@@ -14,11 +14,23 @@ objectives:
     en: Put several entity types in one table with generic `PK`/`SK` keys and prefixes such as `CUST#`, `ORDER#`.
   - vi: Giải thích vì sao một Query lấy được "khách và các đơn của khách" thay cho JOIN.
     en: Explain why one Query can return "a customer and their orders" in place of a JOIN.
+  - vi: Biết khi nào nên tách một thực thể ra bảng riêng.
+    en: Know when an entity belongs in a table of its own.
 requires: [e-dy-l3-01]
 sources:
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-general-nosql-design.html
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-sort-keys.html
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-adjacency-graphs.html
+demo_setup: |
+  {"tables": [{"TableName": "Shop", "BillingMode": "PAY_PER_REQUEST", "KeySchema": [{"AttributeName": "PK", "KeyType": "HASH"}, {"AttributeName": "SK", "KeyType": "RANGE"}], "AttributeDefinitions": [{"AttributeName": "PK", "AttributeType": "S"}, {"AttributeName": "SK", "AttributeType": "S"}]}],
+   "items": {"Shop": [
+    {"PK": "CUST#C-02", "SK": "PROFILE", "type": "customer", "name": "Binh"},
+    {"PK": "CUST#C-02", "SK": "ORDER#2026-08-28#O-503", "type": "order", "total": 355000},
+    {"PK": "CUST#C-02", "SK": "ORDER#2026-09-05#O-504", "type": "order", "total": 440000},
+    {"PK": "ORDER#O-503", "SK": "PRODUCT#P-01", "type": "line", "qty": 3},
+    {"PK": "ORDER#O-503", "SK": "PRODUCT#P-02", "type": "line", "qty": 1},
+    {"PK": "ORDER#O-503", "SK": "PRODUCT#P-04", "type": "line", "qty": 2}
+  ]}}
 quiz:
   - q:
       vi: 'Trong bảng `Shop`, item `{PK: "CUST#C-02", SK: "PROFILE"}` và các item `{PK: "CUST#C-02", SK: "ORDER#…"}` nằm cùng nhau. Query `PK = CUST#C-02` trả về gì?'
@@ -59,67 +71,156 @@ quiz:
       - vi: Vào bảng `Shop`, kèm một GSI riêng cho nhật ký.
         en: Into table `Shop`, with a GSI of its own for the log.
     answer: 1
+    trap: 0
     why:
       vi: 'Nghe hợp lý vì bài này khen single-table. Nhưng lợi ích của nó chỉ có khi các thực thể được đọc cùng nhau trong một Query. Nhật ký không bao giờ đọc cùng ai, mà table class, backup và Streams lại đặt theo bảng. AWS ghi rõ: ứng dụng không truy vấn nhiều thực thể cùng lúc thì nhiều bảng là đủ.'
       en: 'It sounds right because this lesson praises single-table design. But its benefit exists only when entities are read together in one Query. The log is never read with anything, while table class, backups and Streams are set per table. AWS says it plainly: if the app does not query several entities together, multiple tables are good enough.'
 ---
 
+## Mở bài
+
+Trang khách hàng cần hồ sơ và mọi đơn của khách. Trong SQL đó là một JOIN; DynamoDB không có JOIN. Vậy dữ liệu phải được đặt sao để một request là đủ?
+
 ## Ý chính
 
-DynamoDB không có JOIN, nên thay vì nối lúc đọc, ta **đặt sẵn dữ liệu cạnh nhau lúc ghi**. Bảng một-bảng (single-table) chứa nhiều loại item, phân biệt bằng tiền tố trong khóa:
+DynamoDB không có JOIN, nên thay vì nối lúc đọc, ta đặt sẵn dữ liệu cạnh nhau lúc ghi. Bảng một-bảng (single-table) chứa nhiều loại item, phân biệt bằng tiền tố trong khóa chung `PK`/`SK`: `CUST#C-02` + `PROFILE` là hồ sơ khách, `CUST#C-02` + `ORDER#2026-08-28#O-503` là một đơn của khách đó, `ORDER#O-503` + `PRODUCT#P-04` là một dòng hàng. Mỗi `PK` là một item collection, và một Query trên `CUST#C-02` trả cả hồ sơ lẫn đơn.
 
-- `PK = CUST#C-02`, `SK = PROFILE`: hồ sơ khách.
-- `PK = CUST#C-02`, `SK = ORDER#2026-08-28#O-503`: một đơn của khách đó.
-- `PK = ORDER#O-503`, `SK = PRODUCT#P-04`: một dòng hàng của đơn.
-- `PK = STORE`, `SK = VN#DA-NANG#HAI-CHAU#S-01`: một cửa hàng.
+Tên khóa chung (`PK`, `SK`) vì mỗi loại item đặt một thứ khác vào khóa; nó cũng cho nhiều loại dùng chung một GSI (GSI overloading). Một thuộc tính `type` giúp code ứng dụng biết item thuộc loại nào; `type` là từ dành riêng nên trong biểu thức phải viết qua `ExpressionAttributeNames`.
 
-Mỗi `PK` là một item collection. Một Query trên `CUST#C-02` trả cả hồ sơ lẫn đơn, đúng việc mà SQL cần một JOIN.
+Nhiều người nghĩ single-table luôn tốt hơn nhiều bảng. Thật ra lợi ích chỉ có khi các thực thể được đọc cùng nhau trong một Query. Thực thể không bao giờ đọc cùng ai, hoặc cần table class, backup, Streams riêng (các thứ đặt theo bảng), thì để ở bảng riêng. Cái giá của single-table là mẫu truy cập phải biết trước và dữ liệu đôi khi phải nhân bản.
+
+## Cú pháp
+
+```text
+PK = <ENTITY>#<id>            SK = <ENTITY>#<sort fields>#<id> | PROFILE
+Query  PK = :pk                               -> the whole collection (every type)
+Query  PK = :pk AND begins_with(SK, :type)    -> one type inside the collection
+"ExpressionAttributeNames": {"#t": "type"}    -> reserved words in expressions
+```
+
+- Tiền tố trong khóa cho biết loại item.
+- Một item collection = một trang của ứng dụng.
+- `type` là thuộc tính thường, không làm khóa.
 
 ## Ví dụ
 
-Bấm "Tiếp" trên sơ đồ: các item xếp thành từng item collection, mỗi màu một loại thực thể.
+Bảng nhỏ `Shop`, chạy bằng dynoxide. Trang của khách `C-02`:
 
-```text
-PK            SK                          type
-CUST#C-02     ORDER#2026-08-28#O-503      order
-CUST#C-02     ORDER#2026-09-05#O-504      order
-CUST#C-02     PROFILE                     customer
-ORDER#O-503   PRODUCT#P-01                line
-ORDER#O-503   PRODUCT#P-02                line
-ORDER#O-503   PRODUCT#P-04                line
+```json
+{"op": "Query", "input": {"TableName": "Shop", "KeyConditionExpression": "PK = :pk", "ExpressionAttributeValues": {":pk": {"S": "CUST#C-02"}}}}
 ```
 
-## Thực hành
+Ba item hai loại: hai đơn rồi hồ sơ, vì `ORDER#…` đứng trước `PROFILE` theo byte.
 
-Một thuộc tính `type` giúp code ứng dụng biết item thuộc loại nào. `type` là từ dành riêng, nên trong biểu thức cần viết qua tên thay thế.
+Trang của đơn `O-503`:
+
+```json
+{"op": "Query", "input": {"TableName": "Shop", "KeyConditionExpression": "PK = :pk", "ExpressionAttributeValues": {":pk": {"S": "ORDER#O-503"}}}}
+```
+
+Ba dòng hàng. Sơ đồ của bài xếp các item thành từng item collection, mỗi màu một loại.
+
+## Lỗi hay gặp
+
+Viết thẳng `type` trong biểu thức:
+
+```json
+// ERROR ValidationException
+{"op": "Query", "input": {"TableName": "Shop", "KeyConditionExpression": "PK = :pk", "FilterExpression": "type = :t", "ExpressionAttributeValues": {":pk": {"S": "CUST#C-02"}, ":t": {"S": "order"}}}}
+```
+
+`type` là từ dành riêng. Viết `#t = :t` kèm `"ExpressionAttributeNames": {"#t": "type"}`, hoặc tốt hơn là chọn loại bằng tiền tố sort key.
+
+Thiết kế theo bảng SQL:
+
+```text
+// WRONG: one table per entity, the page needs two requests
+Customers  PK = C-02                 -> GetItem
+Orders     PK = C-02, SK = O-503     -> Query
+// FIX: one collection holds the whole page
+Shop       PK = CUST#C-02            -> one Query: PROFILE + ORDER#...
+```
+
+Hai bảng nghĩa là hai request, và ứng dụng tự ghép kết quả, đúng việc DynamoDB không làm hộ.
+
+## Tóm tắt
+
+- Single-table đặt sẵn dữ liệu đọc cùng nhau vào cùng item collection.
+- Khóa chung `PK`/`SK` với tiền tố phân biệt loại item.
+- Một Query trên `PK` thay cho một JOIN.
+- Thực thể không đọc cùng ai, hoặc cần cài đặt bảng riêng, thì để bảng riêng.
 
 # EN
 
+## Opening
+
+The customer page needs the profile and every order of the customer. In SQL that is a JOIN; DynamoDB has no JOIN. So how must the data be placed for one request to be enough?
+
 ## Key idea
 
-DynamoDB has no JOIN, so instead of joining at read time we **place data together at write time**. A single table holds many item types, told apart by prefixes in the key:
+DynamoDB has no JOIN, so instead of joining at read time we place data together at write time. A single table holds many item types, told apart by prefixes in generic `PK`/`SK` keys: `CUST#C-02` + `PROFILE` is the customer profile, `CUST#C-02` + `ORDER#2026-08-28#O-503` is one order of that customer, `ORDER#O-503` + `PRODUCT#P-04` is one order line. Each `PK` is one item collection, and one Query on `CUST#C-02` returns both the profile and the orders.
 
-- `PK = CUST#C-02`, `SK = PROFILE`: the customer profile.
-- `PK = CUST#C-02`, `SK = ORDER#2026-08-28#O-503`: one order of that customer.
-- `PK = ORDER#O-503`, `SK = PRODUCT#P-04`: one line of the order.
-- `PK = STORE`, `SK = VN#DA-NANG#HAI-CHAU#S-01`: one store.
+Generic key names (`PK`, `SK`) because each item type puts something different in the key; they also let many types share one GSI (GSI overloading). A `type` attribute tells application code what kind of item it is reading; `type` is a reserved word, so expressions must name it through `ExpressionAttributeNames`.
 
-Each `PK` is one item collection. One Query on `CUST#C-02` returns both the profile and the orders, the job SQL needs a JOIN for.
+Many people think a single table is always better than several. In fact the benefit exists only when entities are read together in one Query. An entity never read with anything else, or needing its own table class, backups or Streams (all set per table), belongs in its own table. The price of a single table is that access patterns must be known up front and some data gets duplicated.
+
+## Syntax
+
+```text
+PK = <ENTITY>#<id>            SK = <ENTITY>#<sort fields>#<id> | PROFILE
+Query  PK = :pk                               -> the whole collection (every type)
+Query  PK = :pk AND begins_with(SK, :type)    -> one type inside the collection
+"ExpressionAttributeNames": {"#t": "type"}    -> reserved words in expressions
+```
+
+- The prefix in the key tells the item type.
+- One item collection = one page of the application.
+- `type` is an ordinary attribute, not a key.
 
 ## Example
 
-Press "Next" on the diagram: the items line up into item collections, one colour per entity type.
+A small table `Shop`, run on dynoxide. The page of customer `C-02`:
 
-```text
-PK            SK                          type
-CUST#C-02     ORDER#2026-08-28#O-503      order
-CUST#C-02     ORDER#2026-09-05#O-504      order
-CUST#C-02     PROFILE                     customer
-ORDER#O-503   PRODUCT#P-01                line
-ORDER#O-503   PRODUCT#P-02                line
-ORDER#O-503   PRODUCT#P-04                line
+```json
+{"op": "Query", "input": {"TableName": "Shop", "KeyConditionExpression": "PK = :pk", "ExpressionAttributeValues": {":pk": {"S": "CUST#C-02"}}}}
 ```
 
-## Practice
+Three items of two types: the two orders, then the profile, because `ORDER#…` comes before `PROFILE` in byte order.
 
-A `type` attribute tells application code what kind of item it is reading. `type` is a reserved word, so expressions must use a stand-in name for it.
+The page of order `O-503`:
+
+```json
+{"op": "Query", "input": {"TableName": "Shop", "KeyConditionExpression": "PK = :pk", "ExpressionAttributeValues": {":pk": {"S": "ORDER#O-503"}}}}
+```
+
+Three order lines. The lesson's diagram lines the items up into item collections, one colour per type.
+
+## Common mistakes
+
+Writing `type` straight into an expression:
+
+```json
+// ERROR ValidationException
+{"op": "Query", "input": {"TableName": "Shop", "KeyConditionExpression": "PK = :pk", "FilterExpression": "type = :t", "ExpressionAttributeValues": {":pk": {"S": "CUST#C-02"}, ":t": {"S": "order"}}}}
+```
+
+`type` is a reserved word. Write `#t = :t` with `"ExpressionAttributeNames": {"#t": "type"}`, or better, pick the type by sort key prefix.
+
+Designing like SQL tables:
+
+```text
+// WRONG: one table per entity, the page needs two requests
+Customers  PK = C-02                 -> GetItem
+Orders     PK = C-02, SK = O-503     -> Query
+// FIX: one collection holds the whole page
+Shop       PK = CUST#C-02            -> one Query: PROFILE + ORDER#...
+```
+
+Two tables mean two requests, and the application joins the results itself, the very job DynamoDB does not do for you.
+
+## Recap
+
+- A single table places data read together in the same item collection.
+- Generic `PK`/`SK` keys with prefixes that tell item types apart.
+- One Query on `PK` replaces a JOIN.
+- An entity never read with others, or needing its own table settings, gets its own table.

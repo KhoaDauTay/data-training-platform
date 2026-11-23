@@ -121,52 +121,48 @@ quiz:
     why: { vi: "PITR khôi phục về bất kỳ giây nào trong tối đa 35 ngày, luôn vào bảng mới. Streams chỉ giữ 24 giờ và không phải bản sao lưu.", en: "PITR restores to any second within up to 35 days, always into a new table. Streams keep only 24 hours and are not a backup." }
 ---
 
+## Mở bài
+
+Bạn vận hành bảng `FoodApp` của một ứng dụng giao đồ ăn vào giờ cao điểm. Giỏ hết hạn còn nằm trong bảng, bếp cần hàng chờ, khách cần màn hình xác nhận đúng. Đi đủ vòng của cấp L5: thiết kế, truy vấn, giá và vận hành.
+
 ## Ý chính
 
-Bạn vận hành bảng `FoodApp` của một ứng dụng giao đồ ăn. Đi đủ vòng của cấp L5: thiết kế, truy vấn, giá và vận hành.
-
-- **Thiết kế**: `pk = CUST#<id>` gom hồ sơ, giỏ (`CART#…`) và đơn (`ORDER#<time>#<id>`) của một khách. `pk = ORDER#<id>` giữ `SUMMARY` và `PAYMENT` của một đơn. Sparse GSI `KitchenQueue` chỉ chứa đơn đang nấu.
-- **TTL**: giỏ có `expires_at`; TTL xóa trễ nên mọi lần đọc giỏ phải lọc theo thời gian.
-- **Ảnh chụp nhất quán**: màn hình xác nhận đọc `SUMMARY` và `PAYMENT` bằng `TransactGetItems`.
+- **Thiết kế**: `pk = CUST#<id>` gom hồ sơ, giỏ (`CART#…`) và đơn (`ORDER#<time>#<id>`) của một khách; `pk = ORDER#<id>` giữ `SUMMARY` và `PAYMENT`; sparse GSI `KitchenQueue` chỉ chứa đơn đang nấu.
+- **TTL** xóa trễ, nên mọi lần đọc giỏ phải lọc theo `expires_at`.
 - **Giá**: item bị lọc vẫn tính tiền; đọc trong transaction tốn gấp đôi.
 - **Vận hành**: DAX cho đọc nóng chấp nhận trễ, Streams cho doanh thu, PITR cho lỗi ghi.
 
-## Ví dụ
-
-```text
-#  access pattern               request                        key / index
-1  usable carts of a customer   Query + FilterExpression       CUST#c1 | begins_with CART#
-2  2 newest orders              Query, newest first, Limit 2   CUST#c1 | begins_with ORDER#
-3  kitchen queue of a store     Query on GSI KitchenQueue      queue_store = STORE#s1
-4  order confirmation           TransactGetItems               ORDER#o103 | SUMMARY, PAYMENT
-```
-
 ## Thực hành
 
-Bảng có 20 item: 3 khách, 6 giỏ, 7 đơn (4 đơn đang nấu) và 4 item chi tiết đơn. Làm 4 bước, đọc `ScannedCount` và `ConsumedCapacity` trong kết quả, rồi trả lời 5 câu hỏi về giá và vận hành. `TransactWriteItems` không có trong bộ máy trình duyệt, nên bài chỉ dùng đọc.
+Bảng có 20 item: 3 khách, 6 giỏ, 7 đơn (4 đơn đang nấu) và 4 item chi tiết đơn. Làm 4 bước, mỗi bước một request: giỏ còn dùng được, 2 đơn mới nhất, hàng chờ bếp, màn hình xác nhận bằng `TransactGetItems`. Bước 1 và 3 có thanh chi phí: một Scan cho cùng item không đạt. Đọc `ScannedCount` và `ConsumedCapacity` trong kết quả, rồi trả lời 5 câu hỏi về giá và vận hành. `TransactWriteItems` không có trong bộ máy trình duyệt, nên bài chỉ dùng đọc.
+
+## Tóm tắt
+
+- Mỗi mẫu truy cập là một request: Query trên bảng, Query trên sparse GSI, `TransactGetItems`.
+- Item hết hạn và item bị lọc vẫn được đọc và tính tiền.
+- Đọc trong transaction tốn 2 RCU mỗi item tới 4 KB.
+- DAX cho đọc cuối cùng trên khóa nóng; Streams cho tổng hợp; PITR cho lỗi ghi.
 
 # EN
 
+## Opening
+
+You run the `FoodApp` table of a food delivery app at peak hour. Expired carts are still in the table, the kitchen needs its queue, and customers need a correct confirmation screen. Go round the whole of level L5: design, queries, price and operations.
+
 ## Key idea
 
-You run the `FoodApp` table of a food delivery app. Go round the whole of level L5: design, queries, price and operations.
-
-- **Design**: `pk = CUST#<id>` groups a customer's profile, carts (`CART#…`) and orders (`ORDER#<time>#<id>`). `pk = ORDER#<id>` holds an order's `SUMMARY` and `PAYMENT`. The sparse GSI `KitchenQueue` holds only orders being cooked.
-- **TTL**: carts carry `expires_at`; TTL deletes late, so every cart read must filter on time.
-- **Consistent snapshot**: the confirmation screen reads `SUMMARY` and `PAYMENT` with `TransactGetItems`.
+- **Design**: `pk = CUST#<id>` groups a customer's profile, carts (`CART#…`) and orders (`ORDER#<time>#<id>`); `pk = ORDER#<id>` holds `SUMMARY` and `PAYMENT`; the sparse GSI `KitchenQueue` holds only orders being cooked.
+- **TTL** deletes late, so every cart read must filter on `expires_at`.
 - **Price**: filtered items are still billed; transactional reads cost double.
 - **Operations**: DAX for hot reads that accept staleness, Streams for revenue, PITR for bad writes.
 
-## Example
-
-```text
-#  access pattern               request                        key / index
-1  usable carts of a customer   Query + FilterExpression       CUST#c1 | begins_with CART#
-2  2 newest orders              Query, newest first, Limit 2   CUST#c1 | begins_with ORDER#
-3  kitchen queue of a store     Query on GSI KitchenQueue      queue_store = STORE#s1
-4  order confirmation           TransactGetItems               ORDER#o103 | SUMMARY, PAYMENT
-```
-
 ## Practice
 
-The table holds 20 items: 3 customers, 6 carts, 7 orders (4 being cooked) and 4 order detail items. Do the 4 steps, read `ScannedCount` and `ConsumedCapacity` in the results, then answer 5 questions on price and operations. `TransactWriteItems` is not in the browser engine, so the lesson only reads.
+The table holds 20 items: 3 customers, 6 carts, 7 orders (4 being cooked) and 4 order detail items. Do the 4 steps, one request each: usable carts, the 2 newest orders, the kitchen queue, the confirmation screen with `TransactGetItems`. Steps 1 and 3 have a cost bar: a Scan that gives the same items does not pass. Read `ScannedCount` and `ConsumedCapacity` in the results, then answer 5 questions on price and operations. `TransactWriteItems` is not in the browser engine, so the lesson only reads.
+
+## Recap
+
+- Each access pattern is one request: Query on the table, Query on a sparse GSI, `TransactGetItems`.
+- Expired items and filtered items are still read and billed.
+- A transactional read costs 2 RCU per item up to 4 KB.
+- DAX for eventual reads of hot keys; Streams for aggregates; PITR for bad writes.

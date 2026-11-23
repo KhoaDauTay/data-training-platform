@@ -13,6 +13,8 @@ objectives:
     en: Query a GSI with `IndexName` and the index's keys.
   - vi: Thấy GSI chỉ trả thuộc tính đã project và không đọc strong được.
     en: See that a GSI returns only projected attributes and has no strong reads.
+  - vi: Thu hẹp phần đọc trên GSI bằng điều kiện trên sort key của index.
+    en: Narrow the read on a GSI with a condition on the index sort key.
 requires: [e-dy-l3-03]
 sources:
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GSI.html
@@ -174,6 +176,22 @@ lab:
       hint:
         vi: Sort key của index là `orderId`, bắt đầu bằng ngày - đọc ngược và dừng ở 5.
         en: The index sort key is `orderId`, which starts with the date - read backwards and stop at 5.
+    - task:
+        vi: Lấy các đơn `SHIPPED` đặt trong tháng 10/2026 từ GSI `byStatus`. Bước này có thanh chi phí.
+        en: Get the `SHIPPED` orders placed in October 2026 from GSI `byStatus`. This step has a cost bar.
+      solution: |
+        {"op": "Query", "input": {"TableName": "Orders", "IndexName": "byStatus",
+          "KeyConditionExpression": "#s = :s AND begins_with(orderId, :m)",
+          "ExpressionAttributeNames": {"#s": "status"},
+          "ExpressionAttributeValues": {":s": {"S": "SHIPPED"}, ":m": {"S": "2026-10"}}}}
+      check: doc
+      perf: { table: Orders }
+      slow: |
+        {"op":"Scan","input":{"TableName":"Orders","IndexName":"byStatus","FilterExpression":"#s = :s AND begins_with(orderId, :m)","ExpressionAttributeNames":{"#s":"status"},"ExpressionAttributeValues":{":s":{"S":"SHIPPED"},":m":{"S":"2026-10"}}}}
+      ordered: true
+      hint:
+        vi: 'Sort key của index là `orderId`, bắt đầu bằng ngày: `begins_with(orderId, :m)` thuộc `KeyConditionExpression`, không phải bộ lọc.'
+        en: 'The index sort key is `orderId`, which starts with the date: `begins_with(orderId, :m)` belongs in the `KeyConditionExpression`, not a filter.'
 quiz:
   - q:
       vi: 'Ở bước 1, nếu thêm `"ConsistentRead": true` thì sao?'
@@ -186,55 +204,187 @@ quiz:
       - vi: DynamoDB bỏ qua tham số.
         en: DynamoDB ignores the parameter.
     answer: 1
+    trap: 0
     why:
       vi: Nghe như GSI chỉ là một bảng khác nên đọc strong được như bảng gốc. Thật ra GSI cập nhật bất đồng bộ, nên DynamoDB từ chối `ConsistentRead`; bộ mô phỏng trả đúng lỗi này - "Consistent reads are not supported on global secondary indexes".
       en: It sounds as if a GSI is just another table, so it should allow strong reads like the base table. In fact a GSI is updated asynchronously, so DynamoDB refuses `ConsistentRead`; the emulator returns exactly this error - "Consistent reads are not supported on global secondary indexes".
+  - q:
+      vi: 'Query trên `byStatus` (project `INCLUDE` `total`) trả các đơn `NEW`. Trang cần thêm `city` của mỗi đơn. Làm sao?'
+      en: 'A Query on `byStatus` (projecting `INCLUDE` `total`) returns the `NEW` orders. The page also needs each order''s `city`. How?'
+    options:
+      - { vi: "Thêm `city` vào `ProjectionExpression` của Query trên GSI", en: "Add `city` to the GSI Query's `ProjectionExpression`" }
+      - { vi: "Project thêm `city` vào GSI, hoặc đọc từng đơn trên bảng gốc bằng khóa", en: "Project `city` into the GSI, or read each order from the base table by key" }
+      - { vi: "Đổi Query sang `ConsistentRead`", en: "Switch the Query to `ConsistentRead`" }
+    answer: 1
+    why:
+      vi: GSI chỉ giữ thuộc tính đã project và không đọc ngược về bảng, nên `ProjectionExpression` không tạo ra `city`. Project thêm (tốn lưu trữ và WCU cho index) hoặc đọc bảng gốc bằng khóa `customerId` + `orderId` có trong kết quả.
+      en: A GSI holds only projected attributes and never reads back from the table, so `ProjectionExpression` cannot produce `city`. Project it (costing index storage and WCU) or read the base table with the `customerId` + `orderId` keys found in the result.
 ---
+
+## Mở bài
+
+Bảng `Orders` có 120 đơn, khóa theo khách. Kho chỉ muốn 18 đơn đang `NEW`, và không ai muốn đọc cả 120 để tìm chúng. GSI `byStatus` đã có sẵn: giờ đọc nó thế nào?
 
 ## Ý chính
 
-Query một GSI giống Query bảng, thêm `IndexName`. `KeyConditionExpression` dùng khóa **của index**. Kết quả có thứ tự theo sort key của index.
+Query một GSI giống Query bảng, thêm `IndexName`. `KeyConditionExpression` dùng khóa của index: ở đây partition key `status` và sort key `orderId`. Kết quả có thứ tự theo sort key của index, nên `ScanIndexForward` và `Limit` vẫn dùng được như trên bảng.
 
-Khác với bảng:
+GSI khác bảng ở ba chỗ. Nó chỉ có thuộc tính đã project: `byStatus` mang khóa bảng (`customerId`, `orderId`), khóa index (`status`) và `total`; `city` không có. Nó không đọc strong được, vì được cập nhật bất đồng bộ. Và nhiều item có thể có cùng khóa index; DynamoDB không bắt khóa GSI phải duy nhất.
 
-- GSI chỉ có thuộc tính đã project. Ở đây `byStatus` mang khóa bảng (`customerId`, `orderId`), khóa index (`status`) và `total`; `city` không có.
-- Không đọc strong được.
-- Nhiều item có thể có cùng khóa index; DynamoDB không bắt khóa GSI phải duy nhất.
+Nhiều người nghĩ đặt điều kiện vào `FilterExpression` cũng rẻ như vào khóa. Thật ra bộ lọc chạy sau khi đọc: Scan cả index rồi lọc trạng thái và tháng vẫn đọc mọi item của index. Điều kiện trên sort key của index (`begins_with(orderId, :m)`) mới thu hẹp phần đọc.
+
+`status` là từ dành riêng của DynamoDB, nên phải viết qua `ExpressionAttributeNames` (`#s`). Lab chạy bằng dynoxide; `ScannedCount` là số đo thật.
+
+## Cú pháp
+
+```text
+{"op": "Query", "input": {"TableName": "<table>", "IndexName": "<index>",
+  "KeyConditionExpression": "<index pk> = :v [AND <index sk condition>]",
+  ["ExpressionAttributeNames": {"#n": "<reserved word>"},]
+  "ExpressionAttributeValues": {":v": {...}},
+  ["ScanIndexForward": false,] ["Limit": <n>]}}
+```
+
+- `IndexName`: đọc index thay vì bảng.
+- Khóa trong điều kiện là khóa của index, không phải của bảng.
+- Không có `"ConsistentRead": true` trên GSI.
+- Thuộc tính trả về chỉ gồm khóa và phần project.
 
 ## Ví dụ
 
-Không có GSI, câu hỏi "mọi đơn `NEW`" phải là một Scan đọc 120 item. Có GSI, Query chỉ đọc đúng số đơn `NEW`.
+Các đơn đang `NEW` qua GSI:
 
-```text
-Scan + FilterExpression    -> ScannedCount 120
-Query IndexName byStatus   -> ScannedCount = Count
+```json
+{"op": "Query", "input": {"TableName": "Orders", "IndexName": "byStatus", "KeyConditionExpression": "#s = :s", "ExpressionAttributeNames": {"#s": "status"}, "ExpressionAttributeValues": {":s": {"S": "NEW"}}}}
 ```
+
+18 đơn, `ScannedCount` cũng 18. Mỗi item chỉ có `customerId`, `orderId`, `status`, `total`.
+
+Đơn `DELIVERED` gần nhất, đọc ngược trên sort key của index:
+
+```json
+{"op": "Query", "input": {"TableName": "Orders", "IndexName": "byStatus", "KeyConditionExpression": "#s = :s", "ExpressionAttributeNames": {"#s": "status"}, "ExpressionAttributeValues": {":s": {"S": "DELIVERED"}}, "ScanIndexForward": false, "Limit": 1}}
+```
+
+Một item, `ScannedCount` 1: `Limit` dừng việc đọc, không chỉ cắt kết quả.
+
+## Lỗi hay gặp
+
+Scan cả bảng rồi lọc theo trạng thái:
+
+```json
+// WRONG: reads all 120 orders to return the NEW ones
+{"op": "Scan", "input": {"TableName": "Orders", "FilterExpression": "#s = :s", "ExpressionAttributeNames": {"#s": "status"}, "ExpressionAttributeValues": {":s": {"S": "NEW"}}}}
+```
+
+```json
+// FIX: the GSI is keyed on status
+{"op": "Query", "input": {"TableName": "Orders", "IndexName": "byStatus", "KeyConditionExpression": "#s = :s", "ExpressionAttributeNames": {"#s": "status"}, "ExpressionAttributeValues": {":s": {"S": "NEW"}}}}
+```
+
+Câu sai có `ScannedCount` 120, câu sửa 18. Câu sai còn trả cả `city`, nên dễ tưởng nó "tốt hơn".
+
+Xin đọc strong trên GSI:
+
+```json
+// ERROR ValidationException
+{"op": "Query", "input": {"TableName": "Orders", "IndexName": "byStatus", "KeyConditionExpression": "#s = :s", "ExpressionAttributeNames": {"#s": "status"}, "ExpressionAttributeValues": {":s": {"S": "NEW"}}, "ConsistentRead": true}}
+```
+
+GSI chỉ có đọc eventually consistent. Một đơn vừa đổi trạng thái có thể chưa hiện trong index ngay.
 
 ## Thực hành
 
-Mỗi đơn mới ghi vào bảng sẽ được chiếu sang GSI một cách bất đồng bộ, và lần ghi đó tốn thêm WCU cho index.
+Ba bước trên GSI `byStatus`: mọi đơn `NEW`, 5 đơn `PAID` mới nhất, rồi các đơn `SHIPPED` của tháng 10. Bước 1 và 3 có thanh chi phí: một Scan có lọc cho cùng item vẫn không đạt.
+
+## Tóm tắt
+
+- Query GSI = Query bảng + `IndexName`, điều kiện dùng khóa của index.
+- GSI chỉ trả thuộc tính đã project và không đọc strong được.
+- Điều kiện trên sort key của index thu hẹp phần đọc; `FilterExpression` thì không.
+- Từ dành riêng như `status` đi qua `ExpressionAttributeNames`.
 
 # EN
 
+## Opening
+
+Table `Orders` holds 120 orders, keyed by customer. The warehouse wants only the 18 `NEW` ones, and nobody wants to read all 120 to find them. GSI `byStatus` is already there: how do you read it?
+
 ## Key idea
 
-Querying a GSI is like querying the table, plus `IndexName`. The `KeyConditionExpression` uses the **index's** keys. Results come in the index's sort key order.
+Querying a GSI is like querying the table, plus `IndexName`. The `KeyConditionExpression` uses the index's keys: here partition key `status` and sort key `orderId`. Results come in the index's sort key order, so `ScanIndexForward` and `Limit` work just as on the table.
 
-Unlike the table:
+A GSI differs from the table in three ways. It has only its projected attributes: `byStatus` carries the table key (`customerId`, `orderId`), the index key (`status`) and `total`; `city` is not there. It has no strong reads, because it is updated asynchronously. And many items can share the same index key; DynamoDB does not require GSI keys to be unique.
 
-- A GSI has only its projected attributes. Here `byStatus` carries the table key (`customerId`, `orderId`), the index key (`status`) and `total`; `city` is not there.
-- No strong reads.
-- Many items can share the same index key; DynamoDB does not require GSI keys to be unique.
+Many people think a condition in `FilterExpression` is as cheap as one in the key. In fact the filter runs after the read: a Scan of the whole index filtered by status and month still reads every item of the index. A condition on the index sort key (`begins_with(orderId, :m)`) is what narrows the read.
+
+`status` is a DynamoDB reserved word, so it must go through `ExpressionAttributeNames` (`#s`). The lab runs on dynoxide; `ScannedCount` is a real figure.
+
+## Syntax
+
+```text
+{"op": "Query", "input": {"TableName": "<table>", "IndexName": "<index>",
+  "KeyConditionExpression": "<index pk> = :v [AND <index sk condition>]",
+  ["ExpressionAttributeNames": {"#n": "<reserved word>"},]
+  "ExpressionAttributeValues": {":v": {...}},
+  ["ScanIndexForward": false,] ["Limit": <n>]}}
+```
+
+- `IndexName`: read the index instead of the table.
+- The keys in the condition are the index's keys, not the table's.
+- No `"ConsistentRead": true` on a GSI.
+- Returned attributes are only the keys and the projection.
 
 ## Example
 
-Without a GSI, the question "every `NEW` order" needs a Scan that reads 120 items. With the GSI, the Query reads exactly the `NEW` orders.
+The `NEW` orders through the GSI:
 
-```text
-Scan + FilterExpression    -> ScannedCount 120
-Query IndexName byStatus   -> ScannedCount = Count
+```json
+{"op": "Query", "input": {"TableName": "Orders", "IndexName": "byStatus", "KeyConditionExpression": "#s = :s", "ExpressionAttributeNames": {"#s": "status"}, "ExpressionAttributeValues": {":s": {"S": "NEW"}}}}
 ```
+
+18 orders, and `ScannedCount` is 18 too. Each item has only `customerId`, `orderId`, `status`, `total`.
+
+The latest `DELIVERED` order, reading the index sort key backwards:
+
+```json
+{"op": "Query", "input": {"TableName": "Orders", "IndexName": "byStatus", "KeyConditionExpression": "#s = :s", "ExpressionAttributeNames": {"#s": "status"}, "ExpressionAttributeValues": {":s": {"S": "DELIVERED"}}, "ScanIndexForward": false, "Limit": 1}}
+```
+
+One item, `ScannedCount` 1: `Limit` stops the read, it does not just cut the result.
+
+## Common mistakes
+
+Scanning the whole table and filtering on status:
+
+```json
+// WRONG: reads all 120 orders to return the NEW ones
+{"op": "Scan", "input": {"TableName": "Orders", "FilterExpression": "#s = :s", "ExpressionAttributeNames": {"#s": "status"}, "ExpressionAttributeValues": {":s": {"S": "NEW"}}}}
+```
+
+```json
+// FIX: the GSI is keyed on status
+{"op": "Query", "input": {"TableName": "Orders", "IndexName": "byStatus", "KeyConditionExpression": "#s = :s", "ExpressionAttributeNames": {"#s": "status"}, "ExpressionAttributeValues": {":s": {"S": "NEW"}}}}
+```
+
+The wrong one has a `ScannedCount` of 120, the fix 18. The wrong one also returns `city`, so it is easy to think it is "better".
+
+Asking for a strong read on a GSI:
+
+```json
+// ERROR ValidationException
+{"op": "Query", "input": {"TableName": "Orders", "IndexName": "byStatus", "KeyConditionExpression": "#s = :s", "ExpressionAttributeNames": {"#s": "status"}, "ExpressionAttributeValues": {":s": {"S": "NEW"}}, "ConsistentRead": true}}
+```
+
+A GSI has only eventually consistent reads. An order whose status just changed may not show in the index right away.
 
 ## Practice
 
-Each new order written to the table is copied to the GSI asynchronously, and that write costs extra WCU for the index.
+Three steps on GSI `byStatus`: every `NEW` order, the 5 latest `PAID` orders, then the `SHIPPED` orders of October. Steps 1 and 3 have a cost bar: a filtered Scan gives the same items and still does not pass.
+
+## Recap
+
+- Query a GSI = Query the table + `IndexName`; the condition uses the index's keys.
+- A GSI returns only projected attributes and has no strong reads.
+- A condition on the index sort key narrows the read; `FilterExpression` does not.
+- Reserved words like `status` go through `ExpressionAttributeNames`.

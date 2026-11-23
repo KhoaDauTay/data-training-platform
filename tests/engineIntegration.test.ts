@@ -98,6 +98,20 @@ describe('MongoDB labs: every Solution passes its own check', () => {
     }
   });
 
+  // v29 R6 (product-route-v24 §4 R6 exit): every MongoDB capstone L3–L5 has ≥ 1 rule-bar step whose `slow:` fails.
+  it('R6: mỗi capstone MongoDB L3–L5 có bước thanh quy tắc mà `slow:` trượt', async () => {
+    const caps = labs.filter((l) => l.kind === 'capstone' && l.level >= 'L3');
+    expect(caps.map((l) => l.id).sort()).toEqual(['e-mg-l3-18', 'e-mg-l4-14', 'e-mg-l5-10']);
+    for (const l of caps) {
+      const bars = l.lab!.steps.filter((s) => s.rule && s.slow);
+      expect([l.id, bars.length > 0]).toEqual([l.id, true]);
+      for (const s of bars) {
+        expect([l.id, await r.check(l.lab!, s, s.solution)]).toEqual([l.id, expect.objectContaining({ ok: true })]);
+        expect([l.id, await r.check(l.lab!, s, s.slow!)]).toEqual([l.id, expect.objectContaining({ ok: false })]);
+      }
+    }
+  });
+
   it('"mong lỗi": bước có `error` chỉ đạt khi MongoDB từ chối đúng mã đó', async () => {
     const steps = labs.flatMap((l) => l.lab!.steps.filter((s) => s.error).map((s) => [l, s] as const));
     expect(steps.length).toBeGreaterThan(0);
@@ -193,6 +207,17 @@ describe('DynamoDB labs: every Solution passes its own check (dynoxide in Node)'
     expect(v).toMatchObject({ ok: false, reason: 'wrong', why: 'slow' });
     expect(v.ok ? '' : v.message).toMatch(/ScannedCount|RCU|Scan/);
   }, 60_000);
+  // v29 R6: every DynamoDB capstone L3–L5 has ≥ 1 cost-bar step whose `slow:` fails on the bar.
+  it('R6: mỗi capstone DynamoDB L3–L5 có bước thanh chi phí mà `slow:` trượt', async () => {
+    const caps = labs.filter((l) => l.kind === 'capstone' && l.level >= 'L3');
+    expect(caps.map((l) => l.id).sort()).toEqual(['e-dy-l3-11', 'e-dy-l4-14', 'e-dy-l5-07']);
+    const r = dynamoRunner({ lang }, client as never);
+    for (const l of caps) {
+      const bars = l.lab!.steps.filter((s) => s.perf && s.slow);
+      expect([l.id, bars.length > 0]).toEqual([l.id, true]);
+      for (const s of bars) expect([l.id, await r.check(l.lab!, s, s.slow!)]).toEqual([l.id, expect.objectContaining({ ok: false, why: 'slow' })]);
+    }
+  }, 120_000);
   it('thanh không phạt đọc nhất quán mạnh; ReturnConsumedCapacity NONE không né được thanh', async () => {
     const r = dynamoRunner({ lang }, client as never);
     let strong = 0;

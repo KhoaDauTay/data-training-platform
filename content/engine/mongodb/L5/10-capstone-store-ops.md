@@ -75,6 +75,29 @@ lab:
       hint:
         vi: "Gộp theo cửa hàng trước, rồi `$lookup` sang `stores`, `$unwind`, sắp theo mã cửa hàng và `$group` theo `$s.region` với `$push`."
         en: "Group by store first, then `$lookup` into `stores`, `$unwind`, sort by store code and `$group` by `$s.region` with `$push`."
+    - name: { vi: "Lọc trước khi nối", en: "Filter before the join" }
+      task:
+        vi: "Bước 3: số đơn và doanh thu đơn `paid` theo thành phố của cửa hàng: nối `stores` để lấy `city`. Trả `_id` là thành phố, `orders`, `revenue`; xếp `revenue` giảm dần, hòa thì `_id` tăng dần. Bài chấm cả thứ tự stage: đúng kết quả mà nối mọi đơn trước khi lọc là chưa đạt."
+        en: "Step 3: the number and revenue of `paid` orders by the store's city: join `stores` to get the `city`. Return `_id` as the city, `orders`, `revenue`; order by `revenue` descending, ties by `_id` ascending. The stage order is graded too: a right result that joins every order before filtering does not pass."
+      solution: |
+        db.orders.aggregate([
+          { $match: { status: "paid" } },
+          { $lookup: { from: "stores", localField: "store", foreignField: "_id", as: "s" } },
+          { $unwind: "$s" },
+          { $group: { _id: "$s.city", orders: { $sum: 1 }, revenue: { $sum: "$total" } } },
+          { $sort: { revenue: -1, _id: 1 } }
+        ])
+      check: doc
+      ordered: true
+      rule: match-first
+      slow: 'db.orders.aggregate([{ $lookup: { from: "stores", localField: "store", foreignField: "_id", as: "s" } }, { $unwind: "$s" }, { $match: { status: "paid" } }, { $group: { _id: "$s.city", orders: { $sum: 1 }, revenue: { $sum: "$total" } } }, { $sort: { revenue: -1, _id: 1 } }])'
+      sql: "SELECT st.city AS _id, COUNT(*) AS orders, SUM(o.total) AS revenue FROM orders o JOIN stores st ON st.id = o.store WHERE o.status = 'paid' GROUP BY st.city ORDER BY revenue DESC, st.city;"
+      hint:
+        vi: "`$match` trên `status` đứng đầu, rồi `$lookup`, `$unwind`, `$group` theo `$s.city`."
+        en: "Put the `$match` on `status` first, then `$lookup`, `$unwind`, `$group` by `$s.city`."
+      fact:
+        vi: "Bước này chấm theo quy tắc trong docs chính thức (đặt `$match` trước stage nặng), không đo trên `mongod`: mingo không có index hay explain."
+        en: "This step is graded by the rule in the official docs (put `$match` before the heavy stages), not measured on `mongod`: mingo has no index or explain."
 predict:
   sql: |
     db.orders.find(
@@ -114,26 +137,42 @@ quiz:
       en: "With `w: 1` or `w: 0`, data can be rolled back if the primary steps down before replication. `w: \"majority\"` acknowledges only once a majority has durably written it to the oplog, so the new primary is sure to have it."
 ---
 
+## Mở bài
+
+Chuỗi ba cửa hàng cần một báo cáo vận hành trước buổi họp sáng mai: doanh thu theo ngày, theo vùng, theo thành phố, cùng index cho bảng điều khiển và cách ghi tiền an toàn. Bài cuối L5 gom lại những gì bạn đã học.
+
 ## Ý chính
 
-Bài cuối cấp L5, gồm hai phần với hai nhãn khác nhau:
-
-- Hai bước lab chạy thật bằng mingo trong trình duyệt (ngôn ngữ truy vấn MongoDB): báo cáo theo ngày (mẫu bucket) và theo vùng (`$lookup`).
-- Câu đoán index (chỉ mục) và câu kết luận dựa trên docs chính thức của MongoDB (luật ESR, write concern); trình duyệt không có `mongod`, nên phần này không chạy thật: câu đoán index chấm theo luật ESR, không phải `mongod`.
+Bài gồm hai phần với hai nhãn khác nhau. Ba bước lab chạy thật bằng mingo trong trình duyệt: báo cáo theo ngày (mẫu bucket), theo vùng (`$lookup`) và theo thành phố, có thanh quy tắc: `$match` phải đứng trước `$lookup`, `$unwind`, `$group`. Câu đoán index (chỉ mục) và câu kết luận dựa trên docs chính thức của MongoDB (luật ESR, write concern); trình duyệt không có `mongod`, nên phần này chấm theo luật, không đo trên `mongod`.
 
 ## Thực hành
 
-Làm hai bước lab theo thứ tự, rồi chọn index cho truy vấn bảng điều khiển và write concern cho luồng thanh toán.
+Làm ba bước lab theo thứ tự, rồi chọn index cho truy vấn bảng điều khiển và write concern cho luồng thanh toán. Ở bước 3, mở "Pipeline từng bước" để so số tài liệu sau mỗi stage khi `$match` đứng đầu và khi nó đứng sau `$lookup`.
+
+## Tóm tắt
+
+- `$dateTrunc` trên `$toDate` gom đơn thành bucket theo ngày.
+- Gộp theo cửa hàng trước rồi mới `$lookup`: ít tài liệu phải nối hơn.
+- `$match` đứng đầu pipeline: mọi stage nặng sau nó đọc ít hơn, và trên `mongod` nó dùng được index.
+- Index theo ESR cho bảng điều khiển; `w: "majority"` cho tiền.
 
 # EN
 
+## Opening
+
+A chain of three stores needs an operations report before tomorrow morning's meeting: revenue by day, by region and by city, plus an index for the dashboard and a safe way to write money. The final L5 lesson brings together what you have learned.
+
 ## Key idea
 
-The final lesson of level L5, in two parts with two different labels:
-
-- Two lab steps that really run on mingo in the browser (the MongoDB query language): a daily report (bucket pattern) and a regional report (`$lookup`).
-- The index prediction and the conclusion question rest on the MongoDB docs (the ESR rule, write concern); the browser has no `mongod`, so this part does not run for real: the index prediction is graded by the ESR rule, not by `mongod`.
+The lesson has two parts with two different labels. Three lab steps really run on mingo in the browser: a daily report (bucket pattern), a regional report (`$lookup`) and a city report with a rule bar: `$match` must come before `$lookup`, `$unwind` and `$group`. The index prediction and the conclusion question rest on the MongoDB docs (the ESR rule, write concern); the browser has no `mongod`, so this part is graded by rule, not measured on `mongod`.
 
 ## Practice
 
-Do the two lab steps in order, then pick the index for the dashboard query and the write concern for the payment path.
+Do the three lab steps in order, then pick the index for the dashboard query and the write concern for the payment path. In step 3, open "Pipeline step by step" to compare the documents after each stage with `$match` first and with it after `$lookup`.
+
+## Recap
+
+- `$dateTrunc` on `$toDate` groups orders into daily buckets.
+- Group by store first, then `$lookup`: fewer documents to join.
+- `$match` first in the pipeline: every heavy stage after it reads less, and on `mongod` it can use an index.
+- An ESR index for the dashboard; `w: "majority"` for money.

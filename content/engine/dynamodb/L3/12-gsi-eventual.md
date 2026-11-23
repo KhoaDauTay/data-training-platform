@@ -38,6 +38,7 @@ predict:
     - vi: DynamoDB bỏ qua tham số và đọc nhất quán cuối
       en: DynamoDB ignores the parameter and reads eventually consistent
   answer: 1
+  trap: 0
   why:
     vi: 'Nhiều người nghĩ GSI chỉ là một bảng khác nên đọc mạnh được như bảng chính. Thật ra DynamoDB cập nhật GSI bất đồng bộ ("asynchronously, using an eventually consistent model", docs GSI), nên không có bản "chắc chắn mới nhất" để đọc mạnh. Request bị từ chối bằng một `ValidationException`, thông báo `Consistent reads are not supported on global secondary indexes`. Bước 1 cho bạn thấy thông báo này thật (trang chỉ hiện thông báo, không hiện tên loại lỗi).'
     en: 'Many people think a GSI is just another table, so it allows strong reads like the base table. In fact DynamoDB updates a GSI asynchronously ("asynchronously, using an eventually consistent model", GSI docs), so there is no "surely latest" copy to read strongly. The request is refused with a `ValidationException`, message `Consistent reads are not supported on global secondary indexes`. Step 1 shows you this message for real (the page shows the message, not the error type name).'
@@ -129,9 +130,11 @@ lab:
         en: '`SET #s = :p`, with `#s` for `status` (a reserved word). The total is 3 WCU: 1 for the table, 2 for the GSI (delete the `NEW` entry, write the `PAID` one). The page shows only the total; the DynamoDB response splits it into `Table` and `GlobalSecondaryIndexes`.'
 ---
 
-## Ý chính
+## Mở bài
 
 Đơn vừa tạo, bạn Query GSI ngay và muốn chắc chắn thấy nó. Thêm `ConsistentRead: true` có được không?
+
+## Ý chính
 
 Không. GSI được DynamoDB cập nhật **sau** lần ghi vào bảng chính, bất đồng bộ. Vì vậy:
 
@@ -156,11 +159,20 @@ Danh sách "đơn đang chờ" đọc từ GSI là đủ: chậm một chút kh�
 
 **Khác biệt của bộ mô phỏng:** dynoxide cập nhật GSI ngay trong lần ghi, nên trong trình duyệt bạn không bao giờ thấy GSI chậm. DynamoDB thật cập nhật bất đồng bộ, thường dưới một giây. Thông báo lỗi `ValidationException` và các số WCU ở đây thì giống DynamoDB thật.
 
+## Tóm tắt
+
+- GSI chỉ đọc nhất quán cuối; `ConsistentRead: true` bị từ chối.
+- Ngay sau khi ghi, GSI có thể chưa thấy item mới.
+- Cần bản mới nhất: lấy khóa từ GSI, `GetItem` bảng chính đọc mạnh.
+- Đổi khóa GSI tốn 2 WCU ở index; đổi thuộc tính không project thì không tốn gì ở index.
+
 # EN
 
-## Key idea
+## Opening
 
 An order was just created, you query the GSI right away and want to be sure you see it. Does adding `ConsistentRead: true` work?
+
+## Key idea
 
 No. DynamoDB updates a GSI **after** the write to the base table, asynchronously. So:
 
@@ -184,3 +196,10 @@ GetItem Orders, ConsistentRead  -> latest version, 1 RCU
 A "waiting orders" list read from the GSI is fine: being a little late does not matter. Only the deciding step (packing, taking stock) needs to read the base table again with a strongly consistent read.
 
 **Emulator difference:** dynoxide updates the GSI inside the write, so in the browser you never see a GSI lag. Real DynamoDB updates it asynchronously, usually in under a second. The `ValidationException` message and the WCU numbers here match real DynamoDB.
+
+## Recap
+
+- A GSI is only eventually consistent; `ConsistentRead: true` is refused.
+- Right after a write, the GSI may not show the new item yet.
+- For the latest version: take the key from the GSI, then a strong `GetItem` on the base table.
+- Changing a GSI key costs 2 WCU on the index; changing an unprojected attribute costs the index nothing.

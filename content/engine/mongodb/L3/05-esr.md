@@ -6,7 +6,7 @@ module: esr-explain
 title: "Index kép và luật ESR"
 title_en: "Compound indexes and the ESR rule"
 kind: concept
-minutes: 10
+minutes: 12
 runtime: browser
 viz: mg-esr
 objectives:
@@ -54,9 +54,10 @@ quiz:
       - { vi: "`{ status: 1, day: 1, qty: 1 }`", en: "`{ status: 1, day: 1, qty: 1 }`" }
       - { vi: "`{ day: 1, qty: 1, status: 1 }`", en: "`{ day: 1, qty: 1, status: 1 }`" }
     answer: 1
+    trap: 0
     why:
-      vi: "`status` là bằng nên đứng đầu, `day` là trường sắp xếp nên đứng thứ hai, `qty` là khoảng nên đứng cuối."
-      en: "`status` is equality so it comes first, `day` is the sort field so it is second, `qty` is a range so it is last."
+      vi: "Nghe hợp lý vì đó là thứ tự các trường trong câu lệnh, nhưng thứ tự index theo vai trò, không theo cách viết: `status` là bằng nên đứng đầu, `day` là trường sắp xếp nên thứ hai, `qty` là khoảng nên cuối. Đặt `qty` trước `day` thì MongoDB phải sắp trong bộ nhớ."
+      en: "It sounds right because that is the order the fields appear in the command, but index order follows the role, not the writing: `status` is equality so it comes first, `day` is the sort field so it is second, `qty` is a range so it is last. Putting `qty` before `day` forces an in-memory sort."
   - q:
       vi: "Trong luật ESR, `$ne` được tính là gì?"
       en: "Under ESR, what does `$ne` count as?"
@@ -65,61 +66,179 @@ quiz:
       - { vi: "Range", en: "Range" }
       - { vi: "Sort", en: "Sort" }
     answer: 1
+    trap: 0
     why:
-      vi: "Docs chính thức ghi rõ `$ne` và `$nin` là toán tử range, không phải equality. `$regex` cũng là range."
-      en: "The docs state that `$ne` and `$nin` are range operators, not equality. `$regex` is a range too."
+      vi: "Nghe hợp lý vì `$ne` so với một giá trị cố định, nhưng nó chọn mọi giá trị trừ một, tức hai khoảng trong index. Docs chính thức ghi rõ `$ne` và `$nin` là toán tử range. `$regex` cũng là range."
+      en: "It sounds right because `$ne` compares with one fixed value, but it selects every value but one, which is two ranges in the index. The docs state that `$ne` and `$nin` are range operators. `$regex` is a range too."
 ---
+## Mở bài
+
+Cửa hàng phim có màn hình "phim của một đạo diễn, ngắn hơn 130 phút, theo năm". Bạn tạo index trên đúng ba trường đó mà truy vấn vẫn phải sắp trong bộ nhớ. Thứ tự ba trường mới là điều quyết định.
 
 ## Ý chính
 
-Index (chỉ mục) MongoDB là B-tree. Index kép `{ a: 1, b: 1, c: 1 }` sắp khóa theo `a`, trong cùng `a` thì theo `b`, rồi theo `c`, như một danh bạ xếp theo họ rồi tên. Truy vấn chỉ quét được một đoạn liền của index khi các trường đứng trước đã bị cố định bằng phép so bằng.
+Index MongoDB là B-tree. Index kép `{ a: 1, b: 1, c: 1 }` sắp khóa theo `a`, trong cùng `a` thì theo `b`, rồi theo `c`, như danh bạ xếp theo họ rồi tên. Truy vấn chỉ quét được một đoạn liền của index khi các trường đứng trước đã bị cố định bằng phép so bằng.
 
-Docs chính thức của MongoDB khuyên xếp trường theo ESR: Equality (so bằng) trước, Sort (trường sắp xếp) sau đó, Range (khoảng) cuối cùng. Trong một khối bằng, khóa đã có sẵn thứ tự nên MongoDB đọc theo index mà không phải sắp lại.
+Docs chính thức khuyên xếp theo ESR: Equality (so bằng) trước, Sort (trường sắp xếp) sau, Range (khoảng) cuối. Trong một khối bằng, khóa đã có sẵn thứ tự nên MongoDB đọc theo index mà không sắp lại. Nếu range đứng trước sort, thứ tự sort vỡ qua các giá trị range và explain có stage `SORT`. Khi khoảng rất chọn lọc, ERS (range trước sort) có thể rẻ hơn vì chỉ còn vài tài liệu phải sắp.
+
+Nhiều người nghĩ `$ne` là so bằng vì nó nhắc một giá trị. Thật ra `$ne`, `$nin`, `$regex` là range. `$in` một mình như nhiều phép bằng; đi với `.sort()`, mảng dưới 201 phần tử được tách thành phép bằng rồi trộn (`SORT_MERGE`), từ 201 trở lên thì như range, và docs nói ngưỡng này có thể đổi.
+
+Ví dụ chạy bằng mingo; mingo không có index nên `createIndex` chỉ trả danh sách index, không đo kế hoạch.
+
+## Cú pháp
+
+```text
+db.<coll>.createIndex({ <equality fields>: 1, <sort fields>: 1 | -1, <range fields>: 1 })
+```
+
+- Equality: `{ f: v }`, `$eq`, `$in` với mảng nhỏ.
+- Sort: các trường trong `.sort()`, đúng thứ tự (và chiều, hoặc đảo cả bộ).
+- Range: `$gt`, `$gte`, `$lt`, `$lte`, `$ne`, `$nin`, `$regex`.
 
 ## Ví dụ
 
-Nếu range đứng trước sort, thứ tự sort bị vỡ qua các giá trị range, MongoDB phải sắp trong bộ nhớ và explain có stage `SORT`. Theo docs chính thức, kế hoạch không có stage `SORT` nghĩa là thứ tự lấy từ index. Khi điều kiện khoảng rất chọn lọc, đặt range trước sort (ERS) có thể rẻ hơn, vì chỉ còn vài tài liệu phải sắp.
-
-- `$ne`, `$nin` và `$regex` là range.
-- `$in` một mình như nhiều phép bằng. Đi với `.sort()`: mảng dưới 201 phần tử được tách thành phép bằng rồi trộn theo thứ tự index (`SORT_MERGE`); từ 201 phần tử trở lên thì như range. Docs chính thức nói ngưỡng này không cam kết giữ nguyên giữa các phiên bản.
-
-Ví dụ trong docs chính thức: `directors` là equality, `year` là sort, `runtime` là range.
+Truy vấn mẫu: `directors` là bằng, `year` là sắp, `runtime` là khoảng.
 
 ```javascript
-db.movies.find(
-  { directors: "David Lynch", runtime: { $lt: 130 } },
-  { title: 1, year: 1, runtime: 1 }
-).sort({ year: 1 })
+db.movies.find({ directors: "David Lynch", runtime: { $lt: 130 } }, { title: 1, year: 1, runtime: 1 }).sort({ year: 1 })
+```
 
+Chỉ `Blue Velvet` (120 phút) khớp.
+
+Index theo ESR cho truy vấn đó:
+
+```javascript
 db.movies.createIndex({ directors: 1, year: 1, runtime: 1 })
 ```
 
-Đúng với docs chính thức của MongoDB hiện hành (8.x), kiểm ngày 2026-11-20.
+Trên `mongod`, trong khối `"David Lynch"` các khóa đã theo `year`, nên không cần stage `SORT`.
+
+`$in` với vài giá trị vẫn tính như phép bằng:
+
+```javascript
+db.movies.find({ directors: { $in: ["Joel Coen", "David Lynch"] } }, { title: 1 }).sort({ title: 1 })
+```
+
+## Lỗi hay gặp
+
+Đặt range trước sort:
+
+```javascript
+// WRONG: range before sort, mongod must sort in memory
+db.movies.createIndex({ directors: 1, runtime: 1, year: 1 })
+```
+
+```javascript
+// FIX: equality, sort, range
+db.movies.createIndex({ directors: 1, year: 1, runtime: 1 })
+```
+
+Cả hai index đều có đủ ba trường, nên lỗi này không lộ ra trong kết quả; chỉ explain trên `mongod` cho thấy stage `SORT`.
+
+Coi `$ne` là phép bằng:
+
+```javascript
+// WRONG: $ne treated as equality, placed first
+db.movies.createIndex({ directors: 1, year: 1 })
+```
+
+```javascript
+// FIX: for find({ directors: { $ne: "David Lynch" } }).sort({ year: 1 }), sort field first
+db.movies.createIndex({ year: 1, directors: 1 })
+```
+
+Với `$ne`, index bắt đầu bằng `directors` phải quét hai khoảng rồi sắp lại theo `year`; đặt `year` trước thì thứ tự có sẵn.
+
+## Tóm tắt
+
+- Index kép quét liền chỉ khi các trường đứng trước bị cố định bằng phép bằng.
+- ESR: Equality, rồi Sort, rồi Range.
+- `$ne`, `$nin`, `$regex` là range; `$in` với mảng nhỏ là nhiều phép bằng.
+- Range trước sort gây stage `SORT`; ERS chỉ khi khoảng rất chọn lọc.
 
 # EN
+
+## Opening
+
+The film shop has a screen "a director's films shorter than 130 minutes, by year". You index exactly those three fields and the query still sorts in memory. The order of the three fields is what decides it.
 
 ## Key idea
 
 MongoDB indexes are B-trees. The compound index `{ a: 1, b: 1, c: 1 }` sorts keys by `a`, then within the same `a` by `b`, then by `c`, like a phone book ordered by family name then given name. A query scans one contiguous part of the index only when the fields in front are fixed by equality.
 
-The MongoDB docs recommend the ESR order: Equality fields first, then Sort fields, then Range fields last. Inside an equality block the keys are already ordered, so MongoDB reads in index order with no extra sort.
+The docs recommend ESR: Equality fields first, then Sort fields, then Range fields last. Inside an equality block the keys are already ordered, so MongoDB reads in index order with no extra sort. If the range comes before the sort, the sort order breaks across range values and explain shows a `SORT` stage. When the range is very selective, ERS (range before sort) can be cheaper because only a few documents are left to sort.
+
+Many people think `$ne` is an equality because it names one value. In fact `$ne`, `$nin` and `$regex` are ranges. `$in` alone acts as several equality matches; with `.sort()`, an array of fewer than 201 elements is expanded into equalities and merged (`SORT_MERGE`), with 201 or more it acts like a range, and the docs say this threshold may change.
+
+The examples run on mingo; mingo has no indexes, so `createIndex` only returns the index list and measures no plan.
+
+## Syntax
+
+```text
+db.<coll>.createIndex({ <equality fields>: 1, <sort fields>: 1 | -1, <range fields>: 1 })
+```
+
+- Equality: `{ f: v }`, `$eq`, `$in` with a small array.
+- Sort: the fields in `.sort()`, in the same order (and direction, or the whole set reversed).
+- Range: `$gt`, `$gte`, `$lt`, `$lte`, `$ne`, `$nin`, `$regex`.
 
 ## Example
 
-If the range comes before the sort, the sort order breaks across range values, MongoDB must sort in memory and explain shows a `SORT` stage. Per the docs, a plan with no `SORT` stage got its order from the index. When the range predicate is very selective, range before sort (ERS) can be cheaper, because only a few documents are left to sort.
-
-- `$ne`, `$nin` and `$regex` are ranges.
-- `$in` alone acts as several equality matches. With `.sort()`: an array with fewer than 201 elements is expanded into equality matches and merged in index order (`SORT_MERGE`); with 201 or more it acts like a range. The docs say this threshold is not guaranteed to stay the same across versions.
-
-The example from the docs: `directors` is equality, `year` is sort, `runtime` is range.
+The sample query: `directors` is equality, `year` is sort, `runtime` is range.
 
 ```javascript
-db.movies.find(
-  { directors: "David Lynch", runtime: { $lt: 130 } },
-  { title: 1, year: 1, runtime: 1 }
-).sort({ year: 1 })
+db.movies.find({ directors: "David Lynch", runtime: { $lt: 130 } }, { title: 1, year: 1, runtime: 1 }).sort({ year: 1 })
+```
 
+Only `Blue Velvet` (120 minutes) matches.
+
+The ESR index for that query:
+
+```javascript
 db.movies.createIndex({ directors: 1, year: 1, runtime: 1 })
 ```
 
-Matches the current MongoDB manual (8.x), checked 2026-11-20.
+On `mongod`, inside the `"David Lynch"` block the keys are already ordered by `year`, so no `SORT` stage is needed.
+
+`$in` with a few values still counts as equality:
+
+```javascript
+db.movies.find({ directors: { $in: ["Joel Coen", "David Lynch"] } }, { title: 1 }).sort({ title: 1 })
+```
+
+## Common mistakes
+
+Putting the range before the sort:
+
+```javascript
+// WRONG: range before sort, mongod must sort in memory
+db.movies.createIndex({ directors: 1, runtime: 1, year: 1 })
+```
+
+```javascript
+// FIX: equality, sort, range
+db.movies.createIndex({ directors: 1, year: 1, runtime: 1 })
+```
+
+Both indexes hold all three fields, so this mistake never shows in the result; only explain on `mongod` reveals the `SORT` stage.
+
+Treating `$ne` as equality:
+
+```javascript
+// WRONG: $ne treated as equality, placed first
+db.movies.createIndex({ directors: 1, year: 1 })
+```
+
+```javascript
+// FIX: for find({ directors: { $ne: "David Lynch" } }).sort({ year: 1 }), sort field first
+db.movies.createIndex({ year: 1, directors: 1 })
+```
+
+With `$ne`, an index starting with `directors` must scan two ranges and then sort again by `year`; with `year` first the order is already there.
+
+## Recap
+
+- A compound index scans contiguously only when the leading fields are fixed by equality.
+- ESR: Equality, then Sort, then Range.
+- `$ne`, `$nin`, `$regex` are ranges; `$in` with a small array is several equalities.
+- Range before sort causes a `SORT` stage; ERS only when the range is very selective.

@@ -35,9 +35,10 @@ predict:
     - vi: "Bằng nhau, vì cùng hai trường"
       en: "The same, because both hold the same two fields"
   answer: 1
+  trap: 2
   why:
-    vi: "Với `{ rated: 1, year: 1 }`, phần `rated: \"PG\"` cố định một khối, trong khối đó các `year` từ 2000 đến 2005 nằm liền nhau: đọc đúng 235 khóa. Với `{ year: 1, rated: 1 }`, khóa PG nằm rải trong sáu khối năm riêng; MongoDB nhảy qua từng khối nên đọc thêm vài khóa ở chỗ chuyển khối: 246 khóa."
-    en: "With `{ rated: 1, year: 1 }`, `rated: \"PG\"` fixes one block, and inside it the `year` values 2000 to 2005 are contiguous: exactly 235 keys. With `{ year: 1, rated: 1 }`, the PG keys sit in six separate year blocks; MongoDB jumps from block to block and reads a few extra keys at each boundary: 246 keys."
+    vi: "Nghe hợp lý vì hai index chứa cùng hai trường, nhưng thứ tự quyết định khóa nào nằm liền nhau. Với `{ rated: 1, year: 1 }`, `rated: \"PG\"` cố định một khối, trong đó các `year` từ 2000 đến 2005 liền nhau: đọc đúng 235 khóa. Với `{ year: 1, rated: 1 }`, khóa PG rải trong sáu khối năm; MongoDB nhảy qua từng khối nên đọc thêm vài khóa ở chỗ chuyển: 246 khóa."
+    en: "It sounds right because both indexes hold the same two fields, but the order decides which keys sit together. With `{ rated: 1, year: 1 }`, `rated: \"PG\"` fixes one block, and inside it the `year` values 2000 to 2005 are contiguous: exactly 235 keys. With `{ year: 1, rated: 1 }`, the PG keys sit in six separate year blocks; MongoDB jumps from block to block and reads a few extra keys at each boundary: 246 keys."
   recorded:
     tier: docs
     server: MongoDB
@@ -53,90 +54,57 @@ predict:
         totalKeysExamined: 235
         totalDocsExamined: 235
         nReturned: 235
+quiz:
+  - q:
+      vi: "Truy vấn mới: `{ rated: \"PG\", year: 2003 }` (cả hai so bằng). Hai index khác nhau thế nào?"
+      en: "A new query: `{ rated: \"PG\", year: 2003 }` (both equality). How do the two indexes differ?"
+    options:
+      - { vi: "Gần như không khác: hai trường bằng cố định một khối liền với cả hai thứ tự", en: "Hardly at all: two equality fields fix one contiguous block in either order" }
+      - { vi: "`{ year: 1, rated: 1 }` luôn đọc gấp sáu lần", en: "`{ year: 1, rated: 1 }` always reads six times more" }
+      - { vi: "Chỉ `{ rated: 1, year: 1 }` dùng được", en: "Only `{ rated: 1, year: 1 }` can be used" }
+    answer: 0
+    why:
+      vi: "Thứ tự giữa các trường so bằng không đổi vùng quét: cặp `(PG, 2003)` hay `(2003, PG)` đều là một đoạn liền. Khác biệt chỉ xuất hiện khi có trường khoảng hoặc trường sắp."
+      en: "The order among equality fields does not change the scanned range: the pair `(PG, 2003)` or `(2003, PG)` is one contiguous run either way. The difference only appears with a range or sort field."
 ---
+## Mở bài
+
+Hai đồng nghiệp tạo hai index trên cùng hai trường, chỉ khác thứ tự. Cả hai đều trả 235 phim đúng. Index nào làm ít việc hơn, và nhìn vào đâu để biết?
 
 ## Ý chính
 
-Ví dụ trong docs chính thức của MongoDB (chưa chạy trong trình duyệt): hai kết quả dưới đây in trong trang "Interpret Explain Plan Results" (mục Compare Performance of Indexes). Cả hai đều `FETCH` trên `IXSCAN` và trả 235 tài liệu; khác nhau ở số khóa đọc.
+Ví dụ trong docs chính thức của MongoDB (chưa chạy trong trình duyệt): hai kết quả ở thẻ "Theo tài liệu" in trong trang "Interpret Explain Plan Results" (mục Compare Performance of Indexes). Cả hai đều `FETCH` trên `IXSCAN` và trả 235 tài liệu; khác nhau ở số khóa đọc.
 
 - `{ year: 1, rated: 1 }`: `totalKeysExamined` 246.
 - `{ rated: 1, year: 1 }`: `totalKeysExamined` 235, bằng đúng số tài liệu trả về.
 
-Đây chính là phần E đứng trước R của luật ESR: trường so bằng thu hẹp về một khối, rồi khoảng nằm liền trong khối đó.
+Nhiều người nghĩ index chứa cùng các trường thì như nhau. Thật ra B-tree sắp theo trường đầu trước, nên trường so bằng đứng trước gom mọi khóa cần vào một khối, còn khoảng đứng trước thì rải chúng ra. Đây chính là phần E đứng trước R của luật ESR; với dữ liệu lớn, khoảng cách 246 so với 235 có thể thành gấp nhiều lần.
 
-## Ví dụ
+## Tóm tắt
 
-```javascript
-{
-  queryPlanner: {
-    namespace: 'sample_mflix.movies',
-    winningPlan: {
-      stage: 'FETCH',
-      inputStage: {
-        stage: 'IXSCAN',
-        keyPattern: {
-          rated: 1,
-          year: 1
-        },
-        '...': '...'
-      },
-      '...': '...'
-    },
-    '...': '...'
-  },
-  executionStats: {
-    executionSuccess: true,
-    nReturned: 235,
-    totalKeysExamined: 235,
-    totalDocsExamined: 235,
-    '...': '...'
-  },
-  '...': '...'
-}
-```
-
-Đúng với docs chính thức của MongoDB hiện hành, kiểm ngày 2026-11-20.
+- `totalKeysExamined` so với `nReturned` đo index đọc thừa bao nhiêu khóa.
+- Cùng trường, khác thứ tự, có thể khác số khóa đọc.
+- Trường so bằng trước trường khoảng: khóa cần nằm liền một khối.
+- Giữa các trường đều so bằng, thứ tự không đổi vùng quét.
 
 # EN
 
+## Opening
+
+Two colleagues build two indexes on the same two fields, differing only in order. Both return the right 235 movies. Which index does less work, and where do you look to tell?
+
 ## Key idea
 
-Example from the official MongoDB docs (not run in the browser): the two results below are printed on the page "Interpret Explain Plan Results" (section Compare Performance of Indexes). Both are `FETCH` over `IXSCAN` and return 235 documents; they differ in the number of keys read.
+Example from the official MongoDB docs (not run in the browser): the two results in the "From the docs" card are printed on the page "Interpret Explain Plan Results" (section Compare Performance of Indexes). Both are `FETCH` over `IXSCAN` and return 235 documents; they differ in the number of keys read.
 
 - `{ year: 1, rated: 1 }`: `totalKeysExamined` 246.
 - `{ rated: 1, year: 1 }`: `totalKeysExamined` 235, exactly the number of documents returned.
 
-This is the E-before-R part of the ESR rule: the equality field narrows the scan to one block, then the range is contiguous inside that block.
+Many people think indexes holding the same fields are equal. In fact a B-tree sorts by the leading field first, so an equality field in front gathers every needed key into one block, while a range in front scatters them. This is the E-before-R part of the ESR rule; on large data the gap of 246 against 235 can become many times larger.
 
-## Example
+## Recap
 
-```javascript
-{
-  queryPlanner: {
-    namespace: 'sample_mflix.movies',
-    winningPlan: {
-      stage: 'FETCH',
-      inputStage: {
-        stage: 'IXSCAN',
-        keyPattern: {
-          rated: 1,
-          year: 1
-        },
-        '...': '...'
-      },
-      '...': '...'
-    },
-    '...': '...'
-  },
-  executionStats: {
-    executionSuccess: true,
-    nReturned: 235,
-    totalKeysExamined: 235,
-    totalDocsExamined: 235,
-    '...': '...'
-  },
-  '...': '...'
-}
-```
-
-Matches the current MongoDB manual, checked 2026-11-20.
+- `totalKeysExamined` against `nReturned` measures how many extra keys the index read.
+- Same fields in a different order can read a different number of keys.
+- Equality field before range field: the needed keys sit in one block.
+- Among fields that are all equality, the order does not change the scanned range.

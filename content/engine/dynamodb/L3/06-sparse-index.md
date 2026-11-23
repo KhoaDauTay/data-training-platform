@@ -13,6 +13,8 @@ objectives:
     en: Explain why an item missing a GSI key attribute stays out of the GSI.
   - vi: Dùng sparse index để đọc "việc đang mở" mà không Scan cả bảng.
     en: Use a sparse index to read "open work" without scanning the whole table.
+  - vi: Thu hẹp việc đọc sparse index bằng điều kiện trên sort key của nó.
+    en: Narrow a read of the sparse index with a condition on its sort key.
 requires: [e-dy-l3-04]
 sources:
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-indexes-general-sparse-indexes.html
@@ -168,50 +170,207 @@ lab:
       hint:
         vi: '`Scan` cũng nhận `IndexName`. Index chỉ có 18 item vì chỉ 18 đơn có `openSince`.'
         en: '`Scan` also takes an `IndexName`. The index holds only 18 items because only 18 orders have `openSince`.'
+    - task:
+        vi: Điều phối "Da Nang" chỉ cần các đơn mở từ ngày 2026-10-06 trở đi. Đọc từ GSI `openOrders`. Bước này có thanh chi phí.
+        en: The "Da Nang" dispatcher needs only the orders open since 2026-10-06 or later. Read from GSI `openOrders`. This step has a cost bar.
+      solution: |
+        {"op": "Query", "input": {"TableName": "Orders", "IndexName": "openOrders",
+          "KeyConditionExpression": "city = :c AND openSince >= :d",
+          "ExpressionAttributeValues": {":c": {"S": "Da Nang"}, ":d": {"S": "2026-10-06"}}}}
+      check: doc
+      perf: { table: Orders }
+      slow: |
+        {"op":"Scan","input":{"TableName":"Orders","IndexName":"openOrders","ExpressionAttributeValues":{":c":{"S":"Da Nang"},":d":{"S":"2026-10-06"}},"FilterExpression":"city = :c AND openSince >= :d"}}
+      expect: { Count: 4, ScannedCount: 4 }
+      hint:
+        vi: '`openSince` là sort key của index: `>=` thuộc `KeyConditionExpression`.'
+        en: '`openSince` is the index sort key: `>=` belongs in the `KeyConditionExpression`.'
+quiz:
+  - q:
+      vi: Đơn `O-108` vừa giao xong. Làm sao để nó rời khỏi GSI `openOrders`?
+      en: Order `O-108` has just been delivered. How does it leave GSI `openOrders`?
+    options:
+      - { vi: "Đổi `status` thành `DELIVERED`; index tự hiểu", en: "Set `status` to `DELIVERED`; the index understands" }
+      - { vi: "`REMOVE openSince` trong cùng lệnh cập nhật; item thiếu khóa index nên bị xóa khỏi index", en: "`REMOVE openSince` in the same update; the item lacks the index key, so it is deleted from the index" }
+      - { vi: "Gọi `DeleteItem` trên index", en: "Call `DeleteItem` on the index" }
+    answer: 1
+    trap: 0
+    why:
+      vi: Nghe hợp lý vì trạng thái mới là `DELIVERED`, nhưng `openOrders` không có khóa `status`; nó chỉ quan tâm item có `openSince` hay không. Còn `openSince` thì đơn còn trong index. Index không nhận lệnh ghi trực tiếp.
+      en: It sounds right because the new status is `DELIVERED`, but `openOrders` has no `status` key; it only cares whether the item has `openSince`. While `openSince` stays, the order stays in the index. An index takes no direct writes.
+  - q:
+      vi: 102 đơn không có `openSince` được ghi vào bảng. GSI `openOrders` tốn gì cho chúng?
+      en: 102 orders without `openSince` are written to the table. What does GSI `openOrders` cost for them?
+    options:
+      - { vi: "Không gì: item không vào index thì index không phải ghi và không lưu", en: "Nothing: an item that never enters the index needs no index write and no storage" }
+      - { vi: "Một WCU mỗi đơn, như mọi index", en: "One WCU per order, as for every index" }
+      - { vi: "Một nửa WCU mỗi đơn", en: "Half a WCU per order" }
+    answer: 0
+    why:
+      vi: GSI chỉ ghi khi item có đủ khóa index (hoặc vừa mất khóa, lúc đó index xóa bản chiếu). Vì vậy sparse index vừa nhỏ vừa rẻ khi ghi.
+      en: A GSI writes only when an item has every index key (or has just lost one, when the index deletes its copy). That is why a sparse index is both small and cheap to write.
 ---
+
+## Mở bài
+
+Bảng điều phối chỉ cần 18 đơn đang mở trong 120 đơn, và số đơn đã giao sẽ còn tăng mãi. Một index trên `status` vẫn giữ cả đơn đã giao. Có cách nào để index chỉ chứa đúng việc đang mở không?
 
 ## Ý chính
 
-DynamoDB chỉ ghi một item vào GSI khi item có **đủ** thuộc tính khóa của GSI. Item thiếu thì bị bỏ qua. Index như vậy gọi là **sparse** (thưa).
+DynamoDB chỉ ghi một item vào GSI khi item có đủ thuộc tính khóa của GSI. Item thiếu thì bị bỏ qua: không lưu trong index, không tốn WCU cho index. Index như vậy gọi là sparse (thưa).
 
-Mẹo dùng: thêm một thuộc tính "cờ" chỉ khi item ở trạng thái cần theo dõi, và xóa nó (`REMOVE`) khi xong việc. Item tự rời khỏi index.
+Mẹo dùng: thêm một thuộc tính "cờ" chỉ khi item ở trạng thái cần theo dõi, và xóa nó (`REMOVE`) khi xong việc. Đơn mới thì `SET openSince = :d` và vào index; đơn đã giao thì `REMOVE openSince` và tự rời index. Chọn giá trị cờ có ích luôn: ở đây `openSince` là ngày mở đơn, làm sort key để đơn cũ nhất đứng đầu.
 
-- Đơn mới: `SET openSince = :d` thì vào index.
-- Đơn đã giao: `REMOVE openSince` thì ra khỏi index.
+Nhiều người nghĩ đổi `status` là đủ để đơn rời index. Thật ra `openOrders` không có khóa `status`; chỉ việc có hay không có `openSince` mới quyết định. Ngược lại, Scan index chỉ đọc đúng phần việc đang mở, rẻ hơn rất nhiều so với Scan bảng có bộ lọc.
 
-Nhờ vậy, Scan **index** chỉ đọc đúng phần việc đang mở, rẻ hơn rất nhiều so với Scan bảng có bộ lọc.
+Lab chạy bằng dynoxide; `ScannedCount` là số đo thật.
+
+## Cú pháp
+
+```text
+{"op": "UpdateItem", "input": {..., "UpdateExpression": "SET openSince = :d"}}   -> enters the sparse index
+{"op": "UpdateItem", "input": {..., "UpdateExpression": "REMOVE openSince"}}     -> leaves the sparse index
+{"op": "Query", "input": {"TableName": "<t>", "IndexName": "<sparse>", "KeyConditionExpression": "city = :c [AND openSince >= :d]", ...}}
+{"op": "Scan",  "input": {"TableName": "<t>", "IndexName": "<sparse>"}}
+```
+
+- Thuộc tính cờ chỉ có mặt khi item cần được theo dõi.
+- Scan một sparse index chỉ đọc các item có cờ.
+- Giá trị khóa index không được là chuỗi rỗng.
 
 ## Ví dụ
 
-```text
-Scan table, FilterExpression status = NEW  -> ScannedCount 120, Count 18
-Scan index openOrders                      -> ScannedCount 18,  Count 18
+Các đơn đang mở ở "Hue", cũ nhất trước:
+
+```json
+{"op": "Query", "input": {"TableName": "Orders", "IndexName": "openOrders", "KeyConditionExpression": "city = :c", "ExpressionAttributeValues": {":c": {"S": "Hue"}}}}
 ```
+
+Bốn đơn, mỗi item chỉ có khóa (`KEYS_ONLY`): `customerId`, `orderId`, `city`, `openSince`.
+
+Cả bảng điều phối, đọc thẳng cả index:
+
+```json
+{"op": "Scan", "input": {"TableName": "Orders", "IndexName": "openOrders"}}
+```
+
+18 item, `ScannedCount` 18: index chỉ chứa đơn có `openSince`.
+
+## Lỗi hay gặp
+
+Scan bảng rồi lọc trạng thái:
+
+```json
+// WRONG: reads all 120 orders to find 18
+{"op": "Scan", "input": {"TableName": "Orders", "FilterExpression": "#s = :s", "ExpressionAttributeNames": {"#s": "status"}, "ExpressionAttributeValues": {":s": {"S": "NEW"}}}}
+```
+
+```json
+// FIX: the sparse index holds only the open orders
+{"op": "Scan", "input": {"TableName": "Orders", "IndexName": "openOrders"}}
+```
+
+Câu sai có `ScannedCount` 120, câu sửa 18. Bảng càng nhiều đơn cũ, câu sai càng đắt, còn câu sửa thì không đổi.
+
+Đặt cờ bằng chuỗi rỗng thay vì xóa nó:
+
+```json
+// ERROR ValidationException
+{"op": "UpdateItem", "input": {"TableName": "Orders", "Key": {"customerId": {"S": "C-02"}, "orderId": {"S": "2026-10-03#O-108"}}, "UpdateExpression": "SET openSince = :e", "ExpressionAttributeValues": {":e": {"S": ""}}}}
+```
+
+`openSince` là khóa của index, và giá trị khóa không được rỗng. Dùng `REMOVE openSince` để đơn rời index.
 
 ## Thực hành
 
-Chọn khóa của sparse index theo câu hỏi tiếp theo: ở đây `city` để bảng điều phối của từng thành phố đọc bằng một Query.
+Ba bước trên GSI `openOrders`: đơn mở ở một thành phố, toàn bộ index, rồi đơn mở từ một ngày trở đi. Bước 1 và 3 có thanh chi phí.
+
+## Tóm tắt
+
+- Item thiếu khóa của GSI không vào GSI: đó là sparse index.
+- `SET` cờ để vào index, `REMOVE` cờ để rời index.
+- Scan một sparse index chỉ đọc việc đang theo dõi, không phải cả bảng.
+- Giá trị cờ nên có ích: ở đây ngày mở đơn làm sort key.
 
 # EN
 
+## Opening
+
+The dispatch board needs only the 18 open orders out of 120, and the number of delivered orders will keep growing. An index on `status` still holds every delivered order. Is there a way for an index to hold only the open work?
+
 ## Key idea
 
-DynamoDB writes an item into a GSI only when the item has **all** the GSI's key attributes. Items missing one are skipped. Such an index is called **sparse**.
+DynamoDB writes an item into a GSI only when the item has every key attribute of the GSI. Items missing one are skipped: not stored in the index, no WCU spent on the index. Such an index is called sparse.
 
-The trick: add a "flag" attribute only while the item is in a state you want to track, and remove it (`REMOVE`) when the work is done. The item leaves the index by itself.
+The trick: add a "flag" attribute only while the item is in a state you want to track, and remove it (`REMOVE`) when the work is done. A new order gets `SET openSince = :d` and enters the index; a delivered order gets `REMOVE openSince` and leaves it by itself. Make the flag's value useful too: here `openSince` is the date the order opened, used as the sort key so the oldest order comes first.
 
-- New order: `SET openSince = :d` and it enters the index.
-- Delivered order: `REMOVE openSince` and it leaves the index.
+Many people think changing `status` is enough for an order to leave the index. In fact `openOrders` has no `status` key; only having or not having `openSince` decides. In return, a Scan of the index reads only the open work, far cheaper than a filtered Scan of the table.
 
-So a Scan of the **index** reads only the open work, far cheaper than a filtered Scan of the table.
+The lab runs on dynoxide; `ScannedCount` is a real figure.
+
+## Syntax
+
+```text
+{"op": "UpdateItem", "input": {..., "UpdateExpression": "SET openSince = :d"}}   -> enters the sparse index
+{"op": "UpdateItem", "input": {..., "UpdateExpression": "REMOVE openSince"}}     -> leaves the sparse index
+{"op": "Query", "input": {"TableName": "<t>", "IndexName": "<sparse>", "KeyConditionExpression": "city = :c [AND openSince >= :d]", ...}}
+{"op": "Scan",  "input": {"TableName": "<t>", "IndexName": "<sparse>"}}
+```
+
+- The flag attribute exists only while the item must be tracked.
+- A Scan of a sparse index reads only the flagged items.
+- An index key value cannot be an empty string.
 
 ## Example
 
-```text
-Scan table, FilterExpression status = NEW  -> ScannedCount 120, Count 18
-Scan index openOrders                      -> ScannedCount 18,  Count 18
+The open orders in "Hue", oldest first:
+
+```json
+{"op": "Query", "input": {"TableName": "Orders", "IndexName": "openOrders", "KeyConditionExpression": "city = :c", "ExpressionAttributeValues": {":c": {"S": "Hue"}}}}
 ```
+
+Four orders, each item holding only keys (`KEYS_ONLY`): `customerId`, `orderId`, `city`, `openSince`.
+
+The whole dispatch board, reading the whole index:
+
+```json
+{"op": "Scan", "input": {"TableName": "Orders", "IndexName": "openOrders"}}
+```
+
+18 items, `ScannedCount` 18: the index holds only orders with `openSince`.
+
+## Common mistakes
+
+Scanning the table and filtering on status:
+
+```json
+// WRONG: reads all 120 orders to find 18
+{"op": "Scan", "input": {"TableName": "Orders", "FilterExpression": "#s = :s", "ExpressionAttributeNames": {"#s": "status"}, "ExpressionAttributeValues": {":s": {"S": "NEW"}}}}
+```
+
+```json
+// FIX: the sparse index holds only the open orders
+{"op": "Scan", "input": {"TableName": "Orders", "IndexName": "openOrders"}}
+```
+
+The wrong one has a `ScannedCount` of 120, the fix 18. The more old orders the table holds, the dearer the wrong one gets, while the fix stays the same.
+
+Setting the flag to an empty string instead of removing it:
+
+```json
+// ERROR ValidationException
+{"op": "UpdateItem", "input": {"TableName": "Orders", "Key": {"customerId": {"S": "C-02"}, "orderId": {"S": "2026-10-03#O-108"}}, "UpdateExpression": "SET openSince = :e", "ExpressionAttributeValues": {":e": {"S": ""}}}}
+```
+
+`openSince` is an index key, and a key value cannot be empty. Use `REMOVE openSince` so the order leaves the index.
 
 ## Practice
 
-Pick the sparse index's keys from the next question: here `city`, so each city's dispatch board reads with one Query.
+Three steps on GSI `openOrders`: the open orders of one city, the whole index, then the orders open since a given date. Steps 1 and 3 have a cost bar.
+
+## Recap
+
+- An item missing a GSI's key does not enter the GSI: that is a sparse index.
+- `SET` the flag to enter the index, `REMOVE` it to leave.
+- A Scan of a sparse index reads only the tracked work, not the whole table.
+- Make the flag's value useful: here the open date is the sort key.

@@ -13,6 +13,8 @@ objectives:
     en: Query an LSI to sort one customer's orders by `total` instead of by time.
   - vi: Dùng điều kiện khoảng trên sort key của LSI và đọc strongly consistent.
     en: Use a range condition on the LSI sort key, with a strongly consistent read.
+  - vi: Thấy vì sao lọc `total` trên bảng gốc đọc cả item collection còn LSI thì không.
+    en: See why filtering `total` on the base table reads the whole item collection while the LSI does not.
 requires: [e-dy-l3-02]
 sources:
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/LSI.html
@@ -175,54 +177,208 @@ lab:
       hint:
         vi: Đọc ngược theo sort key của LSI và dừng sau 1 item.
         en: Read backwards on the LSI sort key and stop after 1 item.
+    - task:
+        vi: Lấy các đơn của `C-20` có `total` từ 800.000 tới 950.000 qua LSI `byTotal`. Bước này có thanh chi phí.
+        en: Get the orders of `C-20` with `total` from 800,000 to 950,000 through LSI `byTotal`. This step has a cost bar.
+      solution: |
+        {"op": "Query", "input": {"TableName": "Orders", "IndexName": "byTotal",
+          "KeyConditionExpression": "customerId = :c AND #t BETWEEN :a AND :b",
+          "ExpressionAttributeNames": {"#t": "total"},
+          "ExpressionAttributeValues": {":c": {"S": "C-20"}, ":a": {"N": "800000"}, ":b": {"N": "950000"}}}}
+      check: doc
+      perf: { table: Orders }
+      slow: |
+        {"op":"Query","input":{"TableName":"Orders","KeyConditionExpression":"customerId = :c","FilterExpression":"#t BETWEEN :a AND :b","ExpressionAttributeNames":{"#t":"total"},"ExpressionAttributeValues":{":c":{"S":"C-20"},":a":{"N":"800000"},":b":{"N":"950000"}}}}
+      expect: { Count: 2, ScannedCount: 2 }
+      hint:
+        vi: '`BETWEEN` trên sort key của LSI thuộc `KeyConditionExpression`; `total` là từ dành riêng nên viết `#t`.'
+        en: '`BETWEEN` on the LSI sort key belongs in the `KeyConditionExpression`; `total` is a reserved word, so write `#t`.'
+quiz:
+  - q:
+      vi: Bảng `Orders` đã chạy một năm, chưa có LSI. Bạn muốn sắp đơn mỗi khách theo `total` và vẫn đọc strong. Làm được gì?
+      en: Table `Orders` has been live for a year with no LSI. You want each customer's orders sorted by `total` with strong reads. What can you do?
+    options:
+      - { vi: "Thêm LSI `byTotal` bằng `UpdateTable`", en: "Add LSI `byTotal` with `UpdateTable`" }
+      - { vi: "Tạo bảng mới có LSI rồi chép dữ liệu sang; một GSI thì thêm được nhưng không đọc strong", en: "Create a new table with the LSI and copy the data; a GSI can be added but has no strong reads" }
+      - { vi: "Thêm GSI rồi bật `ConsistentRead` trên nó", en: "Add a GSI and turn on `ConsistentRead` for it" }
+    answer: 1
+    trap: 0
+    why:
+      vi: Nghe hợp lý vì GSI thêm được bằng `UpdateTable`, nhưng LSI thì chỉ khai được lúc tạo bảng. Muốn LSI phải có bảng mới; GSI thêm được nhưng chỉ đọc eventually consistent.
+      en: It sounds right because a GSI can be added with `UpdateTable`, but an LSI can only be declared when the table is created. An LSI needs a new table; a GSI can be added but only reads eventually consistent.
+  - q:
+      vi: Bảng có LSI. Một khách lớn có rất nhiều đơn. Giới hạn nào có thể chạm tới?
+      en: The table has an LSI. One big customer has a huge number of orders. Which limit can it reach?
+    options:
+      - { vi: "Item collection của khách đó tối đa 10 GB (bảng cộng mọi LSI)", en: "That customer's item collection is capped at 10 GB (table plus every LSI)" }
+      - { vi: "Mỗi khách tối đa 1.000 đơn", en: "At most 1,000 orders per customer" }
+      - { vi: "Không giới hạn gì, LSI tự tách ra nhiều partition", en: "No limit at all, the LSI splits itself across partitions" }
+    answer: 0
+    why:
+      vi: Khi bảng có LSI, mọi item cùng partition key (cùng bản chiếu trong các LSI) phải nằm trong 10 GB. Chạm trần thì ghi thêm vào collection đó bị từ chối.
+      en: When a table has an LSI, every item with the same partition key (and its copies in the LSIs) must fit in 10 GB. At the cap, more writes to that collection are refused.
 ---
+
+## Mở bài
+
+Bảng `Orders` sắp đơn của mỗi khách theo thời gian. Kế toán lại muốn đơn của một khách theo số tiền: lớn nhất trước, hoặc trong một khoảng tiền. Lọc sau khi đọc thì phải đọc mọi đơn của khách; có cách nào đọc đúng phần cần không?
 
 ## Ý chính
 
-LSI giữ **cùng partition key** với bảng nhưng sắp item collection theo **sort key khác**. Bảng `Orders` sắp đơn của một khách theo `orderId` (thời gian); LSI `byTotal` sắp chính các đơn đó theo `total`.
+LSI giữ cùng partition key với bảng nhưng sắp item collection theo sort key khác. Bảng `Orders` sắp đơn của một khách theo `orderId` (bắt đầu bằng ngày); LSI `byTotal` sắp chính các đơn đó theo `total`. Query LSI là Query bảng thêm `IndexName`, và điều kiện khoảng (`>`, `BETWEEN`, …) trên `total` giờ là điều kiện khóa: chỉ phần trong khoảng bị đọc.
 
-Điểm mạnh và giá phải trả:
+LSI đọc strongly consistent được, và có thể lấy thuộc tính chưa project từ bảng (tốn thêm lượt đọc). Cái giá: LSI chỉ tạo cùng lúc tạo bảng, dùng chung throughput với bảng, và mỗi item collection (bảng cộng các LSI) tối đa 10 GB.
 
-- đọc strongly consistent được;
-- có thể lấy thuộc tính chưa project từ bảng (tốn thêm lượt đọc);
-- chỉ tạo cùng lúc tạo bảng;
-- item collection tối đa 10 GB, và adaptive capacity không tách được nó ra nhiều partition.
+Nhiều người nghĩ Query bảng rồi `FilterExpression` trên `total` cũng tốt như LSI vì kết quả giống nhau. Thật ra bộ lọc chạy sau khi đọc: `ScannedCount` là mọi đơn của khách, và capacity tính theo phần đã đọc. Với khách có hàng nghìn đơn, chênh lệch đó là hóa đơn.
+
+Lab chạy bằng dynoxide. Bộ mô phỏng hỗ trợ LSI với `ConsistentRead`; khi LSI không project thuộc tính bạn xin bằng `ProjectionExpression`, nó chưa tự lấy từ bảng như DynamoDB thật, nên LSI trong bài dùng projection `ALL`.
+
+## Cú pháp
+
+```text
+{"op": "Query", "input": {"TableName": "<table>", "IndexName": "<lsi>",
+  "KeyConditionExpression": "<table pk> = :p [AND <lsi sk> (= | < | <= | > | >= | BETWEEN :a AND :b) :v]",
+  "ExpressionAttributeValues": {...},
+  ["ScanIndexForward": false,] ["Limit": <n>,] ["ConsistentRead": true]}}
+```
+
+- Partition key là của bảng; sort key là của LSI.
+- `ConsistentRead: true` được phép trên LSI.
+- `ScanIndexForward: false` + `Limit: 1`: giá trị lớn nhất, đọc đúng 1 item.
 
 ## Ví dụ
 
-So sánh hai cách lấy "đơn lớn nhất của khách":
+Các đơn của `C-02` theo số tiền, nhỏ trước:
 
-```text
-Query table, FilterExpression on total   -> reads every order of the customer
-Query LSI byTotal, ScanIndexForward false, Limit 1 -> reads 1 item
+```json
+{"op": "Query", "input": {"TableName": "Orders", "IndexName": "byTotal", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-02"}}}}
 ```
+
+Bốn đơn, từ 210.000 tới 910.000, không cần sắp thêm.
+
+Đơn lớn nhất của `C-10`, đọc strong:
+
+```json
+{"op": "Query", "input": {"TableName": "Orders", "IndexName": "byTotal", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-10"}}, "ScanIndexForward": false, "Limit": 1, "ConsistentRead": true}}
+```
+
+Một item (910.000), `ScannedCount` 1.
+
+## Lỗi hay gặp
+
+Query bảng rồi lọc theo tiền:
+
+```json
+// WRONG: reads every order of C-07, then filters
+{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "FilterExpression": "#t > :x", "ExpressionAttributeNames": {"#t": "total"}, "ExpressionAttributeValues": {":c": {"S": "C-07"}, ":x": {"N": "500000"}}}}
+```
+
+```json
+// FIX: the LSI sort key is total, so the range is a key condition
+{"op": "Query", "input": {"TableName": "Orders", "IndexName": "byTotal", "KeyConditionExpression": "customerId = :c AND #t > :x", "ExpressionAttributeNames": {"#t": "total"}, "ExpressionAttributeValues": {":c": {"S": "C-07"}, ":x": {"N": "500000"}}}}
+```
+
+Cùng 3 đơn, nhưng câu sai có `ScannedCount` 4 và thứ tự theo ngày; câu sửa đọc 3 và đã sắp theo tiền.
+
+Bỏ partition key, chỉ đặt điều kiện trên `total`:
+
+```json
+// ERROR ValidationException
+{"op": "Query", "input": {"TableName": "Orders", "IndexName": "byTotal", "KeyConditionExpression": "#t > :x", "ExpressionAttributeNames": {"#t": "total"}, "ExpressionAttributeValues": {":x": {"N": "900000"}}}}
+```
+
+LSI vẫn chia theo `customerId`: một Query phải có bằng trên partition key. "Mọi đơn trên 900.000 của mọi khách" cần một GSI khác.
 
 ## Thực hành
 
-`C-07` có 4 đơn, 3 đơn trên 500.000. Bộ mô phỏng hỗ trợ LSI với `ConsistentRead`; khi LSI không project thuộc tính bạn xin bằng `ProjectionExpression`, nó chưa tự lấy từ bảng như DynamoDB thật, nên LSI trong bài dùng projection `ALL`.
+Ba bước trên LSI `byTotal`: các đơn trên 500.000 của một khách (đọc strong), đơn lớn nhất của một khách, rồi các đơn trong một khoảng tiền. Bước 1 và 3 có thanh chi phí.
+
+## Tóm tắt
+
+- LSI: cùng partition key với bảng, sort key khác, sắp lại item collection.
+- Điều kiện khoảng trên sort key của LSI là điều kiện khóa, chỉ đọc phần trong khoảng.
+- LSI đọc strong được; chỉ tạo cùng bảng; item collection tối đa 10 GB.
+- Query vẫn cần bằng trên partition key, kể cả trên LSI.
 
 # EN
 
+## Opening
+
+Table `Orders` sorts each customer's orders by time. Accounting wants one customer's orders by amount instead: the largest first, or within a price range. Filtering after the read means reading every order of the customer; is there a way to read only the part you need?
+
 ## Key idea
 
-An LSI keeps the **same partition key** as the table but sorts the item collection by a **different sort key**. Table `Orders` sorts a customer's orders by `orderId` (time); LSI `byTotal` sorts the same orders by `total`.
+An LSI keeps the same partition key as the table but sorts the item collection by a different sort key. Table `Orders` sorts a customer's orders by `orderId` (which starts with the date); LSI `byTotal` sorts the same orders by `total`. Querying an LSI is querying the table plus `IndexName`, and a range condition (`>`, `BETWEEN`, …) on `total` is now a key condition: only the part in range is read.
 
-Strengths and the price you pay:
+An LSI supports strongly consistent reads and can fetch unprojected attributes from the table (at an extra read cost). The price: an LSI is created only together with the table, shares the table's throughput, and each item collection (table plus LSIs) is capped at 10 GB.
 
-- strongly consistent reads are allowed;
-- unprojected attributes can be fetched from the table (at an extra read cost);
-- created only together with the table;
-- an item collection is capped at 10 GB, and adaptive capacity cannot split it across partitions.
+Many people think a table Query with a `FilterExpression` on `total` is as good as the LSI because the result is the same. In fact the filter runs after the read: `ScannedCount` is every order of the customer, and capacity is charged on what was read. For a customer with thousands of orders, that difference is the bill.
+
+The lab runs on dynoxide. The emulator supports LSIs with `ConsistentRead`; when an LSI does not project an attribute you request with `ProjectionExpression`, it does not yet fetch it from the table the way real DynamoDB does, so the LSI in this lesson uses an `ALL` projection.
+
+## Syntax
+
+```text
+{"op": "Query", "input": {"TableName": "<table>", "IndexName": "<lsi>",
+  "KeyConditionExpression": "<table pk> = :p [AND <lsi sk> (= | < | <= | > | >= | BETWEEN :a AND :b) :v]",
+  "ExpressionAttributeValues": {...},
+  ["ScanIndexForward": false,] ["Limit": <n>,] ["ConsistentRead": true]}}
+```
+
+- The partition key is the table's; the sort key is the LSI's.
+- `ConsistentRead: true` is allowed on an LSI.
+- `ScanIndexForward: false` + `Limit: 1`: the largest value, reading exactly 1 item.
 
 ## Example
 
-Two ways to get "the customer's largest order":
+The orders of `C-02` by amount, smallest first:
 
-```text
-Query table, FilterExpression on total   -> reads every order of the customer
-Query LSI byTotal, ScanIndexForward false, Limit 1 -> reads 1 item
+```json
+{"op": "Query", "input": {"TableName": "Orders", "IndexName": "byTotal", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-02"}}}}
 ```
+
+Four orders, from 210,000 to 910,000, with no extra sort.
+
+The largest order of `C-10`, read strongly:
+
+```json
+{"op": "Query", "input": {"TableName": "Orders", "IndexName": "byTotal", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-10"}}, "ScanIndexForward": false, "Limit": 1, "ConsistentRead": true}}
+```
+
+One item (910,000), `ScannedCount` 1.
+
+## Common mistakes
+
+Querying the table, then filtering on the amount:
+
+```json
+// WRONG: reads every order of C-07, then filters
+{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "FilterExpression": "#t > :x", "ExpressionAttributeNames": {"#t": "total"}, "ExpressionAttributeValues": {":c": {"S": "C-07"}, ":x": {"N": "500000"}}}}
+```
+
+```json
+// FIX: the LSI sort key is total, so the range is a key condition
+{"op": "Query", "input": {"TableName": "Orders", "IndexName": "byTotal", "KeyConditionExpression": "customerId = :c AND #t > :x", "ExpressionAttributeNames": {"#t": "total"}, "ExpressionAttributeValues": {":c": {"S": "C-07"}, ":x": {"N": "500000"}}}}
+```
+
+The same 3 orders, but the wrong one has a `ScannedCount` of 4 and comes in date order; the fix reads 3, already sorted by amount.
+
+Dropping the partition key and putting a condition only on `total`:
+
+```json
+// ERROR ValidationException
+{"op": "Query", "input": {"TableName": "Orders", "IndexName": "byTotal", "KeyConditionExpression": "#t > :x", "ExpressionAttributeNames": {"#t": "total"}, "ExpressionAttributeValues": {":x": {"N": "900000"}}}}
+```
+
+The LSI is still split by `customerId`: a Query needs equality on the partition key. "Every order above 900,000 of every customer" needs a separate GSI.
 
 ## Practice
 
-`C-07` has 4 orders, 3 of them above 500,000. The emulator supports LSIs with `ConsistentRead`; when an LSI does not project an attribute you request with `ProjectionExpression`, it does not yet fetch it from the table the way real DynamoDB does, so the LSI in this lesson uses an `ALL` projection.
+Three steps on LSI `byTotal`: one customer's orders above 500,000 (strong read), one customer's largest order, then the orders within a price range. Steps 1 and 3 have a cost bar.
+
+## Recap
+
+- LSI: same partition key as the table, another sort key, re-sorting the item collection.
+- A range condition on the LSI sort key is a key condition and reads only the part in range.
+- An LSI allows strong reads; it is created only with the table; an item collection is capped at 10 GB.
+- A Query still needs equality on the partition key, on an LSI too.

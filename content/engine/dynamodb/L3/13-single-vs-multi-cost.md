@@ -36,6 +36,7 @@ predict:
     - vi: "2"
       en: "2"
   answer: 0
+  trap: 2
   why:
     vi: 'Query cộng cỡ mọi item đã đọc rồi làm tròn một lần: 4 item nhỏ, tổng dưới 4 KB, thành 4 KB, tức 1 RCU mạnh, 0,5 RCU cuối. Chọn 2 là tính 0,5 cho từng item, như đọc 4 lần `GetItem`. Đây đúng là ví dụ của AWS: "A single query for two items totalling less than 4KB is 0.5 RCU".'
     en: 'A Query adds up the size of every item read and rounds once: 4 small items, under 4 KB in total, become 4 KB, which is 1 RCU strong, 0.5 RCU eventual. Picking 2 means paying 0.5 per item, as 4 separate `GetItem` calls would. This is the AWS example: "A single query for two items totalling less than 4KB is 0.5 RCU".'
@@ -160,6 +161,10 @@ lab:
         en: 'Add `"ConsistentRead": true`. The same rounded 4 KB costs 1 RCU for a strong read instead of 0.5.'
 ---
 
+## Mở bài
+
+Màn hình "khách và đơn" mở hàng nghìn lần mỗi giờ. Một bảng `Shop` hay hai bảng `Customers` và `Orders`: hóa đơn đọc chênh nhau bao nhiêu, và khi nào nên tách bảng?
+
 ## Ý chính
 
 Nhiều người nghĩ single-table design luôn tốt hơn nhiều bảng. Thật ra nó rẻ hơn ở **một** chỗ: các item hay đọc cùng nhau nằm chung một item collection, nên một Query lấy hết, và RCU được tính trên tổng cỡ rồi làm tròn **một lần**.
@@ -186,7 +191,18 @@ Shop      Query, ConsistentRead true   -> 1 RCU
 
 Các số RCU ở đây do dynoxide trả trong `ConsumedCapacity`, và khớp luật tính của AWS cho các lần đọc thành công. Bước nào cũng chấm theo item trả về; số RCU là để bạn đọc và so. Mọi item ở đây đều nhỏ, nên phần làm tròn 4 KB với item lớn chỉ có trong câu hỏi cuối bài.
 
+## Tóm tắt
+
+- Query tính RCU trên tổng cỡ item đã đọc, làm tròn một lần lên bội 4 KB.
+- Single-table rẻ hơn khi các item được đọc cùng nhau trong một Query.
+- Đọc mạnh tốn gấp đôi đọc nhất quán cuối.
+- Dữ liệu không bao giờ đọc chung, hoặc cần backup hay lớp lưu trữ riêng, thì để bảng riêng.
+
 # EN
+
+## Opening
+
+The "customer and orders" screen opens thousands of times an hour. One table `Shop` or two tables `Customers` and `Orders`: how far apart are the read bills, and when should you split?
 
 ## Key idea
 
@@ -213,3 +229,10 @@ Shop      Query, ConsistentRead true   -> 1 RCU
 ## Practice
 
 The RCU numbers here are what dynoxide returns in `ConsumedCapacity`, and they match the AWS rules for successful reads. Every step is graded on the items returned; the RCU numbers are for you to read and compare. Every item here is small, so 4 KB rounding with large items is only in the questions at the end.
+
+## Recap
+
+- A Query charges RCU on the total size of the items read, rounded once up to a multiple of 4 KB.
+- A single table is cheaper when items are read together in one Query.
+- A strong read costs twice an eventually consistent one.
+- Data never read together, or needing its own backups or table class, gets its own table.

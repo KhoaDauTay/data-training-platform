@@ -155,6 +155,9 @@ quiz:
     answer: 1
     why: { vi: "Mỗi Query: tổng dưới 4 KB làm tròn thành 4 KB = 1 RCU nếu mạnh, 0,5 nếu cuối cùng. 4 × 0,5 = 2 RCU mỗi lượt xem, × 300 = 600 RCU. Đó là giá đọc của write sharding: số Query nhân theo số shard.", en: "Each Query: under 4 KB rounds to 4 KB = 1 RCU if strong, 0.5 if eventual. 4 × 0.5 = 2 RCU per view, × 300 = 600 RCU. That is the read price of write sharding: the Query count grows with the shard count." }
 ---
+## Mở bài
+
+Một ứng dụng thi đố vui sắp ra mắt: người chơi xem hồ sơ, lịch sử trận, các trận đang chạy và bảng xếp hạng trong ngày. Bạn có một bảng trống và bốn mẫu truy cập. Mỗi mẫu phải là đúng một request, không Scan.
 
 ## Ý chính
 
@@ -182,7 +185,18 @@ Mỗi bước dưới đây là một mẫu truy cập, trả lời bằng đún
 
 Bảng có 72 item: 8 hồ sơ, 32 trận (3 trận đang chạy) và 32 điểm trong 4 shard. Làm 4 bước, rồi trả lời 3 câu hỏi về thiết kế và chi phí.
 
+## Tóm tắt
+
+- Liệt kê mẫu truy cập trước, rồi mới chọn khóa.
+- Khóa chính phục vụ mẫu theo người chơi; `begins_with` tách hồ sơ khỏi lịch sử.
+- Sparse GSI chỉ chứa trận đang chạy; khóa shard rải bảng xếp hạng nóng.
+- Tính chi phí cho mẫu nặng nhất: shard giảm tải ghi nhưng nhân số Query khi đọc.
+
 # EN
+
+## Opening
+
+A quiz game is about to launch: players open a profile, their match history, the running matches and the day's leaderboard. You have an empty table and four access patterns. Each pattern must be exactly one request, no Scan.
 
 ## Key idea
 
@@ -209,3 +223,10 @@ Each step below is one access pattern, answered with exactly one request.
 ## Practice
 
 The table holds 72 items: 8 profiles, 32 matches (3 of them running) and 32 scores over 4 shards. Do the 4 steps, then answer 3 questions on design and cost.
+
+## Recap
+
+- List the access patterns first, then choose the keys.
+- The primary key serves the per-player patterns; `begins_with` separates the profile from the history.
+- A sparse GSI holds only running matches; sharded keys spread the hot leaderboard.
+- Cost the heaviest pattern: shards cut the write load but multiply the Queries on read.

@@ -11,6 +11,7 @@ minutes: 10
 objectives:
   - { vi: "Giải thích vì sao item thiếu thuộc tính khóa của GSI không có mặt trong GSI", en: "Explain why an item missing a GSI key attribute is absent from the GSI" }
   - { vi: "Tìm một tập nhỏ item (phiếu đang mở) bằng Query trên sparse GSI thay vì Scan", en: "Find a small subset of items (open tickets) with a Query on a sparse GSI instead of a Scan" }
+  - { vi: "Đưa một item ra khỏi GSI bằng cách xóa thuộc tính khóa của GSI", en: "Take an item out of the GSI by removing the GSI key attributes" }
 requires: []
 sources:
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-indexes-general-sparse-indexes.html
@@ -161,6 +162,20 @@ lab:
       ordered: true
       expect: { Count: 1, ScannedCount: 1 }
       hint: { vi: "Sort key của GSI là `opened_at`, sắp tăng dần sẵn; chỉ cần giới hạn số item.", en: "The GSI's sort key is `opened_at`, already ascending; you only need to limit the number of items." }
+    - task: { vi: "Phiếu `TCK#0019` (sort key `TICKET`) vừa được giải quyết. Đóng nó bằng một `UpdateItem` xóa hai thuộc tính khóa của GSI, để nó rời `OpenByQueue`.", en: "Ticket `TCK#0019` (sort key `TICKET`) has just been solved. Close it with one `UpdateItem` that removes both GSI key attributes, so it leaves `OpenByQueue`." }
+      solution: |
+        {"op": "UpdateItem", "input": {"TableName": "Tickets", "Key": {"pk": {"S": "TCK#0019"}, "sk": {"S": "TICKET"}}, "UpdateExpression": "REMOVE open_queue, opened_at"}}
+      check: doc
+      hint: { vi: "`UpdateExpression` dùng `REMOVE` với tên hai thuộc tính, cách nhau bằng dấu phẩy.", en: "`UpdateExpression` uses `REMOVE` with the two attribute names, separated by a comma." }
+quiz:
+  - q: { vi: "Phiếu đã đóng nhưng ứng dụng đặt `open_queue` thành `CLOSED` thay vì xóa nó. Chuyện gì xảy ra với GSI?", en: "A ticket is closed, but the application sets `open_queue` to `CLOSED` instead of removing it. What happens to the GSI?" }
+    options:
+      - { vi: "Phiếu rời GSI vì không còn mở", en: "The ticket leaves the GSI because it is no longer open" }
+      - { vi: "Phiếu vẫn ở trong GSI, dưới partition `CLOSED`, và GSI hết thưa dần", en: "The ticket stays in the GSI, under the `CLOSED` partition, and the GSI slowly stops being sparse" }
+      - { vi: "DynamoDB báo lỗi vì giá trị không hợp lệ", en: "DynamoDB raises an error because the value is invalid" }
+    answer: 1
+    trap: 0
+    why: { vi: "Nghe hợp lý vì ý nghĩa là \"đã đóng\", nhưng DynamoDB không hiểu ý nghĩa: item có thuộc tính khóa của GSI là có mặt trong GSI. Mọi phiếu đóng dồn vào partition `CLOSED`, GSI phình ra và tốn capacity ghi. Phải `REMOVE` thuộc tính.", en: "It sounds right because the meaning is \"closed\", but DynamoDB does not read meanings: an item with the GSI key attributes is in the GSI. Every closed ticket piles into the `CLOSED` partition, the GSI grows and costs write capacity. You must `REMOVE` the attribute." }
 predict:
   sql: |
     {"op": "Scan", "input": {"TableName": "Tickets", "FilterExpression": "open_queue = :q", "ExpressionAttributeValues": {":q": {"S": "SHIPPING"}}}}
@@ -170,53 +185,183 @@ predict:
     - { vi: "10, mọi phiếu đang mở", en: "10, every open ticket" }
     - { vi: "120, mọi phiếu", en: "120, every ticket" }
   answer: 2
+  trap: 0
   why: { vi: "Đáp án 5 nghe hợp lý vì chỉ 5 phiếu được trả về. Nhưng Scan đọc cả 120 item rồi mới lọc. Sparse GSI chỉ có 10 item (các phiếu đang mở), nên Query trên nó chỉ đọc 5 item của hàng đợi `SHIPPING`.", en: "5 sounds right because only 5 tickets come back. But the Scan reads all 120 items before filtering. The sparse GSI holds only 10 items (the open tickets), so a Query on it reads just the 5 items of the `SHIPPING` queue." }
 ---
+## Mở bài
+
+Bàn hỗ trợ có 120 phiếu, chỉ 10 phiếu đang mở, và màn hình chính chỉ hỏi phiếu đang mở theo hàng đợi. Scan cả bảng để tìm 10 phiếu là trả tiền cho 110 phiếu không ai cần. Có cách nào để index chỉ chứa đúng những phiếu đang mở?
 
 ## Ý chính
 
-DynamoDB chỉ ghi item vào GSI **khi item có đủ thuộc tính khóa của GSI**. Thiếu partition key (hoặc sort key, nếu GSI có) thì item không có mặt trong GSI. GSI mà chỉ chứa một phần nhỏ bảng gọi là **sparse GSI** (GSI thưa).
+DynamoDB chỉ ghi item vào GSI khi item có đủ thuộc tính khóa của GSI. Thiếu partition key (hoặc sort key, nếu GSI có) thì item không có mặt trong GSI. GSI chỉ chứa một phần nhỏ bảng gọi là sparse GSI (GSI thưa).
 
-- Đặt thuộc tính khóa của GSI khi item vào trạng thái cần tìm (phiếu mở), xóa thuộc tính đó khi item rời trạng thái (phiếu đóng).
-- Query trên sparse GSI chỉ đọc vài item, trong khi Scan bảng gốc đọc tất cả.
-- Chọn sort key của GSI là thứ có ích để sắp (ngày mở phiếu), để "cũ nhất trước" là một Query có `Limit`.
-- GSI ghi ít hơn bảng gốc, nên tốn ít capacity ghi hơn.
+Cách dùng: đặt thuộc tính khóa của GSI khi item vào trạng thái cần tìm (phiếu mở), xóa thuộc tính đó khi item rời trạng thái (phiếu đóng). Query trên sparse GSI chỉ đọc vài item, còn Scan bảng gốc đọc tất cả. Chọn sort key của GSI là thứ có ích để sắp (giờ mở phiếu), để "cũ nhất trước" là một Query có `Limit`. GSI cũng nhận ít lần ghi hơn bảng, nên tốn ít capacity ghi hơn.
+
+Nhiều người nghĩ đặt thuộc tính thành một giá trị như `CLOSED` là đủ để "tắt" nó. Thật ra DynamoDB không đọc ý nghĩa: còn thuộc tính là còn trong GSI. Phải `REMOVE` nó.
+
+Lab chạy bằng dynoxide trong trình duyệt.
+
+## Cú pháp
+
+```text
+GSI key attributes present  -> item is in the GSI
+GSI key attributes missing  -> item is not in the GSI
+open:  {"op": "UpdateItem", "input": {..., "UpdateExpression": "SET open_queue = :q, opened_at = :t"}}
+close: {"op": "UpdateItem", "input": {..., "UpdateExpression": "REMOVE open_queue, opened_at"}}
+read:  {"op": "Query", "input": {"TableName": "<t>", "IndexName": "<gsi>", "KeyConditionExpression": "open_queue = :q", ["Limit": 1]}}
+```
+
+- Thuộc tính khóa của GSI phải khai trong `AttributeDefinitions` của bảng.
+- `REMOVE` thuộc tính = rời GSI; `SET` lại = vào lại.
+- Query trên GSI chỉ đọc nhất quán cuối cùng.
 
 ## Ví dụ
 
-```text
-Tickets (120 items)                       OpenByQueue (10 items)
-TCK#0007  queue=SHIPPING  open_queue=SHIPPING  ->  SHIPPING | 2026-11-...
-TCK#0008  queue=ACCOUNT   (closed, no open_queue) -> not in the index
+Phiếu đang mở của hàng đợi `BILLING`:
+
+```json
+{"op": "Query", "input": {"TableName": "Tickets", "IndexName": "OpenByQueue", "KeyConditionExpression": "open_queue = :q", "ExpressionAttributeValues": {":q": {"S": "BILLING"}}}}
 ```
 
-Đóng phiếu bằng `UpdateItem` với `REMOVE open_queue, opened_at`: item tự rời GSI.
+Hai phiếu, `ScannedCount` 2: GSI không chứa phiếu đóng nào.
+
+Phiếu mở mới nhất của `SHIPPING`:
+
+```json
+{"op": "Query", "input": {"TableName": "Tickets", "IndexName": "OpenByQueue", "KeyConditionExpression": "open_queue = :q", "ExpressionAttributeValues": {":q": {"S": "SHIPPING"}}, "ScanIndexForward": false, "Limit": 1}}
+```
+
+`TCK#0007`, mở lúc 2026-11-12T15:00.
+
+Mở lại một phiếu đã đóng: đặt hai thuộc tính, nó vào GSI.
+
+```json
+{"op": "UpdateItem", "input": {"TableName": "Tickets", "Key": {"pk": {"S": "TCK#0002"}, "sk": {"S": "TICKET"}}, "UpdateExpression": "SET open_queue = :q, opened_at = :t", "ExpressionAttributeValues": {":q": {"S": "ACCOUNT"}, ":t": {"S": "2026-11-13T10:00"}}}}
+```
+
+## Lỗi hay gặp
+
+Tìm phiếu mở bằng Scan bảng gốc:
+
+```json
+// WRONG: 2 tickets back, 120 items read
+{"op": "Scan", "input": {"TableName": "Tickets", "FilterExpression": "open_queue = :q", "ExpressionAttributeValues": {":q": {"S": "BILLING"}}}}
+```
+
+```json
+// FIX: the sparse GSI holds only open tickets
+{"op": "Query", "input": {"TableName": "Tickets", "IndexName": "OpenByQueue", "KeyConditionExpression": "open_queue = :q", "ExpressionAttributeValues": {":q": {"S": "BILLING"}}}}
+```
+
+Cùng 2 phiếu; câu sai có `ScannedCount` 120, câu sửa 2.
+
+Đóng phiếu bằng chuỗi rỗng thay vì xóa thuộc tính:
+
+```json
+// ERROR ValidationException
+{"op": "UpdateItem", "input": {"TableName": "Tickets", "Key": {"pk": {"S": "TCK#0019"}, "sk": {"S": "TICKET"}}, "UpdateExpression": "SET open_queue = :e", "ExpressionAttributeValues": {":e": {"S": ""}}}}
+```
+
+Thuộc tính khóa của index không nhận chuỗi rỗng. Dùng `REMOVE open_queue, opened_at`.
 
 ## Thực hành
 
-120 phiếu, 10 phiếu đang mở. Đoán `ScannedCount` của Scan trước, rồi viết hai Query.
+120 phiếu, 10 phiếu đang mở. Đoán `ScannedCount` của Scan trước, rồi đọc phiếu mở của một hàng đợi, lấy phiếu mở lâu nhất, và đóng một phiếu.
+
+## Tóm tắt
+
+- Item chỉ vào GSI khi có đủ thuộc tính khóa của GSI.
+- Sparse GSI = index chỉ chứa phần item đang ở một trạng thái.
+- `SET` thuộc tính để vào GSI, `REMOVE` để rời; đặt giá trị khác thì vẫn ở lại.
+- Query trên sparse GSI đọc vài item thay vì Scan cả bảng.
 
 # EN
 
+## Opening
+
+The help desk has 120 tickets, only 10 of them open, and the main screen only asks for open tickets by queue. Scanning the whole table to find 10 tickets means paying for 110 tickets nobody needs. Is there a way to have an index holding only the open tickets?
+
 ## Key idea
 
-DynamoDB writes an entry into a GSI **only when the item has the GSI's key attributes**. Missing the partition key (or the sort key, if the GSI has one) means the item is absent from the GSI. A GSI holding only a small part of the table is a **sparse GSI**.
+DynamoDB writes an item into a GSI only when the item has the GSI's key attributes. Missing the partition key (or the sort key, if the GSI has one) means the item is absent from the GSI. A GSI holding only a small part of the table is a sparse GSI.
 
-- Set the GSI key attribute when the item enters the state you search for (ticket open), remove it when the item leaves that state (ticket closed).
-- A Query on a sparse GSI reads a handful of items, while a Scan of the base table reads all of them.
-- Pick a GSI sort key that is useful to sort by (the opening date), so "oldest first" is one Query with `Limit`.
-- The GSI receives fewer writes than the base table, so it uses less write capacity.
+How to use it: set the GSI key attribute when the item enters the state you search for (ticket open), remove it when the item leaves that state (ticket closed). A Query on a sparse GSI reads a handful of items, while a Scan of the base table reads all of them. Pick a GSI sort key that is useful to sort by (the opening time), so "oldest first" is one Query with `Limit`. The GSI also receives fewer writes than the table, so it uses less write capacity.
+
+Many people think setting the attribute to a value such as `CLOSED` is enough to "switch it off". In fact DynamoDB does not read meanings: while the attribute is there, the item is in the GSI. You must `REMOVE` it.
+
+The lab runs on dynoxide in the browser.
+
+## Syntax
+
+```text
+GSI key attributes present  -> item is in the GSI
+GSI key attributes missing  -> item is not in the GSI
+open:  {"op": "UpdateItem", "input": {..., "UpdateExpression": "SET open_queue = :q, opened_at = :t"}}
+close: {"op": "UpdateItem", "input": {..., "UpdateExpression": "REMOVE open_queue, opened_at"}}
+read:  {"op": "Query", "input": {"TableName": "<t>", "IndexName": "<gsi>", "KeyConditionExpression": "open_queue = :q", ["Limit": 1]}}
+```
+
+- The GSI key attributes must be declared in the table's `AttributeDefinitions`.
+- `REMOVE` the attribute = leave the GSI; `SET` it again = come back.
+- A Query on a GSI reads eventually consistent data only.
 
 ## Example
 
-```text
-Tickets (120 items)                       OpenByQueue (10 items)
-TCK#0007  queue=SHIPPING  open_queue=SHIPPING  ->  SHIPPING | 2026-11-...
-TCK#0008  queue=ACCOUNT   (closed, no open_queue) -> not in the index
+The open tickets of the `BILLING` queue:
+
+```json
+{"op": "Query", "input": {"TableName": "Tickets", "IndexName": "OpenByQueue", "KeyConditionExpression": "open_queue = :q", "ExpressionAttributeValues": {":q": {"S": "BILLING"}}}}
 ```
 
-Closing a ticket is an `UpdateItem` with `REMOVE open_queue, opened_at`: the item leaves the GSI by itself.
+Two tickets, `ScannedCount` 2: the GSI holds no closed ticket.
+
+The newest open ticket of `SHIPPING`:
+
+```json
+{"op": "Query", "input": {"TableName": "Tickets", "IndexName": "OpenByQueue", "KeyConditionExpression": "open_queue = :q", "ExpressionAttributeValues": {":q": {"S": "SHIPPING"}}, "ScanIndexForward": false, "Limit": 1}}
+```
+
+`TCK#0007`, opened at 2026-11-12T15:00.
+
+Reopening a closed ticket: set both attributes and it enters the GSI.
+
+```json
+{"op": "UpdateItem", "input": {"TableName": "Tickets", "Key": {"pk": {"S": "TCK#0002"}, "sk": {"S": "TICKET"}}, "UpdateExpression": "SET open_queue = :q, opened_at = :t", "ExpressionAttributeValues": {":q": {"S": "ACCOUNT"}, ":t": {"S": "2026-11-13T10:00"}}}}
+```
+
+## Common mistakes
+
+Finding open tickets with a Scan of the base table:
+
+```json
+// WRONG: 2 tickets back, 120 items read
+{"op": "Scan", "input": {"TableName": "Tickets", "FilterExpression": "open_queue = :q", "ExpressionAttributeValues": {":q": {"S": "BILLING"}}}}
+```
+
+```json
+// FIX: the sparse GSI holds only open tickets
+{"op": "Query", "input": {"TableName": "Tickets", "IndexName": "OpenByQueue", "KeyConditionExpression": "open_queue = :q", "ExpressionAttributeValues": {":q": {"S": "BILLING"}}}}
+```
+
+Same 2 tickets; the wrong one has a `ScannedCount` of 120, the fix 2.
+
+Closing a ticket with an empty string instead of removing the attribute:
+
+```json
+// ERROR ValidationException
+{"op": "UpdateItem", "input": {"TableName": "Tickets", "Key": {"pk": {"S": "TCK#0019"}, "sk": {"S": "TICKET"}}, "UpdateExpression": "SET open_queue = :e", "ExpressionAttributeValues": {":e": {"S": ""}}}}
+```
+
+An index key attribute does not accept an empty string. Use `REMOVE open_queue, opened_at`.
 
 ## Practice
 
-120 tickets, 10 of them open. Guess the Scan's `ScannedCount` first, then write the two Queries.
+120 tickets, 10 of them open. Guess the Scan's `ScannedCount` first, then read one queue's open tickets, get the longest-open ticket, and close a ticket.
+
+## Recap
+
+- An item enters a GSI only when it has the GSI's key attributes.
+- Sparse GSI = an index holding only the items in one state.
+- `SET` the attribute to enter the GSI, `REMOVE` it to leave; another value keeps it there.
+- A Query on a sparse GSI reads a few items instead of scanning the whole table.

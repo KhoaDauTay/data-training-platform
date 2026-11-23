@@ -99,7 +99,9 @@ Status: to-verify (level per file header).
 - Access control: enable authentication, use role-based access with built-in roles (`read`, `readWrite`, `dbAdmin`) and least privilege (https://www.mongodb.com/docs/manual/core/authorization/).
 - GridFS stores a file larger than the 16 MiB document limit as chunks (255 KiB by default): file details in `fs.files`, one document per chunk in `fs.chunks`; a driver can read a range without loading the whole file. A file under 16 MiB can live in one document (`BinData`), and GridFS does not fit when a whole file must be replaced atomically (https://www.mongodb.com/docs/manual/core/gridfs/).
 
-BoonData: Engine `L5/*`, `L5/11-backup-gridfs.md`.
+- Time series collections: an update can only match on and modify the `metaField`, must not limit the number of documents (`updateMany` / `multi: true`) and must not `upsert`; shard keys containing the `timeField` are deprecated from 8.0 (https://www.mongodb.com/docs/manual/core/timeseries/timeseries-limitations/).
+
+BoonData: Engine `L5/*`, `L5/11-backup-gridfs.md`. v29 R6: Engine L3–L5 follow the section model; their `javascript` examples and pitfalls run on mingo (`tests/engineAnatomy.test.ts`).
 
 ## Sources
 

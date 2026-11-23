@@ -11,6 +11,8 @@ runtime: docs
 objectives:
   - vi: "Giải thích vì sao ghi xung đột được chạy lại mà ứng dụng không thấy"
     en: "Explain why a conflicting write is retried without the application noticing"
+  - vi: "Phân biệt xung đột ngoài transaction với xung đột trong transaction nhiều tài liệu"
+    en: "Tell a conflict outside a transaction from one inside a multi-document transaction"
 requires: [e-mg-l5-01]
 sources:
   - https://www.mongodb.com/docs/manual/core/wiredtiger/
@@ -32,53 +34,62 @@ predict:
     - vi: "Collection bị giữ lock độc quyền, lệnh thứ hai chờ hết lệnh đầu"
       en: "The collection holds an exclusive lock, the second command waits for the first"
   answer: 1
+  trap: 0
   why:
-    vi: "Docs chính thức về WiredTiger: kiểm soát lạc quan, chỉ intent lock ở mức collection; khi hai thao tác xung đột, một bên gặp write conflict và MongoDB chạy lại nó một cách trong suốt. Mỗi lệnh trên một tài liệu là atomic, nên `qty` giảm đủ 3. Khác với transaction nhiều tài liệu: ở đó write conflict làm transaction hủy và ứng dụng phải chạy lại."
-    en: "The WiredTiger docs: optimistic control with only intent locks at the collection level; when two operations conflict, one hits a write conflict and MongoDB retries it transparently. Each single-document command is atomic, so `qty` drops by the full 3. Unlike a multi-document transaction: there a write conflict aborts the transaction and the application must retry."
+    vi: "Một lỗi nghe hợp lý vì transaction nhiều tài liệu đúng là trả write conflict về ứng dụng. Nhưng theo docs chính thức về WiredTiger: kiểm soát lạc quan, chỉ intent lock ở mức collection; khi hai thao tác xung đột, một bên gặp write conflict và MongoDB chạy lại nó một cách trong suốt. Mỗi lệnh trên một tài liệu là atomic, nên `qty` giảm đủ 3."
+    en: "An error sounds right because a multi-document transaction does return a write conflict to the application. But per the WiredTiger docs: optimistic control with only intent locks at the collection level; when two operations conflict, one hits a write conflict and MongoDB retries it transparently. Each single-document command is atomic, so `qty` drops by the full 3."
   recorded:
     tier: docs
     server: MongoDB
     version: "9.0"
     date: "2026-11-20"
     url: https://www.mongodb.com/docs/manual/core/wiredtiger/
+quiz:
+  - q:
+      vi: "Cùng hai lệnh, nhưng giờ mỗi lệnh nằm trong một transaction nhiều tài liệu, và hai transaction đụng cùng tài liệu. Ứng dụng phải làm gì?"
+      en: "The same two commands, but now each runs inside a multi-document transaction, and both transactions touch the same document. What must the application do?"
+    options:
+      - { vi: "Không gì cả: MongoDB tự chạy lại như ngoài transaction", en: "Nothing: MongoDB retries it, as outside a transaction" }
+      - { vi: "Bắt lỗi có nhãn `TransientTransactionError` và chạy lại cả transaction", en: "Catch the error labelled `TransientTransactionError` and retry the whole transaction" }
+      - { vi: "Đổi sang `w: 0` để tránh xung đột", en: "Switch to `w: 0` to avoid the conflict" }
+    answer: 1
+    trap: 0
+    why:
+      vi: "Nghe hợp lý khi suy từ trường hợp một tài liệu, nhưng trong transaction, write conflict làm transaction bị hủy và lỗi mang nhãn `TransientTransactionError`. Ứng dụng (hoặc callback API của driver) phải chạy lại cả transaction. Write concern không liên quan tới xung đột."
+      en: "It sounds right by analogy with the single-document case, but inside a transaction a write conflict aborts the transaction, and the error carries the `TransientTransactionError` label. The application (or the driver's callback API) must retry the whole transaction. Write concern has nothing to do with conflicts."
 ---
+## Mở bài
+
+Hai nhân viên kho bấm "xuất hàng" cho cùng một mặt hàng trong cùng một mili giây. Một người có bị báo lỗi không, và kho còn đúng số không?
 
 ## Ý chính
 
-Đây là bài đoán theo docs chính thức của MongoDB (trang "WiredTiger Storage Engine", mục Document Level Concurrency); trình duyệt không chạy WiredTiger. Hai câu quyết định:
+Đây là bài đoán theo docs chính thức của MongoDB (trang "WiredTiger Storage Engine", mục Document Level Concurrency); trình duyệt không chạy WiredTiger. Hai câu quyết định: WiredTiger chỉ giữ intent lock ở mức global, database, collection, nên hai client sửa hai tài liệu khác nhau không chờ nhau; khi hai thao tác xung đột trên cùng tài liệu, một thao tác gặp write conflict và MongoDB chạy lại nó, ứng dụng không cần làm gì.
 
-- WiredTiger chỉ giữ intent lock ở mức global, database, collection; hai client sửa hai tài liệu khác nhau không chờ nhau.
-- Khi hai thao tác xung đột trên cùng tài liệu, một thao tác gặp write conflict và MongoDB chạy lại nó, ứng dụng không cần làm gì.
+Nhiều người nghĩ cứ có xung đột là ứng dụng thấy lỗi. Thật ra điều đó chỉ đúng trong transaction nhiều tài liệu: ở đó write conflict làm transaction hủy, lỗi mang nhãn `TransientTransactionError`, và ứng dụng phải chạy lại cả transaction. Một lệnh trên một tài liệu thì luôn atomic và được chạy lại trong suốt, nên `$inc` của cả hai client đều được tính.
 
-Trong transaction nhiều tài liệu thì khác: write conflict làm transaction hủy, ứng dụng phải bắt lỗi và chạy lại cả transaction.
+## Tóm tắt
 
-## Ví dụ
-
-```javascript
-db.stock.find({ _id: "A" })
-```
-
-Sau hai lệnh, tài liệu có `qty` bằng 7.
-
-Đúng với docs chính thức của MongoDB hiện hành, kiểm ngày 2026-11-20.
+- Lệnh trên một tài liệu là atomic; xung đột ngoài transaction được MongoDB tự chạy lại.
+- Chỉ có intent lock ở mức collection: ghi khác tài liệu không chờ nhau.
+- Trong transaction nhiều tài liệu, write conflict hủy transaction; chạy lại khi gặp `TransientTransactionError`.
+- `$inc` trên server an toàn hơn đọc rồi ghi lại giá trị ở ứng dụng.
 
 # EN
 
+## Opening
+
+Two warehouse clerks press "ship" for the same item in the same millisecond. Does one of them get an error, and is the stock count still right?
+
 ## Key idea
 
-This is a prediction based on the MongoDB docs (page "WiredTiger Storage Engine", section Document Level Concurrency); the browser runs no WiredTiger. Two statements decide it:
+This is a prediction based on the MongoDB docs (page "WiredTiger Storage Engine", section Document Level Concurrency); the browser runs no WiredTiger. Two statements decide it: WiredTiger holds only intent locks at the global, database and collection levels, so two clients modifying two different documents do not wait for each other; when two operations conflict on the same document, one hits a write conflict and MongoDB retries it, with nothing for the application to do.
 
-- WiredTiger holds only intent locks at the global, database and collection levels; two clients modifying two different documents do not wait for each other.
-- When two operations conflict on the same document, one hits a write conflict and MongoDB retries it, with nothing for the application to do.
+Many people think any conflict shows up as an error in the application. In fact that is only true inside a multi-document transaction: there a write conflict aborts the transaction, the error carries the `TransientTransactionError` label, and the application must retry the whole transaction. A command on one document is always atomic and retried transparently, so the `$inc` of both clients counts.
 
-A multi-document transaction is different: a write conflict aborts the transaction, and the application must catch the error and retry the whole transaction.
+## Recap
 
-## Example
-
-```javascript
-db.stock.find({ _id: "A" })
-```
-
-After both commands the document has `qty` equal to 7.
-
-Matches the current MongoDB manual, checked 2026-11-20.
+- A command on one document is atomic; a conflict outside a transaction is retried by MongoDB itself.
+- Only intent locks at the collection level: writes on different documents do not wait for each other.
+- In a multi-document transaction a write conflict aborts it; retry on `TransientTransactionError`.
+- A server-side `$inc` is safer than reading and writing the value back in the application.
