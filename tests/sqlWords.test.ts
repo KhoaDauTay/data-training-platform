@@ -33,7 +33,8 @@ describe('SQL bằng lời (V19-A, L162)', () => {
     for (const [id, sql] of all) {
       const r = await buildSteps(sql);
       if (!r.ok) {
-        if (r.reason !== 'withUnion' && r.reason !== 'window') problems.push(`${id}: ${r.reason}`);
+        // v26 R2: a write (Part 9 drills, their quick lessons) is not a SELECT; the line says it cannot be read in words
+        if (r.reason !== 'withUnion' && r.reason !== 'window' && !(r.reason === 'notSelect' && /^\s*(INSERT|UPDATE|DELETE|MERGE|CREATE)\b/i.test(sql))) problems.push(`${id}: ${r.reason}`);
         continue;
       }
       described++;

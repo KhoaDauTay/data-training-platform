@@ -245,7 +245,8 @@ function card(l: Lesson, titleId: string, actions: HTMLElement[], tour = false, 
       l.cues[lang].length ? section('eye', t('lesson.cues'), h('ul', { class: 'm-0 flex list-none flex-wrap gap-2 p-0' },
         ...l.cues[lang].map((c) => h('li', { class: 'rounded-(--r-inset) bg-code px-2 py-1 text-body-sm' }, c)))) : null,
       section('flask', t('lesson.try'), richText(l.try.task[lang]), gslot('lesson-try'), tryPreview(l.try.solution, lessonSchema(l)), area,
-        h('div', { class: 'actions mb-0' }, runMine, boonBtn, check), gslot('lesson-try-actions'), boonBox, verdict, detail, gslot('lesson-diff'), yours),
+        // v26 R2: no scaffold for a write (frameOf is shaped for a read; Part 9's Thử ngay is an INSERT/UPDATE/DELETE)
+        h('div', { class: 'actions mb-0' }, runMine, /^\s*(INSERT|UPDATE|DELETE|MERGE|CREATE)\b/i.test(l.try.solution) ? null : boonBtn, check), gslot('lesson-try-actions'), boonBox, verdict, detail, gslot('lesson-diff'), yours),
       h('p', { class: 'mt-5 mb-0 border-t border-line pt-4 text-body-sm' },
         h('a', { href: l.docs, target: '_blank', rel: 'noopener noreferrer', class: 'inline-flex items-center gap-1.5' }, icon('external', 'size-4'), t('lesson.docs')))));
 }

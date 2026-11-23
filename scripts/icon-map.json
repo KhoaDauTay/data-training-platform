@@ -98,7 +98,7 @@
     "crossJoin": ["grid-nine", "CROSS JOIN: every row paired with every row, a grid (v25 R1)"],
     "anyAll": ["greater-than-or-equal", "ANY / ALL: compare one value with every value of a list (v25 R1)"],
     "insertRows": ["rows-plus-bottom", "INSERT: new rows added at the bottom of a table (v26 R2)"],
-    "editRows": ["note-pencil", "UPDATE / DELETE: rows edited in place (v26 R2)"],
+    "editRows": ["pencil-line", "UPDATE / DELETE: rows edited or erased in place (v26 R2)"],
     "upsertMerge": ["arrows-merge", "ON CONFLICT / MERGE: insert or update, two paths into one row (v26 R2)"],
     "stepsMerge": ["git-merge", "several CTEs merge into one query"],
     "firstPerGroup": ["number-circle-one", "DISTINCT ON: the first row per group"],

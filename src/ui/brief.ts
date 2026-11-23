@@ -81,6 +81,7 @@ function fillBox(tk: Ticket, i: number, shown: number): HTMLElement | null {
   if (shown < (faded ? 1 : Math.min(2, tk.hints.length))) return null;
   if (tk.steps[i].lab) return h('p', { class: 'mt-2 mb-0 text-body-sm' }, t('frame.lab'));
   if (faded && !tk.starter) return null;
+  if (!faded && tk.steps[i].check) return null; // v26 R2: frameOf is shaped for a read; a write drill's hint names the statement instead
   const k = stepKey(tk.id, i);
   const box = h('div', { class: 'mt-2' });
   const fill = async (force: boolean): Promise<void> => {

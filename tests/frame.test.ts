@@ -118,6 +118,8 @@ describe('frameOf: luật', () => {
 
 // ---- sweep: every real Solution (all variants and steps), drill, challenge and "Thử ngay" ----
 
+/** v26 R2: writes get no scaffold (brief.ts fillBox, lessonCard.ts): frameOf is shaped for a read. */
+const WRITE = /^\s*(INSERT|UPDATE|DELETE|MERGE|CREATE)\b/i;
 interface Case { id: string; sql: string; ordered: boolean; precision?: number; trap?: string[]; on: 'game' | 'ecom' | 'fin' | 'lab' }
 function generalDrills() {
   return generalNowSync.drills; // skill drills + advanced nodes' drills
@@ -141,9 +143,9 @@ function cases(): Case[] {
   story(loadLanes().tasks, 'game');
   story(loadTicketTemplates('ecommerce'), 'ecom');
   story(loadTicketTemplates('finance'), 'fin');
-  for (const d of generalDrills()) out.push({ id: d.id, sql: d.solution, ordered: d.ordered, on: 'lab', trap: d.kind === 'trap' ? d.wrong.map((w) => w.sql) : undefined });
+  for (const d of generalDrills().filter((x) => !x.check)) out.push({ id: d.id, sql: d.solution, ordered: d.ordered, on: 'lab', trap: d.kind === 'trap' ? d.wrong.map((w) => w.sql) : undefined });
   const lessons = [...loadLessons().values(), ...generalNowSync.nodes.flatMap((n) => (n.lesson ? [n.lesson] : []))];
-  for (const l of lessons) out.push({ id: `try:${l.id}`, sql: l.try.solution, ordered: l.try.ordered, on: 'lab' });
+  for (const l of lessons.filter((x) => !WRITE.test(x.try.solution))) out.push({ id: `try:${l.id}`, sql: l.try.solution, ordered: l.try.ordered, on: 'lab' });
   return out;
 }
 const ALL = cases();
