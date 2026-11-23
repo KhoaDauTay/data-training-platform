@@ -156,8 +156,8 @@ function skillsCard(all: Ticket[]): HTMLElement {
       : d.h('p', { class: 'm-0 text-body-sm text-muted' }, m('skills.none')));
 }
 
-const errLabel = (code: string): string => (ERR[`err.${code}`] ? m(`err.${code}` as MeKey) : m('err.other'));
-const ERR: Record<string, true> = Object.fromEntries(['42703', '42P01', '42601', '42803', '42702', '42883', '42804', '22P02', '22012', '22007', '21000', '42P20'].map((c) => [`err.${c}`, true]));
+const ERR = ['42703', '42P01', '42601', '42803', '42702', '42883', '42804', '22P02', '22012', '22007', '21000', '42P20'] as const;
+const errLabel = (code: string): string => (ERR.includes(code as (typeof ERR)[number]) ? m(`err.${code as (typeof ERR)[number]}`) : m('err.other'));
 
 function errorsCard(): HTMLElement {
   const top = topErrors(d.readErrors());
@@ -264,7 +264,7 @@ function skillMapCard(x: Measured): HTMLElement {
   const row = (id: string): HTMLElement => {
     const s = x.levels.get(id)!;
     const label = d.ROUTE_SKILLS.find((k) => k.id === id)?.label[lang] ?? id;
-    const words = m(s.review ? 'map.dueAria' : 'map.aria', { skill: label, level: m(`lv.${s.level}` as MeKey), n: s.level });
+    const words = m(s.review ? 'map.dueAria' : 'map.aria', { skill: label, level: m(`lv.${s.level}`), n: s.level });
     return d.h('li', { class: 'flex min-h-9 items-center gap-2', 'data-skill': id, 'data-level': String(s.level) },
       d.skillIcon(id, 'size-4 shrink-0 text-accent'),
       d.h('a', { href: `${d.hashOf('learn')}/skill/${id}`, class: d.cls.cx('min-w-0 flex-1 truncate text-body-sm', s.level ? 'font-semibold' : 'text-muted'), 'aria-label': words, title: words }, label),
@@ -295,7 +295,7 @@ function skillMapCard(x: Measured): HTMLElement {
       due ? d.h('button', { type: 'button', class: d.cls.cx(d.cls.BTN_GO, 'px-4 py-1.5 text-body-sm'), onclick: () => d.startToday() }, m('map.review', { n: due })) : null),
     d.h('p', { class: 'm-0 text-body-sm text-muted' }, m('map.intro')),
     d.h('ul', { class: 'm-0 flex list-none flex-wrap items-center gap-x-4 gap-y-1 p-0 text-caption text-muted', 'aria-hidden': 'true' },
-      ...[0, 1, 2, 3, 4].map((lv) => d.h('li', { class: 'flex items-center gap-1.5' }, dots(lv), m(`lv.${lv}` as MeKey))),
+      ...([0, 1, 2, 3, 4] as const).map((lv) => d.h('li', { class: 'flex items-center gap-1.5' }, dots(lv), m(`lv.${lv}`))),
       d.h('li', { class: 'flex items-center gap-1.5' }, dueChip(), m('map.dueNote'))),
     d.h('div', { class: 'grid gap-x-6 lg:grid-cols-2' }, ...x.parts.map(part)), // ponytail: 2 columns from 1024; xl 3 columns would add CSS past the 20 KB budget
     d.h('div', { class: 'space-y-2 border-t border-line pt-3' },
@@ -357,7 +357,7 @@ function levelsForPortfolio(x: Measured, list: Scope[]): PortfolioLevels {
   return {
     skills: d.SKILLS.flatMap((s) => {
       const l = x.levels.get(s.id);
-      return l && l.level >= 2 ? [{ label: s.label[lang], level: m(`lv.${l.level}` as MeKey) }] : [];
+      return l && l.level >= 2 ? [{ label: s.label[lang], level: m(`lv.${l.level}`) }] : [];
     }),
     badges: x.badges.filter((b) => b.have).map((b) => badgeName(b, list).name),
   };

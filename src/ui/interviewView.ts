@@ -271,7 +271,7 @@ function setPane(run: InterviewRun): HTMLElement {
   return h('div', {}, ...nodes(
     h('header', {},
       h('h2', TITLE, set.title[lang]),
-      h('p', { class: 'mt-1 mb-0 text-body-sm text-muted' }, `${it(`iv.level.${set.level}` as IvKey)} · ${it('iv.question', { i: run.index + 1, n })}`)),
+      h('p', { class: 'mt-1 mb-0 text-body-sm text-muted' }, `${it(`iv.level.${set.level}`)} · ${it('iv.question', { i: run.index + 1, n })}`)),
     run.timer
       ? h('p', { id: 'iv-clock', role: 'timer', class: 'mt-2 mb-0 inline-block rounded-full bg-accent-soft px-3 py-1 text-body-sm tabular-nums' })
       : h('p', { class: 'mt-2 mb-0 text-body-sm text-muted' }, it('iv.practiceMode')),
@@ -450,7 +450,7 @@ export function listPage(): HTMLElement {
         const last = p.sets[s.id];
         return h('li', { class: ROW }, h('div', { class: 'flex min-w-0 flex-1 flex-col gap-1' },
           h('h3', { class: 'm-0 text-body font-bold' }, s.title[lang]),
-          h('p', { class: 'm-0 text-body-sm text-muted' }, `${it(`iv.level.${s.level}` as IvKey)} · ${it('iv.setLine', { ...range(s.modules), n: s.questions.length, min: s.minutes })}`),
+          h('p', { class: 'm-0 text-body-sm text-muted' }, `${it(`iv.level.${s.level}`)} · ${it('iv.setLine', { ...range(s.modules), n: s.questions.length, min: s.minutes })}`),
           h('p', { class: 'm-0 text-body-sm' }, knownLine(s.modules)),
           last ? h('p', { class: 'm-0 text-body-sm' }, it('iv.lastSet', { day: last.at, solved: last.solved, total: last.total, time: clock(last.ms) })) : null),
           actions(s.id));

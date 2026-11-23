@@ -143,7 +143,7 @@ export function portfolioMd(p: { lang: Lang; scope: DomainId; what: string; name
   const m = (k: MeKey, q?: Record<string, string | number>): string => meText(p.lang, k, q);
   const out = [
     `# ${m('pf.h1', { domain: p.what })}`, '',
-    m('pf.by', { name: p.name.trim() || m('pf.anon'), date: p.date, company: m(`co.${p.scope}` as MeKey) }), '',
+    m('pf.by', { name: p.name.trim() || m('pf.anon'), date: p.date, company: m(`co.${p.scope}`) }), '',
     `> ${m('pf.note')}`, '',
   ];
   // v24 (L323): the current skill levels (Can do and above) and the badges held, self-measured

@@ -1,3 +1,4 @@
+import type { DrillKind } from './general';
 /**
  * v13 (product-design-v8 §2.1): Boon's guides in the General area, the pure part. Lazy-only (learnui chunk, through
  * src/ui/guide.ts): no value import from main modules (Plan 6 U3); the caller reads and writes the pref.
@@ -49,7 +50,7 @@ export interface GuideState {
   /** session.mode.kind. */
   mode: string;
   /** Kind of the open ticket when it is a General drill (faded | open | trap | challenge); undefined for every other ticket. */
-  drillKind?: string;
+  drillKind?: DrillKind;
   /** The lesson dialog is open from the General area (openLesson with guide: true); `diff` = its Try box shows the diff. */
   lesson?: { diff: boolean };
   /** The work pane shows the diff of a wrong drill submit (L84). */

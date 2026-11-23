@@ -70,7 +70,7 @@ const SQL_OF: Record<string, string> = {
 };
 const sqlOf = (stage: string, k: number, stages: string[]): string =>
   stage === '$match' && stages.slice(0, k).includes('$group') ? 'HAVING' : SQL_OF[stage] ?? '—';
-const TRAPS = ['$match', '$group', '$count', '$lookup', '$unwind', '$sort', '$limit', '$project'];
+const TRAPS = ['$match', '$group', '$count', '$lookup', '$unwind', '$sort', '$limit', '$project'] as const;
 
 /** Under a run of a MongoDB step: the pipeline by stage and the comparison with SQL. Nothing for a run with no pipeline and no `sql`. */
 export function stepEnd(deps: EngineDeps, s: LabStep, r: LabOutput | undefined, passed: boolean, key: string): HTMLElement | null {
@@ -103,7 +103,7 @@ export function stepEnd(deps: EngineDeps, s: LabStep, r: LabOutput | undefined, 
     traps.length || s.sql ? h('section', { class: 'flex flex-col gap-2 rounded-(--r-inset) bg-surface-2 p-3', 'aria-labelledby': `${key}-cmp`, 'data-compare': '' },
       h('h4', { id: `${key}-cmp`, class: 'm-0 text-body-sm font-bold' }, nt('cmp.title')),
       traps.length ? h('p', { class: 'm-0 text-caption font-bold text-muted' }, nt('cmp.traps')) : null,
-      traps.length ? h('ul', { class: 'm-0 list-disc space-y-1 pl-5 text-body-sm' }, ...traps.map((t) => h('li', {}, ...inline(nt(`trap.${t}` as NosqlKey))))) : null,
+      traps.length ? h('ul', { class: 'm-0 list-disc space-y-1 pl-5 text-body-sm' }, ...traps.map((t) => h('li', {}, ...inline(nt(`trap.${t}`))))) : null,
       s.sql ? (passed
         ? h('div', {}, h('p', { class: 'm-0 text-caption font-bold text-muted' }, nt('cmp.sql')), h('pre', { class: 'sql m-0 overflow-x-auto', lang: 'en', 'data-sql-compare': '' }, s.sql))
         : h('p', { class: 'm-0 text-caption text-muted' }, nt('cmp.after'))) : null) : null);

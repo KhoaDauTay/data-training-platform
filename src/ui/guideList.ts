@@ -56,8 +56,8 @@ function build(id: string, s: GuideState): Guide | undefined {
   if (id === 'skill') return { id, steps: [step('skill-head', 'g.skill.1'), step('skill-card', 'g.skill.2')] };
   if (id === 'lesson') return { id, steps: ['example', 'mistake', 'try', 'try-actions'].map((x, i) => step(`lesson-${x}`, `g.lesson.${i + 1}` as LearnKey)) };
   if (id === 'diff') return { id, steps: [step(s.lesson ? 'lesson-diff' : 'diff', 'g.diff')] };
-  if (id === 'drill' && kind) return { id, also: [`drill:${kind}`], steps: [step('drill-brief', 'g.drill.1'), step('work', 'g.drill.2'), step('drill-brief', `g.drill.${kind}` as LearnKey)] };
-  if (id === `drill:${kind}`) return { id, steps: [step('drill-brief', `g.drill.${kind}` as LearnKey)] };
+  if (id === 'drill' && kind) return { id, also: [`drill:${kind}`], steps: [step('drill-brief', 'g.drill.1'), step('work', 'g.drill.2'), step('drill-brief', `g.drill.${kind}`)] };
+  if (kind && id === `drill:${kind}`) return { id, steps: [step('drill-brief', `g.drill.${kind}`)] };
   if (id === 'review') return { id, steps: [step('drill-brief', 'g.review')] };
   if (id === 'practice') {
     const { app } = d$;
