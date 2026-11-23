@@ -708,6 +708,7 @@ export const vi = {
   'welcome.next': 'Tiếp',
   'welcome.page': 'Bước {i}/{n}',
   'welcome.dbReady': 'Dữ liệu sẵn sàng!',
+  'welcome.dbBar': 'Tiến độ tải dữ liệu',
   'welcome.dbLoading': 'Boon đang chuẩn bị dữ liệu… {mb} MB',
   'welcome.pickTitle': 'Bắt đầu ở đâu?',
   'welcome.short.logistics': 'Cảng biển, giao nhận · 12 chương',

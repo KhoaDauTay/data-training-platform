@@ -1,4 +1,5 @@
 import { getLang, t, type Lang } from '../i18n';
+import { downloading } from '../db/loadProgress';
 import { DOMAINS } from '../domains';
 import { readTour, startTour, TOUR_STEPS, welcomeNeeded, type BootPick } from '../onboarding';
 import { actions, app, done } from '../state';
@@ -27,7 +28,7 @@ let replay = false;
 let picking = false;
 let entering = false;
 /** L87: Boon teaching Lily, built once per open so a progress redraw keeps its loops and the board's highlight. */
-let frame: { root: HTMLElement; scene: HTMLElement; body: HTMLElement; db: HTMLElement; foot: HTMLElement } | undefined;
+let frame: { root: HTMLElement; scene: HTMLElement; body: HTMLElement; db: HTMLElement; bar: HTMLProgressElement; foot: HTMLElement; sig?: string } | undefined;
 
 const dialog = (): HTMLDialogElement => byId('welcome-dialog') as HTMLDialogElement;
 const title = (text: string) => h('h2', { id: 'welcome-title', tabindex: '-1', class: 'm-0 text-heading' }, text);
@@ -90,18 +91,30 @@ function draw(): void {
     const scene = teachScene('lg');
     const body = h('div', { class: 'min-w-0 space-y-3' });
     const db = h('p', { class: 'm-0 truncate text-center text-caption text-muted' });
+    const bar = h('progress', { class: 'block h-1.5 w-full' });
     const foot = h('div', { class: 'flex flex-wrap items-center gap-2' });
     frame = {
       // O1 (Q8): the body scrolls, the footer (Back · step n/N · main button, the download line) sticks to the dialog's bottom.
       root: h('div', {}, h('div', { class: 'space-y-4 p-5' }, h('div', { class: 'flex justify-center' }, scene), body),
-        h('div', { class: 'sticky bottom-0 space-y-1 border-t border-line bg-panel px-5 py-3' }, foot, db)),
-      scene, body, db, foot,
+        h('div', { class: 'sticky bottom-0 space-y-1 border-t border-line bg-panel px-5 py-3' }, foot, db, bar)),
+      scene, body, db, bar, foot,
     };
   }
   const step = steps[panel];
+  const dbLine = entering ? t('welcome.entering') : picking || replay ? '' : ready ? t('welcome.dbReady') : p ? t('welcome.dbLoading', { mb: mb(p.loaded) }) : t('db.loading');
+  frame.db.textContent = dbLine;
+  frame.db.hidden = !dbLine;
+  // L319 (feedback #12): a MB bar while the size is known; the line above keeps the figure
+  frame.bar.setAttribute('aria-label', t('welcome.dbBar'));
+  frame.bar.hidden = !dbLine || entering || !downloading(p);
+  if (p?.total) Object.assign(frame.bar, { max: p.total, value: Math.min(p.loaded, p.total) });
+  // L319: a download tick changes only the line and the bar. Rebuilding the buttons on every tick (several a second) swapped
+  // the "Begin" under the pointer between mousedown and mouseup, so the click was lost while the DB downloaded.
+  const sig = [panel, steps.join(), getLang(), entering, picking, replay].join('|');
+  if (frame.sig === sig && frame.root.parentNode === d) return;
+  frame.sig = sig;
   frame.scene.parentElement!.hidden = step !== 'lang';
   relabelScene(frame.scene);
-  const db = entering ? t('welcome.entering') : picking || replay ? '' : ready ? t('welcome.dbReady') : p ? t('welcome.dbLoading', { mb: mb(p.loaded) }) : t('db.loading');
   const loop = () => [title(t('welcome.loopTitle')), h('ol', { class: 'm-0 space-y-1' }, ...LOOP.map((k) => h('li', {}, t(k)))), h('p', { class: 'm-0 text-muted' }, t('welcome.loopNote'))];
   const body = step === 'lang'
     ? [title(t('welcome.title')), h('p', { class: 'm-0' }, t('welcome.p1')),
@@ -116,8 +129,6 @@ function draw(): void {
   // The scene stays in place across redraws (its loops and a focused Lily/Boon button survive a progress tick).
   if (frame.root.parentNode !== d) d.replaceChildren(frame.root);
   frame.body.replaceChildren(...body);
-  frame.db.textContent = db;
-  frame.db.hidden = !db;
   const last = panel === steps.length - 1;
   const main = (attrs: Record<string, unknown>, text: string) =>
     h('button', { type: 'button', class: cx(BTN_GO, 'px-4 py-2'), 'aria-describedby': 'welcome-step', ...attrs }, text);

@@ -708,6 +708,7 @@ export const en: Record<Key, Msg> = {
   'welcome.next': 'Next',
   'welcome.page': 'Step {i} of {n}',
   'welcome.dbReady': 'The data is ready!',
+  'welcome.dbBar': 'Data download progress',
   'welcome.dbLoading': 'Boon is preparing the data… {mb} MB',
   'welcome.pickTitle': 'Where do you want to start?',
   'welcome.short.logistics': 'Sea freight and forwarding · 12 chapters',
