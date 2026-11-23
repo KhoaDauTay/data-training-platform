@@ -8,6 +8,8 @@ Phạm vi: Lộ trình học (General: `content/skills.yml`, `content/lessons.ym
 
 Người đọc song song: UI/UX designer (`docs/team/ux-route-v24.md`) cần §2 (giải phẫu bài, độ sâu điều hướng). §2 được viết và commit trước.
 
+**Quyết định của user (2026-11-23, qua người điều phối):** Q1 xen kẽ với roadmap v24–v30; Q2 đọc trước, ghi sau; Q3 thiết kế/DBMS là thẻ engine thứ tư; Q4 **bỏ chứng nhận**, thay bằng đo kỹ năng + huy hiệu (Product quyết, §1.7); Q5 chỉ chặn ở Phần 11 và Engine, nơi khác là ghi chú; Q7 **bỏ MySQL/SQLite** (không Phần 12, không bài đọc; khác biệt phương ngữ chỉ nêu khi một bài Postgres cần nó làm bẫy); Q6 không trả lời: giữ `timestamp` (mặc định, xác nhận ở review). Các dòng L320–L327 trong `decision-log.md`.
+
 **Lưu ý đóng băng.** User đã dừng ở v23 (2026-11-20). Tài liệu này là đề xuất; số version ở §4 là "lát R1, R2…" (route slice), không chiếm số v24–v30 đã gán trong roadmap. Ghép lát vào version nào là câu hỏi Q1 (§5).
 
 ---
@@ -26,7 +28,7 @@ Người đọc song song: UI/UX designer (`docs/team/ux-route-v24.md`) cần §
 
 Tutorial (tutorialspoint và tương tự) mỗi chương có: giới thiệu, cú pháp, nhiều ví dụ có kết quả, biến thể, lưu ý. Khoảng cách lớn nhất là **bài nhanh General** (≈ 1/6 độ dài một chương tutorial, 1 ví dụ). Bài Engine mạnh ở phần làm (lab nhiều bước, predict, quiz) nhưng phần chữ cũng ngắn (trung vị 168 từ so với đích 500–900), và thiếu đều đặn hai mục "Cú pháp" và "Lỗi hay gặp".
 
-### 2.2 Giải phẫu chuẩn (một bài = 9 mục, theo thứ tự này)
+### 2.2 Giải phẫu chuẩn (một bài = 8 mục, theo thứ tự này)
 
 Áp cho mọi bài **kỹ năng General** và mọi bài Engine `concept`/`lab`. Bài `quiz`/`predict`/`capstone` dùng tập con ghi ở cột cuối.
 
@@ -37,7 +39,7 @@ Tutorial (tutorialspoint và tương tự) mỗi chương có: giới thiệu, c
 | 3 | **Cú pháp** | khung lệnh, phần tùy chọn trong `[ ]`, bảng "tùy chọn → ý nghĩa" ≤ 8 dòng | có (trừ bài lý thuyết thuần) | có khối `sql` đầu mục |
 | 4 | **Ví dụ chạy được** | 3–6 ví dụ, đơn giản → thật; mỗi ví dụ: SQL + nút Chạy (PGlite, schema `lab` hoặc setup của bài) + kết quả + 1–2 câu đọc kết quả | có | ≥ 3 ví dụ, mỗi ví dụ chạy ra dòng (như `tests/lessons.test.ts`) |
 | 5 | **Lỗi hay gặp** | 2–4 bẫy; mỗi bẫy = câu SQL sai **chạy thật** (báo lỗi có SQLSTATE, hoặc ra kết quả sai lặng lẽ) + vì sao + cách sửa | có | ≥ 2, mỗi câu chạy và khác ví dụ (như `mistake` hôm nay) |
-| 6 | **Ở hệ khác** | MySQL 8.4 / SQLite / SQL Server khác gì, 1 bảng ngắn; nhãn "Không chạy trong trình duyệt · theo tài liệu <hệ>" | chỉ khi có khác biệt | nguồn trong `sources` |
+| — | (bỏ: "Ở hệ khác") | Q7: không dạy MySQL/SQLite. Khác biệt phương ngữ chỉ xuất hiện **trong mục 5** khi nó là một bẫy thật của người viết Postgres (vd. `IFNULL`, backtick, `TOP`), một dòng, nhãn "theo tài liệu <hệ>, không chạy" | — | — |
 | 7 | **Thực hành** | General: "Thử ngay" + 4 drill (faded → open → trap → review). Engine lab: các bước mẫu → khuyết `___` → tự viết (pedagogy P3). Bước có **thanh hiệu năng** (§1.6) mang nhãn | có | như hiện nay |
 | 8 | **Câu hỏi kiểm tra** | 2–4 câu; ≥ 1 lựa chọn sai là hiểu lầm nói bằng giọng người tin nó; `why` | có | ≥ 2 câu, ≥ 1 có `misconception` |
 | 9 | **Tóm tắt và đọc thêm** | 3–5 dòng "nhớ mang về" (dùng lại `syntax/when/trap` của `skills.yml` cho General), link thẻ Best Practice, nguồn chính thức, bài tiếp | có | ≥ 1 nguồn chính thức |
@@ -59,8 +61,8 @@ Tập con cho loại bài khác: `predict` = 1, 2, (dự đoán), 4 (Xem thật)
 
 ### 2.3 Bài ngắn hiện có lớn lên thế nào
 
-- **General:** thẻ nhanh trong `lessons.yml` **giữ nguyên** (nó là bản tóm tắt hiện trong ticket domain qua `lessonSlot`, và trong hộp thoại bài học). Bài đầy đủ là file mới `content/general/lessons/<skill>.md` (frontmatter + 9 mục), mỗi file một chunk lazy như bài Engine (`?fm`, ngân sách mỗi file 8 KB kiểu `'each'`). Ánh xạ: `concept` → nguồn của mục 2; `example` + `explain` → ví dụ 1 của mục 4; `mistake` → bẫy 1 của mục 5; `try` → mục 7; `docs` → mục 9; `skills.yml` `syntax/when/trap` → mục 3 và 9. Viết thêm: cú pháp, 2–5 ví dụ, 1–3 bẫy, ở hệ khác, 2–4 câu hỏi.
-- **Engine:** đã có mục 1, 2, 7, 8, 9; mục 4 thường chỉ 1–2 khối. Phần chữ cần lớn gấp ~3 lần. Thêm cho đều: mục 3 "Cú pháp" và mục 5 "Lỗi hay gặp" thành tiêu đề riêng (nhiều bài đã có lỗi trong `## Ví dụ` dạng `-- ERROR:`: tách ra), mục 6 khi có khác biệt. Nâng theo thứ tự lát (§4), không viết lại cả loạt.
+- **General:** thẻ nhanh trong `lessons.yml` **giữ nguyên** (nó là bản tóm tắt hiện trong ticket domain qua `lessonSlot`, và trong hộp thoại bài học). Bài đầy đủ là file mới `content/general/lessons/<skill>.md` (frontmatter + 9 mục), mỗi file một chunk lazy như bài Engine (`?fm`, ngân sách mỗi file 8 KB kiểu `'each'`). Ánh xạ: `concept` → nguồn của mục 2; `example` + `explain` → ví dụ 1 của mục 4; `mistake` → bẫy 1 của mục 5; `try` → mục 7; `docs` → mục 9; `skills.yml` `syntax/when/trap` → mục 3 và 9. Viết thêm: cú pháp, 2–5 ví dụ, 1–3 bẫy, 2–4 câu hỏi.
+- **Engine:** đã có mục 1, 2, 7, 8, 9; mục 4 thường chỉ 1–2 khối. Phần chữ cần lớn gấp ~3 lần. Thêm cho đều: mục 3 "Cú pháp" và mục 5 "Lỗi hay gặp" thành tiêu đề riêng (nhiều bài đã có lỗi trong `## Ví dụ` dạng `-- ERROR:`: tách ra). Nâng theo thứ tự lát (§4), không viết lại cả loạt.
 - **Nút `adv`:** đã đủ dài; chỉ thêm mục 3, 5, 8 khi thiếu. `adv.yml` đang 46/50 KB: tách mỗi nút ra file riêng cùng lúc với General (cùng cơ chế chunk mỗi bài).
 
 ### 2.4 Độ sâu điều hướng (cho UI/UX)
@@ -70,14 +72,14 @@ Tối đa **4 tầng trang + 1 tầng mục trong trang**:
 | Tầng | General (SQL) | Engine | Ghi chú |
 |---|---|---|---|
 | 1 Khu | `#/learn` | `#/engine` | có sẵn |
-| 2 Track | track trên `#/learn` (SQL Phần 1–12 · Nâng cao) | engine `#/engine/<engine>` (+ thẻ thứ tư nếu Q3 chọn) | |
+| 2 Track | track trên `#/learn` (SQL Phần 1–11 · Nâng cao) | engine `#/engine/<engine>` (PostgreSQL · MongoDB · DynamoDB · Thiết kế CSDL) | |
 | 3 Mô-đun / cấp | `#/learn/sql/<n>` (Phần n) | `#/engine/<engine>/<L>` (các mô-đun là nhóm trên trang cấp) | General: Phần n **không còn** = chương Logistics (§3.1) |
 | 4 Bài | `#/learn/skill/<id>`, `#/learn/adv/<node>` | `#/engine/<engine>/<L>/<id>` | |
-| 5 Mục trong bài | 9 mục §2.2 | 9 mục §2.2 | **không** dùng `#anchor`: router giữ hash. Mục lục trong trang = nút cuộn (`scrollIntoView`), mục hiện tại đánh dấu bằng `aria-current`; nếu cần link sâu tới một mục, phải thêm cú pháp vào `src/route.ts` (vd. `…/<id>/examples`); chưa cần ở lát đầu |
+| 5 Mục trong bài | 8 mục §2.2 | 8 mục §2.2 | **không** dùng `#anchor`: router giữ hash. Mục lục trong trang = nút cuộn (`scrollIntoView`), mục hiện tại đánh dấu bằng `aria-current`; nếu cần link sâu tới một mục, phải thêm cú pháp vào `src/route.ts` (vd. `…/<id>/examples`); chưa cần ở lát đầu |
 
 Một bài dài trên điện thoại: mục 4–5–6 có thể thu gọn (`<details>`), mục 7 (thực hành) luôn mở. Tiến độ đọc **không lưu** (không cần Save); "xong bài" vẫn là luật hiện tại (drill/lab/quiz đạt).
 
-Nhãn trung thực trên mỗi ví dụ/mục: "Chạy thật · PostgreSQL 18.6 (PGlite)", "Chạy bằng mingo", "Chạy bằng dynoxide", "Không chạy trong trình duyệt · theo tài liệu MySQL 8.4 / SQLite" (mục 6 và bài so sánh hệ). Không dùng "sắp có".
+Nhãn trung thực trên mỗi ví dụ/mục: "Chạy thật · PostgreSQL 18.6 (PGlite)", "Chạy bằng mingo", "Chạy bằng dynoxide", và cho dòng phương ngữ hiếm hoi trong mục 5: "Theo tài liệu <hệ>, không chạy trong trình duyệt". Không dùng "sắp có".
 
 Bài có thanh hiệu năng (§1.6) cần chỗ hiện **hai con số chi phí** (bài của bạn / lời giải) và nút kế hoạch gây chậm; dùng lại cây kế hoạch của predict "Xem thật" (`enginePredict`).
 
@@ -90,21 +92,21 @@ Bài có thanh hiệu năng (§1.6) cần chỗ hiện **hai con số chi phí**
 
 | Khu / track | Hôm nay | Đích | Ghi chú |
 |---|---|---|---|
-| General · SQL | 11 Phần (= chương Logistics), 38 kỹ năng, 152 drill | **12 Phần**, **43 kỹ năng** (+5), 172 drill kỹ năng (+20), 1 Phần đọc so sánh hệ (4 nút, 16 drill) | thứ tự theo tutorial SQL (§1.1) |
+| General · SQL | 11 Phần (= chương Logistics), 38 kỹ năng, 152 drill | **11 Phần** (thứ tự mới, không còn = chương), **43 kỹ năng** (+5), **172 drill** kỹ năng (+20) | thứ tự theo tutorial SQL (§1.1) |
 | General · Nâng cao | 28 nút (20 có bài) | 29 nút (+`a11` lấy mẫu ngẫu nhiên) | giữ nguyên thứ tự a → d |
 | Engine · PostgreSQL | 80 bài (L1 12, L2 17, L3 18, L4 16, L5 17) | **92** (L1 +5, L2 +7) | thứ tự mô-đun L1–L2 theo tutorial PostgreSQL; L3–L5 giữ thang tầng hệ thống (pedagogy P6) |
 | Engine · MongoDB | 65 (+ Lộ trình NoSQL 12 phần, 168 drill) | **67** (+2) | thứ tự đã khớp tutorial |
 | Engine · DynamoDB | 55 | **57** (+2) | thứ tự đã khớp tutorial |
-| Thiết kế và lý thuyết CSDL | 0 | **25** (5 cấp) | theo tutorial DBMS; nơi đặt là Q3 |
-| **Tổng bài** | 38 kỹ năng + 20 nút có bài + 200 bài Engine | 43 + 25 nút có bài + 241 bài Engine | |
+| Thiết kế và lý thuyết CSDL | 0 | **25** (5 cấp) | theo tutorial DBMS; thẻ engine thứ tư (Q3, L322) |
+| **Tổng bài** | 38 kỹ năng + 20 nút có bài + 200 bài Engine | 43 kỹ năng + 21 nút có bài + 241 bài Engine (305 bài) | |
 
-Bảy tutorial trong phạm vi (gap map): SQL 122 chương, PostgreSQL 90, MySQL 186, SQLite 54, MongoDB 61, DynamoDB 38, DBMS 91. Mỗi dòng bên dưới ghi các điểm route (số chương trong gap map, dạng `sql#27`) mà bài phủ.
+Năm tutorial trong phạm vi sau Q7: SQL 122 chương, PostgreSQL 90, MongoDB 61, DynamoDB 38, DBMS 91. MySQL (186) và SQLite (54) **ra khỏi phạm vi**; các mã `mysql#`/`sqlite#`/`my#`/`lite#` còn trong bảng và phụ lục chỉ ghi chương mà một bài Postgres phủ kèm, không phải mục tiêu. Mỗi dòng bên dưới ghi các điểm route (số chương trong gap map, dạng `sql#27`) mà bài phủ.
 
 Luật đọc cột "Id": id có sẵn = **giữ** (nội dung lớn lên theo §2); `mới` = id mới, cộng thêm; không id nào bị đổi tên hay xóa (§3.2).
 
 ### 1.1 General · SQL (theo tutorial SQL, đọc trước, ghi sau)
 
-Tutorial SQL đi: Cơ bản → Database → Table (DDL) → Queries (CRUD) → Views → Toán tử và mệnh đề → Joins → Keys → Indexes → Nâng cao → Hàm. BoonData dạy người phân tích dữ liệu nên **giữ "đọc trước"** (quyết định của gap map, A1): DDL/CRUD về General ở Phần 9 (ghi dữ liệu), còn Database/Table/Keys/Views thuộc Engine PostgreSQL L1 (§1.3). Bên trong phần đọc, thứ tự theo đúng mục "Operators and Clauses" của tutorial: WHERE/TOP/DISTINCT/ORDER → GROUP BY/HAVING → LIKE/IN/CASE/NULL → (Joins) → ANY/ALL/EXISTS → UNION/INTERSECT/EXCEPT. Chỗ lệch: tập hợp (UNION…) đặt **sau** Joins và CTE vì 4 drill `full_join` dùng CTE (đã kiểm bằng script trên `sql.yml`). Có nên theo tutorial tuyệt đối (DDL/CRUD trước SELECT) là Q2.
+Tutorial SQL đi: Cơ bản → Database → Table (DDL) → Queries (CRUD) → Views → Toán tử và mệnh đề → Joins → Keys → Indexes → Nâng cao → Hàm. BoonData dạy người phân tích dữ liệu nên **giữ "đọc trước"** (quyết định của gap map, A1): DDL/CRUD về General ở Phần 9 (ghi dữ liệu), còn Database/Table/Keys/Views thuộc Engine PostgreSQL L1 (§1.3). Bên trong phần đọc, thứ tự theo đúng mục "Operators and Clauses" của tutorial: WHERE/TOP/DISTINCT/ORDER → GROUP BY/HAVING → LIKE/IN/CASE/NULL → (Joins) → ANY/ALL/EXISTS → UNION/INTERSECT/EXCEPT. Chỗ lệch: tập hợp (UNION…) đặt **sau** Joins và CTE vì 4 drill `full_join` dùng CTE (đã kiểm bằng script trên `sql.yml`). User chọn đọc trước (Q2, L321).
 
 | Phần | Tên | Kỹ năng (id; "cũ n" = Phần/chương cũ) | Điểm route chính | Ghi chú |
 |---|---|---|---|---|
@@ -119,11 +121,10 @@ Tutorial SQL đi: Cơ bản → Database → Table (DDL) → Queries (CRUD) → 
 | 9 | Ghi dữ liệu | `insert_select` **mới** (INSERT … SELECT, RETURNING, CREATE TABLE AS), `update_join` **mới** (UPDATE … FROM, DELETE … USING, xóa trùng), `upsert` **mới** (ON CONFLICT, MERGE) | sql#27, 29–32, 69, 70; pg#17–19, 31; mysql#48–55, 96, 97, 157, 176; sqlite#12, 18, 19; dbms#53 | = A1 gap map; cần bộ chấm "ghi rồi đọc" (§3.4) |
 | 10 | Hàm cửa sổ | `window_rank` (cũ 10), `window_lag` (cũ 10), `window_agg` (cũ 10) | (không có trong tutorial SQL; sql-core §9) | giữ vì là kỹ năng DA |
 | 11 | Index và hiệu năng | `explain_read` (cũ 11), `sargable` (cũ 11), `index_design` (cũ 11) | sql#78–84, 105; pg#79 | Phần có thanh hiệu năng dày nhất (§1.6) |
-| 12 | SQL ở hệ khác | nút `p1` Cú pháp và lệnh catalog (TOP/LIMIT, backtick, SHOW/DESCRIBE/PRAGMA ↔ `information_schema`), `p2` Kiểu, NULL và so sánh (IFNULL, GROUP BY trống cột, collation, GLOB), `p3` DDL, tự tăng, upsert khác nhau (AUTO_INCREMENT, INSERT IGNORE, REPLACE, ON DUPLICATE KEY), `p4` Giao dịch và isolation khác nhau | các chương cú pháp MySQL/SQLite, sql#39, 83–84 (clustered); mysql 186 → phần "covered" qua `mysql-sqlite-differences.md` | = A5; bài đọc **không chạy** (nhãn), 4 drill/nút **chạy trên PGlite**: sửa thói quen MySQL/T-SQL thành Postgres |
 
 Kiểm thứ tự tiên quyết (script trên `sql.yml` + `lessons.yml`, 2026-11-23): với bảng trên, chỉ **5 drill** dùng cấu trúc của Phần sau: `g-date-math-4` (JOIN), `g-coalesce-1` (JOIN), `g-string-fn-2` (IS NULL), `g-distinct-3` (JOIN), `g-cast-2` (JOIN). Viết lại lời giải/đề, **giữ id** (người đã qua drill vẫn được tính). Không bài nhanh nào vi phạm.
 
-Nâng cao: giữ `a1`–`a10`, `b1`–`b7`, `c1`–`c3`, `d1`–`d8`; thêm `a11` "Lấy mẫu ngẫu nhiên" (`ORDER BY random() LIMIT`, `TABLESAMPLE`; chấm hình dạng, không chấm dòng; mysql#177) = A4. Nút `a10` (hiệu năng sâu) link sang Engine PG L2/L4.
+Nâng cao: giữ `a1`–`a10`, `b1`–`b7`, `c1`–`c3`, `d1`–`d8`; thêm `a11` "Lấy mẫu ngẫu nhiên" (`ORDER BY random() LIMIT`, `TABLESAMPLE`; chấm hình dạng, không chấm dòng) = A4. Nút `a10` (hiệu năng sâu) link sang Engine PG L2/L4.
 
 ### 1.2 Thứ tự Engine: nguyên tắc
 
@@ -172,7 +173,7 @@ Năm lab gỡ lầm tưởng trên `wip/v25-nosql-content` (`e-dy-l2-13`, `e-dy-
 
 ### 1.5 Thiết kế và lý thuyết CSDL (25 bài, theo tutorial DBMS)
 
-Không có chỗ cho nội dung này hôm nay (dbms: 31 missing, 32 partial). Đề xuất là **thẻ engine thứ tư "Thiết kế CSDL"** (id `e-ds-l<n>-NN`, labs chạy trên `pgScriptRunner` như Postgres có `setup`) vì dùng lại nguyên khuôn bài Engine. Roadmap §4.1 luật 4 cấm "engine mới", nên đây là Q3; phương án thay thế ở §3.3.
+Không có chỗ cho nội dung này hôm nay (dbms: 31 missing, 32 partial). **Thẻ engine thứ tư "Thiết kế CSDL"** (id `e-ds-l<n>-NN`, labs chạy trên `pgScriptRunner` như Postgres có `setup`) vì dùng lại nguyên khuôn bài Engine. Điều này **phá** luật 4 của roadmap §4.1 ("không engine mới"); user chấp nhận (Q3), lý do ở L322: lý thuyết thiết kế không thuộc engine nào, và đặt nó vào Nâng cao cần cầu nối drill ↔ runner DB mới, tốn hơn nới `ENGINE_ID`.
 
 | Cấp | Tên | Bài (kind) | Điểm route dbms# |
 |---|---|---|---|
@@ -188,14 +189,14 @@ Phần lưu trữ và index của tutorial DBMS (dbms#58–69) **không** viết
 
 User: "Kiểu dữ liệu đang yếu: bảng phải có id đúng nghĩa và kiểu chọn kỹ, ở Engine và Lộ trình SQL. Domain thì id ít quan trọng hơn, nhưng dữ liệu domain cũng là chỗ bài sau dạy rằng kiểu chọn sai làm truy vấn chậm, thiếu index thì chậm. Thêm kiểm tra hiệu năng có chặn: đúng mà chậm là chưa đạt."
 
-Kiểm kê chi tiết bảng/kiểu/khóa/index của mọi schema là việc của `docs/team/schema-perf-v24.md` (agent khác, cùng worktree; **chưa có** lúc viết bản này). Mục này chỉ chốt phần Product: người học gặp dữ liệu gì, bài nào dựa vào lựa chọn kiểu/index, và chấm "chậm" thế nào.
+Kiểm kê chi tiết bảng/kiểu/khóa/index của mọi schema ở `docs/team/schema-perf-v24.md` (commit `2a13982`, đo chi phí 756 lời giải). Mục này chỉ chốt phần Product: người học gặp dữ liệu gì, bài nào dựa vào lựa chọn kiểu/index, và chấm "chậm" thế nào.
 
 #### a. Mô hình dữ liệu luyện tập theo track
 
 | Track | Dữ liệu người học gặp | Hôm nay (đọc từ nguồn) | Đích (Product) |
 |---|---|---|---|
-| General SQL (Phần 1–11, Nâng cao) | schema `lab` (`src/db/lab.sql`): chuỗi cửa hàng, ~15k dòng, 16 bảng | khóa `id int PRIMARY KEY` **gán tay** (không identity), thời điểm `timestamp` (không múi giờ), trạng thái/kênh là `text` không CHECK, tiền `int`/`bigint` VND, `props jsonb`; 3 index phụ (`orders(customer_id)`, `orders(order_date)`, `app_events(user_id, ts)`); `payments.order_id` không FK là **cố ý** (bài chất lượng dữ liệu) | mọi bảng có khóa chính đúng nghĩa (`bigint`/`int GENERATED BY DEFAULT AS IDENTITY`, giữ giá trị literal nên kết quả không đổi), cột trạng thái có CHECK, khóa ngoại hay join có index; chỗ "sai cố ý" ghi trong đầu file như hook hiện nay. Đổi `timestamp` → `timestamptz` đổi cách hiện giá trị: chỉ làm nếu schema-perf chứng minh mọi drill vẫn ra kết quả cũ (Q6) |
-| General Phần 9 (ghi) và Phần 11 (hiệu năng) | như trên, **cộng** một bảng lớn hơn cho bài hiệu năng | bảng lớn nhất ~vài nghìn dòng; 16 drill có `plan:` (12 trong `sql.yml` trên `orders`/`app_events`, 4 trong `adv.yml`) đã chấm đọc qua index | thêm một bảng sự kiện ≥ 50k dòng ở cuối `lab.sql` (khối mới, `setseed` riêng, rồi `ANALYZE`) để thanh chi phí có ý nghĩa; ghi dữ liệu chỉ trên các bảng **không** có thanh hiệu năng (§3.4) |
+| General SQL (Phần 1–11, Nâng cao) | schema `lab` (`src/db/lab.sql`): chuỗi cửa hàng, ~15k dòng, 16 bảng | khóa `id int PRIMARY KEY` **gán tay** (không identity), thời điểm `timestamp` (không múi giờ), trạng thái/kênh là `text` không CHECK, tiền `int`/`bigint` VND, `props jsonb`; 3 index phụ (`orders(customer_id)`, `orders(order_date)`, `app_events(user_id, ts)`); `payments.order_id` không FK là **cố ý** (bài chất lượng dữ liệu) | mọi bảng có khóa chính đúng nghĩa (`bigint`/`int GENERATED BY DEFAULT AS IDENTITY`, giữ giá trị literal nên kết quả không đổi), cột trạng thái có CHECK, khóa ngoại hay join có index; chỗ "sai cố ý" ghi trong đầu file như hook hiện nay. Thời điểm **giữ `timestamp`** (chuỗi cửa hàng một thành phố, giờ địa phương; `timestamptz` thêm `+00` khắp nơi): mặc định theo `schema-perf-v24.md` S10, xác nhận ở review (Q6); Engine L1-01 vẫn dạy `timestamptz` |
+| General Phần 9 (ghi) và Phần 11 (hiệu năng) | như trên, **cộng** một bảng lớn hơn cho bài hiệu năng | bảng lớn nhất ~vài nghìn dòng; 16 drill có `plan:` (12 trong `sql.yml` trên `orders`/`app_events`, 4 trong `adv.yml`) đã chấm đọc qua index | thêm `lab.events_big` (~25k dòng, identity, CHECK, index `(customer_id, ts)`, không index trên `kind`; khối mới cuối `lab.sql`, `setseed` riêng, rồi `ANALYZE`; chi tiết `schema-perf-v24.md` §2.1): bảng lớn nhất hôm nay chỉ 4,284 dòng / 28 trang, câu không sargable chỉ đắt ×1.9–2.3; ghi dữ liệu chỉ trên các bảng **không** có thanh hiệu năng (§3.4) |
 | Engine PostgreSQL | `setup` riêng mỗi bài, DB mới mỗi lần chạy (`pgScriptRunner`); bài không `setup` chạy trên `lab` | kiểu do từng bài chọn; L1 01–03 dạy chọn kiểu | luật nội dung: mọi bảng trong `setup` có khóa chính và kiểu đúng, trừ khi bài **dạy** cái sai (khi đó bài ghi rõ "bảng này sai cố ý"); `setup` của bài có thanh hiệu năng kết thúc bằng `ANALYZE` |
 | Engine MongoDB | dataset `shop`, `path`, collections inline | `_id` ObjectId/sinh lại mỗi lần chạy | giữ; kiểu ngày `{"$date"}` đúng kiểu, không chuỗi (bài `e-mg-l1-01` nói vì sao) |
 | Engine DynamoDB | `setup { tables, items }` | khóa thiết kế theo mẫu truy cập | giữ; đây là chỗ "khóa sai = Scan" (§b) |
@@ -214,29 +215,97 @@ Nguyên tắc: **không bao giờ dùng mili giây** (thời gian WASM dao độ
 
 | Engine | Đo bằng | Có sẵn | Thêm |
 |---|---|---|---|
-| PostgreSQL (General drill, Engine lab) | `EXPLAIN (FORMAT JSON)` không ANALYZE: loại nút và `Total Cost` gốc, chạy **cùng DB, cùng request** với lời giải | drill `plan: { index: t }` (12 drill); ch11 `lab: { table, ddl, max_cost_ratio }`; Engine `check: plan` (cùng dạng kế hoạch + cùng dòng) | trường `perf: { max_ratio: 1.5, no_seq_scan?: t }` cho drill và bước lab: kết quả đúng **và** cost(bài) ≤ max_ratio × cost(lời giải). Một kiểm, một luật cho cả hai khu |
+| PostgreSQL (General drill, Engine lab) | `EXPLAIN (FORMAT JSON)` không ANALYZE: loại nút và `Total Cost` gốc, chạy **cùng DB, cùng request** với lời giải | drill `plan: { index: t }` (12 drill); ch11 `lab: { table, ddl, max_cost_ratio }`; Engine `check: plan` (cùng dạng kế hoạch + cùng dòng) | `slowVerdict` (`schema-perf-v24.md` §5.2): **indexLost** (lời giải đọc bảng T qua index, bài Seq Scan T, T đủ lớn) **hoặc** cost(bài) > `perf.max_ratio` (mặc định 1.5) × cost(lời giải). Tỉ lệ một mình không đủ: planner đánh giá thấp `date_trunc`/`to_char`, câu không sargable có khi ra ×0.93 |
 | DynamoDB | `ScannedCount`, `ConsumedCapacity` thật của dynoxide | `noScan`, `maxScanned`, `maxRcu` (hôm nay chỉ làm câu trả lời "yếu") | bước có `perf` thì vượt ngưỡng = **chưa đạt** (đổi từ yếu sang chặn) |
 | MongoDB | mingo **không** có index hay explain | luật: `grade: esr`, `covered`, `match-first`; explain ghi sẵn có nhãn | thanh = luật (thứ tự khóa ESR, `$match` trước `$lookup/$unwind`, chỉ chiếu cột trong index), nhãn "Chấm theo quy tắc, không đo trên MongoDB thật"; không hứa con số |
 
-Người học thấy (chặn, nhưng dạy):
+Chặn ở đâu (Q5, L324): **chỉ** bước có `perf:` = General Phần 11 (và 4 drill nút `a10`) + bài Engine có thanh. Mọi drill/bước khác: ratio > 3 → **đạt yếu kèm ghi chú** của Boon (hai dòng kế hoạch, bẫy của kỹ năng), không chặn. Người học thấy ở bước chặn:
 
 - "Đúng kết quả, nhưng chậm: chi phí 1,240 so với lời giải 38 (gấp 33 lần). Nút tốn nhất: Seq Scan trên `events`." + cây kế hoạch (dùng lại `enginePredict`), + gợi ý trỏ về mục "Lỗi hay gặp" của bài.
 - Không vào `completed`, không XP, không tính lượt nộp sai cho drill (người học đã đúng logic); bước capstone không qua.
 - Drill đã qua trước khi có thanh: **giữ** trong `completed` (không chấm lại quá khứ).
 
-Ai có thanh (mỗi chỗ phải có ≥ 1 câu "đúng nhưng chậm" trong nội dung, trường `slow:`, mà test chứng minh **trượt**, và lời giải **qua**: như `tests/planCheck.test.ts`):
+Ai có thanh hoặc ghi chú (mỗi chỗ phải có ≥ 1 câu "đúng nhưng chậm" trong nội dung, trường `slow:`, mà test chứng minh **trượt**, và lời giải **qua**: như `tests/planCheck.test.ts`):
 
 | Chỗ | Bài / drill | Câu chậm điển hình |
 |---|---|---|
-| General Phần 3 | `cast` drill trap/review | `WHERE id::text = '42'`, so cột `int` với chuỗi |
-| General Phần 3 | `date_math`, `date_bucket` 1 drill mỗi kỹ năng | `WHERE date_trunc('month', order_date) = …` thay cho khoảng ngày |
-| General Phần 2, 5, 6, 7 | `distinct`, `correlated_value`, `distinct_on`, `exists` 1 drill mỗi kỹ năng | DISTINCT sau join nhân dòng; subquery tương quan theo từng dòng; NOT IN thay NOT EXISTS |
-| General Phần 11 | 12 drill `plan:` có sẵn (+ 4 drill nút `a10`) + `perf` | hàm trên cột, OR thay IN, index sai thứ tự cột |
-| Engine PG | L1 09–11, **13** (đổi kiểu), **17** (kiểu sai); L2 index labs; L4 01–08; capstone L1–L5 mỗi bài ≥ 1 bước | |
-| Engine Dynamo | L1 08–10, L2 02, L3 03–06, capstone L1–L4 | Scan + filter thay Query; GSI sai khóa |
-| Engine Mongo | L3 05, 08, 09, 12, capstone L2 | thứ tự khóa sai ESR; `$lookup` trước `$match` |
+| General Phần 3 (ghi chú) | `cast` drill trap/review | `WHERE id::text = '42'`, so cột `int` với chuỗi |
+| General Phần 3 (ghi chú) | `date_math`, `date_bucket` 1 drill mỗi kỹ năng | `WHERE date_trunc('month', order_date) = …` thay cho khoảng ngày |
+| General Phần 2, 5, 6, 7 (ghi chú) | `distinct`, `correlated_value`, `distinct_on`, `exists` 1 drill mỗi kỹ năng | DISTINCT sau join nhân dòng; subquery tương quan theo từng dòng; NOT IN thay NOT EXISTS |
+| General Phần 11 (**chặn**) | 12 drill `plan:` có sẵn (+ 4 drill nút `a10`) + `perf` | hàm trên cột, OR thay IN, index sai thứ tự cột |
+| Engine PG (**chặn**) | L1 09–11, **13** (đổi kiểu), **17** (kiểu sai); L2 index labs; L4 01–08; capstone L1–L5 mỗi bài ≥ 1 bước | |
+| Engine Dynamo (**chặn**) | L1 08–10, L2 02, L3 03–06, capstone L1–L4 | Scan + filter thay Query; GSI sai khóa |
+| Engine Mongo (**chặn**, theo luật) | L3 05, 08, 09, 12, capstone L2 | thứ tự khóa sai ESR; `$lookup` trước `$match` |
 
 Bảng nhỏ: planner có thể chọn Seq Scan bất kể index. Thanh chỉ đặt trên bảng mà test chứng minh lời giải đọc qua index và câu chậm trượt; nếu không chứng minh được thì bài không có thanh.
+
+### 1.7 Đo kỹ năng và huy hiệu thay chứng nhận (Q4, quyết định Product, L323)
+
+User: "Không cần chứng nhận, có thể bỏ hẳn. Làm huy hiệu hoặc thứ đo kỹ năng hiện tại của người học, vì chứng nhận vô giá trị. Product quyết."
+
+**Quyết định.** Bỏ hẳn chứng nhận (`certificateSvg`, `PAPER`, `inlineSprite`, khóa `cert.*` trong `src/i18n/me.ts`, thẻ "Chứng nhận" trên `#/me`). Thay bằng hai thứ, cả hai **suy ra** từ Save + pref sẵn có, **không** trường Save mới, không bump:
+
+1. **Bản đồ kỹ năng** (đo mức *hiện tại*, có thể tụt khi lâu không ôn);
+2. **Huy hiệu** (mốc rõ ràng, tính lại mỗi lần vẽ từ mức hiện tại).
+
+Lý do: chứng nhận là ảnh tự in, không chứng minh gì và chỉ nói "đã từng xong". Mức đo từ lần ôn gần nhất nói đúng điều người học cần biết: hôm nay mình làm được gì, cái gì sắp quên.
+
+#### Mô hình mức (thuần, `src/mastery.ts`, chạy trong bundle chính, không cần chunk General)
+
+Mỗi **kỹ năng SQL** (43) có mức 0–4. Bằng chứng, chỉ từ dữ liệu đã có:
+
+| Bằng chứng | Nguồn |
+|---|---|
+| drill đã qua và loại của nó (`faded`, `open`, `trap`, `review`, nhận từ hậu tố `-1..4` theo luật 4 drill/kỹ năng) | `save.completed` (`g-<skill>-n`) |
+| việc domain dạy kỹ năng đó, đánh giá thăng tiến đã qua | `save.completed`, `learnedSkills` |
+| thẻ ôn Leitner: hộp 1–5 và ngày đến hạn | `save.review[skill]` |
+| drill có thanh hiệu năng đã qua (chỉ Phần 11 chặn, nên qua = đã nhanh) | `save.completed` + danh sách id `perf` (tĩnh, sinh lúc build) |
+
+| Mức | Tên (VI / EN) | Điều kiện |
+|---|---|---|
+| 0 | Chưa học / Not started | không có bằng chứng |
+| 1 | Đã gặp / Met | 1 drill qua, hoặc một việc domain *dùng* kỹ năng đã xong |
+| 2 | Làm được / Can do | `knownSkills` hôm nay (≥ 2 drill, hoặc việc dạy nó, hoặc có thẻ ôn) |
+| 3 | Vững / Solid | mức 2 + drill `trap` đã qua + thẻ ôn hộp ≥ 3 (đã nhớ lại đúng qua ≥ 2 khoảng ôn) |
+| 4 | Thành thạo / Fluent | mức 3 + đủ 4 drill + hộp ≥ 4 + (kỹ năng Phần 11) drill có thanh đã qua |
+
+**Tụt mức (decay):** thẻ ôn quá hạn hơn một khoảng của hộp nó (`today − due > INTERVALS[box−1]`, ngày thật của máy như Leitner hiện nay) thì mức hiển thị trừ 1 và kèm nhãn "Cần ôn", link vào hàng ôn hôm nay. Ôn đúng là lên lại; ôn sai thì hộp tụt theo luật Leitner có sẵn, mức tụt theo. Không lưu gì thêm.
+
+**Engine** không có thẻ ôn, nên đo theo **mô-đun**: "Chưa mở / Đang học k/n / Xong" (xong = mọi bài chấm được của mô-đun trong `completed`; bước không chấm được không tính, như L298). Cấp "Xong" = mọi mô-đun xong + capstone. Không tụt (không có ôn); ghi rõ trên trang.
+
+**Domain** (ngoài phạm vi route, nhưng mất chứng nhận domain): bậc nghề `rankOf()` đã là thước đo, giữ như hôm nay.
+
+#### Hiện ở đâu
+
+- **`#/me` thẻ "Bản đồ kỹ năng"** (thay thẻ Chứng nhận): 11 Phần theo `route.yml`, mỗi kỹ năng một hàng = icon kỹ năng + tên + 4 chấm mức (chữ mức đọc được cho trình đọc màn hình, không chỉ màu) + "Cần ôn" nếu có; dưới là Engine: mỗi engine một dòng L1–L5 với k/n mô-đun. Một nút "Ôn những kỹ năng cần ôn" (= `startToday`). Câu đầu thẻ: "Đo trên máy này từ bài bạn đã làm và lần ôn gần nhất. Không xác minh, không phải chứng chỉ."
+- **Trang kỹ năng `#/learn/skill/<id>`:** dòng "Mức của bạn: Vững · ôn tiếp ngày …" và **một** việc để lên mức kế ("Qua drill bẫy để lên Vững").
+- **Trang Phần `#/learn/sql/<n>`:** mỗi hàng kỹ năng có chấm mức (thay ✓ hiện nay; ✓ = mức ≥ 2 vẫn giữ nghĩa cũ).
+- Không thêm gì lên Trang chủ hay top bar (đã có nút Ôn).
+
+#### Huy hiệu
+
+Mỗi huy hiệu = một câu điều kiện đọc được, tính lại mỗi lần vẽ; mất được (khi mức tụt), lấy lại được. Không ngày đạt (Save không có), không điểm, không xếp hạng.
+
+| Huy hiệu | Điều kiện | Số |
+|---|---|---|
+| "Phần n vững" | mọi kỹ năng của Phần n ở mức ≥ 3, không kỹ năng nào "Cần ôn" | 11 |
+| "Đúng và nhanh" | mọi drill có thanh của Phần 11 đã qua | 1 |
+| "SQL nền tảng" | 38 kỹ năng nền ở mức ≥ 2 (= điều kiện chứng nhận General cũ) | 1 |
+| "<Engine> Lk" | cấp k của engine "Xong" (PostgreSQL, MongoDB, DynamoDB, Thiết kế CSDL × L1–L5) | 20 |
+| "Lộ trình NoSQL" | mọi phần của `#/engine/mongodb/path` qua | 1 |
+| "<Domain>: <bậc cuối>" | đánh giá thăng tiến cuối của domain đã qua (= điều kiện chứng nhận domain cũ), ghi "công ty hư cấu" | 3 |
+
+Tổng 37. Vẽ bằng icon pipeline sẵn có (`icons.ts`, một glyph mỗi nhóm, màu accent; chưa đạt = viền xám + câu điều kiện), không ảnh tải về. Portfolio Markdown thêm mục "Mức kỹ năng hiện tại (tự đo, không xác minh)": bảng kỹ năng ≥ 2 và huy hiệu đang có.
+
+#### Portfolio và tên
+
+Portfolio (I6) hôm nay "mở cùng chứng nhận". Đổi: mở khi domain có ≥ 1 việc đã chấm (`save.graded`), không cần qua đánh giá cuối; nội dung giữ nguyên luật cũ (chỉ SQL đã chấm, chữ "hư cấu/not verified"). Pref `cargo-query/me-name` giữ (portfolio dùng).
+
+#### Người đã có chứng nhận
+
+Chứng nhận chưa bao giờ nằm trong Save (vẽ lúc bấm), nên không có gì để chuyển. Ai đạt điều kiện cũ thấy ngay huy hiệu tương ứng ("SQL nền tảng", "<Domain>: <bậc cuối>"): cùng điều kiện, không ai mất sự ghi nhận. File PNG/SVG đã tải về vẫn là của họ. Một dòng `text-caption` trong thẻ Huy hiệu (không pref, không popup): "Chứng nhận đã được thay bằng huy hiệu đo mức hiện tại." Tests: bỏ test chứng nhận, thêm `tests/mastery.test.ts` (thuần) và cập nhật `axeProgress` cho `#/me`.
+
+Lát: **R0** (v24), vì cần `route.yml` cho Phần; mức 4 của Phần 11 và huy hiệu "Đúng và nhanh" tự đúng khi drill có thanh ra ở R2. Ngân sách: chunk `me` nhỏ đi (bỏ SVG chứng nhận), `mastery.ts` trong main < 2 KB gz.
 
 ---
 
@@ -245,8 +314,8 @@ Bảng nhỏ: planner có thể chọn Seq Scan bất kể index. Thanh chỉ đ
 ### 3.1 Ràng buộc kỹ thuật quyết định cách chuyển
 
 1. **Phần của General = chương Logistics.** `skills.yml` `chapter:` vừa là chương ticket grant kỹ năng (mỗi kỹ năng đúng một ticket), vừa là "Phần n" (`moduleTitle` đọc `chapters.yml` `module:`), vừa là đơn vị của `placementItems` và `#/learn/sql/<n>`. Đổi `chapter:` sẽ đổi domain (ngoài phạm vi). → Thêm **một file thứ tự riêng cho General**: `content/general/route.yml` (`- { n, title {vi,en}, skills: [...], nodes: [...] }`), là nguồn duy nhất cho Phần trên `#/learn`, kiểm tra đầu vào và danh sách Luyện SQL. `skills.yml` `chapter:` giữ nghĩa domain. Link "Phần n" từ dòng chương Logistics (`ui/homeView.ts`) đổi thành link tới trang kỹ năng đầu tiên của chương.
-2. **Kỹ năng mới không có ticket domain.** `tests/noDeadEnds.test.ts` đòi mỗi kỹ năng có "một chương dùng nó"; Lily lớn theo `knownSkills` của Logistics (`STAGE_AT`, giai đoạn 5 = "25+ hoặc mọi kỹ năng"); chứng chỉ General = "mọi kỹ năng trong `skills.yml`". → 5 kỹ năng mới vào **file riêng** `content/general/skills-general.yml` (cùng khuôn), không vào `skills.yml`: Lily, chứng chỉ, domain không đổi. Bẫy: `parseSave` chỉ giữ thẻ ôn (`review`) có khóa trong `Known.skills`, mà `main.ts` dựng `Known.skills` từ `SKILLS` (`skills.yml`) lúc boot; nếu file mới chỉ nằm trong chunk lazy thì thẻ ôn của 5 kỹ năng mới **mất khi tải lại**. Cách: danh sách id kỹ năng chỉ-General (5 chuỗi) đi vào bundle chính và vào `Known.skills` (test: fixture có thẻ ôn `upsert` đọc lại còn nguyên); luật noDeadEnds thêm nhánh "kỹ năng chỉ General: có bài + 4 drill + một Phần". Người đã có chứng chỉ General **giữ** nó (chứng chỉ vẫn tính 38 kỹ năng nền); 5 kỹ năng mới hiện thành dòng "Mở rộng" trên `#/me` (Q4).
-3. **Id đóng.** `DRILL_ID = /^g-[a-z0-9-]+$/` nhận mọi drill mới (`g-cross-join-1`, `g-p1-1`, `g-a11-1`). `ENGINE_ID = /^e-(pg|mg|dy)-…/` không nhận `e-ds-`: track thiết kế cần sửa regex + `EngineId` + route + thẻ (nếu Q3 = có).
+2. **Kỹ năng mới không có ticket domain.** `tests/noDeadEnds.test.ts` đòi mỗi kỹ năng có "một chương dùng nó"; Lily lớn theo `knownSkills` của Logistics (`STAGE_AT`, giai đoạn 5 = "25+ hoặc mọi kỹ năng"); chứng chỉ General = "mọi kỹ năng trong `skills.yml`". → 5 kỹ năng mới vào **file riêng** `content/general/skills-general.yml` (cùng khuôn), không vào `skills.yml`: Lily, chứng chỉ, domain không đổi. Bẫy: `parseSave` chỉ giữ thẻ ôn (`review`) có khóa trong `Known.skills`, mà `main.ts` dựng `Known.skills` từ `SKILLS` (`skills.yml`) lúc boot; nếu file mới chỉ nằm trong chunk lazy thì thẻ ôn của 5 kỹ năng mới **mất khi tải lại**. Cách: danh sách id kỹ năng chỉ-General (5 chuỗi) đi vào bundle chính và vào `Known.skills` (test: fixture có thẻ ôn `upsert` đọc lại còn nguyên); luật noDeadEnds thêm nhánh "kỹ năng chỉ General: có bài + 4 drill + một Phần". Chứng nhận bị bỏ (Q4, §1.7), nên kỹ năng mới không làm ai mất gì.
+3. **Id đóng.** `DRILL_ID = /^g-[a-z0-9-]+$/` nhận mọi drill mới (`g-cross-join-1`, `g-a11-1`). `ENGINE_ID = /^e-(pg|mg|dy)-…/` không nhận `e-ds-`: track thiết kế sửa thành `/^e-(pg|mg|dy|ds)-…/` + `EngineId` + route + thẻ (Q3, L322).
 4. **Ngân sách.** `lessons` 35 KB (thẻ nhanh, giữ), `generalAdv` 46/50, `engineLesson` 8 KB mỗi file. Bài đầy đủ General và nút `adv` chuyển sang **một chunk mỗi bài** (cùng cơ chế `?fm` + check-budget `'each'`), nên độ dài §2.2 không đẩy chunk nào quá 8 KB gz; bài Engine ở độ dài đích (VI + EN, gấp ~3 lần chữ hôm nay) ước 6–9 KB gzip so với ngân sách 8 KB mỗi file: nâng `engineLesson` lên 12 KB mỗi file (chỉ tải khi mở bài, không ảnh hưởng boot) hoặc tách mục 6 + ví dụ phụ ra chunk kèm; đo ở lát R3 trên 5 bài mẫu trước khi viết hàng loạt.
 5. **Seed bị ghim.** `lab.sql` có md5 trong `tests/lab.test.ts`, snapshot có `__SEED_HASH__`. Mọi đổi kiểu/khóa/index của `lab` là **một lát riêng** (R0b), chạy lại toàn bộ test General và chụp lại chi phí kế hoạch.
 
@@ -261,17 +330,17 @@ Bảng nhỏ: planner có thể chọn Seq Scan bất kể index. Thanh chỉ đ
 | 38 kỹ năng, Phần = chương | cùng 38 id, Phần theo `route.yml` (§1.1) | cùng dấu ✓; huy hiệu Phần tính lại theo nhóm mới |
 | 152 drill `g-<skill>-1..4` | giữ; 5 drill viết lại nội dung (§1.1) | drill đã qua vẫn ✓ |
 | `lessons.yml` thẻ nhanh | giữ, là "tóm tắt" | bài đầy đủ mới ở trang kỹ năng |
-| 28 nút `a1`…`d8` | giữ, thêm `a11`, `p1`–`p4` | |
+| 28 nút `a1`…`d8` | giữ, thêm `a11` | |
 | 200 bài Engine | giữ id; `module:` đổi ở PG L1 (`ddl`, `write`, `schemas`), bài `e-pg-l1-06`, `e-mg-l1-01` mở rộng | |
 | `#/learn/sql/<n>` đã đánh dấu | trỏ Phần n **mới** (nội dung khác) | chấp nhận; route nhớ chỉ lưu id trang, không lưu n |
-| Chứng chỉ General | giữ (38 kỹ năng) | |
+| Chứng nhận (domain, General) | bỏ; thay bằng bản đồ kỹ năng + huy hiệu đo mức hiện tại (§1.7) | §1.7 "người đã có chứng nhận" |
 
 ### 3.3 Gộp và bỏ
 
 - **Gộp:** B6 vào `e-pg-l1-06`; C1 vào `e-mg-l1-01`; INTERSECT vào `except`; RIGHT JOIN vào `left_join`; DELETE … USING và xóa trùng vào `update_join`; CREATE TABLE AS / SELECT INTO vào `insert_select` (General) và `e-pg-l1-14` (Engine); "Delete table" Dynamo vào C5.
-- **Không làm thành bài riêng:** A4 (lấy mẫu) thành nút `a11` thay vì kỹ năng; MySQL/SQLite thành Phần 12 đọc + mục 6 trong từng bài, **không** có runtime MySQL/SQLite.
+- **Không làm thành bài riêng:** A4 (lấy mẫu) thành nút `a11` thay vì kỹ năng; MySQL/SQLite (Q7): không Phần, không bài đọc, không runtime; chỉ một dòng bẫy trong mục 5 khi cần.
 - **Bỏ khỏi route (n/a, giữ như gap map):** cài đặt, môi trường, GUI, driver (Java/PHP/Perl/Python/C), hosting RDS, 29 sản phẩm khác, tính năng đã bỏ (map-reduce, Data Pipeline).
-- **Phương án nếu Q3 = không có engine thứ tư:** track thiết kế thành nhóm nút `e1`–`e5` trong Nâng cao (drill `g-e1-…`), bài lý thuyết là `quiz`; lab chuẩn hóa cần DDL nên phải chạy trên runner DB mới (`pgScriptRunner`) → cần cầu nối drill ↔ runner, tốn hơn sửa `ENGINE_ID`.
+- **Bỏ (quyết định user):** Phần 12 "SQL ở hệ khác" và nút `p1`–`p4` (Q7); mục 6 "Ở hệ khác" của giải phẫu; chứng nhận và ảnh chứng nhận (Q4).
 - **Không có ngõ cụt:** `tests/noDeadEnds.test.ts` mở rộng: mọi Phần trong `route.yml` có ≥ 1 kỹ năng/nút; mọi kỹ năng chỉ-General có bài đầy đủ + 4 drill; mọi bài `runtime: docs` có quiz để xong; không chữ "sắp có"/"later".
 
 ### 3.4 Hạ tầng cần (code, ghi để ước lượng; tài liệu này không làm)
@@ -280,40 +349,41 @@ Bảng nhỏ: planner có thể chọn Seq Scan bất kể index. Thanh chỉ đ
 |---|---|---|
 | `content/general/route.yml` + đọc Phần từ đó (`learnView`, `placementItems`, `#/learn/sql/<n>`) | `src/learn.ts`, `ui/learnView.ts`, `progress.ts` | R0 |
 | `skills-general.yml` + luật noDeadEnds/i18n/icons cho kỹ năng chỉ-General; id của chúng vào `Known.skills` lúc boot | `src/general.ts`, `src/main.ts`, `src/save.ts`, tests | R0 |
-| Bài đầy đủ General/nút: file `.md` mỗi bài, chunk mỗi bài, test giải phẫu (đủ 9 mục, ≥ 3 ví dụ chạy, ≥ 2 bẫy chạy, ≥ 2 câu hỏi) | `src/generalLessonSources.ts`, `tests/` | R0 |
+| Bài đầy đủ General/nút: file `.md` mỗi bài, chunk mỗi bài, test giải phẫu (đủ 8 mục, ≥ 3 ví dụ chạy, ≥ 2 bẫy chạy, ≥ 2 câu hỏi) | `src/generalLessonSources.ts`, `tests/` | R0 |
 | `perf:` cho drill và bước lab Postgres (một hàm trong `planCheck.ts`), trường `slow:` + test | `src/planCheck.ts`, `work.ts`, `engine/pglab` | R0 |
 | Dynamo `noScan`/`maxScanned`/`maxRcu` chặn khi bước có `perf` | `src/engine/dynamo/grade.ts` | R5 |
+| Bỏ chứng nhận; bản đồ kỹ năng + huy hiệu (§1.7) | `src/me.ts`, `src/ui/meView.ts`, `src/i18n/me.ts`, mới `src/mastery.ts` (thuần) | R0 |
 | Drill ghi: chạy câu của người học rồi câu `after:` (đọc bảng) trong cùng `BEGIN … ROLLBACK`, so với lời giải theo cùng cách; chỉ ghi lên bảng không có thanh hiệu năng | `src/db/run.ts`, `src/grader.ts`, `src/general.ts` | R2 |
-| `ENGINE_ID`/`EngineId` thêm `ds` (nếu Q3) | `src/save.ts`, `src/engine/*`, `src/route.ts` | R4 |
+| `ENGINE_ID`/`EngineId` thêm `ds` | `src/save.ts`, `src/engine/*`, `src/route.ts` | R4 |
 | Kiểu/khóa/index của `lab` + bảng lớn | `src/db/lab.sql` (theo `schema-perf-v24.md`) | R0b |
 
 ---
 
 ## 4. Lát phát hành và tiêu chí thoát
 
-Đánh số R0…R6 (route slice). Mỗi lát phát hành được một mình; thứ tự theo giá trị cho người học và phụ thuộc. Ghép vào version nào (thay roadmap v24–v30, xen kẽ, hay sau v30) là Q1.
+Đánh số R0…R6 (route slice). Mỗi lát phát hành được một mình; thứ tự theo giá trị cho người học và phụ thuộc. User chọn **xen kẽ** (Q1, L320): mỗi version của roadmap mang thêm một lát (cột "Version"); luồng R (sửa review) vẫn đi trước mọi việc mới.
 
-| Lát | Nội dung | Phụ thuộc |
-|---|---|---|
-| **R0** Hạ tầng route | `route.yml` (thứ tự Phần mới, 5 drill viết lại), `skills-general.yml` (rỗng), chunk bài đầy đủ + test giải phẫu, `perf:` + `slow:` cho Postgres | — |
-| **R0b** Dữ liệu `lab` | khóa/kiểu/CHECK/index theo `schema-perf-v24.md`, bảng sự kiện ≥ 50k, `ANALYZE` | R0 (test `perf`) |
-| **R1** SQL Phần 1–8 đầy đủ | 34 bài đầy đủ (gồm `cross_join`, `any_all` mới + 8 drill), thanh hiệu năng Phần 2–7 | R0, R0b |
-| **R2** Ghi dữ liệu + Phần 10–11 | Phần 9 (3 kỹ năng, 12 drill, bộ chấm ghi-rồi-đọc), 6 bài đầy đủ Phần 10–11 (9 bài đầy đủ trong lát), thanh Phần 11 | R1 |
-| **R3** PostgreSQL L1–L2 theo tutorial | 12 bài mới (L1 13–17, L2 18–24), mở rộng `e-pg-l1-06`, giải phẫu §2.2 cho 41 bài L1–L2, thanh hiệu năng L1–L2 | R0 |
-| **R4** SQL ở hệ khác + thiết kế CSDL | Phần 12 (`p1`–`p4`, 16 drill), `a11`, mục "Ở hệ khác" trong các bài đã đầy đủ; track thiết kế 25 bài (hoặc nhóm nút, theo Q3) | R1, R3 |
-| **R5** MongoDB/DynamoDB lấp lỗ | 4 bài mới + `e-mg-l1-01` mở rộng, Dynamo `perf` chặn, thanh luật Mongo; nên đi cùng roadmap v25/v26 | R0 |
-| **R6** Giải phẫu L3–L5 | 51 bài PG + Mongo/Dynamo L3–L5 tách "Cú pháp"/"Lỗi hay gặp"; thanh hiệu năng mọi capstone | R3, R5 |
+| Lát | Nội dung | Phụ thuộc | Version |
+|---|---|---|---|
+| **R0** Hạ tầng route | `route.yml` (thứ tự Phần mới, 5 drill viết lại), `skills-general.yml` (rỗng), chunk bài đầy đủ + test giải phẫu, `perf:` + `slow:` + `slowVerdict` cho Postgres; **bỏ chứng nhận, thêm bản đồ kỹ năng + huy hiệu** (§1.7) | — | v24 |
+| **R0b** Dữ liệu `lab` | khóa/kiểu/CHECK/index theo `schema-perf-v24.md`, `events_big` ~25k, `ANALYZE`; giữ `timestamp` | R0 (test `perf`) | v24 |
+| **R1** SQL Phần 1–8 đầy đủ | 34 bài đầy đủ (gồm `cross_join`, `any_all` mới + 8 drill), thanh hiệu năng Phần 2–7 | R0, R0b | v25 |
+| **R2** Ghi dữ liệu + Phần 10–11 | Phần 9 (3 kỹ năng, 12 drill, bộ chấm ghi-rồi-đọc), 6 bài đầy đủ Phần 10–11 (9 bài đầy đủ trong lát), thanh Phần 11 | R1 | v26 |
+| **R3** PostgreSQL L1–L2 theo tutorial | 12 bài mới (L1 13–17, L2 18–24), mở rộng `e-pg-l1-06`, giải phẫu §2.2 cho 41 bài L1–L2, thanh hiệu năng L1–L2 | R0 | v27 |
+| **R4** Thiết kế CSDL | thẻ thứ tư, 25 bài, `ENGINE_ID` thêm `ds`; nút `a11` | R1, R3 | v28 |
+| **R5** MongoDB/DynamoDB lấp lỗ | 4 bài mới + `e-mg-l1-01` mở rộng, Dynamo `perf` chặn, thanh luật Mongo; nên đi cùng roadmap v25/v26 | R0 | v25 (Mongo) + v26 (Dynamo) |
+| **R6** Giải phẫu L3–L5 | 51 bài PG + Mongo/Dynamo L3–L5 tách "Cú pháp"/"Lỗi hay gặp"; thanh hiệu năng mọi capstone | R3, R5 | v29 |
 
 Tiêu chí thoát (mỗi dòng là một lệnh hoặc một con số; cộng thêm cổng chung của mọi version: `tsc` 0 lỗi, `npm test`, build, `check-budget`, smoke, `ux-audit` 0 serious, e2e phần liên quan, `review-<lát>.md`):
 
 | Lát | Thoát khi |
 |---|---|
-| R0 | `route.yml` có 11 Phần kỹ năng; test thứ tự tiên quyết: 0 drill/bài dùng cấu trúc của Phần sau (script §1.1 thành test); mọi id trong Save fixture v1–v5 vẫn đọc được, `knownSkills` của `save-v5.json` không đổi; ≥ 1 drill có `perf` + `slow:` trượt/qua trong test |
+| R0 | `route.yml` có 11 Phần kỹ năng; test thứ tự tiên quyết: 0 drill/bài dùng cấu trúc của Phần sau (script §1.1 thành test); mọi id trong Save fixture v1–v5 vẫn đọc được, `knownSkills` của `save-v5.json` không đổi; ≥ 1 drill có `perf` + `slow:` trượt/qua trong test; `#/me` không còn chứng nhận; test thuần `mastery`: `save-v5.json` cho đúng mức từng kỹ năng, thẻ quá hạn hạ mức, cùng Save → cùng huy hiệu |
 | R0b | md5 `lab` ghim lại; **0** thay đổi kết quả (so trước/sau) của mọi thứ chạy trên `lab`: 152 drill kỹ năng + drill và challenge của 20 nút, 38 bài nhanh (ví dụ, lỗi, Thử ngay), `interview.yml` (25 câu + 5 take-home), mọi bài Engine PostgreSQL **không** `setup`, starter của Thử ngay; 16 drill `plan:` vẫn qua; seed `lab` trong Node ≤ 1.5× hiện tại |
 | R1 | 34/34 bài Phần 1–8 qua test giải phẫu; ≥ 102 ví dụ chạy ra dòng; mỗi thanh hiệu năng có câu `slow:` trượt; gap map chạy lại: sql "partial/missing" của Phần 1–8 (sql#48, 64–66, 71) = 0 |
 | R2 | 12 drill ghi qua trên lời giải, trượt trên `wrong:`; sau 50 drill ghi liên tiếp, mọi drill `perf` vẫn qua (thử bằng test một phiên); gap map: sql#27, 29–32, 69, 70 và pg#17–19, 31 = covered |
-| R3 | e2e `E2E_ONLY=engine` giải mọi bài L1–L2 bằng lời giải; gap map pg missing = 0 (pg#32, 75, 76, 78, 85, 86) và pg partial "Role & Permission"/"Functions" = 0; mysql triggers/procedures (mysql#104–113, 160–163, 171) = covered |
-| R4 | gap map dbms missing 31 → 0, partial 32 → ≤ 8 (chỉ link sang PG L3–L5); mysql missing ≤ 1; mỗi mục "Ở hệ khác" có nguồn chính thức và nhãn không chạy |
+| R3 | e2e `E2E_ONLY=engine` giải mọi bài L1–L2 bằng lời giải; gap map pg missing = 0 (pg#32, 75, 76, 78, 85, 86) và pg partial "Role & Permission"/"Functions" = 0; (MySQL không còn là mục tiêu, Q7) |
+| R4 | gap map dbms missing 31 → 0, partial 32 → ≤ 8 (chỉ link sang PG L3–L5); 25/25 bài `e-ds-` qua test giải phẫu; Save fixture có id `e-ds-…` đọc lại còn nguyên |
 | R5 | gap map mongodb missing 2 → 0, dynamodb partial 7 → ≤ 2; mỗi bước Dynamo có `perf` trượt với câu Scan tương ứng |
 | R6 | 100% bài Engine qua test giải phẫu (tập con theo `kind`); mỗi capstone có ≥ 1 bước thanh hiệu năng với câu `slow:` trượt |
 
@@ -321,17 +391,19 @@ Chỉ số theo dõi sau phát hành (pref `cargo-query/attempts`, chỉ mã và
 
 ---
 
-## 5. Câu hỏi cho user
+## 5. Câu hỏi cho user: đã trả lời (2026-11-23)
 
-| # | Câu hỏi | Khuyến nghị | Nếu không trả lời |
-|---|---|---|---|
-| Q1 | Lộ trình này **thay** kế hoạch v24–v30 (Best Practice, Mongo/Dynamo đủ, thuật ngữ, so sánh), **xen kẽ** (mỗi version một lát R), hay làm **sau v30**? `wip/v24-best` đang chờ gộp | Xen kẽ: v24 = Best Practice (gần xong) + R0; v25 = R1 + R5 phần Mongo; … | Xen kẽ |
-| Q2 | Thứ tự General theo tutorial **tuyệt đối** (tạo bảng, INSERT/UPDATE/DELETE trước SELECT) hay **đọc trước, ghi sau** như §1.1? | Đọc trước: người học DA cần SELECT ngay, và drill ghi cần bộ chấm mới | Đọc trước |
-| Q3 | Thiết kế và lý thuyết CSDL là **thẻ engine thứ tư** (`e-ds-`, phá luật "không engine mới" của roadmap) hay **nhóm nút Nâng cao**? | Thẻ thứ tư | Nhóm nút Nâng cao (giữ luật roadmap) |
-| Q4 | 5 kỹ năng SQL mới có tính vào chứng chỉ General không? (Tính = người đã có chứng chỉ thấy nó "chưa đủ" tới khi học thêm) | Không: chứng chỉ giữ 38 kỹ năng nền, thêm dòng "Mở rộng" | Không |
-| Q5 | "Đúng mà chậm" chặn **mọi** drill có thanh, hay chỉ ở Phần 11 / Engine, còn Phần 2–7 chỉ nhắc (không chặn)? | Chặn mọi chỗ có thanh (đúng lời user), nhưng chỉ đặt thanh nơi test chứng minh được | Chặn mọi chỗ có thanh |
-| Q6 | Đổi `timestamp` → `timestamptz` trong `lab` (đúng kiểu hơn, nhưng đổi cách hiện giá trị và có thể đổi kết quả drill)? | Chờ `schema-perf-v24.md` đo; chỉ đổi nếu 0 kết quả drill đổi | Không đổi |
-| Q7 | MySQL/SQLite chỉ ở dạng đọc (không runtime) có đủ, hay muốn chạy thật SQLite (sql.js/wasm, ~1 MB, ngân sách mới)? | Chỉ đọc + drill sửa thói quen trên PGlite | Chỉ đọc |
+| # | Câu hỏi | Trả lời | Hệ quả trong tài liệu | Dòng log |
+|---|---|---|---|---|
+| Q1 | Thay, xen kẽ hay sau roadmap v24–v30? | Xen kẽ | cột "Version" ở §4 | L320 |
+| Q2 | Theo tutorial tuyệt đối hay đọc trước, ghi sau? | Đọc trước, ghi sau | §1.1 giữ thứ tự | L321 |
+| Q3 | Thiết kế/DBMS: thẻ engine thứ tư hay nút Nâng cao? | Thẻ thứ tư, nới `ENGINE_ID`, ghi lý do phá luật "không engine mới" | §1.5, §3.1 | L322 |
+| Q4 | Kỹ năng mới có tính vào chứng chỉ? | Bỏ hẳn chứng nhận; Product thiết kế thứ đo kỹ năng hiện tại | §1.7 | L323 |
+| Q5 | Chặn "đúng mà chậm" ở đâu? | Chỉ Phần 11 và Engine; nơi khác là ghi chú | §1.6b | L324 |
+| Q6 | `timestamp` → `timestamptz` trong `lab`? | Không trả lời → mặc định giữ `timestamp` (theo `schema-perf-v24.md` S10), **xác nhận ở review** | §1.6a | L325 |
+| Q7 | MySQL/SQLite đọc hay chạy? | Bỏ: "Postgres, SQL, DynamoDB, MongoDB là đủ" | bỏ Phần 12, mục 6 | L326 |
+
+Còn mở (hỏi ở review R0): ngưỡng mức 3/4 (hộp ≥ 3 / ≥ 4) có quá khắt không, đo lại sau một tháng dữ liệu `cargo-query/attempts` trên máy thử.
 
 ---
 
