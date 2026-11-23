@@ -89,9 +89,11 @@ Hồi chưa có hệ quản trị cơ sở dữ liệu, mỗi chương trình t�
 
 Một hệ quản trị cơ sở dữ liệu (DBMS) là phần mềm đứng giữa dữ liệu và mọi chương trình dùng nó. Nó làm năm việc mà nếu không có nó, ứng dụng nào cũng phải tự viết lại: cho một ngôn ngữ truy vấn (SQL), giữ các luật toàn vẹn (khóa, ràng buộc), cho nhiều người dùng cùng lúc mà không giẫm lên nhau, phục hồi đúng sau sự cố, và kiểm soát ai được đọc ghi gì.
 
-Kiến trúc ba tầng (ANSI/SPARC) tách một database thành ba cách nhìn. **Tầng ngoài** là những gì từng nhóm người dùng thấy, thường là view. **Tầng khái niệm** là toàn bộ bảng, cột, kiểu và ràng buộc của tổ chức. **Tầng trong** là cách dữ liệu nằm trên đĩa: file, trang 8 kB, index.
+Mỗi tầng là một mức trừu tượng, và mỗi tầng có **schema** (bản mô tả, ít khi đổi) tách khỏi **thể hiện** (dữ liệu lúc này, đổi liên tục). Kiến trúc ba tầng (ANSI/SPARC) tách một database thành ba cách nhìn. **Tầng ngoài** là những gì từng nhóm người dùng thấy, thường là view. **Tầng khái niệm** là toàn bộ bảng, cột, kiểu và ràng buộc của tổ chức. **Tầng trong** là cách dữ liệu nằm trên đĩa: file, trang 8 kB, index.
 
 Lợi ích của việc tách tầng là **độc lập dữ liệu**. Độc lập logic: đổi tầng khái niệm (thêm cột, tách bảng) mà view và chương trình cũ vẫn chạy. Độc lập vật lý: đổi tầng trong (thêm index, chuyển file) mà không câu SQL nào phải sửa. Nhiều người nghĩ thêm index là phải sửa câu truy vấn để "dùng" nó. Thật ra planner tự chọn, câu giữ nguyên.
+
+Có thể xếp loại DBMS theo **mô hình dữ liệu**: phân cấp (IBM IMS, dạng cây), mạng (CODASYL, con trỏ giữa bản ghi), quan hệ (Codd 1970, bảng giá trị), đối tượng-quan hệ (PostgreSQL), rồi các họ NoSQL: tài liệu (MongoDB), khóa-giá trị (DynamoDB), đồ thị. Cũng xếp được theo số người dùng (một hay nhiều) và theo nơi đặt (tập trung, khách/chủ, phân tán).
 
 PostgreSQL là hệ khách/chủ: mỗi kết nối có một tiến trình server riêng, chung một vùng nhớ đệm, có tiến trình nền ghi WAL và dọn rác. PGlite trong trình duyệt là cùng mã server đó dịch sang WebAssembly, chạy một phiên.
 
@@ -177,9 +179,11 @@ Before database management systems, every program read and wrote its own files: 
 
 A database management system (DBMS) is the software between the data and every program that uses it. It does five jobs that every application would otherwise rewrite: it offers a query language (SQL), keeps integrity rules (keys, constraints), lets many users work at once without stepping on each other, recovers correctly after a crash, and controls who may read or write what.
 
-The three-level architecture (ANSI/SPARC) splits a database into three views. The **external level** is what each group of users sees, usually views. The **conceptual level** is every table, column, type and constraint of the organisation. The **internal level** is how data sits on disk: files, 8 kB pages, indexes.
+Each level is a level of abstraction, and each has a **schema** (the description, rarely changed) kept apart from the **instance** (the data right now, always changing). The three-level architecture (ANSI/SPARC) splits a database into three views. The **external level** is what each group of users sees, usually views. The **conceptual level** is every table, column, type and constraint of the organisation. The **internal level** is how data sits on disk: files, 8 kB pages, indexes.
 
 Splitting the levels gives **data independence**. Logical independence: change the conceptual level (add a column, split a table) and old views and programs still work. Physical independence: change the internal level (add an index, move files) and no SQL query has to change. Many people think adding an index means editing queries to "use" it. In fact the planner chooses, and the query stays the same.
+
+A DBMS can be classified by its **data model**: hierarchical (IBM IMS, trees), network (CODASYL, pointers between records), relational (Codd 1970, tables of values), object-relational (PostgreSQL), then the NoSQL families: document (MongoDB), key-value (DynamoDB), graph. It can also be classified by number of users (one or many) and by where it runs (centralised, client/server, distributed).
 
 PostgreSQL is a client/server system: each connection has its own server process, they share a buffer cache, and background processes write the WAL and clean up. PGlite in the browser is the same server code compiled to WebAssembly, running one session.
 
