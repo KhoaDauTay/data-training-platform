@@ -24,7 +24,7 @@ export const bestHash = (track?: string, id?: string): string => `#/engine/best$
 
 export const TRACKS = ['sql', 'postgres', 'mongodb', 'dynamodb'] as const;
 export type TrackId = (typeof TRACKS)[number];
-export const RELEASED: readonly TrackId[] = ['sql', 'postgres'];
+export const RELEASED: readonly TrackId[] = ['sql', 'postgres', 'mongodb'];
 export const BP_LEVELS = ['L1', 'L2', 'L3', 'L4', 'L5'] as const;
 export const RUNTIMES = ['lab', 'engine', 'engine-hb', 'mingo', 'dynoxide', 'none'] as const;
 export type BpRuntime = (typeof RUNTIMES)[number];
@@ -221,7 +221,9 @@ export function planScan(json: unknown, table?: string): { node?: string; cost?:
   return { node: scan?.['Node Type'], cost: root['Total Cost'] };
 }
 
-const cell = (v: unknown): string => (v instanceof Date ? v.toISOString() : typeof v === 'number' ? String(Math.round(v * 100) / 100) : String(v));
+// v25 (L374): a MongoDB document's nested object or array is compared by its JSON, never as "[object Object]".
+const cell = (v: unknown): string => (v instanceof Date ? v.toISOString() : typeof v === 'number' ? String(Math.round(v * 100) / 100)
+  : v !== null && typeof v === 'object' ? JSON.stringify(v) : String(v));
 const key = (s: Side): string => s.rows.map((r) => r.map(cell).join('\u0001')).sort().join('\u0002');
 /** Same rows (multiset, numbers to 2 decimals, column names ignored: the grader's rule, without the main module). */
 export const sameRows = (a: Side, b: Side): boolean => a.columns.length === b.columns.length && key(a) === key(b);

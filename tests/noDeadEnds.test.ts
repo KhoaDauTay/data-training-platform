@@ -10,6 +10,7 @@ import { SKILLS } from '../src/progress';
 import { learnAdvOf, learnModuleOf, learnSkillOf, parseRoute } from '../src/route';
 import { bestHash, bestRouteOf, parseBestCard, parseTracks, RELEASED } from '../src/engine/best';
 import * as bestSrc from '../src/bestSources';
+import * as bestMongo from '../src/bestMongoIndex';
 
 /** Plan 8a Task 12 (D8a-15): every General path leads to content, and nothing on it says "later". */
 const g = generalNow()!;
@@ -105,7 +106,7 @@ it('nút nâng cao không nhắc domain (L82)', () => {
 
 describe('Best Practice (v24 BP-UI, L346): mọi route parse, mọi track phát hành có thẻ, không "sắp có"', () => {
   it('route #/engine/best…', () => {
-    const cards = Object.entries(bestSrc.meta).map(([p, x]) => parseBestCard(x, p));
+    const cards = Object.entries({ ...bestSrc.meta, ...bestMongo.meta }).map(([p, x]) => parseBestCard(x, p)); // v25: + the MongoDB index (L374)
     for (const t of parseTracks(bestSrc.tracks)) {
       expect([t.id, RELEASED.includes(t.id), cards.filter((c) => c.track === t.id).length > 0]).toEqual([t.id, true, true]);
       expect(parseRoute(bestHash(t.id))).toBe('engine');

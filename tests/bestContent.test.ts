@@ -16,6 +16,9 @@ import { runLabScript, splitSql } from '../src/engine/pglab/session';
 import { sqlErrorInfo } from '../src/db/run';
 import { labRun } from './generalRules';
 import * as sources from '../src/bestSources';
+import * as mongoIndex from '../src/bestMongoIndex';
+import { loadDataset, runMongo } from '../src/engine/mongo/engineMongo';
+import { mongoRunner } from '../src/engine/mongo/runner';
 
 const raw = import.meta.glob<string>('../content/engine/best/*/*.md', { query: '?raw', import: 'default', eager: true });
 const lessonIds = new Set(Object.values(import.meta.glob<string>('../content/engine/*/L*/*.md', { query: '?raw', import: 'default', eager: true }))
@@ -29,11 +32,12 @@ const released = cards.filter((c) => RELEASED.includes(c.track));
 const DIACRITIC = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i;
 
 describe('thẻ Best Practice: cấu trúc (130 thẻ, cả track chưa phát hành)', () => {
-  it('130 thẻ, id duy nhất; v24 phát hành đúng 60 (SQL 30 + PostgreSQL 30)', () => {
+  it('130 thẻ, id duy nhất; phát hành đúng 98 (SQL 30 + PostgreSQL 30 + MongoDB 38, v25 L374)', () => {
     expect(cards).toHaveLength(130);
     expect(new Set(cards.map((c) => c.id)).size).toBe(130);
     expect(released.filter((c) => c.track === 'sql')).toHaveLength(30);
     expect(released.filter((c) => c.track === 'postgres')).toHaveLength(30);
+    expect(released.filter((c) => c.track === 'mongodb')).toHaveLength(38);
   });
 
   it.each(cards.map((c) => [c.id, c]))('%s: luật nội dung §4.3', (_id, c) => {
@@ -49,19 +53,22 @@ describe('thẻ Best Practice: cấu trúc (130 thẻ, cả track chưa phát h�
     const all = parseTracks(yaml(sourcesTracks()), true);
     for (const c of cards) expect([c.id, all.find((t) => t.id === c.track)?.areas.includes(c.module)]).toEqual([c.id, true]);
     const shown = parseTracks(sources.tracks);
-    expect(shown.map((t) => t.id)).toEqual(['sql', 'postgres']);
+    expect(shown.map((t) => t.id)).toEqual(['sql', 'postgres', 'mongodb']);
     const ids = new Set(released.map((c) => c.id));
     for (const t of shown) for (const g of t.gallery) expect([t.id, g, ids.has(g)]).toEqual([t.id, g, true]);
     expect(shown[0].gallery.length).toBeGreaterThanOrEqual(8);
   });
 
-  it('index (bpindex) chỉ chứa thẻ đã phát hành; thẻ MongoDB/DynamoDB không vào bundle', () => {
+  it('index (bpindex + bpindexMg) chỉ chứa thẻ đã phát hành; thẻ DynamoDB không vào bundle', () => {
     const paths = Object.keys(sources.meta);
     expect(paths).toHaveLength(60);
     expect(paths.every((p) => /\/best\/(sql|postgres)\//.test(p))).toBe(true);
-    expect(sources.full.mongodb).toBeUndefined();
+    const mg = Object.keys(mongoIndex.meta);
+    expect(mg).toHaveLength(38);
+    expect(mg.every((p) => /\/best\/mongodb\//.test(p))).toBe(true);
+    expect(typeof sources.full.mongodb).toBe('function');
     expect(sources.full.dynamodb).toBeUndefined();
-    for (const [p, s] of Object.entries(sources.meta)) expect(parseBestCard(s, p)).toEqual(expect.objectContaining({ id: expect.stringMatching(/^e-bp-[qasipx]\d\d$/) }));
+    for (const [p, s] of Object.entries({ ...sources.meta, ...mongoIndex.meta })) expect(parseBestCard(s, p)).toEqual(expect.objectContaining({ id: expect.stringMatching(/^e-bp-[qasipxm]\d\d$/) }));
   });
 
   it('habits.yml: 8 thói quen, mã VI = EN, EN không dấu, mỗi thói quen có ≥ 1 thẻ đã phát hành', () => {
@@ -105,8 +112,8 @@ async function labSide(p: Pair, sql: string): Promise<Side> {
   }
 }
 
-describe('thẻ Best Practice: cặp Không nên / Nên chạy thật (60 thẻ phát hành)', () => {
-  const runnable = released.filter((c) => c.pair.runtime !== 'none');
+describe('thẻ Best Practice: cặp Không nên / Nên chạy thật (98 thẻ phát hành)', () => {
+  const runnable = released.filter((c) => c.pair.runtime !== 'none' && c.pair.runtime !== 'mingo');
   it('mỗi thẻ "none" là check syntax; mọi thẻ chạy được là một câu mỗi bên (trang không có splitSql, nó nằm cạnh PGlite)', () => {
     for (const c of released) if (c.pair.runtime === 'none') expect([c.id, c.pair.check]).toEqual([c.id, 'syntax']);
     for (const c of released) {
@@ -162,5 +169,30 @@ describe('thẻ Best Practice: cặp Không nên / Nên chạy thật (60 thẻ 
     const good = sideOf(p, await runLabScript(sideScript(p, p.good, splitSql)));
     expect(judge(p, bad, good)).toEqual({ kind: 'error', side: 'good', code: '23514', ok: true });
     expect(judge({ ...p, expect: { code: '23514' } }, bad, good).ok).toBe(false); // the default side (bad) did not fail
+  });
+});
+
+// v25 BP-MG (L374): the MongoDB track's `mingo` pairs run through the same runner the card page uses (mongoRunner.run on the
+// card's inline `setup`), each side on the pristine data, and show what their `check` claims through judge().
+describe('thẻ Best Practice MongoDB: cặp chạy thật trên mingo', () => {
+  const r = mongoRunner({ lang: () => 'en' }, { exec: async (src: string, ds: string, stages?: boolean) => runMongo(await loadDataset(ds), src, { stages }) });
+  const side = async (p: Pair, code: string): Promise<Side> => {
+    try {
+      const out = await r.run({ setup: p.setup, steps: [] }, code.trim());
+      return { columns: out.columns, rows: out.rows };
+    } catch (e) {
+      const x = e as { code?: unknown; message?: string };
+      return { columns: [], rows: [], error: { code: typeof x.code === 'string' ? x.code : undefined, message: x.message ?? String(e) } };
+    }
+  };
+  const mg = released.filter((c) => c.pair.runtime === 'mingo');
+  it('15 thẻ mingo, mọi thẻ MongoDB khác là cú pháp', () => {
+    expect(mg).toHaveLength(15);
+    for (const c of released.filter((x) => x.track === 'mongodb' && x.pair.runtime !== 'mingo')) expect([c.id, c.pair.runtime, c.pair.check]).toEqual([c.id, 'none', 'syntax']);
+  });
+  it.each(mg.map((c) => [c.id, c]))('%s: check của thẻ đúng trên mingo', async (_id, c) => {
+    const p = c.pair;
+    const [bad, good] = [await side(p, p.bad), await side(p, p.good)];
+    expect([c.id, judge(p, bad, good)]).toEqual([c.id, expect.objectContaining({ ok: true })]);
   });
 });

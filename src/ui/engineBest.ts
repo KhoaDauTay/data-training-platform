@@ -326,13 +326,24 @@ async function engineSide(p: Pair, sql: string): Promise<Side> {
     return failSide(e);
   }
 }
+let mongo: Promise<import('../engine/mongo/runner').MongoLabRunner> | undefined;
+/** v25 (L374): a `mingo` card side runs on the MongoDB lab runner (its own worker, the card's `setup` as inline data); writes show the collection after. */
+async function mingoSide(p: Pair, code: string): Promise<Side> {
+  try {
+    const r = await (mongo ??= import('../engine/mongo/runner').then((m) => m.mongoRunner(d.lab)).catch((e: unknown) => { mongo = undefined; throw e; }));
+    const out = await r.run({ setup: p.setup, steps: [] }, code.trim());
+    return { columns: out.columns, rows: out.rows };
+  } catch (e) {
+    return failSide(e);
+  }
+}
 async function runBoth(c: BpCard): Promise<void> {
   const v = visitOf(c.id);
   if (v.run === 'busy') return;
   v.run = 'busy';
   d.rerender();
   try {
-    const side = c.pair.runtime === 'lab' ? labSide : engineSide;
+    const side = c.pair.runtime === 'lab' ? labSide : c.pair.runtime === 'mingo' ? mingoSide : engineSide;
     const bad = await side(c.pair, c.pair.bad); // one after the other, in the existing queue (§3.2)
     const good = await side(c.pair, c.pair.good);
     v.run = { bad, good, v: judge(c.pair, bad, good) };
@@ -430,7 +441,7 @@ function cardPage(c: BpCard): HTMLElement {
         : h('div', { class: 'flex flex-wrap items-center gap-3' },
           h('button', { type: 'button', class: cls.cx(cls.BTN_SECONDARY, 'inline-flex items-center gap-2 px-5 py-2'), 'data-ek': 'bp-run', disabled: v.run === 'busy', onclick: () => void runBoth(c) },
             v.run === 'busy' ? d.loader() : d.icon('kindLab', 'size-4'), bt(v.run === 'busy' ? 'running' : 'runBoth')),
-          h('span', { class: 'text-caption text-muted' }, bt(p.runtime === 'lab' ? 'run.lab' : 'run.engine'), v.run === 'busy' ? ` · ${bt('run.first')}` : '')),
+          h('span', { class: 'text-caption text-muted' }, bt(p.runtime === 'lab' ? 'run.lab' : p.runtime === 'mingo' ? 'run.mingo' : 'run.engine'), v.run === 'busy' ? ` · ${bt('run.first')}` : '')),
       h('p', {
         role: 'status', 'data-verdict': res ? (res.v.ok ? res.v.kind : 'odd') : false,
         class: cls.cx('m-0 rounded-(--r-inset) text-body-sm text-ink', res && 'px-4 py-3 font-semibold', res && (!res.v.ok || res.v.kind === 'diff' || res.v.kind === 'error' ? 'bg-warn-soft' : 'bg-good-soft')),

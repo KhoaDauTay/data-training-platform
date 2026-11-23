@@ -84,6 +84,10 @@ const GROUPS = [
   ['bpindex', /^bestSources-/, 14],
   ['bpsql', /^bestSql-/, 30],
   ['bppg', /^bestPg-/, 35],
+  // v25 BP-MG (L374): the 38 MongoDB cards. bpindexMg = their list fields (src/bestMongoIndex.ts, fetched beside bestSources,
+  // which keeps its 14 KB); bpmongo = the full cards (src/bestMongo.ts), fetched when a MongoDB card opens.
+  ['bpindexMg', /^bestMongoIndex-/, 8], // measured 5.8 KB gz at v25
+  ['bpmongo', /^bestMongo-/, 42], // measured 39.3 KB gz at v25 (38 cards; bppg is 33 for 30)
   ['bpui', /^(engineBest|bpPref)-/, 15],
   ['rest', /./, 1560],
 ];
