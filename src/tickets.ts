@@ -1,5 +1,5 @@
 import { bilingualOf, type Bilingual } from './progress';
-import type { LabSpec, PlanSpec } from './planCheck';
+import type { LabSpec, PerfSpec, PlanSpec } from './planCheck';
 import { parseScene, type Scene } from './scene';
 
 export type Lang = 'vi' | 'en';
@@ -42,6 +42,8 @@ export interface Step {
   plan?: PlanSpec;
   /** Chapter 11 `lab:`: the player writes a CREATE INDEX that speeds up this step's Solution (the slow query). */
   lab?: LabSpec;
+  /** v24 (L340): performance bar (drills only so far): see slowVerdict in src/planCheck.ts. */
+  perf?: PerfSpec;
   /** L4 (v12.0): `precision:`. Numbers must already be at this many decimals (src/grader.ts); absent = lenient 2-decimal compare. */
   precision?: number;
 }
