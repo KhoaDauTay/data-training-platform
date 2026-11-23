@@ -33,7 +33,7 @@ INSERT INTO enrolments VALUES (1, 10, 8.5);
 SELECT count(*) FROM enrolments;
 ```
 
-BoonData: the ER tab and the Data page draw real ER diagrams from `information_schema` (`src/viz/erd.ts`); no lesson yet teaches ER modelling itself (see [boondata-gap-map.md](boondata-gap-map.md)).
+BoonData: the ER tab and the Data page draw real ER diagrams from `information_schema` (`src/viz/erd.ts`); the design track teaches ER modelling, keys and normal forms (`content/engine/design/L2`–`L4`, v28 R4; see [boondata-gap-map.md](boondata-gap-map.md)).
 
 ## 2. Keys and functional dependencies
 
@@ -41,7 +41,7 @@ Status: verified (FD check query).
 
 - **Superkey**: a set of columns whose values identify a row. **Candidate key**: a minimal superkey. **Primary key**: the candidate key chosen; the others are **alternate keys** (enforce them with `UNIQUE`). **Composite key**: more than one column. **Surrogate key**: a generated identifier with no business meaning; keep the natural key `UNIQUE` too.
 - **Functional dependency** X → Y: rows that agree on X agree on Y. A key determines every column.
-- **Armstrong's axioms** (reflexivity, augmentation, transitivity) derive every implied FD; the **closure** X⁺ is everything X determines; X is a superkey iff X⁺ contains all columns. A **minimal cover** is an equivalent FD set with single-column right sides and no redundancy (W. W. Armstrong, "Dependency Structures of Data Base Relationships", IFIP 1974).
+- **Armstrong's axioms** (reflexivity, augmentation, transitivity) derive every implied FD; the **closure** X⁺ is everything X determines; X is a superkey iff X⁺ contains all columns. A **minimal cover** is an equivalent FD set with single-column right sides, no extraneous column on any left side and no redundant FD (W. W. Armstrong, "Dependency Structures of Data Base Relationships", IFIP 1974).
 - In SQL you can test whether data violates a supposed FD:
 
 ```sql
@@ -63,7 +63,7 @@ Short, own-words definitions (E. F. Codd, "Further Normalization of the Data Bas
 | 1NF | every column holds one atomic value; no repeating groups | `phones = '090…, 091…'` |
 | 2NF | 1NF, and no non-key column depends on part of a composite key | `enrolments(student_id, course_id, course_title)` |
 | 3NF | 2NF, and no non-key column depends on another non-key column | `orders(id, customer_id, customer_city)` |
-| BCNF | every determinant is a candidate key | `(student, subject) → teacher` but `teacher → subject` |
+| BCNF | for every non-trivial FD X → Y, X is a superkey ("every determinant is a candidate key" in the informal wording) | `(student, subject) → teacher` but `teacher → subject` |
 | 4NF | no independent multi-valued facts in one table | `(employee, skill, language)` holding all combinations |
 | 5NF | no join dependency not implied by the keys | three-way relationship that is really three pairs |
 

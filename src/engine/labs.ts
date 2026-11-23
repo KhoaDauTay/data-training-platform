@@ -1,7 +1,7 @@
 import type { QueryResult } from '../db/run';
 import type { GradeResult } from '../grader';
 import type { slowVerdict } from '../planCheck';
-import type { EngineId, EngineLesson, Lab, LabStep } from './content';
+import { onPg, type EngineId, type EngineLesson, type Lab, type LabStep } from './content';
 import type { Capacity, ReadMode } from './dynamo/cost';
 
 /**
@@ -129,7 +129,7 @@ export function pgLabRunner(env: LabEnv): LabRunner {
  */
 export const gradable = (l: EngineLesson, step: LabStep): boolean =>
   !!LAB_RUNNERS[l.engine] && l.runtime !== 'docs'
-  && (l.engine === 'postgres' ? step.check !== 'doc' && !(step.check === 'plan' && !l.lab?.setup) : step.check === 'doc' || (l.engine === 'dynamodb' && step.check === 'catalog'));
+  && (onPg(l.engine) ? step.check !== 'doc' && !(step.check === 'plan' && !l.lab?.setup) : step.check === 'doc' || (l.engine === 'dynamodb' && step.check === 'catalog'));
 
 /**
  * The one honest runtime label beside a lesson's title (product-design-db-engine §3.6, checklist L1), derived from what
@@ -137,9 +137,9 @@ export const gradable = (l: EngineLesson, step: LabStep): boolean =>
  * not is a diagram when it has one, else it is read from the official docs.
  */
 export type Honest = 'pg' | 'mingo' | 'dynoxide' | 'diagram' | 'docs';
-const RUNS: Record<EngineId, Honest> = { postgres: 'pg', mongodb: 'mingo', dynamodb: 'dynoxide' };
+const RUNS: Record<EngineId, Honest> = { postgres: 'pg', mongodb: 'mingo', dynamodb: 'dynoxide', design: 'pg' };
 export const honestOf = (l: Pick<EngineLesson, 'engine' | 'runtime' | 'viz' | 'lab' | 'predict'>): Honest =>
-  l.runtime !== 'docs' && LAB_RUNNERS[l.engine] && (l.lab || (l.predict && l.engine === 'postgres')) ? RUNS[l.engine] : l.viz ? 'diagram' : 'docs';
+  l.runtime !== 'docs' && LAB_RUNNERS[l.engine] && (l.lab || (l.predict && onPg(l.engine))) ? RUNS[l.engine] : l.viz ? 'diagram' : 'docs';
 
 /**
  * L280: the same label from the lesson index alone (no lab/predict in it), for lesson rows: a lesson runs here exactly when
@@ -167,3 +167,4 @@ export const LAB_RUNNERS: Partial<Record<EngineId, (env: LabEnv) => Promise<LabR
   mongodb: async (env) => (await import('./mongo/runner')).mongoRunner(env),
   dynamodb: async (env) => (await import('./dynamo/runner')).dynamoRunner(env),
 };
+LAB_RUNNERS.design = LAB_RUNNERS.postgres; // v28 R4 (L420): design labs are PostgreSQL labs (`lab` schema, or the lab runtime with `setup`)

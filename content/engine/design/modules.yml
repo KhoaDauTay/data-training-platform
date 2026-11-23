@@ -1,0 +1,33 @@
+- id: dbms
+  vi: Hệ quản trị CSDL
+  en: Database systems
+- id: relational
+  vi: Mô hình quan hệ
+  en: The relational model
+- id: er
+  vi: Mô hình ER
+  en: ER modelling
+- id: er-mapping
+  vi: Từ ER sang bảng
+  en: From ER to tables
+- id: fd
+  vi: Phụ thuộc hàm
+  en: Functional dependencies
+- id: keys
+  vi: Bao đóng và khóa
+  en: Closure and keys
+- id: normal-forms
+  vi: Các dạng chuẩn
+  en: Normal forms
+- id: denormalize
+  vi: Phi chuẩn hóa và thiết kế trọn bộ
+  en: Denormalising and a full design
+- id: algebra
+  vi: Đại số và phép tính quan hệ
+  en: Relational algebra and calculus
+- id: transactions
+  vi: Lịch và điều khiển đồng thời
+  en: Schedules and concurrency control
+- id: internals
+  vi: Xử lý truy vấn và phục hồi
+  en: Query processing and recovery

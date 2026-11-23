@@ -86,7 +86,7 @@ export function capChecks(c: CapCtx): HTMLElement {
 export function capPlans(c: CapCtx): HTMLElement | null {
   const { d, et, st } = c;
   const { h, cls } = d;
-  const piv = c.l.engine === 'postgres' ? c.pred.capstonePivot(c.l.lab) : undefined; // EXPLAIN plans are Postgres only
+  const piv = (c.l.engine === 'postgres' || c.l.engine === 'design') ? c.pred.capstonePivot(c.l.lab) : undefined; // EXPLAIN plans are Postgres only
   if (!piv) return null;
   const mine = c.mine(piv.gate) ?? (c.done ? steps(c)[piv.gate].solution : undefined);
   const open = c.passed.has(`s${piv.gate}`) && mine !== undefined;

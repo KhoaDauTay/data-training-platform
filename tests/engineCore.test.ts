@@ -2,6 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import v5 from './fixtures/save-v5.json?raw';
 import bp from './fixtures/save-v5-bp.json?raw';
+import ds from './fixtures/save-v5-ds.json?raw';
 import { loadTickets } from '../src/content';
 import { knownSkills } from '../src/home';
 import { engineHash, enginePlayOf, engineRouteOf, hashOf, parseRoute } from '../src/route';
@@ -40,6 +41,13 @@ describe('route #/engine (kept forever)', () => {
     expect(engineHash('postgres', 'L1', 'e-pg-l1-01')).toBe('#/engine/postgres/L1/e-pg-l1-01');
     expect(engineRouteOf(engineHash('postgres', 'L1', 'e-pg-l1-01')).lesson).toBe('e-pg-l1-01');
   });
+  it('v28 R4 (L420): #/engine/design[/L<n>[/<id>]] and #/engine/play/e-ds-…', () => {
+    expect(engineRouteOf('#/engine/design')).toEqual({ engine: 'design', level: undefined, lesson: undefined });
+    expect(engineRouteOf('#/engine/design/l4')).toEqual({ engine: 'design', level: 'L4', lesson: undefined });
+    expect(engineRouteOf('#/engine/design/L4/e-ds-l4-02')).toEqual({ engine: 'design', level: 'L4', lesson: 'e-ds-l4-02' });
+    expect(enginePlayOf('#/engine/play/e-ds-l5-02')).toBe('#/engine/design/L5/e-ds-l5-02');
+    expect(engineRouteOf('#/engine/designs')).toEqual({ engine: undefined, level: undefined, lesson: undefined });
+  });
 });
 
 describe('id e-… trong Save', () => {
@@ -62,6 +70,14 @@ describe('id e-… trong Save', () => {
     expect(parseSave(JSON.stringify(s), known)).toEqual(s);
     for (const id of ['e-bp-q02', 'e-bp-a05', 'e-bp-m07']) expect([id, ENGINE_ID.test(id)]).toEqual([id, true]);
     expect(ENGINE_ID.test('e-bx-q02')).toBe(false);
+  });
+
+  it('v28 R4 (L420): bài Thiết kế CSDL e-ds-… qua đọc → ghi → đọc nguyên vẹn, không bump Save (fixture save-v5-ds.json)', () => {
+    const s = parseSave(ds, known);
+    expect(s.completed.filter((id) => id.startsWith('e-'))).toEqual(JSON.parse(ds).completed.filter((id: string) => id.startsWith('e-'))); // every e- id of the fixture, in order
+    expect(s.completed).toEqual(expect.arrayContaining(['e-ds-l1-01', 'e-ds-l1-02', 'e-ds-l4-06']));
+    expect(parseSave(JSON.stringify(s), known)).toEqual(s);
+    expect(ENGINE_ID.test('e-dz-l1-01')).toBe(false);
   });
 
   it('không đổi kỹ năng đã học (Lily, lộ trình)', () => {

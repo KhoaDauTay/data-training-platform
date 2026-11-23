@@ -14,7 +14,7 @@ import type { PageSub } from './homeView';
  */
 let d: EngineDeps;
 let terms: Term[] = [];
-const NAME: Record<EngineId, string> = { postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB' };
+const NAME: Record<EngineId, string> = { postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB', design: 'Design' }; // design: never a glossary engine (glossary.ts ENG)
 const tt = (key: TermsKey, params?: I18n.Params): string => termsText(d.getLang(), d.locale(), key, params);
 const lang = (): 'vi' | 'en' => d.getLang();
 

@@ -19,7 +19,7 @@ Status: concept; example verified.
 
 - A **relation** is a set of tuples over named attributes with domains; SQL tables differ: rows may repeat unless a key forbids it, and columns may be `NULL` (Codd 1970, https://doi.org/10.1145/362384.362685).
 - **Integrity**: domain constraints (types, `CHECK`), entity integrity (primary key not null), referential integrity (foreign keys), key constraints (`UNIQUE`).
-- Codd's twelve rules (1985) describe what "fully relational" means; useful history, not a checklist any product meets.
+- Codd's rules (1985; usually called the twelve rules, numbered 0 to 12, so thirteen in all) describe what "fully relational" means; useful history, not a checklist any product meets.
 - Handling violations: the statement fails (default), or the foreign key action cascades, sets null or sets default.
 
 ```sql
@@ -33,7 +33,7 @@ SELECT count(*) FROM child;
 
 ## 3. Relational algebra and calculus
 
-Status: verified (SQL equivalents).
+Status: verified (SQL equivalents). BoonData: `content/engine/design/L5/01-relational-algebra.md`, `L5/02-division.md`, `L5/03-relational-calculus.md`.
 
 Algebra is a set of operators that take relations and return a relation; SQL is declarative but every query maps to an algebra tree (the planner's plan is one).
 
@@ -68,7 +68,7 @@ Status: concept; single-session parts verified in [sql-core.md §14](sql-core.md
 
 - **ACID**: atomicity (all or nothing), consistency (constraints hold before and after), isolation (concurrent transactions do not see each other's partial work, to the degree the level promises), durability (a committed change survives a crash).
 - **Schedule**: an interleaving of operations from several transactions. **Serial** schedules run one after another. A schedule is **conflict-serializable** if swapping non-conflicting operations turns it into a serial one; test: build the precedence graph (edge Ti → Tj when an operation of Ti conflicts with a later one of Tj on the same item, at least one a write) and check it has no cycle. **View serializability** is broader and NP-hard to test.
-- **Anomalies**: dirty read (reading uncommitted data), non-repeatable read, phantom (a re-run query sees new rows), lost update, write skew (two transactions each read, then write disjoint rows, breaking a rule that spans both).
+- **Anomalies** (PostgreSQL never shows a dirty read: Read Uncommitted behaves as Read Committed): dirty read (reading uncommitted data), non-repeatable read, phantom (a re-run query sees new rows), lost update, write skew (two transactions each read, then write disjoint rows, breaking a rule that spans both).
 - **Protocols**:
   - Two-phase locking (2PL): a growing phase, then a shrinking phase; strict 2PL holds write locks to commit; guarantees conflict-serializability but can deadlock.
   - Timestamp ordering: each transaction gets a timestamp and conflicting operations must follow it; the Thomas write rule skips obsolete writes instead of aborting.
@@ -76,7 +76,7 @@ Status: concept; single-session parts verified in [sql-core.md §14](sql-core.md
 - **PostgreSQL** uses MVCC snapshots, row locks for writer–writer conflicts, and for Serializable, Serializable Snapshot Isolation (SSI) that detects dangerous read/write dependency cycles and aborts one transaction (Ports & Grittner, VLDB 2012, https://arxiv.org/abs/1208.4179; https://www.postgresql.org/docs/18/transaction-iso.html#XACT-SERIALIZABLE). Read Committed takes a new snapshot per statement; Repeatable Read one per transaction.
 - **Deadlock**: a wait-for cycle. Detection (PostgreSQL checks after `deadlock_timeout`), prevention (lock in a fixed order), or wait-die/wound-wait schemes.
 
-BoonData: Engine `content/engine/postgres/L4/09-table-lock-modes.md` … `L4/14-advisory-locks.md`, `L3/04-mvcc.md`.
+BoonData: Engine `content/engine/postgres/L4/09-table-lock-modes.md` … `L4/14-advisory-locks.md`, `L3/04-mvcc.md`; the theory (schedules, precedence graph, 2PL, timestamp ordering, Thomas write rule) is the design track, `content/engine/design/L5/04-schedules.md` and `L5/05-locking-timestamps.md`.
 
 ## 5. Storage and indexing structures
 
@@ -109,7 +109,7 @@ Status: concept; plan reading verified in [postgresql.md §16](postgresql.md#16-
 - Join algorithms: nested loop (good with an index on the inner side and few outer rows), hash join (equality, one side fits in `work_mem`), merge join (both inputs sorted).
 - **External sorting**: sort runs that fit in memory, write them out, merge; PostgreSQL shows `Sort Method: external merge  Disk: …kB` when `work_mem` is too small.
 
-BoonData: Engine `L4/01-cost-model.md`, `L4/04-join-algorithms.md`, `L4/05-join-order.md`, `L3/14-buffers-workmem-lab.md`.
+BoonData: Engine `L4/01-cost-model.md`, `L4/04-join-algorithms.md`, `L4/05-join-order.md`, `L3/14-buffers-workmem-lab.md`; the algorithms in general: `content/engine/design/L5/06-query-algorithms.md`.
 
 ## 7. Recovery
 

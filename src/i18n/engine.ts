@@ -6,10 +6,13 @@ import type { Lang, Params } from './index';
  * Engine names (PostgreSQL, MongoDB, DynamoDB) are proper names and are not here. No value import from main modules.
  */
 const vi = {
-  'intro': 'Nhìn vào bên trong cơ sở dữ liệu: dữ liệu nằm ở đâu, tìm bằng cách nào, nhiều người cùng ghi thì sao. Ba engine, mỗi engine một thang từ L1 (người mới) tới L5 (bên trong, vận hành). Không cần học hết SQL mới vào; mỗi bài ghi bài nên học trước.',
+  'intro': 'Nhìn vào bên trong cơ sở dữ liệu: dữ liệu nằm ở đâu, tìm bằng cách nào, nhiều người cùng ghi thì sao. Ba engine và thẻ Thiết kế CSDL, mỗi thẻ một thang từ L1 tới L5. Không cần học hết SQL mới vào; mỗi bài ghi bài nên học trước.',
   'desc.postgres': 'CSDL quan hệ mã nguồn mở. Chạy thật ngay trong trình duyệt: kế hoạch, trang dữ liệu, index.',
   'desc.mongodb': 'CSDL tài liệu: lưu JSON lồng nhau, truy vấn bằng toán tử và pipeline.',
   'desc.dynamodb': 'CSDL khóa-giá trị của AWS: thiết kế khóa theo mẫu truy cập, tính chi phí đọc ghi.',
+  'name.design': 'Thiết kế CSDL',
+  'desc.design': 'Lý thuyết CSDL và thiết kế: mô hình quan hệ, ER, phụ thuộc hàm, chuẩn hóa, giao dịch. Lab chạy trên PostgreSQL (PGlite).',
+  'design.deep': 'Phần lưu trữ và index: đào sâu ở PostgreSQL L3–L5.',
   'level.L1': 'Người mới',
   'level.L2': 'Thực hành',
   'level.L3': 'Hiệu năng và mô hình',
@@ -30,6 +33,11 @@ const vi = {
   'ladder.dynamodb.L3': 'LSI/GSI, projection, single-table, các mẫu khóa',
   'ladder.dynamodb.L4': 'Partition, hot partition, chia khóa ghi, transaction, chế độ capacity',
   'ladder.dynamodb.L5': 'Streams, TTL, global tables, sao lưu',
+  'ladder.design.L1': 'DBMS làm gì, ba tầng schema, mô hình quan hệ, ràng buộc',
+  'ladder.design.L2': 'Mô hình ER, thực thể yếu, EER, từ ER sang bảng',
+  'ladder.design.L3': 'Phụ thuộc hàm, luật Armstrong, bao đóng, khóa ứng viên',
+  'ladder.design.L4': 'Dị thường, 1NF đến BCNF, 4NF/5NF, khi nào phi chuẩn hóa',
+  'ladder.design.L5': 'Đại số và phép tính quan hệ, lịch khả tuần tự, khóa, phục hồi',
   'count': '{n} bài',
   'progress': '{k}/{n} bài xong',
   'noLessons': 'Chưa có bài ở cấp này.',
@@ -170,10 +178,13 @@ const vi = {
 export type EngineKey = keyof typeof vi;
 
 const en: Record<EngineKey, string> = {
-  'intro': 'Look inside the database: where data lives, how it is found, what happens when many people write at once. Three engines, each a ladder from L1 (beginner) to L5 (internals, operations). You do not need to finish SQL first; each lesson lists what to learn before it.',
+  'intro': 'Look inside the database: where data lives, how it is found, what happens when many people write at once. Three engines and the Database design card, each a ladder from L1 to L5. You do not need to finish SQL first; each lesson lists what to learn before it.',
   'desc.postgres': 'Open source relational database. Runs for real in your browser: plans, data pages, indexes.',
   'desc.mongodb': 'Document database: stores nested JSON, queried with operators and pipelines.',
   'desc.dynamodb': 'AWS key-value database: keys designed from access patterns, read and write costs counted.',
+  'name.design': 'Database design',
+  'desc.design': 'Database theory and design: the relational model, ER, functional dependencies, normal forms, transactions. Labs run on PostgreSQL (PGlite).',
+  'design.deep': 'Storage and indexes: go deeper in PostgreSQL L3–L5.',
   'level.L1': 'Beginner',
   'level.L2': 'Practitioner',
   'level.L3': 'Performance and modelling',
@@ -194,6 +205,11 @@ const en: Record<EngineKey, string> = {
   'ladder.dynamodb.L3': 'LSI/GSI, projections, single-table design, key patterns',
   'ladder.dynamodb.L4': 'Partitions, hot partitions, write sharding, transactions, capacity modes',
   'ladder.dynamodb.L5': 'Streams, TTL, global tables, backups',
+  'ladder.design.L1': 'What a DBMS does, the three schema levels, the relational model, constraints',
+  'ladder.design.L2': 'ER modelling, weak entities, EER, from ER to tables',
+  'ladder.design.L3': 'Functional dependencies, Armstrong rules, closure, candidate keys',
+  'ladder.design.L4': 'Anomalies, 1NF to BCNF, 4NF/5NF, when to denormalise',
+  'ladder.design.L5': 'Relational algebra and calculus, serializable schedules, locking, recovery',
   'count': '{n} lessons',
   'progress': '{k} of {n} lessons done',
   'noLessons': 'No lessons at this level yet.',
