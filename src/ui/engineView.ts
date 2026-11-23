@@ -323,6 +323,8 @@ function lessonRow(l: EngineLesson, ok: Set<string>, isNext: boolean): HTMLEleme
 interface Visit {
   picks: Record<string, number>;
   says: Record<string, 'right' | 'wrong' | 'pick'>;
+  /** L317: wrong checks per question; `why` shows after a right answer or the 2nd wrong one (engine-ux-spec "Câu kiểm"). */
+  wrongs: Record<string, number>;
   passed: Set<string>;
   code: string[];
   out: ({ result: LabOutput } | { error: unknown } | undefined)[];
@@ -343,7 +345,7 @@ interface Visit {
 const visits = new Map<string, Visit>();
 const visitOf = (id: string): Visit => {
   let v = visits.get(id);
-  if (!v) visits.set(id, (v = { picks: {}, says: {}, passed: new Set(), code: [], out: [], msg: [], pred: {}, cap: {}, good: [] }));
+  if (!v) visits.set(id, (v = { picks: {}, says: {}, wrongs: {}, passed: new Set(), code: [], out: [], msg: [], pred: {}, cap: {}, good: [] }));
   return v;
 };
 
@@ -411,12 +413,12 @@ function question(l: EngineLesson, v: Visit, q: Question, part: string, label: s
   const name = `${l.id}-${part}`;
   const say = v.says[part];
   const status = h('p', { role: 'status', class: cls.cx('m-0 text-body-sm', say === 'right' ? 'good' : say ? 'bad' : '') },
-    say === 'right' ? et('right') : say === 'wrong' ? et('wrong') : say === 'pick' ? et('pick') : '');
+    say === 'right' ? et('right') : say === 'wrong' ? et(whyShown(say, v.wrongs[part]) ? 'wrongWhy' : 'wrong') : say === 'pick' ? et('pick') : '');
   return h('fieldset', { class: 'm-0 space-y-2 border-0 p-0' },
     h('legend', { class: 'mb-2 p-0 font-bold' }, label ? h('span', { class: 'block text-caption font-bold tracking-wider text-muted uppercase' }, label) : null, ...inline(q.q[lang()])),
     ...d.optionOrder(`${l.id}#${part}`, q.options.length).map((i) => h('label', {
       class: cls.cx('flex min-h-11 cursor-pointer items-center gap-2 rounded-(--r-ctl) px-3 py-1 hover:bg-accent-soft has-[:checked]:bg-accent-soft has-[:checked]:ring-2 has-[:checked]:ring-accent',
-        say === 'right' && v.picks[part] === i ? 'bg-good-soft ring-1 ring-good' : 'ring-1 ring-line'),
+        say === 'right' && v.picks[part] === i ? 'bg-good-soft ring-1 ring-good' : say === 'wrong' && v.picks[part] === i ? 'bg-bad-soft ring-1 ring-line' : 'ring-1 ring-line'),
     },
       h('input', {
         type: 'radio', name, value: String(i), 'data-ek': `${name}-${i}`, checked: v.picks[part] === i,
@@ -429,12 +431,15 @@ function question(l: EngineLesson, v: Visit, q: Question, part: string, label: s
           const pick = v.picks[part];
           v.says[part] = pick === undefined ? 'pick' : isRight(q, pick) ? 'right' : 'wrong';
           if (part === 'p' && pick !== undefined && typeof predMod === 'object') predMod.recordFirst(d, l.id, pick);
+          if (v.says[part] === 'wrong') v.wrongs[part] = (v.wrongs[part] ?? 0) + 1;
           if (v.says[part] === 'right') passPart(l, v, part);
           d.rerender();
         },
       }, et('check')), status),
-    say === 'right' ? h('p', { class: 'm-0 rounded-(--r-inset) bg-surface-2 p-3 text-body-sm' }, ...inline(q.why[lang()])) : null);
+    whyShown(say, v.wrongs[part]) ? h('p', { class: 'm-0 rounded-(--r-inset) bg-surface-2 p-3 text-body-sm' }, ...inline(q.why[lang()])) : null);
 }
+/** L317 (engine-ux-spec, Câu kiểm): the explanation after a right answer, or after the 2nd wrong one (the first wrong is a free retry). */
+export const whyShown = (say: 'right' | 'wrong' | 'pick' | undefined, wrongs = 0): boolean => say === 'right' || (say === 'wrong' && wrongs >= 2);
 
 function runnerFor(l: EngineLesson, v: Visit): Promise<LabRunner> | undefined {
   const make = LAB_RUNNERS[l.engine];
