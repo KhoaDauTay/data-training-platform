@@ -691,7 +691,8 @@ SECTIONS.general = async () => {
       const decoy = d.wrong?.[0]?.sql ?? d.check;
       const prev = await ev(`document.querySelector('#work [role=status]')?.textContent?.trim() ?? ''`);
       await typeAnd(decoy, true);
-      await waitFor(`the verdict on the decoy of ${d.id}`, `(t => !!t && t !== ${S(prev)} && !/Đang chạy/.test(t))(document.querySelector('#work [role=status]')?.textContent?.trim())`, 60000);
+      // a decoy that errors (the check read alone on a table only the write creates, 42P01) may answer in the Result tab only
+      await waitFor(`the verdict on the decoy of ${d.id}`, `(t => !!t && t !== ${S(prev)} && !/Đang chạy/.test(t))(document.querySelector('#work [role=status]')?.textContent?.trim())`, 60000).catch(() => sleep(3000));
       if (await ev(`${completed}.includes(${S(d.id)})`)) bad.push(`${d.id}: the decoy passed`);
       await submitUntil(d.solution, `${completed}.includes(${S(d.id)})`);
     }
@@ -1092,7 +1093,8 @@ SECTIONS.engine = async () => {
         if (await ev(`[...document.querySelectorAll('#engine-page [data-ek$="-submit"].bg-accent')].map((b) => b.dataset.ek).join()`) !== `${id}-s${i}-submit`) fail(`step ${i + 1}: the main Submit is not this step's alone`);
         // v25–v27 step kinds: a bar (MongoDB `rule:`, DynamoDB/Postgres `perf:`) names itself above the editor and refuses its
         // `slow:` answer; a "mong lỗi" step (`error:`) refuses a command that runs; a Postgres `after:` step refuses doing nothing.
-        if ((st.rule || st.error || (st.perf && l.engine !== 'postgres')) && !(await ev(`!!(${at('code')})?.closest('[data-step]').querySelector('[data-rule]')`))) fail(`step ${i + 1}: no rule/cost/error line above the editor`);
+        // the line comes from the lazy engineNosql chunk, so it may draw a moment after the step
+        if (st.rule || st.error || (st.perf && l.engine !== 'postgres')) await waitFor(`step ${i + 1}: the rule/cost/error line above the editor`, `!!(${at('code')})?.closest('[data-step]').querySelector('[data-rule]')`, 30000);
         const other = l.lab.steps.find((x) => !x.error && x !== st)?.solution;
         const decoy = st.slow ? ['slow', st.slow] : st.error && other ? ['a command that runs', other] : st.after ? ['doing nothing', 'SELECT 1'] : undefined;
         if (decoy) {
@@ -1193,8 +1195,10 @@ SECTIONS.best = async () => {
     await step(`best: #/engine/best/${t} lists its ${BEST_CARDS.filter((c) => c.track === t).length} cards`, async () => {
       await go(`#/engine/best/${t}`);
       await waitFor(`the ${t} grid`, `!!document.querySelector('#engine-page[data-track="${t}"]')`, 60000);
-      const n = await ev(`document.querySelectorAll('#engine-page [data-card]').length`);
       const want = BEST_CARDS.filter((c) => c.track === t).length;
+      // the track's index is its own lazy chunk: wait for the grid to fill, then compare
+      await waitFor(`${want} cards`, `document.querySelectorAll('#engine-page [data-card]').length >= ${want}`, 30000).catch(() => {});
+      const n = await ev(`document.querySelectorAll('#engine-page [data-card]').length`);
       if (n !== want) fail(`${n} cards, want ${want}`);
     });
   }
