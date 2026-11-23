@@ -21,6 +21,20 @@
     </script>
   </head>
   <body>
+    <!-- L320: the sidebar's room before main.ts draws (renderSidebar sets the same two attributes): Home and #/me have none, so the page no longer jumps 64 px on load (CLS). -->
+    <script>
+      (function () {
+        var b = document.body, h = location.hash, r = '';
+        try {
+          if (h === '') r = JSON.parse(localStorage.getItem('cargo-query/route')) || 'home';
+          b.dataset.side = JSON.parse(localStorage.getItem('cargo-query/sidebar')) === 'open' ? 'open' : 'rail';
+        } catch (e) {
+          r = r || 'home';
+        }
+        if (h) r = /^#\/?$/.test(h) ? 'home' : /^#\/?me(?=$|[/?])/.test(h) ? 'me' : '';
+        if (r === 'home' || r === 'me') b.dataset.route = r;
+      })();
+    </script>
     <!--
       L57 / product-design-v6 §1: Lily (dog, the player's buddy) and Boon (duck, the guide), colours from --lily-* / --boon-*
       in style.css. ui-ux-v6 M1 (L115): parts <g id="<who>-<part>">; a pose is a recipe of parts (RIG, src/ui/mascots.ts), and
