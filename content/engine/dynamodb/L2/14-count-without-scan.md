@@ -15,7 +15,7 @@ objectives:
     en: Read a precomputed total with one `GetItem` instead of adding up every item.
   - vi: Giữ tổng tính sẵn khớp với dữ liệu bằng một `ExecuteTransaction`, và biết Streams làm việc này ra sao trên AWS.
     en: Keep a precomputed total in step with the data with one `ExecuteTransaction`, and know how Streams do this on AWS.
-requires: [e-dy-l2-05, e-dy-l2-09]
+requires: [e-dy-l2-05, e-dy-l2-07, e-dy-l2-09]
 sources:
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.Other.html
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/read-write-operations.html

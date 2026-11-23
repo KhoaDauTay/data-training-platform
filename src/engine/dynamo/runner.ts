@@ -123,10 +123,15 @@ const CAP_OPS = new Set(['GetItem', 'PutItem', 'UpdateItem', 'DeleteItem', 'Quer
 const withCapacity = (req: DynamoRequest): DynamoRequest =>
   (CAP_OPS.has(req.op) ? { op: req.op, input: { ...req.input, ReturnConsumedCapacity: 'INDEXES' } } : req);
 
-/** A step's cost bar, taken from the Solution's own run (route R5, L381): no Scan, and no more items read (or RCU) than it. */
-export function barOf(want: DynamoResult): { noScan: boolean; maxScanned?: number; maxRcu?: number } {
+/**
+ * A step's cost bar, taken from the Solution's own run (route R5, L381): no Scan, no more items read than it (`ScannedCount`),
+ * and for PartiQL (no `ScannedCount`: a hidden scan shows only in capacity) no more RCU, counted at the player's consistency so
+ * `ConsistentRead: true` is never "slow". A GetItem Solution needs only `noScan`.
+ */
+export function barOf(want: DynamoResult, strong = false): { noScan: boolean; maxScanned?: number; maxRcu?: number } {
   const c = readCost(want);
-  return { noScan: want.op !== 'Scan', ...(want.ScannedCount !== undefined ? { maxScanned: want.ScannedCount } : c.rcu !== undefined ? { maxRcu: c.rcu } : {}) };
+  return { noScan: want.op !== 'Scan', ...(want.ScannedCount !== undefined ? { maxScanned: want.ScannedCount }
+    : want.op === 'ExecuteStatement' && c.rcu !== undefined ? { maxRcu: c.rcu * (strong ? 2 : 1) } : {}) };
 }
 
 type KeyDef = { AttributeName: string; KeyType: string };
@@ -217,7 +222,7 @@ export function dynamoRunner(env: Pick<LabEnv, 'lang'>, client = new DynamoClien
         if (!g.ok) return { ok: false, reason: 'wrong', why: g.why === 'count' ? 'count' : g.why === 'order' ? 'order' : 'items', params: g.why === 'count' ? { want: g.expected, got: g.actual } : undefined };
         // The cost bar comes before `expect`, so a Scan is refused by the bar and says why (route R5: right but slow = not passed).
         if (step.perf) {
-          const w = gradeItems(got.r, want.r, { ordered: step.ordered, ...barOf(want.r) });
+          const w = gradeItems(got.r, want.r, { ordered: step.ordered, ...barOf(want.r, got.req.input.ConsistentRead === true && want.req.input.ConsistentRead !== true) });
           if (w.ok && w.weak) {
             const [c, s] = [readCost(got.r), readCost(want.r)];
             const p: Record<string, number> = w.weak === 'rcu' ? { got: c.rcu ?? 0, sol: s.rcu ?? 0 } : { got: c.scanned ?? c.count, sol: s.scanned ?? s.count, count: c.count };
