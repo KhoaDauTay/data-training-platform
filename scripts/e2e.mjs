@@ -994,7 +994,7 @@ const ENGINE_LESSONS = ['postgres', 'mongodb', 'dynamodb', 'design'].flatMap((e)
 const PATH_FILES = yml('content/engine/mongodb/path/index.yml');
 const PATH_DRILLS = PATH_FILES.files.flatMap((f) => yml(`content/engine/mongodb/path/${f.drills}`));
 /** Same rule as src/engine/predict.ts hasRealPlan() (v23 PRED: the predict card with "Xem thật" and the plan tree). */
-const realPlan = (l) => l.engine === 'postgres' && l.runtime !== 'docs' && !!l.predict && (!!l.lab?.setup || !!l.predict.expect);
+const realPlan = (l) => (l.engine === 'postgres' || l.engine === 'design') && l.runtime !== 'docs' && !!l.predict && (!!l.lab?.setup || !!l.predict.expect);
 /** Same rule as src/engine/predict.ts readsCounters() (L296, blind-pg l3-08): "Xem thật" shows the query's rows, not a plan. */
 const readsCounters = (l) => realPlan(l) && !l.predict.expect && !!l.lab?.setup && /\bpg_stat(io)?_/i.test(l.predict.sql);
 /** Same rule as src/engine/predict.ts capstonePivot() (v23 CAP): the step after which the before/after plans open. */
@@ -1013,7 +1013,7 @@ function capstonePivot(lab) {
 /** v23 PG-C lessons (L268): VACUUM size, count(*) predict, Buffers line, unused indexes, REINDEX. */
 const NEW_V23 = ['e-pg-l3-16', 'e-pg-l3-17', 'e-pg-l3-18', 'e-pg-l5-16', 'e-pg-l5-17'];
 /** Same rule as src/engine/labs.ts gradable(). */
-const gradableStep = (l, st) => l.runtime !== 'docs' && (l.engine === 'postgres' ? st.check !== 'doc' && !(st.check === 'plan' && !l.lab?.setup) : st.check === 'doc' || (l.engine === 'dynamodb' && st.check === 'catalog')); // L299
+const gradableStep = (l, st) => l.runtime !== 'docs' && ((l.engine === 'postgres' || l.engine === 'design') ? st.check !== 'doc' && !(st.check === 'plan' && !l.lab?.setup) : st.check === 'doc' || (l.engine === 'dynamodb' && st.check === 'catalog')); // L299
 SECTIONS.engine = async () => {
   await shared();
   const counts = { lessons: 0, passed: 0, steps: 0, predicts: 0, capstones: 0, capPlans: 0, failedLessons: [] };
@@ -1050,7 +1050,7 @@ SECTIONS.engine = async () => {
         await waitFor('right after the real plan', `!!${status}?.classList.contains('good')`, 5000);
       } else if (l.predict) await pick('p', l.predict);
       const cap = l.kind === 'capstone' && !!l.lab && l.runtime !== 'docs';
-      const pivot = cap && l.engine === 'postgres' ? capstonePivot(l.lab) : undefined;
+      const pivot = cap && (l.engine === 'postgres' || l.engine === 'design') ? capstonePivot(l.lab) : undefined;
       if (cap && !(await ev(`!!document.querySelector('#engine-page [data-cap-bar]')`))) fail('no capstone step bar');
       for (const [i, st] of (l.lab?.steps ?? []).entries()) {
         if (!gradableStep(l, st)) continue;
