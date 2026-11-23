@@ -78,15 +78,15 @@ function dots(c: LearnCtx, s: Skill): HTMLElement {
   const { h } = d$;
   const { level } = levelOf(c, s.id);
   return h('span', { class: 'inline-flex shrink-0 items-center gap-1', role: 'img', 'aria-label': lt('lvl.aria', { skill: label(s), level: lt(`lvl.${level}` as LearnKey), n: level }) },
-    ...[1, 2, 3, 4].map((i) => h('span', { class: cx('size-2.5 rounded-full', i <= level ? 'bg-accent' : 'ring-[1.5px] ring-line-strong ring-inset') })));
+    ...[1, 2, 3, 4].map((i) => h('span', { class: cx('size-2.5 rounded-full', i <= level ? 'bg-accent' : 'ring-1 ring-line-strong') })));
 }
-const dueChip = (): HTMLElement => d$.h('a', { href: d$.hashOf('practice'), class: 'relative z-10 inline-flex min-h-6 items-center gap-1 rounded-full bg-warn-soft px-2 py-0.5 text-caption font-semibold text-warn no-underline' },
+const dueChip = (): HTMLElement => d$.h('a', { href: d$.hashOf('practice'), class: 'relative z-10 inline-flex min-h-6 items-center gap-1 rounded-full bg-warn-soft px-2 py-0.5 text-caption font-semibold text-ink no-underline' },
   d$.icon('repeat', 'size-3.5'), lt('lvl.due'));
 /** The skill page's level line (ux §5.2): dots, level name, the one step to the next level, "self-measured". */
 function levelLine(c: LearnCtx, s: Skill): HTMLElement {
   const { h } = d$;
   const { level, due } = levelOf(c, s.id);
-  return h('div', { class: 'flex min-h-10 flex-wrap items-center gap-x-3 gap-y-1 rounded-(--r-inset) bg-surface-2 px-3 py-2 text-body-sm', 'data-level': String(level) },
+  return h('div', { class: 'flex min-h-11 flex-wrap items-center gap-x-3 gap-y-1 rounded-(--r-inset) bg-surface-2 px-3 py-2 text-body-sm', 'data-level': String(level) },
     dots(c, s), h('b', {}, lt('lvl.line', { level: lt(`lvl.${level}` as LearnKey) })),
     h('span', { class: 'text-muted' }, lt(`lvl.next.${level}` as LearnKey)), due ? dueChip() : null,
     h('span', { class: 'ml-auto text-caption text-muted' }, lt('lvl.self')));
@@ -137,10 +137,10 @@ function modulePage(c: LearnCtx, n: number): HTMLElement {
     const st = skillState(c, s.id);
     const { due } = levelOf(c, s.id);
     const isNext = s === next;
-    return h('li', { class: cx('relative flex min-h-12 items-center gap-3 border-l-4 px-4 py-2 max-sm:min-h-16 max-sm:gap-2 max-sm:px-3', isNext ? 'border-l-accent bg-accent-soft' : 'border-l-transparent hover:bg-code'), 'data-skill': s.id },
+    return h('li', { class: cx('relative flex min-h-11 items-center gap-2 border-l-4 px-3 py-2', isNext ? 'border-l-accent bg-accent-soft' : 'border-l-transparent hover:bg-code'), 'data-skill': s.id },
       h('span', { class: 'grid size-8 shrink-0 place-items-center rounded-full bg-accent-soft text-accent', 'aria-hidden': 'true' }, d$.skillIcon(s.id, 'size-5')),
-      h('span', { class: 'w-6 shrink-0 font-mono text-body-sm text-muted tabular-nums', 'aria-hidden': 'true' }, String(order.indexOf(s.id) + 1).padStart(2, '0')),
-      h('a', { href: skillHref(s.id), class: cx('min-w-0 flex-1 truncate text-ink no-underline after:absolute after:inset-0 max-sm:line-clamp-2 max-sm:whitespace-normal', isNext ? 'font-bold' : 'font-semibold'), title: label(s) }, label(s)),
+      h('span', { class: 'shrink-0 font-mono text-body-sm text-muted tabular-nums', 'aria-hidden': 'true' }, String(order.indexOf(s.id) + 1).padStart(2, '0')),
+      h('a', { href: skillHref(s.id), class: cx('min-w-0 flex-1 text-ink no-underline after:absolute after:inset-0', isNext ? 'font-bold' : 'font-semibold'), title: label(s) }, label(s)),
       due ? dueChip() : null,
       h('span', { class: 'shrink-0 text-body-sm text-muted max-sm:hidden' }, `${lt(hasFull(s.id) ? 'part.full' : 'part.quick')} · ${lt('learn.drills', { n: st.drills, total: st.total })}`),
       dots(c, s),
@@ -148,7 +148,7 @@ function modulePage(c: LearnCtx, n: number): HTMLElement {
   };
   const list = (xs: Skill[]): HTMLElement => h('ul', { class: 'm-0 list-none divide-y divide-line overflow-hidden rounded-(--r-card) bg-panel p-0 ring-1 ring-line' }, ...xs.map(row));
   const chip = (f: PartFilter, count: number): HTMLElement => h('button', {
-    type: 'button', 'aria-pressed': String(partFilter === f), class: cx('min-h-8 rounded-full px-3 py-1 text-body-sm font-semibold ring-1', partFilter === f ? 'bg-accent-soft text-accent ring-accent' : 'bg-panel text-ink ring-line hover:ring-accent'),
+    type: 'button', 'aria-pressed': String(partFilter === f), class: cx('min-h-6 rounded-full px-3 py-1 text-body-sm font-semibold ring-1', partFilter === f ? 'bg-accent-soft text-accent ring-accent' : 'bg-panel text-ink ring-line hover:ring-accent'),
     onclick: () => { partFilter = f; d$.actions.rerender(); d$.announce(lt('part.shown', { n: f === 'all' ? skills.length : todo.length })); },
   }, lt(f === 'all' ? 'part.filter.all' : 'part.filter.todo', { n: count }));
   return h('div', { class: 'space-y-4' },
@@ -161,10 +161,10 @@ function modulePage(c: LearnCtx, n: number): HTMLElement {
       : learned.length && todo.length
         ? h('div', { class: 'space-y-3' },
           h('details', { class: 'group rounded-(--r-card) bg-panel ring-1 ring-line' },
-            h('summary', { class: 'flex min-h-12 cursor-pointer list-none items-center gap-2 px-4 [&::-webkit-details-marker]:hidden' },
+            h('summary', { class: 'flex min-h-11 cursor-pointer list-none items-center gap-2 px-4 [&::-webkit-details-marker]:hidden' },
               d$.icon('check', 'size-5 text-good'), h('span', { class: 'flex-1 font-semibold' }, lt('part.doneGroup', { n: learned.length })),
-              h('span', { class: 'text-body-sm font-semibold text-accent' }, lt('part.show', { n: learned.length })), d$.icon('down', 'size-4 text-muted group-open:rotate-180')),
-            h('div', { class: 'p-2 pt-0' }, list(learned))),
+              h('span', { class: 'text-body-sm font-semibold text-accent' }, lt('part.show', { n: learned.length })), d$.icon('down', 'size-4 text-muted [details[open]>summary>&]:rotate-180')),
+            h('div', { class: 'p-2' }, list(learned))),
           list(todo))
         : list(skills));
 }
@@ -251,11 +251,11 @@ function overview(c: LearnCtx): HTMLElement {
     h('ul', { class: 'm-0 grid list-none gap-3 p-0 lg:grid-cols-2' }, ...c.parts.map((p) => {
       const ms = moduleState(c, p.n);
       const isCurrent = p.n === current;
-      return h('li', { class: cx('relative flex min-h-16 cursor-pointer items-center gap-3 rounded-(--r-card) bg-panel px-4 py-3 ring-1 hover:ring-accent', isCurrent ? 'ring-2 ring-accent' : 'ring-line'), 'data-part': String(p.n) }, // v12 L86: the whole card opens it
+      return h('li', { class: cx('relative flex cursor-pointer items-center gap-3 rounded-(--r-card) bg-panel px-4 py-3 ring-1 hover:ring-accent', isCurrent ? 'ring-2 ring-accent' : 'ring-line'), 'data-part': String(p.n) }, // v12 L86: the whole card opens it
         h('span', { class: 'grid size-12 shrink-0 place-items-center rounded-full bg-accent-soft text-accent max-sm:size-10', 'aria-hidden': 'true' }, d$.skillIcon(p.skills[0], 'size-6')),
         h('div', { class: 'min-w-0 flex-1 space-y-1.5' },
           h('div', { class: 'flex items-center gap-2' },
-            h('a', { href: `${d$.hashOf('learn')}/sql/${p.n}`, class: 'min-w-0 flex-1 truncate font-bold text-ink no-underline after:absolute after:inset-0' }, lt('learn.moduleTitle', { n: p.n, title: d$.moduleTitle(p.n, lang) })),
+            h('a', { href: `${d$.hashOf('learn')}/sql/${p.n}`, class: 'min-w-0 flex-1 font-bold text-ink no-underline after:absolute after:inset-0' }, lt('learn.moduleTitle', { n: p.n, title: d$.moduleTitle(p.n, lang) })),
             ms.done ? d$.icon('check', 'size-5 shrink-0 text-good') : isCurrent ? h('span', { class: 'shrink-0 rounded-full bg-accent-soft px-2 text-caption font-semibold text-accent' }, lt('learn.current')) : null),
           h('p', { class: 'm-0 text-body-sm text-muted' }, lt('learn.moduleLine', { k: ms.learned, m: ms.skills.length })),
           bar(ms.learned, ms.skills.length)));

@@ -14,7 +14,7 @@ const GROUPS = [
   ['lessons', /^lessonSources-/, 35], // quick lessons (content/lessons.yml), lazy, fetched at boot beside the tickets (Plan 6): 8 KB for 11 lessons; Plan 8a: 38 lessons, ~0.75 KB each
   ['art', /^logistics-/, 20], // Plan 8b D8b-2: Tien Sa scene, route map and completion scenes, lazy (prefetched when idle after the first render): 7 KB, took 6 KB off main
   ['illustrations', /^illustrations-/, 15], // Plan 8b D8b-8: drawn illustrations (learning path, modules, empty states, Finance), lazy, fetched by the first page that shows one
-  ['css', /^index-.*\.css$/, 20],
+  ['css', /^index-.*\.css$/, 22], // v24 R0 (L338): 20 → 22; v23 shipped at 20,433 B of 20,480, the learning-path pages and the full lesson page add ~70 B (layout in plain CSS)
   // ENG-DYNAMO (L245): @dynoxide/wasm-engine 1.5.0 (DynamoDB emulator) copied as plain assets by src/engine/dynamo/worker.ts:
   // its worker script (69 KB gz -9) + dynoxide_bg.wasm (704) + sqlite3.wasm (391) = 1,170 KB gz, fetched only on the first
   // DynamoDB run (the lab worker itself, ~2 KB gz, falls in `worker`). Optional (4th field) until a page imports

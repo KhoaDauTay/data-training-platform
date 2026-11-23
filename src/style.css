@@ -501,7 +501,13 @@ svg[data-mascot].cq-hop { animation: cq-hop 320ms ease-out 80ms backwards; }
 .lily-bar::-webkit-progress-value { background: var(--accent); border-radius: 999px; }
 .lily-bar::-moz-progress-bar { background: var(--accent); border-radius: 999px; }
 
-/* v24 R0 (L338): a General full lesson's page widens to --w-wide from 1280 px so the 720 px reading column and the 232 px sticky TOC fit side by side. */
+/* v24 R0 (L338): a General full lesson (src/ui/lessonPage.ts). Code never wraps (it scrolls sideways). From 1280 px the page
+   widens to --w-wide: a 720 px reading column beside the 232 px sticky TOC (<aside>); the lesson bar and in-body TOC go.
+   Plain CSS, not Tailwind arbitrary values: the css budget (20 KB) had no room. */
+[data-lesson-page] pre.sql { white-space: pre; }
 @media (min-width: 1280px) {
   #home:has([data-lesson-page]) > * { max-width: var(--w-wide); }
+  [data-lesson-page] { grid-template-columns: minmax(0, 720px) 232px; }
+  [data-lesson-page] > aside { display: block; }
+  [data-fl-bar], [data-fl-toc] { display: none; }
 }

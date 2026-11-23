@@ -24,8 +24,11 @@ const cx = (...c: (string | false | undefined)[]): string => c.filter(Boolean).j
 
 const BTN_GO = 'rounded-full border-0 bg-accent px-4 py-1.5 font-bold text-on-accent shadow-(--shadow-1) hover:bg-accent/90';
 const BTN_SECONDARY = 'rounded-full border border-accent bg-panel px-3 py-1 font-bold text-accent hover:bg-accent-soft';
-const BTN_GHOST = 'inline-flex min-h-8 items-center gap-1.5 rounded-full border-0 bg-transparent px-2.5 py-1 font-semibold text-accent hover:bg-accent-soft';
+const BTN_GHOST = 'inline-flex min-h-6 items-center gap-1.5 rounded-full border-0 bg-transparent px-2.5 py-1 font-semibold text-accent hover:bg-accent-soft';
 const CARD = 'rounded-(--r-card) bg-panel ring-1 ring-line';
+const TOC_ROW = 'flex min-h-11 w-full items-center gap-2 border-0 border-l-4 border-transparent bg-transparent px-3 py-1.5 text-left text-body-sm text-ink hover:bg-accent-soft';
+/** The section being read (set at draw and by the observer; classes, not aria variants, to keep the CSS small). */
+const TOC_NOW = 'border-accent bg-accent-soft font-bold text-accent';
 const CHIP = 'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-body-sm';
 
 type Out = { result?: QueryResult; error?: unknown; sql: string };
@@ -61,7 +64,7 @@ const prose = (text: string): HTMLElement =>
 const KW = /^(SELECT|FROM|WHERE|AS|AND|OR|NOT|IN|IS|NULL|ORDER|BY|GROUP|HAVING|LIMIT|OFFSET|JOIN|LEFT|RIGHT|FULL|INNER|OUTER|CROSS|ON|USING|DISTINCT|CASE|WHEN|THEN|ELSE|END|WITH|UNION|ALL|EXCEPT|INTERSECT|ASC|DESC|LIKE|ILIKE|BETWEEN|EXISTS|ANY|OVER|PARTITION|INSERT|INTO|VALUES|UPDATE|SET|DELETE|RETURNING|CREATE|TABLE|INDEX|EXPLAIN|TRUE|FALSE)$/i;
 function code(sql: string): HTMLElement {
   const { h } = d$;
-  const pre = h('pre', { class: 'sql m-0 overflow-x-auto whitespace-pre', lang: 'en', tabindex: '0' });
+  const pre = h('pre', { class: 'sql m-0 overflow-x-auto', lang: 'en', tabindex: '0' });
   for (const m of sql.matchAll(/(--[^\n]*)|('(?:[^']|'')*')|("(?:[^"]|"")*")|(\b\d+(?:\.\d+)?\b)|([A-Za-z_]\w*)|([\s\S])/g)) {
     const [t, comment, str, , num, word] = m;
     const color = comment ? 'var(--syn-comment)' : str ? 'var(--syn-string)' : num ? 'var(--syn-number)' : word && KW.test(word) ? 'var(--syn-keyword)' : undefined;
@@ -73,13 +76,13 @@ function code(sql: string): HTMLElement {
 function sectionHead(s: LessonSection, aside?: string): HTMLElement {
   const { h } = d$;
   return h('div', { class: 'flex flex-wrap items-center justify-between gap-2' },
-    h('h2', { id: `${secId(s)}-h`, class: 'm-0 flex items-center gap-2.5 text-title font-bold', tabindex: '-1' },
-      h('span', { class: 'grid size-8 shrink-0 place-items-center rounded-full bg-accent-soft text-accent', 'aria-hidden': 'true' }, d$.icon(SEC_ICON[s], 'size-[18px]')),
+    h('h2', { id: `${secId(s)}-h`, class: 'm-0 flex items-center gap-2 text-title font-bold', tabindex: '-1' },
+      h('span', { class: 'grid size-8 shrink-0 place-items-center rounded-full bg-accent-soft text-accent', 'aria-hidden': 'true' }, d$.icon(SEC_ICON[s], 'size-5')),
       secName(s)),
     aside ? h('span', { class: 'text-body-sm text-muted tabular-nums' }, aside) : null);
 }
 const section = (s: LessonSection, aside: string | undefined, ...body: (Node | null)[]): HTMLElement =>
-  d$.h('section', { id: secId(s), 'data-sec': s, class: 'flex scroll-mt-16 flex-col gap-3', 'aria-labelledby': `${secId(s)}-h` }, sectionHead(s, aside), ...body.filter((x): x is Node => !!x));
+  d$.h('section', { id: secId(s), 'data-sec': s, class: 'flex scroll-mt-4 flex-col gap-3', 'aria-labelledby': `${secId(s)}-h` }, sectionHead(s, aside), ...body.filter((x): x is Node => !!x));
 
 /** Runs `sql` on `lab` like "Thử ngay" (runOn: lab seeded on first use), stores the output, redraws `out`. */
 async function runInto(key: string, sql: string, out: HTMLElement, btn: HTMLButtonElement, say?: (r: QueryResult) => string): Promise<void> {
@@ -127,7 +130,7 @@ function exampleBlock(l: FullLesson, i: number, folded: boolean): HTMLElement {
   const key = `${l.id}#ex${i}`;
   const out = h('div', { class: 'flex flex-col gap-2' });
   const title = lt('fl.example', { i: i + 1, title: e.title[lang] });
-  const run: HTMLButtonElement = h('button', { type: 'button', class: cx(BTN_SECONDARY, 'inline-flex min-h-8 items-center gap-1'), 'data-fl-run': key,
+  const run: HTMLButtonElement = h('button', { type: 'button', class: cx(BTN_SECONDARY, 'inline-flex min-h-6 items-center gap-1'), 'data-fl-run': key,
     onclick: () => {
       opened.add(key);
       if (details && !details.open) details.open = true;
@@ -149,8 +152,8 @@ function exampleBlock(l: FullLesson, i: number, folded: boolean): HTMLElement {
   } }, d$.icon(editing ? 'resetCode' : 'editTry', 'size-4'), lt(editing ? 'fl.reset' : 'fl.edit'));
   reads.set(key, () => e.read[d$.getLang()]);
   drawOut(key, out, e.read[lang]);
-  const body = h('div', { class: 'flex flex-col gap-2 px-4 pb-4' }, editing ? editors.get(key)!.host : code(e.sql), out);
-  const actions = h('div', { class: 'flex shrink-0 items-center gap-1 max-sm:pl-3' }, edit, run);
+  const body = h('div', { class: 'flex flex-col gap-2 px-4 py-3' }, editing ? editors.get(key)!.host : code(e.sql), out);
+  const actions = h('div', { class: 'flex shrink-0 items-center gap-1 px-3' }, edit, run);
   const head = (tag: 'div'): HTMLElement => h(tag, { class: 'flex flex-wrap items-center justify-between gap-2 px-4 py-3' },
     h('h3', { class: 'm-0 flex min-w-0 items-center gap-2 text-body font-bold' }, d$.icon('secRun', 'size-5 shrink-0 text-accent'), title),
     folded && !outs.has(key) ? h('span', { class: 'text-body-sm text-muted' }, lt('fl.notRun')) : null);
@@ -158,11 +161,11 @@ function exampleBlock(l: FullLesson, i: number, folded: boolean): HTMLElement {
   if (folded) {
     details = h('details', { class: cx(CARD, 'group'), open: opened.has(key) || outs.has(key), ontoggle: () => (details!.open ? opened.add(key) : opened.delete(key)) },
       h('summary', { class: 'flex cursor-pointer list-none items-center gap-2 pr-3 [&::-webkit-details-marker]:hidden' },
-        h('span', { class: 'min-w-0 flex-1' }, head('div')), d$.icon('down', 'size-4 text-muted group-open:rotate-180')),
-      h('div', { class: 'flex justify-end px-4 pb-1' }, actions), body) as HTMLDetailsElement;
+        h('span', { class: 'min-w-0 flex-1' }, head('div')), d$.icon('down', 'size-4 text-muted [details[open]>summary>&]:rotate-180')),
+      h('div', { class: 'flex justify-end' }, actions), body) as HTMLDetailsElement;
     return details;
   }
-  return h('article', { class: CARD }, h('div', { class: 'flex flex-wrap items-center justify-between gap-x-2 pr-3 max-sm:pb-2' }, h('div', { class: 'min-w-0 basis-full sm:basis-0 sm:flex-1' }, head('div')), actions), body);
+  return h('article', { class: CARD }, h('div', { class: 'flex flex-wrap items-center justify-between gap-x-2 pr-3' }, h('div', { class: 'min-w-48 flex-1' }, head('div')), actions), body);
 }
 
 /** A pitfall: warn-soft card; the wrong query and the fix, each with its own Run (the wrong one really runs). */
@@ -182,12 +185,12 @@ function pitfallBlock(l: FullLesson, i: number): HTMLElement {
       code(p[which]), h('div', {}, btn), out);
   };
   const inner = [one('wrong'), prose(p.why[lang]), one('fix')];
-  const title = h('h3', { class: 'm-0 flex items-center gap-2 text-body font-bold' }, d$.icon('secPitfall', 'size-5 shrink-0 text-warn'), lt('fl.pitfall', { i: i + 1, title: p.title[lang] }));
+  const title = h('h3', { class: 'm-0 flex items-center gap-2 text-body font-bold' }, d$.icon('secPitfall', 'size-5 shrink-0 text-ink'), lt('fl.pitfall', { i: i + 1, title: p.title[lang] }));
   if (i === 0) return h('article', { class: 'flex flex-col gap-3 rounded-(--r-card) bg-warn-soft p-4' }, title, ...inner);
   const key = `${l.id}#pit${i}`;
   const det = h('details', { class: 'group rounded-(--r-card) bg-warn-soft', open: opened.has(key), ontoggle: () => (det.open ? opened.add(key) : opened.delete(key)) },
-    h('summary', { class: 'flex min-h-12 cursor-pointer list-none items-center justify-between gap-2 px-4 py-2 [&::-webkit-details-marker]:hidden' }, title, d$.icon('down', 'size-4 text-muted group-open:rotate-180')),
-    h('div', { class: 'flex flex-col gap-3 px-4 pb-4' }, ...inner)) as HTMLDetailsElement;
+    h('summary', { class: 'flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 px-4 py-2 [&::-webkit-details-marker]:hidden' }, title, d$.icon('down', 'size-4 text-muted [details[open]>summary>&]:rotate-180')),
+    h('div', { class: 'flex flex-col gap-3 px-4 py-3' }, ...inner)) as HTMLDetailsElement;
   return det;
 }
 
@@ -198,10 +201,10 @@ function practice(l: FullLesson, drills: readonly Drill[]): HTMLElement {
   const quick = d$.loadLessons().get(l.id);
   const key = `${l.id}#try`;
   const out = h('div', { class: 'flex flex-col gap-2' });
-  const verdict = h('p', { role: 'status', class: 'm-0 empty:hidden', 'data-fl-verdict': '' });
+  const verdict = h('p', { role: 'status', class: 'm-0', 'data-fl-verdict': '' });
   const drawVerdict = (): void => {
     const v = verdicts.get(key);
-    verdict.className = cx('m-0 font-semibold empty:hidden', v && (v.ok ? 'text-good' : 'text-bad'));
+    verdict.className = cx('m-0 font-semibold', v && (v.ok ? 'text-good' : 'text-bad'));
     verdict.textContent = v?.text ?? '';
   };
   drawOut(key, out);
@@ -257,7 +260,7 @@ function quiz(l: FullLesson): HTMLElement {
     const pick = picks.get(key);
     const name = `fl-${l.id}-q${i}`;
     return h('fieldset', { class: cx(CARD, 'm-0 flex flex-col gap-2 p-4') },
-      h('legend', { class: 'float-left mb-1 w-full text-body font-bold' }, `${lt('fl.quizQ', { i: i + 1, n: l.quiz.length })} · `, ...inline(q.q[lang])),
+      h('legend', { class: 'mb-1 text-body font-bold' }, `${lt('fl.quizQ', { i: i + 1, n: l.quiz.length })} · `, ...inline(q.q[lang])),
       ...q.options.map((o, j) => h('label', { class: cx('flex min-h-11 cursor-pointer items-center gap-2.5 rounded-(--r-ctl) px-3 py-2 ring-1', pick === j ? 'bg-accent-soft ring-2 ring-accent' : 'ring-line hover:ring-accent') },
         h('input', { type: 'radio', name, checked: pick === j, onchange: () => { picks.set(key, j); d$.actions.rerender(); } }),
         h('span', {}, ...inline(o[lang])))),
@@ -272,7 +275,7 @@ function tocList(l: FullLesson, current: LessonSection, onPick?: () => void): HT
   const { h } = d$;
   return h('ul', { class: 'm-0 flex list-none flex-col p-0' }, ...LESSON_SECTIONS.map((s) => h('li', {},
     h('button', { type: 'button', 'data-toc': s, 'aria-current': s === current ? 'location' : false,
-      class: 'flex min-h-9 w-full items-center gap-2 border-0 border-l-3 border-transparent bg-transparent px-3 py-1.5 text-left text-body-sm text-ink hover:bg-accent-soft aria-[current=location]:border-accent aria-[current=location]:bg-accent-soft aria-[current=location]:font-bold aria-[current=location]:text-accent max-xl:min-h-11',
+      class: cx(TOC_ROW, s === current && TOC_NOW),
       onclick: () => {
         onPick?.();
         const el = document.getElementById(secId(s));
@@ -322,28 +325,30 @@ export function lessonPage(deps: DrillDeps, l: FullLesson, c: LessonCtx): HTMLEl
   const setCurrent = (s: LessonSection): void => {
     current = s;
     for (const b of document.querySelectorAll<HTMLElement>('[data-lesson-page] [data-toc]')) {
-      if (b.dataset.toc === s) b.setAttribute('aria-current', 'location');
+      const on = b.dataset.toc === s;
+      if (on) b.setAttribute('aria-current', 'location');
       else b.removeAttribute('aria-current');
+      for (const c of TOC_NOW.split(' ')) b.classList.toggle(c, on);
     }
     const label = document.querySelector('[data-fl-bar-sec]');
     if (label) label.textContent = lt('fl.barSec', { k: LESSON_SECTIONS.indexOf(s) + 1, n: LESSON_SECTIONS.length, name: secName(s) });
   };
 
   // ux §7: phone/tablet lesson bar (sticky under the top bar) + the TOC sheet
-  const sheet = h('dialog', { id: 'fl-toc-sheet', class: 'm-0 mt-auto max-h-[80vh] w-full max-w-none rounded-t-(--r-card) bg-panel p-0 text-ink shadow-(--shadow-2) backdrop:bg-black/40', 'aria-labelledby': 'fl-sheet-title',
+  const sheet = h('dialog', { id: 'fl-toc-sheet', class: 'm-0 mt-auto max-h-[calc(100dvh-2rem)] w-full max-w-none rounded-(--r-card) bg-panel p-0 text-ink shadow-(--shadow-2)', 'aria-labelledby': 'fl-sheet-title',
     onclick: (ev: Event) => { if (ev.target === sheet) sheet.close(); } }) as HTMLDialogElement;
   const opener = h('button', { type: 'button', class: 'flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-full border-0 bg-transparent px-3 text-body-sm font-semibold text-ink hover:bg-accent-soft', 'aria-haspopup': 'dialog',
     onclick: () => {
       sheet.replaceChildren(h('div', { class: 'flex items-center justify-between border-b border-line px-4 py-3' },
         h('h2', { id: 'fl-sheet-title', class: 'm-0 text-title font-bold' }, lt('fl.toc')),
         h('button', { type: 'button', class: BTN_GHOST, onclick: () => sheet.close() }, lt('fl.close'))),
-      h('nav', { class: 'overflow-y-auto py-2', 'aria-label': lt('fl.toc') }, tocList(l, current, () => sheet.close())));
+      h('nav', { class: 'overflow-auto py-2', 'aria-label': lt('fl.toc') }, tocList(l, current, () => sheet.close())));
       sheet.showModal();
     } }, d$.icon('toc', 'size-5 shrink-0 text-accent'),
   h('span', { class: 'truncate', 'data-fl-bar-sec': '' }, lt('fl.barSec', { k: LESSON_SECTIONS.indexOf(current) + 1, n: LESSON_SECTIONS.length, name: secName(current) })));
   sheet.addEventListener('close', () => opener.focus());
-  const bar = h('div', { class: 'sticky top-0 z-20 -mx-4 flex min-h-12 items-center gap-1 border-b border-line bg-panel/95 px-2 backdrop-blur xl:hidden', 'data-fl-bar': '' },
-    c.part ? h('a', { href: `${d$.hashOf('learn')}/sql/${c.part.n}`, class: 'inline-flex min-h-11 max-w-[45%] shrink-0 items-center gap-1 px-2 text-body-sm font-semibold no-underline' },
+  const bar = h('div', { class: 'sticky top-0 z-20 flex min-h-11 items-center gap-1 border-b border-line bg-panel', 'data-fl-bar': '' },
+    c.part ? h('a', { href: `${d$.hashOf('learn')}/sql/${c.part.n}`, class: 'inline-flex min-h-11 min-w-0 items-center gap-1 px-2 text-body-sm font-semibold no-underline' },
       d$.icon('chevronLeft', 'size-4 shrink-0'), h('span', { class: 'truncate' }, lt('learn.moduleTitle', { n: c.part.n, title: c.part.title }))) : null,
     opener, sheet);
 
@@ -356,9 +361,9 @@ export function lessonPage(deps: DrillDeps, l: FullLesson, c: LessonCtx): HTMLEl
         h('a', { href: `${d$.hashOf('learn')}/skill/${c.prev.id}`, class: cx(CHIP, 'bg-accent-soft font-semibold text-accent no-underline') }, c.prev.label[lang]))
       : null);
 
-  const inBodyToc = h('details', { class: cx(CARD, 'xl:hidden') },
+  const inBodyToc = h('details', { class: CARD, 'data-fl-toc': '' },
     h('summary', { class: 'flex min-h-11 cursor-pointer items-center gap-2 px-4 font-semibold' }, d$.icon('toc', 'size-5 text-accent'), lt('fl.tocCount', { n: LESSON_SECTIONS.length })),
-    h('nav', { class: 'pb-2', 'aria-label': lt('fl.tocBody') }, tocList(l, current)));
+    h('nav', { class: 'py-2', 'aria-label': lt('fl.tocBody') }, tocList(l, current)));
 
   const many = l.examples.length > 3;
   const article = h('article', { class: 'flex min-w-0 flex-col gap-8', 'aria-labelledby': 'home-title' },
@@ -372,7 +377,7 @@ export function lessonPage(deps: DrillDeps, l: FullLesson, c: LessonCtx): HTMLEl
       l.syntax.options.length ? h('div', { class: cx(CARD, 'overflow-x-auto') }, h('table', { class: 'w-full border-collapse text-body-sm' },
         h('thead', {}, h('tr', { class: 'bg-surface-2' }, h('th', { scope: 'col', class: 'px-3 py-2 text-left' }, lt('fl.optWrite')), h('th', { scope: 'col', class: 'px-3 py-2 text-left' }, lt('fl.optMeans')))),
         h('tbody', {}, ...l.syntax.options.map((o) => h('tr', { class: 'border-t border-line' },
-          h('td', { class: 'px-3 py-2 align-top sm:whitespace-nowrap' }, h('code', { lang: 'en' }, o.code)), h('td', { class: 'px-3 py-2 whitespace-normal' }, o.text[lang])))))) : null),
+          h('td', { class: 'px-3 py-2 align-top' }, h('code', { lang: 'en' }, o.code)), h('td', { class: 'px-3 py-2 whitespace-normal' }, o.text[lang])))))) : null),
     section('examples', undefined, ...l.examples.map((_, i) => exampleBlock(l, i, many && i > 0))),
     section('pitfalls', undefined, ...l.pitfalls.map((_, i) => pitfallBlock(l, i))),
     practice(l, c.drills),
@@ -386,11 +391,11 @@ export function lessonPage(deps: DrillDeps, l: FullLesson, c: LessonCtx): HTMLEl
   // the examples' "k/n run" sits in the section head (ux §5.3 #4)
   article.querySelector('#fl-examples > div')?.append(h('span', { class: 'text-body-sm text-muted tabular-nums', 'data-fl-ran': '' }, countOf(l, 'examples')));
 
-  const aside = h('aside', { class: 'hidden xl:block' },
-    h('nav', { class: 'sticky top-6 flex flex-col gap-2', 'aria-label': lt('fl.toc') },
+  const aside = h('aside', { class: 'hidden' },
+    h('nav', { class: 'sticky top-0 flex flex-col gap-2 pt-4', 'aria-label': lt('fl.toc') },
       h('p', { class: 'm-0 flex items-center gap-2 px-3 text-caption font-bold tracking-wider text-muted uppercase' }, d$.icon('toc', 'size-4'), lt('fl.toc')),
       tocList(l, current)));
-  const page = h('div', { class: 'grid gap-12 xl:grid-cols-[minmax(0,720px)_232px] xl:justify-between', 'data-lesson-page': l.id }, article, aside);
+  const page = h('div', { class: 'grid gap-8', 'data-lesson-page': l.id }, article, aside);
   requestAnimationFrame(() => { if (page.isConnected) watch(setCurrent); });
   return page;
 }
@@ -406,7 +411,7 @@ function pager(c: LessonCtx): HTMLElement {
   const lang = d$.getLang();
   const link = (s: Skill | undefined, dir: 'prev' | 'next'): HTMLElement | null => s ? h('a', {
     href: `${d$.hashOf('learn')}/skill/${s.id}`,
-    class: cx('flex min-h-12 flex-col justify-center rounded-(--r-ctl) px-4 py-2 no-underline', dir === 'next' ? 'items-end text-right' : 'items-start',
+    class: cx('flex min-h-11 flex-col justify-center rounded-(--r-ctl) px-4 py-2 no-underline', dir === 'next' ? 'items-end text-right' : 'items-start',
       dir === 'next' && c.done ? 'bg-accent text-on-accent hover:bg-accent/90' : 'ring-1 ring-line hover:bg-accent-soft'),
   }, h('span', { class: cx('text-caption', dir === 'next' && c.done ? '' : 'text-muted') }, lt(dir === 'next' ? 'fl.next' : 'fl.prev')), h('span', { class: 'font-bold' }, s.label[lang])) : null;
   return h('nav', { class: 'mt-2 grid gap-2 sm:grid-cols-2', 'aria-label': lt('fl.pager') }, link(c.prev, 'prev') ?? h('span'), link(c.next, 'next'));
