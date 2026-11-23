@@ -1,5 +1,5 @@
 import type { EngineLesson } from '../engine/content';
-import { answerNode, FIRST_KEY, observe, parseEngineFirst, planTree, readsCounters, shownSetup, withFirst, type PlanNode } from '../engine/predict';
+import { answerNode, FIRST_KEY, observe, parseEngineFirst, planTree, showsRows, shownSetup, withFirst, type PlanNode } from '../engine/predict';
 import type { LabOutput } from '../engine/labs';
 import type { EngineKey } from '../i18n/engine';
 import { PRED_DICT, predText, type PredKey } from '../i18n/enginePredict';
@@ -33,7 +33,7 @@ export interface PredictCtx {
   st: PredictState;
   /** The raw EXPLAIN (FORMAT JSON) cell of the question's query on the lab's data. */
   explain: () => Promise<unknown>;
-  /** The question's query itself on the lab's data (a counters predict, readsCounters). */
+  /** The question's query itself on the lab's data (a counters predict or a MongoDB result question, showsRows). */
   run: () => Promise<LabOutput>;
   /** The predict part passed (the lesson may complete). */
   pass: () => void;
@@ -67,7 +67,7 @@ export function predictView(l: EngineLesson, c: PredictCtx): HTMLElement {
     d.announce(et(st.say === 'right' ? 'predict.right' : 'predict.wrong'));
     focusCard(id);
     try {
-      if (readsCounters(l)) {
+      if (showsRows(l)) {
         st.rows = await c.run();
         st.plan = undefined;
       } else {
@@ -90,7 +90,7 @@ export function predictView(l: EngineLesson, c: PredictCtx): HTMLElement {
       h('div', { class: 'grid gap-3 sm:grid-cols-2' }, ...d.optionOrder(`${id}#p`, p.options.length).map((i) => option(c, l, i))),
       h('div', { class: 'flex flex-wrap items-center gap-3' },
         h('button', { type: 'button', class: cls.cx(cls.BTN_GO, 'px-5 py-2 disabled:bg-code disabled:text-disabled disabled:shadow-none'), 'data-ek': `${id}-p-check`, disabled: !!st.viewed && !(typeof st.plan === 'object' && 'error' in st.plan), onclick: () => void see() }, `${et('predict.see')} ›`),
-        h('span', { class: 'text-body-sm text-muted' }, st.viewed ? et('predict.ran') : et(readsCounters(l) ? 'predict.seeNoteRows' : 'predict.seeNote')),
+        h('span', { class: 'text-body-sm text-muted' }, st.viewed ? et('predict.ran') : et(showsRows(l) ? (l.engine === 'mongodb' ? 'predict.seeNoteMongo' : 'predict.seeNoteRows') : 'predict.seeNote')),
         status)),
     st.viewed ? resultCard(l, c) : null);
 }
@@ -131,7 +131,7 @@ function resultCard(l: EngineLesson, c: PredictCtx): HTMLElement {
   return h('section', { class: 'space-y-3 rounded-(--r-card) bg-surface-2 p-4', 'aria-labelledby': `${l.id}-plan` },
     h('div', { class: 'flex flex-wrap items-center gap-2' },
       h('span', { class: cls.cx(cls.PILL, right ? 'bg-good-soft text-good' : 'bg-bad-soft text-bad', 'font-bold') }, right ? `✓ ${et('predict.right')}` : `✗ ${et('predict.wrong')}`),
-      h('h3', { id: `${l.id}-plan`, class: 'm-0 text-body font-bold', tabindex: '-1', 'data-ek': `${l.id}-plan` }, et(readsCounters(l) ? 'predict.rowsTitle' : 'predict.realTitle'))),
+      h('h3', { id: `${l.id}-plan`, class: 'm-0 text-body font-bold', tabindex: '-1', 'data-ek': `${l.id}-plan` }, et(showsRows(l) ? 'predict.rowsTitle' : 'predict.realTitle'))),
     plan === 'busy' ? h('p', { class: 'm-0 flex items-center gap-2 text-body-sm text-muted' }, d.loader(), et('lab.preparing'))
       : plan && 'error' in plan ? d.errorView(plan.error) : null,
     st.rows && plan !== 'busy' ? h('div', { class: 'overflow-x-auto', 'data-real-rows': '' }, d.renderResult(st.rows)) : null,
@@ -160,4 +160,23 @@ function focusCard(id: string): void {
     el.focus({ preventScroll: true });
     el.scrollIntoView?.({ block: 'nearest' });
   }, 0);
+}
+
+/**
+ * v25 REC (research-nosql-v25-v26 §2.3): a predict that does not run here says where its answer comes from: the manual page
+ * it quotes (tier `docs`) or the server it was captured from (tier `mongod`), and only the lines that source prints. Shown
+ * under the question (engineView draws it on a predict without "Xem thật"), never dressed up as a run.
+ */
+export function recordedView(l: EngineLesson, d: EngineDeps, et: Et): HTMLElement | null {
+  const r = l.predict?.recorded;
+  if (!r) return null;
+  const { h, cls } = d;
+  const docs = r.tier === 'docs';
+  return h('section', { class: 'flex flex-col gap-2 rounded-(--r-inset) bg-surface-2 p-3 text-body-sm', 'data-recorded': r.tier, 'aria-label': et('rec.title') },
+    h('p', { class: 'm-0 flex flex-wrap items-center gap-2' },
+      h('span', { class: cls.cx(cls.PILL, 'bg-info-soft text-ink font-bold') }, d.icon('docsOnly', 'size-4'), et(docs ? 'rec.docs' : 'rec.mongod')),
+      h('span', {}, et(docs ? 'rec.docsLine' : 'rec.mongodLine', { server: r.server, version: r.version, date: r.date }))),
+    r.output ? h('pre', { class: 'sql m-0 overflow-x-auto', lang: 'en', 'data-recorded-output': '' }, r.output.trimEnd()) : h('p', { class: 'm-0 text-muted' }, et('rec.noFigures')),
+    r.url ? h('p', { class: 'm-0' }, h('a', { href: r.url, target: '_blank', rel: 'noopener noreferrer', class: 'inline-flex items-center gap-1.5' },
+      d.icon('external', 'size-4 shrink-0'), et('rec.source'), h('span', { class: 'sr-only' }, ` (${et('newTab')})`))) : null);
 }

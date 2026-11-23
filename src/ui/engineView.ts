@@ -178,7 +178,7 @@ export function enginePage(): HTMLElement {
   const f = extra && extra !== 'ready' ? extra : full;
   const page = !lesson ? (engine ? (lv ? levelPage(engine, lv.level) : enginePg(engine)) : overview())
     : f === 'loading' ? loadingLine()
-      : f === 'failed' ? failedBox(() => { fulls.delete(lesson.id); if (predMod === 'failed') predMod = undefined; if (capMod === 'failed') capMod = undefined; d.rerender(); })
+      : f === 'failed' ? failedBox(() => { fulls.delete(lesson.id); if (predMod === 'failed') predMod = undefined; if (capMod === 'failed') capMod = undefined; if (nosqlMod === 'failed') nosqlMod = undefined; d.rerender(); })
         : lessonPage(f!);
   if (f === 'loading' || f === 'failed') return page; // not #engine-page yet: smoke and the axe harness wait for the drawn lesson
   page.id = 'engine-page'; // drawn (not the loading line): tests/axeHarness.ts and scripts/smoke.mjs wait for it
@@ -508,6 +508,9 @@ type PredChunk = typeof import('./enginePredict');
 type CapChunk = typeof import('./engineCapstone');
 let predMod: PredChunk | 'loading' | 'failed' | undefined;
 let capMod: CapChunk | 'loading' | 'failed' | undefined;
+let nosqlMod: typeof import('./engineNosql') | 'loading' | 'failed' | undefined;
+/** v25: the NoSQL lab parts (tables used, MongoDB rule bar, pipeline by step, compared with SQL), once loaded. */
+const N = () => (typeof nosqlMod === 'object' ? nosqlMod : undefined);
 /** The predict chunk, once chunksFor() said 'ready' (callers run only on a drawn lesson that needed it). */
 const P = (): PredChunk => predMod as PredChunk;
 const PLAN_VIZ = /plan-tree|query-path|explain/;
@@ -515,6 +518,11 @@ const PLAN_VIZ = /plan-tree|query-path|explain/;
 function chunksFor(l: EngineLesson): 'ready' | 'loading' | 'failed' {
   const wantPred = !!l.predict || l.kind === 'capstone' || (!!l.viz && PLAN_VIZ.test(l.viz));
   const wantCap = l.kind === 'capstone' && !!LAB_RUNNERS[l.engine];
+  const wantNosql = l.engine !== 'postgres' && !!l.lab;
+  if (wantNosql && nosqlMod === undefined) {
+    nosqlMod = 'loading';
+    import('./engineNosql').then((m) => { nosqlMod = m; }, () => { nosqlMod = 'failed'; }).finally(() => d.rerender());
+  }
   if (wantPred && predMod === undefined) {
     predMod = 'loading';
     import('./enginePredict').then((m) => { predMod = m; }, () => { predMod = 'failed'; }).finally(() => d.rerender());
@@ -523,7 +531,7 @@ function chunksFor(l: EngineLesson): 'ready' | 'loading' | 'failed' {
     capMod = 'loading';
     import('./engineCapstone').then((m) => { capMod = m; }, () => { capMod = 'failed'; }).finally(() => d.rerender());
   }
-  const st = [wantPred ? predMod : 'ok', wantCap ? capMod : 'ok'];
+  const st = [wantPred ? predMod : 'ok', wantCap ? capMod : 'ok', wantNosql ? nosqlMod : 'ok'];
   return st.includes('failed') ? 'failed' : st.includes('loading') ? 'loading' : 'ready';
 }
 const capChunk = (): CapChunk | undefined => (typeof capMod === 'object' ? capMod : undefined);
@@ -561,33 +569,10 @@ async function loadTables(l: EngineLesson, v: Visit): Promise<void> {
 const tableBox = (name: string, line: string, body: Node): HTMLElement =>
   d.h('details', { class: 'rounded-(--r-inset) bg-canvas px-2 py-1 ring-1 ring-line' },
     d.h('summary', { class: 'cursor-pointer text-body-sm' }, d.h('code', {}, name), ` · ${line}`), body);
-/** NoSQL labs: the collections or tables in `lab.setup` (inline JSON), each with its first document or item. */
-function nosqlTables(l: EngineLesson): HTMLElement[] | null {
-  const { h } = d;
-  let j: { collections?: Record<string, unknown[]>; tables?: { TableName?: string; KeySchema?: { AttributeName: string; KeyType: string }[] }[]; items?: Record<string, unknown[]> };
-  try {
-    j = JSON.parse(l.lab?.setup ?? '') as typeof j;
-  } catch {
-    return null; // no inline data (the shared shop dataset) or not JSON: nothing to list
-  }
-  const json = (x: unknown): HTMLElement => h('pre', { class: 'sql my-1 overflow-x-auto', lang: 'en' }, JSON.stringify(x, null, 2));
-  if (j.collections) return Object.entries(j.collections).map(([n, docs]) => tableBox(n, et('tables.docs', { n: docs.length }),
-    h('div', {}, h('p', { class: 'my-1 text-body-sm text-muted' }, et('tables.sampleDoc')), json(docs[0]))));
-  return (j.tables ?? []).map((x) => {
-    const n = x.TableName ?? '?';
-    const items = j.items?.[n] ?? [];
-    return tableBox(n, et('tables.items', { n: items.length }), h('div', {},
-      h('p', { class: 'my-1 text-body-sm text-muted' }, et('tables.keys', { keys: (x.KeySchema ?? []).map((k) => `${k.AttributeName} (${k.KeyType})`).join(', ') })),
-      items[0] ? h('p', { class: 'my-1 text-body-sm text-muted' }, et('tables.sampleItem')) : null, items[0] ? json(items[0]) : null));
-  });
-}
 /** "Tables used" (L280, blind-pg.md: names the steps need were never shown). Postgres reads it from the lab itself on first open. */
 function tablesPanel(l: EngineLesson, v: Visit): HTMLElement | null {
   const { h } = d;
-  if (l.engine !== 'postgres') {
-    const boxes = nosqlTables(l);
-    return boxes?.length ? h('div', { class: 'flex flex-col gap-1.5' }, h('h3', { class: 'm-0 text-body-sm font-bold' }, et(l.engine === 'mongodb' ? 'tables.colls' : 'tables.title')), ...boxes) : null;
-  }
+  if (l.engine !== 'postgres') return N()?.tablesPanel(d, l) ?? null; // v25: the NoSQL panel lives in the engineNosql chunk
   const t = v.tables;
   const body = t === undefined ? null : t === 'busy' ? h('p', { class: 'my-1 flex items-center gap-2 text-body-sm text-muted' }, d.loader(), et('tables.loading'))
     : 'error' in t ? d.errorView(t.error, false)
@@ -633,7 +618,7 @@ function labView(l: EngineLesson, v: Visit): HTMLElement {
           h('div', { class: 'min-w-0 flex-1 flex flex-col gap-1' },
             h('h3', { class: 'm-0 text-caption font-bold tracking-wider text-muted uppercase' }, et('lab.step', { i: i + 1, n: steps.length }),
               i === cur ? h('span', { class: 'ml-2 text-accent' }, `· ${et('cap.current')}`) : null),
-            h('p', { class: 'm-0' }, ...inline(s.task[lang()])))),
+            h('p', { class: 'm-0' }, ...inline(s.task[lang()])), N()?.stepTop(d, s))),
         live ? codeBox(`${key}-code`, v.code[i] ?? '', et('lab.code', { i: i + 1 }), l.engine === 'postgres', {
           change: (x) => { v.code[i] = x; }, run: () => void labAction(l, v, i, false), submit: () => void labAction(l, v, i, true),
         }) : null,
@@ -646,6 +631,7 @@ function labView(l: EngineLesson, v: Visit): HTMLElement {
         s.fact && passed ? h('p', { class: 'm-0 rounded-(--r-inset) bg-good-soft p-3 text-body-sm' }, h('b', {}, `${et('lab.fact')}: `), ...inline(s.fact[lang()])) : null,
         out ? h('div', { class: 'overflow-x-auto' }, shown ? d.renderResult(shown) : d.errorView((out as { error: unknown }).error, false)) : null,
         shown ? metaView(shown) : null,
+        shown ? N()?.stepEnd(d, s, shown, passed, key) : null,
         shown ? insideView(shown, `${key}-inside`) : null,
         shown ? planViz(l, shown, v.code[i] ?? '', `${key}-plan`) : null);
     })),
@@ -779,7 +765,7 @@ function lessonPage(l: EngineLesson): HTMLElement {
           pass: () => passPart(l, v, 'p'),
           diagram: (json) => vizSlot(`${l.id}-pred`, 'pg-plan-tree', 'postgres', json, JSON.stringify(json)),
         })]
-        : [h('pre', { class: 'sql m-0 overflow-x-auto', lang: 'en' }, l.predict.sql), question(l, v, l.predict, 'p', '')])) : null,
+        : [h('pre', { class: 'sql m-0 overflow-x-auto', lang: 'en' }, l.predict.sql), question(l, v, l.predict, 'p', ''), P().recordedView(l, d, P().withPred(d, et))])) : null,
     // review v23: the lab before the questions (capstone: "quiz = the closing questions", product-design-db-engine §capstone; the lessons' text says "then N questions")
     l.lab ? labView(l, v) : null,
     l.quiz?.length ? h('section', { class: cls.cx(cls.CARD, 'flex flex-col gap-4 p-5 max-sm:p-4'), 'aria-labelledby': `${l.id}-quiz` },

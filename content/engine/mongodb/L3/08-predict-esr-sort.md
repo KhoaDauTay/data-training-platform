@@ -36,6 +36,12 @@ predict:
   why:
     vi: "Trong khối `directors` cố định, khóa sắp theo `runtime` trước. Đọc một khoảng `runtime` thì `year` nhảy lên xuống, nên MongoDB phải sắp trong bộ nhớ (stage `SORT`). Index ESR `{ directors: 1, year: 1, runtime: 1 }` giữ `year` liền thứ tự nên không cần `SORT`."
     en: "Inside the fixed `directors` block the keys are ordered by `runtime` first. Reading a `runtime` range makes `year` jump up and down, so MongoDB must sort in memory (a `SORT` stage). The ESR index `{ directors: 1, year: 1, runtime: 1 }` keeps `year` in order, so no `SORT` is needed."
+  recorded:
+    tier: docs
+    server: MongoDB
+    version: "9.0"
+    date: "2026-11-20"
+    url: https://www.mongodb.com/docs/manual/tutorial/equality-sort-range-guideline/
 ---
 
 ## Ý chính

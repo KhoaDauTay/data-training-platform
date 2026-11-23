@@ -7,18 +7,23 @@ title: Tài liệu, collection và kiểu BSON
 title_en: Documents, collections and BSON types
 kind: concept
 runtime: docs
-minutes: 8
+minutes: 12
 viz: mg-bson-doc
 objectives:
   - vi: Đọc một tài liệu và chỉ ra trường nào là giá trị đơn, trường nào là tài liệu nhúng, trường nào là mảng.
     en: Read a document and point out which fields are plain values, which are embedded documents and which are arrays.
   - vi: Biết các kiểu BSON hay gặp (ObjectId, Date, int, double, Decimal128) và hai giới hạn của một tài liệu.
     en: Know the common BSON types (ObjectId, Date, int, double, Decimal128) and the two limits of a document.
+  - vi: Biết database và collection được tạo ngầm ở lần ghi đầu, cách xóa chúng, và hai loại collection đặc biệt (capped, time series).
+    en: Know that databases and collections are created implicitly on the first write, how to drop them, and two special kinds of collection (capped, time series).
 requires: []
 sources:
   - https://www.mongodb.com/docs/manual/core/document/
   - https://www.mongodb.com/docs/manual/reference/bson-types/
   - https://www.mongodb.com/docs/manual/reference/limits/
+  - https://www.mongodb.com/docs/manual/core/databases-and-collections/
+  - https://www.mongodb.com/docs/manual/core/capped-collections/
+  - https://www.mongodb.com/docs/manual/core/timeseries-collections/
 quiz:
   - q:
       vi: "Trong tài liệu ví dụ, `address` là gì?"
@@ -62,6 +67,32 @@ quiz:
     why:
       vi: "`double` là số dấu phẩy động nhị phân nên 19,99 không được lưu chính xác. Decimal128 lưu số thập phân đúng như viết; chuỗi thì không tính toán được."
       en: "`double` is binary floating point, so 19.99 is not stored exactly. Decimal128 keeps the decimal value as written; a string cannot be used in arithmetic."
+  - q:
+      vi: "Bạn gõ `use report` rồi `show dbs`, nhưng chưa ghi tài liệu nào. Database `report` có trong danh sách không?"
+      en: "You type `use report` then `show dbs`, but have not written any document yet. Is the `report` database in the list?"
+    options:
+      - vi: Có, `use` đã tạo nó
+        en: Yes, `use` created it
+      - vi: Chưa, database chỉ được tạo khi ghi dữ liệu lần đầu
+        en: Not yet, a database is created only when data is first written
+    answer: 1
+    why:
+      vi: "Nghe hợp lý khi nghĩ `use` giống `CREATE DATABASE`. Nhưng `use` chỉ chọn database; MongoDB tạo database và collection khi bạn ghi dữ liệu vào lần đầu, ví dụ một `insertOne`."
+      en: "It sounds right to think `use` works like `CREATE DATABASE`. But `use` only selects the database; MongoDB creates the database and the collection when you first write data to them, for example with one `insertOne`."
+  - q:
+      vi: Một collection capped đã đầy. Bạn thêm một tài liệu mới. Chuyện gì xảy ra?
+      en: A capped collection is full. You insert a new document. What happens?
+    options:
+      - vi: Lệnh ghi bị từ chối
+        en: The insert is refused
+      - vi: Tài liệu cũ nhất bị xóa để lấy chỗ cho tài liệu mới
+        en: The oldest documents are removed to make room for the new one
+      - vi: Collection tự lớn thêm
+        en: The collection grows by itself
+    answer: 1
+    why:
+      vi: "Collection capped có cỡ cố định và giữ thứ tự ghi vào. Khi đầy, nó ghi đè tài liệu cũ nhất, như một bộ đệm vòng. Docs chính thức nói thường nên dùng TTL index hoặc collection time series thay cho capped, vì chúng linh hoạt hơn."
+      en: "A capped collection has a fixed size and keeps insertion order. When it is full it overwrites the oldest documents, like a ring buffer. The docs say a TTL index or a time series collection is usually a better choice than capped, since they are more flexible."
 ---
 ## Ý chính
 
@@ -83,6 +114,17 @@ Hai giới hạn: một tài liệu tối đa 16 MiB, và lồng tối đa 100 t
 
 Làm được: đọc một tài liệu, gọi đúng tên từng phần, và chọn kiểu BSON hợp cho tiền, ngày và mã.
 
+Database và collection không cần lệnh tạo trước: `use shop` chỉ chọn database, và lần ghi đầu (ví dụ `insertOne`) tạo cả database lẫn collection. Lệnh `drop` xóa một collection cùng mọi index của nó; `dropDatabase` xóa database đang chọn. Hai loại collection phải tạo rõ bằng `createCollection`: capped (cỡ cố định, đầy thì ghi đè tài liệu cũ nhất) và time series (cho số đo theo thời gian, xem bài L5).
+
+```javascript
+use shop
+db.orders.insertOne({ total: 120000 })   // creates shop and orders
+db.createCollection("events", { capped: true, size: 1048576, max: 1000 })
+db.createCollection("readings", { timeseries: { timeField: "ts", metaField: "sensor" } })
+db.events.drop()
+db.dropDatabase()
+```
+
 ```js
 {
   _id: ObjectId("6716f0a1c2b3d4e5f6a7b8c9"),
@@ -98,7 +140,7 @@ Làm được: đọc một tài liệu, gọi đúng tên từng phần, và ch
 
 ## Thực hành
 
-Bấm qua sơ đồ để xem từng trường được mã hóa thành kiểu BSON nào, rồi trả lời ba câu hỏi.
+Bấm qua sơ đồ để xem từng trường được mã hóa thành kiểu BSON nào, rồi trả lời năm câu hỏi.
 
 # EN
 
@@ -122,6 +164,17 @@ Two limits: a document is at most 16 MiB, and nesting goes at most 100 levels de
 
 You can now: read a document, name each part correctly, and pick a suitable BSON type for money, dates and codes.
 
+Databases and collections need no create command first: `use shop` only selects the database, and the first write (for example `insertOne`) creates both the database and the collection. `drop` removes a collection with all its indexes; `dropDatabase` removes the selected database. Two kinds of collection must be created explicitly with `createCollection`: capped (fixed size, overwrites the oldest documents when full) and time series (for measurements over time, see the L5 lesson).
+
+```javascript
+use shop
+db.orders.insertOne({ total: 120000 })   // creates shop and orders
+db.createCollection("events", { capped: true, size: 1048576, max: 1000 })
+db.createCollection("readings", { timeseries: { timeField: "ts", metaField: "sensor" } })
+db.events.drop()
+db.dropDatabase()
+```
+
 ```js
 {
   _id: ObjectId("6716f0a1c2b3d4e5f6a7b8c9"),
@@ -137,4 +190,4 @@ You can now: read a document, name each part correctly, and pick a suitable BSON
 
 ## Practice
 
-Step through the diagram to see which BSON type each field is encoded as, then answer the three questions.
+Step through the diagram to see which BSON type each field is encoded as, then answer the five questions.

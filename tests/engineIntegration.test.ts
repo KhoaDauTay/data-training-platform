@@ -9,7 +9,9 @@ import { dynamoRunner, labOf, marshal, unmarshal } from '../src/engine/dynamo/ru
 import type { DynamoRequest } from '../src/engine/dynamo/types';
 import { loadDataset, runMongo } from '../src/engine/mongo/engineMongo';
 import { followsEsr, isCovered } from '../src/engine/mongo/path';
-import { mongoRunner } from '../src/engine/mongo/runner';
+import { followsRule, mongoRunner } from '../src/engine/mongo/runner';
+import { gradeMongo } from '../src/engine/mongo/grade';
+import { hasRealRun, mongoRows } from '../src/engine/predict';
 import { resolveViz } from '../src/engine/viz/engineViz';
 import { extensionsOf, replayOf } from '../src/engine/pglab/runner';
 import { enginePathOf } from '../src/route';
@@ -56,13 +58,13 @@ describe('Postgres runner helpers', () => {
 });
 
 describe('MongoDB labs: every Solution passes its own check', () => {
-  const r = mongoRunner({ lang }, { exec: async (src: string, ds: string) => runMongo(await loadDataset(ds), src) });
+  const r = mongoRunner({ lang }, { exec: async (src: string, ds: string, stages?: boolean) => runMongo(await loadDataset(ds), src, { stages }) });
   const labs = lessons.filter((l) => l.engine === 'mongodb' && l.lab && l.runtime !== 'docs');
   it.each(labs.map((l) => [l.id, l] as const))('%s', async (_id, l) => {
     await r.prepare(l.lab!);
     for (const [i, s] of l.lab!.steps.entries()) {
       expect(await r.check(l.lab!, s, s.solution), `step ${i + 1}`).toMatchObject({ ok: true });
-      await r.run(l.lab!, s.solution);
+      if (!s.error) await r.run(l.lab!, s.solution); // a "mong lỗi" step's Solution is the command MongoDB refuses
     }
   });
   it('a write is graded on the collection after it; covered drills grade _id', async () => {
@@ -79,6 +81,43 @@ describe('MongoDB labs: every Solution passes its own check', () => {
     expect(isCovered(wrong, '{ category: 1, price_vnd: 1 }')).toBe(false);
     expect(followsEsr("db.c.find({ a: 1, b: { $gt: 2 } }).sort({ c: 1 })", 'db.c.createIndex({ a: 1, c: 1, b: 1 })')).toBe(true);
     expect(followsEsr("db.c.find({ a: 1, b: { $gt: 2 } }).sort({ c: 1 })", 'db.c.createIndex({ a: 1, b: 1, c: 1 })')).toBe(false);
+  });
+
+  // v25 (route R5): a step with a rule bar refuses its `slow:` answer, which gives the same documents (match-first) or is a
+  // valid createIndex in the wrong order (esr), so the bar, not the result, is what stops it.
+  it('thanh quy tắc: `slow:` trượt, lời giải qua; match-first cho cùng tài liệu', async () => {
+    const barred = labs.flatMap((l) => l.lab!.steps.filter((s) => s.rule).map((s) => [l, s] as const));
+    expect(barred.length).toBeGreaterThanOrEqual(6);
+    for (const [l, s] of barred) {
+      expect([l.id, followsRule(s, s.solution), followsRule(s, s.slow!)]).toEqual([l.id, true, false]);
+      const v = await r.check(l.lab!, s, s.slow!);
+      expect([l.id, v.ok]).toEqual([l.id, false]);
+      if (s.rule !== 'covered') expect([l.id, (v as { message?: string }).message]).toEqual([l.id, expect.stringContaining('not measured on a real MongoDB')]);
+      if (s.rule === 'match-first') expect([l.id, gradeMongo(await r.exec(l.lab!, s.solution), await r.exec(l.lab!, s.slow!), { ordered: s.ordered }).ok]).toEqual([l.id, true]);
+    }
+  });
+
+  it('"mong lỗi": bước có `error` chỉ đạt khi MongoDB từ chối đúng mã đó', async () => {
+    const steps = labs.flatMap((l) => l.lab!.steps.filter((s) => s.error).map((s) => [l, s] as const));
+    expect(steps.length).toBeGreaterThan(0);
+    for (const [l, s] of steps) {
+      await expect(r.exec(l.lab!, s.solution)).rejects.toMatchObject({ code: s.error });
+      expect(await r.check(l.lab!, s, 'db.orders.countDocuments()')).toMatchObject({ ok: false, reason: 'wrong' });
+      expect(await r.check(l.lab!, s, 'db.orders.insertOne({ a: ')).toMatchObject({ ok: false });
+    }
+  });
+
+  it('"Xem thật" của predict MongoDB: câu được hỏi chạy trên dữ liệu của lab; Pipeline từng bước có số tài liệu mỗi stage', async () => {
+    const ps = lessons.filter((l) => l.engine === 'mongodb' && l.predict && mongoRows(l));
+    expect(ps.length).toBeGreaterThanOrEqual(4);
+    for (const l of ps) {
+      expect(hasRealRun(l)).toBe(true);
+      const out = await r.run(l.lab!, l.predict!.sql);
+      expect([l.id, out.columns.length > 0 || out.rows.length === 0]).toEqual([l.id, true]);
+    }
+    const l = lessons.find((x) => x.id === 'e-mg-l3-18')!;
+    const out = await r.run(l.lab!, l.lab!.steps[3].solution);
+    expect(out.meta?.pipeline?.map((x) => [x.stage, x.n])).toEqual([['$match', 7], ['$lookup', 7], ['$unwind', 7], ['$group', 2], ['$sort', 2]]);
   });
 });
 

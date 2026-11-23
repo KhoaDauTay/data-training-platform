@@ -43,6 +43,12 @@ predict:
   why:
     vi: "Index chỉ phục vụ so chuỗi khi truy vấn ghi đúng collation của nó; `strength: 1` khác `strength: 2` nên không dùng index. Nhưng `strength: 1` vẫn bỏ qua hoa thường, nên cả ba tài liệu đều khớp. Ghi `strength: 2` thì vừa dùng index vừa trả 3; không ghi collation thì không dùng index và chỉ trả 1."
     en: "The index serves string comparisons only when the query states its exact collation; `strength: 1` is not `strength: 2`, so the index is not used. But `strength: 1` still ignores case, so all three documents match. With `strength: 2` it uses the index and returns 3; with no collation it does not use the index and returns 1."
+  recorded:
+    tier: docs
+    server: MongoDB
+    version: "9.0"
+    date: "2026-11-20"
+    url: https://www.mongodb.com/docs/manual/core/index-case-insensitive/
 ---
 
 ## Ý chính

@@ -134,3 +134,12 @@
   after:
     vi: đo cardinality và tần suất của ứng viên shard key, và đoán truy vấn đi tới một shard hay mọi shard
     en: measure the cardinality and frequency of shard key candidates, and predict whether a query goes to one shard or every shard
+- id: operations
+  vi: Sao lưu và tệp lớn
+  en: Backups and large files
+  module: operations
+  level: L5
+  title: { vi: "Sao lưu và tệp lớn", en: "Backups and large files" }
+  after:
+    vi: chọn cách sao lưu theo cỡ hệ thống, và biết khi nào một tệp cần GridFS
+    en: choose a backup method by deployment size, and know when a file needs GridFS

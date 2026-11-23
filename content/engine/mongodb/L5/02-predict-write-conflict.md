@@ -35,6 +35,12 @@ predict:
   why:
     vi: "Docs chính thức về WiredTiger: kiểm soát lạc quan, chỉ intent lock ở mức collection; khi hai thao tác xung đột, một bên gặp write conflict và MongoDB chạy lại nó một cách trong suốt. Mỗi lệnh trên một tài liệu là atomic, nên `qty` giảm đủ 3. Khác với transaction nhiều tài liệu: ở đó write conflict làm transaction hủy và ứng dụng phải chạy lại."
     en: "The WiredTiger docs: optimistic control with only intent locks at the collection level; when two operations conflict, one hits a write conflict and MongoDB retries it transparently. Each single-document command is atomic, so `qty` drops by the full 3. Unlike a multi-document transaction: there a write conflict aborts the transaction and the application must retry."
+  recorded:
+    tier: docs
+    server: MongoDB
+    version: "9.0"
+    date: "2026-11-20"
+    url: https://www.mongodb.com/docs/manual/core/wiredtiger/
 ---
 
 ## Ý chính

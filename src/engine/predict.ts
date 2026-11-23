@@ -82,8 +82,17 @@ export const readsCounters = (l: EngineLesson): boolean =>
 /** A Postgres predict gets the real plan only where a plan is the answer: its own lab data (`setup`) or an `expect`. */
 export const hasRealPlan = (l: EngineLesson): boolean =>
   l.engine === 'postgres' && l.runtime !== 'docs' && !!l.predict && (!!l.lab?.setup || !!l.predict.expect) && !readsCounters(l);
-/** The predict card with "Xem thật": a real plan or, for a counters question, the real rows. */
-export const hasRealRun = (l: EngineLesson): boolean => hasRealPlan(l) || readsCounters(l);
+/**
+ * v25: a MongoDB predict on its own lab data whose answer is a result, not a plan (no `recorded`): "Xem thật" runs the question
+ * on mingo and shows its documents (tests/engineIntegration.test.ts runs each one). mingo has no planner, so a plan question
+ * carries `recorded` (what the docs print) instead.
+ */
+export const mongoRows = (l: EngineLesson): boolean =>
+  l.engine === 'mongodb' && l.runtime !== 'docs' && !!l.lab && !!l.predict && !l.predict.recorded;
+/** "Xem thật" shows the question's own rows: a counters question, or a MongoDB result question. */
+export const showsRows = (l: EngineLesson): boolean => readsCounters(l) || mongoRows(l);
+/** The predict card with "Xem thật": a real plan or the real rows. */
+export const hasRealRun = (l: EngineLesson): boolean => hasRealPlan(l) || showsRows(l);
 
 /** The statements of `setup` the question rests on ("Đang có", engine-ux-spec §5.4): its CREATE INDEX lines. */
 export const shownSetup = (setup: string | undefined): string[] =>

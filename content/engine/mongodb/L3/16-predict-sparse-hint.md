@@ -32,6 +32,12 @@ predict:
   why:
     vi: "Không có `hint()`, planner tự tránh index sparse khi kết quả sẽ thiếu. `hint()` bỏ qua kiểm tra đó, nên câu đếm chỉ thấy tài liệu có khóa trong index: 700. Muốn đếm đúng cả collection thì gọi `countDocuments()` không `hint()`."
     en: "Without `hint()`, the planner avoids a sparse index when the result would be incomplete. `hint()` skips that check, so the count only sees documents that have a key in the index: 700. To count the whole collection correctly, call `countDocuments()` without `hint()`."
+  recorded:
+    tier: docs
+    server: MongoDB
+    version: "9.0"
+    date: "2026-11-20"
+    url: https://www.mongodb.com/docs/manual/core/index-sparse/
 ---
 
 ## Ý chính

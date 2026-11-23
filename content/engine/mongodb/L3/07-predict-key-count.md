@@ -38,6 +38,21 @@ predict:
   why:
     vi: "Với `{ rated: 1, year: 1 }`, phần `rated: \"PG\"` cố định một khối, trong khối đó các `year` từ 2000 đến 2005 nằm liền nhau: đọc đúng 235 khóa. Với `{ year: 1, rated: 1 }`, khóa PG nằm rải trong sáu khối năm riêng; MongoDB nhảy qua từng khối nên đọc thêm vài khóa ở chỗ chuyển khối: 246 khóa."
     en: "With `{ rated: 1, year: 1 }`, `rated: \"PG\"` fixes one block, and inside it the `year` values 2000 to 2005 are contiguous: exactly 235 keys. With `{ year: 1, rated: 1 }`, the PG keys sit in six separate year blocks; MongoDB jumps from block to block and reads a few extra keys at each boundary: 246 keys."
+  recorded:
+    tier: docs
+    server: MongoDB
+    version: "9.0"
+    date: "2026-11-20"
+    url: https://www.mongodb.com/docs/manual/tutorial/analyze-query-plan/
+    output: |
+      hint { year: 1, rated: 1 }:
+        totalKeysExamined: 246
+        totalDocsExamined: 235
+        nReturned: 235
+      hint { rated: 1, year: 1 }:
+        totalKeysExamined: 235
+        totalDocsExamined: 235
+        nReturned: 235
 ---
 
 ## Ý chính

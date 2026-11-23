@@ -38,6 +38,23 @@ predict:
   why:
     vi: "Truy vấn lọc theo `year` mà không có index nào trên `year`, nên planner quét cả collection: đọc 21.349 tài liệu để trả 3809. `COLLSCAN` không đọc khóa index nên `totalKeysExamined` = 0."
     en: "The query filters on `year` and no index covers `year`, so the planner scans the whole collection: it reads 21,349 documents to return 3809. A `COLLSCAN` reads no index keys, so `totalKeysExamined` = 0."
+  recorded:
+    tier: docs
+    server: MongoDB
+    version: "9.0"
+    date: "2026-11-20"
+    url: https://www.mongodb.com/docs/manual/tutorial/analyze-query-plan/
+    output: |
+      no index on year:
+        winningPlan: COLLSCAN
+        nReturned: 3809
+        totalKeysExamined: 0
+        totalDocsExamined: 21349
+      after createIndex({ year: 1 }):
+        winningPlan: FETCH > IXSCAN
+        nReturned: 3809
+        totalKeysExamined: 3809
+        totalDocsExamined: 3809
 ---
 
 ## Ý chính

@@ -35,6 +35,12 @@ predict:
   why:
     vi: "Index chỉ giữ phim có `year` lớn hơn 2000. Truy vấn cần cả phim 1991 đến 2000, nên dùng index sẽ làm thiếu kết quả, và MongoDB không chọn nó. `{ year: 2005 }` hay `{ year: { $gt: 2010 } }` thì dùng được."
     en: "The index holds only movies with `year` greater than 2000. The query also needs movies from 1991 to 2000, so the index would give an incomplete result and MongoDB does not pick it. `{ year: 2005 }` or `{ year: { $gt: 2010 } }` can use it."
+  recorded:
+    tier: docs
+    server: MongoDB
+    version: "9.0"
+    date: "2026-11-20"
+    url: https://www.mongodb.com/docs/manual/core/index-partial/
 ---
 
 ## Ý chính

@@ -38,6 +38,12 @@ predict:
   why:
     vi: "Truy vấn được phủ khi mọi trường của truy vấn và mọi trường trả về đều trong cùng index. `_id` được trả về mặc định, nên phải ghi `{ title: 1, _id: 0 }` như ví dụ trong docs chính thức. Khi đó explain có `IXSCAN` không nằm dưới `FETCH`."
     en: "A query is covered when every queried field and every returned field is in the same index. `_id` is returned by default, so you must write `{ title: 1, _id: 0 }` as in the docs example. Then explain shows an `IXSCAN` that is not under a `FETCH`."
+  recorded:
+    tier: docs
+    server: MongoDB
+    version: "9.0"
+    date: "2026-11-20"
+    url: https://www.mongodb.com/docs/manual/core/query-optimization/
 ---
 
 ## Ý chính

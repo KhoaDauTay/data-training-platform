@@ -42,6 +42,9 @@ lab:
         ])
       check: doc
       ordered: true
+      rule: match-first
+      slow: 'db.orders.aggregate([{ $unwind: "$lines" }, { $match: { status: "paid" } }, { $group: { _id: "$store", revenue: { $sum: { $multiply: ["$lines.qty", "$lines.price"] } } } }, { $sort: { revenue: -1, _id: 1 } }])'
+      sql: "SELECT o.store AS _id, SUM(l.qty * l.price) AS revenue FROM orders o JOIN order_lines l ON l.order_id = o.id WHERE o.status = 'paid' GROUP BY o.store ORDER BY revenue DESC, o.store;"
       hint:
         vi: "Bắt đầu bằng `$match` trên `status`, rồi `$unwind` mảng `lines`, rồi `$group` theo `$store` với `$sum` của `$multiply`."
         en: "Start with `$match` on `status`, then `$unwind` the `lines` array, then `$group` by `$store` with a `$sum` of `$multiply`."

@@ -159,12 +159,6 @@ const vi = {
   'tables.loading': 'Đang đọc schema của lab…',
   'tables.none': 'Lab bắt đầu chưa có bảng nào: các bước sẽ tạo bảng.',
   'tables.cols': '{n} cột',
-  'tables.colls': 'Collection dùng',
-  'tables.sampleDoc': 'Tài liệu đầu tiên',
-  'tables.sampleItem': 'Item đầu tiên',
-  'tables.keys': 'Khóa: {keys}',
-  'tables.docs': '{n} tài liệu',
-  'tables.items': '{n} item',
   'cap.current': 'đang làm',
 };
 export type EngineKey = keyof typeof vi;
@@ -322,12 +316,6 @@ const en: Record<EngineKey, string> = {
   'tables.loading': 'Reading the lab schema…',
   'tables.none': 'The lab starts with no tables: the steps create them.',
   'tables.cols': '{n} columns',
-  'tables.colls': 'Collections used',
-  'tables.sampleDoc': 'First document',
-  'tables.sampleItem': 'First item',
-  'tables.keys': 'Keys: {keys}',
-  'tables.docs': '{n} documents',
-  'tables.items': '{n} items',
   'cap.current': 'current',
 };
 
