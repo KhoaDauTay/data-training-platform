@@ -3,3 +3,4 @@ node_modules
 dist
 smoke-out/
 e2e-out/
+.kb-crawl-state.json*

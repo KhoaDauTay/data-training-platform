@@ -15,7 +15,8 @@ A developer's reference for SQL, PostgreSQL, MySQL/SQLite differences, design, p
 | [mysql-sqlite-differences.md](mysql-sqlite-differences.md) | dialect table PostgreSQL / MySQL 8.4 / SQLite / T-SQL, types, grouping, DDL, isolation, a portable-SQL checklist | not run (no runtime); 11 MySQL, 5 SQLite and 1 SQL Server pages read, rest link-checked |
 | [nosql-mongodb.md](nosql-mongodb.md) | data model, CRUD, aggregation, indexes, consistency, operations | 8 behaviours run on mingo 7.2.6; rest link-checked |
 | [nosql-dynamodb.md](nosql-dynamodb.md) | data model, item operations, Query/Scan, indexes, modelling, capacity, operations | quotas/limits pages read; rest link-checked; not run here |
-| [tutorial-routes.md](tutorial-routes.md) + [.json](tutorial-routes.json) | route inventory: 36 tutorials, 1,430 chapters, structure only | crawl 2026-11-23 |
+| [tutorial-routes.md](tutorial-routes.md) + [.json](tutorial-routes.json) | route inventory: tutorials, chapters, per-chapter h2/h3 outline + text hash; structure only | `npm run kb:crawl` |
+| [tutorial-changes.md](tutorial-changes.md) | new / removed / renamed / moved / changed chapters since the previous crawl | `npm run kb:crawl` |
 | [boondata-gap-map.md](boondata-gap-map.md) | every route point of the 7 in-scope tutorials mapped to Engine / General coverage, a proposed route and UI/UX consequences | generated, rules reviewed by hand |
 | [skill-outline.md](skill-outline.md) | what the SQL skill should contain | — |
 
@@ -56,7 +57,23 @@ Not verified, and marked so where it appears: two-session behaviour (locks, isol
 
 Where a page that was read did not state a version (MySQL `CHECK` enforcement, `EXPLAIN ANALYZE`), the text avoids the version or says to-verify.
 
-Scripts live outside the repo in `C:/Users/khoa.huynh/Documents/study/bd-wt/research-db/`: `run.mjs` (the block runner; `node run.mjs <file.md>…`), `mingo-check.mjs`, `crawl.mjs` (route crawl), `gen.py` (writes the two route files and the gap map from `crawl/routes.json`, `gap-head.md`, `gap-tail.md`). Two runner limits worth knowing: `EXPLAIN` cannot be a subquery, so examples read plans through a `plan_text()` helper function; `VACUUM` and `CREATE INDEX CONCURRENTLY` must be blocks of their own.
+Scripts live outside the repo in `C:/Users/khoa.huynh/Documents/study/bd-wt/research-db/`: `run.mjs` (the block runner; `node run.mjs <file.md>…`), `mingo-check.mjs`, `crawl.mjs` (route crawl), `gen.py` (the first route/gap-map generator, now replaced by `scripts/kb/` in the repo, see below). Two runner limits worth knowing: `EXPLAIN` cannot be a subquery, so examples read plans through a `plan_text()` helper function; `VACUUM` and `CREATE INDEX CONCURRENTLY` must be blocks of their own.
+
+## Keeping the tutorial inventory current
+
+Repeatable, no agent needed (`scripts/kb/`, Node only, no dependencies):
+
+```bash
+npm run kb:crawl            # robots.txt -> index -> 36 tables of contents -> chapter pages; writes tutorial-routes.json + tutorial-changes.md
+npm run kb:gen              # tutorial-routes.md (gen-routes.mjs) and boondata-gap-map.md (gen-gap-map.mjs, rules in rules.mjs)
+npm run kb:crawl -- --full  # re-read every chapter page; default skips pages read in the last 30 days (--days N)
+npm run kb:crawl -- --only sql,dbms   # just these tutorials; the others keep their data
+```
+
+- **Copyright rule.** Only structure is kept: tutorial, section, chapter title, URL, order, and per chapter its own h2/h3 heading texts (`outline`), a sha256 of its text (`hash`, the text itself is dropped) and the day it was read (`seen`). No page HTML, paragraph or code sample is written anywhere, not even to the state file or logs.
+- **Polite.** One request at a time, 3 s apart (`--delay ms`), user agent `Claude-User`; robots.txt is read first and every URL is checked against it (a disallowed index stops the run, a disallowed chapter is recorded as `error: robots`). 5xx and timeouts retry up to 3 times (10 s, 30 s, 90 s); a 429 or any other 4xx except 404/410 stops the run; a 404, a redirect elsewhere or a page without an article is recorded on the chapter (`error`) and listed in the changes report.
+- **Resumable.** Progress is saved after every page in `.kb-crawl-state.json` (repo root, git-ignored). A stopped run (Ctrl+C, 429, network) exits 2; run the same command again to continue. `--fresh` discards the state. The JSON and the changes report are written only when a run completes, and the report compares with the last completed run (a chapter without a previous hash has no baseline and never counts as changed).
+- **After a run:** `npm run kb:gen`, read `tutorial-changes.md`, add gap-map rules for any title `gen-gap-map.mjs` prints as unmapped (`scripts/kb/rules.mjs`), and update the knowledge files in our own words if a topic is new. A full first crawl takes about 75 minutes.
 
 ## How this maps to BoonData's existing material (read those, this folder does not repeat them)
 
