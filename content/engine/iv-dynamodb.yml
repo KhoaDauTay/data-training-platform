@@ -1,0 +1,932 @@
+# DynamoDB part of the Database Engine interview bank (v27, L411). Field rules, sets and take-homes: the header of
+# content/engine/iv-postgres.yml.
+
+questions:
+  # ---------------- DynamoDB · junior
+  - id: e-iv-dy-junior-01
+    engine: dynamodb
+    band: junior
+    kind: concept
+    set: dy-junior-2
+    q: { vi: "Khóa chính đơn (chỉ partition key) và khóa chính kép (partition key + sort key) khác nhau thế nào? Item collection là gì?", en: "How does a simple primary key (partition key only) differ from a composite one (partition key + sort key)? What is an item collection?" }
+    answer: { vi: "Khóa đơn: mỗi giá trị partition key là đúng một item, chỉ tra được bằng GetItem theo khóa đầy đủ. Khóa kép: nhiều item chung partition key, phân biệt và **được sắp xếp** theo sort key; DynamoDB băm partition key để chọn partition vật lý. Các item chung partition key là một item collection: `Query` đọc cả nhóm hoặc một khoảng sort key trong nhóm (`begins_with`, `BETWEEN`, `>`) theo thứ tự, rất rẻ.", en: "Simple key: each partition key value is exactly one item, reachable by GetItem with the full key. Composite key: many items share a partition key, distinguished and **sorted** by the sort key; DynamoDB hashes the partition key to pick the physical partition. Items sharing a partition key form an item collection: a `Query` reads the whole group or a sort-key range within it (`begins_with`, `BETWEEN`, `>`) in order, cheaply." }
+    rubric:
+      - { vi: "Phân biệt đúng hai loại khóa", en: "Distinguishes the two key types" }
+      - { vi: "Băm partition key, sắp theo sort key", en: "Partition key hashed, sort key ordered" }
+      - { vi: "Định nghĩa item collection và Query trên nó", en: "Defines item collections and Query over them" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.Partitions.html
+  - id: e-iv-dy-junior-02
+    engine: dynamodb
+    band: junior
+    kind: concept
+    set: dy-junior-3
+    q: { vi: "`Query` và `Scan` khác nhau thế nào? Khi nào `Scan` chấp nhận được?", en: "How do `Query` and `Scan` differ? When is a `Scan` acceptable?" }
+    answer: { vi: "`Query` cần một giá trị partition key (và tùy chọn điều kiện sort key), chỉ đọc item trong một item collection. `Scan` đọc mọi item của bảng/index (chỉ mục), tốn dung lượng đọc theo kích thước toàn bảng, trang 1 MB mỗi lần. Scan chấp nhận được cho bảng rất nhỏ, job nền không gấp (có giới hạn tốc độ), hoặc xuất dữ liệu; còn đường đi chính của ứng dụng phải là Query/GetItem. Muốn phân tích toàn bảng thì dùng export sang S3.", en: "`Query` needs one partition key value (and optionally a sort key condition) and reads only items in one item collection. `Scan` reads every item of the table/index, costing read capacity for the whole table size, 1 MB per page. A scan is acceptable for very small tables, non-urgent background jobs (rate limited), or exports; the app's main paths must be Query/GetItem. For full-table analytics, export to S3." }
+    rubric:
+      - { vi: "Query một partition vs Scan toàn bảng", en: "Query one partition vs Scan all" }
+      - { vi: "Chi phí Scan theo kích thước bảng", en: "Scan cost by table size" }
+      - { vi: "Trường hợp hợp lệ cho Scan", en: "Valid cases for Scan" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-query-scan.html
+  - id: e-iv-dy-junior-03
+    engine: dynamodb
+    band: junior
+    kind: concept
+    set: dy-junior-1
+    q: { vi: "Kích thước tối đa một item là bao nhiêu? Vì sao tên thuộc tính dài cũng tốn tiền?", en: "What is the maximum item size? Why do long attribute names cost money too?" }
+    answer: { vi: "400 KB mỗi item, tính cả độ dài tên thuộc tính lẫn giá trị (UTF-8). Vì mỗi item lưu kèm tên thuộc tính của nó, tên dài làm item to hơn: tốn lưu trữ và tốn RCU/WCU (làm tròn theo 4 KB khi đọc, 1 KB khi ghi). Với bảng hàng tỉ item, đặt tên ngắn nhưng vẫn đọc được là đáng. Dữ liệu lớn (ảnh, tệp) để trên S3 và lưu đường dẫn.", en: "400 KB per item, counting both attribute name lengths and values (UTF-8). Since every item stores its own attribute names, long names make items bigger: more storage and more RCU/WCU (rounded to 4 KB for reads, 1 KB for writes). On tables with billions of items, short but readable names pay off. Large blobs (images, documents) go to S3 with a pointer stored." }
+    rubric:
+      - { vi: "Đúng 400 KB, tính cả tên", en: "Correct 400 KB, names included" }
+      - { vi: "Nối với RCU/WCU và lưu trữ", en: "Ties it to RCU/WCU and storage" }
+      - { vi: "Biết để dữ liệu lớn trên S3", en: "Knows to keep large data in S3" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Constraints.html
+  - id: e-iv-dy-junior-04
+    engine: dynamodb
+    band: junior
+    kind: concept
+    set: dy-junior-2
+    q: { vi: "Đọc eventually consistent và strongly consistent khác nhau thế nào? Index (chỉ mục) nào không cho đọc strongly consistent?", en: "How do eventually consistent and strongly consistent reads differ? Which indexes do not allow strongly consistent reads?" }
+    answer: { vi: "Eventually consistent (mặc định): có thể chưa thấy ghi vừa xong, tốn nửa RCU. Strongly consistent (`ConsistentRead: true`): thấy mọi ghi đã thành công trước đó, tốn 1 RCU mỗi 4 KB, có thể lỗi khi mạng gián đoạn. GSI chỉ cho eventually consistent (được cập nhật bất đồng bộ); LSI và bảng gốc cho cả hai. Global tables giữa các vùng cũng là eventual.", en: "Eventually consistent (default): may not yet reflect a just-finished write, costs half an RCU. Strongly consistent (`ConsistentRead: true`): reflects every prior successful write, costs 1 RCU per 4 KB, may fail during network trouble. GSIs only allow eventually consistent reads (they are updated asynchronously); LSIs and the base table allow both. Cross-region global tables are eventual as well." }
+    rubric:
+      - { vi: "Khác biệt về dữ liệu thấy được", en: "Difference in what is visible" }
+      - { vi: "Khác biệt chi phí 0,5 vs 1", en: "Cost difference 0.5 vs 1" }
+      - { vi: "GSI chỉ eventual", en: "GSI is eventual only" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ReadConsistency.html
+  - id: e-iv-dy-junior-05
+    engine: dynamodb
+    band: junior
+    kind: concept
+    set: dy-junior-3
+    q: { vi: "Giải thích RCU và WCU với quy tắc làm tròn.", en: "Explain RCU and WCU with their rounding rules." }
+    answer: { vi: "1 RCU = một lần đọc strongly consistent mỗi giây cho item tới 4 KB (eventual: hai lần; transactional: cần 2 RCU). 1 WCU = một lần ghi mỗi giây cho item tới 1 KB (transactional: 2 WCU). Kích thước làm tròn lên: item 4,1 KB đọc strong tốn 2 RCU; item 1,1 KB ghi tốn 2 WCU. Với `Query`/`Scan`, kích thước cộng dồn mọi item đã đọc rồi mới làm tròn lên 4 KB; với `BatchGetItem` thì làm tròn từng item.", en: "1 RCU = one strongly consistent read per second of an item up to 4 KB (eventual: two reads; transactional: needs 2 RCU). 1 WCU = one write per second of an item up to 1 KB (transactional: 2 WCU). Sizes round up: a 4.1 KB item costs 2 RCU strongly consistent; a 1.1 KB write costs 2 WCU. For `Query`/`Scan`, the sizes of all items read are summed and then rounded up to 4 KB; `BatchGetItem` rounds each item." }
+    rubric:
+      - { vi: "Đúng đơn vị 4 KB / 1 KB", en: "Correct 4 KB / 1 KB units" }
+      - { vi: "Hệ số eventual/transactional", en: "Eventual/transactional factors" }
+      - { vi: "Làm tròn từng item vs cộng dồn với Query", en: "Per-item rounding vs summed for Query" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/CapacityUnitCalculations.html
+  - id: e-iv-dy-junior-06
+    engine: dynamodb
+    band: junior
+    kind: concept
+    set: dy-junior-1
+    q: { vi: "Đăng ký người dùng: làm sao để `PutItem` không ghi đè người dùng đã tồn tại?", en: "User sign-up: how do you make `PutItem` not overwrite an existing user?" }
+    answer: { vi: "Thêm điều kiện: `ConditionExpression: 'attribute_not_exists(pk)'`. Nếu item với khóa đó đã có, DynamoDB từ chối với `ConditionalCheckFailedException` (lần thử thất bại vẫn tốn WCU). Mặc định `PutItem` ghi đè toàn bộ item cùng khóa mà không báo gì. Cùng cách này dùng cho optimistic locking (`version = :v`) và chặn số dư âm.", en: "Add a condition: `ConditionExpression: 'attribute_not_exists(pk)'`. If an item with that key exists, DynamoDB rejects it with `ConditionalCheckFailedException` (the failed attempt still consumes WCU). By default `PutItem` silently replaces any item with the same key. The same technique drives optimistic locking (`version = :v`) and preventing negative balances." }
+    rubric:
+      - { vi: "attribute_not_exists trên khóa", en: "attribute_not_exists on the key" }
+      - { vi: "Biết Put mặc định ghi đè", en: "Knows Put overwrites by default" }
+      - { vi: "Biết lỗi trả về và vẫn tốn WCU", en: "Knows the error and that WCU is still consumed" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithItems.html
+  - id: e-iv-dy-junior-07
+    engine: dynamodb
+    band: junior
+    kind: concept
+    set: dy-junior-2
+    q: { vi: "Vì sao với DynamoDB người ta nói \"liệt kê access pattern trước, thiết kế khóa sau\"?", en: "Why do people say \"list access patterns first, design keys later\" for DynamoDB?" }
+    answer: { vi: "DynamoDB không có JOIN và không có truy vấn ad hoc rẻ: chỉ đọc hiệu quả được theo khóa chính hoặc khóa của index (chỉ mục) phụ. Nếu thiết kế bảng trước rồi mới nghĩ truy vấn, truy vấn mới thường thành Scan. Vì vậy liệt kê mọi câu hỏi ứng dụng sẽ hỏi (\"đơn của khách X theo ngày\", \"đơn đang giao của kho Y\"), tần suất và độ trễ, rồi chọn partition key/sort key/GSI để mỗi câu là một Query hoặc GetItem.", en: "DynamoDB has no JOINs and no cheap ad hoc queries: efficient reads go only through the primary key or a secondary index key. Design the table first and new queries usually end up as Scans. So list every question the app will ask (\"orders of customer X by date\", \"in-transit orders of warehouse Y\"), with frequency and latency, then choose partition key/sort key/GSIs so each one is a Query or GetItem." }
+    rubric:
+      - { vi: "Không JOIN, chỉ đọc theo khóa", en: "No JOINs, reads only by key" }
+      - { vi: "Hệ quả: truy vấn không lường trước thành Scan", en: "Consequence: unplanned queries become Scans" }
+      - { vi: "Ví dụ access pattern cụ thể", en: "Concrete access pattern examples" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-general-nosql-design.html
+  - id: e-iv-dy-junior-08
+    engine: dynamodb
+    band: junior
+    kind: concept
+    set: dy-junior-3
+    q: { vi: "On-demand và provisioned capacity: chọn thế nào cho một sản phẩm mới chưa biết tải?", en: "On-demand vs provisioned capacity: which for a new product with unknown traffic?" }
+    answer: { vi: "On-demand: trả theo từng request, tự co giãn, không cần dự báo; hợp với tải chưa biết, có đỉnh nhọn, hoặc thường xuyên nhàn rỗi. Provisioned: đặt trước RCU/WCU (có thể auto scaling), rẻ hơn khi tải đều và dự báo được, nhưng thiếu thì bị throttle. Sản phẩm mới: bắt đầu on-demand, đo tải thật vài tuần, rồi chuyển provisioned nếu tải ổn định và tiết kiệm đáng kể (có giới hạn số lần đổi chế độ).", en: "On-demand: pay per request, scales automatically, no forecasting; fits unknown, spiky or often idle traffic. Provisioned: reserve RCU/WCU (optionally with auto scaling), cheaper for steady, predictable traffic, but under-provisioning throttles. New product: start on-demand, measure real traffic for a few weeks, then switch to provisioned if traffic is steady and the saving is significant (mode switches are limited in frequency)." }
+    rubric:
+      - { vi: "Đặc điểm từng chế độ", en: "Characteristics of each mode" }
+      - { vi: "Chọn on-demand cho tải chưa biết", en: "Picks on-demand for unknown traffic" }
+      - { vi: "Biết chuyển sau khi đo", en: "Knows to switch after measuring" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/capacity-mode.html
+  - id: e-iv-dy-junior-09
+    engine: dynamodb
+    band: junior
+    kind: diagnose
+    set: dy-junior-1
+    q: { vi: "Một `GetItem` đọc hồ sơ 6 KB. Tính RCU cho ba kiểu đọc: eventually consistent, strongly consistent, và trong transaction.", en: "A `GetItem` reads a 6 KB profile. Compute RCU for three read types: eventually consistent, strongly consistent, and transactional." }
+    exhibits:
+      - label: { vi: "Đầu vào", en: "Input" }
+        source: aws-rules
+        shown: "GetItem, item size = 6 KB; 1 RCU = 1 strongly consistent read of up to 4 KB"
+        calc:
+          - { expr: "Math.ceil(6 / 4) * 0.5", expect: 1 }
+          - { expr: "Math.ceil(6 / 4) * 1", expect: 2 }
+          - { expr: "Math.ceil(6 / 4) * 2", expect: 4 }
+    answer: { vi: "6 KB làm tròn lên 2 khối 4 KB. Eventually consistent: 2 × 0,5 = 1 RCU. Strongly consistent: 2 RCU. Transactional (`TransactGetItems`): 2 × 2 = 4 RCU. Nếu hồ sơ giảm xuống ≤ 4 KB (ví dụ bỏ trường ít dùng sang item khác), chi phí mỗi lần đọc giảm một nửa.", en: "6 KB rounds up to 2 blocks of 4 KB. Eventually consistent: 2 × 0.5 = 1 RCU. Strongly consistent: 2 RCU. Transactional (`TransactGetItems`): 2 × 2 = 4 RCU. If the profile shrank to ≤ 4 KB (say by moving rarely used fields to another item), every read would cost half." }
+    rubric:
+      - { vi: "Làm tròn 6 KB → 2 khối", en: "Rounds 6 KB → 2 blocks" }
+      - { vi: "Đúng cả ba con số 1 / 2 / 4", en: "All three numbers 1 / 2 / 4 right" }
+      - { vi: "Gợi ý giảm kích thước item", en: "Suggests shrinking the item" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/CapacityUnitCalculations.html
+  - id: e-iv-dy-junior-10
+    engine: dynamodb
+    band: junior
+    kind: diagnose
+    set: dy-junior-2
+    q: { vi: "Mỗi lần ghi một bản ghi nhật ký 2,5 KB. Ứng dụng ghi 200 bản ghi mỗi giây. Cần bao nhiêu WCU (provisioned), và nếu bọc trong transaction thì sao?", en: "Each log record write is 2.5 KB. The app writes 200 records per second. How many WCU (provisioned) are needed, and what if each is wrapped in a transaction?" }
+    exhibits:
+      - label: { vi: "Đầu vào", en: "Input" }
+        source: aws-rules
+        shown: "PutItem, item size = 2.5 KB, 200 writes/s; 1 WCU = 1 write/s of up to 1 KB"
+        calc:
+          - { expr: "Math.ceil(2.5 / 1)", expect: 3 }
+          - { expr: "Math.ceil(2.5 / 1) * 200", expect: 600 }
+          - { expr: "Math.ceil(2.5 / 1) * 2 * 200", expect: 1200 }
+    answer: { vi: "2,5 KB làm tròn lên 3 KB = 3 WCU mỗi lần ghi; 200 lần/giây = 600 WCU. Trong transaction mỗi lần ghi tốn gấp đôi: 1.200 WCU. Gợi ý: nén hoặc rút gọn bản ghi xuống ≤ 2 KB tiết kiệm một phần ba; nhật ký thường không cần transaction.", en: "2.5 KB rounds up to 3 KB = 3 WCU per write; 200 per second = 600 WCU. In a transaction each write costs double: 1,200 WCU. Hint: compressing or trimming records to ≤ 2 KB saves a third; logs rarely need transactions." }
+    rubric:
+      - { vi: "Làm tròn lên 3 WCU", en: "Rounds up to 3 WCU" }
+      - { vi: "600 và 1.200 đúng", en: "600 and 1,200 correct" }
+      - { vi: "Gợi ý tối ưu hợp lý", en: "A sensible optimisation" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/CapacityUnitCalculations.html
+  - id: e-iv-dy-junior-11
+    engine: dynamodb
+    band: junior
+    kind: diagnose
+    set: dy-junior-3
+    q: { vi: "API \"đơn bị hủy\" dùng `Scan` với `FilterExpression` và trả về `Count: 10, ScannedCount: 5000`. Item trung bình 0,8 KB, đọc eventually consistent. Tính chi phí và giải thích vì sao bộ lọc không giúp.", en: "The \"cancelled orders\" API uses a `Scan` with a `FilterExpression` and returns `Count: 10, ScannedCount: 5000`. Items average 0.8 KB, eventually consistent. Compute the cost and explain why the filter does not help." }
+    exhibits:
+      - label: { vi: "Tổng của các trang Scan (cộng từ các phản hồi)", en: "Totals across the Scan pages (summed from the responses)" }
+        source: aws-rules
+        shown: |-
+          summed over all pages: Count 10, ScannedCount 5000, ConsumedCapacity 500
+          item size ~ 0.8 KB; eventually consistent; 1 MB page limit
+        calc:
+          - { expr: "5000 * 0.8", expect: 4000 }
+          - { expr: "Math.ceil(5000 * 0.8 / 4) * 0.5", expect: 500 }
+          - { expr: "Math.ceil(5000 * 0.8 / 1024)", expect: 4 }
+    answer: { vi: "Cộng qua các trang, Scan đọc 5.000 item × 0,8 KB = 4.000 KB → 1.000 khối 4 KB × 0,5 = 500 RCU, rồi mới lọc giữ 10. `FilterExpression` chạy **sau** khi đọc, nên tính tiền theo `ScannedCount`, không theo `Count`. 4.000 KB cũng vượt trang 1 MB, nên thực tế cần ít nhất 4 lượt gọi với `LastEvaluatedKey`. Sửa: GSI thưa có khóa chỉ được đặt trên đơn bị hủy (ví dụ `cancelled_at`), Query trên nó chỉ đọc 10 item.", en: "Summed over its pages, the scan reads 5,000 items × 0.8 KB = 4,000 KB → 1,000 blocks of 4 KB × 0.5 = 500 RCU, then filters down to 10. `FilterExpression` runs **after** reading, so you pay for `ScannedCount`, not `Count`. 4,000 KB also exceeds the 1 MB page, so it really takes at least 4 calls with `LastEvaluatedKey`. Fix: a sparse GSI whose key is set only on cancelled orders (say `cancelled_at`); a Query on it reads just 10 items." }
+    rubric:
+      - { vi: "Tính đúng 500 RCU", en: "Computes 500 RCU correctly" }
+      - { vi: "Bộ lọc chạy sau khi đọc, trả theo ScannedCount", en: "Filter runs after reading, you pay for ScannedCount" }
+      - { vi: "Nhắc phân trang 1 MB", en: "Mentions 1 MB paging" }
+      - { vi: "Đề xuất GSI thưa", en: "Proposes a sparse GSI" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-query-scan.html
+  - id: e-iv-dy-junior-12
+    engine: dynamodb
+    band: junior
+    kind: concept
+    set: dy-junior-1
+    q: { vi: "`KeyConditionExpression` và `FilterExpression` khác nhau thế nào?", en: "How do `KeyConditionExpression` and `FilterExpression` differ?" }
+    answer: { vi: "`KeyConditionExpression` chọn những item sẽ được đọc: bằng trên partition key và (tùy chọn) một điều kiện trên sort key (`=`, `<`, `BETWEEN`, `begins_with`…). Nó quyết định chi phí. `FilterExpression` loại item **sau** khi đã đọc, trên bất kỳ thuộc tính nào; nó chỉ giảm dữ liệu trả về, không giảm RCU. Trường lọc thường xuyên nên đưa vào sort key hoặc khóa của GSI.", en: "`KeyConditionExpression` selects which items are read: equality on the partition key and (optionally) one sort key condition (`=`, `<`, `BETWEEN`, `begins_with`…). It decides the cost. `FilterExpression` drops items **after** they are read, on any attribute; it only reduces the data returned, not the RCU. Frequently filtered fields belong in the sort key or a GSI key." }
+    rubric:
+      - { vi: "Key condition quyết định item đọc", en: "Key condition decides items read" }
+      - { vi: "Filter chạy sau, không giảm RCU", en: "Filter runs after, saves no RCU" }
+      - { vi: "Đưa trường lọc thường xuyên vào khóa", en: "Moves frequent filters into keys" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.html
+  - id: e-iv-dy-junior-13
+    engine: dynamodb
+    band: junior
+    kind: concept
+    set: dy-junior-2
+    q: { vi: "Một `Query` trả về 200 item nhưng khách đó có 5.000 đơn. Chuyện gì xảy ra?", en: "A `Query` returns 200 items but the customer has 5,000 orders. What happened?" }
+    answer: { vi: "Mỗi lần gọi `Query`/`Scan` đọc tối đa 1 MB dữ liệu (trước khi lọc) hoặc tới `Limit`. Nếu còn, phản hồi có `LastEvaluatedKey`; phải gọi lại với `ExclusiveStartKey` bằng giá trị đó cho tới khi không còn `LastEvaluatedKey`. Ứng dụng quên vòng lặp này sẽ lặng lẽ trả thiếu dữ liệu. SDK có paginator làm sẵn.", en: "Each `Query`/`Scan` call reads at most 1 MB of data (before filtering) or up to `Limit`. If more remains, the response carries `LastEvaluatedKey`; call again with `ExclusiveStartKey` set to it until no `LastEvaluatedKey` comes back. An app that forgets this loop silently returns partial data. SDKs offer paginators." }
+    rubric:
+      - { vi: "Giới hạn 1 MB mỗi lần gọi", en: "1 MB per call limit" }
+      - { vi: "Lặp với LastEvaluatedKey / ExclusiveStartKey", en: "LastEvaluatedKey / ExclusiveStartKey" }
+      - { vi: "Nêu rủi ro thiếu dữ liệu lặng lẽ", en: "States the silent partial-data risk" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.Pagination.html
+  - id: e-iv-dy-junior-14
+    engine: dynamodb
+    band: junior
+    kind: concept
+    set: dy-junior-3
+    q: { vi: "DynamoDB có những kiểu dữ liệu nào? Khi nào dùng String Set thay vì List?", en: "What data types does DynamoDB have? When would you use a String Set instead of a List?" }
+    answer: { vi: "Vô hướng: String, Number (tới 38 chữ số, truyền dạng chuỗi), Binary, Boolean, Null. Kiểu document: Map, List (lồng tới 32 tầng). Tập: String Set, Number Set, Binary Set (phần tử duy nhất, không thứ tự, không rỗng). Dùng Set khi cần tập không trùng và thao tác `ADD`/`DELETE` nguyên tử phần tử (ví dụ thẻ của bài viết); dùng List khi cần thứ tự hoặc trùng lặp. Khóa chính chỉ được là String, Number hoặc Binary.", en: "Scalars: String, Number (up to 38 digits, sent as strings), Binary, Boolean, Null. Documents: Map, List (nested up to 32 levels). Sets: String Set, Number Set, Binary Set (unique, unordered, non-empty). Use a Set when you need no duplicates and atomic element `ADD`/`DELETE` (say a post's tags); use a List when order or duplicates matter. Key attributes can only be String, Number or Binary." }
+    rubric:
+      - { vi: "Kể đủ ba nhóm kiểu", en: "Names the three type groups" }
+      - { vi: "So Set vs List đúng", en: "Compares Set vs List correctly" }
+      - { vi: "Biết kiểu được phép cho khóa", en: "Knows the allowed key types" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html
+  - id: e-iv-dy-junior-15
+    engine: dynamodb
+    band: junior
+    kind: design
+    set: dy-junior-1
+    q: { vi: "Bảng người dùng có khóa `user_id`. Cần đăng nhập bằng email và email phải duy nhất. DynamoDB không có ràng buộc UNIQUE. Thiết kế.", en: "A users table is keyed by `user_id`. Login must work by email and emails must be unique. DynamoDB has no UNIQUE constraint. Design it." }
+    answer: { vi: "Hai item cho mỗi người dùng: `pk = USER#<id>` (hồ sơ) và `pk = EMAIL#<email>` (chỉ chứa `user_id`). Đăng ký bằng `TransactWriteItems` gồm hai `Put`, mỗi cái có `attribute_not_exists(pk)`: email trùng làm cả transaction thất bại. Đăng nhập: `GetItem EMAIL#<email>` rồi `GetItem USER#<id>` (hoặc nhúng các trường cần cho đăng nhập vào item email). Đổi email: transaction xóa item email cũ, tạo item mới có điều kiện, cập nhật hồ sơ. Chuẩn hóa email (chữ thường) trước khi làm khóa.", en: "Two items per user: `pk = USER#<id>` (profile) and `pk = EMAIL#<email>` (holding just `user_id`). Sign-up uses `TransactWriteItems` with two `Put`s, each with `attribute_not_exists(pk)`: a duplicate email fails the whole transaction. Login: `GetItem EMAIL#<email>` then `GetItem USER#<id>` (or copy login fields into the email item). Changing email: a transaction deleting the old email item, conditionally creating the new one, updating the profile. Normalise emails (lower case) before using them as keys." }
+    tradeoffs:
+      - { vi: "Transaction tốn gấp đôi WCU nhưng là cách duy nhất bảo đảm duy nhất.", en: "The transaction costs double WCU but is the only way to guarantee uniqueness." }
+      - { vi: "GSI trên email không chặn được trùng (GSI không có ràng buộc và cập nhật bất đồng bộ).", en: "A GSI on email cannot prevent duplicates (no constraints, updated asynchronously)." }
+    rubric:
+      - { vi: "Item khóa email riêng", en: "A separate email key item" }
+      - { vi: "Dùng transaction + attribute_not_exists", en: "Transaction + attribute_not_exists" }
+      - { vi: "Biết GSI không giải quyết duy nhất", en: "Knows a GSI does not solve uniqueness" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/transaction-apis.html
+
+  # ---------------- DynamoDB · mid
+  - id: e-iv-dy-mid-01
+    engine: dynamodb
+    band: mid
+    kind: concept
+    set: dy-mid-2
+    q: { vi: "So sánh GSI và LSI: khóa, thời điểm tạo, tính nhất quán, giới hạn.", en: "Compare GSI and LSI: keys, when created, consistency, limits." }
+    answer: { vi: "LSI: cùng partition key với bảng, sort key khác; chỉ tạo được lúc tạo bảng; cho đọc strongly consistent; dùng chung dung lượng với bảng; item collection (bảng + LSI) giới hạn 10 GB mỗi giá trị partition key; tối đa 5. GSI: partition key và sort key bất kỳ; tạo/xóa bất cứ lúc nào; chỉ eventually consistent; có dung lượng riêng (provisioned); hạn mức mặc định 20 mỗi bảng. Thực tế GSI được dùng nhiều hơn; LSI chỉ khi cần đọc strongly consistent theo thứ tự khác trong cùng partition.", en: "LSI: same partition key as the table, different sort key; only at table creation; allows strongly consistent reads; shares the table's capacity; the item collection (table + LSIs) is limited to 10 GB per partition key value; at most 5. GSI: any partition and sort key; created/deleted anytime; eventually consistent only; its own capacity (provisioned); default quota 20 per table. In practice GSIs are far more common; LSIs only when you need strongly consistent reads in another order within a partition." }
+    rubric:
+      - { vi: "Khác biệt khóa và thời điểm tạo", en: "Key and creation-time differences" }
+      - { vi: "Nhất quán: LSI strong được, GSI không", en: "Consistency: LSI can be strong, GSI cannot" }
+      - { vi: "Giới hạn 10 GB của LSI", en: "LSI's 10 GB limit" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/SecondaryIndexes.html
+  - id: e-iv-dy-mid-02
+    engine: dynamodb
+    band: mid
+    kind: concept
+    set: dy-mid-3
+    q: { vi: "Projection của GSI (`KEYS_ONLY`, `INCLUDE`, `ALL`) ảnh hưởng chi phí thế nào?", en: "How does a GSI projection (`KEYS_ONLY`, `INCLUDE`, `ALL`) affect cost?" }
+    answer: { vi: "GSI lưu bản sao các thuộc tính được chiếu. `ALL`: đọc từ GSI là đủ mọi thứ, nhưng lưu trữ gấp đôi và mỗi lần ghi bảng tốn WCU cho GSI theo kích thước item đầy đủ. `KEYS_ONLY`: GSI nhỏ, ghi rẻ, nhưng cần thêm GetItem vào bảng để lấy thuộc tính khác (thêm RCU và độ trễ). `INCLUDE`: chỉ chiếu thuộc tính truy vấn cần, thường là điểm cân bằng tốt. Cũng nhớ: thay đổi thuộc tính không được chiếu và không phải khóa thì không tốn ghi GSI.", en: "A GSI stores copies of projected attributes. `ALL`: reading from the GSI gives everything, but storage doubles and every table write costs GSI WCU for the full item size. `KEYS_ONLY`: small GSI, cheap writes, but other attributes need an extra GetItem on the table (more RCU and latency). `INCLUDE`: project only what the query needs, usually the sweet spot. Also: changing an attribute that is neither projected nor a key costs no GSI write." }
+    rubric:
+      - { vi: "Ba loại và nội dung", en: "The three types and content" }
+      - { vi: "Đánh đổi ghi/lưu trữ vs đọc thêm", en: "Write/storage vs extra-read trade-off" }
+      - { vi: "Biết thay đổi thuộc tính không chiếu thì không ghi GSI", en: "Knows unprojected changes skip GSI writes" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GSI.html
+  - id: e-iv-dy-mid-03
+    engine: dynamodb
+    band: mid
+    kind: concept
+    set: dy-mid-1
+    q: { vi: "\"Index (chỉ mục) thưa\" (sparse index) trong DynamoDB là gì và dùng cho việc gì?", en: "What is a \"sparse index\" in DynamoDB and what is it for?" }
+    answer: { vi: "Item chỉ xuất hiện trong GSI khi nó có thuộc tính khóa của GSI. Nếu chỉ đặt thuộc tính đó cho một tập con (ví dụ `open_ticket_at` chỉ có trên vé đang mở, xóa khi đóng), GSI chỉ chứa tập con: Query hoặc thậm chí Scan GSI đó rất rẻ. Dùng cho hàng đợi, \"việc cần xử lý\", cờ hiếm. Bỏ thuộc tính (REMOVE) là cách đưa item ra khỏi index.", en: "An item appears in a GSI only if it has the GSI's key attributes. Set that attribute on a subset only (say `open_ticket_at` present on open tickets, removed on close) and the GSI holds just that subset: querying or even scanning it is cheap. Used for queues, \"to-do\" items, rare flags. Removing the attribute (REMOVE) takes the item out of the index." }
+    rubric:
+      - { vi: "Item thiếu thuộc tính khóa không vào GSI", en: "Items without the key attribute are not in the GSI" }
+      - { vi: "Ví dụ cụ thể", en: "Concrete example" }
+      - { vi: "Biết cách đưa item ra khỏi index", en: "Knows how to remove an item from the index" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-indexes-general-sparse-indexes.html
+  - id: e-iv-dy-mid-04
+    engine: dynamodb
+    band: mid
+    kind: concept
+    set: dy-mid-2
+    q: { vi: "`BatchWriteItem` trả về thành công nhưng một phần dữ liệu không được ghi. Vì sao, và xử lý thế nào?", en: "`BatchWriteItem` returns success but some data was not written. Why, and how do you handle it?" }
+    answer: { vi: "Batch tối đa 25 thao tác Put/Delete (16 MB) và không nguyên tử: mỗi item thành công hoặc thất bại riêng. Khi bị throttle hoặc lỗi nội bộ, các item chưa ghi nằm trong `UnprocessedItems` của phản hồi thành công. Phải gửi lại chúng với exponential backoff (và jitter) cho tới khi rỗng. Batch không có Update và không có điều kiện; cần nguyên tử hoặc điều kiện thì dùng `TransactWriteItems`.", en: "A batch holds at most 25 Put/Delete operations (16 MB) and is not atomic: each item succeeds or fails on its own. Under throttling or internal errors, unwritten items come back in `UnprocessedItems` of a successful response. Resend them with exponential backoff (and jitter) until empty. Batches have no Update and no conditions; for atomicity or conditions use `TransactWriteItems`." }
+    rubric:
+      - { vi: "Giới hạn 25 và không nguyên tử", en: "25 limit and non-atomic" }
+      - { vi: "Gửi lại UnprocessedItems với backoff", en: "UnprocessedItems + backoff" }
+      - { vi: "Biết khi nào dùng transaction thay thế", en: "Knows when to use a transaction instead" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithItems.html
+  - id: e-iv-dy-mid-05
+    engine: dynamodb
+    band: mid
+    kind: concept
+    set: dy-mid-3
+    q: { vi: "`TransactWriteItems`: giới hạn, chi phí và cách làm cho việc gọi lại an toàn.", en: "`TransactWriteItems`: limits, cost, and how to make retries safe." }
+    answer: { vi: "Tối đa 100 thao tác (Put, Update, Delete, ConditionCheck) trên các item khác nhau, tổng tối đa 4 MB, trong cùng tài khoản và vùng; tất cả thành công hoặc không gì cả. Chi phí gấp đôi (2 WCU mỗi KB). Xung đột với transaction khác hoặc điều kiện sai làm hủy (`TransactionCanceledException` kèm lý do từng thao tác). Gọi lại an toàn bằng `ClientRequestToken`: cùng token trong 10 phút thì DynamoDB coi là cùng một yêu cầu và không áp dụng lần nữa.", en: "Up to 100 operations (Put, Update, Delete, ConditionCheck) on distinct items, at most 4 MB total, same account and region; all succeed or none do. Costs double (2 WCU per KB). Conflicts with other transactions or failed conditions cancel it (`TransactionCanceledException` with per-operation reasons). Safe retries via `ClientRequestToken`: the same token within 10 minutes is treated as the same request and not applied again." }
+    rubric:
+      - { vi: "Giới hạn 100 thao tác / 4 MB", en: "100 operations / 4 MB limit" }
+      - { vi: "Chi phí gấp đôi", en: "Double cost" }
+      - { vi: "ClientRequestToken 10 phút", en: "ClientRequestToken, 10 minutes" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/transaction-apis.html
+  - id: e-iv-dy-mid-06
+    engine: dynamodb
+    band: mid
+    kind: concept
+    set: dy-mid-1
+    q: { vi: "Đếm lượt xem bằng `UpdateItem` với `ADD views :one`. Có vấn đề gì khi client gọi lại sau timeout?", en: "Counting views with `UpdateItem` using `ADD views :one`. What goes wrong when the client retries after a timeout?" }
+    answer: { vi: "Phép cộng nguyên tử trên server, nên nhiều request song song không mất lượt. Nhưng nó không idempotent: nếu request đầu đã áp dụng mà phản hồi bị mất, lần gọi lại cộng thêm lần nữa. Với lượt xem thì sai số nhỏ chấp nhận được. Với số tiền hay tồn kho thì không: dùng điều kiện theo phiên bản (`version = :v`), transaction có `ClientRequestToken`, hoặc ghi một item sự kiện có id duy nhất (`attribute_not_exists`) rồi cộng sau.", en: "The increment is atomic on the server, so parallel requests lose no counts. But it is not idempotent: if the first request was applied and the reply lost, the retry adds again. For view counts the small error is acceptable. For money or stock it is not: use a version condition (`version = :v`), a transaction with `ClientRequestToken`, or write an event item with a unique id (`attribute_not_exists`) and sum later." }
+    rubric:
+      - { vi: "Nguyên tử nhưng không idempotent", en: "Atomic but not idempotent" }
+      - { vi: "Phân biệt dữ liệu chịu được sai số", en: "Separates error-tolerant data" }
+      - { vi: "Ít nhất một cách làm idempotent", en: "At least one idempotent approach" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithItems.html
+  - id: e-iv-dy-mid-07
+    engine: dynamodb
+    band: mid
+    kind: concept
+    set: dy-mid-2
+    q: { vi: "Hai nhân viên cùng mở và sửa một hồ sơ khách. Cài đặt optimistic locking trên DynamoDB.", en: "Two staff open and edit the same customer record. Implement optimistic locking on DynamoDB." }
+    answer: { vi: "Item có `version` (số). Đọc item cùng `version = 7`. Ghi bằng `UpdateItem … SET …, version = version + :one` với `ConditionExpression: 'version = :seven'`. Người ghi thứ hai gặp `ConditionalCheckFailedException`: đọc lại, gộp hoặc báo người dùng, rồi thử lại. Không lock gì khi đọc, nên hợp với xung đột hiếm. Có thể yêu cầu trả về item hiện tại khi điều kiện thất bại (`ReturnValuesOnConditionCheckFailure`) để khỏi đọc lại.", en: "The item has a numeric `version`. Read it with `version = 7`. Write with `UpdateItem … SET …, version = version + :one` and `ConditionExpression: 'version = :seven'`. The second writer gets `ConditionalCheckFailedException`: reread, merge or tell the user, retry. Nothing is locked on read, so it suits rare conflicts. You can ask for the current item on condition failure (`ReturnValuesOnConditionCheckFailure`) to skip the reread." }
+    rubric:
+      - { vi: "Trường version + điều kiện bằng", en: "Version field + equality condition" }
+      - { vi: "Xử lý khi điều kiện thất bại", en: "Handles the failed condition" }
+      - { vi: "Biết hợp với xung đột hiếm", en: "Knows it suits rare conflicts" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithItems.html
+  - id: e-iv-dy-mid-08
+    engine: dynamodb
+    band: mid
+    kind: concept
+    set: dy-mid-3
+    q: { vi: "Dùng TTL để xóa phiên sau 24 giờ. Cài đặt thế nào và cần cẩn thận gì?", en: "Use TTL to delete sessions after 24 hours. How do you set it up and what needs care?" }
+    answer: { vi: "Bật TTL trên một thuộc tính (ví dụ `expires_at`) chứa thời điểm hết hạn dạng **số giây Unix epoch** (kiểu Number). Xóa do TTL không tốn WCU nhưng không tức thì: AWS chỉ nói thường trong vòng vài ngày. Vì vậy truy vấn phải tự lọc `expires_at > :now`. Xóa do TTL xuất hiện trong Streams (đánh dấu là do dịch vụ xóa), có thể dùng để lưu trữ sang S3. Giá trị sai định dạng (mili giây, chuỗi) thì item không bao giờ bị xóa.", en: "Enable TTL on an attribute (say `expires_at`) holding the expiry as **Unix epoch seconds** (Number type). TTL deletes cost no WCU but are not immediate: AWS only says typically within a few days. So queries must filter `expires_at > :now` themselves. TTL deletes show up in Streams (marked as service deletions), useful for archiving to S3. A wrongly formatted value (milliseconds, strings) means the item never expires." }
+    rubric:
+      - { vi: "Epoch giây, kiểu Number", en: "Epoch seconds, Number type" }
+      - { vi: "Xóa trễ, phải lọc khi đọc", en: "Late deletion, filter on read" }
+      - { vi: "Biết TTL vào Streams / không tốn WCU", en: "Knows TTL deletes reach Streams / cost no WCU" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/TTL.html
+  - id: e-iv-dy-mid-09
+    engine: dynamodb
+    band: mid
+    kind: diagnose
+    set: dy-mid-1
+    q: { vi: "`Query` lấy 120 sự kiện của một đơn, mỗi item 1,5 KB, eventually consistent. Tính RCU.", en: "A `Query` fetches 120 events of one order, 1.5 KB each, eventually consistent. Compute the RCU." }
+    exhibits:
+      - label: { vi: "Đầu vào", en: "Input" }
+        source: aws-rules
+        shown: "Query, 120 items x 1.5 KB, eventually consistent; Query sums item sizes, then rounds up to 4 KB"
+        calc:
+          - { expr: "120 * 1.5", expect: 180 }
+          - { expr: "Math.ceil(120 * 1.5 / 4)", expect: 45 }
+          - { expr: "Math.ceil(120 * 1.5 / 4) * 0.5", expect: 22.5 }
+          - { expr: "120 * Math.ceil(1.5 / 4) * 0.5", expect: 60 }
+    answer: { vi: "Query cộng dồn: 120 × 1,5 = 180 KB → 45 khối 4 KB × 0,5 = 22,5 RCU. Nếu thay bằng 120 lần `GetItem` (hoặc BatchGetItem), mỗi item làm tròn riêng lên 4 KB: 120 × 0,5 = 60 RCU, gần gấp ba. Đây là lý do gom dữ liệu đọc cùng nhau vào một item collection rồi Query.", en: "Query sums sizes: 120 × 1.5 = 180 KB → 45 blocks of 4 KB × 0.5 = 22.5 RCU. Replacing it with 120 `GetItem` calls (or BatchGetItem) rounds each item up to 4 KB: 120 × 0.5 = 60 RCU, almost triple. This is why data read together belongs in one item collection read with Query." }
+    rubric:
+      - { vi: "22,5 RCU đúng", en: "Correct 22.5 RCU" }
+      - { vi: "Biết Query cộng dồn trước khi làm tròn", en: "Knows Query sums before rounding" }
+      - { vi: "So với GetItem từng cái (60)", en: "Compares with per-item GetItem (60)" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/CapacityUnitCalculations.html
+  - id: e-iv-dy-mid-10
+    engine: dynamodb
+    band: mid
+    kind: diagnose
+    set: dy-mid-2
+    q: { vi: "Màn chi tiết đơn đọc 10 dòng hàng (mỗi dòng 1 KB, strongly consistent) bằng `BatchGetItem`. Đồng nghiệp đề xuất chuyển sang `Query` trên item collection của đơn. Tính cả hai.", en: "The order detail screen reads 10 line items (1 KB each, strongly consistent) with `BatchGetItem`. A colleague proposes a `Query` on the order's item collection instead. Compute both." }
+    exhibits:
+      - label: { vi: "Đầu vào", en: "Input" }
+        source: aws-rules
+        shown: "10 items x 1 KB, strongly consistent; BatchGetItem rounds each item to 4 KB; Query sums then rounds"
+        calc:
+          - { expr: "10 * Math.ceil(1 / 4)", expect: 10 }
+          - { expr: "Math.ceil(10 * 1 / 4)", expect: 3 }
+    answer: { vi: "BatchGetItem: mỗi item làm tròn lên 4 KB, 10 × 1 = 10 RCU. Query: 10 KB cộng dồn → 3 khối 4 KB = 3 RCU, và chỉ một round trip, kết quả đã sắp theo sort key. Đề xuất đúng, với điều kiện các dòng hàng cùng partition key (`ORDER#<id>`) và sort key như `LINE#<n>`.", en: "BatchGetItem: each item rounds up to 4 KB, 10 × 1 = 10 RCU. Query: 10 KB summed → 3 blocks of 4 KB = 3 RCU, one round trip, results sorted by the sort key. The proposal is right, provided the lines share the partition key (`ORDER#<id>`) with a sort key like `LINE#<n>`." }
+    rubric:
+      - { vi: "10 RCU so với 3 RCU", en: "10 RCU vs 3 RCU" }
+      - { vi: "Giải thích làm tròn từng item vs cộng dồn", en: "Explains per-item vs summed rounding" }
+      - { vi: "Nêu điều kiện thiết kế khóa", en: "States the key-design condition" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/CapacityUnitCalculations.html
+  - id: e-iv-dy-mid-11
+    engine: dynamodb
+    band: mid
+    kind: diagnose
+    set: dy-mid-3
+    q: { vi: "Bảng có 2 GSI chiếu `ALL`. Ghi một item mới 1,5 KB tốn bao nhiêu WCU tổng? Nếu sau đó một `UpdateItem` đổi thuộc tính khóa của một GSI thì GSI đó tốn bao nhiêu?", en: "A table has 2 GSIs projecting `ALL`. How many WCU in total does writing a new 1.5 KB item cost? If an `UpdateItem` later changes one GSI's key attribute, what does that GSI cost?" }
+    exhibits:
+      - label: { vi: "Đầu vào", en: "Input" }
+        source: aws-rules
+        shown: "PutItem 1.5 KB; GSI-1 and GSI-2 project ALL; later UpdateItem changes GSI-1's partition key (item stays 1.5 KB)"
+        calc:
+          - { expr: "Math.ceil(1.5)", expect: 2 }
+          - { expr: "Math.ceil(1.5) * (1 + 2)", expect: 6 }
+          - { expr: "2 * Math.ceil(1.5)", expect: 4 }
+    answer: { vi: "Bảng 2 WCU + mỗi GSI 2 WCU = 6 WCU cho một lần chèn: gấp ba so với không có index (chỉ mục). Khi đổi giá trị khóa của GSI-1, GSI đó phải xóa mục cũ và ghi mục mới: 2 thao tác × 2 WCU = 4 WCU (cộng 2 WCU của bảng; GSI-2 tốn thêm 2 nếu thuộc tính được chiếu). Đó là lý do nên chiếu tối thiểu và tránh khóa GSI đổi thường xuyên.", en: "Table 2 WCU + 2 WCU per GSI = 6 WCU per insert: triple the index-free cost. Changing GSI-1's key value makes that GSI delete the old entry and write a new one: 2 operations × 2 WCU = 4 WCU (plus the table's 2 WCU; GSI-2 costs 2 more if projected attributes changed). That is why you project minimally and avoid frequently changing GSI keys." }
+    rubric:
+      - { vi: "6 WCU cho lần chèn", en: "6 WCU for the insert" }
+      - { vi: "Đổi khóa GSI = xóa + ghi = 4 WCU", en: "GSI key change = delete + put = 4 WCU" }
+      - { vi: "Rút ra bài học về projection/khóa đổi", en: "Draws the lesson about projections/changing keys" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GSI.html
+  - id: e-iv-dy-mid-12
+    engine: dynamodb
+    band: mid
+    kind: concept
+    set: dy-mid-1
+    q: { vi: "PartiQL cho phép viết `SELECT * FROM Orders WHERE status = 'OPEN'`. Có bẫy gì?", en: "PartiQL lets you write `SELECT * FROM Orders WHERE status = 'OPEN'`. What is the trap?" }
+    answer: { vi: "PartiQL chỉ là cú pháp; nó vẫn chạy bằng GetItem/Query/Scan bên dưới. Câu `SELECT` không có điều kiện bằng trên partition key thành một **Scan** toàn bảng, tốn RCU theo kích thước bảng dù cú pháp trông như SQL có index (chỉ mục). Luôn đưa partition key (hoặc dùng `FROM \"Orders\".\"index\"`) vào WHERE, và dùng chính sách IAM chặn Scan qua PartiQL nếu cần.", en: "PartiQL is only syntax; it still runs as GetItem/Query/Scan underneath. A `SELECT` without an equality on the partition key becomes a full-table **Scan**, costing RCU for the whole table even though it looks like indexed SQL. Always include the partition key (or query `FROM \"Orders\".\"index\"`) in the WHERE, and use an IAM policy to block PartiQL scans if needed." }
+    rubric:
+      - { vi: "PartiQL vẫn là API bên dưới", en: "PartiQL is still the underlying API" }
+      - { vi: "Thiếu partition key = Scan", en: "No partition key = Scan" }
+      - { vi: "Biện pháp phòng (khóa / IAM)", en: "Mitigation (key / IAM)" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ql-reference.html
+  - id: e-iv-dy-mid-13
+    engine: dynamodb
+    band: mid
+    kind: concept
+    set: dy-mid-2
+    q: { vi: "Thiết kế sort key cho sự kiện của thiết bị để lấy được: mọi sự kiện một ngày, sự kiện mới nhất, sự kiện lỗi trong tháng.", en: "Design a sort key for device events to get: all events of a day, the latest event, error events in a month." }
+    answer: { vi: "Partition key `DEVICE#<id>`, sort key `<ISO timestamp>` (ví dụ `2026-10-31T08:15:00Z`): chuỗi ISO sắp theo thời gian. Một ngày: `begins_with(sk, '2026-10-31')`. Mới nhất: `ScanIndexForward: false, Limit: 1`. Lỗi trong tháng: GSI thưa với partition key `DEVICE#<id>#ERROR` (chỉ đặt trên sự kiện lỗi) và sort key timestamp, rồi `begins_with(sk, '2026-10')`; hoặc nếu lỗi hiếm, sort key ghép `ERROR#<ts>` trong item riêng. Sort key ghép theo thứ bậc là kỹ thuật cốt lõi.", en: "Partition key `DEVICE#<id>`, sort key `<ISO timestamp>` (for example `2026-10-31T08:15:00Z`): ISO strings sort chronologically. A day: `begins_with(sk, '2026-10-31')`. Latest: `ScanIndexForward: false, Limit: 1`. Errors in a month: a sparse GSI keyed `DEVICE#<id>#ERROR` (set only on error events) with the timestamp sort key, then `begins_with(sk, '2026-10')`; or, if errors are rare, separate items with a composite sort key `ERROR#<ts>`. Hierarchical composite sort keys are the core technique." }
+    rubric:
+      - { vi: "Timestamp ISO làm sort key", en: "ISO timestamp as sort key" }
+      - { vi: "begins_with và ScanIndexForward", en: "begins_with and ScanIndexForward" }
+      - { vi: "Lời giải hợp lý cho lọc lỗi (GSI thưa / khóa ghép)", en: "A sensible error filter (sparse GSI / composite key)" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-sort-keys.html
+  - id: e-iv-dy-mid-14
+    engine: dynamodb
+    band: mid
+    kind: concept
+    set: dy-mid-3
+    q: { vi: "\"Hot partition\" là gì? Giới hạn thông lượng của một partition là bao nhiêu?", en: "What is a \"hot partition\"? What is one partition's throughput limit?" }
+    answer: { vi: "Dữ liệu được chia theo hash của partition key; mỗi partition vật lý chịu tối đa 3.000 RCU và 1.000 WCU mỗi giây (và khoảng 10 GB). Nếu một giá trị partition key (khách lớn, ngày hôm nay, sản phẩm đang hot) nhận quá phần đó, request bị throttle dù tổng dung lượng bảng còn dư. Adaptive capacity giúp dồn dung lượng sang partition nóng, nhưng không vượt giới hạn mỗi partition cho một khóa: phải thiết kế khóa phân tán (write sharding, khóa cardinality cao).", en: "Data is spread by the partition key hash; each physical partition serves at most 3,000 RCU and 1,000 WCU per second (and about 10 GB). If one partition key value (a big customer, today's date, a viral product) gets more than that, requests are throttled even though the table's total capacity has room. Adaptive capacity shifts capacity to hot partitions but cannot exceed the per-partition limit for one key: design spread-out keys (write sharding, high-cardinality keys)." }
+    rubric:
+      - { vi: "3.000 RCU / 1.000 WCU mỗi partition", en: "3,000 RCU / 1,000 WCU per partition" }
+      - { vi: "Throttle dù tổng còn dư", en: "Throttled despite spare total" }
+      - { vi: "Adaptive capacity có giới hạn, cần thiết kế khóa", en: "Adaptive capacity is bounded, keys must be designed" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/burst-adaptive-capacity.html
+  - id: e-iv-dy-mid-15
+    engine: dynamodb
+    band: mid
+    kind: design
+    set: dy-mid-1
+    q: { vi: "Lịch sử đơn hàng: khách xem đơn của mình mới nhất trước và lọc theo trạng thái; kho xem các đơn \"đang đóng gói\" của mình. Thiết kế bảng và GSI.", en: "Order history: customers view their orders newest first and filter by status; warehouses view their \"packing\" orders. Design the table and GSIs." }
+    answer: { vi: "Bảng: `pk = CUST#<id>`, `sk = ORDER#<created ISO>#<order_id>`: đơn của khách theo thời gian (`ScanIndexForward: false`). Lọc theo trạng thái cho khách: GSI1 `pk = CUST#<id>#<status>`, `sk = created`; hoặc nếu khách ít đơn, Query rồi `FilterExpression` cũng chấp nhận được. Kho: GSI2 thưa `pk = WH#<warehouse>#PACKING`, `sk = created`, chỉ đặt khi đơn đang đóng gói và REMOVE khi chuyển trạng thái, nên index (chỉ mục) nhỏ. Đổi trạng thái = UpdateItem cập nhật các thuộc tính khóa GSI.", en: "Table: `pk = CUST#<id>`, `sk = ORDER#<created ISO>#<order_id>`: a customer's orders by time (`ScanIndexForward: false`). Status filter for customers: GSI1 `pk = CUST#<id>#<status>`, `sk = created`; or, for customers with few orders, Query plus `FilterExpression` is acceptable. Warehouses: sparse GSI2 `pk = WH#<warehouse>#PACKING`, `sk = created`, set only while packing and REMOVEd on status change, so the index stays small. A status change = an UpdateItem updating the GSI key attributes." }
+    tradeoffs:
+      - { vi: "GSI theo trạng thái: đọc rẻ, nhưng mỗi lần đổi trạng thái là xóa + ghi trên GSI.", en: "Status GSIs: cheap reads, but every status change is a delete + put on the GSI." }
+      - { vi: "Kho lớn có thể thành partition nóng trên GSI2: cân nhắc thêm hậu tố ngày.", en: "A big warehouse can become a hot partition on GSI2: consider a date suffix." }
+    rubric:
+      - { vi: "Khóa bảng phục vụ đơn theo khách, theo thời gian", en: "Table keys serve per-customer, time-ordered orders" }
+      - { vi: "GSI thưa cho đơn đang đóng gói", en: "Sparse GSI for packing orders" }
+      - { vi: "Nêu chi phí đổi trạng thái và nguy cơ nóng", en: "States status-change cost and hot-key risk" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-indexes-general-sparse-indexes.html
+
+  # ---------------- DynamoDB · senior
+  - id: e-iv-dy-senior-01
+    engine: dynamodb
+    band: senior
+    kind: concept
+    set: dy-senior-3
+    q: { vi: "Single-table design là gì? Khi nào nó đáng, khi nào không?", en: "What is single-table design? When is it worth it, and when not?" }
+    answer: { vi: "Đặt nhiều loại thực thể (khách, đơn, dòng hàng) vào một bảng với khóa chung chung (`pk`, `sk`, `gsi1pk`…) và tiền tố (`CUST#`, `ORDER#`), sao cho các thực thể đọc cùng nhau nằm chung item collection: một Query lấy được \"khách + 10 đơn mới nhất\", thay cho nhiều lần gọi. Đáng khi access pattern ổn định, cần độ trễ thấp ở quy mô lớn. Không đáng khi access pattern còn thay đổi nhiều, đội chưa quen (khó đọc, khó debug), cần phân tích ad hoc, hoặc các thực thể không bao giờ đọc cùng nhau: khi đó nhiều bảng đơn giản hơn và vẫn ổn.", en: "Put several entity types (customers, orders, lines) into one table with generic keys (`pk`, `sk`, `gsi1pk`…) and prefixes (`CUST#`, `ORDER#`) so entities read together share an item collection: one Query returns \"customer + 10 latest orders\" instead of several calls. Worth it when access patterns are stable and low latency at scale matters. Not worth it when patterns still change a lot, the team is new to it (hard to read and debug), ad hoc analytics is needed, or entities are never read together: then several tables are simpler and fine." }
+    rubric:
+      - { vi: "Định nghĩa với khóa chung và tiền tố", en: "Defines it with generic keys and prefixes" }
+      - { vi: "Lợi ích: một Query lấy nhiều thực thể", en: "Benefit: one Query for several entities" }
+      - { vi: "Nêu công bằng khi nào không nên", en: "Fairly states when not to" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-general-nosql-design.html
+  - id: e-iv-dy-senior-02
+    engine: dynamodb
+    band: senior
+    kind: concept
+    set: dy-senior-1
+    q: { vi: "Mô hình quan hệ nhiều-nhiều (sinh viên – lớp học) trong DynamoDB bằng adjacency list.", en: "Model a many-to-many relationship (students – classes) in DynamoDB with an adjacency list." }
+    answer: { vi: "Mỗi quan hệ là một item: `pk = STUDENT#<s>`, `sk = CLASS#<c>` (kèm thuộc tính cần hiện như tên lớp, ngày đăng ký). Query `pk = STUDENT#<s>, begins_with(sk, 'CLASS#')` cho các lớp của một sinh viên. GSI \"đảo ngược\" với `gsi1pk = sk`, `gsi1sk = pk` cho các sinh viên của một lớp. Item thực thể chính (`pk = STUDENT#<s>, sk = PROFILE`) ở cùng item collection. Dữ liệu chép vào item quan hệ (tên lớp) phải được cập nhật khi nguồn đổi.", en: "Each relationship is an item: `pk = STUDENT#<s>`, `sk = CLASS#<c>` (with display attributes like class name, enrolment date). Query `pk = STUDENT#<s>, begins_with(sk, 'CLASS#')` for a student's classes. An \"inverted\" GSI with `gsi1pk = sk`, `gsi1sk = pk` gives a class's students. The entity item itself (`pk = STUDENT#<s>, sk = PROFILE`) sits in the same item collection. Data copied into relationship items (class name) must be updated when the source changes." }
+    rubric:
+      - { vi: "Item quan hệ với pk/sk đúng", en: "Relationship items with correct pk/sk" }
+      - { vi: "GSI đảo ngược cho chiều kia", en: "Inverted GSI for the other direction" }
+      - { vi: "Nêu chi phí dữ liệu chép", en: "States the cost of copied data" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-adjacency-graphs.html
+  - id: e-iv-dy-senior-03
+    engine: dynamodb
+    band: senior
+    kind: concept
+    set: dy-senior-2
+    q: { vi: "Write sharding là gì? Đọc lại dữ liệu đã shard thế nào?", en: "What is write sharding? How do you read sharded data back?" }
+    answer: { vi: "Khi một giá trị khóa nhận quá nhiều ghi (ví dụ `DATE#2026-10-31`), thêm hậu tố: `DATE#2026-10-31#<n>` với n từ 0 tới N−1, chọn ngẫu nhiên hoặc tính từ một thuộc tính (hash của `order_id` mod N). Ghi phân tán ra N partition key. Đọc: N lần Query song song rồi gộp ở ứng dụng; nếu hậu tố tính được từ thuộc tính thì đọc một item cụ thể chỉ cần một Query. Đánh đổi: đọc tốn N lần, N phải chọn theo thông lượng đỉnh.", en: "When one key value gets too many writes (say `DATE#2026-10-31`), add a suffix: `DATE#2026-10-31#<n>` with n from 0 to N−1, random or computed from an attribute (hash of `order_id` mod N). Writes spread over N partition keys. Reading: N parallel Queries merged in the app; if the suffix is computable from an attribute, fetching a specific item needs one Query. Trade-off: reads cost N calls, and N must be chosen from peak throughput." }
+    rubric:
+      - { vi: "Hậu tố ngẫu nhiên hoặc tính được", en: "Random or computed suffix" }
+      - { vi: "Đọc bằng N Query song song", en: "Read with N parallel Queries" }
+      - { vi: "Đánh đổi và cách chọn N", en: "Trade-off and how to pick N" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-partition-key-sharding.html
+  - id: e-iv-dy-senior-04
+    engine: dynamodb
+    band: senior
+    kind: concept
+    set: dy-senior-3
+    q: { vi: "Burst capacity và adaptive capacity khác nhau thế nào? Có nên dựa vào chúng khi thiết kế?", en: "How do burst capacity and adaptive capacity differ? Should a design rely on them?" }
+    answer: { vi: "Burst (chế độ provisioned): DynamoDB giữ phần dung lượng không dùng của tối đa 5 phút gần nhất để chịu đỉnh ngắn. Adaptive: tự dồn dung lượng của bảng sang partition đang nóng, và có thể tách partition có item nóng; nhưng một giá trị khóa vẫn bị giới hạn ở mức một partition. Không nên dựa vào: burst có thể đã bị dùng cho việc nền, adaptive không cứu được khóa đơn nóng. Thiết kế khóa phân tán và coi hai cơ chế này là đệm an toàn.", en: "Burst (provisioned mode): DynamoDB keeps up to 5 minutes of unused capacity to absorb short spikes. Adaptive: shifts table capacity to hot partitions automatically, and can split partitions with hot items; but a single key value is still capped at one partition's limits. Do not rely on them: burst may already be spent on background work, and adaptive cannot save a single hot key. Design spread-out keys and treat both as a safety cushion." }
+    rubric:
+      - { vi: "Burst = 5 phút dung lượng chưa dùng", en: "Burst = up to 5 minutes of unused capacity" }
+      - { vi: "Adaptive dồn dung lượng, có giới hạn một khóa", en: "Adaptive shifts capacity, bounded per key" }
+      - { vi: "Kết luận không dựa vào khi thiết kế", en: "Concludes not to rely on them" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/burst-adaptive-capacity.html
+  - id: e-iv-dy-senior-05
+    engine: dynamodb
+    band: senior
+    kind: concept
+    set: dy-senior-1
+    q: { vi: "DynamoDB Streams đảm bảo gì về thứ tự và thời gian giữ? Dùng với Lambda cần chú ý gì?", en: "What do DynamoDB Streams guarantee about ordering and retention? What matters when using them with Lambda?" }
+    answer: { vi: "Mỗi thay đổi item xuất hiện đúng một lần trong stream, theo đúng thứ tự thay đổi **của từng item** (không có thứ tự toàn cục), giữ 24 giờ. Chọn view: `KEYS_ONLY`, `NEW_IMAGE`, `OLD_IMAGE`, `NEW_AND_OLD_IMAGES`. Với Lambda: xử lý theo lô theo shard; một bản ghi lỗi làm cả lô thử lại và chặn shard đó, nên cấu hình `BisectBatchOnFunctionError`, giới hạn số lần thử, đích cho bản ghi hỏng; hàm phải idempotent; nếu chậm quá 24 giờ thì mất dữ liệu.", en: "Each item change appears exactly once in the stream, in order **per item** (no global order), retained for 24 hours. Pick a view: `KEYS_ONLY`, `NEW_IMAGE`, `OLD_IMAGE`, `NEW_AND_OLD_IMAGES`. With Lambda: processing is in batches per shard; one failing record retries the whole batch and blocks that shard, so configure `BisectBatchOnFunctionError`, a retry limit and a failure destination; the function must be idempotent; falling behind more than 24 hours loses data." }
+    rubric:
+      - { vi: "Thứ tự theo item, đúng một lần, 24 giờ", en: "Per-item order, exactly once, 24 hours" }
+      - { vi: "Các kiểu view", en: "The view types" }
+      - { vi: "Xử lý lỗi lô và idempotent", en: "Batch failure handling and idempotency" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Streams.html
+  - id: e-iv-dy-senior-06
+    engine: dynamodb
+    band: senior
+    kind: concept
+    set: dy-senior-2
+    q: { vi: "Global tables: hai vùng cùng ghi vào một item gần như cùng lúc. Chuyện gì xảy ra? Thiết kế để tránh vấn đề thế nào?", en: "Global tables: two regions write the same item at almost the same time. What happens? How do you design to avoid trouble?" }
+    answer: { vi: "Mặc định (nhất quán eventual giữa vùng) mỗi vùng nhận ghi ngay; khi nhân bản, xung đột được giải bằng \"người ghi cuối thắng\" theo thời điểm, nên một thay đổi bị mất lặng lẽ, và điều kiện (`ConditionExpression`) chỉ kiểm trong vùng nhận ghi. Thiết kế: mỗi item có một vùng \"chủ\" ghi (ví dụ theo vùng người dùng), các vùng khác chỉ đọc hoặc chuyển ghi về vùng chủ; hoặc chỉ dùng thao tác giao hoán (ghi item sự kiện mới thay vì sửa). Transaction không bảo đảm nguyên tử xuyên vùng.", en: "By default (eventually consistent across regions) each region accepts the write at once; on replication, conflicts resolve as \"last writer wins\" by timestamp, so one change is silently lost, and conditions (`ConditionExpression`) are checked only in the receiving region. Design: each item has one \"home\" region for writes (say by user region), others read or forward writes home; or use only commutative operations (append new event items instead of editing). Transactions are not atomic across regions." }
+    rubric:
+      - { vi: "Last writer wins, mất lặng lẽ", en: "Last writer wins, silent loss" }
+      - { vi: "Điều kiện và transaction chỉ trong một vùng", en: "Conditions and transactions are per region" }
+      - { vi: "Thiết kế vùng chủ hoặc ghi giao hoán", en: "Home-region or commutative-write design" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GlobalTables.html
+  - id: e-iv-dy-senior-07
+    engine: dynamodb
+    band: senior
+    kind: concept
+    set: dy-senior-3
+    q: { vi: "Bảng provisioned có đủ WCU nhưng ghi vẫn bị throttle. Biểu đồ cho thấy một GSI bị throttle. Vì sao ghi vào bảng bị ảnh hưởng?", en: "A provisioned table has enough WCU but writes are still throttled. Metrics show one GSI is throttled. Why does that affect table writes?" }
+    answer: { vi: "GSI được cập nhật bất đồng bộ nhưng có dung lượng ghi riêng; khi GSI thiếu WCU (hoặc khóa GSI nóng), DynamoDB áp \"back-pressure\": throttle chính các lần ghi vào bảng có ảnh hưởng tới GSI đó, để index (chỉ mục) không tụt quá xa. Sửa: tăng WCU (hoặc auto scaling) cho GSI ít nhất bằng nhu cầu ghi thực tế của nó, kiểm khóa GSI có cardinality thấp không, giảm projection. Chỉ số cần xem: `WriteThrottleEvents` theo từng GSI.", en: "GSIs are updated asynchronously but have their own write capacity; when a GSI lacks WCU (or has a hot key), DynamoDB applies back-pressure: it throttles the table writes that affect that GSI so the index does not fall too far behind. Fix: give the GSI (or its auto scaling) at least its real write demand, check whether the GSI key has low cardinality, trim the projection. Metric to watch: `WriteThrottleEvents` per GSI." }
+    rubric:
+      - { vi: "Back-pressure từ GSI lên bảng", en: "Back-pressure from the GSI to the table" }
+      - { vi: "Nguyên nhân: thiếu WCU hoặc khóa nóng của GSI", en: "Cause: GSI WCU shortage or hot GSI key" }
+      - { vi: "Cách sửa và chỉ số theo dõi", en: "Fix and metric" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GSI.html
+  - id: e-iv-dy-senior-08
+    engine: dynamodb
+    band: senior
+    kind: diagnose
+    set: dy-senior-1
+    q: { vi: "Bảng đếm lượt bình chọn có `pk = POLL#<id>`. Một cuộc bình chọn trên truyền hình nhận 5.000 phiếu/giây, mỗi lần ghi 1 KB. Tính xem có bị throttle không và cần chia thành bao nhiêu shard.", en: "A vote table has `pk = POLL#<id>`. A TV poll gets 5,000 votes/second, each write 1 KB. Work out whether it throttles and how many shards you need." }
+    exhibits:
+      - label: { vi: "Đầu vào", en: "Input" }
+        source: aws-rules
+        shown: "5,000 writes/s x 1 KB to one partition key; per-partition limit 1,000 WCU"
+        calc:
+          - { expr: "5000 * Math.ceil(1 / 1)", expect: 5000 }
+          - { expr: "Math.ceil(5000 / 1000)", expect: 5 }
+          - { expr: "5000 / 10", expect: 500 }
+    answer: { vi: "Cần 5.000 WCU trên một giá trị partition key, gấp 5 giới hạn 1.000 WCU của một partition: chắc chắn throttle dù bảng on-demand. Tối thiểu 5 shard (`POLL#<id>#0..4`); chọn 10 để có dư (mỗi shard ~500 WCU, an toàn khi phân bố không đều). Đọc kết quả = 10 Query rồi cộng; tốt hơn là mỗi shard một item bộ đếm (`ADD`), và một job cộng 10 item theo chu kỳ để màn hình đọc một item tổng.", en: "It needs 5,000 WCU on one partition key value, 5× a partition's 1,000 WCU limit: it will throttle even on-demand. At least 5 shards (`POLL#<id>#0..4`); pick 10 for headroom (~500 WCU each, safe under uneven spread). Reading = 10 Queries summed; better, one counter item per shard (`ADD`), and a periodic job sums the 10 so the screen reads one total item." }
+    rubric:
+      - { vi: "So 5.000 với 1.000 WCU", en: "Compares 5,000 with 1,000 WCU" }
+      - { vi: "Số shard tối thiểu 5 và chọn có dư", en: "Minimum 5 shards, with headroom" }
+      - { vi: "Cách đọc tổng hiệu quả", en: "An efficient way to read the total" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-partition-key-sharding.html
+  - id: e-iv-dy-senior-09
+    engine: dynamodb
+    band: senior
+    kind: diagnose
+    set: dy-senior-2
+    q: { vi: "Một job đêm Scan toàn bảng 2 GiB, eventually consistent. Tính RCU tổng và số trang. Nếu bảng provisioned 1.000 RCU dành riêng cho job, job chạy tối thiểu bao lâu?", en: "A nightly job scans a whole 2 GiB table, eventually consistent. Compute total RCU and page count. If the table has 1,000 provisioned RCU reserved for the job, how long does it take at minimum?" }
+    exhibits:
+      - label: { vi: "Đầu vào", en: "Input" }
+        source: aws-rules
+        shown: "Scan 2 GiB = 2,097,152 KB, eventually consistent, 1 MB pages, 1,000 RCU available"
+        calc:
+          - { expr: "2 * 1024 * 1024 / 4", expect: 524288 }
+          - { expr: "2 * 1024 * 1024 / 4 * 0.5", expect: 262144 }
+          - { expr: "2 * 1024", expect: 2048 }
+          - { expr: "Math.ceil(262144 / 1000)", expect: 263 }
+    answer: { vi: "2 GiB = 2.097.152 KB = 524.288 khối 4 KB × 0,5 = 262.144 RCU; 2.048 trang 1 MB. Với 1.000 RCU/giây: ít nhất 263 giây (khoảng 4,4 phút), chưa kể dung lượng còn phải phục vụ ứng dụng. Cải thiện: parallel scan (`Segment`/`TotalSegments`) chỉ nhanh hơn nếu có dư RCU; nếu job là phân tích thì dùng export sang S3 (không tốn RCU của bảng) thay vì Scan.", en: "2 GiB = 2,097,152 KB = 524,288 blocks of 4 KB × 0.5 = 262,144 RCU; 2,048 pages of 1 MB. At 1,000 RCU/s: at least 263 seconds (about 4.4 minutes), ignoring capacity the app still needs. Improvements: parallel scan (`Segment`/`TotalSegments`) only helps with spare RCU; if the job is analytics, use export to S3 (consumes no table RCU) instead of a Scan." }
+    rubric:
+      - { vi: "262.144 RCU và 2.048 trang", en: "262,144 RCU and 2,048 pages" }
+      - { vi: "Thời gian tối thiểu 263 s", en: "Minimum 263 s" }
+      - { vi: "Đề xuất parallel scan có điều kiện / export S3", en: "Suggests conditional parallel scan / S3 export" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/CapacityUnitCalculations.html
+  - id: e-iv-dy-senior-10
+    engine: dynamodb
+    band: senior
+    kind: diagnose
+    set: dy-senior-3
+    q: { vi: "Chuyển khoản dùng `TransactWriteItems` với 4 thao tác: trừ ví A, cộng ví B, ghi 2 item nhật ký; mỗi item 3 KB. Tính WCU mỗi lần chuyển, và chi phí cho 300 lần chuyển/giây.", en: "A transfer uses `TransactWriteItems` with 4 operations: debit wallet A, credit wallet B, write 2 log items; each item is 3 KB. Compute WCU per transfer and for 300 transfers/second." }
+    exhibits:
+      - label: { vi: "Đầu vào", en: "Input" }
+        source: aws-rules
+        shown: "TransactWriteItems, 4 items x 3 KB; transactional write = 2 WCU per 1 KB; 300 transfers/s"
+        calc:
+          - { expr: "4 * Math.ceil(3 / 1) * 2", expect: 24 }
+          - { expr: "4 * Math.ceil(3 / 1) * 2 * 300", expect: 7200 }
+          - { expr: "2 * Math.ceil(1 / 1) * 2 + 2 * Math.ceil(3 / 1) * 2", expect: 16 }
+    answer: { vi: "4 item × 3 KB × 2 = 24 WCU mỗi lần; 300 lần/giây = 7.200 WCU. Tối ưu: ví chỉ cần số dư và phiên bản, giữ ≤ 1 KB (tách thông tin hồ sơ ra item khác): 2 × 1 × 2 + 2 × 3 × 2 = 16 WCU, giảm một phần ba. Nhật ký không cần nằm trong transaction nếu ghi được từ Stream của ví, nhưng như vậy mất tính \"cùng lúc\". Nhớ dùng `ClientRequestToken` và điều kiện số dư `balance >= :amt`.", en: "4 items × 3 KB × 2 = 24 WCU per transfer; 300/s = 7,200 WCU. Optimise: wallets only need balance and version, keep them ≤ 1 KB (move profile data to another item): 2 × 1 × 2 + 2 × 3 × 2 = 16 WCU, a third less. Logs need not be in the transaction if written from the wallets' Stream, at the cost of not being simultaneous. Use `ClientRequestToken` and a balance condition `balance >= :amt`." }
+    rubric:
+      - { vi: "24 WCU và 7.200 WCU", en: "24 WCU and 7,200 WCU" }
+      - { vi: "Tối ưu kích thước item ví", en: "Optimises wallet item size" }
+      - { vi: "Nhắc idempotency và điều kiện số dư", en: "Mentions idempotency and the balance condition" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/transaction-apis.html
+  - id: e-iv-dy-senior-11
+    engine: dynamodb
+    band: senior
+    kind: design
+    set: dy-senior-1
+    q: { vi: "Bảng xếp hạng điểm toàn cầu cho game 10 triệu người: hiện top 100 và hạng của mỗi người. DynamoDB không có ORDER BY toàn bảng. Thiết kế.", en: "A global score leaderboard for a 10-million-player game: show the top 100 and each player's rank. DynamoDB has no table-wide ORDER BY. Design it." }
+    answer: { vi: "Top 100: GSI với partition key cố định bị nóng, nên shard: `gsi1pk = BOARD#<n>` (n = 0..9 theo hash người chơi), `gsi1sk = score` (số, hoặc chuỗi đệm 0). Lấy top 100 = 10 Query `ScanIndexForward: false, Limit: 100` rồi trộn. Hạng chính xác của từng người không làm rẻ được trong DynamoDB: dùng hạng xấp xỉ theo bucket điểm (đếm số người mỗi khoảng điểm, cập nhật qua Stream), hoặc đưa bảng xếp hạng sang một kho chuyên sắp xếp (ví dụ sorted set trong bộ nhớ) cập nhật từ Stream, DynamoDB vẫn là nguồn sự thật.", en: "Top 100: a GSI with a fixed partition key gets hot, so shard it: `gsi1pk = BOARD#<n>` (n = 0..9 by player hash), `gsi1sk = score` (number, or zero-padded string). Top 100 = 10 Queries with `ScanIndexForward: false, Limit: 100`, merged. Exact per-player rank is not cheap in DynamoDB: use approximate rank via score buckets (count players per score range, updated from the Stream), or move the leaderboard to a store built for sorting (for example an in-memory sorted set) fed by the Stream, with DynamoDB as the source of truth." }
+    tradeoffs:
+      - { vi: "GSI shard: top N rẻ, nhưng mỗi lần đổi điểm là ghi GSI (xóa + ghi).", en: "Sharded GSI: cheap top N, but every score change is a GSI write (delete + put)." }
+      - { vi: "Kho sắp xếp ngoài cho hạng chính xác nhưng thêm một hệ thống phải giữ đồng bộ.", en: "An external sorted store gives exact ranks but adds a system to keep in sync." }
+    rubric:
+      - { vi: "Shard GSI cho top N và trộn", en: "Sharded GSI for top N with merge" }
+      - { vi: "Thừa nhận hạng chính xác không rẻ, có phương án", en: "Admits exact rank is not cheap, offers an option" }
+      - { vi: "Dùng Stream để cập nhật dữ liệu phụ", en: "Uses the Stream to update derived data" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-partition-key-sharding.html
+  - id: e-iv-dy-senior-12
+    engine: dynamodb
+    band: senior
+    kind: design
+    set: dy-senior-2
+    q: { vi: "SaaS nhiều tenant trên DynamoDB: làm sao để code lỗi của tenant A không bao giờ đọc được dữ liệu tenant B, và một tenant ồn không làm chậm người khác?", en: "Multi-tenant SaaS on DynamoDB: how do you ensure buggy code for tenant A can never read tenant B's data, and a noisy tenant does not slow others?" }
+    answer: { vi: "Cách ly: partition key bắt đầu bằng `TENANT#<id>#…` và chính sách IAM với điều kiện `dynamodb:LeadingKeys` khớp tenant của phiên (credential tạm cấp theo tenant), nên kể cả code sai cũng bị AWS từ chối khi đọc khóa khác. Ồn: tenant id ở đầu khóa giúp dữ liệu phân tán theo tenant; tenant cực lớn được shard thêm hậu tố; theo dõi tiêu thụ theo tenant ở ứng dụng và giới hạn tốc độ. Tenant lớn hoặc yêu cầu riêng có thể có bảng riêng.", en: "Isolation: partition keys start with `TENANT#<id>#…` and an IAM policy with a `dynamodb:LeadingKeys` condition matching the session's tenant (temporary credentials issued per tenant), so even buggy code is refused by AWS when touching other keys. Noise: the tenant id leading the key spreads data by tenant; very large tenants get suffix sharding; track per-tenant consumption in the app and rate limit. Large or special tenants can get their own table." }
+    tradeoffs:
+      - { vi: "Bảng chung: rẻ, một lần thay đổi, nhưng cách ly dựa vào IAM và khóa.", en: "Shared table: cheap, one change rollout, but isolation relies on IAM and keys." }
+      - { vi: "Bảng riêng mỗi tenant: cách ly mạnh, nhưng hạn mức số bảng và vận hành nhiều.", en: "Table per tenant: strong isolation, but table quotas and more operations." }
+    rubric:
+      - { vi: "Tenant đứng đầu khóa", en: "Tenant leads the key" }
+      - { vi: "IAM LeadingKeys với credential theo tenant", en: "IAM LeadingKeys with per-tenant credentials" }
+      - { vi: "Xử lý tenant ồn", en: "Handles noisy tenants" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/specifying-conditions.html
+  - id: e-iv-dy-senior-13
+    engine: dynamodb
+    band: senior
+    kind: concept
+    set: dy-senior-1
+    q: { vi: "Vì sao LSI có thể làm ghi thất bại khi một khách hàng lớn lên, dù bảng còn nhiều dung lượng?", en: "Why can an LSI make writes fail as one customer grows, even though the table has plenty of capacity?" }
+    answer: { vi: "Bảng có LSI giới hạn mỗi item collection (mọi item cùng partition key, cộng các mục LSI của chúng) ở 10 GB. Khi một khách lớn vượt mức đó, ghi thêm vào khóa đó bị từ chối (`ItemCollectionSizeLimitExceededException`). Bảng không có LSI không có giới hạn này. Vì LSI chỉ tạo được lúc tạo bảng và không xóa riêng được, cân nhắc kỹ; thường dùng GSI thay thế.", en: "A table with an LSI caps each item collection (all items sharing a partition key, plus their LSI entries) at 10 GB. When a big customer exceeds it, further writes to that key are rejected (`ItemCollectionSizeLimitExceededException`). Tables without LSIs have no such cap. Since LSIs exist only from table creation and cannot be dropped alone, think twice; GSIs are usually the alternative." }
+    rubric:
+      - { vi: "Giới hạn 10 GB item collection", en: "10 GB item collection limit" }
+      - { vi: "Chỉ áp dụng khi có LSI", en: "Only applies with an LSI" }
+      - { vi: "LSI không gỡ được, cân nhắc GSI", en: "LSIs cannot be removed, consider GSIs" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/LSI.html
+  - id: e-iv-dy-senior-14
+    engine: dynamodb
+    band: senior
+    kind: concept
+    set: dy-senior-2
+    q: { vi: "Một tính năng mới cần truy vấn theo thuộc tính chưa có trong khóa nào, trên bảng 500 triệu item. Thêm GSI có ảnh hưởng gì?", en: "A new feature needs to query by an attribute in no key yet, on a 500-million-item table. What is the impact of adding a GSI?" }
+    answer: { vi: "Thêm GSI vào bảng đang có là thao tác trực tuyến: DynamoDB backfill index (chỉ mục) từ dữ liệu hiện có, bảng vẫn phục vụ đọc ghi. Nhưng backfill có thể mất nhiều giờ, tiêu thụ WCU của GSI (provisioned: cần đặt đủ WCU cho GSI trong lúc backfill), và GSI chưa dùng được tới khi trạng thái `ACTIVE`. Từ đó mỗi ghi có liên quan tốn thêm WCU. Item thiếu thuộc tính khóa không vào GSI. Lên kế hoạch giờ thấp điểm và theo dõi `OnlineIndexPercentageProgress`.", en: "Adding a GSI to an existing table is an online operation: DynamoDB backfills the index from existing data while the table keeps serving reads and writes. But backfill can take hours, consumes GSI WCU (provisioned: give the GSI enough WCU during backfill), and the GSI is unusable until `ACTIVE`. Afterwards every relevant write costs extra WCU. Items lacking the key attribute are not indexed. Plan off-peak and watch `OnlineIndexPercentageProgress`." }
+    rubric:
+      - { vi: "Thao tác trực tuyến có backfill", en: "Online with backfill" }
+      - { vi: "Chi phí WCU trong và sau backfill", en: "WCU cost during and after backfill" }
+      - { vi: "Theo dõi tiến độ, chỉ dùng khi ACTIVE", en: "Monitors progress, usable only when ACTIVE" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GSI.html
+  - id: e-iv-dy-senior-15
+    engine: dynamodb
+    band: senior
+    kind: concept
+    set: dy-senior-3
+    q: { vi: "Bạn ước tính hóa đơn: tải 400 ghi/giây và 2.000 đọc/giây khá đều cả ngày. Lập luận chọn on-demand hay provisioned thế nào (không cần giá cụ thể)?", en: "You are estimating the bill: 400 writes/s and 2,000 reads/s, fairly even all day. How do you reason about on-demand vs provisioned (no exact prices needed)?" }
+    answer: { vi: "Tính đơn vị cần: WCU = 400 × kích thước làm tròn KB, RCU = 2.000 × khối 4 KB × hệ số nhất quán. Provisioned trả theo giờ cho dung lượng đặt sẵn, kể cả lúc không dùng; on-demand trả theo request. Tải đều, mức dùng thực trên mức đặt cao (ví dụ > 50–60%) thì provisioned (cộng auto scaling, có thể reserved capacity) rẻ hơn rõ rệt; tải nhọn hoặc nhàn rỗi nhiều thì on-demand rẻ hơn. Lấy giá hiện hành của vùng, tính cả hai, cộng phần GSI và Streams; xem lại sau khi có số đo thật.", en: "Compute units: WCU = 400 × rounded KB size, RCU = 2,000 × 4 KB blocks × consistency factor. Provisioned bills hourly for reserved capacity, used or not; on-demand bills per request. Even traffic with high utilisation of the reserved level (say > 50–60%) makes provisioned (with auto scaling, possibly reserved capacity) clearly cheaper; spiky or often idle traffic favours on-demand. Take current regional prices, compute both, include GSIs and Streams; revisit with real measurements." }
+    rubric:
+      - { vi: "Tính đơn vị từ kích thước và nhất quán", en: "Derives units from size and consistency" }
+      - { vi: "Lập luận theo mức sử dụng", en: "Reasons by utilisation" }
+      - { vi: "Nhớ GSI/Streams và đo lại", en: "Remembers GSIs/Streams and re-measuring" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/capacity-mode.html
+
+  # ---------------- DynamoDB · staff
+  - id: e-iv-dy-staff-01
+    engine: dynamodb
+    band: staff
+    kind: design
+    set: dy-staff-1
+    q: { vi: "Đội muốn chuyển một hệ quản lý kho từ Postgres sang DynamoDB để \"scale\". Bạn dẫn dắt quyết định và quá trình thế nào?", en: "A team wants to move a warehouse system from Postgres to DynamoDB \"to scale\". How do you lead the decision and the process?" }
+    answer: { vi: "Trước hết hỏi vấn đề thật: số đo tải, chỗ nghẽn, chi phí hiện tại; nhiều khi Postgres còn nhiều đường (index, bản đọc, partition). Nếu vẫn chuyển: (1) kiểm kê mọi access pattern từ log truy vấn thật, gắn tần suất và SLA; (2) đánh dấu những gì DynamoDB làm kém (báo cáo ad hoc, JOIN nhiều chiều, ràng buộc chéo) và chọn nơi khác cho chúng (export S3 + công cụ phân tích); (3) thiết kế khóa/GSI, mô phỏng chi phí; (4) chuyển theo từng miền: ghi kép hoặc CDC, đối soát số liệu, chuyển đọc dần, giữ đường lùi.", en: "First ask about the real problem: load numbers, bottlenecks, current cost; Postgres often has paths left (indexes, read replicas, partitioning). If moving anyway: (1) inventory every access pattern from real query logs, with frequency and SLA; (2) flag what DynamoDB does poorly (ad hoc reports, multi-way JOINs, cross-entity constraints) and pick another home for it (S3 export + an analytics engine); (3) design keys/GSIs and model the cost; (4) migrate per domain: dual writes or CDC, reconcile numbers, shift reads gradually, keep a way back." }
+    tradeoffs:
+      - { vi: "DynamoDB cho độ trễ ổn định khi scale nhưng mất tính linh hoạt truy vấn.", en: "DynamoDB gives steady latency at scale but loses query flexibility." }
+      - { vi: "Ghi kép đơn giản nhưng dễ lệch; CDC chính xác hơn nhưng thêm hạ tầng.", en: "Dual writes are simple but drift; CDC is more accurate but adds infrastructure." }
+    rubric:
+      - { vi: "Thách thức tiền đề bằng số đo", en: "Challenges the premise with measurements" }
+      - { vi: "Kiểm kê access pattern từ log thật", en: "Inventories access patterns from real logs" }
+      - { vi: "Chỗ cho nhu cầu phân tích", en: "A home for analytics needs" }
+      - { vi: "Di chuyển từng phần có đối soát và đường lùi", en: "Incremental migration with reconciliation and rollback" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-relational-modeling.html
+  - id: e-iv-dy-staff-02
+    engine: dynamodb
+    band: staff
+    kind: design
+    set: dy-staff-2
+    q: { vi: "Bảng single-table 2 tỉ item cần thêm một thuộc tính dẫn xuất vào mọi item `ORDER#` để phục vụ GSI mới. Lên kế hoạch backfill.", en: "A 2-billion-item single table needs a derived attribute on every `ORDER#` item to feed a new GSI. Plan the backfill." }
+    answer: { vi: "(1) Code mới ghi thuộc tính cho mọi item mới/sửa trước (ngăn khoảng trống mới). (2) Backfill bằng parallel scan (`TotalSegments` lớn, mỗi worker một segment, lưu `LastEvaluatedKey` để chạy tiếp được), chỉ lấy item `ORDER#` bằng `FilterExpression`, ghi bằng `UpdateItem` có điều kiện `attribute_not_exists(new_attr)` để không đè giá trị code mới vừa ghi và để chạy lại an toàn. (3) Giới hạn tốc độ theo dung lượng dư; hoặc dùng export S3 để tính danh sách khóa ngoài DynamoDB rồi chỉ chạy Update. (4) Tạo GSI khi backfill xong (hoặc trước, chấp nhận GSI backfill song song), kiểm số lượng trước khi bật tính năng.", en: "(1) New code writes the attribute on every new/updated item first (no new gaps). (2) Backfill with a parallel scan (large `TotalSegments`, one worker per segment, saving `LastEvaluatedKey` to resume), taking only `ORDER#` items via `FilterExpression`, writing with `UpdateItem` conditioned on `attribute_not_exists(new_attr)` so it never overwrites what new code wrote and can rerun safely. (3) Rate-limit to spare capacity; or use an S3 export to compute the key list outside DynamoDB and only run the Updates. (4) Create the GSI after the backfill (or before, accepting a parallel GSI backfill), verify counts before enabling the feature." }
+    tradeoffs:
+      - { vi: "Scan toàn bảng tốn RCU lớn; export S3 tránh RCU nhưng thêm bước xử lý.", en: "A full scan costs a lot of RCU; an S3 export avoids RCU but adds a processing step." }
+      - { vi: "Backfill chậm thì an toàn cho tải sản xuất nhưng kéo dài thời gian ra tính năng.", en: "A slow backfill is safe for production load but delays the feature." }
+    rubric:
+      - { vi: "Chặn khoảng trống mới trước", en: "Stops new gaps first" }
+      - { vi: "Parallel scan có thể chạy tiếp", en: "Resumable parallel scan" }
+      - { vi: "Update có điều kiện, idempotent", en: "Conditional, idempotent updates" }
+      - { vi: "Giới hạn tốc độ / export S3", en: "Rate limiting / S3 export" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Scan.html
+  - id: e-iv-dy-staff-03
+    engine: dynamodb
+    band: staff
+    kind: concept
+    set: dy-staff-1
+    q: { vi: "Parallel scan hoạt động thế nào và khi nào nó làm hại hệ thống?", en: "How does parallel scan work, and when does it hurt the system?" }
+    answer: { vi: "Chia bảng thành `TotalSegments` phần logic; mỗi worker gọi Scan với `Segment` riêng và tự phân trang. Tăng thông lượng gần tuyến tính khi bảng lớn và có dư dung lượng. Có hại khi: dung lượng đọc của bảng dùng chung với ứng dụng (scan song song ăn hết RCU, ứng dụng bị throttle), bảng nhỏ (chi phí điều phối lớn hơn lợi ích), hoặc on-demand (chi phí tăng vọt trong thời gian ngắn). Dùng `Limit` nhỏ, giới hạn tốc độ, hoặc export S3 thay thế.", en: "It splits the table into `TotalSegments` logical parts; each worker scans its own `Segment` and pages independently. Throughput grows nearly linearly on large tables with spare capacity. It hurts when: read capacity is shared with the app (the parallel scan eats RCU and the app throttles), the table is small (coordination costs more than it gains), or on-demand (costs spike in a short window). Use a small `Limit`, rate limits, or an S3 export instead." }
+    rubric:
+      - { vi: "Chia theo Segment/TotalSegments", en: "Segment/TotalSegments" }
+      - { vi: "Ít nhất hai trường hợp gây hại", en: "At least two harmful cases" }
+      - { vi: "Biện pháp giảm thiểu", en: "Mitigations" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Scan.html
+  - id: e-iv-dy-staff-04
+    engine: dynamodb
+    band: staff
+    kind: concept
+    set: dy-staff-2
+    q: { vi: "Hệ CQRS: ghi vào bảng, đọc từ GSI và từ một bản chiếu dựng bằng Streams. Người dùng thấy dữ liệu \"nhảy lùi\". Giải thích các nguồn không nhất quán.", en: "A CQRS system writes to a table and reads from a GSI and from a projection built via Streams. Users see data \"jump backwards\". Explain the sources of inconsistency." }
+    answer: { vi: "(1) GSI cập nhật bất đồng bộ: đọc ngay sau ghi có thể thấy giá trị cũ, và hai lần đọc liên tiếp có thể tới hai bản sao khác nhau. (2) Stream giữ thứ tự theo item, không theo toàn cục: bản chiếu gộp nhiều item có thể áp dụng thay đổi của item B trước item A dù A ghi trước. (3) Lambda thử lại lô làm áp dụng lại sự kiện cũ nếu không kiểm phiên bản. Sửa: bản chiếu lưu `version`/thời điểm của nguồn và chỉ ghi khi mới hơn (cập nhật có điều kiện); màn hình ngay sau thao tác đọc thẳng bảng với strong consistency; chấp nhận và thể hiện \"đang cập nhật\" ở chỗ khác.", en: "(1) GSIs update asynchronously: a read right after a write may see the old value, and two consecutive reads may hit different replicas. (2) Streams order per item, not globally: a projection combining items may apply B's change before A's even though A was written first. (3) Lambda batch retries reapply old events unless versions are checked. Fix: the projection stores the source `version`/timestamp and writes only when newer (conditional update); screens right after an action read the table with strong consistency; elsewhere accept and show \"updating\"." }
+    rubric:
+      - { vi: "GSI bất đồng bộ", en: "Asynchronous GSIs" }
+      - { vi: "Stream chỉ có thứ tự theo item", en: "Streams are ordered per item only" }
+      - { vi: "Phát lại do retry, sửa bằng ghi có điều kiện theo phiên bản", en: "Retry replays, fixed by version-conditioned writes" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Streams.html
+  - id: e-iv-dy-staff-05
+    engine: dynamodb
+    band: staff
+    kind: concept
+    set: dy-staff-3
+    q: { vi: "Đội phân tích muốn chạy truy vấn SQL hằng ngày trên dữ liệu DynamoDB. Bạn đề xuất kiến trúc nào và vì sao không Scan?", en: "The analytics team wants daily SQL over DynamoDB data. Which architecture do you propose and why not Scan?" }
+    answer: { vi: "Export bảng sang S3 (cần bật point-in-time recovery; full export hoặc incremental export) ở định dạng DynamoDB JSON hoặc Ion, rồi truy vấn bằng công cụ SQL trên S3 hoặc nạp vào kho dữ liệu. Export không tiêu thụ RCU của bảng nên không ảnh hưởng ứng dụng. Scan hằng ngày thì tốn RCU theo toàn bảng, cạnh tranh với ứng dụng, chậm, và vẫn phải tự làm phần SQL. Cần gần thời gian thực thì thêm luồng Streams → kho phân tích.", en: "Export the table to S3 (requires point-in-time recovery; full or incremental export) in DynamoDB JSON or Ion, then query with an SQL engine over S3 or load into a warehouse. Exports consume no table RCU, so the app is unaffected. A daily Scan costs RCU for the whole table, competes with the app, is slow, and you still have to provide SQL yourself. For near real time, add a Streams → analytics pipeline." }
+    rubric:
+      - { vi: "Export S3 cần PITR, không tốn RCU", en: "S3 export needs PITR, costs no RCU" }
+      - { vi: "Lý do không Scan", en: "Why not Scan" }
+      - { vi: "Phương án gần thời gian thực qua Streams", en: "Near-real-time option via Streams" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/S3DataExport.HowItWorks.html
+  - id: e-iv-dy-staff-06
+    engine: dynamodb
+    band: staff
+    kind: design
+    set: dy-staff-3
+    q: { vi: "Ứng dụng thanh toán chạy hai vùng với global tables để chịu mất một vùng. Thiết kế cách ghi để không bao giờ trừ tiền hai lần hay mất giao dịch khi xung đột.", en: "A payments app runs in two regions with global tables to survive a region loss. Design writes so money is never debited twice or lost on conflict." }
+    answer: { vi: "Không cho hai vùng cùng sửa một ví: mỗi ví có vùng chủ (thuộc tính `home_region`), mọi ghi ví đi về vùng chủ; vùng kia chỉ đọc hoặc chuyển tiếp. Khi vùng chủ mất hẳn, chuyển vai trò chủ có kiểm soát (quy trình failover, có thể mất vài giây ghi chưa nhân bản: phải đối soát sau). Mọi giao dịch là item sự kiện bất biến có id duy nhất (`attribute_not_exists`), số dư là kết quả cộng dồn từ sự kiện (hoặc cập nhật có điều kiện trong vùng chủ), nên phát lại không trừ hai lần. Từ chối dựa vào last-writer-wins cho tiền. Nếu dịch vụ hỗ trợ chế độ nhất quán mạnh nhiều vùng thì cân nhắc, đổi lại độ trễ ghi cao hơn.", en: "Never let two regions edit one wallet: each wallet has a home region (`home_region` attribute), all wallet writes go there; the other region reads or forwards. If the home region is lost, transfer ownership deliberately (a failover procedure; a few seconds of unreplicated writes may be lost and must be reconciled). Every transaction is an immutable event item with a unique id (`attribute_not_exists`), and the balance is derived from events (or conditionally updated in the home region), so replays never double-debit. Never rely on last-writer-wins for money. If the service offers a multi-region strong consistency mode, consider it, at the cost of higher write latency." }
+    tradeoffs:
+      - { vi: "Vùng chủ đơn giản và đúng, nhưng người dùng xa vùng chủ chịu độ trễ ghi cao hơn.", en: "Home regions are simple and correct, but users far from home pay higher write latency." }
+      - { vi: "Sổ sự kiện bất biến dễ đối soát nhưng đọc số dư cần tổng hợp hoặc bản chụp.", en: "An immutable event ledger reconciles easily but balance reads need aggregation or snapshots." }
+    rubric:
+      - { vi: "Một vùng ghi cho mỗi ví", en: "One writing region per wallet" }
+      - { vi: "Sự kiện bất biến + id duy nhất", en: "Immutable events + unique ids" }
+      - { vi: "Quy trình failover và đối soát", en: "Failover procedure and reconciliation" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GlobalTables.html
+  - id: e-iv-dy-staff-07
+    engine: dynamodb
+    band: staff
+    kind: concept
+    set: dy-staff-1
+    q: { vi: "Một item hồ sơ đã lên 350 KB vì lưu cả lịch sử hoạt động. Liệt kê hậu quả và cách tái cấu trúc.", en: "A profile item has grown to 350 KB because it stores the whole activity history. List the consequences and how to restructure." }
+    answer: { vi: "Hậu quả: mỗi GetItem strong tốn 88 RCU (350/4 làm tròn lên); mỗi UpdateItem dù đổi một trường cũng tốn WCU theo kích thước item lớn hơn trước/sau (≥ 350 WCU); sắp chạm trần 400 KB, khi đó ghi lỗi; GSI chiếu `ALL` nhân thêm chi phí. Tái cấu trúc: hồ sơ cốt lõi nhỏ ở `sk = PROFILE`, mỗi hoạt động một item `sk = ACT#<ts>` cùng partition key (Query khi cần, TTL cho hoạt động cũ), dữ liệu lớn hiếm đọc để S3.", en: "Consequences: each strongly consistent GetItem costs 88 RCU (350/4 rounded up); each UpdateItem, even of one field, costs WCU for the larger of the before/after item (≥ 350 WCU); it is close to the 400 KB cap, after which writes fail; GSIs projecting `ALL` multiply the cost. Restructure: a small core profile at `sk = PROFILE`, one item per activity at `sk = ACT#<ts>` under the same partition key (Query when needed, TTL for old activity), rarely read large data in S3." }
+    rubric:
+      - { vi: "Tính chi phí đọc/ghi theo kích thước", en: "Computes read/write cost by size" }
+      - { vi: "Biết Update tính theo cả item", en: "Knows Update is billed on the whole item" }
+      - { vi: "Tách thành nhiều item cùng partition", en: "Splits into many items in one partition" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-use-s3-too.html
+  - id: e-iv-dy-staff-08
+    engine: dynamodb
+    band: staff
+    kind: diagnose
+    set: dy-staff-1
+    q: { vi: "Một GSI có partition key là `status` (3 giá trị, chia đều). Bảng nhận 9.000 ghi/giây (1 KB), mọi item đều có `status`. Tính tải trên mỗi khóa GSI và dự đoán hệ quả.", en: "A GSI's partition key is `status` (3 values, evenly spread). The table takes 9,000 writes/s (1 KB) and every item has `status`. Compute the load per GSI key and predict the consequence." }
+    exhibits:
+      - label: { vi: "Đầu vào", en: "Input" }
+        source: aws-rules
+        shown: "9,000 writes/s x 1 KB; GSI pk = status, 3 values evenly spread; per-partition limit 1,000 WCU"
+        calc:
+          - { expr: "9000 * Math.ceil(1 / 1) / 3", expect: 3000 }
+          - { expr: "3000 / 1000", expect: 3 }
+    answer: { vi: "Mỗi giá trị `status` nhận 3.000 WCU trên GSI, gấp 3 giới hạn 1.000 WCU của một partition cho một khóa: GSI bị throttle, và qua back-pressure kéo theo ghi vào bảng bị throttle, dù tổng dung lượng còn dư. Khóa cardinality thấp là lỗi thiết kế GSI điển hình. Sửa: thêm hậu tố shard (`status#<0..9>`) và Query song song; hoặc GSI thưa chỉ cho trạng thái hiếm cần tra (ví dụ chỉ đơn `FAILED`), còn trạng thái phổ biến không cần index (chỉ mục).", en: "Each `status` value receives 3,000 WCU on the GSI, 3× the 1,000 WCU per-partition limit for one key: the GSI throttles and, through back-pressure, table writes throttle too, despite spare total capacity. Low-cardinality keys are the classic GSI design mistake. Fix: add a shard suffix (`status#<0..9>`) with parallel Queries; or a sparse GSI only for the rare status that needs lookup (say only `FAILED` orders), leaving common statuses unindexed." }
+    rubric:
+      - { vi: "3.000 WCU mỗi khóa, gấp 3 giới hạn", en: "3,000 WCU per key, 3× the limit" }
+      - { vi: "Nối với back-pressure lên bảng", en: "Connects to back-pressure on the table" }
+      - { vi: "Sửa bằng shard hậu tố hoặc GSI thưa", en: "Fix via suffix sharding or a sparse GSI" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-indexes-general.html
+  - id: e-iv-dy-staff-09
+    engine: dynamodb
+    band: staff
+    kind: diagnose
+    set: dy-staff-2
+    q: { vi: "API \"đơn chưa thanh toán của khách\" dùng Query theo khách + `FilterExpression` trên trạng thái. Phản hồi điển hình: `ScannedCount: 1000, Count: 50`, item 2 KB, eventual. So chi phí với một GSI thưa chỉ chứa đơn chưa thanh toán.", en: "The \"customer's unpaid orders\" API uses a per-customer Query + a `FilterExpression` on status. A typical response: `ScannedCount: 1000, Count: 50`, 2 KB items, eventual. Compare the cost with a sparse GSI holding only unpaid orders." }
+    exhibits:
+      - label: { vi: "Đầu vào", en: "Input" }
+        source: aws-rules
+        shown: |-
+          summed over the pages of one API call: Count 50, ScannedCount 1000
+          item size 2 KB, eventually consistent; alternative: sparse GSI with only unpaid orders (50 items read)
+        calc:
+          - { expr: "Math.ceil(1000 * 2 / 4) * 0.5", expect: 250 }
+          - { expr: "Math.ceil(50 * 2 / 4) * 0.5", expect: 12.5 }
+          - { expr: "250 / 12.5", expect: 20 }
+          - { expr: "Math.ceil(1000 * 2 / 1024)", expect: 2 }
+    answer: { vi: "Hiện tại: đọc 1.000 × 2 KB = 2.000 KB → 500 khối × 0,5 = 250 RCU mỗi lần gọi, để trả 50 item. GSI thưa (`unpaid_pk = CUST#<id>` chỉ đặt khi chưa thanh toán, REMOVE khi trả xong): 50 × 2 KB = 100 KB → 25 khối × 0,5 = 12,5 RCU, rẻ hơn 20 lần (đổi lại chi phí ghi GSI khi trạng thái đổi). Thêm nữa, 2.000 KB vượt trang 1 MB, nên Query hiện tại đã phải gọi ít nhất 2 trang mới đủ 50 kết quả; GSI thưa chỉ cần một lần gọi.", en: "Today: 1,000 × 2 KB = 2,000 KB read → 500 blocks × 0.5 = 250 RCU per call, to return 50 items. Sparse GSI (`unpaid_pk = CUST#<id>` set only while unpaid, REMOVEd once paid): 50 × 2 KB = 100 KB → 25 blocks × 0.5 = 12.5 RCU, 20× cheaper (in exchange for GSI writes on status changes). Also, 2,000 KB exceeds the 1 MB page, so the current Query already needs at least 2 pages to collect the 50 results; the sparse GSI needs one call." }
+    rubric:
+      - { vi: "250 RCU vs 12,5 RCU", en: "250 RCU vs 12.5 RCU" }
+      - { vi: "Thiết kế GSI thưa đúng (đặt/xóa thuộc tính)", en: "Correct sparse GSI design (set/remove attribute)" }
+      - { vi: "Nêu chi phí ghi và vấn đề phân trang", en: "States the write cost and the paging issue" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-indexes-general-sparse-indexes.html
+  - id: e-iv-dy-staff-10
+    engine: dynamodb
+    band: staff
+    kind: diagnose
+    set: dy-staff-3
+    q: { vi: "Một job cập nhật cờ `last_seen` (vài byte) trên item 380 KB, 100 lần/giây. Hóa đơn ghi cao bất thường. Tính và giải thích.", en: "A job updates a tiny `last_seen` flag on a 380 KB item, 100 times per second. The write bill is unusually high. Compute and explain." }
+    exhibits:
+      - label: { vi: "Đầu vào", en: "Input" }
+        source: aws-rules
+        shown: "UpdateItem on a 380 KB item (changes a few bytes); 100 updates/s; UpdateItem bills the larger of the item size before and after"
+        calc:
+          - { expr: "Math.ceil(380 / 1)", expect: 380 }
+          - { expr: "Math.ceil(380 / 1) * 100", expect: 38000 }
+          - { expr: "Math.ceil(0.2 / 1) * 100", expect: 100 }
+    answer: { vi: "`UpdateItem` tính WCU theo kích thước item lớn hơn giữa trước và sau khi cập nhật, không theo phần thay đổi: 380 WCU mỗi lần, 100 lần/giây = 38.000 WCU, và còn vượt 1.000 WCU/partition nên bị throttle. Tách `last_seen` thành item riêng nhỏ (`sk = SEEN`, ~0,2 KB): 1 WCU mỗi lần, 100 WCU tổng: rẻ hơn 380 lần.", en: "`UpdateItem` bills WCU on the larger of the item before and after the update, not on the changed bytes: 380 WCU each, 100/s = 38,000 WCU, which also exceeds 1,000 WCU per partition, so it throttles. Move `last_seen` into a small separate item (`sk = SEEN`, ~0.2 KB): 1 WCU each, 100 WCU total: 380× cheaper." }
+    rubric:
+      - { vi: "Biết Update tính theo cả item", en: "Knows Update bills the whole item" }
+      - { vi: "38.000 WCU và vượt giới hạn partition", en: "38,000 WCU and over the partition limit" }
+      - { vi: "Tách item nhỏ cho dữ liệu đổi thường xuyên", en: "Splits frequently changing data into a small item" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/CapacityUnitCalculations.html
+  - id: e-iv-dy-staff-11
+    engine: dynamodb
+    band: staff
+    kind: design
+    set: dy-staff-1
+    q: { vi: "Xây rate limiter theo API key (100 request/phút) dùng chung cho 200 máy chủ, lưu trên DynamoDB.", en: "Build a per-API-key rate limiter (100 requests/minute) shared by 200 servers, stored in DynamoDB." }
+    answer: { vi: "Cửa sổ cố định: item `pk = RL#<key>#<minute>`, mỗi request `UpdateItem ADD count :one` với `ConditionExpression: 'attribute_not_exists(count) OR count < :limit'`, đặt `expires_at` cho TTL. Điều kiện thất bại = vượt giới hạn (trả 429). Một lệnh nguyên tử, không cần đọc trước. Khóa nóng: một key 100 req/phút thì không sao; key lớn (hàng nghìn req/giây) cần shard hậu tố và chia hạn mức. Nếu cần mượt hơn, token bucket với `tokens` và `updated_at`, cập nhật có điều kiện theo `updated_at` cũ.", en: "Fixed window: an item `pk = RL#<key>#<minute>`, each request does `UpdateItem ADD count :one` with `ConditionExpression: 'attribute_not_exists(count) OR count < :limit'`, setting `expires_at` for TTL. A failed condition = over the limit (return 429). One atomic call, no prior read. Hot keys: a key at 100 req/min is fine; a huge key (thousands of req/s) needs suffix sharding with a split quota. For smoother limits, a token bucket with `tokens` and `updated_at`, conditionally updated against the old `updated_at`." }
+    tradeoffs:
+      - { vi: "Cửa sổ cố định đơn giản nhưng cho phép dồn gấp đôi ở ranh giới phút.", en: "A fixed window is simple but allows a double burst at the minute boundary." }
+      - { vi: "Mỗi request thêm một lần ghi DynamoDB: độ trễ và chi phí; có thể đệm cục bộ để giảm.", en: "Each request adds a DynamoDB write: latency and cost; local buffering can reduce it." }
+    rubric:
+      - { vi: "ADD + điều kiện trong một lệnh", en: "ADD + condition in one call" }
+      - { vi: "TTL cho item cửa sổ cũ", en: "TTL for old window items" }
+      - { vi: "Nêu ranh giới cửa sổ và khóa nóng", en: "Mentions window edges and hot keys" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithItems.html
+  - id: e-iv-dy-staff-12
+    engine: dynamodb
+    band: staff
+    kind: design
+    set: dy-staff-2
+    q: { vi: "Đặt hàng gồm: giữ tồn kho (bảng Inventory), tạo đơn (bảng Orders), thu tiền (dịch vụ ngoài). Thiết kế để không bán quá và không thu tiền đơn không tồn tại.", en: "Placing an order involves: reserving stock (Inventory table), creating the order (Orders table), charging (an external service). Design it to never oversell and never charge for an order that does not exist." }
+    answer: { vi: "Bước 1 (nguyên tử trong DynamoDB): `TransactWriteItems` gồm Update tồn kho có điều kiện `available >= :q` và Put đơn trạng thái `PENDING_PAYMENT` có `attribute_not_exists`, với `ClientRequestToken`. Bước 2: Stream của Orders (hoặc hàng đợi) kích hoạt thu tiền với khóa idempotency = id đơn, nên gọi lại không thu hai lần. Bước 3: thành công → cập nhật đơn `PAID` (có điều kiện trạng thái); thất bại hoặc quá hạn → saga bù: transaction trả tồn kho + đơn `CANCELLED`. Job quét đơn `PENDING_PAYMENT` quá hạn qua GSI thưa.", en: "Step 1 (atomic in DynamoDB): `TransactWriteItems` with a stock Update conditioned on `available >= :q` and a Put of the order in `PENDING_PAYMENT` with `attribute_not_exists`, using `ClientRequestToken`. Step 2: the Orders Stream (or a queue) triggers the charge with an idempotency key = order id, so retries never double-charge. Step 3: success → update the order to `PAID` (status-conditioned); failure or timeout → a compensating saga: a transaction returning stock + order `CANCELLED`. A job finds overdue `PENDING_PAYMENT` orders via a sparse GSI." }
+    tradeoffs:
+      - { vi: "Saga đúng nhưng có trạng thái trung gian người dùng nhìn thấy.", en: "The saga is correct but has intermediate states users can see." }
+      - { vi: "Giữ tồn kho trước khi thu tiền có thể lock hàng tồn kho của đơn bỏ dở: cần thời hạn giữ.", en: "Reserving before charging can lock stock for abandoned orders: holds need an expiry." }
+    rubric:
+      - { vi: "Transaction giữ kho + tạo đơn có điều kiện", en: "Transaction reserving stock + conditional order create" }
+      - { vi: "Thu tiền idempotent theo id đơn", en: "Idempotent charge by order id" }
+      - { vi: "Bù trừ khi thất bại / quá hạn", en: "Compensation on failure / timeout" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/transaction-apis.html
+  - id: e-iv-dy-staff-13
+    engine: dynamodb
+    band: staff
+    kind: concept
+    set: dy-staff-2
+    q: { vi: "Một sản phẩm được hàng triệu người xem cùng lúc trong flash sale: đọc nóng một item. Bạn có những lựa chọn nào?", en: "One product is viewed by millions at once in a flash sale: a hot item read. What are your options?" }
+    answer: { vi: "Một khóa bị giới hạn 3.000 RCU (strong) hoặc 6.000 lần đọc eventual 4 KB mỗi giây. Lựa chọn: (1) cache trước DynamoDB (DAX, write-through, đọc eventual, độ trễ micro giây) hoặc cache ở ứng dụng/CDN với TTL ngắn; (2) nhân bản item đọc nóng thành N bản `PRODUCT#<id>#<n>` và đọc ngẫu nhiên một bản (ghi phải cập nhật cả N); (3) tách phần đổi nhanh (tồn kho) khỏi phần tĩnh (mô tả) để phần tĩnh cache lâu. Đọc eventual giúp gấp đôi so với strong.", en: "One key is capped at 3,000 RCU (strong) or 6,000 eventual 4 KB reads per second. Options: (1) a cache in front (DAX, write-through, eventual reads, microsecond latency) or an app/CDN cache with a short TTL; (2) replicate the hot item into N copies `PRODUCT#<id>#<n>` and read a random one (writes update all N); (3) split fast-changing data (stock) from static data (description) so the static part caches long. Eventual reads double the headroom versus strong." }
+    rubric:
+      - { vi: "Biết giới hạn đọc của một khóa", en: "Knows one key's read limit" }
+      - { vi: "Cache (DAX/ứng dụng) và nhất quán của nó", en: "Caching (DAX/app) and its consistency" }
+      - { vi: "Nhân bản item hoặc tách phần nóng", en: "Item replication or splitting hot data" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DAX.html
+  - id: e-iv-dy-staff-14
+    engine: dynamodb
+    band: staff
+    kind: concept
+    set: dy-staff-3
+    q: { vi: "Kể các giới hạn \"cứng\" của DynamoDB mà thiết kế phải tính trước, mỗi cái một hệ quả.", en: "List DynamoDB's \"hard\" limits that a design must account for, with one consequence each." }
+    answer: { vi: "Item 400 KB (dữ liệu lớn ra S3). Query/Scan 1 MB mỗi trang (phải phân trang). Partition 3.000 RCU / 1.000 WCU mỗi khóa (shard khóa nóng). Transaction 100 thao tác, 4 MB (chia nghiệp vụ lớn thành saga). BatchWrite 25 item, BatchGet 100 item (lặp và xử lý Unprocessed). LSI: item collection 10 GB, tạo lúc tạo bảng. Streams giữ 24 giờ (consumer không được chậm quá). Một số hạn mức (số GSI, số bảng) là mặc định có thể xin tăng, khác với giới hạn cứng.", en: "Items 400 KB (big data to S3). Query/Scan 1 MB per page (must paginate). 3,000 RCU / 1,000 WCU per partition key (shard hot keys). Transactions 100 operations, 4 MB (split big flows into sagas). BatchWrite 25 items, BatchGet 100 items (loop and handle Unprocessed). LSI: 10 GB item collections, created with the table. Streams retained 24 hours (consumers must not lag that far). Some quotas (GSI count, table count) are adjustable defaults, unlike hard limits." }
+    rubric:
+      - { vi: "Ít nhất năm giới hạn đúng số", en: "At least five limits with correct numbers" }
+      - { vi: "Mỗi giới hạn có hệ quả thiết kế", en: "A design consequence for each" }
+      - { vi: "Phân biệt giới hạn cứng và hạn mức tăng được", en: "Separates hard limits from adjustable quotas" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ServiceQuotas.html
+  - id: e-iv-dy-staff-15
+    engine: dynamodb
+    band: staff
+    kind: design
+    set: dy-staff-3
+    q: { vi: "Lưu dữ liệu cảm biến IoT: 50.000 thiết bị, mỗi thiết bị 1 bản ghi/10 giây, đọc chủ yếu 24 giờ gần nhất, giữ 13 tháng cho tra cứu hiếm. Thiết kế tối ưu chi phí.", en: "Store IoT sensor data: 50,000 devices, one record per device every 10 seconds, reads mostly the last 24 hours, keep 13 months for rare lookups. Design for cost." }
+    answer: { vi: "Tải: 5.000 ghi/giây. Khóa `pk = DEV#<id>#<day>`, `sk = ts`: mỗi thiết bị-ngày một item collection, ghi phân tán theo 50.000 thiết bị. Gom: ghi lô theo phút (6 điểm trong một item) giảm số ghi 6 lần nếu chấp nhận trễ 1 phút. TTL `expires_at` = 30 ngày cho dữ liệu nóng; TTL xóa không tốn WCU và xuất hiện trong Streams: dùng Stream để lưu bản tóm tắt/bản gốc sang S3 (định dạng cột) cho 13 tháng, truy vấn hiếm bằng SQL trên S3. Có thể dùng lớp bảng Standard-IA nếu lưu trữ chiếm phần lớn chi phí.", en: "Load: 5,000 writes/s. Key `pk = DEV#<id>#<day>`, `sk = ts`: one item collection per device-day, writes spread over 50,000 devices. Batching: write per minute (6 points in one item) cuts writes 6× if 1 minute of delay is acceptable. TTL `expires_at` = 30 days for hot data; TTL deletes cost no WCU and appear in Streams: use the Stream to archive rollups/raw data to S3 (columnar format) for 13 months, rare lookups via SQL over S3. The Standard-IA table class may help if storage dominates cost." }
+    tradeoffs:
+      - { vi: "Gom theo phút rẻ hơn nhiều nhưng dữ liệu xuất hiện trễ và một item lỗi mất nhiều điểm.", en: "Per-minute batching is much cheaper but data appears later and one failed item loses many points." }
+      - { vi: "Dữ liệu cũ trên S3 rẻ nhưng tra cứu chậm hơn và cần một công cụ khác.", en: "Old data on S3 is cheap but lookups are slower and need another tool." }
+    rubric:
+      - { vi: "Tính tải 5.000 ghi/giây và khóa phân tán", en: "Computes 5,000 writes/s and a spread key" }
+      - { vi: "TTL + Streams lưu trữ sang S3", en: "TTL + Streams archiving to S3" }
+      - { vi: "Ít nhất một tối ưu chi phí khác (gom lô / lớp bảng)", en: "At least one more cost optimisation (batching / table class)" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-time-series.html
+
+takeHomes:
+  - id: e-iv-dy-th-1
+    engine: dynamodb
+    band: mid
+    title: { vi: "Thiết kế single-table cho cửa hàng trực tuyến", en: "Single-table design for an online shop" }
+    brief: { vi: "Cửa hàng trực tuyến cần: xem hồ sơ khách; đơn của khách mới nhất trước; chi tiết một đơn với các dòng hàng; đơn theo trạng thái cho kho; sản phẩm theo danh mục; đánh giá của một sản phẩm. Thiết kế một bảng DynamoDB (khóa, GSI, item mẫu) và chứng minh mỗi access pattern là một Query hoặc GetItem.", en: "An online shop needs: view a customer profile; a customer's orders newest first; one order's detail with its lines; orders by status for the warehouse; products by category; a product's reviews. Design one DynamoDB table (keys, GSIs, sample items) and show that every access pattern is one Query or GetItem." }
+    deliverables:
+      - { vi: "Bảng access pattern → thao tác → khóa/index (chỉ mục).", en: "An access pattern → operation → key/index table." }
+      - { vi: "Item mẫu cho mọi loại thực thể với pk/sk/gsi.", en: "Sample items for every entity type with pk/sk/gsi." }
+      - { vi: "Ước tính RCU/WCU cho 100 đơn/phút.", en: "An RCU/WCU estimate for 100 orders per minute." }
+    model: { vi: "`pk = CUST#<c>`, `sk = PROFILE` | `ORDER#<ts>#<o>` (đơn của khách, Query `begins_with(sk, 'ORDER#')`, `ScanIndexForward: false`). Chi tiết đơn: item collection riêng `pk = ORDER#<o>`, `sk = HEAD` | `LINE#<n>` (một Query). Kho: GSI1 thưa `gsi1pk = STATUS#<s>#<day>`, `gsi1sk = ts` (hậu tố ngày tránh khóa nóng). Sản phẩm: `pk = PROD#<p>`, `sk = META` | `REVIEW#<ts>`; danh mục qua GSI2 `gsi2pk = CAT#<cat>`, `gsi2sk = name`. Ước tính: item tóm tắt dưới khách + đầu đơn (mỗi cái ≤ 1 KB) + 3 dòng 0,5 KB → 5 item, mỗi item làm tròn 1 WCU, cộng GSI1 1 WCU: ~6 WCU/đơn → 100 đơn/phút = 10 WCU/giây.", en: "`pk = CUST#<c>`, `sk = PROFILE` | `ORDER#<ts>#<o>` (a customer's orders, Query `begins_with(sk, 'ORDER#')`, `ScanIndexForward: false`). Order detail: its own item collection `pk = ORDER#<o>`, `sk = HEAD` | `LINE#<n>` (one Query). Warehouse: sparse GSI1 `gsi1pk = STATUS#<s>#<day>`, `gsi1sk = ts` (the day suffix avoids a hot key). Products: `pk = PROD#<p>`, `sk = META` | `REVIEW#<ts>`; categories via GSI2 `gsi2pk = CAT#<cat>`, `gsi2sk = name`. Estimate: a summary item under the customer + the order header (each ≤ 1 KB) + 3 lines of 0.5 KB → 5 items, each rounding to 1 WCU, plus 1 GSI1 WCU: ~6 WCU per order → 100 orders/min = 10 WCU/s." }
+    rubric:
+      - { vi: "Mọi access pattern là Query/GetItem, không Scan", en: "Every access pattern is Query/GetItem, no Scan" }
+      - { vi: "Khóa có tiền tố và sort key có thứ bậc", en: "Prefixed keys and hierarchical sort keys" }
+      - { vi: "Tránh khóa GSI nóng (trạng thái)", en: "Avoids a hot GSI key (status)" }
+      - { vi: "Ước tính dung lượng đúng quy tắc làm tròn", en: "Capacity estimate with correct rounding" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-general-nosql-design.html
+  - id: e-iv-dy-th-2
+    engine: dynamodb
+    band: senior
+    title: { vi: "Rà soát chi phí và throttle của một bảng đang chạy", en: "Cost and throttling review of a live table" }
+    brief: { vi: "Một bảng DynamoDB on-demand có hóa đơn tăng gấp 4 trong quý và thỉnh thoảng throttle lúc cao điểm. Bạn có: định nghĩa bảng (2 GSI chiếu `ALL`, một GSI khóa `status`), số liệu CloudWatch giả lập theo giờ (`ConsumedRCU/WCU`, `ThrottledRequests` theo bảng và GSI), và 5 mẫu request kèm `ConsumedCapacity`/`ScannedCount`. Viết báo cáo nguyên nhân và kế hoạch giảm chi phí.", en: "An on-demand DynamoDB table's bill grew 4× this quarter and it occasionally throttles at peak. You have: the table definition (2 GSIs projecting `ALL`, one keyed on `status`), simulated hourly CloudWatch numbers (`ConsumedRCU/WCU`, `ThrottledRequests` per table and GSI), and 5 sample requests with `ConsumedCapacity`/`ScannedCount`. Write a root-cause report and a cost reduction plan." }
+    deliverables:
+      - { vi: "Bảng phân rã chi phí: bảng vs từng GSI, đọc vs ghi.", en: "A cost breakdown: table vs each GSI, reads vs writes." }
+      - { vi: "Nguyên nhân throttle với phép tính theo giới hạn mỗi partition.", en: "Throttling root cause with per-partition limit arithmetic." }
+      - { vi: "Kế hoạch có thứ tự, mỗi bước ước tính phần tiết kiệm.", en: "An ordered plan, each step with an estimated saving." }
+    model: { vi: "Thứ tự kiểm: (1) request có `ScannedCount` ≫ `Count` (Scan hoặc Filter): thay bằng GSI thưa / khóa tốt hơn; (2) GSI `ALL` làm mỗi ghi tốn gấp 3: đổi sang `INCLUDE`/`KEYS_ONLY` (tạo GSI mới, chuyển đọc, xóa GSI cũ); (3) GSI khóa `status` cardinality thấp: tính WCU mỗi giá trị so với 1.000, shard hậu tố hoặc làm thưa; (4) item lớn bị Update thường xuyên: tách phần đổi nhanh; (5) đọc strong không cần thiết: chuyển eventual; (6) khi tải đã ổn định, so on-demand với provisioned + auto scaling. Mỗi bước ghi phần trăm tiết kiệm từ số đo.", en: "Check order: (1) requests with `ScannedCount` ≫ `Count` (Scan or Filter): replace with a sparse GSI / better keys; (2) `ALL` GSIs make each write cost 3×: switch to `INCLUDE`/`KEYS_ONLY` (create a new GSI, move reads, drop the old); (3) the low-cardinality `status` GSI: compute WCU per value against 1,000, shard with a suffix or make it sparse; (4) large items updated often: split the fast-changing part; (5) unneeded strong reads: switch to eventual; (6) once traffic is steady, compare on-demand with provisioned + auto scaling. Each step states its saving as a percentage from measurements." }
+    rubric:
+      - { vi: "Phân rã chi phí có số", en: "A numeric cost breakdown" }
+      - { vi: "Giải thích throttle bằng giới hạn partition và back-pressure GSI", en: "Explains throttling via partition limits and GSI back-pressure" }
+      - { vi: "Kế hoạch có thứ tự theo lợi ích/rủi ro", en: "Plan ordered by benefit/risk" }
+      - { vi: "Chuyển đổi GSI không gián đoạn", en: "Non-disruptive GSI migration" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/CapacityUnitCalculations.html
+  - id: e-iv-dy-th-3
+    engine: dynamodb
+    band: junior
+    title: { vi: "Phiên đăng nhập và giỏ hàng", en: "Login sessions and shopping carts" }
+    brief: { vi: "Một ứng dụng bán hàng cần lưu: phiên đăng nhập (tra theo session id, tự hết hạn sau 7 ngày) và giỏ hàng của mỗi người dùng (thêm, bớt, xem cả giỏ). Thiết kế một bảng DynamoDB, viết các request cần dùng và ước tính dung lượng cho 50 lần xem giỏ mỗi giây.", en: "A shopping app must store: login sessions (looked up by session id, expiring after 7 days) and each user's cart (add, remove, view the whole cart). Design one DynamoDB table, write the requests you need and estimate capacity for 50 cart views per second." }
+    deliverables:
+      - { vi: "Khóa của bảng và item mẫu cho một phiên và một món trong giỏ.", en: "The table's keys and sample items for a session and a cart entry." }
+      - { vi: "Request cho từng thao tác (GetItem, PutItem, Query, UpdateItem, DeleteItem) và cách cho phiên hết hạn.", en: "The request for each operation (GetItem, PutItem, Query, UpdateItem, DeleteItem) and how sessions expire." }
+      - { vi: "Ước tính RCU cho 50 lần xem giỏ mỗi giây.", en: "An RCU estimate for 50 cart views per second." }
+    model: { vi: "Phiên: `pk = SESSION#<id>`, `sk = META`, có thuộc tính `expires_at` (số giây epoch) và bật TTL trên nó. DynamoDB xóa item hết hạn trong vòng vài ngày và không tốn WCU, nên khi đọc vẫn phải lọc `expires_at > :now`. Giỏ: `pk = USER#<u>`, `sk = CART#<sku>`, mỗi món một item; xem giỏ là một `Query` với `begins_with(sk, 'CART#')`; thêm là `UpdateItem` với `ADD qty :n`; bớt là `DeleteItem`. Ước tính: giỏ 10 món × 0,3 KB = 3 KB; Query cộng cỡ các item rồi làm tròn lên 4 KB = 1 RCU nếu strongly consistent hoặc 0,5 RCU nếu eventually consistent; 50 lần mỗi giây ≈ 25 RCU (eventual) hoặc 50 RCU (strong).", en: "Sessions: `pk = SESSION#<id>`, `sk = META`, with an `expires_at` attribute (epoch seconds) and TTL enabled on it. DynamoDB deletes expired items within a few days without using WCU, so reads must still filter `expires_at > :now`. Carts: `pk = USER#<u>`, `sk = CART#<sku>`, one item per entry; viewing the cart is one `Query` with `begins_with(sk, 'CART#')`; adding is an `UpdateItem` with `ADD qty :n`; removing is a `DeleteItem`. Estimate: a cart of 10 entries × 0.3 KB = 3 KB; Query adds up item sizes then rounds up to 4 KB = 1 RCU strongly consistent or 0.5 RCU eventually consistent; 50 views per second ≈ 25 RCU (eventual) or 50 RCU (strong)." }
+    rubric:
+      - { vi: "Khóa có tiền tố, giỏ là một item collection", en: "Prefixed keys, the cart is one item collection" }
+      - { vi: "TTL trên số giây epoch, vẫn lọc item hết hạn khi đọc", en: "TTL on epoch seconds, expired items still filtered on read" }
+      - { vi: "Mỗi thao tác là một request theo khóa, không Scan", en: "Each operation is one keyed request, no Scan" }
+      - { vi: "Ước tính RCU làm tròn 4 KB đúng", en: "RCU estimate with correct 4 KB rounding" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/TTL.html
+  - id: e-iv-dy-th-4
+    engine: dynamodb
+    band: staff
+    title: { vi: "Ví điểm thưởng chạy nhiều Region", en: "A multi-Region loyalty points wallet" }
+    brief: { vi: "Ví điểm thưởng phục vụ khách ở ba Region. Yêu cầu: đọc và ghi với độ trễ thấp ở mỗi Region, mất một Region vẫn phục vụ được, không bao giờ cộng hay trừ điểm hai lần, và đội phân tích nhận mọi thay đổi trong vòng một phút. Viết đề xuất: mô hình dữ liệu, chọn chế độ global tables, cách chống ghi trùng và xung đột, đường dữ liệu sang phân tích, và chi phí.", en: "A loyalty points wallet serves customers in three Regions. Requirements: low-latency reads and writes in each Region, still serving when one Region is lost, never adding or deducting points twice, and the analytics team gets every change within a minute. Write a proposal: the data model, the global tables mode, how to stop duplicate and conflicting writes, the pipeline to analytics, and the cost." }
+    deliverables:
+      - { vi: "Mô hình item và cách ghi một lần cộng/trừ điểm.", en: "The item model and how one points movement is written." }
+      - { vi: "Chọn MREC hay MRSC, có lý do, và cách xử lý xung đột ghi.", en: "MREC or MRSC with reasons, and how write conflicts are handled." }
+      - { vi: "Đường CDC sang phân tích và bảng chi phí (ghi nhân bản, Streams).", en: "The CDC pipeline to analytics and a cost table (replicated writes, Streams)." }
+    model: { vi: "Mỗi lần cộng/trừ là một item chỉ chèn thêm `pk = WALLET#<w>`, `sk = TX#<ts>#<id>`, ghi bằng `TransactWriteItems` cùng với cập nhật số dư có điều kiện (`balance >= :n` khi trừ) và một item idempotency `pk = IDEM#<key>` với `attribute_not_exists(pk)`: request gửi lại làm transaction bị hủy, không ghi trùng. MREC (mặc định) cho đọc/ghi cục bộ độ trễ thấp và RPO thấp, nhưng xung đột giữa các Region được giải bằng last writer wins, nên hai Region cùng trừ một ví có thể làm sai số dư: định tuyến mọi ghi của một ví về một Region \"nhà\" (theo khách), Region khác chỉ đọc hoặc chuyển tiếp ghi. Nếu không định tuyến được mà cần nhất quán mạnh giữa các Region, MRSC đổi lấy độ trễ ghi cao hơn. Phân tích: DynamoDB Streams → Lambda → kho phân tích, xử lý idempotent theo id của lần cộng/trừ vì một lô có thể được giao lại khi thử lại. Chi phí: mỗi ghi trả thêm một replicated write ở mỗi Region bản sao, cộng phí đọc Streams và chạy Lambda; item nhỏ giữ chi phí thấp.", en: "Each points movement is an append-only item `pk = WALLET#<w>`, `sk = TX#<ts>#<id>`, written with `TransactWriteItems` together with a conditional balance update (`balance >= :n` on a deduction) and an idempotency item `pk = IDEM#<key>` with `attribute_not_exists(pk)`: a resent request cancels the transaction, so nothing is written twice. MREC (the default) gives low-latency local reads/writes and a low RPO, but conflicts between Regions are resolved by last writer wins, so two Regions deducting from the same wallet can corrupt the balance: route every write for a wallet to one \"home\" Region (per customer), other Regions only read or forward writes. If routing is impossible and strong consistency across Regions is needed, MRSC trades it for higher write latency. Analytics: DynamoDB Streams → Lambda → the analytics store, processed idempotently by movement id, since a batch can be delivered again on retry. Cost: every write pays one more replicated write in each replica Region, plus Streams reads and Lambda runs; small items keep it cheap." }
+    rubric:
+      - { vi: "Cộng/trừ chỉ chèn thêm, transaction có điều kiện, idempotency key", en: "Append-only movements, a conditional transaction, an idempotency key" }
+      - { vi: "Hiểu last writer wins của MREC và định tuyến ghi về Region nhà", en: "Understands MREC last writer wins and routes writes to a home Region" }
+      - { vi: "So MREC với MRSC theo độ trễ và tính nhất quán", en: "Compares MREC and MRSC by latency and consistency" }
+      - { vi: "CDC qua Streams, xử lý idempotent", en: "CDC through Streams with idempotent processing" }
+      - { vi: "Chi phí có tính ghi nhân bản", en: "The cost includes replicated writes" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GlobalTables.html
