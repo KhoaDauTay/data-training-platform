@@ -27,6 +27,7 @@ const datasetOf = (lab: LabLike) => lab.setup?.trim() || DEFAULT_DATASET;
 interface Job {
   src: string;
   dataset: string;
+  stages?: boolean;
   resolve: (r: MongoResult) => void;
   reject: (e: Error) => void;
 }
@@ -85,10 +86,10 @@ export class MongoLabClient implements LabRunner {
   }
 
   /** The raw run. Rejects with MongoSyntaxError, MongoRunError, LabTimeoutError or LabFailedError. */
-  exec(src: string, dataset: string = DEFAULT_DATASET): Promise<MongoResult> {
+  exec(src: string, dataset: string = DEFAULT_DATASET, stages?: boolean): Promise<MongoResult> {
     if (this.failure) return Promise.reject(this.failure);
     return new Promise((resolve, reject) => {
-      this.queue.push({ src, dataset, resolve, reject });
+      this.queue.push({ src, dataset, stages, resolve, reject });
       this.pump();
     });
   }
@@ -146,7 +147,7 @@ export class MongoLabClient implements LabRunner {
     const id = this.nextId++;
     const timer = setTimeout(() => this.timeout(id), this.timeoutMs);
     this.inFlight = { id, job, timer };
-    this.worker.postMessage({ id, src: job.src, dataset: job.dataset });
+    this.worker.postMessage({ id, src: job.src, dataset: job.dataset, ...(job.stages ? { stages: true } : {}) });
   }
 
   private timeout(id: number): void {

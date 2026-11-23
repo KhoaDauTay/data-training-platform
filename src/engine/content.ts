@@ -31,7 +31,15 @@ export interface Bi { vi: string; en: string }
 export interface Fact extends Bi { probe?: string; expect?: unknown[][] }
 /** `name` (v23 CAP, L257): a short step name for the capstone step bar; without it the bar derives one from `task`. */
 /** `perf` / `slow` (v24, L340): a performance bar on a Postgres `rows` step, as on a General drill (src/planCheck.ts slowVerdict). */
-export interface LabStep { task: Bi; solution: string; check: Check; ordered: boolean; hint: Bi; expect?: Record<string, number>; fact?: Fact; target?: string; name?: Bi; perf?: PerfSpec; slow?: string }
+/**
+ * v25 MongoDB (route R5): `rule` = a bar graded by rule (`esr` on `target`, `covered` on `index`, `match-first`), never
+ * measured; `error` = the code MongoDB must refuse the command with ("mong lỗi"); `sql` = the equivalent SQL, shown after
+ * the step passes ("So với SQL"), never run. Checked in tests/engineContent.test.ts and tests/engineIntegration.test.ts.
+ */
+export interface LabStep {
+  task: Bi; solution: string; check: Check; ordered: boolean; hint: Bi; expect?: Record<string, number>; fact?: Fact; target?: string; name?: Bi; perf?: PerfSpec; slow?: string;
+  rule?: 'esr' | 'covered' | 'match-first'; index?: string; error?: string; sql?: string;
+}
 export interface Lab { setup?: string; steps: LabStep[] }
 export interface Question { q: Bi; options: Bi[]; answer: number; why: Bi }
 /**
@@ -39,7 +47,13 @@ export interface Question { q: Bi; options: Bi[]; answer: number; why: Bi }
  * planner's row estimate on that node); checked by tests/enginePredict.test.ts through src/engine/predict.ts.
  */
 export interface PredictExpect { node: string; table?: string; index?: string; rows?: number }
-export interface Predict extends Question { sql: string; expect?: PredictExpect }
+/**
+ * v25 REC (research-nosql-v25-v26 §2.3): where a predict's answer comes from when nothing runs here. `tier: docs` = figures
+ * and stage names quoted from the official manual page `url` (never a whole explain JSON); `mongod` = captured from a real
+ * server (needs `explainVersion`). `output` = the few lines quoted, absent when the docs state only the conclusion.
+ */
+export interface Recorded { tier: 'docs' | 'mongod'; server: string; version: string; date: string; url?: string; explainVersion?: string | null; output?: string }
+export interface Predict extends Question { sql: string; expect?: PredictExpect; recorded?: Recorded }
 /** `browser`: runs here; `docs`: numbers come from the official docs, nothing runs (the page says so). */
 export const RUNTIMES = ['browser', 'docs'] as const;
 export type Runtime = (typeof RUNTIMES)[number];
@@ -162,10 +176,9 @@ export function parseEngineLesson(source: string | LessonSource, path: string, y
         hint: bi(s.hint, `lab.steps[${i}].hint`),
         ...(s.expect !== undefined ? { expect: counts(s.expect, `lab.steps[${i}].expect`) } : {}),
         ...(s.fact !== undefined ? { fact: fact(s.fact, `lab.steps[${i}].fact`) } : {}),
-        ...(typeof s.target === 'string' && s.target.trim() ? { target: s.target.trim() } : {}),
         ...(s.name !== undefined ? { name: bi(s.name, `lab.steps[${i}].name`) } : {}),
         ...(s.perf !== undefined ? { perf: perfOf(s.perf, s.slow, `lab.steps[${i}]`) } : {}),
-        ...(typeof s.slow === 'string' ? { slow: s.slow.trim() } : {}),
+        ...Object.fromEntries(['target', 'slow', 'rule', 'index', 'error', 'sql'].flatMap((k) => (typeof s[k] === 'string' && s[k] ? [[k, s[k].trim()]] : []))),
       };
     });
     if (!steps.length) fail('lab cần ít nhất một bước');
@@ -182,6 +195,7 @@ export function parseEngineLesson(source: string | LessonSource, path: string, y
       lesson.predict.expect = { node: String(x.node), ...(x.table ? { table: String(x.table) } : {}), ...(x.index ? { index: String(x.index) } : {}),
         ...(typeof x.rows === 'number' ? { rows: x.rows } : {}) };
     }
+    if (p.recorded) lesson.predict.recorded = p.recorded as Recorded;
   }
   if ((kind === 'lab' || kind === 'capstone') && !lesson.lab) fail(`kind ${kind} cần lab`);
   if (kind === 'quiz' && !lesson.quiz?.length) fail('kind quiz cần quiz');

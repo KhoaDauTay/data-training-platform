@@ -85,3 +85,15 @@ export function isCovered(find: string, index: string): boolean {
   const kept = Object.entries(proj).filter(([, v]) => v !== 0 && v !== false).map(([k]) => k);
   return kept.length > 0 && kept.every((k) => idx.includes(k));
 }
+
+/**
+ * v25 (route R5, rule bar): an aggregate that filters first: its first `$match` comes before any `$unwind`, `$lookup` or
+ * `$group`, so the heavy stages read fewer documents (MongoDB "Aggregation Pipeline Optimization"). A rule, never a measurement.
+ */
+export function matchFirst(src: string): boolean {
+  const c = parseShell(src);
+  const p = (c.method.name === 'aggregate' && Array.isArray(c.method.args[0]) ? c.method.args[0] : []) as MongoDoc[];
+  const m = p.findIndex((st) => Object.hasOwn(st, '$match'));
+  const heavy = p.findIndex((st) => ['$unwind', '$lookup', '$group'].some((k) => Object.hasOwn(st, k)));
+  return m !== -1 && (heavy === -1 || m < heavy);
+}

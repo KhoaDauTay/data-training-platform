@@ -2,7 +2,7 @@
 // in-memory collections. Pure apart from the dataset imports, so Vitest runs it in Node without a worker.
 import { aggregate, find, update, updateMany, updateOne } from 'mingo';
 import { parseShell, type Call } from './parse';
-import { MongoRunError, type MongoDoc, type MongoResult, type MongoValue } from './types';
+import { MongoRunError, type MongoDoc, type MongoResult, type MongoValue, type StageCount } from './types';
 
 /** Same cut as the SQL worker's MAX_ROWS_WORKER. */
 export const MAX_DOCS = 50_000;
@@ -109,7 +109,20 @@ function upsertBase(filter: MongoDoc): MongoDoc {
 }
 
 /** Runs one shell command against a dataset. Writes and createIndex touch copies only: the dataset stays pristine. */
-export function runMongo(ds: Dataset, src: string): MongoResult {
+/**
+ * mingo's `$count` on an empty input gives `[{ n: 0 }]`; MongoDB gives no document ("If the input dataset is empty, `$count`
+ * doesn't return a result", research-nosql-v25-v26 §4.1). Rewritten as `$group` + `$project`, which mingo answers like MongoDB.
+ */
+export function countLikeMongo(pipeline: MongoDoc[]): MongoDoc[] {
+  return pipeline.flatMap((st): MongoDoc[] => {
+    if (typeof st.$count === 'string') return [{ $group: { _id: null, [st.$count]: { $sum: 1 } } }, { $project: { _id: 0 } }];
+    if (isDoc(st.$facet)) return [{ $facet: Object.fromEntries(Object.entries(st.$facet).map(([k, p]) => [k, Array.isArray(p) ? countLikeMongo(p as MongoDoc[]) : p])) }];
+    return [st];
+  });
+}
+
+/** `stages`: also run every prefix of an aggregate (v25 "Pipeline từng bước", shown under a Run, never graded). */
+export function runMongo(ds: Dataset, src: string, want: { stages?: boolean } = {}): MongoResult {
   const start = performance.now();
   idCounter = 0; // per run: the Solution's and the player's identical insert get identical ids, so they grade equal
   const cmd = parseShell(src);
@@ -141,6 +154,24 @@ export function runMongo(ds: Dataset, src: string): MongoResult {
   const filterArg = (i: number) => arg<MongoDoc | undefined>(m, i, isDoc, 'a filter object', true) ?? {};
   const scratch = () => docs; // already this run's own copy
   const lastChain = (n: string) => [...cmd.chain].reverse().find((c) => c.name === n);
+  /** An upsert's new document: the filter's equality fields, then the update applied to them. */
+  const upsertDoc = (filter: MongoDoc, upd: MongoDoc | MongoDoc[], arrayFilters?: MongoDoc[]): MongoDoc => {
+    let doc = upsertBase(filter);
+    if (Array.isArray(upd)) doc = aggregate([doc], upd, opts)[0] as MongoDoc;
+    else update(doc, upd as never, arrayFilters, undefined, { cloneMode: 'none', queryOptions: opts });
+    return Object.hasOwn(doc, '_id') ? doc : { _id: newId(), ...doc };
+  };
+  /** Every prefix 1..k on its own fresh copies (a prefix never sees another's writes). ponytail: O(n·k) runs, fine at lab sizes. */
+  const stagesOf = (pipeline: MongoDoc[]): StageCount[] => pipeline.map((st, k) => {
+    const fresh = new Map<string, MongoDoc[]>();
+    const own = (n: string): MongoDoc[] => {
+      let c = fresh.get(n);
+      if (!c) fresh.set(n, (c = Object.hasOwn(ds.collections, n) ? structuredClone(ds.collections[n]) : []));
+      return c;
+    };
+    const res = aggregate(own(name), countLikeMongo(pipeline.slice(0, k + 1)), { ...opts, collectionResolver: own }) as MongoDoc[];
+    return { stage: Object.keys(st)[0] ?? '?', n: res.length, head: res.slice(0, 3) };
+  });
 
   try {
     switch (m.name) {
@@ -179,19 +210,20 @@ export function runMongo(ds: Dataset, src: string): MongoResult {
         const pipeline = arg<MongoDoc[]>(m, 0, (v) => Array.isArray(v) && v.every(isDoc), 'an array of stages like [{ $match: … }]');
         options(m, 1, ['allowDiskUse']);
         const at = pipeline.findIndex((st) => Object.hasOwn(st, '$out') || Object.hasOwn(st, '$merge'));
-        if (at === -1) return out('docs', aggregate(docs, pipeline, opts) as MongoDoc[]);
+        const stages = want.stages && pipeline.length > 1 ? stagesOf(pipeline.slice(0, at === -1 ? undefined : at)) : undefined;
+        if (at === -1) return out('docs', aggregate(docs, countLikeMongo(pipeline), opts) as MongoDoc[], stages ? { stages } : {});
         const stage = Object.keys(pipeline[at])[0];
         if (at !== pipeline.length - 1) throw new MongoRunError('bad_stage', `${stage} can only be the final stage in the pipeline`);
         // The head runs to a finished array first: mingo's $out/$merge push into the target while reading the source,
         // and the target may be the source itself.
-        const head = aggregate(docs, pipeline.slice(0, -1), opts) as MongoDoc[];
+        const head = aggregate(docs, countLikeMongo(pipeline.slice(0, -1)), opts) as MongoDoc[];
         const spec = pipeline[at][stage];
         const into = stage === '$out' ? spec : isDoc(spec) ? spec.into : undefined;
         const target = typeof into === 'string' ? into : isDoc(into) && typeof into.coll === 'string' ? into.coll : '';
         if (!target) throw new MongoRunError('bad_argument', `${stage} needs a target collection name`);
         if (stage === '$out') run.set(target, structuredClone(head)); // MongoDB replaces the whole target collection
         else aggregate(head, [{ $merge: { ...(spec as MongoDoc), into: target } }], opts); // defaults: merge / insert
-        return { ...out('write', run.get(target) ?? []), collection: target, unknownCollection: undefined };
+        return { ...out('write', run.get(target) ?? [], stages ? { stages } : {}), collection: target, unknownCollection: undefined };
       }
       case 'insertOne':
       case 'insertMany': {
@@ -229,14 +261,34 @@ export function runMongo(ds: Dataset, src: string): MongoResult {
         const r = fn(coll, filter, upd as never, config, opts);
         const ack: MongoDoc = { acknowledged: true, matchedCount: r.matchedCount, modifiedCount: r.modifiedCount, upsertedCount: 0 };
         if (r.matchedCount === 0 && o.upsert === true) {
-          let doc = upsertBase(filter);
-          if (Array.isArray(upd)) doc = aggregate([doc], upd, opts)[0] as MongoDoc;
-          else update(doc, upd as never, config.arrayFilters, undefined, { cloneMode: 'none', queryOptions: opts });
-          if (!Object.hasOwn(doc, '_id')) doc = { _id: newId(), ...doc };
+          const doc = upsertDoc(filter, upd, config.arrayFilters);
           coll.push(doc);
           Object.assign(ack, { upsertedCount: 1, upsertedId: doc._id });
         }
         return out('write', coll, { ack });
+      }
+      case 'findOneAndUpdate': {
+        // v25 (route R5, counters): mongosh returns the document, before the update unless returnDocument: "after".
+        argCount(m, 3);
+        const filter = arg<MongoDoc>(m, 0, isDoc, 'a filter object');
+        const upd = arg<MongoDoc>(m, 1, (v) => isDoc(v) && Object.keys(v).length > 0 && Object.keys(v).every((k) => k.startsWith('$')), 'an update like { $inc: … }');
+        const o = options(m, 2, ['upsert', 'returnDocument']);
+        if (o.returnDocument !== undefined && o.returnDocument !== 'before' && o.returnDocument !== 'after')
+          throw new MongoRunError('bad_option', 'findOneAndUpdate(): returnDocument must be "before" or "after"');
+        const coll = scratch();
+        const hit = find(coll, filter, undefined, opts).next() as MongoDoc | undefined;
+        let before: MongoDoc | null = null;
+        let after: MongoDoc | null = null;
+        if (hit) {
+          before = structuredClone(hit);
+          update(hit, upd as never, undefined, undefined, { cloneMode: 'none', queryOptions: opts });
+          after = hit;
+        } else if (o.upsert === true) {
+          after = upsertDoc(filter, upd);
+          coll.push(after);
+        }
+        const doc = o.returnDocument === 'after' ? after : before;
+        return out('docs', doc ? [structuredClone(doc)] : []);
       }
       case 'deleteOne':
       case 'deleteMany': {
@@ -290,6 +342,6 @@ function compareValues(a: MongoValue, b: MongoValue): number {
 }
 
 /** The worker's whole job: load the lab's data, run, return. */
-export async function runOnDataset(dataset: string, src: string): Promise<MongoResult> {
-  return runMongo(await loadDataset(dataset), src);
+export async function runOnDataset(dataset: string, src: string, stages?: boolean): Promise<MongoResult> {
+  return runMongo(await loadDataset(dataset), src, { stages });
 }

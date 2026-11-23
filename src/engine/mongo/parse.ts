@@ -23,6 +23,7 @@ export interface Command {
 export const METHODS: Record<string, readonly string[]> = {
   find: ['sort', 'limit', 'skip', 'toArray', 'pretty'],
   findOne: [],
+  findOneAndUpdate: [],
   countDocuments: [],
   distinct: [],
   aggregate: ['toArray', 'pretty'],

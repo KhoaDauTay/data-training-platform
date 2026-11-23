@@ -26,6 +26,8 @@ export interface LabMeta {
   planBefore?: string;
   planAfter?: string;
   catalog?: unknown[][];
+  /** v25 MongoDB "Pipeline từng bước": each prefix of the aggregate the player ran, its document count and first documents. */
+  pipeline?: { stage: string; n: number; head: unknown[] }[];
 }
 /** A table for the Result view (QueryResult-compatible: `types` = Postgres type OIDs, empty for a document engine) + meta. */
 export type LabOutput = QueryResult & { meta?: LabMeta };
