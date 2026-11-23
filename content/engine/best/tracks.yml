@@ -1,8 +1,11 @@
 # Khu Best Practice (product-design-best-practice.md §4.2, ADD-8). Thứ tự trong file là thứ tự tab.
 # areas = chữ đầu mã catalogue (docs/team/best-practice-catalogue.md) mà track nhận.
+# gallery (v24, catalogue §13.4) = hàng "Lỗi hay gặp" đầu track: id thẻ theo thứ tự của bảng §13.4 (lớp lỗi có tần suất cao
+# trong Taipalus & Perälä 2019 trước, rồi theo số nguồn hướng dẫn). Không thêm mục mới; chỉ id thẻ đã phát hành.
 - id: sql
   areas: [q, a]
   title: { vi: "SQL", en: "SQL" }
+  gallery: [e-bp-q07, e-bp-q01, e-bp-q02, e-bp-q12, e-bp-q09, e-bp-s01, e-bp-q16, e-bp-q08, e-bp-q10]
   after:
     vi: "Bạn tránh được những câu SQL sai âm thầm: NULL nuốt kết quả, join nhân đôi tổng, khoảng ngày cắt mất dòng."
     en: "You avoid SQL that is silently wrong: NULLs that swallow rows, joins that double totals, date ranges that drop rows."

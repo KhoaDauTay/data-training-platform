@@ -33,7 +33,7 @@ const read = (f: string) => {
   return FILES[f];
 };
 /** ENGINE_ID from product-design-db-engine §2.2 (ENG-CORE's src/engine code is not on this branch yet: keep in sync). */
-const ENGINE_ID = /^e-(pg|mg|dy)-[a-z0-9-]+$/;
+const ENGINE_ID = /^e-(pg|mg|dy|bp)-[a-z0-9-]+$/;
 
 type Bi = { vi: string; en: string };
 interface Skill { id: string; part: number }

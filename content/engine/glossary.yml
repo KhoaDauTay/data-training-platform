@@ -1933,10 +1933,10 @@
   term: access pattern
   engines: [dynamodb, mongodb]
   level: L3
-  keep_en: false
-  vi_term: "mẫu truy cập"
+  keep_en: true
+  vi_term: "access pattern"
   avoid: "mẫu truy cập mạng, quyền truy cập"
-  vi: "Một câu hỏi cụ thể ứng dụng sẽ đọc/ghi (\"đơn của khách X theo ngày\"). DynamoDB thiết kế khóa từ danh sách mẫu truy cập, không từ thực thể. Lần đầu viết \"mẫu truy cập (access pattern)\", như product design §4."
+  vi: "Một câu hỏi cụ thể ứng dụng sẽ đọc/ghi (\"đơn của khách X theo ngày\"). DynamoDB thiết kế khóa từ danh sách access pattern, không từ thực thể."
   en: "A concrete question the application reads or writes (\"orders of customer X by date\"). DynamoDB keys are designed from the list of access patterns, not from entities."
   doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-general-nosql-design.html"
 - id: single-table-design

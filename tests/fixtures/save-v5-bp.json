@@ -1,0 +1,109 @@
+{
+  "version": 5,
+  "completed": [
+    "ch1-01",
+    "ch1-02",
+    "ch1-03",
+    "ch1-04",
+    "ch1-05",
+    "ch2-01",
+    "ch2-02",
+    "ecom-ch1-01",
+    "ecom-ch1-02",
+    "fin-ch1-01",
+    "e-pg-l1-01",
+    "e-bp-q02",
+    "e-bp-s04"
+  ],
+  "xp": 1455,
+  "hintsUsed": {
+    "ch1-02": 1,
+    "r-1": 2,
+    "ecom-ch1-02": 1,
+    "fin-ch1-02": 1
+  },
+  "drafts": {
+    "ch2-03#0": "SELECT count(*) FROM shipments",
+    "r-2#0": "SELECT 1",
+    "ecom-ch1-03#0": "SELECT sku, name, price FROM products",
+    "fin-ch1-02#0": "SELECT code, principal FROM loans"
+  },
+  "graded": {
+    "ch2-02#0": "SELECT mode, direction, COUNT(*) FROM shipments GROUP BY mode, direction",
+    "r-1#0": "SELECT incoterm, count(*) FROM shipments GROUP BY incoterm",
+    "ecom-ch1-02#0": "SELECT sku, name, price FROM products WHERE seller_id = 16 AND is_active = true AND price < 500000",
+    "fin-ch1-01#0": "SELECT count(*) FROM customers"
+  },
+  "review": {
+    "select": {
+      "box": 3,
+      "due": "2026-11-20"
+    },
+    "where": {
+      "box": 2,
+      "due": "2026-11-19"
+    }
+  },
+  "practice": {
+    "solved": 4,
+    "weak": 1
+  },
+  "sandboxDraft": "SELECT count(*) FROM shipments",
+  "bossStep": {
+    "ecom-ch1-05": 1
+  },
+  "dashboard": {
+    "cards": [
+      {
+        "id": "c1",
+        "title": "Lô đi Rotterdam năm 2025",
+        "sql": "SELECT count(*) FROM shipments WHERE pod = 'NLRTM'",
+        "kind": "number",
+        "col": 0,
+        "source": "sandbox"
+      }
+    ],
+    "hidden": [
+      "rows2025"
+    ]
+  },
+  "lanes": [
+    "r-1"
+  ],
+  "byDomain": {
+    "ecommerce": {
+      "dashboard": {
+        "cards": [
+          {
+            "id": "e1",
+            "title": "Đơn tháng 10/2026",
+            "sql": "SELECT count(*) FROM orders WHERE ordered_at >= '2026-10-01'",
+            "kind": "number",
+            "col": 0,
+            "source": "sandbox"
+          }
+        ],
+        "hidden": [
+          "ecomKiteLate"
+        ]
+      },
+      "sandboxDraft": "SELECT * FROM orders LIMIT 5"
+    },
+    "finance": {
+      "dashboard": {
+        "cards": [
+          {
+            "id": "f1",
+            "title": "Khoản vay giải ngân tháng 10/2026",
+            "sql": "SELECT count(*) FROM loans WHERE disbursed_on >= '2026-10-01'",
+            "kind": "number",
+            "col": 0,
+            "source": "sandbox"
+          }
+        ],
+        "hidden": []
+      },
+      "sandboxDraft": "SELECT * FROM loans LIMIT 5"
+    }
+  }
+}

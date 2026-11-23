@@ -8,6 +8,8 @@ import { LEARN_DICT } from '../src/i18n/learn';
 import { appliesIn } from '../src/learn';
 import { SKILLS } from '../src/progress';
 import { learnAdvOf, learnModuleOf, learnSkillOf, parseRoute } from '../src/route';
+import { bestHash, bestRouteOf, parseBestCard, parseTracks, RELEASED } from '../src/engine/best';
+import * as bestSrc from '../src/bestSources';
 
 /** Plan 8a Task 12 (D8a-15): every General path leads to content, and nothing on it says "later". */
 const g = generalNow()!;
@@ -99,4 +101,26 @@ it('nút nâng cao không nhắc domain (L82)', () => {
   const bad = /logistics|e-?commerce|finance|domain|chương \d|chapter \d/i;
   for (const n of generalNow()!.nodes)
     for (const lang of ['vi', 'en'] as const) expect([n.id, bad.test(`${n.applies?.[lang] ?? ''} ${n.why?.[lang] ?? ''}`)]).toEqual([n.id, false]);
+});
+
+describe('Best Practice (v24 BP-UI, L346): mọi route parse, mọi track phát hành có thẻ, không "sắp có"', () => {
+  it('route #/engine/best…', () => {
+    const cards = Object.entries(bestSrc.meta).map(([p, x]) => parseBestCard(x, p));
+    for (const t of parseTracks(bestSrc.tracks)) {
+      expect([t.id, RELEASED.includes(t.id), cards.filter((c) => c.track === t.id).length > 0]).toEqual([t.id, true, true]);
+      expect(parseRoute(bestHash(t.id))).toBe('engine');
+      expect(bestRouteOf(bestHash(t.id))).toEqual({ track: t.id, id: undefined });
+    }
+    for (const c of cards) expect(bestRouteOf(bestHash(c.track, c.id))).toEqual({ track: c.track, id: c.id });
+    expect(bestRouteOf('#/engine/best')).toEqual({ track: undefined, id: undefined });
+    expect(bestRouteOf('#/engine/best/habits')).toEqual({ track: 'habits', id: undefined });
+    expect(bestRouteOf('#/engine/best/sql/<x>')).toEqual({ track: 'sql', id: undefined });
+    expect(bestRouteOf('#/engine/bestx')).toBeUndefined();
+    expect(bestRouteOf('#/engine/postgres')).toBeUndefined();
+    // src/ui/engine.ts (main) tests the same hashes with one regex
+    const main = (h: string): boolean => /^#\/?engine\/best(?=$|[/?])/.test(h);
+    for (const h of ['#/engine/best', '#/engine/best/sql/e-bp-q02', '#/engine/bestx', '#/engine/postgres', '#/engine/best?x']) expect([h, main(h)]).toEqual([h, bestRouteOf(h) !== undefined]);
+    const text = JSON.stringify([bestSrc.tracks, bestSrc.habits, bestSrc.meta]);
+    expect(text).not.toMatch(/sắp có|coming soon|later/i);
+  });
 });
