@@ -29,4 +29,4 @@ export function takeNewRoutes(open: Iterable<string>, kv?: KV): string[] {
 }
 
 /** Ports by the chapter that opens them, latest first: the fleet sails the most recently opened lanes (D8b-3). */
-export const fleetOrder = (): string[] => [...ROUTES].sort((a, b) => b.opens - a.opens).map((r) => r.port);
+export const fleetOrder = (): string[] => ROUTES.toSorted((a, b) => b.opens - a.opens).map((r) => r.port);

@@ -58,9 +58,9 @@ export function mongoRunner(env: Pick<LabEnv, 'lang'>, client: Pick<MongoLabClie
       return await client.exec(code, lab.setup?.trim() || DEFAULT_DATASET, stages);
     } catch (e) {
       const t = TEXT[env.lang()];
-      if (e instanceof MongoSyntaxError) throw Object.assign(new Error(`${e.message}${t.at.replace('{l}', String(e.line)).replace('{c}', String(e.column))}`), { code: e.code });
-      if (e instanceof LabTimeoutError) throw new Error(t.timeout.replace('{s}', String(e.timeoutMs / 1000)));
-      if (e instanceof LabFailedError) throw new Error(t.failed.replace('{d}', e.detail));
+      if (e instanceof MongoSyntaxError) throw Object.assign(new Error(`${e.message}${t.at.replace('{l}', String(e.line)).replace('{c}', String(e.column))}`, { cause: e }), { code: e.code });
+      if (e instanceof LabTimeoutError) throw new Error(t.timeout.replace('{s}', String(e.timeoutMs / 1000)), { cause: e });
+      if (e instanceof LabFailedError) throw new Error(t.failed.replace('{d}', e.detail), { cause: e });
       throw e; // MongoRunError: mingo's own message, shown unchanged
     }
   };

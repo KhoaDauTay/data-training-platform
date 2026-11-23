@@ -61,7 +61,7 @@ let levels = new Map<string, SkillLevel>();
 /** Four dots, filled vs ring (shape, not colour alone), with the level in words for screen readers. */
 function levelDots(id: string): HTMLElement {
   const l = levels.get(id)?.level ?? 0;
-  return d$.h('span', { class: 'inline-flex shrink-0 gap-1', role: 'img', 'aria-label': lt('lv.aria', { level: lt(`lv.${l}` as LearnKey), n: l }), 'data-level': String(l) },
+  return d$.h('span', { class: 'inline-flex shrink-0 gap-1', role: 'img', 'aria-label': lt('lv.aria', { level: lt(`lv.${l}`), n: l }), 'data-level': String(l) },
     ...[1, 2, 3, 4].map((i) => d$.h('span', { class: i <= l ? 'block size-2.5 rounded-full bg-accent' : 'block size-2.5 rounded-full ring-1 ring-line-strong' })));
 }
 const dueChip = (): HTMLElement => d$.h('span', { class: 'inline-flex shrink-0 items-center gap-1 rounded-(--r-chip) bg-warn-soft px-2 text-caption font-semibold text-ink' },
@@ -75,13 +75,13 @@ function levelLine(id: string): HTMLElement {
   const due = s?.card && !s.review ? lt('lv.dueOn', { date: new Date(`${s.card.due}T00:00:00`).toLocaleDateString(d$.locale()) }) : '';
   return h('p', { class: 'm-0 flex min-h-9 flex-wrap items-center gap-x-3 gap-y-1 rounded-(--r-inset) bg-surface-2 px-3 py-1.5 text-body-sm', 'data-level-line': id },
     levelDots(id),
-    h('b', {}, [lt('lv.line', { level: lt(`lv.${l}` as LearnKey) }), due].filter(Boolean).join(' · ')),
+    h('b', {}, [lt('lv.line', { level: lt(`lv.${l}`) }), due].filter(Boolean).join(' · ')),
     s?.review ? dueChip() : null,
-    s?.next ? h('span', {}, lt(`lv.next.${s.next}` as LearnKey)) : null,
+    s?.next ? h('span', {}, lt(`lv.next.${s.next}`)) : null,
     h('span', { class: 'ml-auto text-caption text-muted' }, lt('lv.self')));
 }
 
-const kindLabel = (d: Drill): string => lt(`drill.kind.${d.kind}` as LearnKey);
+const kindLabel = (d: Drill): string => lt(`drill.kind.${d.kind}`);
 const tick = (ok: boolean): Node | string => (ok ? d$.h('span', { class: 'font-bold text-good' }, ' ✓') : '');
 const label = (s: Skill): string => s.label[d$.getLang()];
 const skillHref = (id: string): string => `${d$.hashOf('learn')}/skill/${id}`;
@@ -227,7 +227,7 @@ function bar(k: number, m: number): HTMLElement {
 const STATUS_ICON = { in: 'inApp', partial: 'partial', external: 'external' } as const;
 const statusLine = (x: AdvNode, rest: string): HTMLElement =>
   d$.h('p', { class: 'm-0 flex items-start gap-1.5 text-body-sm text-muted' }, d$.icon(STATUS_ICON[x.status], 'mt-0.5 size-4 text-accent'),
-    d$.h('span', {}, `${lt(`adv.status.${x.status}` as LearnKey)}${rest}`));
+    d$.h('span', {}, `${lt(`adv.status.${x.status}`)}${rest}`));
 
 const hideOnPhone = (el: HTMLElement): HTMLElement => {
   el.classList.add('max-sm:hidden');
@@ -273,7 +273,7 @@ function overview(c: LearnCtx): HTMLElement {
     // ui-ux-v7 M2 (L148): each group folds; closed on phones (28 nodes made the page ~5,200 px at 375), open from sm.
     ...groups.map(([gr, list]) => h('details', { class: 'space-y-2', open: !phone },
       h('summary', { class: 'flex cursor-pointer items-center gap-3' }, h('div', { class: 'w-14 shrink-0' }, d$.illustration('aspect-[3/2]', (il) => il.trackGlyph(gr))), // v5 B1
-        h('h3', { class: 'm-0 flex-1 text-body-sm font-bold tracking-wide text-muted uppercase' }, lt(`adv.group.${gr}` as LearnKey)),
+        h('h3', { class: 'm-0 flex-1 text-body-sm font-bold tracking-wide text-muted uppercase' }, lt(`adv.group.${gr}`)),
         h('span', { class: 'text-caption text-muted tabular-nums' }, `${list.filter((x) => nodeState(c, x).done).length}/${list.length}`),
         d$.icon('down', 'size-4 text-muted [details[open]>summary>&]:rotate-180')),
       h('ul', { class: LIST }, ...list.map((x) => {

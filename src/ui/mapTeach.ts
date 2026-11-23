@@ -207,7 +207,7 @@ export function view(d: DomainId, r: QueryResult, at: Promise<Base>, places: Art
     const vs = (frames.length ? frames.flatMap((f) => geoRows(r, spec, sel.value, f)) : all).map((x) => x.v);
     const lo = Math.min(...vs);
     const hi = Math.max(...vs);
-    const sorted = [...rows].sort((x, y) => y.v - x.v);
+    const sorted = rows.toSorted((x, y) => y.v - x.v);
     const nm = (x: GeoRow) => [x.key, x.key2].filter((k) => k !== undefined).map((k) => b?.name(k!) ?? k).join(' → ');
     const keyCol = [spec.key, spec.key2].filter((c) => c !== undefined).map((c) => r.columns[c!]).join(', ');
     const line = sorted.length ? tx('summary', { col: r.columns[sel.value], key: keyCol, top: nm(sorted[0]), vt: num(sorted[0].v), low: nm(sorted[sorted.length - 1]), vl: num(sorted[sorted.length - 1].v), n: sorted.length }) : tx('need');

@@ -174,9 +174,9 @@ export function dynamoRunner(env: Pick<LabEnv, 'lang'>, client = new DynamoClien
       req = withCapacity(parseRequest(code));
       return { req, r: await raw(lab, req) };
     } catch (e) {
-      if (e instanceof DynamoInputError) throw new Error(inputText(e, env.lang()));
-      if (e instanceof LabTimeoutError) throw new Error(t().timeout.replace('{s}', String(e.timeoutMs / 1000)));
-      if (e instanceof LabFailedError) throw new Error(t().failed.replace('{d}', e.detail));
+      if (e instanceof DynamoInputError) throw new Error(inputText(e, env.lang()), { cause: e });
+      if (e instanceof LabTimeoutError) throw new Error(t().timeout.replace('{s}', String(e.timeoutMs / 1000)), { cause: e });
+      if (e instanceof LabFailedError) throw new Error(t().failed.replace('{d}', e.detail), { cause: e });
       if (e instanceof DynamoError && req) {
         const est = await estimate(lab, req, e);
         if (est) throw new DynamoError(e.type, `${e.type}: ${e.message}\n${est}`);

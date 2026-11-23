@@ -48,7 +48,7 @@ let observer: IntersectionObserver | undefined;
 const SEC_ICON: Record<LessonSection, IconName> = {
   open: 'secOpen', idea: 'kindConcept', syntax: 'secSyntax', examples: 'secRun', pitfalls: 'secPitfall', practice: 'secPractice', quiz: 'kindQuiz', recap: 'secRecap',
 };
-const secName = (s: LessonSection): string => lt(`fl.sec.${s}` as LearnKey);
+const secName = (s: LessonSection): string => lt(`fl.sec.${s}`);
 const secId = (s: LessonSection): string => `fl-${s}`;
 
 /** Inline `code` and **bold** (bold may hold code: the "Many people think X" line, ux §5.3). */
@@ -262,7 +262,7 @@ function practice(l: FullLesson, drills: readonly Drill[]): HTMLElement {
         const ok = d$.app.save.completed.includes(x.id);
         return h('li', {}, h('button', { type: 'button', class: 'flex min-h-11 w-full items-center gap-2 rounded-(--r-ctl) bg-panel px-3 py-2 text-left ring-1 ring-line hover:ring-accent', onclick: () => d$.actions.startDrill(x.id) },
           d$.icon(ok ? 'check' : 'notStarted', cx('size-5 shrink-0', ok ? 'text-good' : 'text-muted')),
-          h('span', { class: 'flex-1' }, lt(`drill.kind.${x.kind}` as LearnKey)),
+          h('span', { class: 'flex-1' }, lt(`drill.kind.${x.kind}`)),
           h('span', { class: 'sr-only' }, ok ? lt('fl.passed') : lt('fl.notYet'))));
       }))));
 }

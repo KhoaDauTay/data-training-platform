@@ -165,7 +165,7 @@ function drillParts(g: General, d: Drill, tk: Ticket): (Node | null | false | un
   return [
     h('header', {},
       h('h2', TITLE, title),
-      h('p', { class: 'mt-1 mb-0 flex flex-wrap items-center gap-2 text-body-sm text-muted' }, lt(`drill.kind.${d.kind}` as LearnKey),
+      h('p', { class: 'mt-1 mb-0 flex flex-wrap items-center gap-2 text-body-sm text-muted' }, lt(`drill.kind.${d.kind}`),
         replayBtn(d$.session.mode.kind === 'drill' ? 'drill' : 'review'))),
     h('div', { class: 'mt-3 text-[15px] leading-relaxed' }, richText(d.task[lang])),
     d$.guideSlot('drill-brief'), // v13 G5/G7: under the task
@@ -265,7 +265,7 @@ export function practiceHub(): HTMLElement | null {
   const row = (label: string, action: HTMLElement): HTMLElement =>
     h('p', { class: 'm-0 flex flex-wrap items-center justify-between gap-2' }, h('span', {}, label), action);
   return wrap(
-    pick ? row(lt('hub.weakest', { skill: nameOf(g, pick), box: box(weakest) }), go(pick, lt(`drill.kind.${pick.kind}` as LearnKey))) : null,
+    pick ? row(lt('hub.weakest', { skill: nameOf(g, pick), box: box(weakest) }), go(pick, lt(`drill.kind.${pick.kind}`))) : null,
     ...half.map((d) => row(lt('hub.continue', { what: nameOf(g, d) }), go(d, lt('hub.resume')))),
   );
 }

@@ -44,8 +44,8 @@ function compare(expected: MongoDoc[], actual: MongoDoc[], ordered: boolean): Do
   const e = expected.map(canon);
   const a = actual.map(canon);
   if (ordered && e.every((x, i) => x === a[i])) return { ok: true };
-  const es = [...e].sort();
-  const as = [...a].sort();
+  const es = e.toSorted();
+  const as = a.toSorted();
   const same = es.every((x, i) => x === as[i]);
   if (same) return ordered ? { ok: false, reason: 'order' } : { ok: true };
   return { ok: false, reason: 'docs', ...diff(expected, actual) };
