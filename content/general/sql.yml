@@ -814,6 +814,40 @@
   solution: "SELECT name, category FROM products WHERE id IN (SELECT product_id FROM order_items WHERE order_id IN (SELECT id FROM orders WHERE store_id = 4 AND order_date = '2026-10-31'))"
   hint: { vi: "Đi từ trong ra: các đơn của cửa hàng 4 hôm đó, rồi các sản phẩm của những đơn ấy.", en: "Work from the inside out: store 4's orders that day, then the products of those orders." }
 
+# ---- any_all (v25 R1, General only: content/general/skills-general.yml)
+- id: g-any-all-1
+  skill: any_all
+  kind: faded
+  task: { vi: "Món nào đắt hơn mọi món nhóm `Household`? Lấy tên và giá.", en: "Which items cost more than every item in the `Household` category? Get the name and the price." }
+  starter: |-
+    SELECT name, price_vnd
+    FROM products
+    WHERE price_vnd > ___ (SELECT price_vnd FROM products WHERE category = 'Household')
+  solution: "SELECT name, price_vnd FROM products WHERE price_vnd > ALL (SELECT price_vnd FROM products WHERE category = 'Household')"
+  hint: { vi: "\"Hơn mọi giá trị\" của danh sách, không phải \"hơn ít nhất một\".", en: "\"More than every value\" of the list, not \"more than at least one\"." }
+- id: g-any-all-2
+  skill: any_all
+  kind: open
+  task: { vi: "Món văn phòng phẩm (`Stationery`) nào đắt hơn ít nhất một món nhóm `Snacks`? Lấy tên và giá.", en: "Which stationery items (`Stationery`) cost more than at least one item in the `Snacks` category? Get the name and the price." }
+  solution: "SELECT name, price_vnd FROM products WHERE category = 'Stationery' AND price_vnd > ANY (SELECT price_vnd FROM products WHERE category = 'Snacks')"
+  hint: { vi: "So giá với cả danh sách giá ăn vặt; chỉ cần thắng một món.", en: "Compare the price with the whole list of snack prices; beating one item is enough." }
+- id: g-any-all-3
+  skill: any_all
+  kind: trap
+  task: { vi: "Khách ở `Can Tho` nào sinh cùng năm hoặc muộn hơn mọi khách ở `Hanoi` đã biết năm sinh? Lấy mã, tên và năm sinh.", en: "Which customers in `Can Tho` were born in the same year as, or later than, every `Hanoi` customer whose birth year is known? Get the id, the name and the birth year." }
+  solution: "SELECT id, name, birth_year FROM customers WHERE city = 'Can Tho' AND birth_year >= ALL (SELECT birth_year FROM customers WHERE city = 'Hanoi' AND birth_year IS NOT NULL)"
+  hint: { vi: "Danh sách năm sinh ở Hà Nội có ô trống; một ô trống làm phép so với mọi giá trị không bao giờ đúng.", en: "The list of Hanoi birth years has empty cells; one empty cell keeps a comparison with every value from ever being true." }
+  wrong:
+    - sql: "SELECT id, name, birth_year FROM customers WHERE city = 'Can Tho' AND birth_year >= ALL (SELECT birth_year FROM customers WHERE city = 'Hanoi')"
+      vi: "4 khách Hà Nội không có năm sinh, và so với ô trống là \"không biết\", nên `>= ALL` không đúng với ai: 0 dòng. Lọc `birth_year IS NOT NULL` trong truy vấn con."
+      en: "4 Hanoi customers have no birth year, and comparing with an empty cell is \"unknown\", so `>= ALL` is true for nobody: 0 rows. Filter `birth_year IS NOT NULL` in the subquery."
+- id: g-any-all-4
+  skill: any_all
+  kind: review
+  task: { vi: "Nhân viên nào được tuyển sau ngày khai trương của mọi cửa hàng? Lấy tên và ngày tuyển (`hired_on`).", en: "Which staff were hired after the opening day of every store? Get the name and the hiring date (`hired_on`)." }
+  solution: "SELECT name, hired_on FROM staff WHERE hired_on > ALL (SELECT opened_on FROM stores)"
+  hint: { vi: "So ngày tuyển với cả danh sách ngày khai trương; phải sau tất cả.", en: "Compare the hiring date with the whole list of opening days; it must come after all of them." }
+
 # ---- exists (ch7)
 - id: g-exists-1
   skill: exists

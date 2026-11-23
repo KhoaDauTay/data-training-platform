@@ -1564,3 +1564,37 @@
       WHERE d.date_key BETWEEN '2026-10-29' AND '2026-10-31'
     solution: "SELECT s.name, p.name FROM stores s CROSS JOIN products p WHERE s.city = 'Ho Chi Minh City' AND p.category = 'Drinks'"
   docs: https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-JOIN
+
+- id: any_all
+  cues:
+    vi: ["hơn mọi …", "hơn ít nhất một …", "bằng một trong …"]
+    en: ["more than every …", "more than at least one …", "equal to one of …"]
+  concept:
+    vi: "ANY và ALL so một giá trị với cả một danh sách (truy vấn con một cột hoặc mảng). `> ANY` đúng khi lớn hơn ít nhất một phần tử; `> ALL` đúng khi lớn hơn mọi phần tử. `= ANY` giống IN."
+    en: "ANY and ALL compare one value with a whole list (a one-column subquery or an array). `> ANY` is true when greater than at least one element; `> ALL` when greater than every element. `= ANY` is the same as IN."
+  example: |-
+    SELECT name, price_vnd
+    FROM products
+    WHERE category = 'Snacks'
+      AND price_vnd < ANY (SELECT price_vnd FROM products WHERE category = 'Drinks')
+  explain:
+    vi: "① Truy vấn con trả giá của 6 đồ uống. ② `< ANY`: món ăn vặt chỉ cần rẻ hơn một trong số đó, tức rẻ hơn đồ uống đắt nhất (35.000 đồng). ③ Kết quả: 4 món ăn vặt; hạt điều, xoài sấy đắt hơn mọi đồ uống nên bị loại."
+    en: "① The subquery returns the prices of the 6 drinks. ② `< ANY`: a snack only needs to be cheaper than one of them, that is, cheaper than the priciest drink (35,000 VND). ③ Result: 4 snacks; the cashew nuts and dried mango cost more than every drink, so they are out."
+  mistake:
+    sql: |-
+      SELECT name, price_vnd
+      FROM products
+      WHERE price_vnd > ANY (SELECT price_vnd FROM products WHERE category = 'Household')
+    vi: "Muốn \"đắt hơn mọi món đồ gia dụng\" mà viết ANY: chỉ cần đắt hơn món gia dụng rẻ nhất, nên ra 17 món thay vì 3. Dùng `> ALL`."
+    en: "Wanting \"pricier than every household item\" but writing ANY: beating the cheapest household item is enough, so 17 items come back instead of 3. Use `> ALL`."
+  try:
+    task:
+      vi: "Từ bảng `products`: `name` rồi `price_vnd` của các món có `category` là một trong hai nhóm `Household`, `Stationery` (viết danh sách thành mảng) và `price_vnd` dưới 30000."
+      en: "From the `products` table: `name` then `price_vnd` of the items whose `category` is one of the two groups `Household`, `Stationery` (write the list as an array) and whose `price_vnd` is under 30000."
+    starter: |-
+      SELECT name, price_vnd
+      FROM products
+      WHERE category = 'Snacks'
+        AND price_vnd < ANY (SELECT price_vnd FROM products WHERE category = 'Drinks')
+    solution: "SELECT name, price_vnd FROM products WHERE category = ANY (ARRAY['Household', 'Stationery']) AND price_vnd < 30000"
+  docs: https://www.postgresql.org/docs/current/functions-subquery.html#FUNCTIONS-SUBQUERY-ANY-SOME
