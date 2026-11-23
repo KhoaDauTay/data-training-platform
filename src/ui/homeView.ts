@@ -112,7 +112,7 @@ function resume(id: string): void {
 }
 
 /** v15 Q2: what "Continue" opens (the last drill's skill, the learning path, or the open domain's next task). */
-export const resumeNow = (): Resume | undefined => resumeTarget(app.save.completed, nextTicket(app.tickets, done()), sqlOnly(), SKILLS.map((s) => s.id));
+export const resumeNow = (): Resume | undefined => resumeTarget(app.save.completed, nextTicket(app.tickets, done()), sqlOnly(), ROUTE_SKILLS.map((s) => s.id)); // v25 R1: a last drill of a General-only skill resumes on its page
 /** Its name: the task title, the skill, or the learning path. */
 export const resumeName = (r: Resume): string =>
   r.kind === 'ticket' ? textOf(r.ticket, getLang()).title : r.kind === 'skill' ? SKILLS.find((s) => s.id === r.skill)!.label[getLang()] : t('nav.learn');

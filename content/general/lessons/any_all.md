@@ -33,7 +33,7 @@ examples:
     read:
       vi: "4 món ăn vặt rẻ hơn đồ uống đắt nhất (nước cam, 35.000 đồng). `< ANY` chỉ cần một giá trị trong danh sách thỏa, nên thực chất là so với giá trị lớn nhất."
       en: "4 snacks cheaper than the priciest drink (orange juice, 35,000 VND). `< ANY` needs just one value of the list to pass, so it really compares with the largest one."
-  - title: { vi: "Lớn tuổi bằng hoặc hơn mọi khách ở Huế", en: "At least as young as every Hue customer" }
+  - title: { vi: "Trẻ bằng hoặc hơn mọi khách ở Huế", en: "At least as young as every Hue customer" }
     sql: |-
       SELECT id, name
       FROM customers

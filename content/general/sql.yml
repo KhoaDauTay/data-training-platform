@@ -248,7 +248,7 @@
 - id: g-join-4
   skill: join
   kind: review
-  task: { vi: "Các đơn ngày 31/10/2026: mã đơn và tên cửa hàng bán đơn đó.", en: "The orders of 2026-10-31: the order id and the name of the store that sold it." }
+  task: { vi: "Các đơn ngày 31/10/2026: mã đơn và tên cửa hàng bán đơn đó. Bài có thanh hiệu năng: câu đúng mà tốn hơn hẳn lời giải (như làm mất chỉ mục trên `orders`) chưa được tính là đạt.", en: "The orders of 2026-10-31: the order id and the name of the store that sold it. This drill has a performance bar: a right answer that costs far more than the Solution (such as losing the index on `orders`) does not pass." }
   solution: "SELECT o.id, s.name FROM orders o JOIN stores s ON s.id = o.store_id WHERE o.order_date = '2026-10-31'"
   perf: { table: orders } # v25 R1 (L360): right but slow is not passed
   slow: "SELECT o.id, s.name FROM orders o JOIN stores s ON s.id = o.store_id WHERE o.order_date::text = '2026-10-31'"
@@ -382,7 +382,7 @@
 - id: g-date-math-4
   skill: date_math
   kind: review
-  task: { vi: "Mỗi đơn kênh `ONLINE` đặt từ 2026-10-01: mã đơn và số ngày từ lúc đặt tới lúc giao (đơn chưa giao thì ô số ngày để trống).", en: "Each `ONLINE` order placed from 2026-10-01: the order id and the number of days from ordering to delivery (an order not delivered yet leaves the days empty)." }
+  task: { vi: "Mỗi đơn kênh `ONLINE` đặt từ 2026-10-01: mã đơn và số ngày từ lúc đặt tới lúc giao (đơn chưa giao thì ô số ngày để trống). Bài có thanh hiệu năng: câu đúng mà tốn hơn hẳn lời giải (như làm mất chỉ mục trên `orders`) chưa được tính là đạt.", en: "Each `ONLINE` order placed from 2026-10-01: the order id and the number of days from ordering to delivery (an order not delivered yet leaves the days empty). This drill has a performance bar: a right answer that costs far more than the Solution (such as losing the index on `orders`) does not pass." }
   solution: "SELECT id, delivered_on - order_date FROM orders WHERE channel = 'ONLINE' AND order_date >= '2026-10-01'"
   perf: { table: orders } # v25 R1 (L360): right but slow is not passed
   slow: "SELECT id, delivered_on - order_date FROM orders WHERE channel = 'ONLINE' AND date_trunc('month', order_date) = '2026-10-01'"
@@ -532,7 +532,7 @@
 - id: g-coalesce-2
   skill: coalesce
   kind: open
-  task: { vi: "Đơn `ONLINE` đặt từ 2026-10-20 (tính cả ngày đó), bỏ đơn `CANCELLED`: mã đơn và số ngày giao = ngày giao trừ ngày đặt (`order_date`); đơn chưa giao (`delivered_on` trống) thì lấy 2026-10-31 thay cho ngày giao.", en: "`ONLINE` orders placed on or after 2026-10-20, leaving out `CANCELLED` ones: order id and delivery days = delivery date minus order date (`order_date`); for an order not delivered yet (`delivered_on` empty), use 2026-10-31 as the delivery date." }
+  task: { vi: "Đơn `ONLINE` đặt từ 2026-10-20 (tính cả ngày đó), bỏ đơn `CANCELLED`: mã đơn và số ngày giao = ngày giao trừ ngày đặt (`order_date`); đơn chưa giao (`delivered_on` trống) thì lấy 2026-10-31 thay cho ngày giao. Bài có thanh hiệu năng: câu đúng mà tốn hơn hẳn lời giải (như làm mất chỉ mục trên `orders`) chưa được tính là đạt.", en: "`ONLINE` orders placed on or after 2026-10-20, leaving out `CANCELLED` ones: order id and delivery days = delivery date minus order date (`order_date`); for an order not delivered yet (`delivered_on` empty), use 2026-10-31 as the delivery date. This drill has a performance bar: a right answer that costs far more than the Solution (such as losing the index on `orders`) does not pass." }
   solution: "SELECT id, COALESCE(delivered_on, DATE '2026-10-31') - order_date FROM orders WHERE channel = 'ONLINE' AND order_date >= '2026-10-20' AND status <> 'CANCELLED'"
   perf: { table: orders } # v25 R1 (L360): right but slow is not passed
   slow: "SELECT id, COALESCE(delivered_on, DATE '2026-10-31') - order_date FROM orders WHERE channel = 'ONLINE' AND COALESCE(order_date, DATE '2026-10-20') >= '2026-10-20' AND status <> 'CANCELLED'"
@@ -699,7 +699,7 @@
 - id: g-distinct-4
   skill: distinct
   kind: review
-  task: { vi: "Mỗi ngày từ 25/10 đến 31/10/2026: có bao nhiêu khách khác nhau đặt đơn? Khách vãng lai (không có mã khách) không tính. Lấy ngày và số khách.", en: "Each day from 2026-10-25 to 2026-10-31: how many different customers placed an order? Walk-in customers (no customer id) do not count. Get the date and the customer count." }
+  task: { vi: "Mỗi ngày từ 25/10 đến 31/10/2026: có bao nhiêu khách khác nhau đặt đơn? Khách vãng lai (không có mã khách) không tính. Lấy ngày và số khách. Bài có thanh hiệu năng: câu đúng mà tốn hơn hẳn lời giải (như làm mất chỉ mục trên `orders`) chưa được tính là đạt.", en: "Each day from 2026-10-25 to 2026-10-31: how many different customers placed an order? Walk-in customers (no customer id) do not count. Get the date and the customer count. This drill has a performance bar: a right answer that costs far more than the Solution (such as losing the index on `orders`) does not pass." }
   solution: "SELECT order_date, COUNT(DISTINCT customer_id) FROM orders WHERE order_date >= '2026-10-25' AND order_date < '2026-11-01' GROUP BY order_date"
   perf: { table: orders } # v25 R1 (L360): right but slow is not passed
   slow: "SELECT order_date, COUNT(DISTINCT customer_id) FROM orders WHERE order_date::text >= '2026-10-25' AND order_date::text < '2026-11-01' GROUP BY order_date"
@@ -872,7 +872,7 @@
 - id: g-exists-3
   skill: exists
   kind: trap
-  task: { vi: "Khách nào đã từng mua ở cửa hàng số 2 (Son Tra)? Lấy mã và tên khách.", en: "Which customers have ever bought at store 2 (Son Tra)? Get the customer id and name." }
+  task: { vi: "Khách nào đã từng mua ở cửa hàng số 2 (Son Tra)? Lấy mã và tên khách. Bài có thanh hiệu năng: câu đúng mà tốn hơn hẳn lời giải (như làm mất chỉ mục trên `orders`) chưa được tính là đạt.", en: "Which customers have ever bought at store 2 (Son Tra)? Get the customer id and name. This drill has a performance bar: a right answer that costs far more than the Solution (such as losing the index on `orders`) does not pass." }
   solution: "SELECT c.id, c.name FROM customers c WHERE EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id AND o.store_id = 2)"
   perf: { table: orders } # v25 R1 (L360): right but slow is not passed
   slow: "SELECT c.id, c.name FROM customers c WHERE (SELECT count(*) FROM orders o WHERE o.customer_id = c.id AND o.store_id = 2) > 0"
@@ -1013,7 +1013,7 @@
 - id: g-distinct-on-1
   skill: distinct_on
   kind: faded
-  task: { vi: "Với mỗi khách có mã từ 1 đến 20, đơn mới nhất là đơn nào? Lấy mã khách, mã đơn và ngày đặt; cùng ngày thì lấy mã đơn lớn hơn.", en: "For each customer with id 1 to 20, which is their latest order? Get the customer id, order id and order date; on the same day take the larger order id." }
+  task: { vi: "Với mỗi khách có mã từ 1 đến 20, đơn mới nhất là đơn nào? Lấy mã khách, mã đơn và ngày đặt; cùng ngày thì lấy mã đơn lớn hơn. Bài có thanh hiệu năng: câu đúng mà tốn hơn hẳn lời giải (như làm mất chỉ mục trên `orders`) chưa được tính là đạt.", en: "For each customer with id 1 to 20, which is their latest order? Get the customer id, order id and order date; on the same day take the larger order id. This drill has a performance bar: a right answer that costs far more than the Solution (such as losing the index on `orders`) does not pass." }
   starter: |-
     SELECT DISTINCT ON (customer_id) customer_id, id, order_date
     FROM orders

@@ -1,7 +1,7 @@
 import { generalNow, loadTickets, loadTicketTemplates } from './content';
 import { learnedSkills } from './home';
 import { dueSkills, localDay, QUEUE_MAX, reviewQueue, warmupQueue, type PracticeItem } from './practice';
-import { currentChapter, SKILLS, xpFor } from './progress';
+import { currentChapter, ROUTE_SKILLS, xpFor } from './progress';
 import { activeDomain, domainSchemaId, type DomainId, type SchemaId } from './domains';
 import type { Drill } from './general';
 import type { LiveRun } from './interviewPrefs';
@@ -111,7 +111,7 @@ export function reviewToday(rnd: () => number = Math.random, drills = generalNow
  * the same on every page (Review is General, like the learning path).
  */
 const reviewSkills = (): Set<string> =>
-  new Set([...learnedSkills(loadTickets('logistics'), done()), ...Object.keys(app.save.review).filter((s) => SKILLS.some((k) => k.id === s))]);
+  new Set([...learnedSkills(loadTickets('logistics'), done()), ...Object.keys(app.save.review).filter((s) => ROUTE_SKILLS.some((k) => k.id === s))]); // v25 R1: General-only skills' cards are reviewed too
 /** Drills reviewed this session (memory only): the next review of the same skill picks another one. */
 export const reviewedDrills = new Set<string>();
 /** Every skill has drills (tests/general.test.ts), so the drill queue holds one item per due skill: countable without the General chunk. */

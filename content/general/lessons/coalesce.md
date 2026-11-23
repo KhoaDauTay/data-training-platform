@@ -124,7 +124,7 @@ Nhiều người nghĩ **thay mọi NULL bằng 0 là cách an toàn**. Thật r
 
 ## Cú pháp
 
-Ở hệ khác bạn có thể gặp `IFNULL` hay `NVL`; Postgres dùng `COALESCE`, là cách viết chuẩn SQL.
+Hai hàm đều nhận cột hay biểu thức; `COALESCE` nhận bao nhiêu đối số cũng được, `NULLIF` nhận đúng hai.
 
 # EN
 
@@ -140,4 +140,4 @@ Many people think **replacing every NULL with 0 is the safe choice**. In fact an
 
 ## Syntax
 
-In other systems you may meet `IFNULL` or `NVL`; Postgres uses `COALESCE`, the standard SQL spelling.
+Both take columns or expressions; `COALESCE` takes as many arguments as you like, `NULLIF` exactly two.

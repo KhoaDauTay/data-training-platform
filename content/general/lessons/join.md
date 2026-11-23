@@ -76,8 +76,8 @@ pitfalls:
     wrong: "SELECT o.id, s.name FROM orders o JOIN stores s ON s.id = o.customer_id WHERE o.order_date = '2026-10-31'"
     fix: "SELECT o.id, s.name FROM orders o JOIN stores s ON s.id = o.store_id WHERE o.order_date = '2026-10-31'"
     why:
-      vi: "Hai cột đều là số nên Postgres không phản đối: nó ghép mã khách với mã cửa hàng. Chỉ đơn của khách có mã từ 1 tới 5 tìm được \"cặp\", và cặp đó sai. Câu sai ra 1 dòng thay vì 5; luôn ghép khóa ngoại với đúng bảng nó trỏ tới."
-      en: "Both columns are numbers, so Postgres does not object: it matches customer ids with store ids. Only orders from customers 1 to 5 find a \"partner\", and the wrong one. The wrong query returns 1 row instead of 5; always join a foreign key to the table it points to."
+      vi: "Hai cột đều là số nên Postgres không phản đối: nó ghép mã khách với mã cửa hàng. Chỉ đơn có mã khách tình cờ từ 1 tới 5 mới tìm được \"cặp\", và cặp đó không mang nghĩa gì. Câu sai ra 1 dòng thay vì 5; luôn ghép khóa ngoại với đúng bảng nó trỏ tới."
+      en: "Both columns are numbers, so Postgres does not object: it matches customer ids with store ids. Only orders whose customer id happens to be 1 to 5 find a \"partner\", and that pairing means nothing. The wrong query returns 1 row instead of 5; always join a foreign key to the table it points to."
   - title: { vi: "Tên cột có ở cả hai bảng", en: "A column name found in both tables" }
     wrong: "SELECT id, name FROM orders o JOIN stores s ON s.id = o.store_id WHERE o.order_date = '2026-10-31'"
     fix: "SELECT o.id, s.name FROM orders o JOIN stores s ON s.id = o.store_id WHERE o.order_date = '2026-10-31' ORDER BY o.id"

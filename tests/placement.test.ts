@@ -5,7 +5,7 @@ import { homeModel, kpisOf, kpiTiles, knownSkills, learnedSkills } from '../src/
 import { placementItems } from '../src/learn';
 import { pickForSkill, seedReview, reviewQueue, warmupQueue } from '../src/practice';
 import {
-  chaptersOf, chapterTablesOf, contentProblems, currentChapter, domainSkills, earlyReview, isOptional, nextTicket, PARTS, passedChapters, rankOf, SKILLS, visibleTickets,
+  chaptersOf, chapterTablesOf, contentProblems, currentChapter, domainSkills, earlyReview, isOptional, nextTicket, PARTS, passedChapters, rankOf, ROUTE_SKILLS, SKILLS, visibleTickets,
 } from '../src/progress';
 import { emptySave, parseSave, serializeSave, type Known } from '../src/save';
 import { derive } from '../src/scene';
@@ -147,6 +147,6 @@ describe('General: kiểm tra đầu vào', () => {
     const p1 = PARTS[0].skills;
     const items = placementItems(PARTS, g, new Set(p1));
     expect(items.some((i) => i.skills.some((s) => p1.includes(s)))).toBe(false);
-    expect(placementItems(PARTS, g, new Set(SKILLS.map((s) => s.id)))).toEqual([]);
+    expect(placementItems(PARTS, g, new Set(ROUTE_SKILLS.map((s) => s.id)))).toEqual([]); // v25 R1: Parts 5–6 also hold the General-only skills
   });
 });
