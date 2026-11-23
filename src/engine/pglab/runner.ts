@@ -55,6 +55,7 @@ export const CATALOG_PROBE = `SELECT * FROM (
   UNION ALL SELECT 'column', table_schema || '.' || table_name || '.' || column_name, data_type || ' ' || is_nullable || ' ' || coalesce(column_default, '') FROM information_schema.columns WHERE table_schema NOT IN ('pg_catalog', 'information_schema')
   UNION ALL SELECT 'constraint', conrelid::regclass::text || '.' || conname, pg_get_constraintdef(oid) FROM pg_constraint WHERE connamespace::regnamespace::text NOT IN ('pg_catalog', 'information_schema')
   UNION ALL SELECT 'view', schemaname || '.' || viewname, definition FROM pg_views WHERE schemaname NOT IN ('pg_catalog', 'information_schema')
+  UNION ALL SELECT 'matview', schemaname || '.' || matviewname, definition FROM pg_matviews
   UNION ALL SELECT 'statistics', stxname::text, pg_get_statisticsobjdef(oid) FROM pg_statistic_ext
   UNION ALL SELECT 'schema', nspname::text, coalesce(nspacl::text, '') FROM pg_namespace WHERE nspname !~ '^pg_' AND nspname <> 'information_schema'
   UNION ALL SELECT 'function', p.oid::regprocedure::text, pg_get_functiondef(p.oid) || coalesce(p.proacl::text, '') FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname !~ '^pg_' AND n.nspname <> 'information_schema' AND p.prokind IN ('f', 'p')
