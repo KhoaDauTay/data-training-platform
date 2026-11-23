@@ -1,4 +1,4 @@
-// v27 R3 (product-route-v24 §2.2, §4 R3): the eight-section anatomy of PostgreSQL Engine lessons, L1–L2 (R6 extends the
+// v27 R3 + v29 R6 (product-route-v24 §2.2, §4 R3/R6): the eight-section anatomy of PostgreSQL Engine lessons, L1–L5 (R6 extends the
 // scope to L3–L5 and the NoSQL engines). Sections per kind (§2.2 "tập con"):
 //   concept/lab: Mở bài · Ý chính · Cú pháp · Ví dụ · Lỗi hay gặp · (lab: Thực hành) · Tóm tắt, plus questions;
 //   quiz: Mở bài · Ý chính · Ví dụ · Tóm tắt; predict: Mở bài · Ý chính · Tóm tắt (the predict card is its example);
@@ -19,7 +19,7 @@ import type { ScriptStep } from '../src/engine/pglab/script';
 import { wordCount } from '../src/fullLesson';
 import { compareResults, grade } from '../src/grader';
 
-const files = import.meta.glob<string>('../content/engine/postgres/L[12]/*.md', { query: '?raw', import: 'default', eager: true });
+const files = import.meta.glob<string>('../content/engine/postgres/L*/*.md', { query: '?raw', import: 'default', eager: true });
 const all = Object.entries(files).map(([p, raw]) => {
   const fm = parse(/^---\n([\s\S]*?)\n---\n/.exec(raw.replace(/\r\n/g, '\n'))![1]) as Record<string, unknown>;
   return { l: parseEngineLesson(raw, p, parse), fm };
@@ -39,8 +39,8 @@ const ERR = /^--\s*ERROR\s+([0-9A-Z]{5})\b/m;
 const isErr = (b: string): boolean => /^--\s*ERROR\b/m.test(b);
 const words = (l: EngineLesson): number => l.sections.reduce((n, s) => n + wordCount(s.text.vi.replace(/```[\s\S]*?```/g, '')), 0);
 
-describe('Engine PostgreSQL L1–L2: giải phẫu 8 mục (R3)', () => {
-  it('đủ 41 bài L1–L2', () => expect(all.length).toBe(41));
+describe('Engine PostgreSQL L1–L5: giải phẫu 8 mục (R3, R6)', () => {
+  it('đủ 92 bài L1–L5', () => expect(all.length).toBe(92));
 
   it.each(all.map((x) => [x.l.id, x] as const))('%s: mục theo loại bài, thứ tự, độ dài, câu hỏi, nguồn', (_, { l, fm }) => {
     const ids = l.sections.map((s) => s.id);
@@ -116,7 +116,7 @@ describe('Engine PostgreSQL L1–L2: giải phẫu 8 mục (R3)', () => {
   }, 120_000);
 });
 
-describe('Engine PostgreSQL L1–L2: bước chấm bằng catalog hoặc `after` không qua khi không làm gì', () => {
+describe('Engine PostgreSQL L1–L5: bước chấm bằng catalog hoặc `after` không qua khi không làm gì', () => {
   const runner = pgScriptRunner({ grade, verdict: (x) => JSON.stringify(x).slice(0, 200) }, { run: runLabScript, reset: () => undefined });
   const steps = all.flatMap(({ l }) => (l.lab?.steps ?? []).map((s, i) => [`${l.id} s${i + 1}`, l, i] as const)
     .filter(([, , i]) => { const s = l.lab!.steps[i]; return gradable(l, s) && (s.after !== undefined || s.check === 'catalog'); }));
