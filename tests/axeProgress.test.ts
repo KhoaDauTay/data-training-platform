@@ -9,6 +9,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import save from './fixtures/save-v5.json?raw';
 import { loadGeneral } from '../src/content';
+import { PARTS } from '../src/progress';
 import { drillHash } from '../src/route';
 import { session } from '../src/session';
 import { boot, EmptyWorker, openModal, problems, visit } from './axeHarness';
@@ -41,11 +42,11 @@ describe('axe-core: a returning player, dark theme, 375 px (FIX-1)', () => {
     expect(await problems()).toEqual([]);
   });
 
-  it('#/me (v24, L323): skill map with level words, 37 badges, no certificate; the skill and Part pages show levels', async () => {
+  it('#/me (v24, L323): skill map with level words, one badge per route.yml Part + 26, no certificate; the skill and Part pages show levels', async () => {
     await visit('#/me');
     const home = document.getElementById('home')!;
     expect(home.querySelector('[data-me=skill-map]')).not.toBeNull();
-    expect(home.querySelectorAll('[data-me=badges] details [data-badge]')).toHaveLength(37);
+    expect(home.querySelectorAll('[data-me=badges] details [data-badge]')).toHaveLength(PARTS.length + 26); // route.yml Parts drawn (Part 9 waits for R2, L336) + fast, foundation, 20 engine, path, 3 domains
     expect(home.textContent).not.toMatch(/Tải (PNG|SVG)/);
     expect(home.querySelector('[data-skill=select] a')?.getAttribute('aria-label')).toMatch(/^Chọn cột \(SELECT\): (Làm được, mức 2 trên 4|Đã gặp, mức 1 trên 4, cần ôn)$/); // save-v5: taught by ch1; the real clock decides overdue
     for (const hash of ['#/learn/sql/1', '#/learn/skill/select']) {
