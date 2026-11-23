@@ -884,14 +884,14 @@ function termsView(): TermsView | 'loading' | 'failed' {
   if (termsMod === undefined) {
     termsMod = 'loading';
     Promise.all([import('./engineTerms'), import('../engineTermsSources')])
-      .then(([m, src]) => { m.initTerms(d, src.glossary); termsMod = m; }, () => { termsMod = 'failed'; }).finally(() => d.rerender());
+      .then(([m, src]) => { m.initTerms(d, src.glossary); termsMod = m; }).catch(() => { termsMod = 'failed'; }).finally(() => d.rerender()); // a parse throw too
   }
   return termsMod;
 }
 function ivView(): IvView | 'loading' | 'failed' {
   if (ivMod === undefined) {
     ivMod = 'loading';
-    import('./engineInterview').then((m) => { m.initIv(d); ivMod = m; }, () => { ivMod = 'failed'; }).finally(() => d.rerender());
+    import('./engineInterview').then((m) => { m.initIv(d); ivMod = m; }).catch(() => { ivMod = 'failed'; }).finally(() => d.rerender());
   }
   return ivMod;
 }

@@ -21,7 +21,7 @@ export interface IvPrefs {
   noted: string[];
 }
 
-const SET_ID = /^((pg|mg|dy)-(junior|mid|senior|staff)-[1-9]|again)$/;
+const SET_ID = /^((pg|mg|dy)-(junior|mid|senior|staff)-[1-3]|again)$/;
 const Q_ID = /^e-iv-(pg|mg|dy)-(junior|mid|senior|staff)-\d\d$/;
 const TH_ID = /^e-iv-(pg|mg|dy)-th-[1-9]$/;
 const DAY = /^\d{4}-\d\d-\d\d$/;

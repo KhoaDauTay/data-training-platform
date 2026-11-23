@@ -48,6 +48,7 @@ describe('routes #/engine/terms and #/engine/interview (route.ts)', () => {
     expect(engineInterviewOf('#/engine/interview/again')).toEqual({ set: 'again' });
     expect(engineInterviewOf('#/engine/interview/e-iv-dy-th-4')).toEqual({ th: 'e-iv-dy-th-4' });
     expect(engineInterviewOf('#/engine/interview/xx-mid-2')).toEqual({});
+    expect(engineInterviewOf('#/engine/interview/pg-mid-9')).toEqual({}); // 3 sets per band
     expect(engineInterviewOf('#/engine/interviews')).toBeUndefined();
     expect(engineInterviewOf('#/learn/interview')).toBeUndefined();
     expect(engineInterviewHash('mg-staff-3')).toBe('#/engine/interview/mg-staff-3');
@@ -78,8 +79,9 @@ describe('first-mention marker (design-v27 Q2)', () => {
     expect(buttons(m.mark('A covering index is an index.'))).toEqual(['covering index', 'index']);
     expect(buttons(marker(g, 'postgres', 'L1').mark('covering index only'))).toEqual(['covering index']);
   });
-  it('a capital alias matches its case; a lower-case one any case; word edges', () => {
-    expect(buttons(marker(g, 'postgres', 'L1').mark('mvcc, Heap'))).toEqual(['Heap']);
+  it('exact case, except a lower-case phrase may start a sentence; word edges', () => {
+    expect(buttons(marker(g, 'postgres', 'L1').mark('mvcc, Heap, heap'))).toEqual(['heap']); // "Explain why…" is no mention of explain
+    expect(buttons(marker(g, 'postgres', 'L1').mark('Covering index first.'))).toEqual(['Covering index']);
     expect(buttons(marker(g, 'dynamodb', 'L1').mark('a scan, then a Scan'))).toEqual(['Scan']);
     expect(buttons(marker(g, 'postgres', 'L1').mark('heaps and reindexing'))).toEqual([]);
   });
@@ -91,8 +93,8 @@ describe('first-mention marker (design-v27 Q2)', () => {
     expect(out.map((x) => (typeof x === 'string' ? x : x.text)).join('')).toBe(text);
     expect(buttons(out)).toHaveLength(MAX_BUTTONS);
   });
-  it('aliases: match, else term and VI word without a "(…)" note, split on " / "', () => {
-    expect(aliasesOf(T('a', 'simple / composite primary key', 'L1', ['dynamodb'], { viTerm: 'khóa đơn / khóa kép' }))).toEqual(['simple', 'composite primary key', 'khóa đơn', 'khóa kép']);
+  it('aliases: match, else term and VI word without a "(…)" note (never split: "simple" alone is no term)', () => {
+    expect(aliasesOf(T('a', 'simple / composite primary key', 'L1', ['dynamodb'], { viTerm: 'khóa đơn / khóa kép' }))).toEqual(['simple / composite primary key', 'khóa đơn / khóa kép']);
     expect(aliasesOf(T('b', 'window function ($setWindowFields)', 'L1', ['mongodb'], { viTerm: '`$setWindowFields`' }))).toEqual(['window function', '$setWindowFields']);
   });
   it('search: no diacritics, any case, every word; engine and level filters', () => {

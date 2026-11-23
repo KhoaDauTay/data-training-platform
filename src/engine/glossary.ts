@@ -43,8 +43,8 @@ export function parseGlossary(raw: unknown): Term[] {
  */
 export function aliasesOf(t: Term): string[] {
   if (t.match) return t.match;
-  const base = (s: string): string[] => s.replace(/`/g, '').replace(/\s*\([^)]*\)\s*$/, '').split(' / ').map((x) => x.trim()).filter(Boolean);
-  return [...new Set([...base(t.term), ...base(t.viTerm)])];
+  const base = (s: string): string => s.replace(/`/g, '').replace(/\s*\([^)]*\)\s*$/, '').trim();
+  return [...new Set([base(t.term), base(t.viTerm)].filter(Boolean))];
 }
 
 /** Search: every word of `q` in the term, its VI word or its aliases (no diacritics, any case); filters by engine and level. */
@@ -70,20 +70,18 @@ export const MAX_BUTTONS = 15;
 /**
  * One marker per lesson draw: terms of the lesson's engine. Only the first mention of a term whose level is at or above the
  * lesson's becomes a button (lower ones count as learned: design-v27 Q2); later mentions stay text; at most `max` buttons.
- * An alias with a capital letter matches its exact case ("Scan", "GIN"); an all-lower-case one any case.
+ * Case: an alias matches its exact case ("Scan", "GIN", "explain"); a lower-case alias of several words also at the start of a
+ * sentence ("Visibility map"), never a lower-case single word ("Explain why…" is a verb, not MongoDB's explain).
  */
 export function marker(all: readonly Term[], engine: EngineId, level: Level, max = MAX_BUTTONS): Marker {
   const terms = all.filter((t) => t.engines.includes(engine));
   const byAlias = new Map<string, Term>();
   for (const t of terms) for (const a of aliasesOf(t)) {
-    const k = /[A-Z]/.test(a) ? a : a.toLowerCase();
-    if (!byAlias.has(k)) byAlias.set(k, t);
+    const forms = /[A-Z]/.test(a) || !/\s/.test(a) ? [a] : [a, a[0].toUpperCase() + a.slice(1)];
+    for (const k of forms) if (!byAlias.has(k)) byAlias.set(k, t);
   }
   const keys = [...byAlias.keys()].sort((a, b) => b.length - a.length);
-  const exact = keys.filter((k) => /[A-Z]/.test(k));
-  const loose = keys.filter((k) => !/[A-Z]/.test(k));
-  const res = [exact.length ? new RegExp(exact.map(edge).join('|'), 'gu') : null, loose.length ? new RegExp(loose.map(edge).join('|'), 'giu') : null]
-    .filter((r): r is RegExp => !!r);
+  const res = keys.length ? [new RegExp(keys.map(edge).join('|'), 'gu')] : [];
   const seen: Term[] = [];
   const marked = new Set<string>();
   let buttons = 0;
@@ -92,7 +90,7 @@ export function marker(all: readonly Term[], engine: EngineId, level: Level, max
     mark(text: string): Piece[] {
       const hits: { at: number; end: number; term: Term }[] = [];
       for (const re of res) for (const m of text.matchAll(re)) {
-        const term = byAlias.get(re.flags.includes('i') ? m[0].toLowerCase() : m[0]);
+        const term = byAlias.get(m[0]);
         if (term) hits.push({ at: m.index, end: m.index + m[0].length, term });
       }
       hits.sort((a, b) => a.at - b.at || b.end - a.end);

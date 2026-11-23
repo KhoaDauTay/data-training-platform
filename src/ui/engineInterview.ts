@@ -40,7 +40,7 @@ function bankOf(e: EngineId): Bank | 'loading' | 'failed' {
   const have = banks.get(e);
   if (have) return have;
   banks.set(e, 'loading');
-  void SRC[e]().then((m) => banks.set(e, parseBank(m.default)), () => banks.set(e, 'failed')).finally(() => d.rerender());
+  void SRC[e]().then((m) => banks.set(e, parseBank(m.default))).catch(() => banks.set(e, 'failed')).finally(() => d.rerender()); // a parse throw too
   return 'loading';
 }
 const questionOf = (id: string): IvQuestion | undefined => {
