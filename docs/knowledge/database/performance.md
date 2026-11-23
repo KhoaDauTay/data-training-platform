@@ -101,7 +101,7 @@ SELECT reltuples BETWEEN 45000 AND 55000 FROM pg_class WHERE relname = 'ev';
 
 ## 6. Statistics and the planner
 
-Status: verified.
+Status: verified (examples here and in postgresql.md §16).
 
 - `ANALYZE` samples each column (MCV list, histogram, n_distinct, correlation) into `pg_stats` (https://www.postgresql.org/docs/18/planner-stats.html). Autovacuum runs it after enough changes; run it yourself after a bulk load.
 - Correlated columns (city and postcode) fool the independence assumption; `CREATE STATISTICS … (dependencies, ndistinct, mcv)` fixes estimates (https://www.postgresql.org/docs/18/planner-stats.html#PLANNER-STATS-EXTENDED).
@@ -109,6 +109,23 @@ Status: verified.
 ```sql
 -- expect: [["50"]]
 SELECT n_distinct::int FROM pg_stats WHERE tablename = 'sales' AND attname = 'store';
+```
+
+Three planner facts the Engine L4 lessons rely on (all asserted below or in [postgresql.md §16](postgresql.md#16-explain-and-the-planner)):
+
+- A table that was never analyzed is not planned as empty or as a fixed default: the planner scales a rows-per-page guess by the table's real page count. That is why a freshly loaded table often gets a sane row estimate but bad selectivity: the column statistics are still missing until `ANALYZE` (https://www.postgresql.org/docs/18/planner-stats.html).
+- `SET enable_seqscan = off` (or any `enable_*`) is a diagnostic, not a fix. In PostgreSQL 18 it no longer adds a huge cost; the planner avoids disabled nodes when it can, uses one when there is no other path, and `EXPLAIN` prints `Disabled: true` on it. A plan that still shows the disabled node means no usable index exists (https://www.postgresql.org/docs/18/runtime-config-query.html#RUNTIME-CONFIG-QUERY-ENABLE).
+- Prepared statements (and PL/pgSQL queries) switch from custom to generic plans after five executions when the generic plan is not clearly costlier. A query that is fast for common values and slow for a rare one may be a generic-plan problem; `plan_cache_mode = force_custom_plan` for that session or function is the targeted fix (https://www.postgresql.org/docs/18/sql-prepare.html, https://www.postgresql.org/docs/18/runtime-config-query.html#GUC-PLAN-CACHE-MODE).
+
+```sql
+-- expect: [["true"]]
+-- `pay` has no index, so the disabled Seq Scan stays, marked rather than priced out
+SET enable_seqscan = off;
+SELECT plan_text('SELECT * FROM pay WHERE amt = 5') LIKE '%Seq Scan on pay%Disabled: true%';
+```
+
+```sql
+RESET enable_seqscan;
 ```
 
 ## 7. Writes, maintenance and memory

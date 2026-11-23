@@ -307,11 +307,41 @@ ANALYZE events;
 SELECT plan_text($q$SELECT * FROM events WHERE at = '2026-05-01'$q$) LIKE '%events_kind_at%';
 ```
 
+GIN and SP-GiST limits (verified v29/v30; https://www.postgresql.org/docs/18/gin.html, https://www.postgresql.org/docs/18/spgist.html, https://www.postgresql.org/docs/18/indexes-multicolumn.html):
+
+- A GIN index cannot hand rows back one at a time, so the planner reads it only through a Bitmap Index Scan feeding a Bitmap Heap Scan, never a plain Index Scan or Index Only Scan. Turning bitmap scans off does not produce an Index Scan; the bitmap plan stays, marked disabled (below and §16).
+- The `n_entries` figure on a GIN metapage (`gin_metapage_info` from `pageinspect`) is a statistic written when the index is built and by `VACUUM`, not a live key count: an index built on an empty table still shows 0 after rows arrive (Engine L5-04, run through the lab runtime with `pageinspect`; not runnable on the plain PGlite of this file).
+- SP-GiST indexes take one key column only; B-tree, GiST, GIN and BRIN accept several.
+
+```sql
+-- expect: error 0A000
+CREATE TABLE pts (a point, b point);
+CREATE INDEX ON pts USING spgist (a, b);
+```
+
+```sql
+-- expect: [["Bitmap Heap Scan","true"]]
+-- GIN has no plain Index Scan: with seq and bitmap scans both off, the plan is still the (disabled) bitmap scan
+CREATE TABLE gdocs (id int, tags text[]);
+INSERT INTO gdocs SELECT g, ARRAY['t' || (g % 50), 'all'] FROM generate_series(1, 5000) g;
+CREATE INDEX gdocs_tags ON gdocs USING gin (tags);
+ANALYZE gdocs;
+SET enable_seqscan = off;
+SET enable_bitmapscan = off;
+SELECT plan_json($q$SELECT * FROM gdocs WHERE tags @> ARRAY['t7']$q$) -> 0 -> 'Plan' ->> 'Node Type',
+       plan_json($q$SELECT * FROM gdocs WHERE tags @> ARRAY['t7']$q$) -> 0 -> 'Plan' ->> 'Disabled';
+```
+
+```sql
+RESET enable_seqscan;
+RESET enable_bitmapscan;
+```
+
 BoonData: Logistics chapter 11 is the index lab (`isCreateIndex`, `runLab`; `container_events` deliberately has no index on `container_id`); skills `explain_read`, `sargable`, `index_design`; Engine L2 "indexes" lessons (`content/engine/postgres/L2/`).
 
 ## 12. Locks
 
-Status: syntax verified; blocking behaviour not verified (needs two sessions).
+Status: syntax, `SET LOCAL` scope and advisory lock release verified; blocking behaviour not verified (needs two sessions).
 
 - Row locks: `SELECT … FOR UPDATE` (exclusive), `FOR NO KEY UPDATE`, `FOR SHARE`, `FOR KEY SHARE`; `NOWAIT` errors instead of waiting, `SKIP LOCKED` skips locked rows (job queues) (https://www.postgresql.org/docs/18/sql-select.html#SQL-FOR-UPDATE-SHARE).
 - Table locks: eight modes from `ACCESS SHARE` (plain SELECT) to `ACCESS EXCLUSIVE` (most `ALTER TABLE`, `DROP`, `TRUNCATE`, `VACUUM FULL`); conflict table at https://www.postgresql.org/docs/18/explicit-locking.html.
@@ -328,6 +358,40 @@ SELECT sku FROM stock WHERE sku = 'A' FOR UPDATE SKIP LOCKED;
 
 ```sql
 COMMIT;
+```
+
+`SET LOCAL` lasts until the end of the current transaction. Outside a transaction block it only raises a warning and changes nothing, so the setting above must come after `BEGIN` (https://www.postgresql.org/docs/18/sql-set.html):
+
+```sql
+SET LOCAL lock_timeout = '3s';
+```
+
+```sql
+-- expect: [["0"]]
+SELECT current_setting('lock_timeout');
+```
+
+Advisory locks lock a number the application chooses, not a row or table (https://www.postgresql.org/docs/18/explicit-locking.html#ADVISORY-LOCKS; functions at https://www.postgresql.org/docs/18/functions-admin.html#FUNCTIONS-ADVISORY-LOCKS):
+
+- `pg_advisory_xact_lock(key)` is released when the transaction ends, by commit or rollback. Prefer it.
+- `pg_advisory_lock(key)` is held by the session until `pg_advisory_unlock(key)` or disconnect; a `ROLLBACK` does not release it, so a pooled connection can go back to the pool still holding it. It stacks: two calls need two unlocks.
+- The `try` forms return true or false at once instead of waiting; the `_shared` forms let several holders share a key. `pg_advisory_unlock` returns false (with a warning) for a key the session does not hold.
+
+```sql
+-- expect: [["true","false"]]
+-- a session-level lock survives ROLLBACK; the second unlock finds nothing to release
+BEGIN;
+SELECT pg_advisory_lock(7);
+ROLLBACK;
+SELECT pg_advisory_unlock(7), pg_advisory_unlock(7);
+```
+
+```sql
+-- expect: [["0"]]
+BEGIN;
+SELECT pg_advisory_xact_lock(8);
+COMMIT;
+SELECT count(*) FROM pg_locks WHERE locktype = 'advisory';
 ```
 
 ## 13. Auto increment and sequences
@@ -406,6 +470,48 @@ SELECT plan_json('SELECT * FROM events WHERE id = 5') -> 0 -> 'Plan' ->> 'Node T
 SELECT plan_text('(ANALYZE) SELECT count(*) FROM events') LIKE '%Buffers:%';
 ```
 
+Planner details verified for the Engine L4 lessons (v29):
+
+- PostgreSQL 18 changed how `enable_*` settings work: a disabled node type is no longer priced with a huge added cost (the old `1e10`); the planner counts disabled nodes, prefers the plan with the fewest, and `EXPLAIN` marks such a node `Disabled: true`. When no other path exists, the disabled node is still used (https://www.postgresql.org/docs/18/runtime-config-query.html#RUNTIME-CONFIG-QUERY-ENABLE; release notes https://www.postgresql.org/docs/18/release-18.html).
+- A prepared statement with the default `plan_cache_mode = auto` gets five custom plans (planned for the actual parameter values); from the sixth execution the server may switch to a generic plan, which shows `$1` instead of the value, when its estimated cost is not clearly worse than the custom plans' average. `EXPLAIN EXECUTE` counts as an execution (https://www.postgresql.org/docs/18/sql-prepare.html).
+- Before a table was ever analyzed (`reltuples` = -1, `relpages` = 0) the planner does not assume a fixed size: it reads the table's real number of pages and scales a rows-per-page guess by it, so a never-analyzed 50,000-row table is still estimated in the tens of thousands (https://www.postgresql.org/docs/18/planner-stats.html; https://www.postgresql.org/docs/18/catalog-pg-class.html). Column statistics (MCV list, histogram) still need `ANALYZE`.
+
+```sql
+-- expect: [["Seq Scan","true","false"]]
+CREATE TABLE pc (id int PRIMARY KEY, v int);
+INSERT INTO pc SELECT g, g % 10 FROM generate_series(1, 10000) g;
+ANALYZE pc;
+SET enable_seqscan = off;
+SELECT plan_json('SELECT * FROM pc WHERE v = 3') -> 0 -> 'Plan' ->> 'Node Type',
+       plan_json('SELECT * FROM pc WHERE v = 3') -> 0 -> 'Plan' ->> 'Disabled',
+       (plan_json('SELECT * FROM pc WHERE v = 3') -> 0 -> 'Plan' ->> 'Total Cost')::float > 1e9;
+```
+
+```sql
+RESET enable_seqscan;
+```
+
+```sql
+-- expect: [["custom"],["custom"],["custom"],["custom"],["custom"],["generic"]]
+PREPARE pq(int) AS SELECT * FROM pc WHERE v = $1;
+CREATE TEMP TABLE seen (n int, kind text);
+DO $$ DECLARE r text; s text; BEGIN
+  FOR i IN 1..6 LOOP
+    s := '';
+    FOR r IN EXECUTE 'EXPLAIN EXECUTE pq(3)' LOOP s := s || r; END LOOP;
+    INSERT INTO seen VALUES (i, CASE WHEN s LIKE '%$1%' THEN 'generic' ELSE 'custom' END);
+  END LOOP; END $$;
+SELECT kind FROM seen ORDER BY n;
+```
+
+```sql
+-- expect: [["true","-1","0"]]
+CREATE TABLE fresh (id int, pad text);
+INSERT INTO fresh SELECT g, repeat('x', 50) FROM generate_series(1, 50000) g;
+SELECT (plan_json('SELECT * FROM fresh') -> 0 -> 'Plan' ->> 'Plan Rows')::int > 20000, reltuples::int, relpages
+FROM pg_class WHERE relname = 'fresh';
+```
+
 BoonData: the EXPLAIN tab uses `EXPLAIN (ANALYZE, FORMAT JSON)` inside `BEGIN … ROLLBACK`; chapter 11 grades plans on node types and planner cost, never milliseconds (`src/planCheck.ts`).
 
 ## 17. MVCC, VACUUM and ANALYZE
@@ -416,6 +522,21 @@ Status: verified (new row version on UPDATE; VACUUM sets the visibility map). Pa
 - `VACUUM` makes dead space reusable and updates the visibility map; it does not shrink the file (`VACUUM FULL` rewrites the table under an `ACCESS EXCLUSIVE` lock). Autovacuum does both `VACUUM` and `ANALYZE` in the background; keep it on (catalogue P03) (https://www.postgresql.org/docs/18/routine-vacuuming.html).
 - Transaction IDs are 32-bit; freezing old rows prevents wraparound.
 - HOT updates (no indexed column changed, room on the page) avoid new index entries (https://www.postgresql.org/docs/18/storage-hot.html).
+
+- `xid` values (`xmin`, `xmax`) have equality but no `<` or `>` operator: the counter wraps around, so "smaller" does not mean "older". Compare with `age(xid)`, the number of transactions since (https://www.postgresql.org/docs/18/routine-vacuuming.html#VACUUM-FOR-WRAPAROUND).
+- The first change of a page after a checkpoint writes a full-page image into the WAL, so a torn page can be repaired on replay; the image leaves out the free hole between the line pointers and the tuples, so for a nearly empty page it is a few hundred bytes, not 8 KB. Later changes to that page before the next checkpoint log only the change (https://www.postgresql.org/docs/18/wal-reliability.html; `full_page_writes` and `wal_compression` at https://www.postgresql.org/docs/18/runtime-config-wal.html). Measured in Engine L3-13 with `pg_walinspect` in the lab runtime (332 bytes for the lab page); not runnable on the plain PGlite of this file.
+
+```sql
+-- expect: [["true"]]
+CREATE TABLE xa (id int);
+INSERT INTO xa VALUES (1);
+SELECT age(xmin) >= 0 FROM xa;
+```
+
+```sql
+-- expect: error 42883
+SELECT xmin < xmax FROM xa;
+```
 
 ```sql
 -- expect: [["true"]]
