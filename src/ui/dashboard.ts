@@ -233,7 +233,7 @@ function startersBlock(locked: boolean): HTMLElement | null {
   return h('div', { class: 'mt-5' },
     h('h3', { class: 'm-0 text-body font-bold' }, t('dash.starters')),
     h('p', { class: 'mt-1 mb-3 text-body-sm text-muted' }, t('dash.startersIntro'), locked ? '' : ` ${t('dash.startersHide')}`),
-    h('div', { class: 'grid gap-4 sm:grid-cols-2' }, ...list.map(starterCard))); // 4 columns left a chart < 260 px: scrollbars (L93)
+    h('div', { class: 'grid items-start gap-4 sm:grid-cols-2' }, ...list.map(starterCard))); // 4 columns left a chart < 260 px: scrollbars (L93)
 }
 
 /** Locked: what opens custom cards, the locked "Make a card" control (not a button) and one real way forward. */
@@ -280,7 +280,7 @@ function mineSection(redraw: () => void): HTMLElement {
     h('p', { class: 'mt-2 mb-3 text-body-sm' }, h('span', { class: 'text-muted' }, t('dash.kinds')), ' ', kinds),
     cards.length >= MAX_CARDS ? h('p', { class: 'mb-3 text-body-sm', role: 'note' }, t('dash.full', { max: MAX_CARDS })) : null,
     cards.length
-      ? h('div', { class: 'grid gap-4 sm:grid-cols-2 lg:grid-cols-3' }, ...cards.map((c, i) => playerCard(c, i, cards.length, redraw)))
+      ? h('div', { class: 'grid items-start gap-4 sm:grid-cols-2 lg:grid-cols-3' }, ...cards.map((c, i) => playerCard(c, i, cards.length, redraw)))
       : h('div', { class: cx(CARD, 'p-5') },
         mascot('lily', 'sleep', 'size-16 mb-2'), // v6 §2.4: an empty state
         h('h3', { class: 'm-0 text-body font-bold' }, t('dash.emptyTitle')),
@@ -371,7 +371,7 @@ function companySection(redraw: () => void): HTMLElement {
       h('h2', { id: 'dash-company-title', tabindex: '-1', class: 'm-0 text-title font-bold' }, t('dash.company')),
       h('span', { class: 'text-body-sm text-muted' }, t('dash.companyOpen', { n: tiles.filter((x) => x.open).length, total: tiles.length }))),
     h('p', { class: 'mt-1 mb-3 text-[15px] text-muted' }, t('dash.companyIntro')),
-    h('div', { class: 'grid gap-4 sm:grid-cols-2 lg:grid-cols-4' }, ...shown.filter((x) => x.open && x.ticket).map((x) => kpiTile(x, redraw))),
+    h('div', { class: 'grid items-start gap-4 sm:grid-cols-2 lg:grid-cols-4' }, ...shown.filter((x) => x.open && x.ticket).map((x) => kpiTile(x, redraw))),
     lockedRow(shown.filter((x) => !(x.open && x.ticket))),
     gone.length
       ? h('details', { class: 'mt-3' },
