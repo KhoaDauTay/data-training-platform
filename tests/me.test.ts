@@ -193,3 +193,19 @@ describe('portfolio (I6)', () => {
     expect(md).toMatch(/not verified/);
   });
 });
+
+describe('L316 wording (user feedback)', () => {
+  it('no "1 study days": the EN day counts carry no plural noun after the number', () => {
+    for (const k of ['days.total', 'days.label'] as const) expect(ME_DICT.en[k]).not.toMatch(/\{n\} study days/);
+  });
+  it('Lily is the learner\'s study buddy (L87), never "that is you"; the two Home counters name what they count', async () => {
+    const { dict } = await import('../src/i18n/vi').then((m) => ({ dict: m.vi as Record<string, string> }));
+    const en = (await import('../src/i18n/en')).en as Record<string, unknown>;
+    for (const k of ['teach.scene', 'teach.lily', 'lily.line']) {
+      expect(dict[k]).not.toMatch(/là bạn\)/);
+      expect(String(en[k])).not.toMatch(/that is you/);
+    }
+    expect(dict['home.skillsTeaser']).toMatch(/Kỹ năng SQL/);
+    expect(dict['home.progress']).toMatch(/^Việc/);
+  });
+});

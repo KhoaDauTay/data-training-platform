@@ -141,8 +141,8 @@ const en: Record<MeKey, string> = {
   'err.21000': 'Subquery returned more than one row',
   'err.42P20': 'Window function in the wrong place',
   'days.title': 'Study days ({w} weeks)',
-  'days.label': '{n} study days in the last {w} weeks',
-  'days.total': '{n} study days on this device in total.',
+  'days.label': 'Study days in the last {w} weeks: {n}',
+  'days.total': 'Study days on this device in total: {n}.', // L316: no plural to get wrong ("1 study days")
   'days.note': 'No streak to lose, no comparison with anyone.',
   'days.week': 'This week: tasks done {t}, skills up a memory level {r}.',
   'next.title': 'What to do next',
