@@ -8,10 +8,12 @@ title_en: "L4 capstone: a slow report and a migration that froze the app"
 kind: capstone
 runtime: browser
 minutes: 30
+verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - { vi: "Đi từ ước lượng sai tới thuật toán nối sai, dùng `pg_stats` và ước lượng thật", en: "Go from a wrong estimate to a wrong join algorithm, using `pg_stats` and real estimates" }
   - { vi: "Chứng minh câu tra một khách dùng Nested Loop qua index", en: "Prove that the one-customer lookup uses a Nested Loop through an index" }
   - { vi: "Đọc lock mà một lệnh ghi thật sự lấy, và đề xuất cách chạy migration không làm treo ứng dụng", en: "Read the locks a write really takes, and propose how to run a migration without freezing the app" }
+  - { vi: "Viết câu tra đơn của một khách vừa đúng vừa đi qua index", en: "Write a customer's order lookup that is both right and goes through an index" }
 requires: [e-pg-l4-02, e-pg-l4-03, e-pg-l4-04, e-pg-l4-09, e-pg-l4-12]
 sources:
   - https://www.postgresql.org/docs/18/planner-stats.html
@@ -61,6 +63,13 @@ lab:
       check: rows
       ordered: true
       hint: { vi: "Như bài e-pg-l4-09: nối `pg_locks.relation` với `pg_class.oid`.", en: "As in lesson e-pg-l4-09: join `pg_locks.relation` to `pg_class.oid`." }
+    - task: { vi: "Bước 5, trang khách hàng. Mã và số tiền các đơn của khách số 77, sắp theo mã đơn. Bài chấm cả tốc độ: câu trả đúng dòng mà không đọc `orders` qua index vẫn chưa đạt.", en: "Step 5, the customer page. Id and amount of customer 77's orders, sorted by order id. Speed is graded too: a query that returns the right rows without reading `orders` through an index does not pass yet." }
+      solution: "SELECT id, amount FROM orders WHERE customer_id = 77 ORDER BY id"
+      check: rows
+      ordered: true
+      perf: { table: orders }
+      slow: "SELECT id, amount FROM orders WHERE customer_id + 0 = 77 ORDER BY id"
+      hint: { vi: "So sánh cột `customer_id` trực tiếp với số 77; một phép tính trên cột (`customer_id + 0`) làm planner bỏ `orders_customer_idx`.", en: "Compare column `customer_id` directly with the number 77; arithmetic on the column (`customer_id + 0`) makes the planner drop `orders_customer_idx`." }
 predict:
   sql: "SELECT * FROM orders WHERE status = 'lost'"
   q: { vi: "Đơn thất lạc chiếm 2 %. Postgres đọc thế nào?", en: "Lost orders are 2%. How does Postgres read them?" }
@@ -69,6 +78,7 @@ predict:
     - { vi: "Bitmap Heap Scan qua `orders_status_idx`", en: "A Bitmap Heap Scan through `orders_status_idx`" }
     - { vi: "Index Only Scan", en: "An Index Only Scan" }
   answer: 1
+  trap: 0
   why: { vi: "Seq Scan nghe hợp lý vì 400 dòng vẫn là khá nhiều, nhưng 2 % là đủ hiếm để index thắng. Tần suất MCV 0,02 × 20.000 = 400 dòng: đủ hiếm để đi qua index, đủ nhiều để gom theo trang bằng bitmap. Câu cần mọi cột nên không thể Index Only Scan.", en: "A Seq Scan sounds right because 400 rows is still quite a few, but 2% is rare enough for the index to win. MCV frequency 0.02 × 20,000 = 400 rows: rare enough for the index, enough rows to group by page with a bitmap. The query needs every column, so an Index Only Scan is impossible." }
   expect: { node: Bitmap Index Scan, index: orders_status_idx }
 quiz:
@@ -78,6 +88,7 @@ quiz:
       - { vi: "Không ảnh hưởng gì", en: "No effect at all" }
       - { vi: "Tắt `enable_nestloop` cho cả server", en: "Turn `enable_nestloop` off for the whole server" }
     answer: 0
+    trap: 2
     why: { vi: "Tắt `enable_nestloop` nghe nhanh gọn vì nó gỡ ngay kế hoạch chậm, nhưng nó tác động lên mọi câu khác trên server. Ước lượng thấp ở phía ngoài nhân lên số lần lặp phía trong. Sửa ước lượng, không tắt tính năng của planner.", en: "Turning off `enable_nestloop` sounds quick because it removes the slow plan at once, but it hits every other query on the server. A low estimate on the outer side multiplies the inner loops. Fix the estimate; do not switch planner features off." }
   - q: { vi: "Kết luận 2. Cần chạy `ALTER TABLE orders ADD COLUMN note text` giữa giờ làm việc, khi một báo cáo dài đang đọc `orders`. Cách an toàn?", en: "Conclusion 2. You must run `ALTER TABLE orders ADD COLUMN note text` during business hours while a long report is reading `orders`. The safe way?" }
     options:
@@ -85,6 +96,7 @@ quiz:
       - { vi: "Chạy thẳng, ALTER không lấy lock nào", en: "Just run it, ALTER locks nothing" }
       - { vi: "Đặt `deadlock_timeout = 0`", en: "Set `deadlock_timeout = 0`" }
     answer: 0
+    trap: 1
     why: { vi: "Chạy thẳng nghe ổn vì thêm một cột có thể chỉ sửa catalog, nhưng nó vẫn cần lock ACCESS EXCLUSIVE. Hàng đợi lock là FIFO: ALTER đang chờ báo cáo sẽ chặn cả các SELECT ngắn phía sau. `lock_timeout` để migration tự bỏ cuộc thay vì làm treo ứng dụng.", en: "Running it directly sounds fine because adding a column can be a catalog-only change, but it still needs an ACCESS EXCLUSIVE lock. The lock queue is FIFO: an ALTER waiting for the report blocks even short SELECTs behind it. `lock_timeout` makes the migration give up instead of freezing the app." }
   - q: { vi: "Kết luận 3. Báo cáo gồm ba câu (tổng đơn, tổng tiền, theo vùng) phải khớp nhau trong khi đơn mới vẫn được ghi. Mức cô lập nào?", en: "Conclusion 3. The report runs three statements (order count, total amount, by region) that must agree while new orders keep arriving. Which isolation level?" }
     options:
@@ -92,21 +104,23 @@ quiz:
       - { vi: "Repeatable Read (khai báo `READ ONLY`): cả ba câu thấy cùng một snapshot", en: "Repeatable Read (as a `READ ONLY` transaction): all three statements see the same snapshot" }
       - { vi: "Read Uncommitted", en: "Read Uncommitted" }
     answer: 1
+    trap: 0
     why: { vi: "Read Committed hấp dẫn vì nó là mặc định và không bao giờ thấy dữ liệu chưa commit, nhưng nhất quán từng câu chưa đủ. Read Committed lấy snapshot mỗi câu, nên ba con số có thể lệch nhau. Transaction chỉ đọc không gặp lỗi xung đột ghi.", en: "Read Committed is tempting because it is the default and never sees uncommitted data, but per-query consistency is not enough. Read Committed takes a snapshot per statement, so the three figures can disagree. A read-only transaction never hits a write conflict." }
 ---
 
+## Mở bài
+
+Đội bán hàng báo hai sự cố trong cùng một tuần: báo cáo theo vùng lúc nhanh lúc chậm, và một migration giữa giờ làm việc làm cả ứng dụng treo vài phút. Hai triệu chứng nghe như một, nhưng nguyên nhân khác nhau. Việc của bạn là tìm bằng chứng cho từng cái bằng số liệu thật, rồi kết luận.
+
 ## Ý chính
 
-Đội bán hàng báo hai vấn đề cùng tuần:
+Năm bước dùng lại cả cấp L4: thống kê cột (MCV), thống kê mở rộng, thuật toán nối, lock trên bảng, và một câu đọc vừa đúng vừa nhanh. Ba câu kết luận thêm mức cô lập.
 
-- báo cáo theo vùng lúc nhanh lúc chậm;
-- một migration giữa giờ làm việc làm cả ứng dụng treo vài phút.
-
-Nhiệm vụ: tìm bằng chứng cho từng vấn đề bằng số liệu thật, rồi kết luận. Bốn bước dùng lại cả L4: thống kê cột (MCV), thống kê mở rộng, thuật toán nối, lock trên bảng; ba câu kết luận thêm mức cô lập.
+Bước 5 có thanh hiệu năng: câu trả đúng dòng mà không đọc `orders` qua index vẫn chưa qua. Mỗi bước chạy trên một database mới dựng từ setup; các bước trước của bài chỉ đọc, nên không bước nào đổi dữ liệu cho bước sau.
 
 ## Ví dụ
 
-Số liệu thật trên PGlite:
+Số liệu thật trên PGlite, để bạn biết mình đang tìm gì:
 
 ```text
 status MCV: {delivered,open,lost}  {0.8,0.18,0.02}
@@ -122,22 +136,30 @@ Nested Loop
 
 ## Thực hành
 
-Bốn bước có chấm, một câu đoán kế hoạch, ba câu kết luận. Kỹ năng chuyên gia: tách một "hệ thống chậm" thành hai nguyên nhân khác nhau (ước lượng sai, chờ lock), chứng minh từng cái bằng `pg_stats`, `EXPLAIN` và `pg_locks`, và đề xuất cách sửa đúng chỗ.
+Năm bước có chấm, một câu đoán kế hoạch, ba câu kết luận. Tách một "hệ thống chậm" thành hai nguyên nhân (ước lượng sai, chờ lock), chứng minh từng cái bằng `pg_stats`, `EXPLAIN` và `pg_locks`, rồi viết câu tra đơn của một khách đi qua index.
+
+## Tóm tắt
+
+- Ước lượng sai bắt đầu từ thống kê: đọc `pg_stats`, và dùng `CREATE STATISTICS` khi hai cột phụ thuộc nhau.
+- Ước lượng thấp ở phía ngoài làm planner chọn sai thuật toán nối; sửa ước lượng, đừng tắt tính năng của planner.
+- DDL cần ACCESS EXCLUSIVE và hàng đợi lock là FIFO: đặt `lock_timeout` trước migration.
+- So sánh cột trực tiếp với giá trị; phép tính trên cột làm planner bỏ index.
 
 # EN
 
+## Opening
+
+The sales team reports two incidents in the same week: the per-region report is sometimes fast, sometimes slow, and a migration during business hours froze the whole app for minutes. The two symptoms sound like one, but their causes differ. Your job is to find evidence for each from real numbers, then conclude.
+
 ## Key idea
 
-The sales team reports two incidents in the same week:
+The five steps reuse all of level L4: column statistics (MCV), extended statistics, join algorithms, table locks, and a read that is both right and fast. The three conclusion questions add isolation levels.
 
-- the per-region report is sometimes fast, sometimes slow;
-- a migration during business hours froze the whole app for minutes.
-
-The task: find evidence for each incident from real numbers, then conclude. The four steps reuse all of L4: column statistics (MCV), extended statistics, join algorithms, table locks; the three conclusion questions add isolation levels.
+Step 5 has a performance bar: a query that returns the right rows without reading `orders` through an index does not pass yet. Each step runs on a fresh database built from the setup; the earlier steps only read, so no step changes the data for the next.
 
 ## Example
 
-Real figures from PGlite:
+Real figures from PGlite, so you know what you are looking for:
 
 ```text
 status MCV: {delivered,open,lost}  {0.8,0.18,0.02}
@@ -153,4 +175,11 @@ Nested Loop
 
 ## Practice
 
-Four graded steps, one plan prediction, three conclusion questions. Expert skill: split a "slow system" into two different causes (a wrong estimate, a lock wait), prove each with `pg_stats`, `EXPLAIN` and `pg_locks`, and propose the fix in the right place.
+Five graded steps, one plan prediction, three conclusion questions. Split a "slow system" into two causes (a wrong estimate, a lock wait), prove each with `pg_stats`, `EXPLAIN` and `pg_locks`, then write a customer's order lookup that goes through an index.
+
+## Recap
+
+- A wrong estimate starts in the statistics: read `pg_stats`, and use `CREATE STATISTICS` when two columns depend on each other.
+- A low estimate on the outer side makes the planner pick the wrong join algorithm; fix the estimate, do not switch planner features off.
+- DDL needs ACCESS EXCLUSIVE and the lock queue is FIFO: set `lock_timeout` before a migration.
+- Compare the column directly with the value; arithmetic on the column makes the planner drop the index.
