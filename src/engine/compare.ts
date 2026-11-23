@@ -76,7 +76,7 @@ export const FACTS: Record<string, Fact> = {
   dyTxLimit: { src: `${AWS}transaction-apis.html`, values: [100, 2], text: {
     vi: 'Theo tài liệu AWS: một transaction chứa tối đa {dyTxLimit.0} thao tác, và mỗi item trong đó được tính như {dyTxLimit.1} lần đọc hoặc ghi.',
     en: 'From the AWS docs: one transaction holds at most {dyTxLimit.0} actions, and each item in it is charged as {dyTxLimit.1} reads or writes.' } },
-  dyGsiQuota: { src: `${AWS}ServiceQuotas.html`, values: [20], text: {
+  dyGsiQuota: { src: `${AWS}GSI.OnlineOps.html`, values: [20], text: {
     vi: 'Theo tài liệu AWS: mặc định mỗi bảng có tối đa {dyGsiQuota.0} GSI.',
     en: 'From the AWS docs: by default a table holds at most {dyGsiQuota.0} GSIs.' } },
 };

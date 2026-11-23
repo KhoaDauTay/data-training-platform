@@ -8,7 +8,7 @@ import type { Lang, Params } from './index';
 const vi = {
   'title': 'Chọn engine nào?',
   'intro': 'Cùng một cửa hàng, ba engine: PostgreSQL, MongoDB và DynamoDB. Mỗi ô ghi rõ điều nó nói đã chạy thật trong trình duyệt hay chỉ lấy từ tài liệu.',
-  'dataset': 'Mọi số đo trên trang chạy trong trình duyệt, trên một cửa hàng mẫu {n} đơn nạp giống nhau vào ba engine; một test chạy lại từng số trên cả ba runtime.',
+  'dataset': 'Các số có nhãn "Đo trong trình duyệt" đến từ chính ba runtime mà trang Engine dùng (PGlite, mingo, dynoxide), trên một cửa hàng mẫu {n} đơn nạp giống nhau vào cả ba; một test chạy lại từng số đó. Các số khác lấy từ tài liệu, có link tới trang đã đọc.',
   'legend': 'Nhãn',
   'tier.run': 'Chạy trong trình duyệt',
   'tier.diff': 'Chạy được, khác engine thật',
@@ -45,7 +45,7 @@ export type CmpKey = keyof typeof vi;
 const en: Record<CmpKey, string> = {
   'title': 'Which engine?',
   'intro': 'One shop, three engines: PostgreSQL, MongoDB and DynamoDB. Each cell says whether what it claims really ran in the browser or comes from the docs only.',
-  'dataset': 'Every figure on this page ran in the browser, on a sample shop of {n} orders loaded the same way into all three engines; a test reruns each figure on all three runtimes.',
+  'dataset': 'Figures labelled "Measured in the browser" come from the same three runtimes the Engine pages use (PGlite, mingo, dynoxide), on a sample shop of {n} orders loaded the same way into all three; a test reruns each of them. Other figures come from the docs, with a link to the page that was read.',
   'legend': 'Labels',
   'tier.run': 'Runs in the browser',
   'tier.diff': 'Runs, differs from the real engine',

@@ -77,11 +77,11 @@ predict:
   options:
     - { vi: "Một `Hash Join` kiểu anti: băm `customers`, quét `orders` một lần, giữ khách không có cặp", en: "One anti `Hash Join`: hash `customers`, scan `orders` once, keep the customers with no match" }
     - { vi: "`Seq Scan` trên `customers`, và câu con chạy lại cho từng khách", en: "A `Seq Scan` on `customers`, with the subquery run again for each customer" }
-    - { vi: "Một `Hash Join` thường rồi một `Filter` bỏ dòng có đơn", en: "A plain `Hash Join` followed by a `Filter` that drops rows with an order" }
+    - { vi: "Một `Nested Loop`: với mỗi khách, tra `orders` một lần", en: "A `Nested Loop`: for each customer, one lookup into `orders`" }
   answer: 0
   why:
-    vi: "\"Câu con tương quan chạy lại cho từng dòng\" nghe hợp lý vì nó nhắc tới `c.id` của câu ngoài. Nhưng planner đổi `NOT EXISTS` thành một phép nối anti: băm bảng nhỏ, quét bảng lớn một lần, chỉ giữ dòng bên trái không có cặp. Phương án `Filter` là kế hoạch của cách viết `LEFT JOIN … o.id IS NULL` (bước 2)."
-    en: "\"A correlated subquery runs again for every row\" sounds right because it mentions the outer `c.id`. But the planner turns `NOT EXISTS` into an anti join: hash the small table, scan the big one once, keep only left rows with no match. The `Filter` option is the plan of the `LEFT JOIN … o.id IS NULL` form (step 2)."
+    vi: "\"Câu con tương quan chạy lại cho từng dòng\" nghe hợp lý vì nó nhắc tới `c.id` của câu ngoài. Nhưng planner đổi `NOT EXISTS` thành một phép nối anti: băm bảng nhỏ, quét bảng lớn một lần, chỉ giữ dòng bên trái không có cặp. Không có index trên `orders.customer_id`, mỗi lần tra trong `Nested Loop` sẽ là một lần quét cả bảng, nên planner chọn băm."
+    en: "\"A correlated subquery runs again for every row\" sounds right because it mentions the outer `c.id`. But the planner turns `NOT EXISTS` into an anti join: hash the small table, scan the big one once, keep only left rows with no match. With no index on `orders.customer_id`, each lookup in a `Nested Loop` would scan the whole table, so the planner hashes."
   expect: { node: Hash Join }
 quiz:
   - q:

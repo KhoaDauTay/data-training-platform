@@ -55,7 +55,7 @@ function axisCard(a: (typeof AXES)[number]): HTMLElement {
   const head = `cmp-${a.id.toLowerCase()}`;
   const lessons = a.lessons.map((id) => c.lesson(id)).filter((x) => !!x);
   return h('section', { class: c.d.cls.cx(c.d.cls.CARD, 'flex flex-col gap-3 p-4 sm:p-5'), 'aria-labelledby': head, id: `${head}-card` },
-    h('h3', { id: head, class: 'm-0 text-title font-bold' }, `${a.id} · ${a.title[lang()]}`),
+    h('h3', { id: head, tabindex: '-1', class: 'm-0 text-title font-bold' }, `${a.id} · ${a.title[lang()]}`),
     h('p', { class: 'm-0 text-muted' }, a.ask[lang()]),
     h('ul', { class: 'm-0 grid list-none gap-3 p-0 lg:grid-cols-3' }, ...CMP_ENGINES.map((e) => h('li', { class: 'flex flex-col gap-2 rounded-(--r-inset) bg-surface-2 p-3', 'data-cell': `${a.id}-${e}` },
       h('span', { class: 'flex items-center gap-2 font-bold' }, c.d.icon(ICON[e], 'size-5 shrink-0 text-accent'), NAME[e]),
@@ -76,7 +76,7 @@ function summary(): HTMLElement {
       h('caption', { class: 'sr-only' }, ct('summary')),
       h('thead', {}, h('tr', {}, h('th', { scope: 'col', class: 'text-left' }, ct('axis')), ...CMP_ENGINES.map((e) => h('th', { scope: 'col', class: 'text-left' }, NAME[e])))),
       h('tbody', {}, ...AXES.map((a) => h('tr', {},
-        h('th', { scope: 'row', class: 'text-left font-normal' }, h('a', { href: `#cmp-${a.id.toLowerCase()}-card`, onclick: (ev: Event) => { ev.preventDefault(); document.getElementById(`cmp-${a.id.toLowerCase()}-card`)?.scrollIntoView(); } }, `${a.id} · ${a.title[lang()]}`)),
+        h('th', { scope: 'row', class: 'text-left font-normal' }, h('button', { type: 'button', class: 'border-0 bg-transparent p-0 text-left text-accent underline', onclick: () => { const t = document.getElementById(`cmp-${a.id.toLowerCase()}`); t?.scrollIntoView(); t?.focus(); } }, `${a.id} · ${a.title[lang()]}`)),
         ...CMP_ENGINES.map((e) => h('td', {}, tierChip(a.cells[e].tier))))))));
 }
 

@@ -95,14 +95,16 @@ export async function measure(): Promise<Record<string, (string | number)[]>> {
   out.pgText = [txt.steps[0].error?.code ?? '', '6,500,000', String(MIXED[1]), MIXED.length, 5_000_000, Number(txt.steps[2].rows[0][0])];
 
   // ---- MongoDB (mingo through runMongo: one command per run, each on a fresh copy)
-  const shop = datasetOf({ products: [{ _id: 'P1', stock: 5 }, { _id: 'P2', stock: 1 }], mixed: MIXED.map((total, i) => ({ _id: i + 1, total })) });
+  const shop = datasetOf({ products: [{ _id: 'P1', stock: 5 }, { _id: 'P2', stock: 1 }], mixed: MIXED.map((total, i) => ({ _id: i + 1, total })),
+    orders: orders.map((o) => ({ _id: o.id, status: o.status, created: { $date: o.created }, total: o.total })) });
   const first = runMongo(shop, 'db.products.updateOne({ _id: "P1", stock: { $gte: 2 } }, { $inc: { stock: -2 } })');
   const after1 = datasetOf({ products: first.docs, mixed: [] });
   const second = runMongo(after1, 'db.products.updateOne({ _id: "P2", stock: { $gte: 2 } }, { $inc: { stock: -2 } })');
   const stock = (id: string) => Number(second.docs.find((x) => x._id === id)?.stock);
   out.mgTx = [stock('P1'), stock('P2')];
   out.mgText = [Number(runMongo(shop, 'db.mixed.aggregate([{ $match: { total: { $gt: 5000000 } } }, { $count: "n" }])').docs[0]?.n ?? 0)];
-  out.mgCountEmpty = [runMongo(shop, 'db.mixed.aggregate([{ $match: { channel: "store" } }, { $count: "n" }])').docs.length];
+  out.mgCountEmpty = [runMongo(shop, 'db.orders.aggregate([{ $match: { channel: "store" } }, { $count: "n" }])').docs.length];
+  if ((runMongo(shop, 'db.orders.countDocuments({})') as { value?: unknown }).value !== CMP_ORDERS) throw new Error('orders not loaded into the Mongo dataset');
 
   // ---- DynamoDB (dynoxide)
   const eng = await dynamo();

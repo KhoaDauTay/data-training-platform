@@ -67,8 +67,8 @@ lab:
       fact:
         vi: "Bất ngờ: vẫn có Sort. Planner đọc 40 dòng của khách bằng `Bitmap Heap Scan` (đọc theo trang, mất thứ tự) rồi sắp 40 dòng đó, tổng cost 85.99. Sắp 40 dòng rẻ hơn đi index theo thứ tự từng dòng một. Có index đúng thứ tự không có nghĩa là luôn bỏ Sort."
         en: "A surprise: there is still a Sort. The planner reads the customer's 40 rows with a `Bitmap Heap Scan` (page order, no row order) and then sorts those 40 rows, total cost 85.99. Sorting 40 rows is cheaper than walking the index row by row in order. An index in the right order does not mean the Sort always goes."
-        probe: "SELECT (SELECT count(*) FROM nodes_of('SELECT created_on, amount, sum(amount) OVER (ORDER BY created_on, id) AS running FROM orders WHERE customer_id = 42') WHERE node IN ('Sort', 'Bitmap Heap Scan')), top_cost('SELECT created_on, amount, sum(amount) OVER (ORDER BY created_on, id) AS running FROM orders WHERE customer_id = 42')"
-        expect: [[2, 85.99]]
+        probe: "SELECT (SELECT count(*) FROM nodes_of('SELECT created_on, amount, sum(amount) OVER (ORDER BY created_on, id) AS running FROM orders WHERE customer_id = 42') WHERE node IN ('Sort', 'Bitmap Heap Scan')), top_cost('SELECT created_on, amount, sum(amount) OVER (ORDER BY created_on, id) AS running FROM orders WHERE customer_id = 42'), (SELECT count(*) FROM orders WHERE customer_id = 42)"
+        expect: [[2, 85.99, 40]]
     - task:
         vi: "Một câu có hai cửa sổ khác thứ tự: cộng dồn theo khách (như bước 1) và `rank() OVER (ORDER BY amount DESC)`. Đếm số nút `Sort` trong kế hoạch của nó bằng hàm `nodes_of(q)` (trả một dòng cho mỗi nút)."
         en: "A query with two windows in different orders: the running total per customer (as in step 1) and `rank() OVER (ORDER BY amount DESC)`. Count the `Sort` nodes in its plan with the function `nodes_of(q)` (one row per node)."
