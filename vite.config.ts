@@ -51,7 +51,9 @@ export default defineConfig({
   worker: { format: 'es', plugins: () => [pgQueryNoEagerLoad()] },
   // ui-ux-v6 §2.2: Vite 8 drops @license comments when it minifies; GSAP's licence forbids removing its notice (check-budget.mjs checks it).
   // ENG-VIZ (L236) was a second build entry until L248: src/engine/vizRegistry.ts now loads engineViz lazily.
-  build: { rolldownOptions: { output: { comments: { legal: true } } } },
+  // v24 R0 (L337): one chunk per General full lesson, named `gl-<skill>-<hash>.js` so check-budget can hold each to its budget.
+  build: { rolldownOptions: { output: { comments: { legal: true },
+    chunkFileNames: (c) => (c.facadeModuleId?.includes('/content/general/lessons/') ? 'assets/gl-[name]-[hash].js' : 'assets/[name]-[hash].js') } } },
   // Vitest turns every .css import into '' unless included; tests/theme.test.ts and tests/mascots.test.ts read style.css?raw.
   test: { css: { include: [/style\.css/] }, exclude: ['**/node_modules/**', '.claude/**'], testTimeout: 60_000, hookTimeout: 60_000, setupFiles: ['tests/setup.ts'] },
 });

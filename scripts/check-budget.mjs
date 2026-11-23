@@ -29,6 +29,7 @@ const GROUPS = [
   ['generalAdv', /^generalAdvSources-/, 50], // v19 L167: advanced DA track (content/general/adv.yml), its own lazy chunk: 46 KB gz (roadmap §2.6 guessed ≤ 15; adv.yml is the bigger file)
   ['interview', /^interview(Sources|View)-/, 25], // v17 I5 (L144): 19 KB gz at T1 (content 12 + UI 7). The interview room, lazy: content/general/interview.yml + parser (interviewSources) and its UI + VI/EN text (interviewView), fetched only on #/learn/interview or a run
   ['learnui', /^(learnView|drillBrief)-/, 25], // Plan 8a D8a-12/13: General UI (drill workspace, learning path) and its VI/EN text, lazy
+  ['generalLesson', /^gl-[a-z0-9_]+-[\w-]{8}\.js$/, 8, 'each'], // v24 R0 (L337): one lazy chunk per General full lesson (content/general/lessons/<skill>.md as JSON; vite.config.ts names it gl-<skill>), fetched when its skill page opens; per file
   ['ecom', /^ecomSources-/, 50], // Plan 9: content/domains/ecom (30 tickets, chapters, people, KPIs), lazy on the first visit (D9-16); V22-E (L201): tickets of ch1–4 only
   ['ecomLate', /^ecomLateSources-/, 25], // V22-E (L201): E-com tickets of chapters 5+ (src/ecomLateSources.ts), fetched in parallel with `ecom` by loadDomain('ecommerce')
   ['ecomart', /^ecommerce-/, 10], // Plan 9: src/art/ecommerce.ts (store scene, delivery map), lazy
