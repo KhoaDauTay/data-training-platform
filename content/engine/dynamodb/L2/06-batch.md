@@ -57,6 +57,17 @@ lab:
       hint:
         vi: Mỗi phần tử là một `PutRequest` (có `Item`) hoặc một `DeleteRequest` (có `Key`).
         en: Each element is a `PutRequest` (with an `Item`) or a `DeleteRequest` (with a `Key`).
+    - task:
+        vi: 'Hai cuốn `978-0-03` và `978-0-08` ngừng bán. Xóa cả hai trong một request.'
+        en: 'Books `978-0-03` and `978-0-08` are discontinued. Delete both in one request.'
+      solution: |
+        {"op": "BatchWriteItem", "input": {"RequestItems": {"Books": [
+          {"DeleteRequest": {"Key": {"isbn": {"S": "978-0-03"}}}},
+          {"DeleteRequest": {"Key": {"isbn": {"S": "978-0-08"}}}}]}}}
+      check: doc
+      hint:
+        vi: Hai phần tử `DeleteRequest`, mỗi phần tử một `Key`.
+        en: Two `DeleteRequest` elements, each with one `Key`.
 quiz:
   - q:
       vi: '`BatchWriteItem` trả về thành công nhưng `UnprocessedItems` không rỗng. Nên làm gì?'
@@ -69,9 +80,10 @@ quiz:
       - vi: Gửi lại cả lô ban đầu.
         en: Send the whole original batch again.
     answer: 1
+    trap: 0
     why:
-      vi: Request báo thành công nên dễ nghĩ cả lô đã ghi xong. Nhưng lô chỉ lỗi khi mọi yêu cầu con đều lỗi. Phần chưa làm (ví dụ vì bị throttle, tức bị giới hạn tốc độ) nằm trong `UnprocessedItems` (hoặc `UnprocessedKeys` với `BatchGetItem`) và phải gửi lại.
-      en: The call reports success, so it is easy to think the whole batch was written. But a batch fails only when every request in it fails. Whatever was not done (for example because of throttling) comes back in `UnprocessedItems` (or `UnprocessedKeys` for `BatchGetItem`) and must be sent again.
+      vi: Nghe hợp lý vì request báo thành công, nhưng lô chỉ lỗi khi mọi yêu cầu con đều lỗi. Phần chưa làm (ví dụ vì bị throttle, tức bị giới hạn tốc độ) nằm trong `UnprocessedItems` (hoặc `UnprocessedKeys` với `BatchGetItem`) và phải gửi lại.
+      en: It sounds right because the call reports success, but a batch fails only when every request in it fails. Whatever was not done (for example because of throttling) comes back in `UnprocessedItems` (or `UnprocessedKeys` for `BatchGetItem`) and must be sent again.
   - q:
       vi: Bạn cần tăng `stock` của 30 cuốn sách. `BatchWriteItem` có làm được không?
       en: You need to increase `stock` on 30 books. Can `BatchWriteItem` do it?
@@ -88,6 +100,10 @@ quiz:
       en: '`BatchWriteItem` does not support updates and takes at most 25 Put/Delete requests. A Put in a batch replaces the whole item, it does not add.'
 ---
 
+## Mở bài
+
+Trang giỏ hàng cần ba cuốn sách, và bạn đang gọi `GetItem` ba lần nối tiếp. Gộp chúng vào một lần gọi mạng thì nhanh hơn, nhưng có rẻ hơn không, và có nguyên tử không?
+
 ## Ý chính
 
 Batch gộp nhiều thao tác theo khóa vào một lần gọi mạng. DynamoDB chạy chúng song song, nhưng **mỗi phần vẫn là một thao tác riêng**: không nguyên tử, phần này thành công không phụ thuộc phần kia.
@@ -95,26 +111,69 @@ Batch gộp nhiều thao tác theo khóa vào một lần gọi mạng. DynamoDB
 - `BatchGetItem`: tối đa **100** khóa, **16 MB**, có thể trên nhiều bảng. Mỗi item được tính capacity như một `GetItem` riêng.
 - `BatchWriteItem`: tối đa **25** yêu cầu `PutRequest`/`DeleteRequest`, **16 MB**. **Không có Update**, và không đặt được `ConditionExpression`.
 
-Phần chưa xử lý được trả lại trong `UnprocessedKeys` / `UnprocessedItems`. Code phải gửi lại phần đó, có chờ tăng dần.
+Phần chưa xử lý được trả lại trong `UnprocessedKeys` / `UnprocessedItems`. Code phải gửi lại phần đó, có chờ tăng dần. Kết quả của `BatchGetItem` không theo thứ tự khóa, nên giữ thuộc tính khóa trong projection để ghép lại.
+
+## Cú pháp
+
+```text
+{"op": "BatchGetItem", "input": {"RequestItems": {"<table>": {"Keys": [<key>, ...], "ProjectionExpression": "..."}}}}
+{"op": "BatchWriteItem", "input": {"RequestItems": {"<table>": [
+  {"PutRequest": {"Item": <item>}}, {"DeleteRequest": {"Key": <key>}}]}}}
+```
+
+- Nạp dữ liệu lớn: chia lô 25, gửi lại `UnprocessedItems` tới khi rỗng, mỗi vòng chờ lâu hơn.
 
 ## Ví dụ
 
-Nạp dữ liệu lớn bằng lô 25:
+Đọc hai cuốn trong một request:
 
-```text
-for chunk in items, 25 at a time:
-  pending = chunk
-  while pending not empty:
-    r = BatchWriteItem(pending)
-    pending = r.UnprocessedItems
-    wait a little longer each round
+```json
+{"op": "BatchGetItem", "input": {"RequestItems": {"Books": {"Keys": [{"isbn": {"S": "978-0-02"}}, {"isbn": {"S": "978-0-05"}}], "ProjectionExpression": "isbn, title, stock"}}}}
+```
+
+Thêm một cuốn và xóa một cuốn trong cùng lô:
+
+```json
+{"op": "BatchWriteItem", "input": {"RequestItems": {"Books": [{"PutRequest": {"Item": {"isbn": {"S": "978-0-15"}, "title": {"S": "Batch Day"}, "price": {"N": "60000"}}}}, {"DeleteRequest": {"Key": {"isbn": {"S": "978-0-06"}}}}]}}}
+```
+
+## Lỗi hay gặp
+
+Lặp một khóa trong cùng `BatchGetItem`:
+
+```json
+// ERROR ValidationException
+{"op": "BatchGetItem", "input": {"RequestItems": {"Books": {"Keys": [{"isbn": {"S": "978-0-02"}}, {"isbn": {"S": "978-0-02"}}]}}}}
+```
+
+Dùng `PutRequest` để "sửa" giá trong lô:
+
+```json
+// WRONG: the Put replaces the whole item, stock and tags are lost
+{"op": "BatchWriteItem", "input": {"RequestItems": {"Books": [{"PutRequest": {"Item": {"isbn": {"S": "978-0-01"}, "price": {"N": "110000"}}}}]}}}
+```
+
+```json
+// FIX: one UpdateItem per book that changes
+{"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-01"}}, "UpdateExpression": "SET price = :p", "ExpressionAttributeValues": {":p": {"N": "110000"}}}}
 ```
 
 ## Thực hành
 
-Bước 1 trả 3 item không theo thứ tự khóa, nên được chấm như một tập. Bước 2 được chấm bằng trạng thái bảng sau khi ghi.
+Bước 1 trả 3 item không theo thứ tự khóa, nên được chấm như một tập. Bước ghi được chấm bằng trạng thái bảng sau khi ghi.
+
+## Tóm tắt
+
+- Batch gộp nhiều thao tác theo khóa vào một lần gọi, không nguyên tử.
+- `BatchGetItem`: tối đa 100 khóa; mỗi item tính như một `GetItem`.
+- `BatchWriteItem`: tối đa 25 Put/Delete, không Update, không điều kiện.
+- Luôn gửi lại `UnprocessedKeys` / `UnprocessedItems`, có chờ tăng dần.
 
 # EN
+
+## Opening
+
+The cart page needs three books, and you call `GetItem` three times in a row. Packing them into one network call is faster, but is it cheaper, and is it atomic?
 
 ## Key idea
 
@@ -123,21 +182,60 @@ A batch packs several key-based operations into one network call. DynamoDB runs 
 - `BatchGetItem`: up to **100** keys, **16 MB**, possibly across several tables. Each item is charged like its own `GetItem`.
 - `BatchWriteItem`: up to **25** `PutRequest`/`DeleteRequest` entries, **16 MB**. **No updates**, and no `ConditionExpression`.
 
-Anything not processed comes back in `UnprocessedKeys` / `UnprocessedItems`. Your code must send that part again, with increasing waits.
+Anything not processed comes back in `UnprocessedKeys` / `UnprocessedItems`. Your code must send that part again, with increasing waits. `BatchGetItem` results do not come back in key order, so keep the key attribute in the projection to match them up.
+
+## Syntax
+
+```text
+{"op": "BatchGetItem", "input": {"RequestItems": {"<table>": {"Keys": [<key>, ...], "ProjectionExpression": "..."}}}}
+{"op": "BatchWriteItem", "input": {"RequestItems": {"<table>": [
+  {"PutRequest": {"Item": <item>}}, {"DeleteRequest": {"Key": <key>}}]}}}
+```
+
+- Loading a lot of data: chunks of 25, send `UnprocessedItems` again until it is empty, waiting longer each round.
 
 ## Example
 
-Loading a lot of data in batches of 25:
+Read two books in one request:
 
-```text
-for chunk in items, 25 at a time:
-  pending = chunk
-  while pending not empty:
-    r = BatchWriteItem(pending)
-    pending = r.UnprocessedItems
-    wait a little longer each round
+```json
+{"op": "BatchGetItem", "input": {"RequestItems": {"Books": {"Keys": [{"isbn": {"S": "978-0-02"}}, {"isbn": {"S": "978-0-05"}}], "ProjectionExpression": "isbn, title, stock"}}}}
+```
+
+Add one book and delete another in the same batch:
+
+```json
+{"op": "BatchWriteItem", "input": {"RequestItems": {"Books": [{"PutRequest": {"Item": {"isbn": {"S": "978-0-15"}, "title": {"S": "Batch Day"}, "price": {"N": "60000"}}}}, {"DeleteRequest": {"Key": {"isbn": {"S": "978-0-06"}}}}]}}}
+```
+
+## Common mistakes
+
+Repeating a key in the same `BatchGetItem`:
+
+```json
+// ERROR ValidationException
+{"op": "BatchGetItem", "input": {"RequestItems": {"Books": {"Keys": [{"isbn": {"S": "978-0-02"}}, {"isbn": {"S": "978-0-02"}}]}}}}
+```
+
+Using a `PutRequest` to "change" a price in a batch:
+
+```json
+// WRONG: the Put replaces the whole item, stock and tags are lost
+{"op": "BatchWriteItem", "input": {"RequestItems": {"Books": [{"PutRequest": {"Item": {"isbn": {"S": "978-0-01"}, "price": {"N": "110000"}}}}]}}}
+```
+
+```json
+// FIX: one UpdateItem per book that changes
+{"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-01"}}, "UpdateExpression": "SET price = :p", "ExpressionAttributeValues": {":p": {"N": "110000"}}}}
 ```
 
 ## Practice
 
-Step 1 returns 3 items in no particular key order, so it is graded as a set. Step 2 is graded by the table's state after the write.
+Step 1 returns 3 items in no particular key order, so it is graded as a set. The write steps are graded by the table's state after the write.
+
+## Recap
+
+- A batch packs several key-based operations into one call; it is not atomic.
+- `BatchGetItem`: up to 100 keys; each item is charged like a `GetItem`.
+- `BatchWriteItem`: up to 25 Puts/Deletes, no updates, no conditions.
+- Always resend `UnprocessedKeys` / `UnprocessedItems`, with increasing waits.

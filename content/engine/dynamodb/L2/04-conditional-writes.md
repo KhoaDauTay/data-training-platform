@@ -84,10 +84,30 @@ quiz:
       - vi: Ghi bị từ chối và không tốn gì.
         en: The write is rejected and costs nothing.
     answer: 1
+    trap: 2
     why:
-      vi: Dễ nghĩ một lần ghi không xảy ra thì không mất gì. Nhưng theo AWS, khi điều kiện sai DynamoDB vẫn tiêu thụ WCU theo cỡ item đang có (tối thiểu 1). Thêm `ReturnValuesOnConditionCheckFailure` là `ALL_OLD` để lấy item hiện tại trong lỗi mà không cần đọc lại.
-      en: It is easy to think a write that never happened costs nothing. But per AWS, when the condition is false DynamoDB still consumes WCU based on the existing item size (at least 1). Add `ReturnValuesOnConditionCheckFailure` set to `ALL_OLD` to get the current item inside the error without reading it again.
+      vi: Nghe hợp lý vì lần ghi không xảy ra, nhưng theo AWS, khi điều kiện sai DynamoDB vẫn tiêu thụ WCU theo cỡ item đang có (tối thiểu 1). Thêm `ReturnValuesOnConditionCheckFailure` là `ALL_OLD` để lấy item hiện tại trong lỗi mà không cần đọc lại.
+      en: It sounds right because the write never happened, but per AWS, when the condition is false DynamoDB still consumes WCU based on the existing item size (at least 1). Add `ReturnValuesOnConditionCheckFailure` set to `ALL_OLD` to get the current item inside the error without reading it again.
+  - q:
+      vi: '`PutItem` cuốn `978-0-01` (đã có) với `title` mới, không có `ConditionExpression`. DynamoDB làm gì?'
+      en: '`PutItem` for book `978-0-01` (already there) with a new `title` and no `ConditionExpression`. What does DynamoDB do?'
+    options:
+      - vi: Báo lỗi khóa trùng, như `INSERT` trong SQL
+        en: It reports a duplicate key, like an SQL `INSERT`
+      - vi: Thay cả item bằng item mới, im lặng
+        en: It replaces the whole item with the new one, silently
+      - vi: Chỉ đổi `title`, giữ các thuộc tính khác
+        en: It changes only `title` and keeps the other attributes
+    answer: 1
+    trap: 0
+    why:
+      vi: 'Nghe hợp lý nếu quen `INSERT` của SQL, nhưng `PutItem` là "ghi đè hoặc tạo": item cũ biến mất, kể cả `stock` và `tags` không có trong item mới. Muốn "chỉ thêm" thì cần `attribute_not_exists(isbn)`; muốn sửa vài thuộc tính thì dùng `UpdateItem`.'
+      en: 'It sounds right if you know SQL `INSERT`, but `PutItem` means "overwrite or create": the old item is gone, including `stock` and `tags` that the new item lacks. For "insert only" you need `attribute_not_exists(isbn)`; to change a few attributes, use `UpdateItem`.'
 ---
+
+## Mở bài
+
+Hai nhân viên cùng bán cuốn sách cuối cùng, hoặc nhà phát hành gửi trùng một cuốn đã có. Một lần ghi bình thường sẽ âm kho hoặc đè mất dữ liệu. Làm sao để DynamoDB chỉ ghi khi điều kiện còn đúng?
 
 ## Ý chính
 
@@ -103,21 +123,77 @@ Khi điều kiện sai:
 - **vẫn tốn WCU** (đơn vị năng lực ghi) theo cỡ item đang có (tối thiểu 1), dù phản hồi lỗi không báo con số đó;
 - `ReturnValuesOnConditionCheckFailure: "ALL_OLD"` gửi kèm item hiện tại trong lỗi.
 
+Ghi có điều kiện idempotent khi điều kiện kiểm chính thuộc tính đang sửa: gửi lại bước 3 lần nữa sẽ bị từ chối vì giá đã là `92000`, nên không có gì bị ghi hai lần.
+
+## Cú pháp
+
+```text
+{"op": "PutItem" | "UpdateItem" | "DeleteItem", "input": {...,
+  "ConditionExpression": "attribute_not_exists(isbn)" | "stock >= :q" | "version = :v",
+  "ReturnValuesOnConditionCheckFailure": "ALL_OLD"}}
+```
+
+- Điều kiện được kiểm trên item hiện tại, ngay trước khi ghi, cùng một bước.
+- Điều kiện sai: `ConditionalCheckFailedException`, không ghi gì.
+
 ## Ví dụ
 
-Optimistic locking với số phiên bản:
+Đổi giá `978-0-06` chỉ khi giá vẫn là giá bạn đã đọc:
 
 ```json
-{"UpdateExpression": "SET price = :p, version = version + :one",
- "ConditionExpression": "version = :v",
- "ExpressionAttributeValues": {":p": {"N": "92000"}, ":one": {"N": "1"}, ":v": {"N": "7"}}}
+{"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-06"}}, "UpdateExpression": "SET price = :new", "ConditionExpression": "price = :old", "ExpressionAttributeValues": {":new": {"N": "75000"}, ":old": {"N": "70000"}}, "ReturnValues": "ALL_NEW"}}
+```
+
+Xóa cuốn `978-0-03` chỉ khi đã hết hàng:
+
+```json
+{"op": "DeleteItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-03"}}, "ConditionExpression": "stock = :z", "ExpressionAttributeValues": {":z": {"N": "0"}}, "ReturnValues": "ALL_OLD"}}
+```
+
+## Lỗi hay gặp
+
+"Chỉ thêm" một cuốn đã có:
+
+```json
+// ERROR ConditionalCheckFailedException
+{"op": "PutItem", "input": {"TableName": "Books", "Item": {"isbn": {"S": "978-0-01"}, "title": {"S": "Data at Rest"}}, "ConditionExpression": "attribute_not_exists(isbn)"}}
+```
+
+Bán 5 cuốn `978-0-02` khi kho chỉ còn 3:
+
+```json
+// ERROR ConditionalCheckFailedException
+{"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-02"}}, "UpdateExpression": "SET stock = stock - :q", "ConditionExpression": "stock >= :q", "ExpressionAttributeValues": {":q": {"N": "5"}}}}
+```
+
+Đổi giá bằng `PutItem`:
+
+```json
+// WRONG: the whole item is replaced, stock and tags are lost
+{"op": "PutItem", "input": {"TableName": "Books", "Item": {"isbn": {"S": "978-0-02"}, "title": {"S": "Keys and Values"}, "price": {"N": "90000"}}}}
+```
+
+```json
+// FIX: UpdateItem changes one attribute and keeps the rest
+{"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-02"}}, "UpdateExpression": "SET price = :p", "ExpressionAttributeValues": {":p": {"N": "90000"}}}}
 ```
 
 ## Thực hành
 
-Ghi có điều kiện idempotent khi điều kiện kiểm chính thuộc tính đang sửa: gửi lại bước 3 lần nữa sẽ bị từ chối vì giá đã là `92000`, nên không có gì bị ghi hai lần.
+Bảng `Books` có 8 cuốn. Mỗi bước chạy lại từ dữ liệu gốc và được chấm bằng trạng thái bảng sau khi ghi.
+
+## Tóm tắt
+
+- `ConditionExpression` kiểm và ghi trong một bước nguyên tử.
+- `attribute_not_exists(pk)` = chỉ thêm khi chưa có.
+- Kiểm giá trị đã đọc (hoặc `version`) = optimistic locking.
+- Điều kiện sai: `ConditionalCheckFailedException`, item giữ nguyên, vẫn tốn WCU.
 
 # EN
+
+## Opening
+
+Two clerks sell the last copy at once, or the publisher resends a book you already have. A plain write would make stock negative or overwrite data. How do you make DynamoDB write only while a condition still holds?
 
 ## Key idea
 
@@ -133,16 +209,68 @@ When the condition is false:
 - it **still consumes WCU** based on the size of the existing item (at least 1), even though the error response does not report that number;
 - `ReturnValuesOnConditionCheckFailure: "ALL_OLD"` puts the current item into the error.
 
+A conditional write is idempotent when the condition checks the attribute being changed: sending step 3 again is rejected because the price is already `92000`, so nothing is written twice.
+
+## Syntax
+
+```text
+{"op": "PutItem" | "UpdateItem" | "DeleteItem", "input": {...,
+  "ConditionExpression": "attribute_not_exists(isbn)" | "stock >= :q" | "version = :v",
+  "ReturnValuesOnConditionCheckFailure": "ALL_OLD"}}
+```
+
+- The condition is checked on the current item right before the write, in the same step.
+- A false condition: `ConditionalCheckFailedException`, nothing is written.
+
 ## Example
 
-Optimistic locking with a version number:
+Change the price of `978-0-06` only if it is still the price you read:
 
 ```json
-{"UpdateExpression": "SET price = :p, version = version + :one",
- "ConditionExpression": "version = :v",
- "ExpressionAttributeValues": {":p": {"N": "92000"}, ":one": {"N": "1"}, ":v": {"N": "7"}}}
+{"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-06"}}, "UpdateExpression": "SET price = :new", "ConditionExpression": "price = :old", "ExpressionAttributeValues": {":new": {"N": "75000"}, ":old": {"N": "70000"}}, "ReturnValues": "ALL_NEW"}}
+```
+
+Delete book `978-0-03` only if it is sold out:
+
+```json
+{"op": "DeleteItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-03"}}, "ConditionExpression": "stock = :z", "ExpressionAttributeValues": {":z": {"N": "0"}}, "ReturnValues": "ALL_OLD"}}
+```
+
+## Common mistakes
+
+"Insert only" a book that is already there:
+
+```json
+// ERROR ConditionalCheckFailedException
+{"op": "PutItem", "input": {"TableName": "Books", "Item": {"isbn": {"S": "978-0-01"}, "title": {"S": "Data at Rest"}}, "ConditionExpression": "attribute_not_exists(isbn)"}}
+```
+
+Selling 5 copies of `978-0-02` when only 3 are left:
+
+```json
+// ERROR ConditionalCheckFailedException
+{"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-02"}}, "UpdateExpression": "SET stock = stock - :q", "ConditionExpression": "stock >= :q", "ExpressionAttributeValues": {":q": {"N": "5"}}}}
+```
+
+Changing a price with `PutItem`:
+
+```json
+// WRONG: the whole item is replaced, stock and tags are lost
+{"op": "PutItem", "input": {"TableName": "Books", "Item": {"isbn": {"S": "978-0-02"}, "title": {"S": "Keys and Values"}, "price": {"N": "90000"}}}}
+```
+
+```json
+// FIX: UpdateItem changes one attribute and keeps the rest
+{"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-02"}}, "UpdateExpression": "SET price = :p", "ExpressionAttributeValues": {":p": {"N": "90000"}}}}
 ```
 
 ## Practice
 
-A conditional write is idempotent when the condition checks the attribute being changed: sending step 3 again is rejected because the price is already `92000`, so nothing is written twice.
+Table `Books` holds 8 books. Each step runs again from the original data and is graded by the table's state after the write.
+
+## Recap
+
+- A `ConditionExpression` checks and writes in one atomic step.
+- `attribute_not_exists(pk)` = insert only when new.
+- Checking the value you read (or a `version`) = optimistic locking.
+- A false condition: `ConditionalCheckFailedException`, the item unchanged, WCU still consumed.

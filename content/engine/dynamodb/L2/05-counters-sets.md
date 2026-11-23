@@ -59,6 +59,20 @@ lab:
       hint:
         vi: 'Giá trị là một tập hợp, nhãn `SS`: `{"SS": ["…", "…"]}`. Tập hợp không có thứ tự và không trùng.'
         en: 'The value is a set with the `SS` tag: `{"SS": ["…", "…"]}`. Sets have no order and no duplicates.'
+    - task:
+        vi: 'Đếm lượt xem cuốn `978-0-05` trong thuộc tính `views` (chưa có) bằng `ADD`, cộng 1, và trả về giá trị mới.'
+        en: 'Count a view of book `978-0-05` in the attribute `views` (it does not exist yet) with `ADD`, adding 1, and return the new value.'
+      solution: |
+        {"op": "UpdateItem", "input": {"TableName": "Books",
+          "Key": {"isbn": {"S": "978-0-05"}},
+          "UpdateExpression": "ADD #v :one",
+          "ExpressionAttributeNames": {"#v": "views"},
+          "ExpressionAttributeValues": {":one": {"N": "1"}},
+          "ReturnValues": "UPDATED_NEW"}}
+      check: doc
+      hint:
+        vi: '`ADD` coi thuộc tính số chưa có là 0, nên không cần `if_not_exists`. `views` là từ dành riêng.'
+        en: '`ADD` treats a missing number attribute as 0, so no `if_not_exists` is needed. `views` is a reserved word.'
 quiz:
   - q:
       vi: Ứng dụng gửi `ADD views :one`, mạng chập chờn nên SDK gửi lại lần nữa. Điều gì có thể xảy ra?
@@ -71,10 +85,30 @@ quiz:
       - vi: Request thứ hai luôn lỗi.
         en: The second request always fails.
     answer: 1
+    trap: 0
     why:
-      vi: Dễ nghĩ DynamoDB nhận ra lần gửi lại, vì SDK tự gửi lại. Nhưng AWS ghi rõ atomic counter không idempotent, mỗi lần gửi là một lần cộng. Dùng nó khi sai số nhỏ chấp nhận được (lượt xem). Với tiền hay tồn kho, dùng ghi có điều kiện để lần gửi lại bị từ chối.
-      en: It is easy to assume DynamoDB spots the retry, since the SDK sends it on its own. But AWS states that atomic counters are not idempotent, so every send is one more addition. Use them where a small error is fine (view counts). For money or stock, use a conditional write so the retry is rejected.
+      vi: Nghe hợp lý vì SDK tự gửi lại nên có vẻ DynamoDB phải biết, nhưng AWS ghi rõ atomic counter không idempotent, mỗi lần gửi là một lần cộng. Dùng nó khi sai số nhỏ chấp nhận được (lượt xem). Với tiền hay tồn kho, dùng ghi có điều kiện để lần gửi lại bị từ chối.
+      en: It sounds right because the SDK sends the retry on its own, so DynamoDB seems to know, but AWS states that atomic counters are not idempotent, so every send is one more addition. Use them where a small error is fine (view counts). For money or stock, use a conditional write so the retry is rejected.
+  - q:
+      vi: 'Thuộc tính `tags` là một danh sách `L`. `ADD tags :t` với `:t` là `{"SS": ["new"]}` làm gì?'
+      en: 'The attribute `tags` is an `L` list. What does `ADD tags :t` with `:t` set to `{"SS": ["new"]}` do?'
+    options:
+      - vi: Thêm "new" vào cuối danh sách
+        en: It appends "new" to the list
+      - vi: '`ValidationException`: `ADD` chỉ dùng cho số và tập hợp, không cho danh sách'
+        en: 'A `ValidationException`: `ADD` works only on numbers and sets, not on lists'
+      - vi: Đổi `tags` thành tập hợp
+        en: It turns `tags` into a set
+    answer: 1
+    trap: 0
+    why:
+      vi: 'Nghe hợp lý vì `ADD` thêm được phần tử vào tập hợp, nhưng danh sách và tập hợp là hai kiểu khác nhau, và kiểu của toán hạng phải khớp kiểu thuộc tính. Danh sách dùng `SET tags = list_append(tags, :t)`.'
+      en: 'It sounds right because `ADD` can add elements to a set, but a list and a set are different types, and the operand type must match the attribute type. Lists use `SET tags = list_append(tags, :t)`.'
 ---
+
+## Mở bài
+
+Mỗi lần ai đó mở trang một cuốn sách, bạn muốn cộng 1 vào lượt xem. Đọc số cũ, cộng, rồi ghi lại thì hai lượt xem cùng lúc sẽ mất một. Có cách nào cộng thẳng trên server?
 
 ## Ý chính
 
@@ -83,25 +117,72 @@ quiz:
 - Với **số**: cộng vào (số âm để trừ). Thuộc tính chưa có thì coi như 0.
 - Với **tập hợp** (`SS`, `NS`, `BS`): thêm phần tử. Thuộc tính chưa có thì tạo tập mới.
 
-`DELETE` chỉ dùng cho tập hợp: bớt phần tử. Tập hợp không được rỗng, nên bớt phần tử cuối cùng sẽ xóa luôn thuộc tính.
+`DELETE` chỉ dùng cho tập hợp: bớt phần tử. Tập hợp không được rỗng, nên bớt phần tử cuối cùng sẽ xóa luôn thuộc tính. `ADD` không dùng được cho danh sách `L`; danh sách dùng `list_append`.
 
-`ADD` không dùng được cho danh sách `L`; danh sách dùng `list_append`.
+Trang về UpdateExpression của AWS ghi: nhìn chung nên dùng `SET` thay cho `ADD` để thao tác idempotent (gửi lại nhiều lần vẫn cho cùng kết quả). Nhưng `SET a = a + :n` cũng cộng lại mỗi lần gửi; chỉ một điều kiện trên chính thuộc tính đang sửa (bài trước) mới làm lần gửi lại vô hại. `ADD` vẫn là cách duy nhất để thêm phần tử vào tập hợp.
+
+## Cú pháp
+
+```text
+ADD stock :n            (number: add, a negative :n subtracts)
+ADD formats :f          (set: add elements, :f is {"SS": [...]})
+DELETE formats :f       (set: remove elements)
+```
+
+- `ADD` và `DELETE` không có dấu `=`.
+- Hai tập được ghép thì phần tử trùng chỉ giữ một: `{"ebook", "paperback"}` thêm `{"ebook", "audio"}` thành `{"audio", "ebook", "paperback"}`.
 
 ## Ví dụ
 
-Hai tập được ghép, phần tử trùng chỉ giữ một:
+Bán 3 cuốn `978-0-06`: `ADD` với số âm:
 
-```text
-formats = {"ebook", "paperback"}
-ADD formats {"ebook", "audio"}     -> {"audio", "ebook", "paperback"}
-DELETE formats {"paperback"}       -> {"audio", "ebook"}
+```json
+{"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-06"}}, "UpdateExpression": "ADD stock :n", "ExpressionAttributeValues": {":n": {"N": "-3"}}, "ReturnValues": "UPDATED_NEW"}}
+```
+
+Tạo tập `formats` cho cuốn `978-0-02`:
+
+```json
+{"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-02"}}, "UpdateExpression": "ADD formats :f", "ExpressionAttributeValues": {":f": {"SS": ["ebook", "audio"]}}, "ReturnValues": "UPDATED_NEW"}}
+```
+
+## Lỗi hay gặp
+
+`ADD` vào một danh sách `L`:
+
+```json
+// ERROR ValidationException
+{"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-01"}}, "UpdateExpression": "ADD tags :t", "ExpressionAttributeValues": {":t": {"SS": ["new"]}}}}
+```
+
+Dùng `SET` khi muốn cộng thêm hàng về:
+
+```json
+// WRONG: stock becomes 10, the 3 copies already there are forgotten
+{"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-02"}}, "UpdateExpression": "SET stock = :n", "ExpressionAttributeValues": {":n": {"N": "10"}}, "ReturnValues": "UPDATED_NEW"}}
+```
+
+```json
+// FIX: ADD adds to the current value
+{"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-02"}}, "UpdateExpression": "ADD stock :n", "ExpressionAttributeValues": {":n": {"N": "10"}}, "ReturnValues": "UPDATED_NEW"}}
 ```
 
 ## Thực hành
 
-Trang về UpdateExpression của AWS ghi: nhìn chung nên dùng `SET` thay cho `ADD` để thao tác idempotent (gửi lại nhiều lần vẫn cho cùng kết quả). Nhưng `SET a = a + :n` cũng cộng lại mỗi lần gửi; chỉ một điều kiện trên chính thuộc tính đang sửa (bài trước) mới làm lần gửi lại vô hại. `ADD` vẫn là cách duy nhất để thêm phần tử vào tập hợp.
+Bảng `Books` có 8 cuốn; `tags` là danh sách `L`, chưa cuốn nào có tập hợp. Làm ba bước.
+
+## Tóm tắt
+
+- `ADD` trên số: cộng nguyên tử, thuộc tính chưa có coi là 0.
+- `ADD` / `DELETE` trên tập hợp: thêm / bớt phần tử, không trùng.
+- `ADD` không dùng cho danh sách `L`.
+- Atomic counter không idempotent: lần gửi lại cộng thêm lần nữa.
 
 # EN
+
+## Opening
+
+Every time someone opens a book's page, you want to add 1 to its view count. Read the old number, add, write it back, and two views at the same moment lose one. Is there a way to add directly on the server?
 
 ## Key idea
 
@@ -110,20 +191,63 @@ Trang về UpdateExpression của AWS ghi: nhìn chung nên dùng `SET` thay cho
 - On a **number**: add to it (a negative number subtracts). A missing attribute counts as 0.
 - On a **set** (`SS`, `NS`, `BS`): add elements. A missing attribute becomes a new set.
 
-`DELETE` works only on sets: it removes elements. A set cannot be empty, so removing the last element removes the attribute.
+`DELETE` works only on sets: it removes elements. A set cannot be empty, so removing the last element removes the attribute. `ADD` does not work on `L` lists; lists use `list_append`.
 
-`ADD` does not work on `L` lists; lists use `list_append`.
+The AWS page on update expressions says that, in general, you should use `SET` rather than `ADD` to keep operations idempotent. But `SET a = a + :n` also adds again on every send; only a condition on the attribute being changed (previous lesson) makes a retry harmless. `ADD` is still the only way to add elements to a set.
+
+## Syntax
+
+```text
+ADD stock :n            (number: add, a negative :n subtracts)
+ADD formats :f          (set: add elements, :f is {"SS": [...]})
+DELETE formats :f       (set: remove elements)
+```
+
+- `ADD` and `DELETE` have no `=` sign.
+- When two sets are merged, duplicates are kept once: `{"ebook", "paperback"}` plus `{"ebook", "audio"}` gives `{"audio", "ebook", "paperback"}`.
 
 ## Example
 
-Two sets are merged and duplicates kept once:
+Sell 3 copies of `978-0-06`: `ADD` with a negative number:
 
-```text
-formats = {"ebook", "paperback"}
-ADD formats {"ebook", "audio"}     -> {"audio", "ebook", "paperback"}
-DELETE formats {"paperback"}       -> {"audio", "ebook"}
+```json
+{"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-06"}}, "UpdateExpression": "ADD stock :n", "ExpressionAttributeValues": {":n": {"N": "-3"}}, "ReturnValues": "UPDATED_NEW"}}
+```
+
+Create the set `formats` for book `978-0-02`:
+
+```json
+{"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-02"}}, "UpdateExpression": "ADD formats :f", "ExpressionAttributeValues": {":f": {"SS": ["ebook", "audio"]}}, "ReturnValues": "UPDATED_NEW"}}
+```
+
+## Common mistakes
+
+`ADD` on an `L` list:
+
+```json
+// ERROR ValidationException
+{"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-01"}}, "UpdateExpression": "ADD tags :t", "ExpressionAttributeValues": {":t": {"SS": ["new"]}}}}
+```
+
+Using `SET` when new stock arrives:
+
+```json
+// WRONG: stock becomes 10, the 3 copies already there are forgotten
+{"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-02"}}, "UpdateExpression": "SET stock = :n", "ExpressionAttributeValues": {":n": {"N": "10"}}, "ReturnValues": "UPDATED_NEW"}}
+```
+
+```json
+// FIX: ADD adds to the current value
+{"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-02"}}, "UpdateExpression": "ADD stock :n", "ExpressionAttributeValues": {":n": {"N": "10"}}, "ReturnValues": "UPDATED_NEW"}}
 ```
 
 ## Practice
 
-The AWS page on update expressions says that, in general, you should use `SET` rather than `ADD` to keep operations idempotent. But `SET a = a + :n` also adds again on every send; only a condition on the attribute being changed (previous lesson) makes a retry harmless. `ADD` is still the only way to add elements to a set.
+Table `Books` holds 8 books; `tags` is an `L` list and no book has a set yet. Do the three steps.
+
+## Recap
+
+- `ADD` on a number: an atomic addition, a missing attribute counts as 0.
+- `ADD` / `DELETE` on a set: add / remove elements, no duplicates.
+- `ADD` does not work on `L` lists.
+- An atomic counter is not idempotent: a retry adds again.

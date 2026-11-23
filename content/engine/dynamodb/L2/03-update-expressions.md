@@ -82,7 +82,42 @@ lab:
       hint:
         vi: '`if_not_exists(views, :z)` trả về `views` nếu có, ngược lại trả `:z`. `views` cũng là từ dành riêng.'
         en: '`if_not_exists(views, :z)` returns `views` when it exists, otherwise `:z`. `views` is a reserved word too.'
+quiz:
+  - q:
+      vi: 'Hai thu ngân cùng lúc gửi `SET stock = stock - :one` cho cùng một cuốn đang còn 5. Sau hai lần ghi, `stock` là bao nhiêu?'
+      en: 'Two cashiers send `SET stock = stock - :one` for the same book at the same time, while it has 5 left. After both writes, what is `stock`?'
+    options:
+      - vi: 4, vì cả hai cùng đọc 5 rồi cùng ghi 4
+        en: 4, because both read 5 and both write 4
+      - vi: "3"
+        en: "3"
+      - vi: Lần ghi thứ hai báo lỗi
+        en: The second write fails
+    answer: 1
+    trap: 0
+    why:
+      vi: 'Nghe hợp lý vì trong code ứng dụng "đọc rồi ghi" hay mất một lần cập nhật, nhưng `stock - :one` được tính ở phía server, trên item, một cách nguyên tử. Lần ghi sau thấy kết quả của lần trước, nên còn 3.'
+      en: 'It sounds right because "read then write" in application code often loses an update, but `stock - :one` is computed on the server, on the item, atomically. The second write sees the first one, so 3 are left.'
+  - q:
+      vi: '`SET tags = list_append(:new, tags)` thêm `:new` vào đâu?'
+      en: 'Where does `SET tags = list_append(:new, tags)` add `:new`?'
+    options:
+      - vi: Cuối danh sách, như mọi lệnh "append"
+        en: At the end of the list, like every "append"
+      - vi: Đầu danh sách
+        en: At the front of the list
+      - vi: Thay cả danh sách
+        en: It replaces the whole list
+    answer: 1
+    trap: 0
+    why:
+      vi: 'Nghe hợp lý vì tên hàm là "append", nhưng `list_append` nối danh sách thứ nhất với danh sách thứ hai theo đúng thứ tự viết. `:new` đứng trước nên nằm ở đầu; muốn thêm vào cuối, viết `list_append(tags, :new)`.'
+      en: 'It sounds right because the function is called "append", but `list_append` joins the first list and the second list in the order you write them. `:new` comes first, so it lands at the front; to add at the end, write `list_append(tags, :new)`.'
 ---
+
+## Mở bài
+
+Một cuốn sách giảm giá 12000. Bạn có cần đọc giá hiện tại, trừ trong ứng dụng rồi ghi lại không? Với `UpdateExpression`, DynamoDB tự tính trên item.
 
 ## Ý chính
 
@@ -95,21 +130,70 @@ lab:
 
 Mọi phép tính chạy **ở phía server, trên một item, nguyên tử** (atomic): không cần đọc rồi ghi lại, nên hai người sửa cùng lúc không đè lên nhau.
 
-## Ví dụ
+`list_append(:first, tags)` thêm vào **đầu** danh sách, `list_append(tags, :last)` thêm vào **cuối**. `if_not_exists` đặt giá trị mặc định mà không cần biết item đã có thuộc tính hay chưa; kết hợp với `+` ta có bộ đếm an toàn cho item mới.
 
-Ghép nhiều mệnh đề trong một request:
+## Cú pháp
 
 ```text
-SET price = price - :d, tags = list_append(:first, tags) REMOVE promo
+SET price = price - :d, tags = list_append(tags, :t), #v = if_not_exists(#v, :z) + :one
+REMOVE promo, tags[0]
 ```
 
-`list_append(:first, tags)` thêm vào **đầu** danh sách, `list_append(tags, :last)` thêm vào **cuối**.
+- Các phép gán trong một mệnh đề cách nhau bằng dấu phẩy.
+- Mỗi mệnh đề (`SET`, `REMOVE`, `ADD`, `DELETE`) xuất hiện tối đa một lần.
+- `"ReturnValues": "ALL_NEW"` hoặc `"UPDATED_NEW"` trả về item sau khi sửa.
+
+## Ví dụ
+
+Tăng giá cuốn `978-0-02` thêm 5000 và trả về phần đã đổi:
+
+```json
+{"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-02"}}, "UpdateExpression": "SET price = price + :d", "ExpressionAttributeValues": {":d": {"N": "5000"}}, "ReturnValues": "UPDATED_NEW"}}
+```
+
+Hai mệnh đề trong một request: đặt `stock` mới và xóa phần tử đầu của `tags`:
+
+```json
+{"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-04"}}, "UpdateExpression": "SET stock = :s REMOVE tags[0]", "ExpressionAttributeValues": {":s": {"N": "30"}}, "ReturnValues": "ALL_NEW"}}
+```
+
+## Lỗi hay gặp
+
+Viết số thẳng vào biểu thức như trong SQL:
+
+```json
+// ERROR ValidationException
+{"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-05"}}, "UpdateExpression": "SET price = price - 12000"}}
+```
+
+Gán thẳng danh sách mới khi chỉ muốn thêm một nhãn:
+
+```json
+// WRONG: tags becomes ["classic"], the old tags are gone
+{"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-01"}}, "UpdateExpression": "SET tags = :t", "ExpressionAttributeValues": {":t": {"L": [{"S": "classic"}]}}, "ReturnValues": "ALL_NEW"}}
+```
+
+```json
+// FIX: list_append keeps the old tags
+{"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-01"}}, "UpdateExpression": "SET tags = list_append(tags, :t)", "ExpressionAttributeValues": {":t": {"L": [{"S": "classic"}]}}, "ReturnValues": "ALL_NEW"}}
+```
 
 ## Thực hành
 
-`if_not_exists` là cách đặt giá trị mặc định mà không cần biết item đã có thuộc tính hay chưa. Kết hợp với `+` ta có bộ đếm an toàn cho item mới.
+Bảng `Books` có 8 cuốn. Mỗi bước chạy lại từ dữ liệu gốc và được chấm bằng trạng thái bảng sau khi ghi.
+
+## Tóm tắt
+
+- Bốn mệnh đề: `SET`, `REMOVE`, `ADD`, `DELETE`, mỗi cái tối đa một lần.
+- Phép tính chạy ở server, trên một item, nguyên tử.
+- Giá trị luôn đi qua `:x`, kể cả số.
+- `list_append` nối theo thứ tự viết; `if_not_exists` cho giá trị mặc định.
 
 # EN
+
+## Opening
+
+A book's price drops by 12000. Do you need to read the current price, subtract in the application and write it back? With an `UpdateExpression`, DynamoDB computes on the item itself.
 
 ## Key idea
 
@@ -122,16 +206,61 @@ An `UpdateExpression` has four clauses. Each appears at most once, and they can 
 
 Every computation runs **on the server, on one item, atomically**: no read-then-write, so two people changing the item at once do not overwrite each other.
 
-## Example
+`list_append(:first, tags)` adds to the **front** of the list, `list_append(tags, :last)` to the **end**. `if_not_exists` sets a default without knowing whether the item already has the attribute; combined with `+` it gives a safe counter for new items.
 
-Several clauses in one request:
+## Syntax
 
 ```text
-SET price = price - :d, tags = list_append(:first, tags) REMOVE promo
+SET price = price - :d, tags = list_append(tags, :t), #v = if_not_exists(#v, :z) + :one
+REMOVE promo, tags[0]
 ```
 
-`list_append(:first, tags)` adds to the **front** of the list, `list_append(tags, :last)` to the **end**.
+- Assignments inside one clause are separated by commas.
+- Each clause (`SET`, `REMOVE`, `ADD`, `DELETE`) appears at most once.
+- `"ReturnValues": "ALL_NEW"` or `"UPDATED_NEW"` returns the item after the change.
+
+## Example
+
+Raise the price of `978-0-02` by 5000 and return what changed:
+
+```json
+{"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-02"}}, "UpdateExpression": "SET price = price + :d", "ExpressionAttributeValues": {":d": {"N": "5000"}}, "ReturnValues": "UPDATED_NEW"}}
+```
+
+Two clauses in one request: set a new `stock` and remove the first element of `tags`:
+
+```json
+{"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-04"}}, "UpdateExpression": "SET stock = :s REMOVE tags[0]", "ExpressionAttributeValues": {":s": {"N": "30"}}, "ReturnValues": "ALL_NEW"}}
+```
+
+## Common mistakes
+
+Writing a number straight into the expression, as in SQL:
+
+```json
+// ERROR ValidationException
+{"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-05"}}, "UpdateExpression": "SET price = price - 12000"}}
+```
+
+Assigning a new list when you only meant to add one tag:
+
+```json
+// WRONG: tags becomes ["classic"], the old tags are gone
+{"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-01"}}, "UpdateExpression": "SET tags = :t", "ExpressionAttributeValues": {":t": {"L": [{"S": "classic"}]}}, "ReturnValues": "ALL_NEW"}}
+```
+
+```json
+// FIX: list_append keeps the old tags
+{"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-01"}}, "UpdateExpression": "SET tags = list_append(tags, :t)", "ExpressionAttributeValues": {":t": {"L": [{"S": "classic"}]}}, "ReturnValues": "ALL_NEW"}}
+```
 
 ## Practice
 
-`if_not_exists` sets a default without knowing whether the item already has the attribute. Combined with `+` it gives a safe counter for new items.
+Table `Books` holds 8 books. Each step runs again from the original data and is graded by the table's state after the write.
+
+## Recap
+
+- Four clauses: `SET`, `REMOVE`, `ADD`, `DELETE`, each at most once.
+- Computations run on the server, on one item, atomically.
+- Values always go through `:x`, numbers included.
+- `list_append` joins in the order written; `if_not_exists` gives a default.

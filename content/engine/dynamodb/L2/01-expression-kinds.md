@@ -22,6 +22,15 @@ sources:
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.ExpressionAttributeValues.html
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ReservedWords.html
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Constraints.html
+demo_setup: |
+  {"tables": [{"TableName": "Orders", "BillingMode": "PAY_PER_REQUEST", "KeySchema": [{"AttributeName": "customerId", "KeyType": "HASH"}, {"AttributeName": "orderId", "KeyType": "RANGE"}], "AttributeDefinitions": [{"AttributeName": "customerId", "AttributeType": "S"}, {"AttributeName": "orderId", "AttributeType": "S"}]}],
+   "items": {"Orders": [
+    {"customerId": "C-02", "orderId": "2026-07-25#O-105", "status": "SHIPPED", "total": 640000},
+    {"customerId": "C-02", "orderId": "2026-08-26#O-106", "status": "PAID", "total": 910000},
+    {"customerId": "C-02", "orderId": "2026-09-17#O-107", "status": "DELIVERED", "total": 210000},
+    {"customerId": "C-02", "orderId": "2026-10-03#O-108", "status": "NEW", "total": 820000},
+    {"customerId": "C-03", "orderId": "2026-10-13#O-112", "status": "NEW", "total": 580000}
+  ]}}
 quiz:
   - q:
       vi: 'Request có `"FilterExpression": "total > 500000"`. DynamoDB trả lỗi gì và sửa thế nào?'
@@ -34,9 +43,10 @@ quiz:
       - vi: '`ConditionalCheckFailedException`.'
         en: '`ConditionalCheckFailedException`.'
     answer: 1
+    trap: 0
     why:
-      vi: Câu này trông giống WHERE của SQL nên dễ nghĩ là chạy được. Nhưng biểu thức DynamoDB không nhận giá trị viết thẳng, và mọi từ dành riêng (`total`, `status`, `name`, `date`…) phải được thay bằng một tên `#…` trong `ExpressionAttributeNames`.
-      en: It looks like an SQL WHERE, so it is easy to think it runs. But DynamoDB expressions never take literal values, and every reserved word (`total`, `status`, `name`, `date`...) must be replaced by a `#…` name declared in `ExpressionAttributeNames`.
+      vi: Nghe hợp lý vì câu này trông giống WHERE của SQL, nhưng biểu thức DynamoDB không nhận giá trị viết thẳng, và mọi từ dành riêng (`total`, `status`, `name`, `date`…) phải được thay bằng một tên `#…` trong `ExpressionAttributeNames`.
+      en: It sounds right because it looks like an SQL WHERE, but DynamoDB expressions never take literal values, and every reserved word (`total`, `status`, `name`, `date`...) must be replaced by a `#…` name declared in `ExpressionAttributeNames`.
   - q:
       vi: Biểu thức lọc `#a = :v OR #b = :v` có bao nhiêu toán tử theo cách DynamoDB đếm?
       en: How many operators does the filter `#a = :v OR #b = :v` have, the way DynamoDB counts them?
@@ -53,6 +63,10 @@ quiz:
       en: Two `=` comparisons and one `OR`. The limit is 300 operators per expression. In `SET a = a + :v`, the `=` of `SET` does not count, only the `+` does.
 ---
 
+## Mở bài
+
+Bạn viết `total > 500000` vào một request như viết WHERE trong SQL, và DynamoDB từ chối. Biểu thức của DynamoDB có những loại nào, và giá trị, tên thuộc tính phải đi qua đâu?
+
 ## Ý chính
 
 Một request có thể mang tới năm loại biểu thức, mỗi loại làm việc ở một bước:
@@ -68,22 +82,65 @@ Hai bảng thay thế đi kèm:
 - `ExpressionAttributeValues`: mọi **giá trị** trong biểu thức là một chỗ giữ chỗ `:x`.
 - `ExpressionAttributeNames`: một **tên** `#x` thay cho tên thuộc tính trùng từ dành riêng, có ký tự đặc biệt, hoặc lặp nhiều lần.
 
-## Ví dụ
+Danh sách từ dành riêng có hơn 500 từ, gồm nhiều tên rất hay gặp như `status`, `total`, `name`, `date`, `data`, `count`. Thói quen an toàn: luôn dùng một tên thay thế như `#n` trong biểu thức. Giới hạn: mỗi biểu thức tối đa 4 KB và 300 toán tử (so sánh, `AND`/`OR`/`NOT`, `BETWEEN`, `IN`, hàm, `+`/`-`); `IN` tối đa 100 toán hạng.
 
-```json
-{"KeyConditionExpression": "customerId = :c",
- "FilterExpression": "#t > :x AND #s <> :n",
- "ExpressionAttributeNames": {"#t": "total", "#s": "status"},
- "ExpressionAttributeValues": {":c": {"S": "C-02"}, ":x": {"N": "500000"}, ":n": {"S": "NEW"}}}
+## Cú pháp
+
+```text
+"KeyConditionExpression": "<pk> = :p AND <sk condition>",
+"FilterExpression": "#n <op> :v",
+"ExpressionAttributeNames": {"#n": "<attribute name>"},
+"ExpressionAttributeValues": {":p": {"S": "..."}, ":v": {"N": "..."}}
 ```
 
-Giới hạn: mỗi biểu thức tối đa 4 KB và 300 toán tử (so sánh, `AND`/`OR`/`NOT`, `BETWEEN`, `IN`, hàm, `+`/`-`); `IN` tối đa 100 toán hạng.
+- Chỗ giữ chỗ giá trị bắt đầu bằng `:`, chỗ giữ chỗ tên bắt đầu bằng `#`.
+- Mọi chỗ giữ chỗ đã khai phải được dùng trong một biểu thức của request.
 
-## Thực hành
+## Ví dụ
 
-Danh sách từ dành riêng có hơn 500 từ, gồm nhiều tên rất hay gặp như `status`, `total`, `name`, `date`, `data`, `count`. Thói quen an toàn: luôn dùng một tên thay thế như `#n` trong biểu thức.
+Các đơn của `C-02` trên 500000, `total` qua tên `#t`:
+
+```json
+{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "FilterExpression": "#t > :x", "ExpressionAttributeNames": {"#t": "total"}, "ExpressionAttributeValues": {":c": {"S": "C-02"}, ":x": {"N": "500000"}}}}
+```
+
+Cùng khách, chỉ trả `orderId` và `status`:
+
+```json
+{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ProjectionExpression": "orderId, #s", "ExpressionAttributeNames": {"#s": "status"}, "ExpressionAttributeValues": {":c": {"S": "C-02"}}}}
+```
+
+## Lỗi hay gặp
+
+Dùng thẳng từ dành riêng `status` trong biểu thức:
+
+```json
+// ERROR ValidationException
+{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "FilterExpression": "status = :s", "ExpressionAttributeValues": {":c": {"S": "C-02"}, ":s": {"S": "NEW"}}}}
+```
+
+Khai một chỗ giữ chỗ mà không dùng:
+
+```json
+// ERROR ValidationException
+{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-02"}, ":x": {"N": "500000"}}}}
+```
+
+Viết số thẳng vào biểu thức cũng là `ValidationException`: giá trị chỉ đi qua `:x`.
+
+## Tóm tắt
+
+- Năm loại biểu thức: key condition, filter, projection, condition, update.
+- Key condition chọn trước khi đọc; filter bỏ bớt sau khi đọc.
+- Mọi giá trị là một `:x` trong `ExpressionAttributeValues`.
+- Từ dành riêng cần một tên `#x` trong `ExpressionAttributeNames`.
+- Mỗi biểu thức tối đa 4 KB và 300 toán tử.
 
 # EN
+
+## Opening
+
+You write `total > 500000` into a request the way you write an SQL WHERE, and DynamoDB refuses it. What kinds of expressions does DynamoDB have, and where must values and attribute names go?
 
 ## Key idea
 
@@ -100,17 +157,56 @@ Two substitution maps come with them:
 - `ExpressionAttributeValues`: every **value** in an expression is a placeholder `:x`.
 - `ExpressionAttributeNames`: a **name** `#x` stands in for an attribute name that is a reserved word, has special characters, or repeats often.
 
-## Example
+The reserved word list has over 500 words, including very common names such as `status`, `total`, `name`, `date`, `data`, `count`. A safe habit: always use a stand-in name such as `#n` in expressions. Limits: each expression is at most 4 KB and 300 operators (comparisons, `AND`/`OR`/`NOT`, `BETWEEN`, `IN`, functions, `+`/`-`); `IN` takes at most 100 operands.
 
-```json
-{"KeyConditionExpression": "customerId = :c",
- "FilterExpression": "#t > :x AND #s <> :n",
- "ExpressionAttributeNames": {"#t": "total", "#s": "status"},
- "ExpressionAttributeValues": {":c": {"S": "C-02"}, ":x": {"N": "500000"}, ":n": {"S": "NEW"}}}
+## Syntax
+
+```text
+"KeyConditionExpression": "<pk> = :p AND <sk condition>",
+"FilterExpression": "#n <op> :v",
+"ExpressionAttributeNames": {"#n": "<attribute name>"},
+"ExpressionAttributeValues": {":p": {"S": "..."}, ":v": {"N": "..."}}
 ```
 
-Limits: each expression is at most 4 KB and 300 operators (comparisons, `AND`/`OR`/`NOT`, `BETWEEN`, `IN`, functions, `+`/`-`); `IN` takes at most 100 operands.
+- A value placeholder starts with `:`, a name placeholder with `#`.
+- Every declared placeholder must be used in one of the request's expressions.
 
-## Practice
+## Example
 
-The reserved word list has over 500 words, including very common names such as `status`, `total`, `name`, `date`, `data`, `count`. A safe habit: always use a stand-in name such as `#n` in expressions.
+The orders of `C-02` above 500000, with `total` through the name `#t`:
+
+```json
+{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "FilterExpression": "#t > :x", "ExpressionAttributeNames": {"#t": "total"}, "ExpressionAttributeValues": {":c": {"S": "C-02"}, ":x": {"N": "500000"}}}}
+```
+
+The same customer, returning only `orderId` and `status`:
+
+```json
+{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ProjectionExpression": "orderId, #s", "ExpressionAttributeNames": {"#s": "status"}, "ExpressionAttributeValues": {":c": {"S": "C-02"}}}}
+```
+
+## Common mistakes
+
+Using the reserved word `status` directly in an expression:
+
+```json
+// ERROR ValidationException
+{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "FilterExpression": "status = :s", "ExpressionAttributeValues": {":c": {"S": "C-02"}, ":s": {"S": "NEW"}}}}
+```
+
+Declaring a placeholder and not using it:
+
+```json
+// ERROR ValidationException
+{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-02"}, ":x": {"N": "500000"}}}}
+```
+
+Writing a number straight into an expression is a `ValidationException` too: values only go through `:x`.
+
+## Recap
+
+- Five kinds of expressions: key condition, filter, projection, condition, update.
+- A key condition picks before reading; a filter drops items after reading.
+- Every value is a `:x` in `ExpressionAttributeValues`.
+- A reserved word needs a `#x` name in `ExpressionAttributeNames`.
+- Each expression is at most 4 KB and 300 operators.

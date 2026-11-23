@@ -207,10 +207,30 @@ quiz:
       - vi: Bằng 0 cho item bị lọc bỏ.
         en: It is zero for the dropped item.
     answer: 1
+    trap: 0
     why:
-      vi: Trả về ít item hơn nên dễ nghĩ là trả ít tiền hơn. Nhưng FilterExpression chạy sau khi Query đã đọc. Capacity tính trên `ScannedCount` (dữ liệu đã đọc), không phải `Count`.
-      en: Fewer items come back, so it is easy to think you pay less. But a FilterExpression runs after the Query has read the items. Capacity is charged on what was read (`ScannedCount`), not on `Count`.
+      vi: Nghe hợp lý vì trả về ít item hơn, nhưng FilterExpression chạy sau khi Query đã đọc. Capacity tính trên dữ liệu đã đọc (`ScannedCount`), không phải `Count`.
+      en: It sounds right because fewer items come back, but a FilterExpression runs after the Query has read the items. Capacity is charged on what was read (`ScannedCount`), not on `Count`.
+  - q:
+      vi: 'Bạn chuyển điều kiện `begins_with(orderId, :m)` từ `KeyConditionExpression` sang `FilterExpression` của cùng Query. Chuyện gì xảy ra?'
+      en: 'You move the condition `begins_with(orderId, :m)` from the `KeyConditionExpression` to the `FilterExpression` of the same Query. What happens?'
+    options:
+      - vi: Cùng kết quả, chỉ đọc nhiều item hơn
+        en: The same result, it just reads more items
+      - vi: '`ValidationException`, vì bộ lọc của Query không được dùng thuộc tính khóa'
+        en: 'A `ValidationException`, because a Query filter cannot use key attributes'
+      - vi: Kết quả rỗng
+        en: An empty result
+    answer: 1
+    trap: 0
+    why:
+      vi: 'Nghe hợp lý vì trên `Scan` đó đúng là chuyện xảy ra, nhưng Query từ chối bộ lọc nhắc tới partition key hay sort key. Điều kiện trên sort key chỉ có một chỗ: `KeyConditionExpression`.'
+      en: 'It sounds right because that is what happens on a `Scan`, but a Query rejects a filter that mentions the partition key or the sort key. A sort key condition has one place only: the `KeyConditionExpression`.'
 ---
+
+## Mở bài
+
+Bạn cần đơn tháng 10 của một khách và lọc theo tháng trong `FilterExpression`. Kết quả có thể đúng, nhưng bạn trả tiền cho bao nhiêu item?
 
 ## Ý chính
 
@@ -222,22 +242,72 @@ Một Query đi qua ba bước:
 
 Chỉ bước đầu làm giảm lượng đọc, tức giảm tiền. Bộ lọc và projection chỉ làm phản hồi gọn hơn.
 
-Bộ lọc của Query không được nhắc tới partition key hay sort key. DynamoDB từ chối với lỗi `ValidationException`. Muốn lọc theo sort key, viết điều kiện đó trong `KeyConditionExpression`.
+Bộ lọc của Query không được nhắc tới partition key hay sort key. DynamoDB từ chối với lỗi `ValidationException`. Muốn lọc theo sort key, viết điều kiện đó trong `KeyConditionExpression`. Khi thiết kế khóa, đưa thứ hay lọc nhất (ngày, loại, trạng thái) vào đầu sort key.
+
+## Cú pháp
+
+```text
+"KeyConditionExpression": "customerId = :c AND begins_with(orderId, :m)",
+"FilterExpression": "#t > :x",
+"ProjectionExpression": "orderId, #t"
+```
+
+- Key condition: bằng trên partition key, thêm tối đa một điều kiện sort key.
+- Filter: thuộc tính không phải khóa, chạy sau khi đọc.
 
 ## Ví dụ
 
-Cùng một câu hỏi "đơn tháng 10 của `C-21`", hai cách viết:
+Đơn của `C-02` trên 500000: `Count` 3, `ScannedCount` 4:
 
-```text
-KeyConditionExpression: customerId = :c AND begins_with(orderId, :m)  -> ScannedCount 1
-FilterExpression:       begins_with(orderId, :m)                       -> ValidationException
+```json
+{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "FilterExpression": "#t > :x", "ExpressionAttributeNames": {"#t": "total"}, "ExpressionAttributeValues": {":c": {"S": "C-02"}, ":x": {"N": "500000"}}}}
 ```
+
+Tháng nằm ở đầu sort key, nên đơn tháng 9 của `C-03` chỉ đọc một item:
+
+```json
+{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c AND begins_with(orderId, :m)", "ExpressionAttributeValues": {":c": {"S": "C-03"}, ":m": {"S": "2026-09"}}}}
+```
+
+## Lỗi hay gặp
+
+Đặt điều kiện sort key vào bộ lọc của Query:
+
+```json
+// ERROR ValidationException
+{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "FilterExpression": "begins_with(orderId, :m)", "ExpressionAttributeValues": {":c": {"S": "C-21"}, ":m": {"S": "2026-10"}}}}
+```
+
+Lọc theo khách bằng `Scan`:
+
+```json
+// WRONG: the same 4 orders, but every item of the table is read
+{"op": "Scan", "input": {"TableName": "Orders", "FilterExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-02"}}}}
+```
+
+```json
+// FIX: the customer is the partition key
+{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-02"}}}}
+```
+
+`ScannedCount` của `Scan` là 120, của Query là 4.
 
 ## Thực hành
 
-Khi thiết kế khóa, đưa thứ hay lọc nhất (ngày, loại, trạng thái) vào đầu sort key. Một bộ lọc đọc 4 item để giữ 3 thì rẻ; một bộ lọc đọc 10.000 item để giữ 3 là dấu hiệu khóa chưa đúng.
+Bảng `Orders` có 120 đơn của 30 khách, sort key `orderId` bắt đầu bằng ngày. So `Count` với `ScannedCount` sau mỗi lần chạy.
+
+## Tóm tắt
+
+- Key condition chọn item để đọc; filter bỏ bớt sau khi đọc.
+- Capacity tính theo `ScannedCount`, không theo `Count`.
+- Bộ lọc của Query không được dùng thuộc tính khóa.
+- Đưa thứ hay lọc vào đầu sort key để lọc bằng key condition.
 
 # EN
+
+## Opening
+
+You need one customer's October orders and filter on the month in the `FilterExpression`. The result may be right, but how many items do you pay for?
 
 ## Key idea
 
@@ -249,17 +319,63 @@ A Query goes through three steps:
 
 Only the first step reduces what is read, which is what you pay for. The filter and the projection only make the response smaller.
 
-A Query filter cannot mention the partition key or the sort key. DynamoDB rejects it with a `ValidationException`. To filter on the sort key, write that condition in the `KeyConditionExpression`.
+A Query filter cannot mention the partition key or the sort key. DynamoDB rejects it with a `ValidationException`. To filter on the sort key, write that condition in the `KeyConditionExpression`. When designing a key, put what you filter on most (date, type, status) at the front of the sort key.
+
+## Syntax
+
+```text
+"KeyConditionExpression": "customerId = :c AND begins_with(orderId, :m)",
+"FilterExpression": "#t > :x",
+"ProjectionExpression": "orderId, #t"
+```
+
+- Key condition: equality on the partition key, plus at most one sort key condition.
+- Filter: non-key attributes, applied after reading.
 
 ## Example
 
-The same question, "the October order of `C-21`", written two ways:
+The orders of `C-02` above 500000: `Count` 3, `ScannedCount` 4:
 
-```text
-KeyConditionExpression: customerId = :c AND begins_with(orderId, :m)  -> ScannedCount 1
-FilterExpression:       begins_with(orderId, :m)                       -> ValidationException
+```json
+{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "FilterExpression": "#t > :x", "ExpressionAttributeNames": {"#t": "total"}, "ExpressionAttributeValues": {":c": {"S": "C-02"}, ":x": {"N": "500000"}}}}
 ```
+
+The month sits at the front of the sort key, so the September order of `C-03` reads one item:
+
+```json
+{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c AND begins_with(orderId, :m)", "ExpressionAttributeValues": {":c": {"S": "C-03"}, ":m": {"S": "2026-09"}}}}
+```
+
+## Common mistakes
+
+Putting a sort key condition into the Query filter:
+
+```json
+// ERROR ValidationException
+{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "FilterExpression": "begins_with(orderId, :m)", "ExpressionAttributeValues": {":c": {"S": "C-21"}, ":m": {"S": "2026-10"}}}}
+```
+
+Filtering on the customer with a `Scan`:
+
+```json
+// WRONG: the same 4 orders, but every item of the table is read
+{"op": "Scan", "input": {"TableName": "Orders", "FilterExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-02"}}}}
+```
+
+```json
+// FIX: the customer is the partition key
+{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-02"}}}}
+```
+
+The `Scan` has a `ScannedCount` of 120, the Query 4.
 
 ## Practice
 
-When designing a key, put what you filter on most (date, type, status) at the front of the sort key. A filter that reads 4 items to keep 3 is cheap; a filter that reads 10,000 items to keep 3 is a sign the key is wrong.
+Table `Orders` holds 120 orders of 30 customers; the sort key `orderId` starts with the date. Compare `Count` with `ScannedCount` after each run.
+
+## Recap
+
+- A key condition picks the items to read; a filter drops items after reading.
+- Capacity follows `ScannedCount`, not `Count`.
+- A Query filter cannot use key attributes.
+- Put what you filter on at the front of the sort key, so the key condition does the filtering.

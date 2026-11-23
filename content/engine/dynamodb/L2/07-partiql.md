@@ -201,10 +201,30 @@ quiz:
       - vi: Bị từ chối ngay.
         en: It is rejected right away.
     answer: 1
+    trap: 0
     why:
-      vi: Có `WHERE` nên trông như SQL dùng index. Nhưng PartiQL chỉ đổi cú pháp. Không có điều kiện bằng (hoặc `IN`) trên partition key thì DynamoDB phải đọc cả bảng, với đúng giá và độ chậm của Scan.
-      en: It has a `WHERE`, so it looks like SQL using an index. But PartiQL only changes the syntax. Without an equality (or `IN`) on the partition key, DynamoDB has to read the whole table, at the price and speed of a Scan.
+      vi: Nghe hợp lý vì có `WHERE` nên trông như SQL dùng index, nhưng PartiQL chỉ đổi cú pháp. Không có điều kiện bằng (hoặc `IN`) trên partition key thì DynamoDB phải đọc cả bảng, với đúng giá và độ chậm của Scan.
+      en: It sounds right because a `WHERE` looks like SQL using an index, but PartiQL only changes the syntax. Without an equality (or `IN`) on the partition key, DynamoDB has to read the whole table, at the price and speed of a Scan.
+  - q:
+      vi: "`INSERT INTO Orders VALUE {...}` với khóa chính đã có trong bảng. Chuyện gì xảy ra?"
+      en: "`INSERT INTO Orders VALUE {...}` with a primary key that is already in the table. What happens?"
+    options:
+      - vi: Ghi đè item cũ, như `PutItem`
+        en: It overwrites the old item, like `PutItem`
+      - vi: Câu lệnh bị từ chối, item cũ giữ nguyên
+        en: The statement is rejected and the old item stays
+      - vi: Thêm một item thứ hai cùng khóa
+        en: It adds a second item with the same key
+    answer: 1
+    trap: 0
+    why:
+      vi: 'Nghe hợp lý vì PartiQL chạy trên cùng bộ máy với `PutItem`, nhưng `INSERT` của PartiQL chỉ thêm khi khóa chưa có, giống `PutItem` kèm `attribute_not_exists`. Hai item không bao giờ chung một khóa chính.'
+      en: 'It sounds right because PartiQL runs on the same engine as `PutItem`, but a PartiQL `INSERT` adds only when the key is new, like `PutItem` with `attribute_not_exists`. Two items never share a primary key.'
 ---
+
+## Mở bài
+
+Bạn quen SQL và thấy DynamoDB nhận câu `SELECT … WHERE`. Viết như SQL thì có chạy như SQL không, và câu nào âm thầm thành Scan cả bảng?
 
 ## Ý chính
 
@@ -215,21 +235,71 @@ PartiQL cho phép viết request DynamoDB bằng cú pháp giống SQL, qua `Exe
 - `INSERT` lỗi nếu khóa đã có, khác `PutItem` vốn ghi đè.
 - Không có JOIN, GROUP BY hay hàm gộp.
 
-Cú pháp: chuỗi trong nháy đơn `'…'`, tên trùng từ dành riêng trong nháy kép `"…"`, map dạng `{'k': v}`.
+Đọc từ một index (chỉ mục) ở bài L3 bằng tên dạng `"Orders"."byStatus"`.
+
+## Cú pháp
+
+```text
+SELECT <attrs | *> FROM <table> WHERE <pk> = '<v>' [AND <sort key condition>]
+UPDATE <table> SET "<attr>" = '<v>' WHERE <pk> = '<v>' AND <sk> = '<v>'
+INSERT INTO <table> VALUE {'<attr>': <v>, ...}
+```
+
+- Chuỗi trong nháy đơn `'…'`; tên trùng từ dành riêng trong nháy kép `"…"`; map dạng `{'k': v}`.
 
 ## Ví dụ
 
-Đọc từ một index (chỉ mục) ở bài L3 bằng tên dạng `"Orders"."byStatus"`:
+Các đơn của `C-07`, một Query:
 
-```text
-SELECT * FROM "Orders"."byStatus" WHERE "status" = 'NEW'
+```partiql
+SELECT * FROM Orders WHERE customerId = 'C-07'
 ```
+
+Chỉ `orderId` và `total` của `C-02`, với `"total"` trong nháy kép:
+
+```partiql
+SELECT orderId, "total" FROM Orders WHERE customerId = 'C-02'
+```
+
+## Lỗi hay gặp
+
+`UPDATE` thiếu sort key:
+
+```partiql
+// ERROR ValidationException
+UPDATE Orders SET "status" = 'DELIVERED' WHERE customerId = 'C-04'
+```
+
+Lọc khách bằng hàm thay vì điều kiện bằng:
+
+```partiql
+// WRONG: the same 4 orders, but begins_with on the partition key makes it a Scan
+SELECT * FROM Orders WHERE begins_with(customerId, 'C-04')
+```
+
+```partiql
+// FIX: an equality on the partition key is a Query
+SELECT * FROM Orders WHERE customerId = 'C-04'
+```
+
+`ScannedCount` của bản sai là 120, của bản sửa là 4.
 
 ## Thực hành
 
 Mỗi bước là một câu PartiQL, chạy thẳng qua `ExecuteStatement`. Bước ghi được chấm bằng trạng thái bảng sau khi ghi.
 
+## Tóm tắt
+
+- PartiQL đổi cú pháp, không đổi luật của DynamoDB.
+- Điều kiện bằng trên partition key: Query; thiếu nó: Scan cả bảng.
+- `UPDATE` / `DELETE` cần khóa chính đầy đủ trong `WHERE`.
+- `INSERT` từ chối khóa đã có; không có JOIN hay GROUP BY.
+
 # EN
+
+## Opening
+
+You know SQL, and DynamoDB accepts `SELECT … WHERE`. Does SQL-like code run like SQL, and which statements quietly become a full table Scan?
 
 ## Key idea
 
@@ -240,16 +310,62 @@ PartiQL lets you write DynamoDB requests in SQL-like syntax, through `ExecuteSta
 - `INSERT` fails if the key exists, unlike `PutItem`, which overwrites.
 - No JOIN, GROUP BY or aggregate functions.
 
-Syntax: strings in single quotes `'…'`, reserved-word names in double quotes `"…"`, maps written `{'k': v}`.
+Read from an index (L3) with a name like `"Orders"."byStatus"`.
+
+## Syntax
+
+```text
+SELECT <attrs | *> FROM <table> WHERE <pk> = '<v>' [AND <sort key condition>]
+UPDATE <table> SET "<attr>" = '<v>' WHERE <pk> = '<v>' AND <sk> = '<v>'
+INSERT INTO <table> VALUE {'<attr>': <v>, ...}
+```
+
+- Strings in single quotes `'…'`; reserved-word names in double quotes `"…"`; maps written `{'k': v}`.
 
 ## Example
 
-Read from an index (L3) with a name like `"Orders"."byStatus"`:
+The orders of `C-07`, a Query:
 
-```text
-SELECT * FROM "Orders"."byStatus" WHERE "status" = 'NEW'
+```partiql
+SELECT * FROM Orders WHERE customerId = 'C-07'
 ```
+
+Only `orderId` and `total` of `C-02`, with `"total"` in double quotes:
+
+```partiql
+SELECT orderId, "total" FROM Orders WHERE customerId = 'C-02'
+```
+
+## Common mistakes
+
+An `UPDATE` without the sort key:
+
+```partiql
+// ERROR ValidationException
+UPDATE Orders SET "status" = 'DELIVERED' WHERE customerId = 'C-04'
+```
+
+Filtering the customer with a function instead of an equality:
+
+```partiql
+// WRONG: the same 4 orders, but begins_with on the partition key makes it a Scan
+SELECT * FROM Orders WHERE begins_with(customerId, 'C-04')
+```
+
+```partiql
+// FIX: an equality on the partition key is a Query
+SELECT * FROM Orders WHERE customerId = 'C-04'
+```
+
+The wrong version has a `ScannedCount` of 120, the fix 4.
 
 ## Practice
 
 Each step is one PartiQL statement, run directly through `ExecuteStatement`. A write step is graded by the table's state after the write.
+
+## Recap
+
+- PartiQL changes the syntax, not DynamoDB's rules.
+- An equality on the partition key: a Query; without it: a full table Scan.
+- `UPDATE` / `DELETE` need the full primary key in `WHERE`.
+- `INSERT` refuses an existing key; there is no JOIN or GROUP BY.
