@@ -987,7 +987,7 @@ let playedSave;
 // ---- engine (L248): every Database Engine lesson in the real app, in file order. A lab types each gradable step's Solution
 // and waits for its green line; a quiz/predict picks the answers; a concept (or a lesson with nothing gradable) uses its
 // button. Then the NoSQL path: every drill's Solution (or answer). Each lesson is one check, so the report lists the failures.
-const ENGINE_LESSONS = ['postgres', 'mongodb', 'dynamodb'].flatMap((e) => walk(`content/engine/${e}`).filter((f) => /\/L[1-5]\//.test(f)).sort().map((f) => {
+const ENGINE_LESSONS = ['postgres', 'mongodb', 'dynamodb', 'design'].flatMap((e) => walk(`content/engine/${e}`).filter((f) => /\/L[1-5]\//.test(f)).sort().map((f) => {
   const fm = parseYaml(/^---\r?\n([\s\S]*?)\r?\n---/.exec(readFileSync(join(ROOT, f), 'utf8'))[1]);
   return { ...fm, hash: `#/engine/${fm.engine}/${fm.level}/${fm.id}` };
 }));
