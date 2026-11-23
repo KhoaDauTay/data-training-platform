@@ -9,25 +9,26 @@
 --   * chapters 7-9 (Plan 3), incl. the Europe lane (NLRTM/DEHAM/BEANR) margin drop in Q3 2026: head of the Plan 3 block at the end
 --   * chapters 10-12 (Plan 4): customer 1 D&D spike, carrier 3 (Blue Anchor Lines) high claim rate, container_events for the chapter 11 index lab: head of the Plan 4 block at the end
 
+-- ports.region = the continent of the port (one level for every row, L302): Asia, Europe, North America, Oceania. Vietnam's own ports are Asia too: tell them apart by country.
 INSERT INTO ports VALUES
-  ('VNSGN', 'Ho Chi Minh (Cat Lai)', 'Vietnam', 'Vietnam', 'SEAPORT', 0),
-  ('VNHPH', 'Hai Phong', 'Vietnam', 'Vietnam', 'SEAPORT', 0),
-  ('VNDAD', 'Da Nang', 'Vietnam', 'Vietnam', 'SEAPORT', 0),
+  ('VNSGN', 'Ho Chi Minh (Cat Lai)', 'Vietnam', 'Asia', 'SEAPORT', 0),
+  ('VNHPH', 'Hai Phong', 'Vietnam', 'Asia', 'SEAPORT', 0),
+  ('VNDAD', 'Da Nang', 'Vietnam', 'Asia', 'SEAPORT', 0),
   ('CNSHA', 'Shanghai', 'China', 'Asia', 'SEAPORT', 5),
   ('CNNGB', 'Ningbo', 'China', 'Asia', 'SEAPORT', 5),
   ('SGSIN', 'Singapore', 'Singapore', 'Asia', 'SEAPORT', 3),
   ('KRPUS', 'Busan', 'South Korea', 'Asia', 'SEAPORT', 6),
   ('JPTYO', 'Tokyo', 'Japan', 'Asia', 'SEAPORT', 8),
   ('THLCH', 'Laem Chabang', 'Thailand', 'Asia', 'SEAPORT', 3),
-  ('INNSA', 'Nhava Sheva', 'India', 'South Asia', 'SEAPORT', 14),
+  ('INNSA', 'Nhava Sheva', 'India', 'Asia', 'SEAPORT', 14),
   ('NLRTM', 'Rotterdam', 'Netherlands', 'Europe', 'SEAPORT', 30),
   ('DEHAM', 'Hamburg', 'Germany', 'Europe', 'SEAPORT', 32),
   ('BEANR', 'Antwerp', 'Belgium', 'Europe', 'SEAPORT', 31),
   ('USLAX', 'Los Angeles', 'United States', 'North America', 'SEAPORT', 20),
   ('USNYC', 'New York', 'United States', 'North America', 'SEAPORT', 35),
   ('AUSYD', 'Sydney', 'Australia', 'Oceania', 'SEAPORT', 16),
-  ('SGN', 'Tan Son Nhat Airport', 'Vietnam', 'Vietnam', 'AIRPORT', 0),
-  ('HAN', 'Noi Bai Airport', 'Vietnam', 'Vietnam', 'AIRPORT', 0),
+  ('SGN', 'Tan Son Nhat Airport', 'Vietnam', 'Asia', 'AIRPORT', 0),
+  ('HAN', 'Noi Bai Airport', 'Vietnam', 'Asia', 'AIRPORT', 0),
   ('PVG', 'Shanghai Pudong Airport', 'China', 'Asia', 'AIRPORT', 1),
   ('ICN', 'Incheon Airport', 'South Korea', 'Asia', 'AIRPORT', 1),
   ('NRT', 'Narita Airport', 'Japan', 'Asia', 'AIRPORT', 1),
@@ -341,7 +342,7 @@ WITH lane AS (
   SELECT o.code AS pol, p.code AS pod, p.region = 'Europe' AS eu, p.base_transit_days AS days,
     CASE o.code WHEN 'VNSGN' THEN 1.0 WHEN 'VNHPH' THEN 1.03 ELSE 1.06 END AS f_pol
   FROM ports o CROSS JOIN ports p
-  WHERE o.code IN ('VNSGN', 'VNHPH', 'VNDAD') AND p.kind = 'SEAPORT' AND p.region <> 'Vietnam'
+  WHERE o.code IN ('VNSGN', 'VNHPH', 'VNDAD') AND p.kind = 'SEAPORT' AND p.country <> 'Vietnam'
 ), typ (container_type, f_type) AS (VALUES ('20GP', 1.0), ('40GP', 1.75), ('40HC', 1.85), ('40RF', 2.6)),
 period (valid_from, valid_to, who, gri) AS (VALUES
   (DATE '2026-04-01', DATE '2026-06-30', 'all', 1.0),

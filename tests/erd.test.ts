@@ -191,7 +191,7 @@ describe('distinctValuesSql (giá trị của cột chữ, product-design-v4 §C
     const run = await runner();
     expect(toDistinctValues(await run(distinctValuesSql('ports', ['kind', 'region', 'code'])))).toEqual({
       kind: ['AIRPORT', 'SEAPORT'],
-      region: ['Asia', 'Europe', 'North America', 'Oceania', 'South Asia', 'Vietnam'],
+      region: ['Asia', 'Europe', 'North America', 'Oceania'],
     });
     expect(toDistinctValues(await run(distinctValuesSql('employees', ['dept'])))).toEqual({ dept: ['CS', 'Customs', 'Finance', 'Management', 'Ops', 'Sales'] });
     expect(() => distinctValuesSql('ports', ['kind; DROP TABLE ports'])).toThrow();
