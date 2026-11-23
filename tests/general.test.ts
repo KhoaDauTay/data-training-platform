@@ -9,7 +9,7 @@ const parseDrills = (src: string, origin: string) => drillsOf(parseYaml(src), or
 const parseAdv = (src: string, origin: string) => advOf(parseYaml(src), origin, parseLessonBody);
 const buildGeneral = (a: string, b: string) => build(parseYaml(a), parseYaml(b), parseLessonBody);
 import { generalNow } from '../src/content';
-import { SKILLS } from '../src/progress';
+import { ROUTE_SKILLS as SKILLS } from '../src/progress'; // v25 R1: + the General-only skills (skills-general.yml)
 import { textOf } from '../src/tickets';
 import { compareResults } from '../src/grader';
 import { ANSWER_WORDS, codeSpans, distinctResults, drillRules, labRun, prose, VI_DIACRITIC } from './generalRules';

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import iconMap from '../scripts/icon-map.json';
 import iconCustom from '../scripts/icon-custom.json';
 import { ICON_DATA } from '../src/ui/iconData';
-import { SKILLS } from '../src/progress';
+import { ROUTE_SKILLS as SKILLS } from '../src/progress'; // v25 R1: + the General-only skills (skills-general.yml)
 import { KPIS } from '../src/home';
 import { DOMAINS } from '../src/domains';
 import { ICON_NAMES, iconPaths, isIconName, NAV_ICON, SKILL_ICON, skillIconName } from '../src/ui/icons';

@@ -6,7 +6,8 @@ import { vi } from '../src/i18n/vi';
 import { chaptersOf } from '../src/progress';
 import { LEARN_DICT } from '../src/i18n/learn';
 import { appliesIn } from '../src/learn';
-import { SKILLS } from '../src/progress';
+import { GENERAL_SKILLS, partOf, SKILLS } from '../src/progress';
+import { fullLessons, lessonIdOf } from '../src/generalLessonSources';
 import { learnAdvOf, learnModuleOf, learnSkillOf, parseRoute } from '../src/route';
 import { bestHash, bestRouteOf, parseBestCard, parseTracks, RELEASED } from '../src/engine/best';
 import * as bestSrc from '../src/bestSources';
@@ -23,6 +24,15 @@ describe('không ngõ cụt trên phần Chung', () => {
       expect([s.id, loadLessons().has(s.id)]).toEqual([s.id, true]);
       expect([s.id, g.bySkill.get(s.id)?.length]).toEqual([s.id, 4]);
       expect([s.id, appliesIn(tickets, s.id).length > 0]).toEqual([s.id, true]);
+    }
+  });
+
+  it('v25 R1 (product §3.1.2): mọi kỹ năng chỉ-General có bài nhanh, bài đầy đủ, 4 drill, một Phần và trang riêng', () => {
+    expect(GENERAL_SKILLS.length).toBeGreaterThan(0);
+    const full = Object.keys(fullLessons).map(lessonIdOf);
+    for (const s of GENERAL_SKILLS) {
+      expect([s.id, loadLessons().has(s.id), full.includes(s.id), g.bySkill.get(s.id)?.length, partOf(s.id) !== undefined]).toEqual([s.id, true, true, 4, true]);
+      expect(learnSkillOf(`#/learn/skill/${s.id}`)).toBe(s.id);
     }
   });
 

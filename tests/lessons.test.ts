@@ -6,7 +6,8 @@ import { compareResults } from '../src/grader';
 import { cueIn, lessonSchema, LESSONS_KEY, loadLessonPrefs, markLesson, parseLessons as lessonsOf } from '../src/lessons';
 import { parse as parseYaml } from 'yaml';
 const parseLessons = (src: string, origin?: string) => lessonsOf(parseYaml(src), origin); // V22-E: the parser takes parsed YAML
-import { CHAPTER_TABLES, SKILLS } from '../src/progress';
+import { CHAPTER_TABLES, GENERAL_SKILLS, ROUTE_SKILLS } from '../src/progress';
+const SKILLS = ROUTE_SKILLS; // v25 R1: skills.yml + the General-only skills (skills-general.yml)
 import { textOf } from '../src/tickets';
 import { labRun } from './generalRules';
 
@@ -87,9 +88,11 @@ describe('bài học nhanh (content/lessons.yml)', () => {
   });
 
   it.each(lessons)('$id: ≥ 3 dấu hiệu mỗi ngôn ngữ; việc mở kỹ năng dùng ≥ 1 dấu hiệu trong thân đề / Task', (l) => {
-    const t = templates.find((x) => x.grants.includes(l.id))!;
+    const t = templates.find((x) => x.grants.includes(l.id));
     for (const lang of ['vi', 'en'] as const) {
       expect(l.cues[lang].length).toBeGreaterThanOrEqual(3);
+      if (!t && GENERAL_SKILLS.some((s) => s.id === l.id)) continue; // v25 R1: no domain ticket grants a General-only skill
+      if (!t) throw new Error(`${l.id}: no ticket grants it`);
       const x = textOf(t, lang);
       expect(l.cues[lang].some((c) => cueIn(c, `${x.body}\n${x.task}`))).toBe(true);
     }

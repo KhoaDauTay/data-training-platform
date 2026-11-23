@@ -78,7 +78,7 @@ describe('thứ tự tiên quyết (product §1.1 thành test, L336)', () => {
   it('bảy drill viết lại giữ id và loại', () => {
     const want = { 'g-date-math-4': 'review', 'g-coalesce-1': 'faded', 'g-string-fn-2': 'open', 'g-distinct-3': 'trap', 'g-cast-1': 'faded', 'g-cast-2': 'open', 'g-cast-3': 'trap' };
     for (const [id, kind] of Object.entries(want)) expect([id, g.byId.get(id)?.kind]).toEqual([id, kind]);
-    expect(sqlYml.match(/^- id: g-/gm)).toHaveLength(152);
+    expect(sqlYml.match(/^- id: g-/gm)).toHaveLength(160); // v25 R1: + 4 drills each for cross_join, any_all
   });
 
   it('bài nhanh: lời giải "Thử ngay" chỉ dùng Phần của nó, trừ khung starter đưa sẵn', () => {

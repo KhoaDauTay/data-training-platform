@@ -1527,3 +1527,40 @@
       ORDER BY paid_at
     solution: "SELECT order_id, line_no FROM order_items WHERE product_id = 30 AND qty = 5 AND order_id >= 1000"
   docs: https://www.postgresql.org/docs/current/indexes-multicolumn.html
+
+# v25 R1: General-only skills (content/general/skills-general.yml); no domain ticket grants them, so their cues are not
+# checked against a ticket (tests/lessons.test.ts).
+- id: cross_join
+  cues:
+    vi: ["mọi … với mọi …", "kể cả ngày không …", "đủ mọi tổ hợp …"]
+    en: ["every … with every …", "including days with no …", "every combination of …"]
+  concept:
+    vi: "CROSS JOIN ghép mỗi dòng của bảng này với mọi dòng của bảng kia, không cần điều kiện. Số dòng là tích hai bảng. Dùng nó để dựng một lưới đầy đủ (mọi cửa hàng × mọi ngày), rồi đặt số liệu thật lên bằng LEFT JOIN."
+    en: "CROSS JOIN pairs each row of one table with every row of the other, with no condition. The row count is the product of both. Use it to build a full grid (every store × every day), then lay the real data on with LEFT JOIN."
+  example: |-
+    SELECT s.name, d.date_key
+    FROM stores s
+    CROSS JOIN dim_date d
+    WHERE d.date_key BETWEEN '2026-10-29' AND '2026-10-31'
+  explain:
+    vi: "① `stores s CROSS JOIN dim_date d`: mỗi cửa hàng đi với mọi ngày của bảng lịch, không có `ON`. ② `WHERE d.date_key BETWEEN …`: chỉ giữ ba ngày cuối tháng 10 để lưới vừa đủ. ③ Kết quả: 15 dòng = 5 cửa hàng × 3 ngày, kể cả ngày một cửa hàng không bán được gì."
+    en: "① `stores s CROSS JOIN dim_date d`: each store goes with every day of the calendar table, with no `ON`. ② `WHERE d.date_key BETWEEN …`: keep only the last three days of October so the grid is just big enough. ③ Result: 15 rows = 5 stores × 3 days, including days when a store sold nothing."
+  mistake:
+    sql: |-
+      SELECT s.name, o.id
+      FROM orders o
+      CROSS JOIN stores s
+      WHERE o.order_date = '2026-10-31'
+    vi: "Muốn tên cửa hàng của mỗi đơn mà viết CROSS JOIN: mỗi đơn đi với cả 5 cửa hàng, 25 dòng thay vì 5. Khi cần cặp khớp, dùng JOIN … ON."
+    en: "Wanting each order's store name but writing CROSS JOIN: every order goes with all 5 stores, 25 rows instead of 5. When you need matching pairs, use JOIN … ON."
+  try:
+    task:
+      vi: "Mỗi cửa hàng ở `Ho Chi Minh City` (bảng `stores`) với mỗi sản phẩm nhóm `Drinks` (bảng `products`): `name` của cửa hàng rồi `name` của sản phẩm, mọi cặp."
+      en: "Each store in `Ho Chi Minh City` (table `stores`) with each product in the `Drinks` category (table `products`): the store's `name` then the product's `name`, every pair."
+    starter: |-
+      SELECT s.name, d.date_key
+      FROM stores s
+      CROSS JOIN dim_date d
+      WHERE d.date_key BETWEEN '2026-10-29' AND '2026-10-31'
+    solution: "SELECT s.name, p.name FROM stores s CROSS JOIN products p WHERE s.city = 'Ho Chi Minh City' AND p.category = 'Drinks'"
+  docs: https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-JOIN

@@ -552,6 +552,41 @@
   solution: "SELECT name, COALESCE(birth_year, 0) FROM customers WHERE id BETWEEN 1 AND 40"
   hint: { vi: "Một hàm lấy giá trị đầu tiên không trống trong danh sách: `birth_year`, rồi 0.", en: "One function takes the first non-empty value of a list: `birth_year`, then 0." }
 
+# ---- cross_join (v25 R1, General only: content/general/skills-general.yml)
+- id: g-cross-join-1
+  skill: cross_join
+  kind: faded
+  task: { vi: "Lịch trực cho các cửa hàng ở `Da Nang`: mỗi cửa hàng với mỗi ngày từ 2026-10-29 tới 2026-10-31 (bảng lịch `dim_date`). Lấy tên cửa hàng và ngày, mọi cặp.", en: "A duty roster for the stores in `Da Nang`: each store with each day from 2026-10-29 to 2026-10-31 (calendar table `dim_date`). Get the store name and the date, every pair." }
+  starter: |-
+    SELECT s.name, d.date_key
+    FROM stores s
+    ___ dim_date d
+    WHERE s.city = 'Da Nang' AND d.date_key BETWEEN '2026-10-29' AND '2026-10-31'
+  solution: "SELECT s.name, d.date_key FROM stores s CROSS JOIN dim_date d WHERE s.city = 'Da Nang' AND d.date_key BETWEEN '2026-10-29' AND '2026-10-31'"
+  hint: { vi: "Phép ghép không có điều kiện, đưa mỗi cửa hàng gặp mọi ngày.", en: "The join with no condition, which makes every store meet every day." }
+- id: g-cross-join-2
+  skill: cross_join
+  kind: open
+  task: { vi: "Mỗi cửa hàng ở `Da Nang` và mỗi ngày từ 2026-10-25 tới 2026-10-31: ngày, tên cửa hàng và số đơn (mọi trạng thái) của cửa hàng đó trong ngày đó. Ngày không có đơn vẫn có một dòng với số 0.", en: "Each store in `Da Nang` and each day from 2026-10-25 to 2026-10-31: the date, the store name and that store's number of orders (any status) that day. A day with no order still has a row with 0." }
+  solution: "SELECT d.date_key, s.name, count(o.id) FROM dim_date d CROSS JOIN stores s LEFT JOIN orders o ON o.store_id = s.id AND o.order_date = d.date_key WHERE d.date_key BETWEEN '2026-10-25' AND '2026-10-31' AND s.city = 'Da Nang' GROUP BY d.date_key, s.name"
+  hint: { vi: "Dựng lưới ngày × cửa hàng trước, rồi gắn đơn vào lưới sao cho ô trống còn lại; đếm một cột của đơn.", en: "Build the day × store grid first, then attach the orders so empty cells stay; count a column of the orders." }
+- id: g-cross-join-3
+  skill: cross_join
+  kind: trap
+  task: { vi: "Mọi cửa hàng với mọi tháng 2026-01-01, 2026-02-01, 2026-03-01 (các ngày đó trong `dim_date`): tên cửa hàng, tháng và chỉ tiêu `target_vnd` của tháng đó (bảng `store_targets`). Ô chưa có chỉ tiêu vẫn hiện, chỉ tiêu để trống.", en: "Every store with every month 2026-01-01, 2026-02-01, 2026-03-01 (those days in `dim_date`): the store name, the month and that month's `target_vnd` (table `store_targets`). A cell with no target still shows, with an empty target." }
+  solution: "SELECT s.name, d.date_key, t.target_vnd FROM stores s CROSS JOIN dim_date d LEFT JOIN store_targets t ON t.store_id = s.id AND t.month = d.date_key WHERE d.date_key IN ('2026-01-01', '2026-02-01', '2026-03-01')"
+  hint: { vi: "Lưới 5 cửa hàng × 3 tháng phải còn đủ 15 ô sau khi gắn chỉ tiêu.", en: "The 5 stores × 3 months grid must keep all 15 cells after the targets are attached." }
+  wrong:
+    - sql: "SELECT s.name, d.date_key, t.target_vnd FROM stores s CROSS JOIN dim_date d JOIN store_targets t ON t.store_id = s.id AND t.month = d.date_key WHERE d.date_key IN ('2026-01-01', '2026-02-01', '2026-03-01')"
+      vi: "Gắn chỉ tiêu bằng phép nối thường bỏ mất các ô không có chỉ tiêu (Thao Dien trước tháng 3): 13 dòng thay vì 15. Dùng `LEFT JOIN` sau lưới."
+      en: "Attaching targets with a plain join drops the cells with no target (Thao Dien before March): 13 rows instead of 15. Use `LEFT JOIN` after the grid."
+- id: g-cross-join-4
+  skill: cross_join
+  kind: review
+  task: { vi: "Kế hoạch trưng bày: mỗi sản phẩm nhóm `Snacks` phải có mặt ở mỗi cửa hàng tại `Da Nang`. Liệt kê mọi cặp: tên sản phẩm và tên cửa hàng.", en: "A display plan: every product in the `Snacks` category must be on show in every store in `Da Nang`. List every pair: the product name and the store name." }
+  solution: "SELECT p.name, s.name FROM products p CROSS JOIN stores s WHERE p.category = 'Snacks' AND s.city = 'Da Nang'"
+  hint: { vi: "Lọc từng bảng rồi ghép mọi cặp; 6 món × 2 cửa hàng.", en: "Filter each table, then pair everything; 6 items × 2 stores." }
+
 # ---- self_join (ch5)
 - id: g-self-join-1
   skill: self_join
