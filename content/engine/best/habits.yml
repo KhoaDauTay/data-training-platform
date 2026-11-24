@@ -11,13 +11,13 @@ habits:
     points:
       - { vi: "Mỗi dòng là gì (một đơn? một khách một tháng?) và khoảng bao nhiêu dòng.", en: "What one row is (one order? one customer per month?) and roughly how many rows." }
       - { vi: "Lệch so với dự đoán là dấu hiệu đầu tiên của lỗi.", en: "A gap from your guess is the first sign of a bug." }
-    cards: [e-bp-a04, e-bp-a13]
+    cards: []
   - text: { vi: "Đi từng bước nhỏ, đếm dòng sau mỗi join.", en: "Work in small steps and count rows after every join." }
     points:
       - { vi: "Chạy phần `FROM … JOIN` trước và xem số dòng.", en: "Run the `FROM … JOIN` part first and look at the row count." }
       - { vi: "Sau khi gộp, so tổng với bảng gốc (tổng kiểm).", en: "After aggregating, compare the total with the source table (a control total)." }
       - { vi: "Lỗi logic (câu chạy được nhưng số sai) là loại lỗi bền nhất ở người học SQL [1]; cú pháp thì database tự báo.", en: "Logic errors (the query runs but the numbers are wrong) are the most persistent errors of SQL learners [1]; the database reports syntax errors itself." }
-    cards: [e-bp-q07, e-bp-a06]
+    cards: [e-bp-q07]
   - text: { vi: "Hỏi \"còn NULL thì sao?\" ở mọi điều kiện.", en: "Ask \"what about NULL?\" for every condition." }
     points:
       - { vi: "`= NULL`, `NOT IN` gặp NULL, `LEFT JOIN` bị `WHERE` biến thành `INNER`.", en: "`= NULL`, `NOT IN` meeting a NULL, a `LEFT JOIN` that `WHERE` turns into an `INNER` one." }
@@ -27,7 +27,7 @@ habits:
     points:
       - { vi: "Khóa không trùng, không có bản ghi mồ côi, giá trị nằm trong danh sách cho phép.", en: "No duplicate keys, no orphan records, values inside the allowed list." }
       - { vi: "Lưu lại, chạy lại mỗi lần dữ liệu đổi [2].", en: "Keep them and run them again whenever the data changes [2]." }
-    cards: [e-bp-a12, e-bp-a24, e-bp-a11]
+    cards: [e-bp-a12, e-bp-a11]
   - text: { vi: "Đọc kế hoạch, đừng đoán tốc độ.", en: "Read the plan; do not guess the speed." }
     points:
       - { vi: "PostgreSQL: `EXPLAIN`; so số dòng ước lượng với số thật, xem index có được dùng [3].", en: "PostgreSQL: `EXPLAIN`; compare estimated rows with actual rows, and check whether an index is used [3]." }
@@ -40,14 +40,14 @@ habits:
       - { vi: "Bảng và cột `snake_case` chữ thường, không trùng từ khóa.", en: "Tables and columns in lower-case `snake_case`, never a keyword." }
       - { vi: "Mọi cột tính toán có tên nói nghĩa và đơn vị (`revenue_vnd`).", en: "Every computed column gets a name that says its meaning and unit (`revenue_vnd`)." }
       - { vi: "Theo một bộ quy tắc có sẵn và giữ nhất quán [6].", en: "Follow an existing style guide and stay consistent [6]." }
-    cards: [e-bp-s08, e-bp-s13, e-bp-s14, e-bp-q23, e-bp-q09]
+    cards: [e-bp-s08, e-bp-q09]
   - text: { vi: "Ghim mọi thứ làm kết quả đổi theo ngày chạy.", en: "Pin everything that makes the result depend on the day it runs." }
     points:
       - { vi: "\"Hôm nay\" là tham số.", en: "\"Today\" is a parameter." }
       - { vi: "`ORDER BY` có tiebreaker trước `LIMIT`.", en: "`ORDER BY` has a tiebreaker before `LIMIT`." }
       - { vi: "Lấy mẫu có seed.", en: "Sampling uses a seed." }
       - { vi: "Khoảng ngày nửa mở.", en: "Date ranges are half-open." }
-    cards: [e-bp-a05, e-bp-q10, e-bp-a14, e-bp-q12]
+    cards: [e-bp-a05, e-bp-q10, e-bp-q12]
   - text: { vi: "Tự review trước khi gửi, rồi nhờ người khác review.", en: "Review your own query before sending it, then ask someone else to review it." }
     points:
       - { vi: "Grain là gì; NULL đi đâu; join có nhân dòng không.", en: "What is the grain; where do NULLs go; does a join multiply rows." }
