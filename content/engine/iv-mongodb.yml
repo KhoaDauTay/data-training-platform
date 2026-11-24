@@ -720,8 +720,16 @@ questions:
       - label: { vi: "find({ tenantId: <id>, status: 'open' }).sort({ createdAt: -1 }).limit(20), index { tenantId: 1, createdAt: -1 }", en: "find({ tenantId: <id>, status: 'open' }).sort({ createdAt: -1 }).limit(20), index { tenantId: 1, createdAt: -1 }" }
         source: illustrative
         shown: |-
-          S12: planSummary: 'IXSCAN { tenantId: 1, createdAt: -1 }', keysExamined: 24, docsExamined: 24, nreturned: 20
-          S07: planSummary: 'IXSCAN { tenantId: 1, createdAt: -1 }', keysExamined: 310000, docsExamined: 310000, nreturned: 20
+          S12: planSummary: IXSCAN
+            { tenantId: 1, createdAt: -1 }
+            keysExamined: 24
+            docsExamined: 24
+            nreturned: 20
+          S07: planSummary: IXSCAN
+            { tenantId: 1, createdAt: -1 }
+            keysExamined: 310000
+            docsExamined: 310000
+            nreturned: 20
     answer: { vi: "Cùng hình dạng truy vấn, cùng index; khác nhau ở dữ liệu. Index chỉ có `tenantId` rồi `createdAt`, nên `status` được lọc sau khi đọc tài liệu. Người bán nhỏ gần như mọi đơn mới đều đang mở, nên 24 khóa là đủ 20 đơn; `S07` có rất ít đơn mở giữa hàng trăm nghìn đơn đã xong, nên phải đi 310.000 khóa. Sửa: index theo ESR `{ tenantId: 1, status: 1, createdAt: -1 }`, để `status` thu hẹp khoảng quét. Nhìn số đo theo từng tenant, không chỉ trung bình: một tenant lớn có phân bố dữ liệu khác hẳn. Nếu `S07` còn lớn lên, cân nhắc zone để đưa nó lên shard riêng.", en: "Same query shape, same index; the difference is the data. The index has only `tenantId` then `createdAt`, so `status` is filtered after reading the documents. For a small seller almost every recent order is open, so 24 keys give the 20 orders; `S07` has very few open orders among hundreds of thousands of finished ones, so it walks 310,000 keys. Fix: an ESR index `{ tenantId: 1, status: 1, createdAt: -1 }`, so `status` narrows the scanned range. Look at metrics per tenant, not only averages: a big tenant has a very different data distribution. If `S07` keeps growing, consider a zone that moves it to its own shard." }
     rubric:
       - { vi: "Đọc tỉ lệ 310.000/20 so với 24/20", en: "Reads the 310,000/20 ratio against 24/20" }

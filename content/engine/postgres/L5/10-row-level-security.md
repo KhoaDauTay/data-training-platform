@@ -76,8 +76,8 @@ quiz:
     why: { vi: "Nghe hợp lý vì thiếu `WITH CHECK` thì tưởng không có gì kiểm dòng mới, nhưng Postgres tự điền nó. `USING` lọc dòng cũ được nhắm tới; `WITH CHECK` kiểm dòng mới. Không ghi `WITH CHECK` thì Postgres dùng lại `USING`, chặn việc \"đẩy\" dòng sang khách khác.", en: "It sounds right because without `WITH CHECK` nothing seems to check the new row, but Postgres fills it in. `USING` filters the existing rows you can target; `WITH CHECK` validates the new row. Without `WITH CHECK`, Postgres reuses `USING`, which stops a row being \"pushed\" to another tenant." }
   - q: { vi: "Ứng dụng kết nối bằng chính vai trò sở hữu bảng. Policy không có tác dụng. Sửa thế nào?", en: "The application connects as the role that owns the table. The policies have no effect. How do you fix it?" }
     options:
-      - { vi: "`FORCE ROW LEVEL SECURITY`, hoặc vai trò riêng cho ứng dụng", en: "`FORCE ROW LEVEL SECURITY`, or a separate role for the app" }
-      - { vi: "Xóa rồi tạo lại các policy cho đúng", en: "Drop and recreate the policies correctly" }
+      - { vi: "`FORCE ROW LEVEL SECURITY` hoặc vai trò riêng", en: "`FORCE ROW LEVEL SECURITY` or a separate app role" }
+      - { vi: "Xóa rồi tạo lại các policy, lần này cho đúng vai trò", en: "Drop and recreate the policies for the right role" }
       - { vi: "Đặt `row_security = off` cho vai trò ứng dụng", en: "Set `row_security = off` for the app role" }
     answer: 0
     trap: 1

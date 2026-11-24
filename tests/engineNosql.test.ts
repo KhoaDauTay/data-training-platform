@@ -7,7 +7,8 @@ import { h } from '../src/ui/dom';
 import { icon } from '../src/ui/icons';
 import { parseEngineLesson, type LabStep } from '../src/engine/content';
 import type { LabOutput } from '../src/engine/labs';
-import type { EngineDeps } from '../src/ui/engineView';
+import { pgBar, type EngineDeps } from '../src/ui/engineView';
+import { capChecks, type CapCtx } from '../src/ui/engineCapstone';
 import { stepEnd, stepTop, tablesPanel } from '../src/ui/engineNosql';
 import { recordedView, withPred } from '../src/ui/enginePredict';
 import { costPanel } from '../src/ui/engineDynamo';
@@ -50,6 +51,30 @@ describe('engineDynamo: Partition / Chi phí (v26 L380)', () => {
   it('the cost bar and a DynamoDB "mong lỗi" above the editor', () => {
     expect(stepTop(d, step({ perf: { table: 'Orders' }, slow: 'x' }))!.getAttribute('data-rule')).toBe('cost');
     expect(stepTop(d, step({ error: 'TransactionCanceledException' }))!.textContent).toContain('DynamoDB refuses');
+  });
+});
+
+// R2 E03 (L578b): a Postgres/design capstone's cost bar speaks of the plan cost, never ScannedCount, and "Chấm bằng" lists it.
+describe('thanh chi phí theo engine (e-ds-l5-11)', () => {
+  const dsFiles = import.meta.glob<string>('../content/engine/design/L5/11-*.md', { query: '?raw', import: 'default', eager: true });
+  const ds = Object.entries(dsFiles).map(([p, s]) => parseEngineLesson(s, p, parse))[0];
+  const bar = ds.lab!.steps.findIndex((s) => s.perf);
+  it('pgBar: plan-cost words with the table, no DynamoDB words; nothing without perf', () => {
+    expect(bar).toBe(5);
+    const el = pgBar(d, ds.lab!.steps[bar])!;
+    expect(el.getAttribute('data-rule')).toBe('cost');
+    expect(el.textContent).toContain('EXPLAIN');
+    expect(el.querySelectorAll('code')[1]?.textContent).toBe('orders');
+    expect(el.textContent).not.toMatch(/ScannedCount|ConsumedCapacity|Scan \+/);
+    expect(pgBar(d, ds.lab!.steps[0])).toBeNull();
+  });
+  it('capChecks: the bar is in the step 6 line, Postgres wording; a NoSQL step gets the NoSQL wording', () => {
+    const ctx = (l: typeof ds) => ({ d, et, inline: (t: string) => [t], lang: 'en', l, passed: new Set<string>(), graded: () => true } as unknown as CapCtx);
+    const line = (l: typeof ds, i: number) => capChecks(ctx(l)).querySelector(`[data-check="${i}"]`)!.textContent!;
+    expect(line(ds, bar)).toContain('cost bar: `orders` is read through an index');
+    expect(line(ds, 0)).not.toContain('cost bar');
+    const dy = { ...ds, engine: 'dynamodb' as const };
+    expect(line(dy, bar)).toContain('cost bar: it reads no more than the answer');
   });
 });
 

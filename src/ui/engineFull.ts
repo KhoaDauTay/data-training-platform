@@ -99,7 +99,9 @@ function outView(b: DemoBlock, o: DemoOut | 'busy' | undefined): (Node | null)[]
     ok ? d.icon('check', 'size-4') : null, text);
   if ('result' in o) {
     const r = o.result;
-    return [b.error ? line(false, ft('run.unexpected', { code: b.error })) : line(true, ft('run.rows', { n: r.rows.length, ms: Math.round(r.ms ?? 0) })),
+    // R2 E07 (L578d): a WRONG block that runs is still the wrong way: no green check, the line says so (every engine)
+    const rows = { n: r.rows.length, ms: Math.round(r.ms ?? 0) };
+    return [b.error ? line(false, ft('run.unexpected', { code: b.error })) : b.mark === 'wrong' ? line(false, ft('run.rowsWrong', rows)) : line(true, ft('run.rows', rows)),
       h('div', { class: 'overflow-x-auto', tabindex: '0' }, d.renderResult(r, undefined, 5)), c.meta(r)];
   }
   const got = errCode(o.error);

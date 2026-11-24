@@ -69,7 +69,10 @@ export function capChecks(c: CapCtx): HTMLElement {
   const words = (i: number): string => {
     const s = steps(c)[i];
     const key: PredKey = s.check === 'rows' ? (s.ordered ? 'cap.check.rowsOrdered' : 'cap.check.rows') : `cap.check.${s.check}`;
-    return et(key, { i: i + 1 });
+    // R2 E03 (L578b): a step's cost bar is part of what grades it; Postgres/design name the plan cost (onPg, inlined: no content.ts value here).
+    const pg = c.l.engine === 'postgres' || c.l.engine === 'design';
+    const bar = s.perf ? et(pg ? 'cap.check.perfPg' : 'cap.check.perfNosql', { table: s.perf.table }) : '';
+    return et(key, { i: i + 1 }) + bar;
   };
   return h('section', { class: cls.cx(cls.CARD, 'space-y-2 p-4'), 'aria-labelledby': `${c.l.id}-graded` },
     h('h3', { id: `${c.l.id}-graded`, class: 'm-0 text-body font-bold' }, et('cap.gradedBy')),
@@ -79,7 +82,7 @@ export function capChecks(c: CapCtx): HTMLElement {
       return h('li', { class: 'flex items-start gap-2' },
         ok ? d.icon('check', 'mt-0.5 size-4 shrink-0 text-good') : off ? h('span', { class: 'mt-0.5 inline-block size-4 shrink-0 rounded-full border-2 border-dashed border-line-strong', 'aria-hidden': 'true' })
           : h('span', { class: 'mt-0.5 flex size-4 shrink-0 items-center justify-center', 'aria-hidden': 'true', 'data-todo': '' }, h('span', { class: 'block size-1.5 rounded-full bg-muted' })),
-        h('span', {}, words(i), off ? h('span', { class: 'text-muted' }, ` (${et('cap.ungraded')})`) : h('span', { class: 'sr-only' }, ` (${ok ? et('cap.passed') : et('cap.todo')})`)));
+        h('span', { 'data-check': String(i) }, ...c.inline(words(i)), off ? h('span', { class: 'text-muted' }, ` (${et('cap.ungraded')})`) : h('span', { class: 'sr-only' }, ` (${ok ? et('cap.passed') : et('cap.todo')})`)));
     })));
 }
 

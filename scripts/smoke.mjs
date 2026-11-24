@@ -90,9 +90,12 @@ const ROUTE_HASH = {
 const ROUTES = JSON.parse(/export const ROUTES = (\[[^\]]*\])/.exec(readFileSync(join(ROOT, 'src/route.ts'), 'utf8'))[1].replace(/'/g, '"'));
 // v24 BP-UI (L346): the Best Practice track grid, a lab card, a plan card (engine runtime) and the 8 habits page.
 const BEST_PAGES = ['#/engine/best/sql', '#/engine/best/sql/e-bp-q02', '#/engine/best/postgres/e-bp-i04', '#/engine/best/habits'];
+// R2 T2-P-01 (L578e): the multi-tenant pages (as scripts/ux-audit.mjs TENANCY_PAGES): hub, placement diagram, NoSQL lessons, MongoDB card.
+const TENANCY_PAGES = ['#/engine/design/L4/e-ds-l4-09', '#/engine/design/L5/e-ds-l5-10', '#/engine/mongodb/L3/e-mg-l3-19',
+  '#/engine/dynamodb/L3/e-dy-l3-14', '#/engine/best/mongodb/e-bp-m39'];
 // V20-C (L179): plus the General sub-pages and the other two domains' pages (the list of tests/axe.test.ts).
 const PAGES = [...ROUTES.filter((r) => ROUTE_HASH[r]).map((r) => ROUTE_HASH[r]), '#/learn/sql/1', '#/learn/skill/select', '#/learn/adv/a2', '#/learn/adv/d5',
-  '#/learn/interview', '#/engine/postgres', '#/engine/postgres/L1', '#/engine/mongodb/path', '#/engine/mongodb/path/find', '#/engine/dynamodb/L1/e-dy-l1-09', ...BEST_PAGES, ...(ENGINE_LAB ? [ENGINE_LAB.hash] : []), ...['ecommerce', 'finance'].flatMap((d) => ['', '/play', '/data', '/dashboard', '/map'].map((p) => `#/d/${d}${p}`))];
+  '#/learn/interview', '#/engine/postgres', '#/engine/postgres/L1', '#/engine/mongodb/path', '#/engine/mongodb/path/find', '#/engine/dynamodb/L1/e-dy-l1-09', ...BEST_PAGES, ...TENANCY_PAGES, ...(ENGINE_LAB ? [ENGINE_LAB.hash] : []), ...['ecommerce', 'finance'].flatMap((d) => ['', '/play', '/data', '/dashboard', '/map'].map((p) => `#/d/${d}${p}`))];
 const mainOf = (hash) => (/\/play$/.test(hash) ? 'shell' : /\/data$/.test(hash) ? 'data' : /\/dashboard$/.test(hash) ? 'dashboard' : 'home');
 // axe-core from node_modules (dev dependency, L141; never in dist/), injected into the page over CDP. target-size is off by default.
 const AXE = readFileSync(join(ROOT, 'node_modules/axe-core/axe.min.js'), 'utf8');
@@ -620,7 +623,7 @@ try {
         const main = mainOf(hash);
         await waitFor(`<main id="${main}"> with an h1`, `(location.hash === ${S(hash)} || location.hash.startsWith(${S(hash + '/')})) && (m => m && !m.hidden && !!m.querySelector('h1'))(document.getElementById(${S(main)}))`, 30000);
         await waitFor('#notice closed (DB/domain ready)', `document.getElementById('notice').hidden`, 90000);
-        if (BEST_PAGES.includes(hash)) await waitFor('#engine-page (the drawn Best Practice page)', `!!document.getElementById('engine-page')`, 60000);
+        if (BEST_PAGES.includes(hash) || TENANCY_PAGES.includes(hash)) await waitFor('#engine-page (the drawn lesson or Best Practice page)', `!!document.getElementById('engine-page')`, 60000);
         const m = await ev(`({ sw: document.documentElement.scrollWidth, iw: window.innerWidth, theme: document.documentElement.dataset.theme,
           main: (x => x.scrollWidth - x.clientWidth)(document.getElementById(${S(main)})) })`);
         // against the emulated width, not innerWidth: a mobile viewport may zoom out and grow innerWidth with the content

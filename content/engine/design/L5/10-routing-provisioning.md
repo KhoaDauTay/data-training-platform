@@ -79,7 +79,7 @@ quiz:
       vi: "Token đăng nhập của người dùng nên mang gì để bộ định tuyến tìm đúng shard?"
       en: "What should a user's sign-in token carry so the router finds the right shard?"
     options:
-      - { vi: "tenant_id; shard thì tra danh mục", en: "tenant_id; look the shard up" }
+      - { vi: "Chỉ tenant_id; shard thì tra danh mục", en: "Only tenant_id; look the shard up" }
       - { vi: "Cả tenant_id lẫn shard cho nhanh", en: "Both tenant_id and shard, for speed" }
       - { vi: "Chỉ shard, vì đó là thứ cần tìm", en: "Only the shard, as that is the goal" }
     answer: 0

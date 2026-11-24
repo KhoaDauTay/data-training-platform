@@ -209,7 +209,7 @@ Hai lô, `SH-1006` và `SH-1012`.
 
 ## Lỗi hay gặp
 
-Scan có bộ lọc theo khách. Cả hai câu trả đúng 4 lô của `C03`, nhưng câu sai có `ScannedCount` 15:
+Scan có bộ lọc theo khách. Cả hai câu trả đúng 4 lô của `C03`, nhưng câu sai **đã quét 15 item để trả về 4** (`ScannedCount` 15), và trả phí cho cả 15:
 
 ```json
 // WRONG
@@ -344,7 +344,7 @@ Two shipments, `SH-1006` and `SH-1012`.
 
 ## Common mistakes
 
-A Scan filtered by tenant. Both requests return the same 4 shipments of `C03`, but the wrong one has a `ScannedCount` of 15:
+A Scan filtered by tenant. Both requests return the same 4 shipments of `C03`, but the wrong one **scanned 15 items to return 4** (`ScannedCount` 15), and pays for all 15:
 
 ```json
 // WRONG

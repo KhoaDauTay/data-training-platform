@@ -44,10 +44,15 @@ const CONFIGS = [
   { w: 375, h: 740, theme: 'dark' },
   { w: 320, h: 640, theme: 'light' },
 ];
+// R2 T2-P-01 (L578e): shared with scripts/smoke.mjs's page list (kept equal by hand: two files, no shared module).
+const TENANCY_PAGES = ['#/engine/design/L4/e-ds-l4-09', '#/engine/design/L5/e-ds-l5-10', '#/engine/mongodb/L3/e-mg-l3-19',
+  '#/engine/dynamodb/L3/e-dy-l3-14', '#/engine/best/mongodb/e-bp-m39'];
 const ALL_PAGES = ['#/', '#/learn', '#/learn/sql/1', '#/learn/skill/select', '#/learn/interview', '#/practice', '#/me',
   ...['logistics', 'ecommerce', 'finance'].flatMap((d) => ['', '/play', '/data', '/dashboard', '/map'].map((p) => `#/d/${d}${p}`)),
   '#/engine', '#/engine/postgres', '#/engine/postgres/L1', '#/engine/mongodb/path', '#/engine/dynamodb/L1/e-dy-l1-09',
-  '#/engine/best/sql', '#/engine/best/postgres', '#/engine/best/sql/e-bp-q02', '#/engine/best/postgres/e-bp-i04', '#/engine/best/habits']; // v24 BP-UI (L346)
+  '#/engine/best/sql', '#/engine/best/postgres', '#/engine/best/sql/e-bp-q02', '#/engine/best/postgres/e-bp-i04', '#/engine/best/habits', // v24 BP-UI (L346)
+  // R2 T2-P-01 (L578e): the tenancy hub, the placement diagram, one NoSQL tenancy lesson per engine and the MongoDB card
+  ...TENANCY_PAGES];
 const PAGES = process.env.UX_PAGES ? process.env.UX_PAGES.split(',') : ALL_PAGES;
 const TOPBAR_PAGES = ['#/d/finance', '#/d/logistics/play', '#/learn'];
 const mainOf = (hash) => (/\/play$/.test(hash) ? 'shell' : /\/data$/.test(hash) ? 'data' : /\/dashboard$/.test(hash) ? 'dashboard' : 'home');

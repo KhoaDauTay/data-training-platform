@@ -1,6 +1,6 @@
 import {
-  blocksOf, ENGINES, engineXp, isRight, onPg, lessonPassed, parseEngineLesson, parseModules, partsOf, progressOf, treeOf,
-  type EngineId, type EngineLesson, type Kind, type LessonSource, type Level, type ModuleName, type Question, type SectionId, type Tree,
+  blocksOf, docsNoteKey, ENGINES, engineXp, isRight, onPg, lessonPassed, parseEngineLesson, parseModules, partsOf, progressOf, treeOf,
+  type EngineId, type EngineLesson, type Kind, type LabStep, type LessonSource, type Level, type ModuleName, type Question, type SectionId, type Tree,
 } from '../engine/content';
 import { gradable, honestOf, honestRow, LAB_RUNNERS, type Honest, type LabEnv, type LabOutput, type LabRunner, type LabVerdict } from '../engine/labs';
 import { vizMountFor, type VizDeps, type VizMounted } from '../engine/vizRegistry';
@@ -461,14 +461,21 @@ function question(l: EngineLesson, v: Visit, q: Question, part: string, label: s
     say === 'right' ? et('right') : say === 'wrong' ? et(whyShown(say, v.wrongs[part]) ? 'wrongWhy' : 'wrong') : say === 'pick' ? et('pick') : '');
   return h('fieldset', { class: 'm-0 min-w-0 space-y-2 border-0 p-0' }, // min-w-0: a fieldset is min-content wide by default (T1-C8-01)
     h('legend', { class: 'mb-2 p-0 font-bold' }, label ? h('span', { class: 'block text-caption font-bold tracking-wider text-muted uppercase' }, label) : null, ...inline(q.q[lang()])),
-    ...d.optionOrder(`${l.id}#${part}`, q.options.length).map((i) => h('label', {
-      class: cls.cx('flex min-h-11 cursor-pointer items-center gap-2 rounded-(--r-ctl) px-3 py-1 hover:bg-accent-soft has-[:checked]:bg-accent-soft has-[:checked]:ring-2 has-[:checked]:ring-accent',
-        say === 'right' && v.picks[part] === i ? 'bg-good-soft ring-1 ring-good' : say === 'wrong' && v.picks[part] === i ? 'bg-bad-soft ring-1 ring-line' : 'ring-1 ring-line'),
-    },
-      h('input', {
-        type: 'radio', name, value: String(i), 'data-ek': `${name}-${i}`, checked: v.picks[part] === i,
-        onchange: () => { v.picks[part] = i; },
-      }), h('span', {}, ...inline(q.options[i][lang()])))),
+    ...d.optionOrder(`${l.id}#${part}`, q.options.length).map((i) => {
+      // R2 E16 (L578f): a checked wrong pick is red with a ✕, never the teal "selected" look of a pick not checked yet
+      const bad = say === 'wrong' && v.picks[part] === i;
+      const good = say === 'right' && v.picks[part] === i;
+      return h('label', {
+        class: cls.cx('flex min-h-11 cursor-pointer items-center gap-2 rounded-(--r-ctl) px-3 py-1 hover:bg-accent-soft',
+          bad ? 'bg-bad-soft ring-2 ring-bad' : good ? 'bg-good-soft ring-2 ring-good'
+            : 'ring-1 ring-line has-[:checked]:bg-accent-soft has-[:checked]:ring-2 has-[:checked]:ring-accent'),
+        'data-wrong-pick': bad ? '' : false,
+      },
+        h('input', {
+          type: 'radio', name, value: String(i), 'data-ek': `${name}-${i}`, checked: v.picks[part] === i,
+          onchange: () => { v.picks[part] = i; },
+        }), h('span', { class: 'min-w-0 flex-1' }, ...inline(q.options[i][lang()])), bad ? d.icon('x', 'size-4 shrink-0 text-bad') : null);
+    }),
     h('div', { class: 'flex flex-wrap items-center gap-3' },
       h('button', {
         type: 'button', class: cls.cx(cls.BTN_SECONDARY, 'px-4 py-1.5'), 'data-ek': `${name}-check`,
@@ -644,6 +651,19 @@ function tablesPanel(l: EngineLesson, v: Visit): HTMLElement | null {
   return box;
 }
 
+/**
+ * R2 E03 (L578b): a Postgres/design step's `perf` bar, in plan-cost words. The NoSQL chunk's `stepTop` (ScannedCount, RCU)
+ * is for MongoDB/DynamoDB only: it stays cached after a NoSQL lesson, so a Postgres step must never reach it.
+ */
+export function pgBar(dd: Pick<EngineDeps, 'h' | 'cls' | 'getLang' | 'locale'>, s: LabStep): HTMLElement | null {
+  if (!s.perf) return null;
+  const { h, cls } = dd;
+  const t = (k: EngineKey, p?: I18n.Params): string => engineText(dd.getLang(), dd.locale(), k, p);
+  return h('p', { class: 'm-0 flex flex-wrap items-center gap-2 text-body-sm', 'data-rule': 'cost' },
+    h('span', { class: cls.cx(cls.PILL, 'bg-sun text-sun-ink font-bold') }, t('perf.bar')),
+    h('span', { class: 'text-muted' }, ...t('perf.barNote', { table: s.perf.table }).split(/`([^`]+)`/).map((x, i) => (i % 2 ? h('code', {}, x) : x))));
+}
+
 function labView(l: EngineLesson, v: Visit): HTMLElement {
   const { h, cls } = d;
   const steps = l.lab!.steps;
@@ -677,7 +697,7 @@ function labView(l: EngineLesson, v: Visit): HTMLElement {
           h('div', { class: 'min-w-0 flex-1 flex flex-col gap-1' },
             h('h3', { class: 'm-0 text-caption font-bold tracking-wider text-muted uppercase' }, et('lab.step', { i: i + 1, n: steps.length }),
               i === cur ? h('span', { class: 'ml-2 text-accent-ink' }, `· ${et('cap.current')}`) : null),
-            h('p', { class: 'm-0' }, ...inline(s.task[lang()])), N()?.stepTop(d, s))),
+            h('p', { class: 'm-0' }, ...inline(s.task[lang()])), onPg(l.engine) ? pgBar(d, s) : N()?.stepTop(d, s))),
         ed ? codeBox(`${key}-code`, v.code[i] ?? '', et('lab.code', { i: i + 1 }), onPg(l.engine), {
           change: (x) => { v.code[i] = x; }, run: () => void labAction(l, v, i, false), submit: () => void labAction(l, v, i, true),
         }) : null,
@@ -790,7 +810,7 @@ function lessonBody(l: EngineLesson): HTMLElement {
         honestChip(l), kindChip(l.kind), h('span', {}, et('minutes', { n: l.minutes })), h('span', { 'aria-hidden': 'true' }, '·'),
         h('a', { href: d.engineHash(l.engine, l.level), class: 'text-muted' }, module.name[lang()]),
         isDone ? h('span', { class: cls.cx(cls.PILL, cls.DONE_PILL) }, d.icon('check', 'size-4'), et('done')) : null),
-      l.runtime === 'docs' ? h('p', { class: 'm-0 text-body-sm text-muted', 'data-runtime': 'docs' }, et(l.docsWhy ? `runtime.docs.${l.docsWhy}` : 'runtime.docs')) : null,
+      l.runtime === 'docs' ? h('p', { class: 'm-0 text-body-sm text-muted', 'data-runtime': 'docs' }, et(docsNoteKey(l) as EngineKey)) : null,
       req.length ? h('p', { class: 'm-0 flex flex-wrap items-center gap-2 text-body-sm' }, h('span', { class: 'text-muted' }, `${et('requires')}:`),
         ...req.map((x) => h('a', { href: lessonHash(x), class: cls.cx(cls.PILL, 'min-h-6 bg-code text-ink no-underline hover:bg-accent-soft') }, x.title[lang()], tick(ok.has(x.id))))) : null),
     ...secs((id) => id === 'open'),
@@ -825,7 +845,10 @@ function lessonBody(l: EngineLesson): HTMLElement {
       h('div', { class: 'ml-auto flex flex-wrap gap-2' },
         prev ? h('a', { href: lessonHash(prev), class: cls.cx(cls.BTN_GHOST, 'inline-flex items-center gap-1 px-4 py-2 no-underline'), title: prev.title[lang()] }, d.icon('chevronLeft', 'size-4'), et('lesson.prev')) : null,
         next ? h('a', { href: lessonHash(next), class: cls.cx(isDone ? cls.BTN_GO : cls.BTN_SECONDARY, 'inline-flex items-center gap-1 px-4 py-2 no-underline'), title: et('next', { title: next.title[lang()] }) },
-          et('lesson.next'), d.icon('chevronRight', 'size-4')) : null)),
+          et('lesson.next'), d.icon('chevronRight', 'size-4'))
+          // R2 E13 (L578f): the track's last lesson is no dead end: back to the engine's page
+          : h('a', { href: d.engineHash(l.engine), class: cls.cx(isDone ? cls.BTN_GO : cls.BTN_SECONDARY, 'inline-flex items-center gap-1 px-4 py-2 no-underline'), 'data-ek': `${l.id}-to-engine` },
+            et('lesson.toEngine', { name: nameOf(l.engine) }), d.icon('chevronRight', 'size-4')))),
     mark?.list() ?? null,
     l.sources.length ? h('section', { class: 'flex flex-col gap-2', 'aria-labelledby': `${l.id}-src` },
       h('h2', { id: `${l.id}-src`, class: 'm-0 text-body font-bold' }, et('sources')),

@@ -268,6 +268,25 @@ describe('engineViz shell', () => {
         }
       }
       expect(words()).toEqual(expect.arrayContaining(['t-04', 's4']));
+      // R2 E06 (L578c): every tenant cell sits ≥ 3 units inside its shard, ≥ 3 units from its neighbour; step 6 cuts no key
+      for (let i = 0; i < v.count; i++) {
+        v.go(i);
+        const shards = [0, 1, 2, 3].map((s) => svg.querySelector(`rect[data-k="sh${s}"]`)!);
+        const cells = [...svg.querySelectorAll('rect[data-k^="ct-"]')];
+        expect(cells.length).toBe(6);
+        for (const c of cells) {
+          const [x, y, w, hh] = ['x', 'y', 'width', 'height'].map((a) => at(c, a));
+          const sh = shards.find((s) => x >= at(s, 'x') && x < at(s, 'x') + at(s, 'width'))!;
+          expect(x - at(sh, 'x'), `step ${i + 1} ${c.getAttribute('data-k')}`).toBeGreaterThanOrEqual(3);
+          expect(at(sh, 'x') + at(sh, 'width') - (x + w)).toBeGreaterThanOrEqual(3);
+          expect(at(sh, 'y') + at(sh, 'height') - (y + hh)).toBeGreaterThanOrEqual(3);
+          expect(w).toBeGreaterThanOrEqual(34);
+          for (const o of cells) if (o !== c && at(o, 'y') === y && at(o, 'x') > x) expect(at(o, 'x') - (x + w)).toBeGreaterThanOrEqual(3);
+        }
+      }
+      v.go(5);
+      expect(words().some((w) => w === 'Dynamo  TENANT#t-04')).toBe(true);
+      expect(words().some((w) => /#…/.test(w ?? ''))).toBe(false);
       v.go(3);
       expect(words()).toContain(lang === 'vi' ? 'quá tải' : 'overloaded');
       v.go(4);

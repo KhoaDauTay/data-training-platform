@@ -96,7 +96,7 @@ quiz:
       en: "The seller page runs `find({ tenantId, status }).sort({ createdAt: -1 })` and already has the index `{ status: 1, createdAt: -1 }`. Should it switch to an index that starts with `tenantId`?"
     options:
       - { vi: "Không cần: `status` đã lọc gần hết, phần đọc thêm rất nhỏ", en: "No need: `status` already filters most out, the extra reading is tiny" }
-      - { vi: "Không cần: MongoDB tự thêm `tenantId` vào mọi index kép", en: "No need: MongoDB adds `tenantId` to every compound index by itself" }
+      - { vi: "Nên: để phép `sort` theo `createdAt` dùng được index", en: "Yes: so that the `sort` on `createdAt` can use an index" }
       - { vi: "Nên: thiếu nó, mỗi lần đọc đi qua khóa của mọi người bán", en: "Yes: without it, every read walks the keys of every seller" }
     answer: 2
     trap: 0
@@ -108,7 +108,7 @@ quiz:
       en: "The `S07` report puts `$unwind` first and only then `$match: { tenantId: \"S07\" }`, and the result is right. What is the concern on `mongod`?"
     options:
       - { vi: "`$unwind` tách đơn của mọi người bán trước khi lọc ra một người", en: "`$unwind` splits every seller's orders before one seller is picked out" }
-      - { vi: "Kết quả sẽ thiếu những đơn có nhiều dòng hàng sau `$unwind`", en: "The result will miss the orders that have several lines after `$unwind`" }
+      - { vi: "`$unwind` luôn ghi ra đĩa, nên cần bật `allowDiskUse`", en: "`$unwind` always spills to disk, so it needs `allowDiskUse`" }
       - { vi: "Không gì: `mongod` luôn tự dời `$match` qua `$unwind` cho bạn", en: "Nothing: `mongod` always moves `$match` across `$unwind` for you" }
     answer: 0
     trap: 2

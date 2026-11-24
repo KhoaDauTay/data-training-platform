@@ -132,8 +132,8 @@ Trang quản lý cần số đơn và doanh thu của mỗi cửa hàng, mỗi l
 
 DynamoDB không có `COUNT(*)` hay `SUM()` chạy trên cả bảng. Có ba cách, giá rất khác nhau:
 
-- **`Select` `COUNT` trên `Query`**: đếm item của một item collection. Không trả item, nhưng **vẫn tốn RCU như đọc cả item**, và vẫn chia trang ở 1 MB.
-- **`Scan` để đếm hay cộng**: đọc cả bảng mỗi lần hỏi. Bảng lớn lên thì phí lớn theo. Chỉ dùng cho việc nền.
+- **Đếm trên một Query** (`Select` `COUNT` trên `Query`): đếm item của một item collection. Không trả item, nhưng **vẫn tốn RCU như đọc cả item**, và vẫn chia trang ở 1 MB.
+- **Quét để đếm hay cộng** (`Scan`): đọc cả bảng mỗi lần hỏi. Bảng lớn lên thì phí lớn theo. Chỉ dùng cho việc nền.
 - **Tổng tính sẵn**: giữ một item như `STATS` có `orderCount`, `revenue`, cập nhật mỗi lần ghi đơn. Đọc nó là một `GetItem` 0,5 RCU, bảng lớn bao nhiêu cũng vậy.
 
 Tổng tính sẵn chỉ đáng tin khi mọi lần ghi đều cập nhật nó. Có hai cách giữ nó khớp:
@@ -222,8 +222,8 @@ The manager page needs each store's order count and revenue every time it opens.
 
 DynamoDB has no `COUNT(*)` or `SUM()` that runs over a whole table. There are three ways, at very different prices:
 
-- **`Select` `COUNT` on a `Query`**: counts the items of one item collection. No items come back, but it **still costs RCU like reading the items**, and still pages at 1 MB.
-- **A `Scan` to count or sum**: reads the whole table every time you ask. The bigger the table, the bigger the bill. Keep it for background jobs.
+- **Counting on a Query** (`Select` `COUNT` on a `Query`): counts the items of one item collection. No items come back, but it **still costs RCU like reading the items**, and still pages at 1 MB.
+- **A scan to count or sum** (`Scan`): reads the whole table every time you ask. The bigger the table, the bigger the bill. Keep it for background jobs.
 - **A precomputed total**: keep an item such as `STATS` with `orderCount` and `revenue`, updated on every order write. Reading it is one `GetItem` of 0.5 RCU, however big the table gets.
 
 A precomputed total can be trusted only when every write updates it. Two ways keep it in step:

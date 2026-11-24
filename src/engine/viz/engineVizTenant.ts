@@ -74,7 +74,7 @@ define<TenancyModel>('pg-tenancy-models', {}, (m, tr) => {
 
 // v37 (L573, uiux-design §2.3): pg-tenant-placement, the platform view. An illustration (nothing here runs in the
 // browser), so every frame carries the "Minh họa" note. Tenants are their catalog ids (as in e-ds-l5-10's lab), tones
-// only repeat the words. 4 shards, 12 units apart; every arrow stops 3 units short of the box it points at (R1 E04).
+// only repeat the words. 4 shards, 6 units apart; every arrow stops 3 units short of the box it points at (R1 E04).
 // ── tenantPlacement ─────────────────────────────────────────────────────────────────────────────────────────────
 export interface PlacementModel { tenants: { id: string; tier: string; shard: number }[]; move: { tenant: string; to: number } }
 export const PLACEMENT_SAMPLE: PlacementModel = {
@@ -82,8 +82,9 @@ export const PLACEMENT_SAMPLE: PlacementModel = {
     .map(([id, tier, shard]) => ({ id: id as string, tier: tier as string, shard: shard as number })),
   move: { tenant: 't-04', to: 3 },
 };
-const SX = [6, 92, 178, 264];
-const SW = 74;
+// R2 E06 (L578c): wider shards (78) so two 34-unit tenant cells keep ~4 units around their label (R2 T2-C7-01: 2.2).
+const SX = [4, 88, 172, 256];
+const SW = 78;
 
 define<PlacementModel>('pg-tenant-placement', PLACEMENT_SAMPLE, (m, tr) => {
   const ts = (Array.isArray(m?.tenants) ? m.tenants : PLACEMENT_SAMPLE.tenants).slice(0, 6)
@@ -104,7 +105,7 @@ define<PlacementModel>('pg-tenant-placement', PLACEMENT_SAMPLE, (m, tr) => {
     out.push({ k: 'cat', t: 'r', x: 60, y: 66, w: 220, h: 128, tone: 'plain' });
     if (step === 5) {
       out.push(text('ch', 72, 82, tr('khóa bắt đầu bằng khách', 'keys start with the tenant'), { b: true, ink: 'muted' }));
-      ['SQL  (tenant_id, id)', 'Mongo  { tenantId, … }', 'Dynamo  TENANT#t-04#…'].forEach((s, i) => out.push(text(`n${i}`, 72, ROW(i) + 8, s, { mono: true })));
+      ['SQL  (tenant_id, id)', 'Mongo  { tenantId, … }', 'Dynamo  TENANT#t-04'].forEach((s, i) => out.push(text(`n${i}`, 72, ROW(i) + 8, s, { mono: true })));
     } else {
       [tr('khách', 'tenant'), tr('gói', 'tier'), 'shard'].forEach((s, i) => out.push(text(`h${i}`, [72, 120, 232][i], 82, s, { b: true, ink: 'muted' })));
       ts.forEach((t, i) => {
@@ -122,17 +123,17 @@ define<PlacementModel>('pg-tenant-placement', PLACEMENT_SAMPLE, (m, tr) => {
     SX.forEach((x, s) => {
       const on = focusShards.includes(s);
       const hot = step === 3 && s === from;
-      out.push({ k: `sh${s}`, t: 'r', x, y: 226, w: SW, h: 86, tone: !on ? 'ghost' : hot ? 'dead' : s >= 2 ? 'new' : 'cell', bold: hot });
+      out.push({ k: `sh${s}`, t: 'r', x, y: 226, w: SW, h: 90, tone: !on ? 'ghost' : hot ? 'dead' : s >= 2 ? 'new' : 'cell', bold: hot });
       out.push(text(`sl${s}`, x + SW / 2, 240, `s${s + 1}`, { a: 'm', b: true, ink: on ? 'ink' : 'muted' }));
       out.push(text(`ss${s}`, x + SW / 2, 256, hot ? tr('quá tải', 'overloaded') : kind[s], { a: 'm', ink: hot ? 'dead' : on ? 'ink' : 'muted' }));
-      ts.filter((t) => home(t) === s).forEach((t, j) => out.push(...box(`c${t.id}`, x + 4 + (j % 2) * 35, 266 + Math.floor(j / 2) * 22, 31, 18, t.id,
+      ts.filter((t) => home(t) === s).forEach((t, j) => out.push(...box(`c${t.id}`, x + 4 + (j % 2) * 37, 266 + Math.floor(j / 2) * 24, 34, 20, t.id,
         !on ? 'ghost' : t === mv && step >= 3 ? 'warm' : 'plain')));
     });
     return out;
   };
   const v = { t: mv.id, a: `s${from + 1}`, b: `s${to + 1}` };
   return {
-    title: tr('Minh họa: khách nào ở shard nào', 'Illustration: which tenant lives on which shard'), w: 340, h: 318,
+    title: tr('Minh họa: khách nào ở shard nào', 'Illustration: which tenant lives on which shard'), w: 340, h: 322,
     frames: [
       { say: fill(tr('Mỗi yêu cầu mang tenant_id. Bộ định tuyến tra bảng danh mục để biết khách ở shard nào: {t} ở {a}.', 'Every request carries tenant_id. The router looks the tenant up in a catalog table: {t} lives on {a}.'), v), nodes: draw(0) },
       { say: tr('Khách nhỏ gói free và pro dùng chung hai shard s1 và s2: mô hình pool, rẻ cho mỗi khách.', 'Small tenants on the free and pro tiers share shards s1 and s2: the pool model, cheap per tenant.'), nodes: draw(1) },

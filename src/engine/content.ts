@@ -68,6 +68,15 @@ export type Runtime = (typeof RUNTIMES)[number];
 export const DOCS_WHY = ['sessions', 'server', 'scale', 'next'] as const;
 export type DocsWhy = (typeof DOCS_WHY)[number];
 /**
+ * The i18n key of a `runtime: docs` lesson's notice (L578a): the `docs_why` texts name Postgres and PGlite, so a MongoDB or
+ * DynamoDB lesson gets its own engine's `server` wording (a real cluster / the real AWS service), else the generic notice.
+ */
+export function docsNoteKey(l: { engine: EngineId; docsWhy?: DocsWhy }): string {
+  if (!l.docsWhy) return 'runtime.docs';
+  if (l.engine === 'mongodb' || l.engine === 'dynamodb') return l.docsWhy === 'server' ? `runtime.docs.server.${l.engine}` : 'runtime.docs';
+  return `runtime.docs.${l.docsWhy}`;
+}
+/**
  * v27 R3 (product-route-v24 §2.2): the eight-section anatomy adds `open` (drawn above the objectives), `syntax`, `pitfalls`
  * and `recap` (drawn after the questions). Which sections a kind needs: tests/engineAnatomy.test.ts.
  */

@@ -25,9 +25,13 @@ export function metaView(d: EngineDeps, r: LabOutput): HTMLElement | null {
       ['meta.docsExamined', m.explain.docsExamined.toLocaleString(d.locale())]);
   }
   const plans = (['planBefore', 'planAfter'] as const).filter((k) => m[k]);
+  // R2 E07 (L578d): read more than returned (a Scan + filter) is the point of the number: say it, not only in grey
+  const over = m.scannedCount !== undefined && m.count !== undefined && m.scannedCount > m.count;
   return h('section', { class: 'flex flex-col gap-2', 'aria-label': rt(d, 'meta.title') },
     pairs.length ? h('dl', { class: 'm-0 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 rounded-(--r-inset) bg-surface-2 p-3 text-body-sm' },
-      ...pairs.flatMap(([k, v]) => [h('dt', { class: 'text-muted' }, rt(d, k)), h('dd', { class: 'm-0 font-semibold tabular-nums' }, v)])) : null,
+      ...pairs.flatMap(([k, v]) => [h('dt', { class: 'text-muted' }, rt(d, k)), h('dd', { class: over && k === 'meta.scannedCount' ? 'm-0 font-bold tabular-nums text-bad' : 'm-0 font-semibold tabular-nums' }, v)])) : null,
+    over ? h('p', { class: 'm-0 rounded-(--r-inset) bg-bad-soft p-2 text-body-sm font-semibold text-ink', 'data-overread': '' },
+      rt(d, 'meta.overread', { s: m.scannedCount!, n: m.count! })) : null,
     ...plans.map((k) => h('div', {}, h('p', { class: 'm-0 text-body-sm text-muted' }, rt(d, `meta.${k}`)), h('pre', { tabindex: '0', class: 'sql m-0 overflow-x-auto' }, m[k]!))),
     m.catalog?.length ? h('div', {}, h('p', { class: 'm-0 text-body-sm text-muted' }, rt(d, 'meta.catalog')),
       h('pre', { tabindex: '0', class: 'sql m-0 overflow-x-auto' }, m.catalog.map((row) => row.map(String).join(' | ')).join('\n'))) : null);

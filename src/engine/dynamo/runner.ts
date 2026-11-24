@@ -143,6 +143,24 @@ function pkOf(req: DynamoRequest, lab: DynamoLab): string | undefined {
   return (idx ?? t)?.KeySchema?.find((k) => k.KeyType === 'HASH')?.AttributeName;
 }
 
+/** The table's key attributes in order: its HASH and RANGE, then every GSI/LSI key (HASH before RANGE), no repeats. */
+function keysOf(req: DynamoRequest, lab: DynamoLab): string[] {
+  const name = tableOf(req, lab);
+  const t = lab.tables.find((x) => x.TableName === name) as { KeySchema?: KeyDef[]; GlobalSecondaryIndexes?: { KeySchema: KeyDef[] }[]; LocalSecondaryIndexes?: { KeySchema: KeyDef[] }[] } | undefined;
+  const ks = (k?: KeyDef[]): string[] => ['HASH', 'RANGE'].flatMap((type) => (k ?? []).filter((x) => x.KeyType === type).map((x) => x.AttributeName));
+  return [...ks(t?.KeySchema), ...[...(t?.GlobalSecondaryIndexes ?? []), ...(t?.LocalSecondaryIndexes ?? [])].flatMap((g) => ks(g.KeySchema))];
+}
+/**
+ * R2 E07 (L578d): result columns in a stable order, the keys first (the engine returns attributes in no fixed order, so
+ * two runs of one lesson showed `port, SK, …` and `weightKg, port, …`, the partition key off screen): the given key
+ * attributes that occur, then the rest by name.
+ */
+export function columnOrder(names: string[], keys: string[]): string[] {
+  const all = new Set(names);
+  const head = [...new Set(keys)].filter((k) => all.has(k));
+  return [...head, ...[...all].filter((n) => !head.includes(n)).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))];
+}
+
 export function dynamoRunner(env: Pick<LabEnv, 'lang'>, client = new DynamoClient(labOf)): LabRunner {
   const t = () => TEXT[env.lang()];
   const raw = async (lab: Lab, req: DynamoRequest): Promise<DynamoResult> => {
@@ -245,7 +263,7 @@ export function dynamoRunner(env: Pick<LabEnv, 'lang'>, client = new DynamoClien
 /** Items (or, after a write, the table it changed) as a table; the engine's numbers as LabMeta (v26: + the cost panel's data). */
 function output({ req, r }: { req: DynamoRequest; r: DynamoResult }, lab: DynamoLab): LabOutput {
   const items = r.after ?? r.Items;
-  const columns = [...new Set(items.flatMap((i) => Object.keys(i)))];
+  const columns = columnOrder(items.flatMap((i) => Object.keys(i)), keysOf(req, lab));
   const base = items.length || !r.raw || !isObj(r.raw) || 'Items' in r.raw || 'Item' in r.raw || 'Responses' in r.raw
     ? { columns, types: [], rows: items.map((i) => columns.map((c) => (i[c] ? cell(unmarshal(i[c])) : undefined))) }
     : { columns: ['response'], types: [], rows: [[JSON.stringify(r.raw, null, 1)]] };

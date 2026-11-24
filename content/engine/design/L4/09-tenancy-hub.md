@@ -92,13 +92,47 @@ Một sáng, người bán Minh Tea gọi lên: báo cáo thu tiền của họ 
 
 Trong pool, ba lớp giữ dữ liệu các khách tách nhau, và mỗi lớp chặn một loại lỗi. **Câu lọc**: mọi câu nhắc tới `tenant_id`, kể cả trong điều kiện nối, nếu không thì đọc nhầm. **Khóa**: `tenant_id` đầu khóa chính, khóa ngoại ghép và luật duy nhất theo tenant, để database từ chối ghi sai. **Chính sách**: bảo mật theo dòng thêm điều kiện tenant vào mọi câu, làm lưới khi một câu quên lọc.
 
-Bản đồ chủ đề, mỗi dòng một lớp và các bài đào sâu lớp đó:
+Bản đồ chủ đề: mỗi lớp một nhóm, mỗi dòng một bài đào sâu lớp đó.
 
-- **Mô hình** (dữ liệu nằm ở đâu): `e-ds-l4-08` · `e-ds-l4-10` · `e-pg-l1-19` · `e-mg-l5-12` · `e-ds-l5-08`
-- **Câu lọc** (chặn đọc nhầm, giữ câu nhanh): `e-pg-l2-26` · `e-pg-l4-20` · `e-mg-l3-19` · `e-bp-m39`
-- **Khóa** (chặn ghi sai): `e-ds-l2-06` · `e-ds-l2-07` · `e-dy-l3-14`
-- **Chính sách** (lưới khi câu quên lọc): `e-pg-l5-10` · `e-pg-l5-19` · `e-pg-l5-20` · `e-bp-s10` · `e-bp-x08` · `e-dy-l5-09`
-- **Vận hành** (khách rời đi, khách quá tải, đổi cấu trúc từng shard, định tuyến) và bài tổng hợp: `e-pg-l5-21` · `e-pg-l5-22` · `e-dy-l4-16` · `e-ds-l5-09` · `e-ds-l5-10` · `e-ds-l4-11` · `e-ds-l5-11`
+**Mô hình**: dữ liệu nằm ở đâu.
+
+- `e-ds-l4-08`
+- `e-ds-l4-10`
+- `e-ds-l5-08`
+- `e-pg-l1-19`
+- `e-mg-l5-12`
+
+**Câu lọc**: chặn đọc nhầm, giữ câu nhanh.
+
+- `e-pg-l2-26`
+- `e-pg-l4-20`
+- `e-mg-l3-19`
+- `e-bp-m39`
+
+**Khóa**: chặn ghi sai.
+
+- `e-ds-l2-06`
+- `e-ds-l2-07`
+- `e-dy-l3-14`
+
+**Chính sách**: lưới khi câu quên lọc.
+
+- `e-pg-l5-10`
+- `e-pg-l5-19`
+- `e-pg-l5-20`
+- `e-bp-x08`
+- `e-bp-s10`
+- `e-dy-l5-09`
+
+**Vận hành** (khách rời đi, khách quá tải, đổi cấu trúc từng shard, định tuyến) và bài tổng hợp.
+
+- `e-ds-l5-09`
+- `e-ds-l5-10`
+- `e-pg-l5-21`
+- `e-pg-l5-22`
+- `e-dy-l4-16`
+- `e-ds-l4-11`
+- `e-ds-l5-11`
 
 Nhiều người nghĩ có một lớp là đủ. Thật ra chúng không thay nhau được: chính sách không kiểm khóa ngoại trỏ đi đâu, kiểm duy nhất và khóa ngoại cũng không đi qua chính sách, còn khóa thì không ngăn một câu đọc thiếu điều kiện. Silo và bridge đẩy phần lớn việc cô lập xuống hạ tầng; pool đặt nó vào dữ liệu, nên cần đủ cả ba.
 
@@ -152,7 +186,7 @@ WHERE i.tenant_id = 2;
 Câu sai thấy 12 dòng, câu đúng 4. Lớp khóa thì chặn khoản trả cho hóa đơn không có ở người bán đó:
 
 ```sql
--- ERROR 23503: no invoice 9 at seller 1
+-- ERROR 23503: seller 1 has no invoice 9
 INSERT INTO payments
 VALUES (1, 5, 9, 10);
 ```
@@ -174,13 +208,47 @@ One morning seller Minh Tea calls: their payments report holds amounts that are 
 
 In a pool, three layers keep tenants apart, and each layer stops one kind of mistake. **Query filters**: every query names `tenant_id`, join conditions included, otherwise it reads the wrong rows. **Keys**: `tenant_id` first in primary keys, composite foreign keys and per-tenant uniqueness rules, so the database refuses wrong writes. **Policies**: row-level security adds the tenant condition to every query, a net for the query that forgets its filter.
 
-The topic map, one row per layer with the lessons that go deep on it:
+The topic map: one group per layer, one line per lesson that goes deep on it.
 
-- **Models** (where the data lives): `e-ds-l4-08` · `e-ds-l4-10` · `e-pg-l1-19` · `e-mg-l5-12` · `e-ds-l5-08`
-- **Query filters** (stop wrong reads, keep queries fast): `e-pg-l2-26` · `e-pg-l4-20` · `e-mg-l3-19` · `e-bp-m39`
-- **Keys** (stop wrong writes): `e-ds-l2-06` · `e-ds-l2-07` · `e-dy-l3-14`
-- **Policies** (the net for a query that forgets its filter): `e-pg-l5-10` · `e-pg-l5-19` · `e-pg-l5-20` · `e-bp-s10` · `e-bp-x08` · `e-dy-l5-09`
-- **Operations** (a tenant leaves, a tenant overloads, per-shard migrations, routing) and the capstones: `e-pg-l5-21` · `e-pg-l5-22` · `e-dy-l4-16` · `e-ds-l5-09` · `e-ds-l5-10` · `e-ds-l4-11` · `e-ds-l5-11`
+**Models**: where the data lives.
+
+- `e-ds-l4-08`
+- `e-ds-l4-10`
+- `e-ds-l5-08`
+- `e-pg-l1-19`
+- `e-mg-l5-12`
+
+**Query filters**: stop wrong reads, keep queries fast.
+
+- `e-pg-l2-26`
+- `e-pg-l4-20`
+- `e-mg-l3-19`
+- `e-bp-m39`
+
+**Keys**: stop wrong writes.
+
+- `e-ds-l2-06`
+- `e-ds-l2-07`
+- `e-dy-l3-14`
+
+**Policies**: the net for a query that forgets its filter.
+
+- `e-pg-l5-10`
+- `e-pg-l5-19`
+- `e-pg-l5-20`
+- `e-bp-x08`
+- `e-bp-s10`
+- `e-dy-l5-09`
+
+**Operations** (a tenant leaves, a tenant overloads, per-shard migrations, routing) and the capstones.
+
+- `e-ds-l5-09`
+- `e-ds-l5-10`
+- `e-pg-l5-21`
+- `e-pg-l5-22`
+- `e-dy-l4-16`
+- `e-ds-l4-11`
+- `e-ds-l5-11`
 
 Many people think one layer is enough. In fact they cannot replace each other: a policy does not check where a foreign key points, unique and foreign key checks do not go through the policy, and keys do not stop a query that reads without its condition. Silo and bridge push most isolation down into the infrastructure; a pool puts it into the data, so it needs all three.
 
@@ -234,7 +302,7 @@ WHERE i.tenant_id = 2;
 The wrong version sees 12 rows, the right one 4. The key layer stops a payment for an invoice that seller does not have:
 
 ```sql
--- ERROR 23503: no invoice 9 at seller 1
+-- ERROR 23503: seller 1 has no invoice 9
 INSERT INTO payments
 VALUES (1, 5, 9, 10);
 ```

@@ -62,7 +62,7 @@ Một khách lớn của cổng Cargo Query hỏi hai câu: "Ai khác đọc đ�
 
 **Bảng chung (pool)**: mọi khách trong một bảng, mọi khóa mở đầu bằng mã khách (bài `e-dy-l3-14`). Rẻ, một bộ cài đặt, một lần đổi thiết kế. Cách ly dựa vào khóa và điều kiện IAM `dynamodb:LeadingKeys` (bài `e-dy-l5-08`).
 
-**`LeadingKeys` cho khách**: cấp cho thông tin đăng nhập của khách `C02` quyền đọc ghi item có partition key `TENANT#C02`. Ba bẫy nằm trong docs của AWS. Một: `ForAllValues` đúng khi request không mang khóa đó, và Scan không mang, nên thêm `"Null": {"dynamodb:LeadingKeys": "false"}` và không cấp Scan. Hai: mọi khóa, cả của GSI, phải mở đầu bằng mã khách. Ba: khóa có hậu tố (`TENANT#C09#2`) cần `StringLike` với mẫu tiền tố. Lệnh theo lô và transaction được duyệt quyền theo từng item.
+**Điều kiện khóa theo khách** (`LeadingKeys`): cấp cho thông tin đăng nhập của khách `C02` quyền đọc ghi item có partition key `TENANT#C02`. Ba bẫy nằm trong docs của AWS. Một: `ForAllValues` đúng khi request không mang khóa đó, và Scan không mang, nên thêm `"Null": {"dynamodb:LeadingKeys": "false"}` và không cấp Scan. Hai: mọi khóa, cả của GSI, phải mở đầu bằng mã khách. Ba: khóa có hậu tố (`TENANT#C09#2`) cần `StringLike` với mẫu tiền tố. Lệnh theo lô và transaction được duyệt quyền theo từng item.
 
 **Bảng hay tài khoản riêng (silo)**: cài đặt, backup, alarm và phạm vi sự cố theo từng khách. Quota ban đầu 2.500 bảng mỗi vùng cho một tài khoản, xin tăng được tới 10.000; quá nữa thì thêm tài khoản. Giữ cùng thiết kế khóa có tiền tố khách trong bảng riêng, để chuyển khách giữa hai mô hình không phải viết lại truy vấn.
 
@@ -186,7 +186,7 @@ A big tenant of the Cargo Query portal asks two questions: "Can anyone else read
 
 **A shared table (pool)**: every tenant in one table, every key starting with the tenant id (lesson `e-dy-l3-14`). Cheap, one set of settings, one design change. Isolation rests on the keys and the IAM condition `dynamodb:LeadingKeys` (lesson `e-dy-l5-08`).
 
-**`LeadingKeys` for tenants**: give tenant `C02`'s credentials read and write access to items whose partition key is `TENANT#C02`. Three traps sit in the AWS docs. One: `ForAllValues` is true when the request does not carry that key, and a Scan does not, so add `"Null": {"dynamodb:LeadingKeys": "false"}` and do not grant Scan. Two: every key, GSI keys included, must start with the tenant id. Three: a key with a suffix (`TENANT#C09#2`) needs `StringLike` with a prefix pattern. Batch calls and transactions are authorised item by item.
+**Key conditions per tenant** (`LeadingKeys`): give tenant `C02`'s credentials read and write access to items whose partition key is `TENANT#C02`. Three traps sit in the AWS docs. One: `ForAllValues` is true when the request does not carry that key, and a Scan does not, so add `"Null": {"dynamodb:LeadingKeys": "false"}` and do not grant Scan. Two: every key, GSI keys included, must start with the tenant id. Three: a key with a suffix (`TENANT#C09#2`) needs `StringLike` with a prefix pattern. Batch calls and transactions are authorised item by item.
 
 **A table or account each (silo)**: settings, backups, alarms and the blast radius per tenant. The initial quota is 2,500 tables per Region for one account, which can be raised to 10,000; beyond that, add accounts. Keep the same tenant-prefixed key design in a table of its own, so moving a tenant between the two models does not mean rewriting queries.
 

@@ -646,7 +646,10 @@ questions:
     exhibits:
       - label: { vi: "Đầu vào", en: "Input" }
         source: aws-rules
-        shown: "2400 writes/s, item = 1.5 KB; 1 WCU = one write of up to 1 KB; one partition: at most 1000 WCU/s"
+        shown: |-
+          2400 writes/s, item 1.5 KB
+          1 WCU = 1 write of up to 1 KB
+          1 partition: at most 1000 WCU/s
         calc:
           - { expr: "Math.ceil(1.5) * 2400", expect: 4800 }
           - { expr: "Math.ceil(4800 / 1000)", expect: 5 }

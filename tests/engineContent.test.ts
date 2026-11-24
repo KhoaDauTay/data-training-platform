@@ -4,12 +4,13 @@
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 import {
-  blocksOf, ENGINE_XP, engineXp, isRight, lessonPassed, lessonProblems, onPg, parseEngineLesson, parseModules, partsOf, progressOf, treeOf,
+  blocksOf, docsNoteKey, ENGINE_XP, engineXp, isRight, lessonPassed, lessonProblems, onPg, parseEngineLesson, parseModules, partsOf, progressOf, treeOf,
   type EngineLesson,
 } from '../src/engine/content';
 import { compareResults } from '../src/grader';
 import { labRun } from './generalRules';
 import { gradable, honestOf, honestRow } from '../src/engine/labs';
+import { ENGINE_DICT, type EngineKey } from '../src/i18n/engine';
 
 const files = import.meta.glob<string>(['../content/engine/*/L*/*.md', './fixtures/engine/*/L*/*.md'], { query: '?raw', import: 'default', eager: true });
 const moduleFiles = import.meta.glob<string>(['../content/engine/*/modules.yml', './fixtures/engine/*/modules.yml'], { query: '?raw', import: 'default', eager: true });
@@ -23,6 +24,22 @@ describe('content/engine (ENGINE-CONTENT-V1)', () => {
   it('mẫu (tests/fixtures/engine): bài Postgres L1 khái niệm, lab, câu hỏi', () => {
     const pg = lessons.filter((l) => l.engine === 'postgres' && l.level === 'L1');
     for (const k of ['concept', 'lab', 'quiz'] as const) expect(pg.some((l) => l.kind === k)).toBe(true);
+  });
+
+  // R2 E02 (L578a): the inline renderer splits code spans first, so `**` around a code span shows as raw asterisks.
+  it('chữ đậm không bọc code span (ngoài khối code), không còn ** thô', () => {
+    const bad: string[] = [];
+    for (const [p, s] of Object.entries(files)) {
+      if (fixture(p)) continue;
+      let fence = false;
+      s.split(/\r?\n/).forEach((line, i) => {
+        if (/^\s*```/.test(line)) { fence = !fence; return; }
+        if (fence) return;
+        const rest = line.split(/(`[^`\n]+`)/).filter((q) => !(q.length > 1 && q.startsWith('`') && q.endsWith('`')));
+        if (rest.some((q) => q.replace(/\*\*[^*\n]+\*\*/g, '').includes('**'))) bad.push(`${p}:${i + 1}`);
+      });
+    }
+    expect(bad).toEqual([]);
   });
 
   it('tiêu đề bài không có dấu `: h1, hàng bài và tab hiện chữ thô (review v23)', () => {
@@ -180,6 +197,25 @@ describe('honestOf: nhãn trung thực của mọi bài', () => {
 describe('Postgres runtime: docs có lý do', () => {
   it('mọi bài Postgres runtime: docs có docs_why', () => {
     expect(sets[0].filter((l) => l.engine === 'postgres' && l.runtime === 'docs' && !l.docsWhy).map((l) => l.id)).toEqual([]);
+  });
+  // R2 E01 (L578a): the `docs_why` texts name Postgres/PGlite; a MongoDB or DynamoDB lesson shows its own engine's notice.
+  it('thông báo runtime: docs đúng engine (MongoDB/DynamoDB không nói Postgres/PGlite)', () => {
+    const docs = sets[0].filter((l) => l.runtime === 'docs');
+    for (const l of docs) {
+      const key = docsNoteKey(l) as EngineKey;
+      for (const lang of ['vi', 'en'] as const) {
+        const text = ENGINE_DICT[lang][key];
+        expect(text, `${l.id} ${key}`).toBeTruthy();
+        if (!onPg(l.engine)) expect(text, `${l.id} ${lang}`).not.toMatch(/Postgres|PGlite/);
+      }
+    }
+    expect(docsNoteKey({ engine: 'mongodb', docsWhy: 'server' })).toBe('runtime.docs.server.mongodb');
+    expect(docsNoteKey({ engine: 'dynamodb', docsWhy: 'server' })).toBe('runtime.docs.server.dynamodb');
+    expect(docsNoteKey({ engine: 'dynamodb', docsWhy: 'sessions' })).toBe('runtime.docs');
+    expect(docsNoteKey({ engine: 'postgres', docsWhy: 'server' })).toBe('runtime.docs.server');
+    expect(ENGINE_DICT.vi['runtime.docs.server.mongodb']).toMatch(/MongoDB/);
+    expect(ENGINE_DICT.vi['runtime.docs.server.dynamodb']).toMatch(/AWS/);
+    expect(['e-mg-l5-12', 'e-dy-l5-09'].every((id) => docs.some((l) => l.id === id && !onPg(l.engine)))).toBe(true);
   });
 });
 
