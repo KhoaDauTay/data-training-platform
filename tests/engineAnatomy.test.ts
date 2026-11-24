@@ -231,7 +231,9 @@ describe('Engine MongoDB/DynamoDB L1–L5: giải phẫu theo loại bài (R6, v
         return { out: JSON.stringify([r.kind, r.docs, r.value]), empty: r.kind === 'docs' && !r.docs.length && r.value === undefined };
       }
       const r = await dynamo.run(lab, code);
-      return { out: JSON.stringify([r.rows, r.meta?.dynamo?.scanned]), empty: !r.meta?.dynamo?.write && !r.rows.length };
+      // v37: columns now have a fixed order, so a WRONG that returns the same items must differ in cost (ScannedCount or consumed capacity)
+      const d = r.meta?.dynamo as Record<string, unknown> | undefined;
+      return { out: JSON.stringify([r.rows, d?.scanned, d?.capacity ?? d?.consumed ?? d?.rcu]), empty: !r.meta?.dynamo?.write && !r.rows.length };
     } catch (e) {
       const x = e as { code?: string; type?: string; message?: string };
       return { err: x.code ?? x.type ?? `? ${x.message}`, out: '', empty: true };
