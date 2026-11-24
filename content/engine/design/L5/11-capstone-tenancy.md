@@ -17,9 +17,12 @@ objectives:
     en: Move the big seller to a dedicated shard with one catalog row, then make their page fast and prove it with the speed bar.
 requires: [e-ds-l5-10]
 sources:
-  - https://www.postgresql.org/docs/18/ddl-rowsecurity.html
-  - https://www.postgresql.org/docs/18/functions-admin.html#FUNCTIONS-ADMIN-SET
-  - https://www.postgresql.org/docs/18/indexes-multicolumn.html
+  - url: https://www.postgresql.org/docs/18/ddl-rowsecurity.html
+    title: "Row Security Policies"
+  - url: https://www.postgresql.org/docs/18/functions-admin.html#FUNCTIONS-ADMIN-SET
+    title: "System Administration Functions › Configuration Settings"
+  - url: https://www.postgresql.org/docs/18/indexes-multicolumn.html
+    title: "Multicolumn Indexes"
 lab:
   setup: |
     CREATE TABLE shards (

@@ -17,9 +17,12 @@ objectives:
     en: Add an index that starts with tenant_id so that seller's page is fast, and prove it with the speed bar.
 requires: [e-ds-l4-10]
 sources:
-  - https://www.postgresql.org/docs/18/ddl-constraints.html
-  - https://www.postgresql.org/docs/18/indexes-multicolumn.html
-  - https://www.postgresql.org/docs/18/indexes-expressional.html
+  - url: https://www.postgresql.org/docs/18/ddl-constraints.html
+    title: "Constraints"
+  - url: https://www.postgresql.org/docs/18/indexes-multicolumn.html
+    title: "Multicolumn Indexes"
+  - url: https://www.postgresql.org/docs/18/indexes-expressional.html
+    title: "Indexes on Expressions"
 lab:
   setup: |
     CREATE TABLE sellers (

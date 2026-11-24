@@ -100,6 +100,8 @@ export interface EngineLesson {
   objectives: Bi[];
   requires: string[];
   sources: string[];
+  /** v38 (R2 E08): a source written as `{ url, title }` shows that title in "Đọc thêm" instead of its URL slug. */
+  sourceTitles?: Record<string, string>;
   viz?: string;
   lab?: Lab;
   quiz?: Question[];
@@ -175,10 +177,13 @@ export function parseEngineLesson(source: string | LessonSource, path: string, y
     minutes: typeof fm.minutes === 'number' && fm.minutes > 0 && fm.minutes <= 120 ? fm.minutes : fail('minutes phải từ 1 đến 120'),
     objectives: list(fm.objectives, 'objectives').map((o, i) => bi(o, `objectives[${i}]`)),
     requires: list(fm.requires, 'requires').map(String),
-    sources: list(fm.sources, 'sources').map(String),
+    sources: list(fm.sources, 'sources').map((s) => (s && typeof s === 'object' ? String((s as { url?: unknown }).url) : String(s))),
     sections: [],
     order: Number(nn),
   };
+  const titled = list(fm.sources, 'sources').filter((s): s is { url: unknown; title: unknown } => !!s && typeof s === 'object');
+  for (const s of titled) if (typeof s.title !== 'string' || !s.title.trim()) fail('sources: { url, title } cần title');
+  if (titled.length) lesson.sourceTitles = Object.fromEntries(titled.map((s) => [String(s.url), String(s.title)]));
   if (lesson.id !== lessonIdFor(engine, level, nn)) fail(`id phải là ${lessonIdFor(engine, level, nn)} (theo đường dẫn)`);
   if (fm.runtime !== undefined) lesson.runtime = RUNTIMES.includes(fm.runtime as Runtime) ? (fm.runtime as Runtime) : fail(`runtime phải là một trong ${RUNTIMES.join(', ')}`);
   if (fm.docs_why !== undefined) {

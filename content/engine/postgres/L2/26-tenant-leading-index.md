@@ -15,9 +15,12 @@ objectives:
   - { vi: "Giữ điều kiện khách ở dạng index dùng được (`tenant_id = 7`, không bọc biểu thức)", en: "Keep the tenant condition in a form the index can use (`tenant_id = 7`, not wrapped in an expression)" }
 requires: [e-pg-l2-02]
 sources:
-  - https://www.postgresql.org/docs/18/indexes-multicolumn.html
-  - https://www.postgresql.org/docs/18/indexes-ordering.html
-  - https://www.postgresql.org/docs/18/using-explain.html
+  - url: https://www.postgresql.org/docs/18/indexes-multicolumn.html
+    title: "Multicolumn Indexes"
+  - url: https://www.postgresql.org/docs/18/indexes-ordering.html
+    title: "Indexes and ORDER BY"
+  - url: https://www.postgresql.org/docs/18/using-explain.html
+    title: "Using EXPLAIN"
 lab:
   setup: |
     -- Cargo Query customer portal: 50 shippers share one invoices table (loaded from several systems, so created_at is not in heap order)
@@ -96,7 +99,7 @@ LIMIT 10;
 
 ## Ví dụ
 
-Trước khi có index ghép, câu của khách 7:
+Trước khi có index nhiều cột, câu của khách 7:
 
 ```sql
 EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF,

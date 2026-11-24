@@ -15,9 +15,12 @@ objectives:
   - { vi: "Biết tag chi phí gắn theo bảng, nên bảng chung cần ứng dụng tự đo chi phí từng khách", en: "Know that cost tags attach per table, so a shared table needs the application to meter each tenant's cost" }
 requires: [e-dy-l5-08, e-dy-l3-14]
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/specifying-conditions.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ServiceQuotas.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Tagging.html
+  - url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/specifying-conditions.html
+    title: "IAM policy conditions for fine-grained access"
+  - url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ServiceQuotas.html
+    title: "Quotas"
+  - url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Tagging.html
+    title: "Tagging resources"
 demo_setup: |
   {"tables": [{"TableName": "Portal", "BillingMode": "PAY_PER_REQUEST", "KeySchema": [{"AttributeName": "PK", "KeyType": "HASH"}, {"AttributeName": "SK", "KeyType": "RANGE"}], "AttributeDefinitions": [{"AttributeName": "PK", "AttributeType": "S"}, {"AttributeName": "SK", "AttributeType": "S"}]}],
    "items": {"Portal": [

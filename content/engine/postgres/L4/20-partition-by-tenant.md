@@ -16,9 +16,12 @@ objectives:
 requires: [e-pg-l4-08]
 viz: pg-partition-prune
 sources:
-  - https://www.postgresql.org/docs/18/ddl-partitioning.html
-  - https://www.postgresql.org/docs/18/sql-createtable.html
-  - https://www.postgresql.org/docs/18/sql-altertable.html
+  - url: https://www.postgresql.org/docs/18/ddl-partitioning.html
+    title: "Table Partitioning"
+  - url: https://www.postgresql.org/docs/18/sql-createtable.html
+    title: "CREATE TABLE"
+  - url: https://www.postgresql.org/docs/18/sql-altertable.html
+    title: "ALTER TABLE"
 lab:
   setup: |
     -- Lantern Market: seller 1 sells as much as all the others together

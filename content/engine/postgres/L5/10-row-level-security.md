@@ -16,10 +16,14 @@ objectives:
 requires: []
 viz: pg-rls-path
 sources:
-  - https://www.postgresql.org/docs/18/ddl-rowsecurity.html
-  - https://www.postgresql.org/docs/18/sql-createpolicy.html
-  - https://www.postgresql.org/docs/18/sql-createview.html
-  - https://www.postgresql.org/docs/18/view-pg-policies.html
+  - url: https://www.postgresql.org/docs/18/ddl-rowsecurity.html
+    title: "Row Security Policies"
+  - url: https://www.postgresql.org/docs/18/sql-createpolicy.html
+    title: "CREATE POLICY"
+  - url: https://www.postgresql.org/docs/18/sql-createview.html
+    title: "CREATE VIEW"
+  - url: https://www.postgresql.org/docs/18/view-pg-policies.html
+    title: "pg_policies"
 lab:
   setup: |
     DROP TABLE IF EXISTS tickets CASCADE;

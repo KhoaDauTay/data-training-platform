@@ -18,9 +18,12 @@ objectives:
     en: "Keep `tenantId` in the filter of every bulk write"
 requires: [e-mg-l3-05, e-mg-l3-12]
 sources:
-  - https://www.mongodb.com/docs/atlas/build-multi-tenant-arch/
-  - https://www.mongodb.com/docs/manual/tutorial/equality-sort-range-guideline/
-  - https://www.mongodb.com/docs/manual/core/indexes/index-types/index-compound/
+  - url: https://www.mongodb.com/docs/atlas/build-multi-tenant-arch/
+    title: "Build a Multi-Tenant Architecture"
+  - url: https://www.mongodb.com/docs/manual/tutorial/equality-sort-range-guideline/
+    title: "The ESR (Equality, Sort, Range) Guideline"
+  - url: https://www.mongodb.com/docs/manual/core/indexes/index-types/index-compound/
+    title: "Compound Indexes"
 lab:
   setup: |
     {"collections": {"orders": [
@@ -122,7 +125,7 @@ Chợ Lồng Đèn cho mỗi người bán xem đơn của riêng mình, và m�
 
 ## Ý chính
 
-Mô hình collection dùng chung: mọi tài liệu có trường `tenantId` (ở đây là mã người bán) và mọi truy vấn phải lọc theo nó. Trang kiến trúc nhiều tenant của MongoDB Atlas nói rõ việc tách dữ liệu là logic và do tầng ứng dụng giữ: một người dùng database đọc được dữ liệu của mọi tenant.
+Mô hình collection dùng chung: mọi tài liệu có trường `tenantId` (ở đây là mã người bán) và mọi truy vấn phải lọc theo nó. Tài liệu của MongoDB Atlas về kiến trúc nhiều khách nói rõ: ở mô hình này dữ liệu chỉ được tách bằng điều kiện lọc, và chính ứng dụng phải giữ điều kiện đó. Một tài khoản database đọc được dữ liệu của mọi tenant.
 
 Index kép phục vụ truy vấn trên tiền tố (prefix) của nó. Index `{ tenantId: 1, status: 1, createdAt: -1 }` phục vụ `find({ tenantId })`, `find({ tenantId, status })` và cả phần sắp xếp theo `createdAt`. Mọi truy vấn của trang người bán đều có `tenantId`, nên đặt nó đầu mọi index kép thì đoạn quét chỉ còn khóa của một người bán. Phần sau `tenantId` vẫn theo ESR: bằng, sắp, khoảng.
 

@@ -15,10 +15,14 @@ objectives:
   - { vi: "Cho view đọc bảng theo quyền người gọi bằng `security_invoker`", en: "Make a view read its table with the caller's rights using `security_invoker`" }
 requires: [e-pg-l5-10]
 sources:
-  - https://www.postgresql.org/docs/18/ddl-rowsecurity.html
-  - https://www.postgresql.org/docs/18/sql-createpolicy.html
-  - https://www.postgresql.org/docs/18/sql-altertable.html
-  - https://www.postgresql.org/docs/18/sql-createview.html
+  - url: https://www.postgresql.org/docs/18/ddl-rowsecurity.html
+    title: "Row Security Policies"
+  - url: https://www.postgresql.org/docs/18/sql-createpolicy.html
+    title: "CREATE POLICY"
+  - url: https://www.postgresql.org/docs/18/sql-altertable.html
+    title: "ALTER TABLE"
+  - url: https://www.postgresql.org/docs/18/sql-createview.html
+    title: "CREATE VIEW"
 lab:
   setup: |
     DO $$

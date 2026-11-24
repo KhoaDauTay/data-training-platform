@@ -17,10 +17,14 @@ objectives:
     en: Use a partial unique index for an optional value.
 requires: [e-ds-l2-06]
 sources:
-  - https://www.postgresql.org/docs/18/ddl-constraints.html#DDL-CONSTRAINTS-UNIQUE-CONSTRAINTS
-  - https://www.postgresql.org/docs/18/indexes-unique.html
-  - https://www.postgresql.org/docs/18/indexes-partial.html
-  - https://www.postgresql.org/docs/18/ddl-rowsecurity.html
+  - url: https://www.postgresql.org/docs/18/ddl-constraints.html#DDL-CONSTRAINTS-UNIQUE-CONSTRAINTS
+    title: "Constraints › Unique Constraints"
+  - url: https://www.postgresql.org/docs/18/indexes-unique.html
+    title: "Unique Indexes"
+  - url: https://www.postgresql.org/docs/18/indexes-partial.html
+    title: "Partial Indexes"
+  - url: https://www.postgresql.org/docs/18/ddl-rowsecurity.html
+    title: "Row Security Policies"
 lab:
   setup: |
     CREATE TABLE sellers (id int PRIMARY KEY, name text NOT NULL);
@@ -98,6 +102,12 @@ Trong mô hình pool, "duy nhất" gần như luôn có nghĩa "duy nhất trong
 Nhiều người nghĩ luật toàn cục chỉ chặt hơn, không hại gì. Thật ra nó chặn khách hợp lệ, và tài liệu Postgres nói rõ kiểm duy nhất, khóa chính và khóa ngoại không đi qua bảo mật theo dòng: lỗi 23505 cho người bán này biết một giá trị đã có ở người bán khác. Đó là một kênh rò rỉ, dù không ai đọc được dòng kia.
 
 Hai biến thể hay gặp. Email không phân biệt hoa thường: index duy nhất trên biểu thức `(tenant_id, lower(email))`. Giá trị không bắt buộc ghi bằng `''`: index duy nhất một phần `WHERE tax_code <> ''`. Một luật thật sự toàn cục (một số sê-ri chỉ được một tenant đăng ký) không có chỗ trong bảng chia theo tenant; nó cần một bảng chỉ mục riêng.
+
+**NULL không đụng nhau**: theo mặc định, hai dòng `(2, NULL)` không vi phạm `UNIQUE (tenant_id, tax_code)`, vì NULL không bằng NULL. Muốn mỗi người bán có tối đa một dòng thiếu mã số thuế, viết `UNIQUE NULLS NOT DISTINCT (tenant_id, tax_code)` (Postgres 15 trở lên). Bảng ở bài này ghi giá trị thiếu bằng `''`, nên dùng index một phần thay vào đó.
+
+**Thêm hoặc bỏ qua, theo tenant**: `INSERT … ON CONFLICT (tenant_id, email) DO NOTHING` chỉ dùng được khi có một luật duy nhất đúng trên các cột ấy. Với index biểu thức, đích xung đột phải viết đúng biểu thức: `ON CONFLICT (tenant_id, lower(email))`. Viết `ON CONFLICT (email)` thì Postgres báo lỗi 42P10 vì không có luật nào khớp, và đó là dấu hiệu tốt: luật toàn cục đã không còn.
+
+**Thêm luật vào bảng đang chạy**: `CREATE UNIQUE INDEX CONCURRENTLY` dựng index mà không chặn ghi. Nếu dữ liệu cũ đã có hai dòng trùng trong cùng một tenant, lệnh dừng với lỗi 23505 và để lại một index ở trạng thái INVALID, phải xóa đi rồi dựng lại. Vì vậy tìm và gộp các dòng trùng trước, bằng `GROUP BY tenant_id, lower(email) HAVING count(*) > 1`. Index trên cột trần còn có thể thành ràng buộc nhờ `ADD CONSTRAINT … UNIQUE USING INDEX`; index biểu thức thì giữ là index.
 
 ## Cú pháp
 
@@ -204,7 +214,7 @@ CREATE UNIQUE INDEX ex_tax
 
 ## Thực hành
 
-Ba bước, đều chấm bằng catalog: luật email theo người bán, luật email không phân biệt hoa thường, và luật mã số thuế một phần. Sau đó là hai câu hỏi.
+Ba bước, đều chấm bằng catalog: luật email theo người bán, luật email không phân biệt hoa thường, và luật mã số thuế một phần. Mỗi luật sửa một lỗi vừa thấy ở phần trên: luật toàn cục chặn khách hợp lệ, chữ hoa làm một người thành hai, và chuỗi rỗng đụng nhau dù không ai nhập mã. Sau đó là hai câu hỏi về phạm vi của luật.
 
 ## Tóm tắt
 
@@ -226,6 +236,12 @@ In the pool model, "unique" almost always means "unique within one tenant". Writ
 Many people think a global rule is only stricter and does no harm. In fact it blocks valid customers, and the Postgres docs say plainly that unique, primary key and foreign key checks do not go through row-level security: error 23505 tells this seller that a value exists at another seller. That is a leak channel, even though no one can read the other row.
 
 Two common variants. Case-insensitive email: a unique index on the expression `(tenant_id, lower(email))`. An optional value written as `''`: a partial unique index `WHERE tax_code <> ''`. A truly global rule (a serial number only one tenant may register) has no home in a table split by tenant; it needs a separate lookup table.
+
+**NULLs never collide**: by default two rows `(2, NULL)` do not break `UNIQUE (tenant_id, tax_code)`, because NULL is not equal to NULL. To allow at most one row without a tax code per seller, write `UNIQUE NULLS NOT DISTINCT (tenant_id, tax_code)` (Postgres 15 and later). This lesson's table records a missing value as `''`, so it uses a partial index instead.
+
+**Upserts per tenant**: `INSERT … ON CONFLICT (tenant_id, email) DO NOTHING` only works when there is a unique rule on exactly those columns. With an expression index, the conflict target must spell out the expression: `ON CONFLICT (tenant_id, lower(email))`. Writing `ON CONFLICT (email)` makes Postgres fail with 42P10, as no rule matches, and that is a good sign: the global rule is gone.
+
+**Adding the rule to a live table**: `CREATE UNIQUE INDEX CONCURRENTLY` builds the index without blocking writes. If the old data already holds two duplicate rows inside one tenant, the command stops with error 23505 and leaves an INVALID index behind, which must be dropped and built again. So find and merge the duplicates first, with `GROUP BY tenant_id, lower(email) HAVING count(*) > 1`. An index on plain columns can then become a constraint through `ADD CONSTRAINT … UNIQUE USING INDEX`; an expression index stays an index.
 
 ## Syntax
 
@@ -332,7 +348,7 @@ CREATE UNIQUE INDEX ex_tax
 
 ## Practice
 
-Three steps, all graded on the catalog: the per-seller email rule, the case-insensitive email rule, and the partial tax code rule. Then two questions.
+Three steps, all graded on the catalog: the per-seller email rule, the case-insensitive email rule, and the partial tax code rule. Each rule fixes a mistake shown above: the global rule blocks a valid customer, upper case turns one person into two, and empty strings collide although nobody typed a code. Then two questions on the scope of a rule.
 
 ## Recap
 

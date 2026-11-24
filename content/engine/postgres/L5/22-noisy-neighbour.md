@@ -15,10 +15,14 @@ objectives:
   - { vi: "Biết giới hạn nào đặt được theo vai trò (`statement_timeout`, `CONNECTION LIMIT`) và giới hạn nào phải nằm ở tầng trên database", en: "Know which limits can be set per role (`statement_timeout`, `CONNECTION LIMIT`) and which must live above the database" }
 requires: [e-pg-l5-21]
 sources:
-  - https://www.postgresql.org/docs/18/sql-alterrole.html
-  - https://www.postgresql.org/docs/18/runtime-config-client.html
-  - https://www.postgresql.org/docs/18/plpgsql-trigger.html
-  - https://www.postgresql.org/docs/18/errcodes-appendix.html
+  - url: https://www.postgresql.org/docs/18/sql-alterrole.html
+    title: "ALTER ROLE"
+  - url: https://www.postgresql.org/docs/18/runtime-config-client.html
+    title: "Client Connection Defaults"
+  - url: https://www.postgresql.org/docs/18/plpgsql-trigger.html
+    title: "PL/pgSQL › Trigger Functions"
+  - url: https://www.postgresql.org/docs/18/errcodes-appendix.html
+    title: "Error Codes"
 lab:
   setup: |
     DO $$

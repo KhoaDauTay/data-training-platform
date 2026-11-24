@@ -18,9 +18,12 @@ objectives:
     en: "See that a Scan filtered by tenant reads every tenant's items"
 requires: [e-dy-l3-07, e-dy-l3-04]
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-partition-key-design.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-indexes-gsi-overloading.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/specifying-conditions.html
+  - url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-partition-key-design.html
+    title: "Best practices for partition keys"
+  - url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-indexes-gsi-overloading.html
+    title: "Overloading global secondary indexes"
+  - url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/specifying-conditions.html
+    title: "IAM policy conditions for fine-grained access"
 lab:
   setup: |
     {"tables": [{"TableName": "Portal", "BillingMode": "PAY_PER_REQUEST",

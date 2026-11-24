@@ -18,9 +18,12 @@ objectives:
     en: Spot three common operations mistakes - health checks on the wrong path, a grant order that fails only on a fresh environment, a forgotten replication slot.
 requires: [e-ds-l5-09]
 sources:
-  - https://www.postgresql.org/docs/18/sql-grant.html
-  - https://www.postgresql.org/docs/18/logicaldecoding-explanation.html#LOGICALDECODING-REPLICATION-SLOTS
-  - https://www.postgresql.org/docs/18/view-pg-replication-slots.html
+  - url: https://www.postgresql.org/docs/18/sql-grant.html
+    title: "GRANT"
+  - url: https://www.postgresql.org/docs/18/logicaldecoding-explanation.html#LOGICALDECODING-REPLICATION-SLOTS
+    title: "Logical Decoding › Replication Slots"
+  - url: https://www.postgresql.org/docs/18/view-pg-replication-slots.html
+    title: "pg_replication_slots"
 lab:
   setup: |
     CREATE TABLE shards (
@@ -108,7 +111,11 @@ Một yêu cầu của người bán Chợ Lồng Đèn chỉ mang `tenant_id`; 
 
 Định tuyến: bộ định tuyến đọc `tenant_id` từ danh tính đã kiểm (một claim đã ký, không phải thân yêu cầu), tra danh mục ra shard, rồi gửi tới proxy của shard đó. Danh mục chỉ ghi địa chỉ proxy, không ghi địa chỉ máy ghi trực tiếp, để không ứng dụng nào "đi tắt khi proxy hỏng". Mỗi shard có một proxy gộp kết nối riêng; proxy không định tuyến giữa các shard.
 
-Chuyển một khách: khóa ghi của khách, chép dữ liệu theo lô, so số dòng và mã băm, rồi đổi đúng một dòng danh mục kèm số phiên bản, kiểm định tuyến, cuối cùng mới xóa ở shard cũ. Đổi dòng kèm `AND version = 1` để hai tiến trình không cùng chuyển một khách.
+Chuyển một khách: tạm chặn ghi của khách, chép dữ liệu theo lô, so số dòng và mã băm, rồi đổi đúng một dòng danh mục kèm số phiên bản, kiểm định tuyến, cuối cùng mới xóa ở shard cũ. Đổi dòng kèm `AND version = 1` để hai tiến trình không cùng chuyển một khách.
+
+**Bản nhớ tạm của bộ định tuyến**: tra danh mục ở mọi yêu cầu thì chậm, nên bộ định tuyến giữ kết quả vài giây. Ngay sau một lần chuyển, bản nhớ tạm có thể còn trỏ về shard cũ. Vì vậy shard cũ tiếp tục chặn ghi của khách đã đi: yêu cầu đến nhầm bị từ chối với một mã báo "đã chuyển", bộ định tuyến bỏ bản nhớ tạm, tra lại và thử lại. Không có yêu cầu nào lặng lẽ ghi vào nơi ở cũ.
+
+**Khi danh mục không trả lời**: bộ định tuyến từ chối yêu cầu và báo lỗi tạm thời, không bao giờ gửi tới một shard "mặc định". Đoán sai một lần là ghi dữ liệu của người bán này vào chỗ của người bán khác, và lỗi đó khó gỡ hơn nhiều so với vài giây báo bận.
 
 Cấp phát: mỗi shard là một khối cố định (cụm máy, proxy, cấu hình có phiên bản, khóa mã hóa, bí mật cho từng vai trò, cảnh báo), dựng bằng cùng một mô-đun hạ tầng cho cả gói chung lẫn gói riêng, chỉ khác tham số. Kịch bản dựng chỉ tạo vai trò, chưa tạo bảng. Nhiều người nghĩ kịch bản chạy xanh một lần là xong. Thật ra nó phải được thử trên môi trường mới tinh, và phải kiểm theo đúng đường ứng dụng đi: qua proxy.
 
@@ -212,6 +219,10 @@ A Lantern Market seller's request carries only `tenant_id`; someone has to know 
 Routing: the router reads `tenant_id` from a verified identity (a signed claim, not the request body), looks the shard up in the catalog, then sends the request to that shard's proxy. The catalog holds only proxy addresses, never the direct writer address, so no application "takes a shortcut when the proxy is down". Each shard has its own connection-pooling proxy; a proxy does not route between shards.
 
 Moving a tenant: block the tenant's writes, copy its data in batches, compare row counts and hashes, then change exactly one catalog row with a version number, check routing, and only then delete on the old shard. The row change carries `AND version = 1` so two processes never move the same tenant.
+
+**The router's cache**: looking the catalog up on every request is slow, so the router keeps the answer for a few seconds. Right after a move, that cached copy may still point at the old shard. So the old shard keeps blocking the moved tenant's writes: a request that lands there is refused with a "moved" code, and the router drops its cache, looks up again and retries. No request quietly writes to the old home.
+
+**When the catalog does not answer**: the router refuses the request with a temporary error, and never sends it to a "default" shard. One wrong guess writes this seller's data into another seller's place, which is far harder to undo than a few seconds of "busy".
 
 Provisioning: each shard is a fixed unit (cluster, proxy, versioned settings, encryption key, a secret per role, alarms), built from the same infrastructure module for shared and dedicated tiers, with different inputs only. The bootstrap script creates roles but no tables yet. Many people think a script that passed once is done. In fact it must be tested on a brand-new environment, and checked along the path applications really take: through the proxy.
 

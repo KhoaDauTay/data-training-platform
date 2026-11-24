@@ -17,9 +17,12 @@ objectives:
     en: Join two of a tenant's tables on both key columns.
 requires: [e-ds-l2-03]
 sources:
-  - https://www.postgresql.org/docs/18/ddl-constraints.html#DDL-CONSTRAINTS-FK
-  - https://www.postgresql.org/docs/18/sql-createtable.html
-  - https://docs.aws.amazon.com/wellarchitected/latest/saas-lens/silo-pool-and-bridge-models.html
+  - url: https://www.postgresql.org/docs/18/ddl-constraints.html#DDL-CONSTRAINTS-FK
+    title: "Constraints › Foreign Keys"
+  - url: https://www.postgresql.org/docs/18/sql-createtable.html
+    title: "CREATE TABLE"
+  - url: https://docs.aws.amazon.com/wellarchitected/latest/saas-lens/silo-pool-and-bridge-models.html
+    title: "Silo, Pool, and Bridge Models"
 lab:
   setup: |
     CREATE TABLE sellers (id int PRIMARY KEY, name text NOT NULL);
@@ -106,6 +109,12 @@ Một **tenant** (khách hàng thuê hệ thống) là một tổ chức mà d�
 Khóa chính `(tenant_id, id)` cho mỗi tenant đánh số riêng, giữ dữ liệu một tenant nằm liền nhau trong index, và khi chuyển một tenant sang máy khác thì số của họ không đụng số của ai. Khóa ngoại ghép `(tenant_id, customer_id)` trỏ tới `(tenant_id, id)` của bảng cha: hai cột phải khớp cùng lúc, nên một đơn chỉ trỏ được tới khách của chính người bán đó. Khóa ngoại một cột trên `id` không biết chủ là ai, nên nó nhận cả tham chiếu chéo.
 
 Ba thói quen đi kèm: đánh index cho khóa ngoại ghép ở bảng con (xóa dòng cha khỏi phải quét cả bảng con), nối hai bảng bằng cả hai cột, và giữ khóa ngoại một chiều cha → con để chép hay xóa trọn một tenant theo đúng thứ tự.
+
+**Khi id đã là số toàn cục**: nhiều hệ thống có sẵn `id` sinh từ một sequence chung hay UUID, duy nhất trên cả chợ. Không cần đánh số lại. Thêm `UNIQUE (tenant_id, id)` ở bảng cha là đủ để khóa ngoại ghép trỏ vào; khóa chính vẫn có thể là `id`. Cái giá: hai index thay vì một, và dòng của một tenant không còn nằm liền nhau trong index của khóa chính. Với bảng mới, `(tenant_id, id)` làm khóa chính vẫn gọn hơn.
+
+**Đổi một bảng đang chạy**: thêm khóa ngoại ghép vào bảng lớn thì Postgres phải kiểm mọi dòng cũ. Cách êm có hai bước: `ADD FOREIGN KEY … NOT VALID` chỉ kiểm dòng ghi từ lúc đó, rồi `VALIDATE CONSTRAINT` quét dòng cũ mà không chặn ghi. Nếu bước kiểm báo lỗi 23503, đó chính là những tham chiếu chéo đã lọt vào từ trước: sửa dữ liệu, rồi kiểm lại.
+
+**Số riêng cho từng tenant**: một sequence chung vẫn đủ cho `(tenant_id, id)`, số chỉ có khoảng trống. Khi người bán muốn hóa đơn của mình bắt đầu từ 1 và liền nhau, dùng một bảng đếm theo tenant: `UPDATE counters SET n = n + 1 WHERE tenant_id = 2 RETURNING n` trong cùng giao dịch ghi hóa đơn. Lệnh này giữ lock trên dòng đếm của đúng một tenant, nên hai người bán không phải chờ nhau.
 
 ## Cú pháp
 
@@ -244,6 +253,12 @@ A **tenant** is an organisation whose data must stay apart from every other orga
 A primary key `(tenant_id, id)` lets each tenant number its own rows, keeps one tenant's rows together in the index, and when a tenant moves to another server its numbers collide with no one's. A composite foreign key `(tenant_id, customer_id)` points to the parent's `(tenant_id, id)`: both columns must match at once, so an order can only point at its own seller's customer. A single-column foreign key on `id` does not know the owner, so it accepts a cross-tenant reference too.
 
 Three habits come with it: index the composite foreign key on the child side (deleting a parent then does not scan the whole child table), join two tables on both columns, and keep foreign keys one way, parent → child, so a whole tenant can be copied or deleted in the right order.
+
+**When the id is already global**: many systems already have an `id` from a shared sequence or a UUID, unique across the whole market. There is no need to renumber. A `UNIQUE (tenant_id, id)` on the parent is enough for a composite foreign key to point at; the primary key can stay `id`. The price: two indexes instead of one, and one tenant's rows no longer sit together in the primary key's index. For a new table, `(tenant_id, id)` as the primary key is still tidier.
+
+**Changing a live table**: adding a composite foreign key to a big table makes Postgres check every old row. The smooth way has two steps: `ADD FOREIGN KEY … NOT VALID` checks only rows written from then on, then `VALIDATE CONSTRAINT` scans the old rows without blocking writes. If that check reports error 23503, those are exactly the cross-tenant references that slipped in earlier: fix the data, then validate again.
+
+**Per-tenant numbers**: one shared sequence is still enough for `(tenant_id, id)`; the numbers just have gaps. When a seller wants its invoices to start at 1 with no gaps, use a counter table per tenant: `UPDATE counters SET n = n + 1 WHERE tenant_id = 2 RETURNING n` in the same transaction that writes the invoice. It holds a lock on one tenant's counter row only, so two sellers never wait for each other.
 
 ## Syntax
 

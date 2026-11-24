@@ -17,9 +17,12 @@ objectives:
     en: Know which lesson and card to read next for each layer.
 requires: [e-ds-l4-08]
 sources:
-  - https://docs.aws.amazon.com/wellarchitected/latest/saas-lens/silo-pool-and-bridge-models.html
-  - https://www.postgresql.org/docs/18/ddl-constraints.html#DDL-CONSTRAINTS-FK
-  - https://www.postgresql.org/docs/18/ddl-rowsecurity.html
+  - url: https://docs.aws.amazon.com/wellarchitected/latest/saas-lens/silo-pool-and-bridge-models.html
+    title: "Silo, Pool, and Bridge Models"
+  - url: https://www.postgresql.org/docs/18/ddl-constraints.html#DDL-CONSTRAINTS-FK
+    title: "Constraints › Foreign Keys"
+  - url: https://www.postgresql.org/docs/18/ddl-rowsecurity.html
+    title: "Row Security Policies"
 lab:
   setup: |
     CREATE TABLE invoices (
@@ -92,6 +95,10 @@ Một sáng, người bán Minh Tea gọi lên: báo cáo thu tiền của họ 
 
 Trong pool, ba lớp giữ dữ liệu các khách tách nhau, và mỗi lớp chặn một loại lỗi. **Câu lọc**: mọi câu nhắc tới `tenant_id`, kể cả trong điều kiện nối, nếu không thì đọc nhầm. **Khóa**: `tenant_id` đầu khóa chính, khóa ngoại ghép và luật duy nhất theo tenant, để database từ chối ghi sai. **Chính sách**: bảo mật theo dòng thêm điều kiện tenant vào mọi câu, làm lưới khi một câu quên lọc.
 
+**Thứ tự dựng**: khóa trước, vì sửa khóa chính và khóa ngoại khi bảng đã đầy dữ liệu là việc lớn nhất (thêm `tenant_id` vào khóa phải dựng lại index và kiểm lại mọi tham chiếu). Câu lọc đi cùng từng câu SQL ngay từ đầu, và index có `tenant_id` đứng đầu giữ chúng nhanh. Chính sách theo dòng bật sau cùng, khi ứng dụng đã đặt ngữ cảnh khách ở mọi yêu cầu; bật sớm hơn thì câu nào thiếu ngữ cảnh cũng ra 0 dòng, rất khó dò.
+
+**Kiểm từng lớp, mỗi lần đổi cấu trúc**: mỗi lớp có một phép kiểm tự động. Câu lọc: chạy cùng một câu với hai tenant khác nhau và so kết quả, không được có dòng chung. Khóa: đọc `pg_constraint` tìm khóa ngoại thiếu `tenant_id` (bài `e-ds-l2-06`). Chính sách: đọc `pg_class` tìm bảng có `tenant_id` mà chưa bật bảo mật theo dòng, như ví dụ cuối phần Ví dụ. Cả ba đều rẻ và chạy được trong CI.
+
 Bản đồ chủ đề: mỗi lớp một nhóm, mỗi dòng một bài đào sâu lớp đó.
 
 **Mô hình**: dữ liệu nằm ở đâu.
@@ -160,6 +167,17 @@ WHERE i.tenant_id = 2
 ORDER BY i.id;
 ```
 
+Lớp chính sách: bảng nào chưa bật bảo mật theo dòng? Cả hai bảng ở đây đều chưa, nên một câu quên lọc vẫn đọc được mọi khách; bài `e-pg-l5-10` bật nó.
+
+```sql
+SELECT relname,
+  relrowsecurity AS rls_on
+FROM pg_class
+WHERE relname IN
+  ('invoices', 'payments')
+ORDER BY relname;
+```
+
 ## Lỗi hay gặp
 
 Phép nối thiếu vế tenant nhân mỗi hóa đơn với khoản trả cùng số của cả ba người bán:
@@ -191,6 +209,8 @@ INSERT INTO payments
 VALUES (1, 5, 9, 10);
 ```
 
+Lỗi này là tin tốt: database chặn ngay lúc ghi, thay vì để một báo cáo sai lộ ra nhiều tháng sau, khi đã khó biết dòng nào thuộc về ai.
+
 ## Tóm tắt
 
 - Pool có ba lớp: câu lọc (kể cả điều kiện nối), khóa có `tenant_id`, chính sách theo dòng; mỗi lớp chặn một loại lỗi.
@@ -207,6 +227,10 @@ One morning seller Minh Tea calls: their payments report holds amounts that are 
 ## Key idea
 
 In a pool, three layers keep tenants apart, and each layer stops one kind of mistake. **Query filters**: every query names `tenant_id`, join conditions included, otherwise it reads the wrong rows. **Keys**: `tenant_id` first in primary keys, composite foreign keys and per-tenant uniqueness rules, so the database refuses wrong writes. **Policies**: row-level security adds the tenant condition to every query, a net for the query that forgets its filter.
+
+**Build order**: keys first, because changing primary and foreign keys once a table is full is the biggest job (adding `tenant_id` to a key rebuilds its index and re-checks every reference). Filters come with every SQL query from day one, and an index that leads with `tenant_id` keeps them fast. Row-level security goes on last, once the app sets the tenant context on every request; turned on earlier, any query without the context returns 0 rows, which is hard to trace.
+
+**Check each layer on every schema change**: each layer has an automatic check. Filters: run the same query as two different tenants and compare, with no row in common. Keys: read `pg_constraint` for foreign keys without `tenant_id` (lesson `e-ds-l2-06`). Policies: read `pg_class` for tables that carry `tenant_id` but have row-level security off, as the last example shows. All three are cheap and can run in CI.
 
 The topic map: one group per layer, one line per lesson that goes deep on it.
 
@@ -276,6 +300,17 @@ WHERE i.tenant_id = 2
 ORDER BY i.id;
 ```
 
+The policy layer: which tables have row-level security off? Both tables here do, so a query that forgets its filter still reads every tenant; lesson `e-pg-l5-10` turns it on.
+
+```sql
+SELECT relname,
+  relrowsecurity AS rls_on
+FROM pg_class
+WHERE relname IN
+  ('invoices', 'payments')
+ORDER BY relname;
+```
+
 ## Common mistakes
 
 A join without the tenant term multiplies each invoice by the payments with the same number at all three sellers:
@@ -306,6 +341,8 @@ The wrong version sees 12 rows, the right one 4. The key layer stops a payment f
 INSERT INTO payments
 VALUES (1, 5, 9, 10);
 ```
+
+This error is good news: the database stops the write at once, instead of letting a wrong report surface months later, when it is hard to tell which row belongs to whom.
 
 ## Recap
 

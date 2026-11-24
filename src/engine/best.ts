@@ -48,6 +48,8 @@ export interface Habits { title: Bi; intro: Bi; habits: Habit[]; after: Bi; sour
 export interface BpMeta { id: string; code: string; track: TrackId; level: string; module: string; title: Bi; avoid: Bi; lint?: string; skills: string[] }
 export interface BpCard extends BpMeta {
   minutes: number; objectives: Bi[]; requires: string[]; adv: string[]; sources: string[];
+  /** v38 (R2 E08): like EngineLesson.sourceTitles, from `{ url, title }` entries. */
+  sourceTitles?: Record<string, string>;
   verified: { version: string; date: string }; pair: Pair; quiz: Question[]; tip?: Bi;
   sections: { id: BpSectionId; text: Bi }[];
 }
@@ -113,13 +115,15 @@ export function parseBestCard(src: CardSource, path: string): BpCard | BpMeta {
     objectives: list(fm.objectives, 'objectives').map((o, i) => bi(o, `objectives[${i}]`)),
     requires: list(fm.requires, 'requires').map(String),
     adv: list(fm.adv, 'adv').map(String),
-    sources: list(fm.sources, 'sources').map(String),
+    sources: list(fm.sources, 'sources').map((s) => (s && typeof s === 'object' ? String((s as { url?: unknown }).url) : String(s))),
     verified: { version: str(v?.version, 'verified.version'), date: str(String(v?.date ?? ''), 'verified.date') },
     pair,
     quiz: list(fm.quiz, 'quiz').map((q, i) => question(q, `quiz[${i}]`)),
     ...(lint ? { tip: bi(lint.tip, 'lint.tip') } : {}),
     sections: [],
   };
+  const titled = list(fm.sources, 'sources').filter((s): s is { url: unknown; title: unknown } => !!s && typeof s === 'object');
+  if (titled.length) card.sourceTitles = Object.fromEntries(titled.map((s) => [String(s.url), str(s.title, 'sources.title')]));
   if (!card.quiz.length) fail('cần ít nhất một quiz (ADD-7: không thẻ chỉ đọc)');
   const [viPart, enPart, extra] = src.body.split(EN_RE);
   if (enPart === undefined || extra !== undefined) fail('cần đúng một khối "# EN"');

@@ -702,7 +702,8 @@ function labView(l: EngineLesson, v: Visit): HTMLElement {
           change: (x) => { v.code[i] = x; }, run: () => void labAction(l, v, i, false), submit: () => void labAction(l, v, i, true),
         }) : null,
         live && !ed ? h('div', { class: 'flex flex-wrap items-center gap-3' },
-          main >= 0 && i > main ? h('span', { class: 'text-body-sm text-muted' }, et('lab.later', { n: main + 1 })) : null,
+          // R2 E12 (v38): the step right before this one, not the current step ("after step 1" on step 6 read as wrong)
+          main >= 0 && i > main ? h('span', { class: 'text-body-sm text-muted' }, et('lab.later', { n: i })) : null,
           h('button', { type: 'button', class: cls.cx(cls.BTN_GHOST, 'px-3 py-1'), 'data-ek': `${key}-open`, onclick: (e: Event) => { (e.currentTarget as HTMLElement).blur(); v.opened.add(i); focusKey = `${key}-code`; d.rerender(); } }, et('lab.open'))) : null,
         ed ? h('div', { class: 'flex flex-wrap items-center gap-2' },
           h('button', { type: 'button', class: cls.cx(cls.BTN_SECONDARY, 'px-4 py-1.5'), 'data-ek': `${key}-run`, disabled: v.busy !== undefined, onclick: () => void labAction(l, v, i, false) }, et('lab.run')),
@@ -711,7 +712,7 @@ function labView(l: EngineLesson, v: Visit): HTMLElement {
         h('details', {}, h('summary', { class: 'cursor-pointer text-body-sm font-semibold text-accent-ink' }, et('lab.hint')), h('p', { class: 'mt-2 mb-0 text-body-sm' }, ...inline(s.hint[lang()]))),
         h('p', { role: 'status', 'data-ek': `${key}-status`, class: cls.cx('m-0 text-body-sm', msg ? (msg.ok ? 'good' : 'bad') : '') }, ...inline(msg?.text ?? '')),
         s.fact && passed ? h('p', { class: 'm-0 rounded-(--r-inset) bg-good-soft p-3 text-body-sm ring-1 ring-good-line' }, h('b', {}, `${et('lab.fact')}: `), ...inline(s.fact[lang()])) : null,
-        out ? h('div', { class: 'overflow-x-auto', tabindex: '0' }, shown ? d.renderResult(shown) : d.errorView((out as { error: unknown }).error, false)) : null,
+        out ? h('div', { class: 'overflow-x-auto', tabindex: '0' }, shown ? d.renderResult(shown, undefined, undefined, onPg(l.engine) ? undefined : et(l.engine === 'mongodb' ? 'res.docs' : 'res.items', { n: shown.rows.length })) : d.errorView((out as { error: unknown }).error, false)) : null,
         shown ? R().metaView(d, shown) : null,
         shown ? N()?.stepEnd(d, s, shown, passed, key) : null,
         shown ? R().insideView(d, vizSlot, shown, `${key}-inside`) : null,
@@ -854,15 +855,15 @@ function lessonBody(l: EngineLesson): HTMLElement {
       h('h2', { id: `${l.id}-src`, class: 'm-0 text-body font-bold' }, et('sources')),
       h('ul', { class: 'm-0 list-disc space-y-1 pl-5 text-body-sm' }, ...l.sources.map((u) =>
         h('li', {}, h('a', { href: u, target: '_blank', rel: 'noopener noreferrer', title: u, class: 'inline-flex items-center gap-1.5' },
-          d.icon('external', 'size-4 shrink-0'), sourceTitle(u), h('span', { class: 'sr-only' }, ` (${et('newTab')})`)))))) : null));
+          d.icon('external', 'size-4 shrink-0'), sourceTitle(u, l.sourceTitles?.[u]), h('span', { class: 'sr-only' }, ` (${et('newTab')})`)))))) : null));
 }
 
 const SITE: Record<string, string> = {
   'www.postgresql.org': 'PostgreSQL', 'wiki.postgresql.org': 'PostgreSQL Wiki', 'www.mongodb.com': 'MongoDB',
   'docs.aws.amazon.com': 'DynamoDB', 'use-the-index-luke.com': 'Use The Index, Luke', 'www.sqlstyle.guide': 'SQL Style Guide',
 };
-/** v23 (L299): a source's link text, from its URL (sources are bare https URLs): "PostgreSQL · Storage hot". */
-export function sourceTitle(u: string): string {
+/** v23 (L299): a source's link text, from its URL (sources are bare https URLs): "PostgreSQL · Storage hot". v38: a content `title` replaces the slug. */
+export function sourceTitle(u: string, title?: string): string {
   let url: URL;
   try { url = new URL(u); } catch { return u; }
   const dec = (x: string): string => { try { return decodeURIComponent(x); } catch { return x; } };
@@ -875,6 +876,7 @@ export function sourceTitle(u: string): string {
   const aws = url.hostname === 'docs.aws.amazon.com' && !url.pathname.startsWith('/amazondynamodb/')
     ? (url.pathname.includes('/saas-lens/') ? 'AWS SaaS Lens' : 'AWS') : undefined;
   const site = aws ?? SITE[url.hostname] ?? url.hostname.replace(/^www\./, '');
+  if (title) return `${site} · ${title}`;
   return page ? `${site} · ${page[0].toUpperCase()}${page.slice(1)}` : site;
 }
 

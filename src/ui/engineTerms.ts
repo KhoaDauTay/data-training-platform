@@ -76,11 +76,11 @@ function termButton(t: Term, text: string, engine: EngineId): Node[] {
   const pid = `tp-${t.id}`;
   const btn = h('button', {
     type: 'button', popovertarget: pid, 'aria-expanded': 'false', 'data-term': t.id,
-    class: 'inline min-h-6 cursor-pointer border-0 bg-transparent p-0 py-0.5 [font:inherit] text-accent underline decoration-dotted underline-offset-4 hover:bg-accent-soft',
+    class: 'inline min-h-6 cursor-pointer border-0 bg-transparent p-0 px-0.5 py-0.5 [font:inherit] text-accent underline decoration-dotted underline-offset-4 hover:bg-accent-soft',
   }, text);
   const pop = h('span', {
     id: pid, popover: 'auto', role: 'dialog', 'aria-labelledby': `${pid}-h`,
-    class: 'fixed m-0 inset-auto border-0 w-[min(22rem,calc(100vw-2rem))] flex-col gap-2 rounded-(--r-card) bg-panel p-4 text-body-sm text-ink ring-1 ring-line shadow-(--shadow-2) [&:popover-open]:flex max-sm:inset-x-4 max-sm:bottom-4 max-sm:w-auto',
+    class: 'fixed m-0 inset-auto border-0 w-[min(22rem,calc(100vw-2rem))] flex-col gap-2 rounded-(--r-card) bg-panel p-4 text-body-sm text-ink ring-1 ring-line shadow-(--shadow-2) [&:popover-open]:flex max-sm:inset-x-4 max-sm:bottom-18 max-sm:w-auto',
   },
   h('span', { class: 'flex flex-wrap items-baseline gap-x-2 gap-y-1' }, h('strong', { id: `${pid}-h`, lang: 'en', class: 'text-body' }, t.term), viLine(t), levelChip(t.level)),
   h('span', { class: 'block' }, ...rich(t[lang()])),

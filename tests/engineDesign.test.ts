@@ -109,9 +109,13 @@ describe('Engine Thiết kế CSDL: giải phẫu 8 mục', () => {
     if (l.kind !== 'capstone') expect(qs.some((q) => q.trap !== undefined), '≥ 1 câu có trap (hiểu lầm)').toBe(true);
   });
 
-  it('độ dài chữ VI (đích §2.2 lý thuyết 700–1,200; không chặn, in ra để báo cáo)', () => {
+  it('độ dài chữ VI (đích §2.2 lý thuyết 700–1,200; in ra để báo cáo, chặn cho bài đa tenant)', () => {
     console.log('từ VI:', all.map(({ l }) => `${l.id} ${words(l)}`).join('; '));
     expect(all.every(({ l }) => words(l) > 0)).toBe(true);
+    // v38 (L581): the multi-tenant concept and lab lessons reached 700 words, so for them it blocks (quiz and capstone excepted)
+    const tenancy = all.filter(({ l }) => /^e-ds-l(2-0[67]|4-0[89]|5-(0[89]|10))$/.test(l.id));
+    expect(tenancy.length).toBe(7);
+    expect(tenancy.filter(({ l }) => words(l) < 700).map(({ l }) => `${l.id} ${words(l)}`)).toEqual([]);
   });
 
   it.each(all.map((x) => [x.l.id, x.l] as const))('%s: Ví dụ và Lỗi hay gặp chạy thật sau setup', async (_, l) => {

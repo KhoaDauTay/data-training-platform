@@ -18,8 +18,10 @@ requires: [e-pg-l5-19]
 skills: []
 adv: []
 sources:
-  - https://www.postgresql.org/docs/18/sql-createview.html
-  - https://www.postgresql.org/docs/18/ddl-rowsecurity.html
+  - url: https://www.postgresql.org/docs/18/sql-createview.html
+    title: "CREATE VIEW"
+  - url: https://www.postgresql.org/docs/18/ddl-rowsecurity.html
+    title: "Row Security Policies"
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-25" }
 pair:
   runtime: engine

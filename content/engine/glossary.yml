@@ -1349,7 +1349,7 @@
   vi_term: "luật ESR"
   match: ["ESR"]
   avoid: "luật cứng không ngoại lệ"
-  vi: "Thứ tự trường trong compound index: bằng trước, sort sau, khoảng cuối. `$ne`, `$nin`, `$regex` tính là khoảng. Khi khoảng rất chọn lọc, đặt khoảng trước sort (ERS) có thể tốt hơn."
+  vi: "Thứ tự trường trong index kép (compound index): lọc bằng trước, sắp xếp sau, khoảng cuối. `$ne`, `$nin`, `$regex` tính là khoảng. Khi khoảng rất chọn lọc, đặt khoảng trước sort (ERS) có thể tốt hơn."
   en: "Field order in a compound index: equality first, then sort, then range. `$ne`, `$nin`, `$regex` count as ranges. When the range is very selective, putting it before the sort (ERS) can win."
   doc: "https://www.mongodb.com/docs/manual/tutorial/equality-sort-range-guideline/"
 - id: multikey-index
@@ -1925,7 +1925,7 @@
   vi_term: "GSI"
   match: ["GSI", "global secondary index"]
   avoid: "index toàn cầu (nhiều Region)"
-  vi: "Index với partition/sort key tùy ý, thêm/xóa lúc nào cũng được, throughput riêng, chỉ nhất quán cuối (cập nhật bất đồng bộ), chỉ đọc được thuộc tính đã project. Tối đa 20 mỗi bảng."
+  vi: "Index với partition/sort key tùy ý, thêm/xóa lúc nào cũng được, có thông lượng (throughput) riêng, chỉ nhất quán cuối (cập nhật bất đồng bộ), chỉ đọc được các thuộc tính được chiếu (project) vào index. Tối đa 20 mỗi bảng."
   en: "An index with any partition/sort key, added or removed at any time, with its own throughput, eventually consistent only (updated asynchronously), reading only projected attributes. Up to 20 per table."
   doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GSI.html"
 - id: lsi-local-secondary-index

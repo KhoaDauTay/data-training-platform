@@ -78,6 +78,8 @@ describe('Engine PostgreSQL L1–L5: giải phẫu 8 mục (R3, R6)', () => {
     const short = all.map(({ l }) => [l.id, l.kind, words(l)] as const).filter(([, k, n]) => (k === 'concept' ? n < 500 : k === 'lab' ? n < 350 : false));
     if (short.length) console.log('dưới đích §2.2:', short.map((x) => x.join(' ')).join('; '));
     expect(all.every(({ l }) => words(l) > 0)).toBe(true);
+    // v38 (L581): the multi-tenant lessons block at the floor
+    expect(short.filter(([id]) => /^e-pg-l(1-19|2-26|4-20|5-(10|19|2[0-2]))$/.test(id))).toEqual([]);
   });
 
   it.each(all.map((x) => [x.l.id, x.l] as const))('%s: Ví dụ và Lỗi hay gặp chạy thật sau setup', async (_, l) => {
@@ -194,6 +196,8 @@ describe('Engine MongoDB/DynamoDB L1–L5: giải phẫu theo loại bài (R6, v
     expect(nsAll.every(({ l }) => words(l) > 0)).toBe(true);
     // v33 (L531): L1–L2 reached the floor, so there it blocks; L3–L5 concepts stay print-only until lengthened
     expect(short.filter(([id]) => /-l[12]-/.test(id)), 'L1–L2 dưới đích §2.2').toEqual([]);
+    // v38 (L581): so do the multi-tenant lessons
+    expect(short.filter(([id]) => /^e-(mg-l3-19|mg-l5-12|dy-l3-14|dy-l4-16|dy-l5-09)$/.test(id))).toEqual([]);
   });
 
   const lang = () => 'en' as const;

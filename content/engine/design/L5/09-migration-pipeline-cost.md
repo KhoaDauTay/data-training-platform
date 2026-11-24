@@ -17,9 +17,12 @@ objectives:
     en: Switch a shard on only once its schema exists, and split cost by shard and tier tags.
 requires: [e-ds-l5-08]
 sources:
-  - https://www.postgresql.org/docs/18/plpgsql-transactions.html
-  - https://www.postgresql.org/docs/18/plpgsql-statements.html#PLPGSQL-STATEMENTS-EXECUTING-DYN
-  - https://www.postgresql.org/docs/18/infoschema-columns.html
+  - url: https://www.postgresql.org/docs/18/plpgsql-transactions.html
+    title: "PL/pgSQL › Transaction Management"
+  - url: https://www.postgresql.org/docs/18/plpgsql-statements.html#PLPGSQL-STATEMENTS-EXECUTING-DYN
+    title: "PL/pgSQL › Executing Dynamic Commands"
+  - url: https://www.postgresql.org/docs/18/infoschema-columns.html
+    title: "information_schema.columns"
 lab:
   setup: |
     CREATE TABLE shards (
@@ -117,7 +120,7 @@ lab:
         en: "Sum `costs` by `shard_id` in a subquery, join it to `usage`, then `u.requests / sum(u.requests) OVER (PARTITION BY u.shard_id)` is the tenant's share."
 quiz:
   - q:
-      vi: "Thư mục chuyển đổi hôm nay bị thiếu, nên bộ chạy áp 0 thay đổi và thoát mã 0. Nó nên báo gì?"
+      vi: "Thư mục chuyển đổi hôm nay bị thiếu, nên bộ chạy áp dụng 0 thay đổi và thoát mã 0. Nó nên báo gì?"
       en: "Today the migrations folder is missing, so the runner applies 0 changes and exits with code 0. What should it report?"
     options:
       - { vi: "Cảnh báo, rồi chạy tiếp ở shard sau", en: "A warning, then carry on to the next shard" }
@@ -143,15 +146,17 @@ quiz:
 ---
 ## Mở bài
 
-Đổi cấu trúc trên một database là một lệnh; trên năm shard, đó là năm lần chạy, và lần thứ ba có thể hỏng. Nếu bộ chạy nuốt lỗi và báo "xong", danh mục nói mọi shard đã ở phiên bản mới trong khi một shard vẫn ở bản cũ. Bài này chạy năm shard bằng năm schema để thấy cách dừng đúng lúc và cách chia hóa đơn.
+Đổi cấu trúc trên một database là một lệnh; trên năm shard, đó là năm lần chạy, và lần thứ ba có thể hỏng. Nếu bộ chạy chuyển đổi (migration runner) nuốt lỗi và báo "xong", danh mục nói mọi shard đã ở phiên bản mới trong khi một shard vẫn ở bản cũ. Bài này chạy năm shard bằng năm schema để thấy cách dừng đúng lúc và cách chia hóa đơn.
 
 ## Ý chính
 
 Mỗi shard có một số phiên bản trong danh mục. Bộ chạy lấy danh sách shard từ danh mục, không bao giờ từ một biến tên máy viết tay, rồi đưa từng shard lên: thử trước trên một shard ít rủi ro, sau đó lần lượt các shard còn lại. Nó dừng ở lỗi đầu tiên và báo lỗi. Phiên bản chỉ được ghi sau khi thay đổi đã thật sự có trên shard đó.
 
-Nhiều người nghĩ thoát mã 0 là xong. Thật ra một lần chạy được đánh giá bằng dòng kết quả rõ ràng ("áp 3 trên 3"), không chỉ mã thoát: đã có bộ chạy hỏng giữa chừng mà vẫn thoát 0. Chạy mà 0 thay đổi, hay không tìm thấy thư mục chuyển đổi, là thất bại. Một shard chỉ được bật (`serving`) khi schema của nó đã có; bật dựa trên danh mục mà không nhìn vào database thì khách sẽ được gửi tới một shard rỗng.
+Nhiều người nghĩ thoát mã 0 là xong. Thật ra một lần chạy được đánh giá bằng dòng kết quả rõ ràng ("đã áp dụng 3/3"), không chỉ mã thoát: đã có bộ chạy hỏng giữa chừng mà vẫn thoát 0. Chạy mà 0 thay đổi, hay không tìm thấy thư mục chuyển đổi, là thất bại. Một shard chỉ được bật (`serving`) khi schema của nó đã có; bật dựa trên danh mục mà không nhìn vào database thì khách sẽ được gửi tới một shard rỗng.
 
-Chi phí: gắn thẻ mọi tài nguyên bằng `shard_id`, gói (`tier`), môi trường và người sở hữu. Chi phí mỗi shard là tổng các tài nguyên mang thẻ đó; chia cho khách theo phần tải (số yêu cầu) để thấy ai đã lớn hơn gói của mình. Tài nguyên không thẻ thì sửa thẻ, đừng chia đại.
+Chi phí: gắn thẻ chi phí (tag của nhà cung cấp đám mây) cho mọi tài nguyên, gồm `shard_id`, gói (`tier`), môi trường và người sở hữu. Chi phí mỗi shard là tổng các tài nguyên mang thẻ đó; chia cho khách theo phần tải (số yêu cầu) để thấy ai đã lớn hơn gói của mình. Tài nguyên không thẻ thì gắn thẻ bổ sung, đừng chia đại.
+
+**Chạy lại phải an toàn**: lần chạy sau bắt đầu lại từ shard còn ở phiên bản cũ, nên mỗi bước chuyển đổi phải chạy lại được mà không hỏng: `ADD COLUMN IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`. Thay đổi phá vỡ (đổi tên hay xóa cột) chia làm hai đợt: đợt một thêm cái mới và ứng dụng đọc được cả hai; đợt hai, khi mọi shard đã lên, mới bỏ cái cũ. Nhờ vậy trong lúc các shard lệch phiên bản, ứng dụng vẫn chạy trên cả hai.
 
 ## Cú pháp
 
@@ -299,6 +304,8 @@ Each shard has a version number in the catalog. The runner takes the shard list 
 Many people think exit code 0 means done. In fact a run is judged by an explicit result line ("applied 3 of 3"), not only by its exit code: runners have failed halfway and still exited 0. A run with 0 changes, or one that cannot find its migrations folder, is a failure. A shard is switched on (`serving`) only once its schema exists; switching on from the catalog without looking at the database sends tenants to an empty shard.
 
 Cost: tag every resource with `shard_id`, tier (`tier`), environment and owner. A shard's cost is the sum of the resources carrying its tag; split it across tenants by their share of the load (requests) to see who has outgrown their tier. Fix untagged resources; do not split them at random.
+
+**Re-runs must be safe**: the next run starts again from the shard still on the old version, so every migration step must run twice without harm: `ADD COLUMN IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`. A breaking change (renaming or dropping a column) goes in two waves: the first adds the new thing and the app reads both; the second, once every shard is up, removes the old one. That way the app keeps working on both while the shards are on different versions.
 
 ## Syntax
 

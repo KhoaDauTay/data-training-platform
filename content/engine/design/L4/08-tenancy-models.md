@@ -18,9 +18,12 @@ objectives:
     en: Add a new tenant in the bridge and in the pool, and see what each one costs.
 requires: [e-ds-l2-06]
 sources:
-  - https://docs.aws.amazon.com/wellarchitected/latest/saas-lens/silo-pool-and-bridge-models.html
-  - https://www.postgresql.org/docs/18/ddl-schemas.html
-  - https://www.postgresql.org/docs/18/manage-ag-overview.html
+  - url: https://docs.aws.amazon.com/wellarchitected/latest/saas-lens/silo-pool-and-bridge-models.html
+    title: "Silo, Pool, and Bridge Models"
+  - url: https://www.postgresql.org/docs/18/ddl-schemas.html
+    title: "Schemas"
+  - url: https://www.postgresql.org/docs/18/manage-ag-overview.html
+    title: "Managing Databases › Overview"
 lab:
   setup: |
     CREATE TABLE invoices (
@@ -103,6 +106,12 @@ Chợ Lồng Đèn bắt đầu bán phần mềm quản lý cho người bán, 
 
 **Pool**: mọi tenant chung một bộ bảng, mỗi dòng có `tenant_id`. Rẻ nhất và chỉ đổi cấu trúc một lần, nhưng cô lập nằm trong dữ liệu: khóa ghép (`e-ds-l2-06`), luật duy nhất theo tenant (`e-ds-l2-07`), câu nào cũng lọc `tenant_id`, và thường thêm bảo mật theo dòng. Nhiều hệ thống trộn: khách nhỏ ở pool, khách lớn ra silo, cùng một cấu trúc bảng.
 
+**Đếm trước khi chọn**: với N khách và M bảng, pool giữ M bảng, bridge giữ N × M bảng, silo giữ N database. Chợ có 300 người bán và 40 bảng: pool là 40 bảng, bridge là 12.000 bảng, và thêm một cột là chạy 300 lần. Silo với nhóm 10 kết nối cho mỗi database cần 3.000 kết nối, trong khi `max_connections` mặc định của Postgres là 100. Vì vậy câu hỏi thực tế không phải "mô hình nào tốt nhất" mà là "khách nào cần ra khỏi pool".
+
+**Chuyển một khách giữa hai mô hình**: đưa một người bán lớn từ pool sang silo là chép các dòng `WHERE tenant_id = 7` của từng bảng sang database mới, cha trước con sau. Nhờ khóa `(tenant_id, id)`, số của khách đó không đụng số của ai ở nơi mới. Nếu khóa chỉ là `id` toàn cục thì vẫn chép được, nhưng mọi khóa ngoại phải được kiểm lại bằng tay.
+
+**Khôi phục một khách**: bản sao lưu của Postgres là của cả cụm hay cả database. Trong silo, khôi phục một khách là khôi phục database của họ. Trong pool hay bridge, phải dựng bản sao lưu ra một chỗ riêng rồi chép lại đúng các dòng hay đúng schema của khách đó; việc này nên được tập dượt trước khi hợp đồng hứa thời gian khôi phục.
+
 ## Ví dụ
 
 Pool: một bảng, chia khách bằng `tenant_id`.
@@ -181,7 +190,7 @@ FROM invoices;
 RESET search_path;
 ```
 
-Bridge: khách mới chưa có schema thì mọi câu của họ hỏng cho tới khi việc tạo và đổi cấu trúc chạy xong:
+Bridge: khách mới chưa có schema thì mọi câu của họ hỏng cho tới khi việc tạo và đổi cấu trúc chạy xong, nên việc tạo schema phải là một bước của quy trình nhận khách:
 
 ```sql
 -- ERROR 42P01: C has no schema
@@ -209,6 +218,12 @@ Lantern Market starts selling management software to its sellers, and the design
 **Bridge**: one database, one schema per tenant (`seller_a.invoices`, `seller_b.invoices`). The same SQL with a different `search_path`. Privileges go per schema, but thousands of schemas bloat the catalog and every schema change runs N times. Note: AWS's SaaS guidance uses "bridge" for a mix of silo and pool per service; this lesson uses the older meaning, a schema per tenant.
 
 **Pool**: all tenants share one set of tables, and every row carries `tenant_id`. The cheapest, with one schema change for everyone, but isolation lives in the data: composite keys (`e-ds-l2-06`), per-tenant uniqueness (`e-ds-l2-07`), a `tenant_id` filter in every query, and usually row-level security on top. Many systems mix: small tenants in the pool, large ones out in a silo, with one table design.
+
+**Count before you choose**: with N tenants and M tables, the pool keeps M tables, the bridge N × M tables and the silo N databases. With 300 sellers and 40 tables the pool is 40 tables and the bridge 12,000, and adding one column runs 300 times. A silo with a pool of 10 connections per database needs 3,000 connections, while Postgres's default `max_connections` is 100. So the practical question is not "which model is best" but "which tenants need to leave the pool".
+
+**Moving a tenant between models**: taking a large seller from the pool to a silo means copying the `WHERE tenant_id = 7` rows of every table into the new database, parents before children. Thanks to the `(tenant_id, id)` key, that tenant's numbers collide with no one's in the new place. With a global `id` key the copy still works, but every foreign key has to be checked by hand.
+
+**Restoring one tenant**: a Postgres backup covers the whole cluster or a whole database. In a silo, restoring a tenant means restoring its database. In a pool or a bridge, the backup has to be restored somewhere else first, then exactly that tenant's rows or schema copied back; rehearse this before a contract promises a restore time.
 
 ## Example
 
@@ -288,7 +303,7 @@ FROM invoices;
 RESET search_path;
 ```
 
-Bridge: a new tenant without a schema breaks every query until creating and migrating it is done:
+Bridge: a new tenant without a schema breaks every query until creating and migrating it is done, so creating the schema must be a step of the sign-up process:
 
 ```sql
 -- ERROR 42P01: C has no schema

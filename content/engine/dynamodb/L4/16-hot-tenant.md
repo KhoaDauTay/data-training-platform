@@ -18,9 +18,12 @@ objectives:
     en: "Measure each tenant's RCU from `ConsumedCapacity` instead of guessing"
 requires: [e-dy-l4-05, e-dy-l3-14]
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-partition-key-sharding.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/burst-adaptive-capacity.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/read-write-operations.html
+  - url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-partition-key-sharding.html
+    title: "Write sharding"
+  - url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/burst-adaptive-capacity.html
+    title: "Burst and adaptive capacity"
+  - url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/read-write-operations.html
+    title: "Read and write operations"
 lab:
   setup: |
     {"tables": [

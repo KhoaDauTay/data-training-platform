@@ -107,7 +107,7 @@ define<EsrModel>('mg-compound-index-esr', {
     return out;
   };
   return {
-    title: tr('Index ghép và luật ESR', 'Compound indexes and the ESR rule'), w: 340, h: 270,
+    title: tr('Index kép và luật ESR', 'Compound indexes and the ESR rule'), w: 340, h: 270,
     frames: [
       { say: tr('Truy vấn có ba phần: so bằng (status), sắp xếp (created), khoảng (total > 50).', 'The query has three parts: an equality (status), a sort (created) and a range (total > 50).'), nodes: draw(undefined, {}) },
       { say: tr('Index { status, total, created } (E, R, S): khóa sắp theo status rồi total, nên quét liền một đoạn và chỉ đọc khóa khớp…', 'Index { status, total, created } (E, R, S): keys are ordered by status, then total, so the scan is one tight range of matching keys…'), nodes: draw('ers', { scan: true }) },

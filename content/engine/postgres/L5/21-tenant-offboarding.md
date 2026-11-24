@@ -15,10 +15,14 @@ objectives:
   - { vi: "Chứng minh không còn dòng nào ở mọi bảng có cột `tenant_id`, kể cả bảng không có khóa ngoại", en: "Prove that no row is left in every table with a `tenant_id` column, including tables without a foreign key" }
 requires: [e-pg-l5-20]
 sources:
-  - https://www.postgresql.org/docs/18/sql-copy.html
-  - https://www.postgresql.org/docs/18/ddl-constraints.html
-  - https://www.postgresql.org/docs/18/ddl-partitioning.html
-  - https://www.postgresql.org/docs/18/functions-xml.html
+  - url: https://www.postgresql.org/docs/18/sql-copy.html
+    title: "COPY"
+  - url: https://www.postgresql.org/docs/18/ddl-constraints.html
+    title: "Constraints"
+  - url: https://www.postgresql.org/docs/18/ddl-partitioning.html
+    title: "Table Partitioning"
+  - url: https://www.postgresql.org/docs/18/functions-xml.html
+    title: "XML Functions"
 lab:
   setup: |
     -- Lantern Market: seller 7 is leaving. tenant_id = the seller.

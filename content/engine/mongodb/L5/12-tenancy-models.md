@@ -18,10 +18,14 @@ objectives:
     en: "Put `tenantId` first in the shard key and pin one tenant's range to chosen shards with a zone"
 requires: [e-mg-l5-05, e-mg-l3-19]
 sources:
-  - https://www.mongodb.com/docs/atlas/build-multi-tenant-arch/
-  - https://www.mongodb.com/docs/manual/core/zone-sharding/
-  - https://www.mongodb.com/docs/manual/reference/method/sh.addShardToZone/
-  - https://www.mongodb.com/docs/manual/core/sharding-choose-a-shard-key/
+  - url: https://www.mongodb.com/docs/atlas/build-multi-tenant-arch/
+    title: "Build a Multi-Tenant Architecture"
+  - url: https://www.mongodb.com/docs/manual/core/zone-sharding/
+    title: "Zones"
+  - url: https://www.mongodb.com/docs/manual/reference/method/sh.addShardToZone/
+    title: "sh.addShardToZone()"
+  - url: https://www.mongodb.com/docs/manual/core/sharding-choose-a-shard-key/
+    title: "Choose a Shard Key"
 demo_setup: '{"collections": {"orders": [{"_id": 1, "tenantId": "S07", "total": 120000}, {"_id": 2, "tenantId": "S07", "total": 45000}, {"_id": 3, "tenantId": "S03", "total": 300000}, {"_id": 4, "tenantId": "S07", "total": 90000}, {"_id": 5, "tenantId": "S12", "total": 80000}, {"_id": 6, "tenantId": "S07", "total": 60000}, {"_id": 7, "tenantId": "S07", "total": 30000}, {"_id": 8, "tenantId": "S03", "total": 100000}, {"_id": 9, "tenantId": "S07", "total": 70000}, {"_id": 10, "tenantId": "S07", "total": 55000}]}}'
 quiz:
   - q:
@@ -130,7 +134,7 @@ db["orders_" + seller]
 
 ```text
 // FIX
-orders  { tenantId: "S07", ... }
+// one orders collection, tenantId
 db.orders.find({
   tenantId: "S07",
   status: "paid" })
@@ -243,7 +247,7 @@ db["orders_" + seller]
 
 ```text
 // FIX
-orders  { tenantId: "S07", ... }
+// one orders collection, tenantId
 db.orders.find({
   tenantId: "S07",
   status: "paid" })

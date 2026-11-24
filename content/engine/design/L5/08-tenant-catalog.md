@@ -17,9 +17,12 @@ objectives:
     en: Pick the least-loaded shard of the right tier, skipping shards being created or drained.
 requires: [e-ds-l4-11]
 sources:
-  - https://www.postgresql.org/docs/18/rangetypes.html
-  - https://www.postgresql.org/docs/18/ddl-constraints.html#DDL-CONSTRAINTS-EXCLUSION
-  - https://www.postgresql.org/docs/18/btree-gist.html
+  - url: https://www.postgresql.org/docs/18/rangetypes.html
+    title: "Range Types"
+  - url: https://www.postgresql.org/docs/18/ddl-constraints.html#DDL-CONSTRAINTS-EXCLUSION
+    title: "Constraints › Exclusion Constraints"
+  - url: https://www.postgresql.org/docs/18/btree-gist.html
+    title: "btree_gist"
 lab:
   setup: |
     CREATE EXTENSION btree_gist;
@@ -70,8 +73,8 @@ lab:
         vi: "Điều kiện ngày nằm trong `ON` của `LEFT JOIN`, để shard trống vẫn ra với `load` 0; lọc gói và trạng thái ở `WHERE`, sức chứa ở `HAVING`."
         en: "Put the date condition in the `LEFT JOIN`'s `ON`, so an empty shard still shows with `load` 0; filter tier and state in `WHERE`, capacity in `HAVING`."
     - task:
-        vi: "Đặt người bán mới `t-08` vào shard ít tải nhất vừa tìm được (`s2`), từ `2026-10-31` không hạn. Bài chấm bằng nơi ở hôm nay của mọi khách."
-        en: "Place the new seller `t-08` on the least-loaded shard you just found (`s2`), from `2026-10-31` with no end. It is graded by every tenant's home today."
+        vi: "Đặt người bán mới `t-08` vào shard ít tải nhất mà bước 2 tìm ra, từ `2026-10-31` không hạn. Bài chấm bằng nơi ở hôm nay của mọi khách."
+        en: "Place the new seller `t-08` on the least-loaded shard that step 2 found, from `2026-10-31` with no end. It is graded by every tenant's home today."
       solution: INSERT INTO placements VALUES ('t-08', 's2', '[2026-10-31,)')
       after: SELECT tenant_id, shard_id FROM placements WHERE during @> DATE '2026-10-31' ORDER BY tenant_id
       check: rows
@@ -125,6 +128,12 @@ Danh mục (catalog) là hai bảng. `shards` ghi mỗi shard thuộc gói nào 
 Shard đi qua các trạng thái: đang tạo (`creating`), phục vụ (`serving`), rút tải (`draining`), rồi nghỉ. Rút tải nghĩa là khách cũ vẫn được phục vụ nhưng không nhận khách mới. Một shard từng giữ dữ liệu khách không bao giờ bị xóa tại chỗ; nó được rút tải, kiểm trống, chụp bản cuối, rồi mới nghỉ.
 
 Luật đặt khách: khách mới vào shard ít tải nhất đúng gói, chỉ khi shard đang phục vụ và còn dưới sức chứa; khách enterprise vào shard riêng. Nhiều người nghĩ một cột `shard_id` trong bảng khách là đủ. Thật ra lúc chuyển khách và lúc đối soát, bạn cần biết khách ở đâu theo thời gian, và một ràng buộc loại trừ trên `(tenant_id, during)` bảo đảm không bao giờ có hai nơi ở chồng nhau.
+
+**Vì sao không băm**: đặt khách bằng công thức `hash(tenant_id) % 5` thì không cần danh mục, nhưng công thức quyết thay bạn. Không thể đưa riêng một người bán lớn sang shard riêng, và thêm shard thứ sáu là đổi chỗ phần lớn khách cùng lúc. Danh mục tốn một lần tra cứu cho mỗi yêu cầu, đổi lại mỗi khách chuyển được một mình, vào lúc bạn chọn.
+
+**Tra cứu phải rẻ**: mọi yêu cầu đều hỏi danh mục, nên câu "khách này ở đâu hôm nay" phải đọc qua index. Ràng buộc loại trừ đã dựng sẵn một index GiST trên `(tenant_id, during)`, và câu `WHERE tenant_id = 't-04' AND during @> DATE '2026-10-31'` dùng được nó. Bộ định tuyến thường giữ kết quả trong bộ nhớ vài giây; bài `e-ds-l5-10` nói cách giữ để bản nhớ tạm không đưa khách tới nơi ở cũ.
+
+**Sức chứa đo bằng gì**: bài này đếm số khách cho dễ thấy. Hệ thống thật đo bằng tải (số yêu cầu, dung lượng, thời gian CPU), vì một người bán bận có thể nặng bằng mười người bán nhỏ.
 
 ## Cú pháp
 
@@ -262,6 +271,12 @@ The catalog is two tables. `shards` records each shard's tier (`pool` shared or 
 A shard moves through states: being created (`creating`), serving (`serving`), draining (`draining`), then retired. Draining means existing tenants are still served but no new ones are placed. A shard that ever held tenant data is never destroyed in place; it drains, is checked empty, gets a final snapshot, and only then retires.
 
 The placement rule: a new tenant goes to the least-loaded shard of its tier, only if that shard is serving and below capacity; enterprise tenants go to a dedicated shard. Many people think one `shard_id` column in the tenant table is enough. In fact during a move and during billing checks you need to know where a tenant lived over time, and an exclusion constraint on `(tenant_id, during)` guarantees two homes never overlap.
+
+**Why not hash**: placing tenants with the formula `hash(tenant_id) % 5` needs no catalog, but the formula decides for you. A large seller cannot be moved alone to a dedicated shard, and adding a sixth shard moves most tenants at once. The catalog costs one lookup per request; in return each tenant can move alone, when you choose.
+
+**The lookup must be cheap**: every request asks the catalog, so "where does this tenant live today" must read through an index. The exclusion constraint already built a GiST index on `(tenant_id, during)`, and `WHERE tenant_id = 't-04' AND during @> DATE '2026-10-31'` can use it. Routers usually keep the answer in memory for a few seconds; lesson `e-ds-l5-10` shows how to keep that cached copy from sending a tenant to its old home.
+
+**What capacity measures**: this lesson counts tenants to keep it visible. Real systems measure load (requests, storage, CPU time), because one busy seller can weigh as much as ten small ones.
 
 ## Syntax
 

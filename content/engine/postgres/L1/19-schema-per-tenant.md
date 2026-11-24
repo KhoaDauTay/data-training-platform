@@ -15,9 +15,12 @@ objectives:
   - { vi: "Biết giá của mô hình này khi số khách lớn: catalog phình, đổi cấu trúc N lần, `search_path` là trạng thái của phiên", en: "Know the price of this model when tenants are many: a growing catalog, N migrations, `search_path` as session state" }
 requires: [e-pg-l1-06]
 sources:
-  - https://www.postgresql.org/docs/18/ddl-schemas.html
-  - https://www.postgresql.org/docs/18/sql-createschema.html
-  - https://www.postgresql.org/docs/18/infoschema-columns.html
+  - url: https://www.postgresql.org/docs/18/ddl-schemas.html
+    title: "Schemas"
+  - url: https://www.postgresql.org/docs/18/sql-createschema.html
+    title: "CREATE SCHEMA"
+  - url: https://www.postgresql.org/docs/18/infoschema-columns.html
+    title: "information_schema.columns"
 lab:
   setup: |
     -- Lantern Market: each seller gets its own schema with the same tables

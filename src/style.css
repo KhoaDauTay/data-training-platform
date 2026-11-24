@@ -515,7 +515,7 @@ svg[data-mascot].cq-hop { animation: cq-hop 320ms ease-out 80ms backwards; }
 [data-lesson-page] pre.sql { white-space: pre; }
 @media (min-width: 1280px) {
   #home:has([data-lesson-page]) > * { max-width: var(--w-wide); }
-  [data-lesson-page] { grid-template-columns: minmax(0, 720px) 232px; }
+  [data-lesson-page] { grid-template-columns: minmax(0, 720px) 232px; padding-bottom: 3rem; } /* v38 (R2 E23): the last "Đọc thêm" link was cut at 1280 */
   [data-lesson-page] > aside { display: block; }
   [data-fl-bar], [data-fl-toc] { display: none; }
 }

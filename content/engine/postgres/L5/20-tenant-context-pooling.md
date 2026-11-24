@@ -16,9 +16,12 @@ objectives:
 requires: [e-pg-l5-19]
 viz: pg-rls-path
 sources:
-  - https://www.postgresql.org/docs/18/sql-set.html
-  - https://www.postgresql.org/docs/18/functions-admin.html
-  - https://www.postgresql.org/docs/18/ddl-rowsecurity.html
+  - url: https://www.postgresql.org/docs/18/sql-set.html
+    title: "SET"
+  - url: https://www.postgresql.org/docs/18/functions-admin.html
+    title: "System Administration Functions"
+  - url: https://www.postgresql.org/docs/18/ddl-rowsecurity.html
+    title: "Row Security Policies"
 lab:
   setup: |
     DO $$

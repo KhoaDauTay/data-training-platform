@@ -18,9 +18,12 @@ requires: [e-mg-l3-19]
 skills: []
 adv: []
 sources:
-  - https://www.mongodb.com/docs/atlas/build-multi-tenant-arch/
-  - https://www.mongodb.com/docs/manual/core/indexes/index-types/index-compound/
-  - https://www.mongodb.com/docs/manual/core/zone-sharding/
+  - url: https://www.mongodb.com/docs/atlas/build-multi-tenant-arch/
+    title: "Build a Multi-Tenant Architecture"
+  - url: https://www.mongodb.com/docs/manual/core/indexes/index-types/index-compound/
+    title: "Compound Indexes"
+  - url: https://www.mongodb.com/docs/manual/core/zone-sharding/
+    title: "Zones"
 verified: { version: "mingo 7.2.6", date: "2026-11-25" }
 pair:
   runtime: mingo

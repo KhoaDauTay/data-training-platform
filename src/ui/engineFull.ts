@@ -30,6 +30,8 @@ export interface FullCtx {
 
 let c: FullCtx;
 const ft = (key: FullKey, params?: Params): string => fullText(c.d.getLang(), c.d.locale(), key, params);
+/** v38 (R2 E17): rows, documents or items, by the open lesson's engine. */
+const unit = (): string => ft(`unit.${c.l.engine}`);
 const SEC_ICON: Record<SectionId, IconName> = {
   open: 'secOpen', idea: 'kindConcept', syntax: 'secSyntax', example: 'secRun', pitfalls: 'secPitfall', practice: 'secPractice', recap: 'secRecap',
 };
@@ -85,7 +87,7 @@ async function run(x: FullCtx, bs: DemoBlock[], i: number): Promise<void> {
     for (const k of keys) outs.set(k, { error: shown });
   }
   const o = outs.get(keyOf(l, i));
-  if (o && o !== 'busy') d.announce('result' in o ? ft('run.rows', { n: o.result.rows.length, ms: Math.round(o.result.ms ?? 0) }) : bs[i].error && errCode(o.error) === bs[i].error ? ft('run.expected', { code: bs[i].error!, rt: RT[l.engine] }) : '');
+  if (o && o !== 'busy') d.announce('result' in o ? ft('run.rows', { n: o.result.rows.length, ms: Math.round(o.result.ms ?? 0), u: ft(`unit.${l.engine}`) }) : bs[i].error && errCode(o.error) === bs[i].error ? ft('run.expected', { code: bs[i].error!, rt: RT[l.engine] }) : '');
   d.rerender();
 }
 
@@ -100,9 +102,9 @@ function outView(b: DemoBlock, o: DemoOut | 'busy' | undefined): (Node | null)[]
   if ('result' in o) {
     const r = o.result;
     // R2 E07 (L578d): a WRONG block that runs is still the wrong way: no green check, the line says so (every engine)
-    const rows = { n: r.rows.length, ms: Math.round(r.ms ?? 0) };
+    const rows = { n: r.rows.length, ms: Math.round(r.ms ?? 0), u: unit() };
     return [b.error ? line(false, ft('run.unexpected', { code: b.error })) : b.mark === 'wrong' ? line(false, ft('run.rowsWrong', rows)) : line(true, ft('run.rows', rows)),
-      h('div', { class: 'overflow-x-auto', tabindex: '0' }, d.renderResult(r, undefined, 5)), c.meta(r)];
+      h('div', { class: 'overflow-x-auto', tabindex: '0' }, d.renderResult(r, undefined, 5, ft('run.caption', rows))), c.meta(r)];
   }
   const got = errCode(o.error);
   return [b.error && got === b.error ? line(true, ft('run.expected', { code: got, rt: RT[c.l.engine] })) : null,
@@ -120,7 +122,7 @@ function demoView(bs: DemoBlock[], i: number): HTMLElement {
       : b.mark === 'fix' ? h('span', { class: cls.cx(CHIP, 'bg-good-soft text-good') }, ft('run.chipFix')) : null;
   return h('div', { class: cls.cx(cls.CARD, 'flex min-w-0 flex-col gap-2 p-3'), 'data-demo': String(i) },
     h('div', { class: 'flex flex-wrap items-center gap-2' }, chip,
-      c.make ? h('button', { type: 'button', class: cls.cx(cls.BTN_SECONDARY, 'ml-auto inline-flex min-h-6 items-center gap-1 px-3 py-1'), 'data-ek': `${keyOf(c.l, i)}-run`,
+      !b.runs ? h('span', { class: 'ml-auto text-body-sm text-muted' }, ft('run.shownOnly')) : c.make ? h('button', { type: 'button', class: cls.cx(cls.BTN_SECONDARY, 'ml-auto inline-flex min-h-6 items-center gap-1 px-3 py-1'), 'data-ek': `${keyOf(c.l, i)}-run`,
         'aria-disabled': o === 'busy' ? 'true' : false, onclick: () => { if (outs.get(keyOf(x.l, i)) !== 'busy') void run(x, bs, i); } }, c.d.icon('run', 'size-4'), ft(b.mark === 'wrong' ? 'run.wrong' : b.mark === 'fix' ? 'run.fix' : 'run.run')) : null),
     h('pre', { tabindex: '0', class: 'sql m-0 overflow-x-auto', lang: 'en' }, b.code),
     ...outView(b, o).filter((n): n is Node => !!n));
@@ -149,7 +151,8 @@ export function sections(x: FullCtx, keep: (id: SectionId) => boolean): HTMLElem
       s.id === 'example' && n && c.make ? h('p', { class: 'm-0 text-body-sm text-muted' }, ft('run.note', { rt: RT[l.engine] })) : null,
       ...blocksOf(s.text[c.lang]).map((b) => b.kind === 'p' ? h('p', { class: 'm-0' }, ...c.inline(b.text, true))
         : b.kind === 'ul' ? h('ul', { class: 'm-0 list-disc space-y-1 pl-5' }, ...b.items.map((t) => h('li', {}, ...c.inline(t, true))))
-          : live && bs[j]?.runs ? demoView(bs, j++) : (live && j++, h('pre', { tabindex: '0', class: 'sql m-0 overflow-x-auto', lang: 'en' }, b.code))));
+          // v38 (R2 E10): a marked block that cannot run here (```text) still gets its Sai/Sửa card, without Run
+          : live && (bs[j]?.runs || bs[j]?.mark) ? demoView(bs, j++) : (live && j++, h('pre', { tabindex: '0', class: 'sql m-0 overflow-x-auto', lang: 'en' }, b.code))));
   });
 }
 

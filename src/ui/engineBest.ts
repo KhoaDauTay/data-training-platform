@@ -27,7 +27,7 @@ type LessonMeta = Record<string, { fm: unknown }>;
 
 let d: EngineDeps;
 /** Main values engineView does not take: a skill's label (content/skills.yml) for the skill chips. */
-let main: { skill: (id: string) => { vi: string; en: string } | undefined; sourceTitle: (u: string) => string };
+let main: { skill: (id: string) => { vi: string; en: string } | undefined; sourceTitle: (u: string, title?: string) => string };
 const rt = { of: bestRouteOf, hash: bestHash };
 let index: BpMeta[] = [];
 let tracks: Track[] = [];
@@ -114,8 +114,8 @@ function keepFocus(): void {
 }
 
 /** v23 (L299) on Best Practice: a source reads as its title (engineView's sourceTitle, passed in), the URL stays the href. */
-const srcLink = (u: string): HTMLElement => d.h('a', { href: u, target: '_blank', rel: 'noopener noreferrer', title: u, class: 'inline-flex items-center gap-1.5' },
-  d.icon('external', 'size-4 shrink-0'), main.sourceTitle(u));
+const srcLink = (u: string, title?: string): HTMLElement => d.h('a', { href: u, target: '_blank', rel: 'noopener noreferrer', title: u, class: 'inline-flex items-center gap-1.5' },
+  d.icon('external', 'size-4 shrink-0'), main.sourceTitle(u, title));
 
 // ---- pages
 
@@ -477,7 +477,7 @@ function cardPage(c: BpCard): HTMLElement {
       ...links.map(([label, ...kids]) => h('p', { class: 'm-0 flex flex-wrap items-center gap-2 text-body-sm' }, h('span', { class: 'text-muted' }, `${label}:`), ...kids))) : null,
     h('section', { class: 'flex flex-col gap-2', 'aria-labelledby': 'bp-src' },
       h('h2', { id: 'bp-src', class: 'm-0 text-body font-bold' }, bt('sources')),
-      h('ul', { class: 'm-0 list-disc space-y-1 pl-5 text-body-sm' }, ...c.sources.map((u) => h('li', {}, srcLink(u)))),
+      h('ul', { class: 'm-0 list-disc space-y-1 pl-5 text-body-sm' }, ...c.sources.map((u) => h('li', {}, srcLink(u, c.sourceTitles?.[u])))),
       h('p', { class: 'm-0 text-caption text-muted' }, bt('verified', { version: c.verified.version, date: c.verified.date }))),
     h('nav', { class: cls.cx(cls.CARD, 'flex flex-wrap items-center justify-end gap-2 p-4'), 'aria-label': t.title[lang()] },
       prev ? h('a', { href: rt.hash(c.track, prev.id), class: cls.cx(cls.BTN_GHOST, 'inline-flex items-center gap-1 px-4 py-2 no-underline'), title: prev.title[lang()] }, d.icon('chevronLeft', 'size-4'), bt('prev')) : null,

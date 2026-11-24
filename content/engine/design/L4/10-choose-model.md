@@ -15,8 +15,10 @@ objectives:
     en: Read a tenant table to find who should leave the pool.
 requires: [e-ds-l4-09]
 sources:
-  - https://docs.aws.amazon.com/wellarchitected/latest/saas-lens/silo-pool-and-bridge-models.html
-  - https://docs.aws.amazon.com/pdfs/whitepapers/latest/saas-tenant-isolation-strategies/saas-tenant-isolation-strategies.pdf
+  - url: https://docs.aws.amazon.com/wellarchitected/latest/saas-lens/silo-pool-and-bridge-models.html
+    title: "Silo, Pool, and Bridge Models"
+  - url: https://docs.aws.amazon.com/pdfs/whitepapers/latest/saas-tenant-isolation-strategies/saas-tenant-isolation-strategies.pdf
+    title: "SaaS Tenant Isolation Strategies (PDF)"
 lab:
   setup: |
     CREATE TABLE seller_plans (
