@@ -117,11 +117,15 @@ Khách ở quận Sơn Trà, qua dot notation:
 db.customers.find({ "address.district": "Son Tra" })
 ```
 
+Kết quả là một khách, `c3` (Chi). Dấu chấm đi xuyên vào tài liệu nhúng `address` và so riêng trường `district`; trường `city` bên cạnh không ảnh hưởng.
+
 Khách hạng `"gold"` ở `"Hoi An"`, hai điều kiện cùng phải đúng:
 
 ```js
 db.customers.find({ tier: "gold", "address.city": "Hoi An" })
 ```
+
+Chỉ `c4` (Dung) thỏa cả hai. Khách gold còn lại, `c1`, ở Da Nang nên bị loại: thêm một điều kiện vào filter chỉ có thể làm kết quả nhỏ đi, không bao giờ lớn thêm.
 
 ## Lỗi hay gặp
 
@@ -151,9 +155,11 @@ db.customers.find({ "address.city": "da nang" })
 db.customers.find({ "address.city": "Da Nang" })
 ```
 
+Bản sai trả rỗng, bản sửa trả `c1` và `c3`. MongoDB không báo "không tìm thấy" hay gợi ý chữ gần đúng: kết quả rỗng là tín hiệu duy nhất. Khi một filter trả rỗng bất ngờ, mở một tài liệu ra xem giá trị thật được lưu thế nào trước khi sửa filter.
+
 ## Thực hành
 
-Collection `customers` có 5 khách ở Da Nang, Hue và Hoi An. Làm ba bước.
+Collection `customers` có 5 khách ở Da Nang, Hue và Hoi An. Làm ba bước. Bước 1 là một điều kiện bằng trên trường phẳng `tier`. Bước 2 đi vào tài liệu nhúng bằng dot notation. Bước 3 ghép hai điều kiện trong cùng một filter, một phẳng và một lồng. Mỗi bước được chấm trên tài liệu trả về, nên giữ nguyên tài liệu, không cần projection.
 
 ## Tóm tắt
 
@@ -200,11 +206,15 @@ Customers in the Son Tra district, through dot notation:
 db.customers.find({ "address.district": "Son Tra" })
 ```
 
+The result is one customer, `c3` (Chi). The dot reaches into the embedded `address` document and compares only its `district` field; the `city` field next to it plays no part.
+
 `"gold"` customers in `"Hoi An"`, both conditions must hold:
 
 ```js
 db.customers.find({ tier: "gold", "address.city": "Hoi An" })
 ```
+
+Only `c4` (Dung) meets both. The other gold customer, `c1`, lives in Da Nang and is left out: adding a condition to a filter can only shrink the result, never grow it.
 
 ## Common mistakes
 
@@ -234,9 +244,11 @@ db.customers.find({ "address.city": "da nang" })
 db.customers.find({ "address.city": "Da Nang" })
 ```
 
+The wrong version returns nothing, the fix returns `c1` and `c3`. MongoDB does not say "not found" or suggest a near match: an empty result is the only signal. When a filter comes back empty unexpectedly, open one document and look at how the value is really stored before you change the filter.
+
 ## Practice
 
-Collection `customers` holds 5 customers in Da Nang, Hue and Hoi An. Do the three steps.
+Collection `customers` holds 5 customers in Da Nang, Hue and Hoi An. Do the three steps. Step 1 is one equality on the flat field `tier`. Step 2 reaches into the embedded document with dot notation. Step 3 joins two conditions in one filter, one flat and one nested. Each step is graded on the documents returned, so keep whole documents, no projection needed.
 
 ## Recap
 

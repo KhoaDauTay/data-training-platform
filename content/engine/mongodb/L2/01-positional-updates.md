@@ -127,6 +127,8 @@ Làm được: sửa đúng dòng hàng trong đơn mà không ghi lại cả m�
 db.orders.updateOne({ _id: 1, "lines.sku": "p4" }, { $inc: { "lines.$.qty": 1 } })
 ```
 
+Trong đơn 1, dòng `"p4"` đổi `qty` từ 1 thành 2; dòng `"p1"` đứng trước nó không bị chạm, vì `$` trỏ đúng phần tử đã khớp `"lines.sku": "p4"`.
+
 Mọi đơn đã thanh toán được tặng thêm một đơn vị cho dòng rẻ hơn 30000:
 
 ```js
@@ -136,6 +138,8 @@ db.orders.updateMany(
   { arrayFilters: [{ "cheap.price": { $lt: 30000 } }] }
 )
 ```
+
+Ba đơn `paid` được xét. Dòng `"p1"` giá 25000 của đơn 1 lên 3, của đơn 6 lên 2. Đơn 5 khớp filter nhưng không dòng nào rẻ hơn 30000, nên giữ nguyên: một tài liệu khớp filter không bắt buộc phải có phần tử khớp `arrayFilters`.
 
 ## Lỗi hay gặp
 
@@ -151,7 +155,7 @@ db.orders.updateMany({ "lines.qty": { $gte: 2 } }, { $set: { "lines.$.bulk": tru
 db.orders.updateMany({ "lines.qty": { $gte: 2 } }, { $set: { "lines.$[l].bulk": true } }, { arrayFilters: [{ "l.qty": { $gte: 2 } }] })
 ```
 
-Đơn 5 có hai dòng `qty` bằng 2: bản sai chỉ đánh dấu dòng đầu.
+Đơn 5 có hai dòng `qty` bằng 2: bản sai chỉ đánh dấu dòng đầu. Đơn 7 cũng vậy: `"p2"` (2) có cờ, `"p3"` (3) thì không. Lỗi này lặng lẽ, không có thông báo nào; chỉ đếm lại các dòng mới thấy. Khi một tài liệu có thể chứa nhiều phần tử khớp, dùng `$[<id>]`.
 
 Ghi thẳng vào tên mảng thay vì vào từng phần tử:
 
@@ -165,9 +169,11 @@ db.orders.updateOne({ _id: 7 }, { $set: { lines: 4 } })
 db.orders.updateOne({ _id: 7, "lines.sku": "p3" }, { $set: { "lines.$.qty": 4 } })
 ```
 
+Bản sai biến `lines` của đơn 7 thành số `4`: cả hai dòng hàng mất. MongoDB không cảnh báo, vì `$set` cho phép đổi kiểu một trường. Bản sửa chỉ đổi `qty` của dòng `"p3"` thành 4 và giữ dòng `"p2"`.
+
 ## Thực hành
 
-Bốn bước trên `orders`, mỗi bước bắt đầu lại từ dữ liệu gốc.
+Bốn bước trên `orders`, mỗi bước bắt đầu lại từ dữ liệu gốc. Bước 1 sửa một dòng bằng `$`, nên filter phải có điều kiện trên `lines`. Bước 2 dùng `$[]` cùng `$mul` cho mọi dòng của một đơn. Bước 3 và 4 dùng `updateMany` với `arrayFilters`: một điều kiện bằng, rồi một điều kiện có toán tử. Sau mỗi bước, xem lại cả các dòng không được sửa: chúng phải giữ nguyên.
 
 ## Tóm tắt
 
@@ -215,6 +221,8 @@ Order 1 adds one more `"p4"`, through `$`:
 db.orders.updateOne({ _id: 1, "lines.sku": "p4" }, { $inc: { "lines.$.qty": 1 } })
 ```
 
+In order 1, line `"p4"` goes from `qty` 1 to 2; line `"p1"` before it is untouched, because `$` points at exactly the element that matched `"lines.sku": "p4"`.
+
 Every paid order gets one extra unit on lines cheaper than 30000:
 
 ```js
@@ -224,6 +232,8 @@ db.orders.updateMany(
   { arrayFilters: [{ "cheap.price": { $lt: 30000 } }] }
 )
 ```
+
+Three `paid` orders are considered. The `"p1"` line priced 25000 goes up to 3 in order 1 and to 2 in order 6. Order 5 matches the filter but has no line under 30000, so it stays as it was: a document that matches the filter need not hold an element that matches `arrayFilters`.
 
 ## Common mistakes
 
@@ -239,7 +249,7 @@ db.orders.updateMany({ "lines.qty": { $gte: 2 } }, { $set: { "lines.$.bulk": tru
 db.orders.updateMany({ "lines.qty": { $gte: 2 } }, { $set: { "lines.$[l].bulk": true } }, { arrayFilters: [{ "l.qty": { $gte: 2 } }] })
 ```
 
-Order 5 has two lines with `qty` equal to 2: the wrong version flags only the first.
+Order 5 has two lines with `qty` equal to 2: the wrong version flags only the first. Order 7 is the same: `"p2"` (2) gets the flag, `"p3"` (3) does not. This mistake is silent, with no message; only counting the lines again shows it. When one document can hold several matching elements, use `$[<id>]`.
 
 Writing to the array name instead of its elements:
 
@@ -253,9 +263,11 @@ db.orders.updateOne({ _id: 7 }, { $set: { lines: 4 } })
 db.orders.updateOne({ _id: 7, "lines.sku": "p3" }, { $set: { "lines.$.qty": 4 } })
 ```
 
+The wrong version turns the `lines` of order 7 into the number `4`: both lines are gone. MongoDB gives no warning, because `$set` may change a field's type. The fix changes only the `qty` of line `"p3"` to 4 and keeps line `"p2"`.
+
 ## Practice
 
-Four steps on `orders`; each step starts again from the original data.
+Four steps on `orders`; each step starts again from the original data. Step 1 changes one line with `$`, so the filter needs a condition on `lines`. Step 2 uses `$[]` with `$mul` on every line of one order. Steps 3 and 4 use `updateMany` with `arrayFilters`: an equality condition, then a condition with an operator. After each step, also look at the lines that were not changed: they must stay as they were.
 
 ## Recap
 

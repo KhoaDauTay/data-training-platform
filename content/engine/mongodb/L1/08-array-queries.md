@@ -150,17 +150,23 @@ Sản phẩm có nhãn `"gift"`:
 db.products.find({ tags: "gift" })
 ```
 
+Ba sản phẩm `p4`, `p5`, `p6`: mỗi cái có `"gift"` ở đâu đó trong mảng. Một giá trị đơn so với một trường mảng nghĩa là "mảng có chứa phần tử này", không cần toán tử nào.
+
 Sản phẩm có cả `"hot"` lẫn `"cold"`, thứ tự nào cũng được:
 
 ```js
 db.products.find({ tags: { $all: ["cold", "hot"] } })
 ```
 
+Chỉ `p1` (Green tea): mảng của nó là `["hot", "cold"]`, ngược thứ tự với danh sách trong `$all`, nhưng vẫn khớp.
+
 Đơn có một dòng vừa số lượng từ 5 vừa giá dưới 20000:
 
 ```js
 db.orders.find({ lines: { $elemMatch: { qty: { $gte: 5 }, price: { $lt: 20000 } } } })
 ```
+
+Kết quả là đơn 4, có một dòng `p3` số lượng 10 giá 15000. Cả hai điều kiện được thử trên cùng một phần tử của `lines`.
 
 ## Lỗi hay gặp
 
@@ -176,6 +182,8 @@ db.orders.find({ "lines.sku": "p4", "lines.qty": { $gte: 2 } }, { _id: 1 })
 db.orders.find({ lines: { $elemMatch: { sku: "p4", qty: { $gte: 2 } } } }, { _id: 1 })
 ```
 
+Bản sai trả đơn 1 và 5; bản sửa chỉ trả đơn 5. Ở đơn 1, một dòng có `sku` là `p4` và một dòng khác có số lượng từ 2, nên mỗi điều kiện tìm được phần tử riêng. Khi nhiều điều kiện phải đúng trên cùng một phần tử, dùng `$elemMatch`.
+
 So bằng cả mảng khi không quan tâm thứ tự:
 
 ```js
@@ -188,9 +196,11 @@ db.products.find({ tags: ["gift", "hot"] })
 db.products.find({ tags: { $all: ["gift", "hot"] } })
 ```
 
+Bản sai trả rỗng: so bằng cả mảng đòi đúng các phần tử theo đúng thứ tự, mà `p6` lưu `["hot", "gift"]`. Bản sửa trả `p6`. Chỉ so cả mảng khi thứ tự thật sự có nghĩa.
+
 ## Thực hành
 
-Trước khi làm, đoán câu hỏi dự đoán: điều kiện dot notation không có `$elemMatch` trả về đơn nào? Rồi làm năm bước.
+Trước khi làm, đoán câu hỏi dự đoán: điều kiện dot notation không có `$elemMatch` trả về đơn nào? Rồi làm năm bước. Ba bước đầu trên `products`: một nhãn, hai nhãn bất kể thứ tự, rồi mảng rỗng bằng `$size`. Hai bước sau trên `orders`: một điều kiện dot notation vào mảng tài liệu, rồi hai điều kiện phải đúng trên cùng một dòng.
 
 ## Tóm tắt
 
@@ -241,17 +251,23 @@ Products tagged `"gift"`:
 db.products.find({ tags: "gift" })
 ```
 
+Three products `p4`, `p5`, `p6`: each has `"gift"` somewhere in its array. A single value compared with an array field means "the array contains this element", with no operator needed.
+
 Products with both `"hot"` and `"cold"`, in any order:
 
 ```js
 db.products.find({ tags: { $all: ["cold", "hot"] } })
 ```
 
+Only `p1` (Green tea): its array is `["hot", "cold"]`, the reverse of the list in `$all`, and it still matches.
+
 Orders with one line that has a quantity of at least 5 and a price under 20000:
 
 ```js
 db.orders.find({ lines: { $elemMatch: { qty: { $gte: 5 }, price: { $lt: 20000 } } } })
 ```
+
+The result is order 4, with one line of `p3` at quantity 10 and price 15000. Both conditions are tried on the same element of `lines`.
 
 ## Common mistakes
 
@@ -267,6 +283,8 @@ db.orders.find({ "lines.sku": "p4", "lines.qty": { $gte: 2 } }, { _id: 1 })
 db.orders.find({ lines: { $elemMatch: { sku: "p4", qty: { $gte: 2 } } } }, { _id: 1 })
 ```
 
+The wrong version returns orders 1 and 5; the fix returns only order 5. In order 1, one line has `sku` `p4` and another line has a quantity of at least 2, so each condition finds its own element. When several conditions must hold on the same element, use `$elemMatch`.
+
 Equality on a whole array when order does not matter:
 
 ```js
@@ -279,9 +297,11 @@ db.products.find({ tags: ["gift", "hot"] })
 db.products.find({ tags: { $all: ["gift", "hot"] } })
 ```
 
+The wrong version returns nothing: equality on a whole array needs exactly those elements in exactly that order, and `p6` stores `["hot", "gift"]`. The fix returns `p6`. Compare a whole array only when the order really matters.
+
 ## Practice
 
-Before you start, answer the prediction: which orders does the dot-notation filter without `$elemMatch` return? Then do the five steps.
+Before you start, answer the prediction: which orders does the dot-notation filter without `$elemMatch` return? Then do the five steps. The first three are on `products`: one tag, two tags in any order, then an empty array with `$size`. The last two are on `orders`: one dot-notation condition into an array of documents, then two conditions that must hold on the same line.
 
 ## Recap
 

@@ -72,6 +72,8 @@ Thứ tự stage là một phần của câu hỏi: sau `$group` các trường 
 
 `aggregate` chỉ đọc. Kết quả là một danh sách tài liệu mới, collection gốc không đổi (trừ khi dùng `$out`/`$merge`, một bài sau ở L2).
 
+Nhiều người nghĩ pipeline giống một câu SQL mà bộ máy tự sắp lại mệnh đề. Thật ra thứ tự bạn viết chính là thứ tự dữ liệu chảy qua. Bộ tối ưu của MongoDB có dời hoặc gộp vài stage, nhưng chỉ khi kết quả chắc chắn không đổi; nó không sửa một pipeline viết sai thứ tự. Cách đọc một pipeline: đi từng stage, mỗi lần tự hỏi "ra khỏi stage này còn bao nhiêu tài liệu, mỗi tài liệu có những trường nào". Nếu stage sau nhắc tới một trường mà stage trước đã bỏ, kết quả sẽ rỗng hoặc sai, thường không có lỗi nào báo.
+
 Làm được: đọc một pipeline và nói hình dạng tài liệu sau từng stage.
 
 ## Cú pháp
@@ -98,6 +100,8 @@ db.orders.aggregate([
 ])
 ```
 
+Kết quả có hai tài liệu: `S2` với doanh thu 235000 rồi `S1` với 95000. Mỗi tài liệu chỉ còn `_id` (mã cửa hàng) và `revenue`; các trường như `status`, `total` của từng đơn không còn sau `$group`.
+
 Hai đơn lớn nhất, chỉ lấy `total`:
 
 ```js
@@ -107,6 +111,8 @@ db.orders.aggregate([
   { $project: { total: 1 } }
 ])
 ```
+
+Kết quả: đơn 3 (450000) rồi đơn 5 (210000), mỗi đơn chỉ có `_id` và `total`. `$sort` đứng trước `$limit` nên đây đúng là hai đơn lớn nhất.
 
 ## Lỗi hay gặp
 
@@ -122,6 +128,8 @@ db.orders.aggregate([{ $group: { _id: "$store", n: { $sum: 1 } } }, { $match: { 
 db.orders.aggregate([{ $match: { status: "paid" } }, { $group: { _id: "$store", n: { $sum: 1 } } }])
 ```
 
+Bản sai trả về danh sách rỗng mà không báo lỗi; bản sửa đếm được 1 đơn đã thanh toán ở `S1` và 2 ở `S2`.
+
 Cắt trước khi sắp:
 
 ```js
@@ -134,9 +142,11 @@ db.orders.aggregate([{ $limit: 2 }, { $sort: { total: -1 } }])
 db.orders.aggregate([{ $sort: { total: -1 } }, { $limit: 2 }])
 ```
 
+Bản sai ở đây trả đơn 2 (120000) và đơn 1 (95000): hai đơn đầu theo thứ tự lưu của bộ chạy trong trình duyệt, không phải hai đơn lớn nhất. Trên máy chủ MongoDB thật, thứ tự khi chưa sắp không được bảo đảm, nên bản sai có thể ra hai đơn khác; bản sửa luôn ra đơn 3 và đơn 5.
+
 ## Thực hành
 
-Bấm qua sơ đồ: số tài liệu và các trường thay đổi thế nào sau mỗi stage. Rồi trả lời hai câu hỏi.
+Bấm qua sơ đồ: số tài liệu và các trường thay đổi thế nào sau mỗi stage. Rồi trả lời hai câu hỏi. Câu đầu hỏi một pipeline đặt `$match` sau `$group`: trước khi chọn, hãy viết ra các trường còn lại sau `$group`. Câu thứ hai hỏi vì sao `$match` nên đứng đầu.
 
 ## Tóm tắt
 
@@ -169,6 +179,8 @@ Stage order is part of the question: after `$group` the old fields are gone. Put
 
 `aggregate` only reads. The result is a new list of documents and the collection is unchanged (unless you use `$out`/`$merge`, a later L2 lesson).
 
+Many people think a pipeline is like an SQL query whose clauses the engine reorders for you. In fact the order you write is the order the data flows through. MongoDB's optimizer does move or merge some stages, but only when the result is certain not to change; it does not repair a pipeline written in the wrong order. How to read a pipeline: walk it stage by stage and ask each time "how many documents leave this stage, and which fields does each one have". If a later stage refers to a field an earlier stage dropped, the result is empty or wrong, usually with no error.
+
 You can now: read a pipeline and tell the shape of the documents after each stage.
 
 ## Syntax
@@ -195,6 +207,8 @@ db.orders.aggregate([
 ])
 ```
 
+The result has two documents: `S2` with revenue 235000, then `S1` with 95000. Each holds only `_id` (the store code) and `revenue`; fields such as `status` and `total` of each order are gone after `$group`.
+
 The two largest orders, with `total` only:
 
 ```js
@@ -204,6 +218,8 @@ db.orders.aggregate([
   { $project: { total: 1 } }
 ])
 ```
+
+Result: order 3 (450000) then order 5 (210000), each with only `_id` and `total`. `$sort` comes before `$limit`, so these really are the two largest orders.
 
 ## Common mistakes
 
@@ -219,6 +235,8 @@ db.orders.aggregate([{ $group: { _id: "$store", n: { $sum: 1 } } }, { $match: { 
 db.orders.aggregate([{ $match: { status: "paid" } }, { $group: { _id: "$store", n: { $sum: 1 } } }])
 ```
 
+The wrong version returns an empty list with no error; the fix counts 1 paid order at `S1` and 2 at `S2`.
+
 Cutting before sorting:
 
 ```js
@@ -231,9 +249,11 @@ db.orders.aggregate([{ $limit: 2 }, { $sort: { total: -1 } }])
 db.orders.aggregate([{ $sort: { total: -1 } }, { $limit: 2 }])
 ```
 
+The wrong version here returns order 2 (120000) and order 1 (95000): the first two in the in-browser runtime's stored order, not the two largest. On a real MongoDB server the order without a sort is not guaranteed, so the wrong version may return two other orders; the fix always returns orders 3 and 5.
+
 ## Practice
 
-Step through the diagram: how the number of documents and their fields change after each stage. Then answer the two questions.
+Step through the diagram: how the number of documents and their fields change after each stage. Then answer the two questions. The first asks about a pipeline with `$match` after `$group`: before you choose, write down the fields left after `$group`. The second asks why `$match` belongs at the start.
 
 ## Recap
 

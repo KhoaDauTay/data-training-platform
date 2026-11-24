@@ -110,6 +110,8 @@ Màn hình đơn của cửa hàng `"S2"` cần tên khách, nhưng đơn chỉ 
 
 `$lookup` tốn hơn đọc một tài liệu nhúng. Nếu màn hình nào cũng cần tên khách cùng đơn, cân nhắc chép sẵn vài trường ít đổi (như `name`) vào đơn: đó là câu hỏi nhúng hay tham chiếu của mô-đun Mô hình hóa.
 
+Thứ tự stage quan trọng. Đặt `$match` trước `$lookup` để chỉ ghép những tài liệu bạn thật sự cần: ghép 4 đơn của một cửa hàng rẻ hơn ghép mọi đơn rồi mới lọc. Sau `$lookup`, mỗi tài liệu mang theo cả mảng tài liệu khớp, nên nó to lên; chỉ giữ trường cần bằng `$project` càng sớm càng tốt.
+
 Làm được: ghép hai collection để trả lời câu hỏi cần dữ liệu từ cả hai, và tìm tài liệu "mồ côi".
 
 ## Cú pháp
@@ -133,6 +135,8 @@ db.customers.aggregate([
 ])
 ```
 
+Sáu khách trở về, mỗi khách có `name` và `orderCount`: `An` có 3 đơn, `Binh` 2, `Giang` 0. `Giang` vẫn có mặt với mảng rỗng, đúng tính chất left outer join.
+
 Đơn của cửa hàng `"S2"` kèm thành phố của khách:
 
 ```js
@@ -143,6 +147,8 @@ db.orders.aggregate([
   { $project: { total: 1, city: "$buyer.city" } }
 ])
 ```
+
+Bốn đơn của `"S2"` trở về, mỗi đơn có `total` và một `city` phẳng, ví dụ đơn 2 là `Hue`, đơn 5 là `Hoi An`. `$match` đứng đầu nên chỉ bốn đơn này được ghép.
 
 ## Lỗi hay gặp
 
@@ -158,6 +164,8 @@ db.orders.aggregate([{ $match: { _id: 2 } }, { $lookup: { from: "customers", loc
 db.orders.aggregate([{ $match: { _id: 2 } }, { $lookup: { from: "customers", localField: "customer", foreignField: "_id", as: "buyer" } }, { $unwind: "$buyer" }, { $project: { name: "$buyer.name" } }])
 ```
 
+Bản sai trả `name: ["Binh"]`, một mảng; ứng dụng chờ chuỗi sẽ hiện sai hoặc lỗi. Bản sửa trả `name: "Binh"`. Lưu ý: `$unwind` bỏ tài liệu có mảng rỗng, nên khi cần giữ đơn không có khách, dùng `$arrayElemAt` hoặc tùy chọn `preserveNullAndEmptyArrays`.
+
 Đảo `localField` và `foreignField`:
 
 ```js
@@ -170,9 +178,11 @@ db.orders.aggregate([{ $match: { _id: 2 } }, { $lookup: { from: "customers", loc
 db.orders.aggregate([{ $match: { _id: 2 } }, { $lookup: { from: "customers", localField: "customer", foreignField: "_id", as: "buyer" } }])
 ```
 
+Bản sai vẫn chạy, không báo lỗi: đơn 2 trở về với `buyer: []`. Bản sửa cho `buyer` có đúng một khách, `c2` tên `Binh` ở `Hue`. Khi mảng `as` rỗng ở mọi tài liệu, nghi ngay hai trường bị đảo.
+
 ## Thực hành
 
-Ba bước trên `orders` và `customers`. Khách `"c6"` chưa có đơn.
+Ba bước trên `orders` và `customers`. Khách `"c6"` chưa có đơn. Bước 1 ghép tên khách vào các đơn của `"S2"` rồi kéo phẳng bằng `$unwind`. Bước 2 ghép như vậy, bỏ đơn đã hủy, rồi `$group` theo thành phố của khách và sắp theo tên thành phố. Bước 3 đổi hướng: bắt đầu từ `customers` và giữ những khách có mảng đơn rỗng.
 
 ## Tóm tắt
 
@@ -197,6 +207,8 @@ The order screen of store `"S2"` needs the customer's name, but an order only st
 
 `$lookup` costs more than reading an embedded document. If every screen needs the customer's name with the order, consider copying a few rarely changing fields (such as `name`) into the order: that is the embed-or-reference question of the Modelling module.
 
+Stage order matters. Put `$match` before `$lookup` so you join only the documents you need: joining the 4 orders of one store is cheaper than joining every order and filtering afterwards. After `$lookup` each document carries the whole array of matches, so it grows; keep only the fields you need with `$project` as early as you can.
+
 You can now: join two collections to answer a question that needs data from both, and find "orphan" documents.
 
 ## Syntax
@@ -220,6 +232,8 @@ db.customers.aggregate([
 ])
 ```
 
+Six customers come back, each with `name` and `orderCount`: `An` has 3 orders, `Binh` 2, `Giang` 0. `Giang` is still there with an empty array, as a left outer join promises.
+
 The orders of store `"S2"` with the customer's city:
 
 ```js
@@ -230,6 +244,8 @@ db.orders.aggregate([
   { $project: { total: 1, city: "$buyer.city" } }
 ])
 ```
+
+The four orders of `"S2"` come back, each with `total` and a flat `city`, for example order 2 is `Hue`, order 5 is `Hoi An`. `$match` comes first, so only these four orders are joined.
 
 ## Common mistakes
 
@@ -245,6 +261,8 @@ db.orders.aggregate([{ $match: { _id: 2 } }, { $lookup: { from: "customers", loc
 db.orders.aggregate([{ $match: { _id: 2 } }, { $lookup: { from: "customers", localField: "customer", foreignField: "_id", as: "buyer" } }, { $unwind: "$buyer" }, { $project: { name: "$buyer.name" } }])
 ```
 
+The wrong version returns `name: ["Binh"]`, an array; an application expecting a string shows it wrongly or fails. The fix returns `name: "Binh"`. Note that `$unwind` drops documents whose array is empty, so when you must keep an order without a customer, use `$arrayElemAt` or the `preserveNullAndEmptyArrays` option.
+
 Swapping `localField` and `foreignField`:
 
 ```js
@@ -257,9 +275,11 @@ db.orders.aggregate([{ $match: { _id: 2 } }, { $lookup: { from: "customers", loc
 db.orders.aggregate([{ $match: { _id: 2 } }, { $lookup: { from: "customers", localField: "customer", foreignField: "_id", as: "buyer" } }])
 ```
 
+The wrong version still runs with no error: order 2 comes back with `buyer: []`. The fix gives `buyer` exactly one customer, `c2` named `Binh` in `Hue`. When the `as` array is empty on every document, suspect swapped fields first.
+
 ## Practice
 
-Three steps on `orders` and `customers`. Customer `"c6"` has no order yet.
+Three steps on `orders` and `customers`. Customer `"c6"` has no order yet. Step 1 joins the customer name onto the orders of `"S2"` and flattens it with `$unwind`. Step 2 joins the same way, drops cancelled orders, then runs `$group` on the customer's city and sorts by city name. Step 3 turns around: it starts from `customers` and keeps those whose order array is empty.
 
 ## Recap
 

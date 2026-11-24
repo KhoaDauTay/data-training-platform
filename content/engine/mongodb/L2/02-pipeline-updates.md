@@ -116,11 +116,15 @@ db.orders.updateMany(
 )
 ```
 
+Đơn 1, 5, 6 có thêm `lineCount` (2, 2, 1) và cùng một giá trị `checkedAt`. Đơn 2, 3, 4 không khớp filter nên không đổi.
+
 Chép mã khách sang trường mới `buyer` của đơn 2:
 
 ```js
 db.orders.updateOne({ _id: 2 }, [{ $set: { buyer: "$customer" } }])
 ```
+
+Đơn 2 có `buyer: "c2"`, chép từ `customer`. Hai trường giờ độc lập: đổi `customer` sau này không kéo `buyer` theo.
 
 ## Lỗi hay gặp
 
@@ -136,6 +140,8 @@ db.orders.updateOne({ _id: 2 }, { $set: { buyer: "$customer" } })
 db.orders.updateOne({ _id: 2 }, [{ $set: { buyer: "$customer" } }])
 ```
 
+Bản sai ghi đúng chuỗi `"$customer"` vào `buyer`, không có lỗi nào. Thiếu `[ ]` là đủ để đổi nghĩa: update kiểu toán tử coi giá trị là dữ liệu, update kiểu pipeline coi nó là biểu thức.
+
 Dùng `$project` khi chỉ muốn thêm một trường:
 
 ```js
@@ -148,9 +154,11 @@ db.orders.updateOne({ _id: 1 }, [{ $project: { lineCount: { $size: "$lines" } } 
 db.orders.updateOne({ _id: 1 }, [{ $set: { lineCount: { $size: "$lines" } } }])
 ```
 
+Bản sai để đơn 1 chỉ còn `_id` và `lineCount`: `customer`, `status`, `lines` đều mất, và không lấy lại được. `$project` hợp khi bạn thật sự muốn thu gọn tài liệu, như bước 3 của bài.
+
 ## Thực hành
 
-Ba bước trên `orders`. Đơn 4 đã hủy và có thêm trường `note`.
+Ba bước trên `orders`. Đơn 4 đã hủy và có thêm trường `note`. Bước 1 tính `total` bằng `$map` rồi `$sum` trên `lines`. Bước 2 dùng `$cond` và `$size` để gán nhãn theo số dòng. Bước 3 dùng `$project` để thu gọn các đơn đã hủy, nên `note` của đơn 4 cũng phải biến mất.
 
 ## Tóm tắt
 
@@ -197,11 +205,15 @@ db.orders.updateMany(
 )
 ```
 
+Orders 1, 5, 6 gain `lineCount` (2, 2, 1) and one shared `checkedAt` value. Orders 2, 3, 4 do not match the filter and stay as they were.
+
 Copy the customer code into a new field `buyer` of order 2:
 
 ```js
 db.orders.updateOne({ _id: 2 }, [{ $set: { buyer: "$customer" } }])
 ```
+
+Order 2 now has `buyer: "c2"`, copied from `customer`. The two fields are independent from now on: changing `customer` later does not carry `buyer` along.
 
 ## Common mistakes
 
@@ -217,6 +229,8 @@ db.orders.updateOne({ _id: 2 }, { $set: { buyer: "$customer" } })
 db.orders.updateOne({ _id: 2 }, [{ $set: { buyer: "$customer" } }])
 ```
 
+The wrong version stores the exact string `"$customer"` in `buyer`, with no error at all. Leaving out the `[ ]` is enough to change the meaning: an operator-style update treats the value as data, a pipeline update treats it as an expression.
+
 Using `$project` when you only want to add a field:
 
 ```js
@@ -229,9 +243,11 @@ db.orders.updateOne({ _id: 1 }, [{ $project: { lineCount: { $size: "$lines" } } 
 db.orders.updateOne({ _id: 1 }, [{ $set: { lineCount: { $size: "$lines" } } }])
 ```
 
+The wrong version leaves order 1 with only `_id` and `lineCount`: `customer`, `status` and `lines` are gone and cannot be recovered. `$project` fits when you really want to shrink the document, as in step 3 of this lesson.
+
 ## Practice
 
-Three steps on `orders`. Order 4 is cancelled and has an extra `note` field.
+Three steps on `orders`. Order 4 is cancelled and has an extra `note` field. Step 1 computes `total` with `$map` then `$sum` over `lines`. Step 2 uses `$cond` and `$size` to label orders by their number of lines. Step 3 uses `$project` to shrink the cancelled orders, so the `note` of order 4 must disappear too.
 
 ## Recap
 

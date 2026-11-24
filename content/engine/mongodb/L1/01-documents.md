@@ -160,6 +160,8 @@ Kiểu là một phần của giá trị. Collection `items` có giá lưu bằn
 db.items.find({ price: { $type: "string" } })
 ```
 
+Kết quả là đúng một tài liệu, `A2`, với `price: "25000"` trong dấu nháy. Trên màn hình nó trông giống hệt `A1`, chỉ kiểu BSON cho biết hai giá trị khác nhau. Đây là cách nhanh để kiểm một collection trước khi tin vào các phép so sánh trên trường đó.
+
 ## Lỗi hay gặp
 
 Lưu số dưới dạng chuỗi, rồi so sánh như số:
@@ -174,6 +176,8 @@ db.items.find({ price: { $lt: 30000 } })
 db.items.find({ price: { $type: "string" } })
 ```
 
+Bản sai chỉ trả `A1`: phép so sánh số bỏ qua lặng lẽ giá trị lưu bằng chuỗi, không báo lỗi. Bản sửa không phải truy vấn tốt hơn mà là bước tìm thủ phạm; cách sửa thật là ghi lại giá trị đó thành số, rồi giữ kiểu đúng ngay từ lúc thêm (bài L2 về kiểm tra lược đồ chỉ cách chặn từ đầu).
+
 Tự đặt `_id` trùng với tài liệu đã có:
 
 ```js
@@ -181,7 +185,7 @@ Tự đặt `_id` trùng với tài liệu đã có:
 db.items.insertOne({ _id: 1, sku: "A4", price: 52000 })
 ```
 
-MongoDB thật báo lỗi khóa trùng mã 11000, vì `_id` luôn có index duy nhất.
+MongoDB thật báo lỗi khóa trùng mã 11000, vì `_id` luôn có index duy nhất. Mã `duplicate_key` trên khối này là của mingo, bộ chạy trong trình duyệt; thông báo thì giống: `E11000 duplicate key error`. Cách sửa: bỏ `_id` để MongoDB tự sinh, hoặc chọn một giá trị chưa dùng.
 
 ## Tóm tắt
 
@@ -257,6 +261,8 @@ The type is part of the value. Collection `items` stores prices as numbers and o
 db.items.find({ price: { $type: "string" } })
 ```
 
+The result is exactly one document, `A2`, with `price: "25000"` in quotes. On screen it looks just like `A1`; only the BSON type tells the two values apart. This is a quick way to check a collection before trusting comparisons on that field.
+
 ## Common mistakes
 
 Storing a number as a string, then comparing it as a number:
@@ -271,6 +277,8 @@ db.items.find({ price: { $lt: 30000 } })
 db.items.find({ price: { $type: "string" } })
 ```
 
+The wrong version returns only `A1`: the number comparison silently skips the value stored as a string and reports no error. The fix is not a better query but the step that finds the culprit; the real repair is to write that value back as a number, then keep the right type from the moment of insert (the L2 lesson on schema validation shows how to block it up front).
+
 Choosing an `_id` that another document already has:
 
 ```js
@@ -278,7 +286,7 @@ Choosing an `_id` that another document already has:
 db.items.insertOne({ _id: 1, sku: "A4", price: 52000 })
 ```
 
-A real MongoDB reports a duplicate key error with code 11000, because `_id` always has a unique index.
+A real MongoDB reports a duplicate key error with code 11000, because `_id` always has a unique index. The code `duplicate_key` on this block comes from mingo, the in-browser runtime; the message is the same: `E11000 duplicate key error`. The fix: leave `_id` out so MongoDB generates one, or pick a value not in use.
 
 ## Recap
 

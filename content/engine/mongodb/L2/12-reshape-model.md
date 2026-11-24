@@ -126,11 +126,15 @@ Mỗi khách kèm `_id` của đơn mới nhất, rồi bỏ mảng tạm:
 db.customers.aggregate([{ $lookup: { from: "orders", localField: "_id", foreignField: "customer", as: "orders" } }, { $set: { lastOrder: { $max: "$orders._id" } } }, { $unset: "orders" }])
 ```
 
+Bốn khách trở về: `c1` có `lastOrder` là 3, `c2` là 6, `c3` là 9. Khách `c6` chưa có đơn nên `$max` trên mảng rỗng cho `null`. `$unset` bỏ mảng tạm, nên kết quả chỉ còn các trường của khách cộng một trường tóm tắt.
+
 Xem trước số dòng hàng của mỗi đơn trước khi lưu nó:
 
 ```js
 db.orders.aggregate([{ $project: { lineCount: { $size: "$lines" } } }])
 ```
+
+Năm đơn trở về với `lineCount` lần lượt 2, 1, 2, 1, 1. Đây chỉ là `aggregate`, không ghi gì: bạn kiểm hình mới trước khi chạy lệnh ghi thật.
 
 ## Lỗi hay gặp
 
@@ -146,6 +150,8 @@ db.orders.updateMany({}, [{ $set: { total: { $sum: "$lines.price" } } }])
 db.orders.updateMany({}, [{ $set: { total: { $sum: { $map: { input: "$lines", as: "l", in: { $multiply: ["$$l.qty", "$$l.price"] } } } } } }])
 ```
 
+Bản sai ghi `total` 70000 cho đơn 1 (25000 + 45000), trong khi đúng là 95000 vì dòng đầu có `qty` 2; đơn 9 thành 60000 thay vì 180000. Giá trị tính sẵn sai sẽ bị đọc mãi, nên kiểm lệnh ghi bằng `aggregate` trước. Ở đây mỗi lần chạy bắt đầu từ dữ liệu gốc, nên bạn thử lại được.
+
 Chép thẳng trường của mảng `$lookup`:
 
 ```js
@@ -158,9 +164,11 @@ db.orders.aggregate([{ $lookup: { from: "customers", localField: "customer", for
 db.orders.aggregate([{ $lookup: { from: "customers", localField: "customer", foreignField: "_id", as: "c" } }, { $project: { buyer: { name: { $arrayElemAt: ["$c.name", 0] } } } }])
 ```
 
+Bản sai cho `buyer: { name: ["An"] }`; bản sửa cho `buyer: { name: "An" }`. Một mảng một phần tử trông gần đúng, nhưng mọi truy vấn và màn hình đọc nó như chuỗi sẽ lệch.
+
 ## Thực hành
 
-Ba bước trên `customers` và `orders`. Khách `"c6"` chưa có đơn.
+Ba bước trên `customers` và `orders`. Khách `"c6"` chưa có đơn. Bước 1 là computed pattern: lệnh ghi thêm `total` vào mọi đơn. Bước 2 gộp đơn vào hồ sơ khách: số đơn và tổng số dòng hàng. Bước 3 là extended reference: nhúng tên và thành phố của khách vào từng đơn.
 
 ## Tóm tắt
 
@@ -208,11 +216,15 @@ Each customer with the `_id` of their latest order, then drop the temporary arra
 db.customers.aggregate([{ $lookup: { from: "orders", localField: "_id", foreignField: "customer", as: "orders" } }, { $set: { lastOrder: { $max: "$orders._id" } } }, { $unset: "orders" }])
 ```
 
+Four customers come back: `c1` has `lastOrder` 3, `c2` 6, `c3` 9. Customer `c6` has no order, so `$max` over an empty array gives `null`. `$unset` drops the temporary array, so the result keeps only the customer fields plus one summary field.
+
 Preview each order's line count before storing it:
 
 ```js
 db.orders.aggregate([{ $project: { lineCount: { $size: "$lines" } } }])
 ```
+
+Five orders come back with `lineCount` 2, 1, 2, 1, 1. This is only an `aggregate` and writes nothing: you check the new shape before running the real write.
 
 ## Common mistakes
 
@@ -228,6 +240,8 @@ db.orders.updateMany({}, [{ $set: { total: { $sum: "$lines.price" } } }])
 db.orders.updateMany({}, [{ $set: { total: { $sum: { $map: { input: "$lines", as: "l", in: { $multiply: ["$$l.qty", "$$l.price"] } } } } } }])
 ```
 
+The wrong version stores a `total` of 70000 for order 1 (25000 + 45000), while the right one is 95000 because the first line has `qty` 2; order 9 becomes 60000 instead of 180000. A wrong precomputed value is read forever, so check the write with an `aggregate` first. Here each run starts from the original data, so you can try again.
+
 Copying a field of the `$lookup` array as it is:
 
 ```js
@@ -240,9 +254,11 @@ db.orders.aggregate([{ $lookup: { from: "customers", localField: "customer", for
 db.orders.aggregate([{ $lookup: { from: "customers", localField: "customer", foreignField: "_id", as: "c" } }, { $project: { buyer: { name: { $arrayElemAt: ["$c.name", 0] } } } }])
 ```
 
+The wrong version gives `buyer: { name: ["An"] }`; the fix gives `buyer: { name: "An" }`. A one-element array looks almost right, but every query and screen that reads it as a string goes wrong.
+
 ## Practice
 
-Three steps on `customers` and `orders`. Customer `"c6"` has no order yet.
+Three steps on `customers` and `orders`. Customer `"c6"` has no order yet. Step 1 is the computed pattern: a write adds `total` to every order. Step 2 folds orders into the customer profile: order count and total line items. Step 3 is the extended reference: it embeds the customer's name and city into each order.
 
 ## Recap
 

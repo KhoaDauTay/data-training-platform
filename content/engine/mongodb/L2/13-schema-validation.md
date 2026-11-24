@@ -120,11 +120,15 @@ db.createCollection("orders", {
 })
 ```
 
+Với luật này, một lần thêm đơn thiếu `lines` hoặc có `status: "Paid"` bị từ chối. `enum` so đúng từng ký tự, nên `"Paid"` không phải `"paid"`. `required` chỉ đòi trường có mặt; một trường có mặt với giá trị `null` vẫn qua `required`, muốn chặn thì thêm `bsonType` cho trường đó.
+
 Tìm các tài liệu cũ đang vi phạm:
 
 ```text
 db.orders.find({ $nor: [ { $jsonSchema: schema } ] })
 ```
+
+`schema` là biến giữ cùng đối tượng `$jsonSchema` của validator. Truy vấn này chạy được cả khi collection chưa có validator, nên bạn đếm được tài liệu sai trước khi bật luật. Trong trình duyệt nó không chạy: thư viện mingo từ chối `$jsonSchema` khi không được cấp một bộ kiểm JSON Schema riêng, và ứng dụng này không cấp.
 
 ## Lỗi hay gặp
 
@@ -137,6 +141,8 @@ db.runCommand({ collMod: "orders", validator: { ... }, validationAction: "warn" 
 db.runCommand({ collMod: "orders", validator: { ... }, validationAction: "error" })
 ```
 
+`"warn"` hợp lúc chuyển đổi: xem log để biết bao nhiêu lần ghi sẽ bị chặn, rồi mới đổi sang `"error"`. Đừng để `"warn"` lại mãi: dữ liệu sai vẫn chảy vào và báo cáo vẫn sót.
+
 Bật `"strict"` trên collection cũ còn tài liệu sai, rồi mọi lần sửa mà chưa làm chúng hợp lệ đều bị từ chối:
 
 ```text
@@ -145,6 +151,8 @@ db.runCommand({ collMod: "orders", validator: { ... }, validationLevel: "strict"
 // FIX: new and valid documents are checked, old invalid ones can still be fixed
 db.runCommand({ collMod: "orders", validator: { ... }, validationLevel: "moderate" })
 ```
+
+Thứ tự an toàn trên collection cũ: tìm tài liệu sai bằng `$nor`, bật `"moderate"`, sửa dần dữ liệu cũ, rồi mới chuyển sang `"strict"`. Sau mỗi đợt sửa, chạy lại cùng truy vấn `$nor` để xem còn bao nhiêu tài liệu sai.
 
 ## Tóm tắt
 
@@ -211,11 +219,15 @@ db.createCollection("orders", {
 })
 ```
 
+With this rule, inserting an order without `lines` or with `status: "Paid"` is rejected. `enum` compares character by character, so `"Paid"` is not `"paid"`. `required` only asks for the field to be present; a field present with the value `null` still passes `required`, so add a `bsonType` for that field to block it.
+
 Find the old documents that break the rules:
 
 ```text
 db.orders.find({ $nor: [ { $jsonSchema: schema } ] })
 ```
+
+`schema` is a variable holding the same `$jsonSchema` object as the validator. This query works even before the collection has a validator, so you can count the invalid documents before you turn the rule on. It does not run in the browser: the mingo library refuses `$jsonSchema` unless it is given a separate JSON Schema checker, and this app gives it none.
 
 ## Common mistakes
 
@@ -228,6 +240,8 @@ db.runCommand({ collMod: "orders", validator: { ... }, validationAction: "warn" 
 db.runCommand({ collMod: "orders", validator: { ... }, validationAction: "error" })
 ```
 
+`"warn"` suits a migration: read the log to see how many writes would be blocked, then switch to `"error"`. Do not leave `"warn"` on for good: bad data keeps flowing in and the report keeps missing orders.
+
 Turning on `"strict"` for an old collection that still holds invalid documents, so every update that does not make them valid is rejected:
 
 ```text
@@ -236,6 +250,8 @@ db.runCommand({ collMod: "orders", validator: { ... }, validationLevel: "strict"
 // FIX: new and valid documents are checked, old invalid ones can still be fixed
 db.runCommand({ collMod: "orders", validator: { ... }, validationLevel: "moderate" })
 ```
+
+A safe order on an old collection: find the invalid documents with `$nor`, turn on `"moderate"`, fix the old data bit by bit, and only then switch to `"strict"`. After each batch of fixes, run the same `$nor` query again to see how many invalid documents are left.
 
 ## Recap
 

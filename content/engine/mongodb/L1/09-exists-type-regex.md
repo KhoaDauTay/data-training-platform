@@ -137,17 +137,23 @@ Khách có số điện thoại nhưng không có trường `email`:
 db.customers.find({ phone: { $exists: true }, email: { $exists: false } })
 ```
 
+Chỉ `c3` (Chi): có `phone`, không có trường `email`. `$exists` hỏi trường có mặt hay không, chứ không quan tâm giá trị bên trong.
+
 Khách có tên bắt đầu bằng `D`:
 
 ```js
 db.customers.find({ name: { $regex: "^D" } })
 ```
 
+Kết quả là `c4` (Dung). Dấu `^` neo mẫu vào đầu chuỗi; bỏ nó đi thì mọi tên có chữ `D` ở bất kỳ đâu đều khớp.
+
 Khách có `email` đúng bằng `null`, không tính khách thiếu trường:
 
 ```js
 db.customers.find({ email: { $type: "null" } })
 ```
+
+Chỉ `c5` (Em), người có `email: null` ghi rõ. `c3` thiếu trường nên không khớp: `$type: "null"` phân biệt "có trường, giá trị rỗng" với "không có trường".
 
 ## Lỗi hay gặp
 
@@ -163,6 +169,8 @@ db.customers.find({ email: null })
 db.customers.find({ email: { $exists: false } })
 ```
 
+Bản sai trả `c3` và `c5`, bản sửa chỉ trả `c3`. So bằng `null` khớp cả hai trường hợp, thiếu trường và giá trị `null`; đó là chủ ý của MongoDB, nhưng dễ đếm nhầm khi hai trường hợp có nghĩa nghiệp vụ khác nhau.
+
 Quên rằng `$regex` phân biệt hoa thường:
 
 ```js
@@ -175,9 +183,11 @@ db.products.find({ name: { $regex: "tea" } })
 db.products.find({ name: { $regex: "tea", $options: "i" } })
 ```
 
+Bản sai trả `p1` và `p6`; bản sửa thêm `p5` (Tea set). Tùy chọn `i` bỏ qua hoa thường, nhưng một mẫu không neo `^` vẫn phải dò cả chuỗi của từng tài liệu, nên trên collection lớn nó chậm hơn so bằng.
+
 ## Thực hành
 
-Khách `"c3"` không có trường `email`, khách `"c5"` có `email` bằng `null`. Làm bốn bước.
+Khách `"c3"` không có trường `email`, khách `"c5"` có `email` bằng `null`. Làm bốn bước. Bước 1 lấy khách có trường `email`, dù giá trị là gì. Bước 2 chỉ giữ email là chuỗi. Bước 3 dùng so bằng `null` và nhận cả hai trường hợp. Bước 4 tìm tên sản phẩm chứa một từ, bất kể hoa thường.
 
 ## Tóm tắt
 
@@ -226,17 +236,23 @@ Customers with a phone number but no `email` field:
 db.customers.find({ phone: { $exists: true }, email: { $exists: false } })
 ```
 
+Only `c3` (Chi): it has `phone` and no `email` field. `$exists` asks whether the field is present, not what value it holds.
+
 Customers whose name starts with `D`:
 
 ```js
 db.customers.find({ name: { $regex: "^D" } })
 ```
 
+The result is `c4` (Dung). The `^` anchors the pattern at the start of the string; without it, every name with a `D` anywhere would match.
+
 Customers whose `email` is exactly `null`, leaving out those without the field:
 
 ```js
 db.customers.find({ email: { $type: "null" } })
 ```
+
+Only `c5` (Em), who has `email: null` written out. `c3` lacks the field and does not match: `$type: "null"` tells "field present, empty value" apart from "no field".
 
 ## Common mistakes
 
@@ -252,6 +268,8 @@ db.customers.find({ email: null })
 db.customers.find({ email: { $exists: false } })
 ```
 
+The wrong version returns `c3` and `c5`, the fix returns only `c3`. Equality with `null` matches both cases, a missing field and a `null` value; MongoDB does this on purpose, but it is easy to miscount when the two cases mean different things to the business.
+
 Forgetting that `$regex` is case-sensitive:
 
 ```js
@@ -264,9 +282,11 @@ db.products.find({ name: { $regex: "tea" } })
 db.products.find({ name: { $regex: "tea", $options: "i" } })
 ```
 
+The wrong version returns `p1` and `p6`; the fix adds `p5` (Tea set). The `i` option ignores case, but a pattern without a `^` anchor still has to scan the whole string of every document, so on a large collection it is slower than an equality.
+
 ## Practice
 
-Customer `"c3"` has no `email` field, customer `"c5"` has `email` set to `null`. Do the four steps.
+Customer `"c3"` has no `email` field, customer `"c5"` has `email` set to `null`. Do the four steps. Step 1 gets customers that have an `email` field, whatever its value. Step 2 keeps only emails that are strings. Step 3 uses equality with `null` and accepts both cases. Step 4 finds product names that contain a word, in any case.
 
 ## Recap
 

@@ -131,11 +131,15 @@ Hai đồ uống tồn kho ít nhất, hòa thì theo `_id`:
 db.products.find({ category: "drink" }).sort({ stock: 1, _id: 1 }).limit(2)
 ```
 
+Kết quả là `p2` (tồn 8) rồi `p6` (tồn 12). `sort` chạy trước `limit` dù bạn viết theo thứ tự nào; `_id` trong khóa sắp xếp làm thứ tự cố định khi hai sản phẩm cùng tồn kho.
+
 Số sản phẩm còn dưới 10 đơn vị:
 
 ```js
 db.products.countDocuments({ stock: { $lt: 10 } })
 ```
+
+Kết quả là một con số, 3 (`p2`, `p3`, `p5`), không phải danh sách tài liệu. `countDocuments` nhận cùng filter với `find`, nên kiểm được bằng `find` khi con số trông lạ.
 
 ## Lỗi hay gặp
 
@@ -151,6 +155,8 @@ db.products.find({}, { name: 1, _id: 0 }).skip(2).limit(2)
 db.products.find({}, { name: 1, _id: 0 }).sort({ name: 1, _id: 1 }).skip(2).limit(2)
 ```
 
+Ở đây bản sai trả `Rice cracker`, `Dried mango` theo thứ tự lưu, bản sửa trả `Green tea`, `Lotus tea`. Không có `sort`, MongoDB không hứa thứ tự nào: máy chủ thật có thể đổi thứ tự sau một lần cập nhật, nên trang 2 có thể lặp hoặc bỏ sót tài liệu.
+
 Nhầm chiều sắp xếp khi lấy top N:
 
 ```js
@@ -163,9 +169,11 @@ db.products.find({}, { name: 1, price: 1, _id: 0 }).sort({ price: 1 }).limit(3)
 db.products.find({}, { name: 1, price: 1, _id: 0 }).sort({ price: -1 }).limit(3)
 ```
 
+Bản sai trả ba món rẻ nhất (15000, 25000, 45000), bản sửa trả ba món đắt nhất: `Tea set`, `Coffee beans`, `Lotus tea`. Cả hai chạy không lỗi; chỉ đọc kết quả mới thấy sai.
+
 ## Thực hành
 
-Bốn bước trên `products`. Ba bước đầu chấm cả thứ tự.
+Bốn bước trên `products`. Ba bước đầu chấm cả thứ tự. Bước 1 lấy ba sản phẩm đắt nhất. Bước 2 lấy trang thứ hai, mỗi trang hai tên, theo thứ tự tên. Bước 3 sắp xếp theo hai khóa: nhóm tăng dần, trong nhóm giá giảm dần. Bước 4 chỉ đếm, không trả tài liệu.
 
 ## Tóm tắt
 
@@ -212,11 +220,15 @@ The two drinks with the lowest stock, ties broken by `_id`:
 db.products.find({ category: "drink" }).sort({ stock: 1, _id: 1 }).limit(2)
 ```
 
+The result is `p2` (8 in stock), then `p6` (12 in stock). `sort` runs before `limit` whatever order you write them in; `_id` in the sort key fixes the order when two products have the same stock.
+
 The number of products with fewer than 10 units:
 
 ```js
 db.products.countDocuments({ stock: { $lt: 10 } })
 ```
+
+The result is one number, 3 (`p2`, `p3`, `p5`), not a list of documents. `countDocuments` takes the same filter as `find`, so you can check it with `find` when the number looks odd.
 
 ## Common mistakes
 
@@ -232,6 +244,8 @@ db.products.find({}, { name: 1, _id: 0 }).skip(2).limit(2)
 db.products.find({}, { name: 1, _id: 0 }).sort({ name: 1, _id: 1 }).skip(2).limit(2)
 ```
 
+Here the wrong version returns `Rice cracker`, `Dried mango` in stored order, the fix returns `Green tea`, `Lotus tea`. Without `sort`, MongoDB promises no order: a real server may change the order after an update, so page 2 can repeat or skip documents.
+
 Getting the sort direction wrong for a top N:
 
 ```js
@@ -244,9 +258,11 @@ db.products.find({}, { name: 1, price: 1, _id: 0 }).sort({ price: 1 }).limit(3)
 db.products.find({}, { name: 1, price: 1, _id: 0 }).sort({ price: -1 }).limit(3)
 ```
 
+The wrong version returns the three cheapest (15000, 25000, 45000), the fix the three most expensive: `Tea set`, `Coffee beans`, `Lotus tea`. Both run without an error; only reading the result shows the mistake.
+
 ## Practice
 
-Four steps on `products`. The first three are graded in order.
+Four steps on `products`. The first three are graded in order. Step 1 takes the three most expensive products. Step 2 takes the second page, two names per page, in name order. Step 3 sorts by two keys: category ascending, then price descending within a category. Step 4 only counts and returns no documents.
 
 ## Recap
 

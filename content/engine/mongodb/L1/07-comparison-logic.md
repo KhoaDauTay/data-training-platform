@@ -129,17 +129,23 @@ Làm được: lọc theo khoảng, theo danh sách và kết hợp nhiều đi�
 db.products.find({ category: "drink", stock: { $lt: 15 } })
 ```
 
+Hai đồ uống khớp: `p2` (tồn 8) và `p6` (tồn 12). `p1` cũng là đồ uống nhưng còn 40 nên bị loại: hai điều kiện ở hai trường khác nhau vẫn nối bằng AND ngầm.
+
 Hàng quà tặng, theo nhóm hoặc theo nhãn:
 
 ```js
 db.products.find({ $or: [{ category: "gift" }, { tags: "gift" }] })
 ```
 
+Ba sản phẩm: `p5` khớp theo nhóm, `p4` và `p6` khớp theo nhãn. Hai điều kiện nằm trên hai trường khác nhau, nên cần `$or`; nếu cùng một trường, `$in` ngắn hơn.
+
 Mọi sản phẩm không thuộc nhóm `"drink"` hay `"gift"`:
 
 ```js
 db.products.find({ category: { $nin: ["drink", "gift"] } })
 ```
+
+Còn lại hai món ăn vặt, `p3` và `p4`. Lưu ý `$nin` cũng trả về tài liệu không có trường `category`; ở đây mọi sản phẩm đều có trường này nên kết quả không đổi.
 
 ## Lỗi hay gặp
 
@@ -155,6 +161,8 @@ db.products.find({ price: { $gt: 20000 }, price: { $lt: 100000 } })
 db.products.find({ price: { $gt: 20000, $lt: 100000 } })
 ```
 
+Bản sai trả bốn sản phẩm, trong đó có `p3` giá 15000, thấp hơn cận dưới bạn đã ghi. Đây là luật của đối tượng JavaScript: khóa trùng thì khóa sau thắng, nên không có lỗi nào. Bản sửa đặt `$gt` và `$lt` trong cùng một tài liệu con và trả đúng `p1`, `p4`, `p6`.
+
 So một số với chuỗi:
 
 ```js
@@ -167,9 +175,11 @@ db.products.find({ price: { $gt: "50000" } })
 db.products.find({ price: { $gt: 50000 } })
 ```
 
+Bản sai trả rỗng: MongoDB so sánh theo kiểu, nên một chuỗi không bao giờ lớn hơn hay nhỏ hơn một số trong phép `$gt`. Bản sửa trả `p2`, `p5`, `p6`. Giá trị đến từ ô nhập liệu thường là chuỗi; đổi sang số trước khi đưa vào filter.
+
 ## Thực hành
 
-Bốn bước trên `products` (6 sản phẩm, giá từ 15.000 tới 350.000).
+Bốn bước trên `products` (6 sản phẩm, giá từ 15.000 tới 350.000). Bước 1 dùng một phép so sánh và một projection. Bước 2 đặt một khoảng giá có cả hai đầu trong cùng một tài liệu con. Bước 3 chọn theo danh sách nhóm bằng `$in`. Bước 4 ghép hai điều kiện trên hai trường khác nhau bằng `$or`.
 
 ## Tóm tắt
 
@@ -220,17 +230,23 @@ Drinks with fewer than 15 units:
 db.products.find({ category: "drink", stock: { $lt: 15 } })
 ```
 
+Two drinks match: `p2` (8 in stock) and `p6` (12 in stock). `p1` is a drink too but has 40, so it is left out: two conditions on two different fields are still joined by an implicit AND.
+
 Gift items, by category or by tag:
 
 ```js
 db.products.find({ $or: [{ category: "gift" }, { tags: "gift" }] })
 ```
 
+Three products: `p5` matches by category, `p4` and `p6` by tag. The two conditions sit on two different fields, so you need `$or`; on one field, `$in` is shorter.
+
 Every product outside the `"drink"` and `"gift"` categories:
 
 ```js
 db.products.find({ category: { $nin: ["drink", "gift"] } })
 ```
+
+The two snacks are left, `p3` and `p4`. Note that `$nin` also returns documents that have no `category` field; here every product has one, so the result does not change.
 
 ## Common mistakes
 
@@ -246,6 +262,8 @@ db.products.find({ price: { $gt: 20000 }, price: { $lt: 100000 } })
 db.products.find({ price: { $gt: 20000, $lt: 100000 } })
 ```
 
+The wrong version returns four products, among them `p3` at 15000, below the lower bound you wrote. This is the rule of JavaScript objects: with a duplicate key the later one wins, so there is no error. The fix puts `$gt` and `$lt` in one sub-document and returns exactly `p1`, `p4`, `p6`.
+
 Comparing a number with a string:
 
 ```js
@@ -258,9 +276,11 @@ db.products.find({ price: { $gt: "50000" } })
 db.products.find({ price: { $gt: 50000 } })
 ```
 
+The wrong version returns nothing: MongoDB compares by type, so in a `$gt` a string is never greater or smaller than a number. The fix returns `p2`, `p5`, `p6`. Values from an input box are usually strings; convert them to numbers before they go into a filter.
+
 ## Practice
 
-Four steps on `products` (6 products, priced from 15,000 to 350,000).
+Four steps on `products` (6 products, priced from 15,000 to 350,000). Step 1 uses one comparison and a projection. Step 2 sets a price range with both ends in one sub-document. Step 3 picks by a list of categories with `$in`. Step 4 joins two conditions on two different fields with `$or`.
 
 ## Recap
 

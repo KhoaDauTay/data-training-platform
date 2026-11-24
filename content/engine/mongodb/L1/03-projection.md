@@ -105,6 +105,8 @@ Không được trộn `1` và `0` trong cùng projection. Ngoại lệ duy nh�
 
 Với trường lồng, `"address.city": 1` trả về `address` chỉ còn `city` bên trong. Trả ít trường hơn giúp gửi ít dữ liệu qua mạng hơn.
 
+Projection không lọc tài liệu: số tài liệu trả về do bộ lọc (đối số thứ nhất) quyết định, projection chỉ cắt bớt trường của từng tài liệu. Nếu một tài liệu thiếu trường bạn chọn, nó vẫn có mặt trong kết quả, chỉ là không có trường đó. Vì collection không ép một lược đồ chung, hai tài liệu trong cùng kết quả có thể có số trường khác nhau.
+
 Làm được: lấy đúng những trường một màn hình cần, bỏ `_id` khi không dùng.
 
 ## Cú pháp
@@ -126,7 +128,7 @@ Tên của sản phẩm giá 25000, không kèm `_id`:
 db.products.find({ price: 25000 }, { name: 1, _id: 0 })
 ```
 
-Kết quả: `{ name: "Green tea" }`.
+Kết quả: `{ name: "Green tea" }`. Chỉ còn một trường, vì `_id` đã bị bỏ và chỉ `name` được chọn.
 
 Mọi trường của các đồ uống trừ `tags`:
 
@@ -134,11 +136,15 @@ Mọi trường của các đồ uống trừ `tags`:
 db.products.find({ category: "drink" }, { tags: 0 })
 ```
 
+Ba đồ uống `p1`, `p2`, `p6` trở về với `_id`, `name`, `category`, `price`, `stock`; chỉ `tags` biến mất. Kiểu bỏ hợp khi tài liệu có nhiều trường và bạn chỉ muốn giấu vài trường.
+
 Tên và quận của khách, quận nằm trong `address`:
 
 ```js
 db.customers.find({}, { name: 1, "address.district": 1, _id: 0 })
 ```
+
+Mỗi khách trở về với `name` và một `address` chỉ còn `district`, ví dụ `{ name: "An", address: { district: "Hai Chau" } }`: hình dạng lồng được giữ nguyên.
 
 ## Lỗi hay gặp
 
@@ -149,7 +155,7 @@ Trộn kiểu chọn và kiểu bỏ:
 db.products.find({}, { name: 1, stock: 0 })
 ```
 
-Chỉ cần `{ name: 1 }`: trường không ghi trong kiểu chọn đã bị bỏ.
+Chỉ cần `{ name: 1 }`: trường không ghi trong kiểu chọn đã bị bỏ. Mã `mingo` là của bộ chạy trong trình duyệt; máy chủ MongoDB thật cũng từ chối projection này, với thông báo và mã lỗi của nó.
 
 Quên rằng `_id` luôn đi kèm:
 
@@ -163,9 +169,11 @@ db.products.find({ category: "gift" }, { name: 1 })
 db.products.find({ category: "gift" }, { name: 1, _id: 0 })
 ```
 
+Bản sai trả `{ name: "Tea set", _id: "p5" }` dù bạn chỉ chọn `name`. Ứng dụng đọc kết quả theo đúng danh sách trường sẽ gặp một trường thừa; ghi `_id: 0` khi không cần nó.
+
 ## Thực hành
 
-Ba bước trên `products` và `customers`.
+Ba bước trên `products` và `customers`. Bước 1 dùng kiểu chọn và bỏ `_id`. Bước 2 chọn một trường trong tài liệu nhúng bằng dot notation. Bước 3 đổi sang kiểu bỏ để giữ mọi trường trừ hai trường. Sau mỗi bước, so số trường trong kết quả với số trường của tài liệu gốc.
 
 ## Tóm tắt
 
@@ -191,6 +199,8 @@ You cannot mix `1` and `0` in one projection. The only exception is `_id: 0`, wh
 
 For an embedded field, `"address.city": 1` returns `address` with only `city` inside. Returning fewer fields sends less data over the network.
 
+A projection does not filter documents: the filter (the first argument) decides how many documents come back, the projection only trims the fields of each one. If a document lacks a field you selected, it is still in the result, just without that field. Because a collection does not enforce one shared schema, two documents in the same result can carry different numbers of fields.
+
 You can now: return exactly the fields a screen needs and drop `_id` when you do not use it.
 
 ## Syntax
@@ -212,7 +222,7 @@ The name of the product priced 25000, without `_id`:
 db.products.find({ price: 25000 }, { name: 1, _id: 0 })
 ```
 
-Result: `{ name: "Green tea" }`.
+Result: `{ name: "Green tea" }`. Only one field is left, because `_id` is dropped and only `name` is selected.
 
 Every field of the drinks except `tags`:
 
@@ -220,11 +230,15 @@ Every field of the drinks except `tags`:
 db.products.find({ category: "drink" }, { tags: 0 })
 ```
 
+The three drinks `p1`, `p2`, `p6` come back with `_id`, `name`, `category`, `price`, `stock`; only `tags` is gone. The exclude style suits documents with many fields when you want to hide just a few.
+
 Customer names and districts, with the district inside `address`:
 
 ```js
 db.customers.find({}, { name: 1, "address.district": 1, _id: 0 })
 ```
+
+Each customer comes back with `name` and an `address` holding only `district`, for example `{ name: "An", address: { district: "Hai Chau" } }`: the nested shape is kept.
 
 ## Common mistakes
 
@@ -235,7 +249,7 @@ Mixing include and exclude:
 db.products.find({}, { name: 1, stock: 0 })
 ```
 
-`{ name: 1 }` is enough: a field not listed in an include projection is already dropped.
+`{ name: 1 }` is enough: a field not listed in an include projection is already dropped. The code `mingo` comes from the in-browser runtime; a real MongoDB server refuses this projection too, with its own message and error code.
 
 Forgetting that `_id` always comes along:
 
@@ -249,9 +263,11 @@ db.products.find({ category: "gift" }, { name: 1 })
 db.products.find({ category: "gift" }, { name: 1, _id: 0 })
 ```
 
+The wrong version returns `{ name: "Tea set", _id: "p5" }` although you selected only `name`. An application that reads the result by an exact field list meets an extra field; write `_id: 0` when you do not need it.
+
 ## Practice
 
-Three steps on `products` and `customers`.
+Three steps on `products` and `customers`. Step 1 uses an include projection and drops `_id`. Step 2 selects one field of an embedded document with dot notation. Step 3 switches to the exclude style to keep every field but two. After each step, compare the number of fields in the result with the fields of the source document.
 
 ## Recap
 

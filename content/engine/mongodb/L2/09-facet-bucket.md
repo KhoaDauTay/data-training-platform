@@ -105,6 +105,8 @@ Trang tổng quan cần biểu đồ đơn theo khoảng giá trị, số đơn 
 
 `$sortByCount: "$status"` là cách viết gọn của gom nhóm đếm rồi sắp giảm dần.
 
+Mỗi pipeline con trong `$facet` nhận cùng một bản sao đầu vào và không thấy kết quả của pipeline con khác. Vì cả kết quả nằm trong một tài liệu, nó vẫn chịu giới hạn kích thước một tài liệu (16 MiB trên MongoDB); `$facet` hợp với các con số tóm tắt, không hợp với việc trả hàng nghìn tài liệu.
+
 Làm được: dựng biểu đồ phân bố theo khoảng và trả nhiều chỉ số cho một trang tổng quan trong một lệnh.
 
 ## Cú pháp
@@ -132,11 +134,15 @@ db.orders.aggregate([
 ])
 ```
 
+Kết quả là đúng một tài liệu: `count` chứa `{ n: 4 }` và `byStore` chứa `S2` với 3 đơn, `S1` với 1 đơn. Cả hai báo cáo dùng chung bốn đơn đã qua `$match`.
+
 Số đơn theo cửa hàng, nhiều nhất trước:
 
 ```js
 db.orders.aggregate([{ $sortByCount: "$store" }])
 ```
+
+Hai cửa hàng `S1` và `S2` mỗi bên 4 đơn. Khi hai nhóm có cùng số đếm, thứ tự giữa chúng không được bảo đảm; thêm `$sort` theo `_id` nếu màn hình cần thứ tự cố định.
 
 ## Lỗi hay gặp
 
@@ -147,7 +153,7 @@ Có giá trị nằm ngoài mọi khoảng mà không có `default`:
 db.orders.aggregate([{ $bucket: { groupBy: "$total", boundaries: [0, 100000, 300000] } }])
 ```
 
-Đơn 3 có `total` là 450000, không thuộc khoảng nào.
+Đơn 3 có `total` là 450000, không thuộc khoảng nào. Sửa bằng cách thêm `default: "other"` hoặc mở rộng `boundaries` tới một cận lớn hơn mọi giá trị. Mã `mingo` là của bộ chạy trong trình duyệt; máy chủ MongoDB thật cũng từ chối, với mã và thông báo của nó.
 
 Quên dấu `$` ở `$sortByCount`:
 
@@ -161,9 +167,11 @@ db.orders.aggregate([{ $sortByCount: "status" }])
 db.orders.aggregate([{ $sortByCount: "$status" }])
 ```
 
+Bản sai trả một nhóm `{ _id: "status", count: 8 }`: chuỗi không có `$` là hằng số, nên mọi đơn cùng một nhóm. Bản sửa trả `paid` 4, `shipped` 3, `cancelled` 1. Lỗi này không báo gì, chỉ lộ khi chỉ có một nhóm.
+
 ## Thực hành
 
-Ba bước trên `orders` (8 đơn, `total` từ 25.000 tới 450.000).
+Ba bước trên `orders` (8 đơn, `total` từ 25.000 tới 450.000). Bước 1 chia đơn thành ba khoảng bằng `$bucket` và đặt tên trường đếm qua `output`. Bước 2 dùng `$facet` để trả số đơn theo trạng thái và đơn lớn nhất trong cùng một tài liệu. Bước 3 bỏ cận trên cùng và gom phần còn lại vào nhóm `"big"` bằng `default`.
 
 ## Tóm tắt
 
@@ -190,6 +198,8 @@ The dashboard needs a histogram of orders by value range, the number of orders p
 `$facet` runs several sub-pipelines over the same input documents and returns exactly one document, each field holding the result of one sub-pipeline. It suits a dashboard that needs many numbers at once.
 
 `$sortByCount: "$status"` is shorthand for a counting group followed by a descending sort.
+
+Each sub-pipeline of `$facet` gets the same copy of the input and cannot see the other sub-pipelines' results. Because the whole result sits in one document, it is bound by the size limit of one document (16 MiB on MongoDB); `$facet` suits summary numbers, not returning thousands of documents.
 
 You can now: build a range histogram and return several dashboard numbers in one command.
 
@@ -218,11 +228,15 @@ db.orders.aggregate([
 ])
 ```
 
+The result is exactly one document: `count` holds `{ n: 4 }` and `byStore` holds `S2` with 3 orders and `S1` with 1. Both reports share the four orders that passed `$match`.
+
 The number of orders per store, most first:
 
 ```js
 db.orders.aggregate([{ $sortByCount: "$store" }])
 ```
+
+Stores `S1` and `S2` have 4 orders each. When two groups have the same count, their order is not guaranteed; add a `$sort` on `_id` if the screen needs a fixed order.
 
 ## Common mistakes
 
@@ -233,7 +247,7 @@ A value outside every range and no `default`:
 db.orders.aggregate([{ $bucket: { groupBy: "$total", boundaries: [0, 100000, 300000] } }])
 ```
 
-Order 3 has a `total` of 450000, which fits no range.
+Order 3 has a `total` of 450000, which fits no range. Fix it by adding `default: "other"` or by extending `boundaries` to a bound above every value. The code `mingo` comes from the in-browser runtime; a real MongoDB server refuses it too, with its own code and message.
 
 Forgetting the `$` in `$sortByCount`:
 
@@ -247,9 +261,11 @@ db.orders.aggregate([{ $sortByCount: "status" }])
 db.orders.aggregate([{ $sortByCount: "$status" }])
 ```
 
+The wrong version returns one group `{ _id: "status", count: 8 }`: a string without `$` is a constant, so every order falls into the same group. The fix returns `paid` 4, `shipped` 3, `cancelled` 1. This mistake raises nothing; it shows only when there is a single group.
+
 ## Practice
 
-Three steps on `orders` (8 orders, `total` from 25,000 to 450,000).
+Three steps on `orders` (8 orders, `total` from 25,000 to 450,000). Step 1 splits the orders into three ranges with `$bucket` and names the count field through `output`. Step 2 uses `$facet` to return the count per status and the largest order in the same document. Step 3 drops the top bound and gathers the rest into the `"big"` group with `default`.
 
 ## Recap
 

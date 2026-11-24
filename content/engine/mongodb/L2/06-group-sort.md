@@ -134,6 +134,8 @@ db.orders.aggregate([
 ])
 ```
 
+Kết quả là một tài liệu: `{ _id: null, revenue: 1395000, orders: 8 }`. Với `_id: null`, cả collection là một nhóm, giống một `SUM` không có `GROUP BY` trong SQL.
+
 Đơn lớn nhất của mỗi cửa hàng, xếp theo mã cửa hàng:
 
 ```js
@@ -142,6 +144,8 @@ db.orders.aggregate([
   { $sort: { _id: 1 } }
 ])
 ```
+
+Hai tài liệu: `S1` với đơn lớn nhất 450000, rồi `S2` với 210000. `$sort` trên `_id` làm thứ tự này luôn như nhau, dù `$group` trả nhóm theo thứ tự nào.
 
 ## Lỗi hay gặp
 
@@ -157,6 +161,8 @@ db.orders.aggregate([{ $group: { _id: "store", orders: { $sum: 1 } } }])
 db.orders.aggregate([{ $group: { _id: "$store", orders: { $sum: 1 } } }])
 ```
 
+Bản sai ra một tài liệu `{ _id: "store", orders: 8 }`: chữ `"store"` là hằng, giống nhau với mọi đơn. Bản sửa ra hai nhóm, mỗi cửa hàng 4 đơn. Một kết quả chỉ có một nhóm khi bạn chờ nhiều nhóm là dấu hiệu quên `$`.
+
 Gõ sai tên trường trong phép tổng hợp:
 
 ```js
@@ -169,11 +175,11 @@ db.orders.aggregate([{ $group: { _id: "$store", revenue: { $sum: "$totals" } } }
 db.orders.aggregate([{ $group: { _id: "$store", revenue: { $sum: "$total" } } }])
 ```
 
-`$sum` bỏ qua giá trị thiếu, nên tên sai không báo lỗi.
+`$sum` bỏ qua giá trị thiếu, nên tên sai không báo lỗi. Bản sai cho cả hai cửa hàng doanh thu 0; bản sửa cho `S1` 980000 và `S2` 415000. Doanh thu bằng 0 ở mọi nhóm gần như luôn là tên trường sai, không phải dữ liệu thật.
 
 ## Thực hành
 
-Bốn bước trên `orders`. Hai bước giữa chấm cả thứ tự.
+Bốn bước trên `orders`. Hai bước giữa chấm cả thứ tự. Bước 1 bỏ đơn đã hủy rồi gom theo cửa hàng với hai phép tổng hợp. Bước 2 là top 2 khách: `$group`, `$sort` giảm dần, rồi `$limit`. Bước 3 tính trung bình và lớn nhất theo trạng thái, sắp theo `_id`. Bước 4 đếm bằng `$count`, không cần `$group`.
 
 ## Tóm tắt
 
@@ -222,6 +228,8 @@ db.orders.aggregate([
 ])
 ```
 
+The result is one document: `{ _id: null, revenue: 1395000, orders: 8 }`. With `_id: null` the whole collection is one group, like a `SUM` without `GROUP BY` in SQL.
+
 The largest order of each store, sorted by store code:
 
 ```js
@@ -230,6 +238,8 @@ db.orders.aggregate([
   { $sort: { _id: 1 } }
 ])
 ```
+
+Two documents: `S1` with its largest order of 450000, then `S2` with 210000. The `$sort` on `_id` keeps this order the same, whatever order `$group` returns the groups in.
 
 ## Common mistakes
 
@@ -245,6 +255,8 @@ db.orders.aggregate([{ $group: { _id: "store", orders: { $sum: 1 } } }])
 db.orders.aggregate([{ $group: { _id: "$store", orders: { $sum: 1 } } }])
 ```
 
+The wrong version gives one document `{ _id: "store", orders: 8 }`: the text `"store"` is a constant, the same for every order. The fix gives two groups, 4 orders per store. A single group when you expected several is a sign of a missing `$`.
+
 Mistyping the field name in an accumulator:
 
 ```js
@@ -257,11 +269,11 @@ db.orders.aggregate([{ $group: { _id: "$store", revenue: { $sum: "$totals" } } }
 db.orders.aggregate([{ $group: { _id: "$store", revenue: { $sum: "$total" } } }])
 ```
 
-`$sum` ignores missing values, so the wrong name raises no error.
+`$sum` ignores missing values, so the wrong name raises no error. The wrong version gives both stores a revenue of 0; the fix gives `S1` 980000 and `S2` 415000. A revenue of 0 in every group is almost always a wrong field name, not real data.
 
 ## Practice
 
-Four steps on `orders`. The two middle steps are graded in order.
+Four steps on `orders`. The two middle steps are graded in order. Step 1 leaves out cancelled orders, then groups by store with two accumulators. Step 2 is the top 2 customers: `$group`, a descending `$sort`, then `$limit`. Step 3 computes the average and the largest per status, sorted by `_id`. Step 4 counts with `$count`, no `$group` needed.
 
 ## Recap
 

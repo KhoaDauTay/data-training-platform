@@ -125,11 +125,15 @@ Trung bình của đơn hiện tại và đơn liền trước trong từng cử
 db.orders.aggregate([{ $setWindowFields: { partitionBy: "$store", sortBy: { createdAt: 1 }, output: { avgLast2: { $avg: "$total", window: { documents: [-1, "current"] } } } } }])
 ```
 
+Cả 8 đơn trở về, không đơn nào bị gộp. Trong cửa hàng `S1`, đơn 1 có `avgLast2` là 95000 vì chưa có đơn liền trước; đơn 3 có 272500, trung bình của 95000 và 450000. Sang `S2` cửa sổ bắt đầu lại từ đầu.
+
 Số thứ tự của từng đơn trong cửa hàng, theo thời gian:
 
 ```js
 db.orders.aggregate([{ $setWindowFields: { partitionBy: "$store", sortBy: { createdAt: 1 }, output: { n: { $documentNumber: {} } } } }, { $project: { store: 1, n: 1 } }])
 ```
+
+Mỗi cửa hàng đánh số riêng từ 1 tới 4: đơn 1, 3, 4, 7 của `S1` có `n` từ 1 tới 4, rồi đơn 2, 5, 6, 8 của `S2` cũng từ 1 tới 4. `$documentNumber` không đồng hạng, khác `$rank`.
 
 ## Lỗi hay gặp
 
@@ -145,6 +149,8 @@ db.orders.aggregate([{ $setWindowFields: { sortBy: { createdAt: 1 }, output: { r
 db.orders.aggregate([{ $setWindowFields: { sortBy: { createdAt: 1 }, output: { runningTotal: { $sum: "$total", window: { documents: ["unbounded", "current"] } } } } }, { $project: { runningTotal: 1 } }])
 ```
 
+Bản sai cho mọi đơn cùng `runningTotal` là 1395000, tổng của cả 8 đơn. Bản sửa tăng dần từ 95000 ở đơn đầu tới 1395000 ở đơn cuối. `sortBy` đã có, nhưng không có `window` thì phép cộng vẫn chạy trên cả nhóm.
+
 Đảo dấu `by` của `$shift`:
 
 ```js
@@ -157,9 +163,11 @@ db.orders.aggregate([{ $setWindowFields: { sortBy: { createdAt: 1 }, output: { p
 db.orders.aggregate([{ $setWindowFields: { sortBy: { createdAt: 1 }, output: { prevTotal: { $shift: { output: "$total", by: -1, default: null } } } } }, { $project: { prevTotal: 1 } }])
 ```
 
+Bản sai cho đơn 1 `prevTotal` là 120000, tức `total` của đơn 2 đứng sau nó, và đơn cuối nhận `null`. Bản sửa cho đơn đầu `null` và đơn 2 nhận 95000 của đơn 1. Nhớ: số âm nhìn lùi, số dương nhìn tới.
+
 ## Thực hành
 
-Ba bước trên `orders`. Bước 1 và 3 chấm cả thứ tự.
+Ba bước trên `orders`. Bước 1 và 3 chấm cả thứ tự. Bước 1 bỏ đơn đã hủy rồi cộng dồn `total` theo `createdAt`. Bước 2 xếp hạng đơn theo `total` trong từng cửa hàng bằng `partitionBy` và `$rank`. Bước 3 lọc đơn của một khách rồi lấy `total` của đơn liền trước bằng `$shift`.
 
 ## Tóm tắt
 
@@ -211,11 +219,15 @@ The average of the current order and the one before it, per store:
 db.orders.aggregate([{ $setWindowFields: { partitionBy: "$store", sortBy: { createdAt: 1 }, output: { avgLast2: { $avg: "$total", window: { documents: [-1, "current"] } } } } }])
 ```
 
+All 8 orders come back; none is merged. In store `S1`, order 1 has `avgLast2` 95000 because it has no previous order; order 3 has 272500, the mean of 95000 and 450000. In `S2` the window starts again from the beginning.
+
 Each order's sequence number within its store, by time:
 
 ```js
 db.orders.aggregate([{ $setWindowFields: { partitionBy: "$store", sortBy: { createdAt: 1 }, output: { n: { $documentNumber: {} } } } }, { $project: { store: 1, n: 1 } }])
 ```
+
+Each store numbers its own orders from 1 to 4: orders 1, 3, 4, 7 of `S1` get `n` 1 to 4, then orders 2, 5, 6, 8 of `S2` also get 1 to 4. `$documentNumber` never ties, unlike `$rank`.
 
 ## Common mistakes
 
@@ -231,6 +243,8 @@ db.orders.aggregate([{ $setWindowFields: { sortBy: { createdAt: 1 }, output: { r
 db.orders.aggregate([{ $setWindowFields: { sortBy: { createdAt: 1 }, output: { runningTotal: { $sum: "$total", window: { documents: ["unbounded", "current"] } } } } }, { $project: { runningTotal: 1 } }])
 ```
 
+The wrong version gives every order the same `runningTotal` of 1395000, the sum of all 8 orders. The fix grows from 95000 on the first order to 1395000 on the last. `sortBy` is there, but without `window` the sum still runs over the whole partition.
+
 Flipping the sign of `by` in `$shift`:
 
 ```js
@@ -243,9 +257,11 @@ db.orders.aggregate([{ $setWindowFields: { sortBy: { createdAt: 1 }, output: { p
 db.orders.aggregate([{ $setWindowFields: { sortBy: { createdAt: 1 }, output: { prevTotal: { $shift: { output: "$total", by: -1, default: null } } } } }, { $project: { prevTotal: 1 } }])
 ```
 
+The wrong version gives order 1 a `prevTotal` of 120000, the `total` of order 2 that comes after it, and the last order gets `null`. The fix gives the first order `null` and order 2 gets the 95000 of order 1. Remember: a negative number looks back, a positive one looks ahead.
+
 ## Practice
 
-Three steps on `orders`. Steps 1 and 3 are graded in order.
+Three steps on `orders`. Steps 1 and 3 are graded in order. Step 1 drops cancelled orders and adds up `total` by `createdAt`. Step 2 ranks orders by `total` within each store with `partitionBy` and `$rank`. Step 3 filters one customer's orders and takes the `total` of the previous order with `$shift`.
 
 ## Recap
 

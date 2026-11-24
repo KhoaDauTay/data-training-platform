@@ -125,11 +125,15 @@ db.orders.aggregate([
 ])
 ```
 
+Hai kết quả: dòng `"p1"` số lượng 4 của đơn 3 và dòng `"p3"` số lượng 10 của đơn 4. `_id` vẫn là mã đơn: sau `$unwind`, mọi tài liệu tách từ một đơn mang chung `_id` của đơn đó.
+
 Đếm tổng số dòng hàng của mọi đơn:
 
 ```js
 db.orders.aggregate([{ $unwind: "$lines" }, { $count: "lineCount" }])
 ```
+
+Kết quả: `{ lineCount: 12 }`, đúng bằng số dòng hàng của 9 đơn. Đơn 9 không có dòng nào nên không góp tài liệu nào.
 
 ## Lỗi hay gặp
 
@@ -145,6 +149,8 @@ db.orders.aggregate([{ $group: { _id: "$lines.sku", orders: { $sum: 1 } } }])
 db.orders.aggregate([{ $unwind: "$lines" }, { $group: { _id: "$lines.sku", orders: { $sum: 1 } } }])
 ```
 
+Bản sai ra 9 nhóm, mỗi nhóm 1 đơn, với khóa là cả mảng như `["p1", "p4"]`, kể cả một nhóm `[]` của đơn 9. Bản sửa ra 6 nhóm theo từng sản phẩm, ví dụ `"p1"` có mặt trong 3 đơn.
+
 Quên rằng `$unwind` mặc định bỏ mảng rỗng:
 
 ```js
@@ -157,9 +163,11 @@ db.orders.aggregate([{ $match: { _id: 9 } }, { $unwind: "$lines" }])
 db.orders.aggregate([{ $match: { _id: 9 } }, { $unwind: { path: "$lines", preserveNullAndEmptyArrays: true } }])
 ```
 
+Bản sai trả danh sách rỗng. Bản sửa trả đơn 9 với `_id`, `customer`, `store`, `status` và không có trường `lines`. Báo cáo "đơn nào chưa có hàng" cần đúng những tài liệu mà `$unwind` mặc định bỏ đi.
+
 ## Thực hành
 
-Ba bước trên `orders`. Đơn 9 là đơn nháp chưa có dòng hàng nào. Trước bước 3, đoán trước: với `$unwind` mặc định, đơn 9 có hiện trong kết quả không?
+Ba bước trên `orders`. Đơn 9 là đơn nháp chưa có dòng hàng nào. Trước bước 3, đoán trước: với `$unwind` mặc định, đơn 9 có hiện trong kết quả không? Bước 1 và 2 đi theo cùng một khuôn: `$match` theo trạng thái, `$unwind`, `$group` theo `"$lines.sku"`, `$sort`; bước 2 thêm `$multiply` trong `$sum` và `$limit`. Bước 3 dùng dạng tài liệu của `$unwind` để giữ đơn rỗng.
 
 ## Tóm tắt
 
@@ -209,11 +217,15 @@ db.orders.aggregate([
 ])
 ```
 
+Two results: line `"p1"` with quantity 4 in order 3 and line `"p3"` with quantity 10 in order 4. `_id` is still the order id: after `$unwind`, every document split from one order carries that order's `_id`.
+
 Count all the lines of every order:
 
 ```js
 db.orders.aggregate([{ $unwind: "$lines" }, { $count: "lineCount" }])
 ```
+
+Result: `{ lineCount: 12 }`, exactly the number of lines in the 9 orders. Order 9 has no line, so it adds no document.
 
 ## Common mistakes
 
@@ -229,6 +241,8 @@ db.orders.aggregate([{ $group: { _id: "$lines.sku", orders: { $sum: 1 } } }])
 db.orders.aggregate([{ $unwind: "$lines" }, { $group: { _id: "$lines.sku", orders: { $sum: 1 } } }])
 ```
 
+The wrong version gives 9 groups of 1 order each, keyed by the whole array such as `["p1", "p4"]`, including a group `[]` for order 9. The fix gives 6 groups, one per product; for example `"p1"` appears in 3 orders.
+
 Forgetting that a default `$unwind` drops empty arrays:
 
 ```js
@@ -241,9 +255,11 @@ db.orders.aggregate([{ $match: { _id: 9 } }, { $unwind: "$lines" }])
 db.orders.aggregate([{ $match: { _id: 9 } }, { $unwind: { path: "$lines", preserveNullAndEmptyArrays: true } }])
 ```
 
+The wrong version returns an empty list. The fix returns order 9 with `_id`, `customer`, `store`, `status` and no `lines` field. A report of "orders with no items yet" needs exactly the documents a default `$unwind` drops.
+
 ## Practice
 
-Three steps on `orders`. Order 9 is a draft with no line yet. Before step 3, predict: with a default `$unwind`, does order 9 show up in the result?
+Three steps on `orders`. Order 9 is a draft with no line yet. Before step 3, predict: with a default `$unwind`, does order 9 show up in the result? Steps 1 and 2 follow one pattern: `$match` on status, `$unwind`, `$group` on `"$lines.sku"`, `$sort`; step 2 adds `$multiply` inside `$sum` and a `$limit`. Step 3 uses the document form of `$unwind` to keep the empty order.
 
 ## Recap
 

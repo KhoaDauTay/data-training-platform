@@ -126,6 +126,8 @@ db.orders.aggregate([
 ])
 ```
 
+Năm đơn từ 100000 trở lên trở về, mỗi đơn có thêm `big: true` và không còn `lines`. Các stage chạy theo thứ tự: `$set` thêm trường, rồi `$project` kiểu loại bỏ đúng một trường.
+
 Đơn đã giao với tiền VAT làm tròn tới đồng:
 
 ```js
@@ -134,6 +136,8 @@ db.orders.aggregate([
   { $project: { total: 1, vat: { $round: [{ $multiply: ["$total", 0.08] }, 0] } } }
 ])
 ```
+
+Ba đơn đã giao: 2, 3, 7, với `vat` lần lượt 9600, 36000, 22800. Mỗi kết quả chỉ có `_id`, `total`, `vat`, vì `$project` kiểu chọn bỏ mọi trường khác.
 
 ## Lỗi hay gặp
 
@@ -149,6 +153,8 @@ db.orders.aggregate([{ $match: { store: "S2" } }, { $project: { buyer: { $concat
 db.orders.aggregate([{ $match: { store: "S2" } }, { $project: { buyer: { $concat: ["$customer", "-", "$store"] } } }])
 ```
 
+Bản sai cho cả bốn đơn cùng `buyer: "customer-S2"`, không lỗi nào. Bản sửa ra `"c2-S2"`, `"c4-S2"`… Thấy cùng một giá trị lặp ở mọi tài liệu là dấu hiệu quên `$`.
+
 Dùng `$project` khi chỉ muốn thêm một trường:
 
 ```js
@@ -161,9 +167,11 @@ db.orders.aggregate([{ $match: { status: "paid" } }, { $project: { vat: { $multi
 db.orders.aggregate([{ $match: { status: "paid" } }, { $set: { vat: { $multiply: ["$total", 0.08] } } }])
 ```
 
+Bản sai chỉ còn `_id` và `vat` (ví dụ đơn 1: 7600); `customer`, `total`, `lines` đều mất. Bản sửa giữ cả đơn và thêm `vat`. Chọn stage theo câu hỏi: cần đúng vài trường thì `$project`, cần thêm vào tài liệu thì `$set`.
+
 ## Thực hành
 
-Ba bước trên `orders` (8 đơn ở hai cửa hàng `"S1"` và `"S2"`, tháng 10/2026).
+Ba bước trên `orders` (8 đơn ở hai cửa hàng `"S1"` và `"S2"`, tháng 10/2026). Bước 1 lọc theo hai điều kiện rồi chọn ba trường. Bước 2 thêm một trường tính bằng `$multiply`. Bước 3 dùng hai biểu thức cùng lúc: `$dateToString` đổi ngày tạo thành chuỗi theo UTC, `$size` đếm dòng hàng. Mỗi bước đều là `$match` trước, `$project` sau.
 
 ## Tóm tắt
 
@@ -213,6 +221,8 @@ db.orders.aggregate([
 ])
 ```
 
+Five orders of 100000 or more come back, each with an extra `big: true` and without `lines`. The stages run in order: `$set` adds the field, then an exclude-style `$project` drops exactly one field.
+
 Shipped orders with VAT rounded to the dong:
 
 ```js
@@ -221,6 +231,8 @@ db.orders.aggregate([
   { $project: { total: 1, vat: { $round: [{ $multiply: ["$total", 0.08] }, 0] } } }
 ])
 ```
+
+Three shipped orders: 2, 3, 7, with `vat` 9600, 36000 and 22800. Each result holds only `_id`, `total`, `vat`, because an include-style `$project` drops every other field.
 
 ## Common mistakes
 
@@ -236,6 +248,8 @@ db.orders.aggregate([{ $match: { store: "S2" } }, { $project: { buyer: { $concat
 db.orders.aggregate([{ $match: { store: "S2" } }, { $project: { buyer: { $concat: ["$customer", "-", "$store"] } } }])
 ```
 
+The wrong version gives all four orders the same `buyer: "customer-S2"`, with no error. The fix gives `"c2-S2"`, `"c4-S2"`… The same value repeated on every document is a sign of a missing `$`.
+
 Using `$project` when you only want to add a field:
 
 ```js
@@ -248,9 +262,11 @@ db.orders.aggregate([{ $match: { status: "paid" } }, { $project: { vat: { $multi
 db.orders.aggregate([{ $match: { status: "paid" } }, { $set: { vat: { $multiply: ["$total", 0.08] } } }])
 ```
 
+The wrong version keeps only `_id` and `vat` (for example order 1: 7600); `customer`, `total` and `lines` are gone. The fix keeps the whole order and adds `vat`. Pick the stage by the question: exactly a few fields means `$project`, adding to the document means `$set`.
+
 ## Practice
 
-Three steps on `orders` (8 orders at two stores `"S1"` and `"S2"`, October 2026).
+Three steps on `orders` (8 orders at two stores `"S1"` and `"S2"`, October 2026). Step 1 filters on two conditions, then picks three fields. Step 2 adds a field computed with `$multiply`. Step 3 uses two expressions at once: `$dateToString` turns the creation date into a UTC string, `$size` counts the lines. Every step is `$match` first, `$project` second.
 
 ## Recap
 

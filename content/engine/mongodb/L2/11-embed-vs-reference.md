@@ -87,6 +87,8 @@ Nên tham chiếu khi:
 
 Ở giữa là chép một ít trường (extended reference), ví dụ tên khách trong đơn: đọc nhanh, không cần `$lookup`, nhưng phải tự cập nhật bản chép nếu cần. Hợp với dữ liệu không đổi hoặc dữ liệu "theo thời điểm".
 
+Một cách tự hỏi nhanh: màn hình nào đọc dữ liệu này, đọc bao nhiêu lần so với ghi, và phía "nhiều" lớn tới đâu sau một năm? Đơn hàng có vài dòng hàng và luôn được đọc cùng nhau: nhúng. Sản phẩm có thể nhận hàng chục nghìn đánh giá, còn trang sản phẩm chỉ hiện vài cái mới nhất: tham chiếu, kèm một mảng nhỏ các đánh giá mới nhất trong sản phẩm.
+
 Nhiều người nghĩ MongoDB không bắt schema nên không cần thiết kế. Thật ra vẫn phải thiết kế, theo câu hỏi mà ứng dụng hỏi nhiều nhất, không theo hình bảng của SQL.
 
 ## Cú pháp
@@ -109,11 +111,15 @@ Nhiều người nghĩ MongoDB không bắt schema nên không cần thiết k�
 db.orders.find({ _id: 3 })
 ```
 
+Đơn 3 trở về trong một lần đọc, đủ hai dòng hàng và `customerName: "An"`, không cần chạm collection khác. `customerName` là bản chép: nếu khách đổi tên, đơn cũ vẫn giữ tên lúc đặt, và với một hóa đơn đó thường là điều bạn muốn.
+
 Đánh giá tham chiếu sản phẩm: đọc theo `productId` trong collection riêng:
 
 ```js
 db.reviews.find({ productId: "p1" })
 ```
+
+Hai đánh giá `r980` và `r981` của `p1` trở về; `r982` thuộc `p3` không có mặt. Thêm một đánh giá chỉ là một lần ghi vào `reviews`, tài liệu sản phẩm không phình ra.
 
 ## Lỗi hay gặp
 
@@ -126,6 +132,8 @@ Nhúng một mảng lớn lên mãi:
 { _id: "p1", name: "Green tea", latestReviews: [ /* 3 reviews */ ] }
 ```
 
+Mảng lớn lên mãi làm mỗi lần đọc sản phẩm kéo theo mọi đánh giá, và cuối cùng chạm giới hạn 16 MiB của một tài liệu. Giữ vài phần tử mới nhất trong tài liệu, phần còn lại ở collection riêng.
+
 Tách mọi quan hệ thành collection như bảng SQL:
 
 ```text
@@ -134,6 +142,8 @@ db.order_lines.find({ orderId: 3 })   // plus a $lookup on every order view
 // FIX: embed them, one read and one atomic write
 db.orders.find({ _id: 3 })
 ```
+
+Tách như bảng SQL thì mỗi lần mở đơn cần thêm `$lookup`, và sửa đơn cùng dòng hàng không còn là một lần ghi nguyên tử trên một tài liệu.
 
 ## Tóm tắt
 
@@ -167,6 +177,8 @@ Reference when:
 
 In between is copying a few fields (extended reference), such as the customer's name in an order: fast reads with no `$lookup`, but you must update the copies yourself if needed. It suits data that never changes or point-in-time data.
 
+A quick way to ask: which screen reads this data, how often is it read compared with written, and how large will the "many" side be after a year? An order has a few lines and they are always read together: embed. A product can collect tens of thousands of reviews while its page shows only the latest few: reference, plus a small array of the latest reviews inside the product.
+
 Many people think that since MongoDB enforces no schema, there is nothing to design. In fact you still design, for the questions your application asks most, not for the table shapes of SQL.
 
 ## Syntax
@@ -189,11 +201,15 @@ An order that embeds its lines: one read returns the whole order, with a copied 
 db.orders.find({ _id: 3 })
 ```
 
+Order 3 comes back in one read, with both lines and `customerName: "An"`, without touching another collection. `customerName` is a copy: if the customer changes their name, the old order keeps the name at order time, and for an invoice that is usually what you want.
+
 Reviews that reference a product: read by `productId` in their own collection:
 
 ```js
 db.reviews.find({ productId: "p1" })
 ```
+
+The two reviews `r980` and `r981` of `p1` come back; `r982` belongs to `p3` and is not there. Adding a review is one write to `reviews`; the product document does not grow.
 
 ## Common mistakes
 
@@ -206,6 +222,8 @@ Embedding an array that keeps growing:
 { _id: "p1", name: "Green tea", latestReviews: [ /* 3 reviews */ ] }
 ```
 
+An array that keeps growing makes every product read drag along every review, and in the end it hits the 16 MiB limit of a document. Keep a few latest items in the document and the rest in their own collection.
+
 Splitting every relationship into a collection like SQL tables:
 
 ```text
@@ -214,6 +232,8 @@ db.order_lines.find({ orderId: 3 })   // plus a $lookup on every order view
 // FIX: embed them, one read and one atomic write
 db.orders.find({ _id: 3 })
 ```
+
+Split like SQL tables, every order view needs an extra `$lookup`, and changing an order with its lines is no longer one atomic write on one document.
 
 ## Recap
 

@@ -128,17 +128,23 @@ Xem trước những gì sẽ bị xóa:
 db.products.find({ category: "gift" })
 ```
 
+Chỉ một tài liệu khớp: `p5` (Tea set). `p4` có nhãn `"gift"` trong `tags` nhưng thuộc nhóm `snack`, nên filter trên `category` không chạm tới nó.
+
 Rồi mới xóa với cùng filter:
 
 ```js
 db.products.deleteMany({ category: "gift" })
 ```
 
+Ở đây một lần ghi hiện collection sau khi ghi: còn năm sản phẩm, đúng là thiếu `p5`, khớp với bản xem trước. Trong mongosh thật, lệnh xóa trả `deletedCount` thay vì danh sách tài liệu.
+
 Thêm một sản phẩm không có `_id`, MongoDB tự sinh:
 
 ```js
 db.products.insertOne({ name: "Jasmine tea", category: "drink", price: 40000, stock: 15, tags: [] })
 ```
+
+Tài liệu mới đứng cuối với một `_id` do bộ chạy sinh. Mingo trong trình duyệt sinh chuỗi đếm như `"000000000000000000000001"`; MongoDB thật sinh một `ObjectId` có thời điểm tạo ở 4 byte đầu.
 
 ## Lỗi hay gặp
 
@@ -148,6 +154,8 @@ Thêm tài liệu với `_id` đã có:
 // ERROR duplicate_key
 db.products.insertOne({ _id: "p1", name: "Green tea 2", category: "drink", price: 26000, stock: 5, tags: [] })
 ```
+
+`p1` đã có, nên lệnh bị từ chối và collection không đổi. Mã `duplicate_key` là của mingo; MongoDB thật báo lỗi khóa trùng mã 11000 với cùng thông báo `E11000 duplicate key error`. Sửa bằng cách bỏ `_id` hoặc chọn một giá trị chưa dùng.
 
 Dùng `deleteOne` khi muốn xóa mọi tài liệu khớp:
 
@@ -161,9 +169,11 @@ db.products.deleteOne({ category: "drink" })
 db.products.deleteMany({ category: "drink" })
 ```
 
+Bản sai chỉ xóa `p1`; `p2` và `p6` vẫn còn và không có lỗi nào nhắc bạn. Bản sửa xóa cả ba đồ uống. `deleteOne` hợp khi filter chắc chắn trúng một tài liệu, ví dụ lọc theo `_id`.
+
 ## Thực hành
 
-Bốn bước. Mỗi bước chạy trên một bản sao mới của collection, nên bước sau không thấy thay đổi của bước trước.
+Bốn bước. Mỗi bước chạy trên một bản sao mới của collection, nên bước sau không thấy thay đổi của bước trước. Bước 1 thêm một sản phẩm với `_id` tự chọn bằng `insertOne`. Bước 2 thêm hai sản phẩm trong một lệnh `insertMany`. Bước 3 xóa mọi sản phẩm hết hàng. Bước 4 xóa đúng một sản phẩm theo `_id`. Mỗi bước được chấm trên collection sau khi ghi, nên mọi trường của tài liệu mới phải đúng.
 
 ## Tóm tắt
 
@@ -210,17 +220,23 @@ Preview what will be deleted:
 db.products.find({ category: "gift" })
 ```
 
+Only one document matches: `p5` (Tea set). `p4` has the label `"gift"` in `tags` but belongs to category `snack`, so a filter on `category` does not touch it.
+
 Only then delete, with the same filter:
 
 ```js
 db.products.deleteMany({ category: "gift" })
 ```
 
+Here a write shows the collection after the write: five products are left, `p5` is the one missing, matching the preview. In a real mongosh the delete returns `deletedCount` instead of a list of documents.
+
 Insert a product without `_id`, and MongoDB generates one:
 
 ```js
 db.products.insertOne({ name: "Jasmine tea", category: "drink", price: 40000, stock: 15, tags: [] })
 ```
+
+The new document comes last with an `_id` made by the runtime. Mingo in the browser makes a counter string such as `"000000000000000000000001"`; a real MongoDB generates an `ObjectId` whose first 4 bytes hold the creation time.
 
 ## Common mistakes
 
@@ -230,6 +246,8 @@ Inserting a document with an `_id` that already exists:
 // ERROR duplicate_key
 db.products.insertOne({ _id: "p1", name: "Green tea 2", category: "drink", price: 26000, stock: 5, tags: [] })
 ```
+
+`p1` already exists, so the command is refused and the collection is unchanged. The code `duplicate_key` comes from mingo; a real MongoDB reports a duplicate key error with code 11000 and the same message `E11000 duplicate key error`. Fix it by leaving `_id` out or picking a value not in use.
 
 Using `deleteOne` when every match must go:
 
@@ -243,9 +261,11 @@ db.products.deleteOne({ category: "drink" })
 db.products.deleteMany({ category: "drink" })
 ```
 
+The wrong version deletes only `p1`; `p2` and `p6` remain and no error warns you. The fix deletes all three drinks. `deleteOne` suits a filter that surely hits one document, for example a filter on `_id`.
+
 ## Practice
 
-Four steps. Each step runs on a fresh copy of the collection, so a step never sees the changes of the step before.
+Four steps. Each step runs on a fresh copy of the collection, so a step never sees the changes of the step before. Step 1 adds a product with a chosen `_id` using `insertOne`. Step 2 adds two products in one `insertMany`. Step 3 deletes every product out of stock. Step 4 deletes exactly one product by `_id`. Each step is graded on the collection after the write, so every field of a new document must be right.
 
 ## Recap
 
