@@ -86,7 +86,7 @@ quiz:
 ---
 ## Mở bài
 
-Một sáng, người bán Minh Tea gọi lên: báo cáo thu tiền của họ có những khoản không phải của họ. Không ai bẻ khóa gì cả, chỉ là một phép nối thiếu một vế. Bài này gom ba lớp bảo vệ của mô hình pool vào một chỗ và chỉ đường tới các bài đào sâu từng lớp.
+Một sáng, người bán Minh Tea gọi lên: báo cáo thu tiền của họ có những khoản không phải của họ. Không ai đột nhập cả, chỉ là một phép nối thiếu một vế. Bài này gom ba lớp bảo vệ của mô hình pool vào một chỗ và chỉ đường tới các bài đào sâu từng lớp.
 
 ## Ý chính
 

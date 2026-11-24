@@ -110,6 +110,18 @@ quiz:
     why:
       vi: "Nghe hợp lý vì schema riêng tách mọi người khỏi nhau, nhưng 49 người bán nhỏ không có vấn đề gì và sẽ phải gánh việc đổi cấu trúc gấp 50. Vì mọi khóa bắt đầu bằng tenant_id, dữ liệu của người bán 1 tách ra được trọn vẹn."
       en: "It sounds right because own schemas separate everyone, but the 49 small sellers have no problem and would carry 50 times the schema changes. Because every key starts with tenant_id, seller 1's data comes out whole."
+  - q:
+      vi: "Bảng `orders` đã có khóa chính `(tenant_id, id)`. Vì sao trang của người bán 1 vẫn cần index `(tenant_id, placed_on)`?"
+      en: "Table `orders` already has the primary key `(tenant_id, id)`. Why does seller 1's page still need the index `(tenant_id, placed_on)`?"
+    options:
+      - { vi: "Không cần: khóa chính đã bắt đầu bằng tenant_id nên đủ nhanh", en: "It does not: the primary key already starts with tenant_id, so it is fast enough" }
+      - { vi: "Khóa chính chỉ thu hẹp tới mọi đơn của người bán 1; index thêm `placed_on` ngay sau `tenant_id` thì đọc thẳng đoạn một tuần", en: "The primary key only narrows to all of seller 1's orders; an index with `placed_on` right after `tenant_id` reads the one-week range directly" }
+      - { vi: "Vì khóa chính không dùng được cho điều kiện bằng", en: "Because a primary key cannot serve an equality condition" }
+    answer: 1
+    trap: 0
+    why:
+      vi: "Nhiều người nghĩ cột đầu đúng là đủ. Thật ra với người bán nóng, `tenant_id = 1` vẫn còn 6.000 dòng; cột thứ hai của index phải là cột mà câu lọc theo khoảng, để đọc đúng tuần cần thiết."
+      en: "Many people think the right first column is enough. In fact for the hot seller `tenant_id = 1` still leaves 6,000 rows; the index's second column must be the one the query filters by range, so it reads only the week it needs."
 ---
 ## Mở bài
 
