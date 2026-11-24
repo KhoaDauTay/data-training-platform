@@ -119,8 +119,20 @@ function inline(text: string, marked = false): (Node | string)[] {
 /** v28 R4 (L421): a code span holding a lesson id (`e-pg-l4-12`) is a link to that lesson, named by its title (the design track's "go deeper" links). */
 function codeOrLink(c: string): Node {
   const to = /^e-(pg|mg|dy|ds)-l[1-5]-\d\d$/.test(c) ? lessons.find((x) => x.id === c) : undefined;
-  return to ? d.h('a', { href: lessonHash(to) }, `${nameOf(to.engine)} ${to.level} · ${to.title[lang()]}`) : d.h('code', {}, c);
+  if (to) return d.h('a', { href: lessonHash(to) }, `${nameOf(to.engine)} ${to.level} · ${to.title[lang()]}`);
+  const bp = bpHashOf(c);
+  return bp ? d.h('a', { href: bp }, `Best Practice · ${c.slice(5).toUpperCase()}`) : d.h('code', {}, c);
 }
+/**
+ * v34 (L545, handoff item 4): a Best Practice card id (`e-bp-s10`) → its card's route. The track follows the code's letter
+ * (content/engine/best/<track>/<code>-…), so no card index has to load here; tests/engineBpLink.test.ts checks every card.
+ */
+const BP_TRACK: Record<string, string> = { a: 'sql', q: 'sql', i: 'postgres', p: 'postgres', s: 'postgres', x: 'postgres', m: 'mongodb', d: 'dynamodb' };
+export const bpHashOf = (id: string): string | undefined => {
+  const m = /^e-bp-([a-z])\d\d$/.exec(id);
+  const track = m && BP_TRACK[m[1]];
+  return track ? `#/engine/best/${track}/${id}` : undefined;
+};
 function prose(text: string, marked = false): HTMLElement {
   return d.h('div', { class: 'flex flex-col gap-3' }, ...blocksOf(text).map((b) => b.kind === 'p' ? d.h('p', { class: 'm-0' }, ...inline(b.text, marked))
     : b.kind === 'ul' ? d.h('ul', { class: 'm-0 list-disc space-y-1 pl-5' }, ...b.items.map((x) => d.h('li', {}, ...inline(x, marked))))
