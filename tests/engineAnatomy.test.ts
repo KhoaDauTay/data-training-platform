@@ -223,6 +223,9 @@ describe('Engine MongoDB/DynamoDB L1–L5: giải phẫu theo loại bài (R6, v
     try {
       if (l.engine === 'mongodb') {
         const r = await mongo.exec(lab, code);
+        // v30.1: the lesson page runs blocks through run() (stages on, docs → table); it must draw what exec() returned
+        const shown = await mongo.run(lab, code);
+        if (r.docs.length && shown.rows.length !== r.docs.length) return { err: `run() drew ${shown.rows.length} of ${r.docs.length}`, out: '', empty: true };
         return { out: JSON.stringify([r.kind, r.docs, r.value]), empty: r.kind === 'docs' && !r.docs.length && r.value === undefined };
       }
       const r = await dynamo.run(lab, code);

@@ -24,6 +24,8 @@ const vi = {
   'run.unexpected': 'Bài nói sẽ lỗi {code}, nhưng lệnh đã chạy được.',
   'run.note': 'Chạy thật trên {rt}, ngay trong trình duyệt. Chỉ để xem: không tính điểm, không lưu gì.',
   'run.ran': '{k}/{n} đã chạy trong phiên này',
+  'run.timeout': 'Quá {s} giây nên đã dừng. Bấm Chạy để thử lại.',
+  'run.failed': 'Không khởi động được runtime trong trình duyệt: {d}',
 };
 type FullKey = keyof typeof vi;
 const en: Record<FullKey, string> = {
@@ -45,6 +47,8 @@ const en: Record<FullKey, string> = {
   'run.unexpected': 'The lesson says this fails with {code}, but it ran.',
   'run.note': 'Runs for real on {rt}, right in your browser. Only to look at: no score, nothing saved.',
   'run.ran': '{k}/{n} run in this session',
+  'run.timeout': 'Stopped after {s} seconds. Press Run to try again.',
+  'run.failed': 'The in-browser runtime could not start: {d}',
 };
 export type { FullKey };
 export const FULL_DICT = { vi: vi as Record<FullKey, string>, en };

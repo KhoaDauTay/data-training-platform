@@ -79,7 +79,10 @@ async function run(x: FullCtx, bs: DemoBlock[], i: number): Promise<void> {
       }
     }
   } catch (error) {
-    for (const k of keys) outs.set(k, { error });
+    // the lab runtime's own failures carry no text (src/engine/pglab/client.ts): say what happened
+    const e = error as { name?: string; timeoutMs?: number; detail?: string };
+    const shown = e?.name === 'LabTimeoutError' ? new Error(ft('run.timeout', { s: (e.timeoutMs ?? 0) / 1000 })) : e?.name === 'LabFailedError' ? new Error(ft('run.failed', { d: e.detail ?? '' })) : error;
+    for (const k of keys) outs.set(k, { error: shown });
   }
   const o = outs.get(keyOf(l, i));
   if (o && o !== 'busy') d.announce('result' in o ? ft('run.rows', { n: o.result.rows.length, ms: Math.round(o.result.ms ?? 0) }) : bs[i].error && errCode(o.error) === bs[i].error ? ft('run.expected', { code: bs[i].error!, rt: RT[l.engine] }) : '');
@@ -116,7 +119,7 @@ function demoView(bs: DemoBlock[], i: number): HTMLElement {
   return h('div', { class: cls.cx(cls.CARD, 'flex min-w-0 flex-col gap-2 p-3'), 'data-demo': String(i) },
     h('div', { class: 'flex flex-wrap items-center gap-2' }, chip,
       c.make ? h('button', { type: 'button', class: cls.cx(cls.BTN_SECONDARY, 'ml-auto inline-flex min-h-6 items-center gap-1 px-3 py-1'), 'data-ek': `${keyOf(c.l, i)}-run`,
-        disabled: o === 'busy', onclick: () => void run(x, bs, i) }, c.d.icon('run', 'size-4'), ft(b.mark === 'wrong' ? 'run.wrong' : b.mark === 'fix' ? 'run.fix' : 'run.run')) : null),
+        'aria-disabled': o === 'busy' ? 'true' : false, onclick: () => { if (outs.get(keyOf(x.l, i)) !== 'busy') void run(x, bs, i); } }, c.d.icon('run', 'size-4'), ft(b.mark === 'wrong' ? 'run.wrong' : b.mark === 'fix' ? 'run.fix' : 'run.run')) : null),
     h('pre', { class: 'sql m-0 overflow-x-auto', lang: 'en' }, b.code),
     ...outView(b, o).filter((n): n is Node => !!n));
 }

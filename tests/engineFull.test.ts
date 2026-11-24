@@ -72,7 +72,9 @@ const want = (l: EngineLesson): string[] => {
     ...(l.quiz?.length ? ['quiz'] : []), ...(ids.includes('recap') ? ['recap'] : [])];
 };
 const runAndWait = async (l: EngineLesson, i: number): Promise<HTMLElement> => {
-  q(`[data-ek="${l.id}-x${i}-run"]`)!.click();
+  const btn = q(`[data-ek="${l.id}-x${i}-run"]`)!;
+  btn.focus();
+  btn.click();
   await vi.waitFor(() => expect(q(`[data-demo="${i}"] [role=status], [data-demo="${i}"] .error`)).not.toBeNull(), { timeout: 90_000, interval: 100 });
   return q(`[data-demo="${i}"]`)!;
 };
@@ -104,6 +106,7 @@ describe('Engine full-lesson layout (F01)', () => {
     const ex = await runAndWait(l, 0);
     expect(ex.querySelector('table')).not.toBeNull();
     expect(ex.querySelector('[role=status]')!.className).toContain('text-good');
+    expect(document.activeElement?.getAttribute('data-ek')).toBe(`${l.id}-x0-run`); // focus survives the redraw
     const e = bs.findIndex((b) => b.mark === 'error');
     const err = await runAndWait(l, e);
     expect(err.textContent).toContain(bs[e].error!);
