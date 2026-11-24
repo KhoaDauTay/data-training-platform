@@ -2,7 +2,7 @@
 
 Status: verified (examples; prose from the primary sources listed in §5). ```` ```sql ```` blocks ran in order on PGlite 0.5.16 (PostgreSQL 18.6) with asserted `-- expect:` lines (`node ~/.claude/skills/sql/scripts/run.mjs multi-tenant.md`). Blocks marked `norun` need a real server.
 
-Scope: tenancy models, `tenant_id` in keys, uniqueness per tenant (v34); row-level security and the tenant setting behind a pool (§4–§5, v35); the tenant in NoSQL keys (§6, v36); the platform around the shards: catalog, lifecycle, provisioning, routing, per-shard migrations, cost tags (§7, v37). RLS basics are also in [security.md](security.md) §3. BoonData lessons: `e-ds-l2-06`, `e-ds-l2-07`, `e-ds-l4-08` … `e-ds-l4-11`, `e-ds-l5-08` … `e-ds-l5-11` (Design track); `e-pg-l5-10`, `e-pg-l5-19`, `e-pg-l5-20` (RLS, pooling); `e-mg-l3-19`, `e-mg-l5-12`; `e-dy-l3-14`, `e-dy-l4-16`, `e-dy-l5-09`; cards S10, X08, M39. Only `sql` blocks run; `js` and `json` blocks are shown, not run.
+Scope: tenancy models, `tenant_id` in keys, uniqueness per tenant (v34); row-level security and the tenant setting behind a pool (§4–§5, v35); the tenant in NoSQL keys (§6, v36); the platform around the shards: catalog, lifecycle, provisioning, routing, per-shard migrations, cost tags (§7, v37). RLS basics are also in [security.md](security.md) §3. BoonData lessons: `e-ds-l2-06`, `e-ds-l2-07`, `e-ds-l4-08` … `e-ds-l4-11`, `e-ds-l5-08` … `e-ds-l5-11` (Design track); `e-pg-l1-19` (schema per tenant), `e-pg-l2-26` (index led by the tenant), `e-pg-l4-20` (partition by tenant), `e-pg-l5-10`, `e-pg-l5-19`, `e-pg-l5-20` (RLS, pooling), `e-pg-l5-21` (offboarding), `e-pg-l5-22` (noisy neighbour); `e-mg-l3-19`, `e-mg-l5-12`; `e-dy-l3-14`, `e-dy-l4-16`, `e-dy-l5-09`; cards S10, X08, M39. Only `sql` blocks run; `js` and `json` blocks are shown, not run.
 
 Vocabulary: a **tenant** is a customer organisation whose data must stay apart from every other one; **multi-tenancy** is one system serving many tenants. Examples use a neutral marketplace: sellers are tenants.
 
@@ -19,6 +19,8 @@ Vocabulary: a **tenant** is a customer organisation whose data must stay apart f
 - Tenancy (who the tenant is) and isolation (the tenant cannot reach another's data) are separate concerns (AWS SaaS Tenant Isolation Strategies whitepaper, https://docs.aws.amazon.com/pdfs/whitepapers/latest/saas-tenant-isolation-strategies/saas-tenant-isolation-strategies.pdf).
 - PostgreSQL cannot query across databases on one connection, so a silo needs a connection pool per tenant (https://www.postgresql.org/docs/18/manage-ag-overview.html).
 - Schema-per-tenant relies on `search_path`, which is session state: a pooled connection that still points at the previous tenant's schema reads that tenant's rows without any error (https://www.postgresql.org/docs/18/ddl-schemas.html).
+- Count before choosing: with N tenants and M tables a pool keeps M tables, a bridge N × M (300 sellers × 40 tables = 12,000 tables, and one added column runs 300 times), a silo N databases (with a 10-connection pool each, 3,000 connections against PostgreSQL's default `max_connections` of 100). The practical question is which tenants must leave the pool.
+- Restoring one tenant: a PostgreSQL backup covers a cluster or a database. In a silo that is the tenant's restore; in a pool or a bridge, restore elsewhere and copy exactly that tenant's rows or schema back. Rehearse it before a contract promises a restore time.
 
 ```sql
 -- expect: [["public","1"],["seller_a","1"],["seller_b","1"]]
@@ -44,6 +46,21 @@ CREATE DATABASE seller_a;
 - Join tenant tables on both columns. A join on `id` alone matches rows of every tenant with the same number.
 - Keep foreign keys acyclic (parent → child) so a whole tenant can be copied parents-first and deleted in reverse.
 - A CI gate can read `pg_constraint` and fail when a tenant table's primary or foreign key does not start with `tenant_id`.
+- An existing global `id` (a shared sequence, a UUID) can stay the primary key: a `UNIQUE (tenant_id, id)` on the parent is enough for composite foreign keys to reference. The cost is a second index, and one tenant's rows are no longer together in the primary key's index.
+- On a live table, add the composite foreign key `NOT VALID` (only rows written from then on are checked), then `VALIDATE CONSTRAINT` (scans the old rows without blocking writes). A `23503` there lists exactly the cross-tenant references that slipped in earlier (https://www.postgresql.org/docs/18/sql-altertable.html).
+- Gap-free numbers per tenant (invoice 1, 2, 3 for each seller) need a counter row per tenant, `UPDATE counters SET n = n + 1 WHERE tenant_id = … RETURNING n` in the transaction that writes the row; the row lock is per tenant, so tenants never wait for each other. A shared sequence is fine when gaps are acceptable.
+
+```sql
+-- expect: [["true"]]
+CREATE TABLE shops (tenant_id int NOT NULL, id int NOT NULL, PRIMARY KEY (tenant_id, id));
+CREATE TABLE refunds (tenant_id int NOT NULL, id int NOT NULL, shop_id int NOT NULL, PRIMARY KEY (tenant_id, id));
+INSERT INTO shops VALUES (2, 20);
+INSERT INTO refunds VALUES (2, 1, 20);
+ALTER TABLE refunds ADD CONSTRAINT refunds_shop FOREIGN KEY (tenant_id, shop_id)
+  REFERENCES shops (tenant_id, id) NOT VALID;
+ALTER TABLE refunds VALIDATE CONSTRAINT refunds_shop;
+SELECT convalidated FROM pg_constraint WHERE conname = 'refunds_shop';
+```
 
 Single-column foreign key: the cross-tenant reference is accepted.
 
@@ -86,6 +103,8 @@ SELECT (SELECT count(*) FROM bills b JOIN pays p ON p.bill_id = b.id WHERE b.ten
 - Case-insensitive: a unique index on the expression `(tenant_id, lower(email))` (https://www.postgresql.org/docs/18/indexes-expressional.html).
 - Optional values stored as `''`: a partial unique index `WHERE code <> ''` (https://www.postgresql.org/docs/18/indexes-partial.html). Stored as `NULL`, no condition is needed (NULLs are distinct by default); `NULLS NOT DISTINCT` makes them collide (PostgreSQL 15+).
 - A rule that is truly global across tenants (a serial number only one tenant may register) has no home once tenants live in different databases; it needs a separate, tenant-independent lookup table written with a condition.
+- `ON CONFLICT` must name a unique rule exactly: `ON CONFLICT (tenant_id, lower(email))` for the expression index. `ON CONFLICT (email)` fails with `42P10` once no global rule exists, which is a useful sign that the global rule is gone.
+- Adding the rule to a live table: `CREATE UNIQUE INDEX CONCURRENTLY` does not block writes, but stops with `23505` on duplicates already inside a tenant and leaves an INVALID index to drop. Find the duplicates first (`GROUP BY tenant_id, lower(email) HAVING count(*) > 1`). Only an index on plain columns can then become a constraint through `ADD CONSTRAINT … UNIQUE USING INDEX` (https://www.postgresql.org/docs/18/sql-createindex.html).
 
 ```sql
 -- expect: error 23505
@@ -108,6 +127,11 @@ CREATE UNIQUE INDEX buyers_ci_email ON buyers_ci (tenant_id, lower(email));
 INSERT INTO buyers_ci VALUES (1, 'an@mail.vn');
 INSERT INTO buyers_ci VALUES (1, 'An@mail.vn') ON CONFLICT (tenant_id, lower(email)) DO NOTHING;
 SELECT count(*) FROM buyers_ci;
+```
+
+```sql
+-- expect: error 42P10
+INSERT INTO buyers_ci VALUES (2, 'an@mail.vn') ON CONFLICT (email) DO NOTHING;
 ```
 
 ```sql
@@ -205,7 +229,7 @@ DynamoDB (https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/speci
 
 ## 7. The platform around the shards
 
-**Catalog.** One service owns the tenant → shard directory and the shard catalog (tier, state, schema version, proxy address). Infrastructure code creates clusters and reports them; the registry validates and writes the catalog, and never trusts tags blindly. A cluster that exists but is not registered receives no tenants, which makes it safe. Keep where a tenant lives over time (a date range per placement) so one tenant has one home at any moment: an exclusion constraint `EXCLUDE USING gist (tenant_id WITH =, during WITH &&)` (needs `btree_gist` for `=` on a plain column), or, without the extension, a partial unique index on the open placement (https://www.postgresql.org/docs/18/rangetypes.html#RANGETYPES-CONSTRAINT).
+**Catalog.** One service owns the tenant → shard directory and the shard catalog (tier, state, schema version, proxy address). Infrastructure code creates clusters and reports them; the registry validates and writes the catalog, and never trusts tags blindly. A cluster that exists but is not registered receives no tenants, which makes it safe. Keep where a tenant lives over time (a date range per placement) so one tenant has one home at any moment: an exclusion constraint `EXCLUDE USING gist (tenant_id WITH =, during WITH &&)` (needs `btree_gist` for `=` on a plain column), or, without the extension, a partial unique index on the open placement (https://www.postgresql.org/docs/18/rangetypes.html#RANGETYPES-CONSTRAINT). The exclusion constraint's GiST index also serves the per-request lookup `WHERE tenant_id = … AND during @> DATE '…'`. A directory beats a formula such as `hash(tenant_id) % N`: the formula needs no lookup, but it cannot send one tenant to a dedicated shard, and changing N moves most tenants at once. Capacity is better measured in load (requests, storage, CPU) than in tenant count.
 
 ```sql
 -- expect: error 23505
@@ -227,9 +251,9 @@ INSERT INTO placements VALUES ('t-04', 's3', '[2026-09-01,)');
 GRANT SELECT ON notes TO router_ro;
 ```
 
-**Proxy and routing.** One pooler per shard, not a cross-shard router; it bounds the connection count (tasks × pools × shards against `max_connections`). Migrations connect directly to the writer as the owner. The routing catalog holds only proxy addresses, so applications cannot fall back to the writer when the proxy is down, and health checks follow the same path as applications. The router reads the tenant from the verified identity and looks the shard up; tokens carry identity, never placement, because placement changes during a move while tokens live on. A move is: block the tenant's writes, copy in keyset batches, compare counts and hashes, flip one catalog row with a version check, verify routing, purge the source last.
+**Proxy and routing.** One pooler per shard, not a cross-shard router; it bounds the connection count (tasks × pools × shards against `max_connections`). Migrations connect directly to the writer as the owner. The routing catalog holds only proxy addresses, so applications cannot fall back to the writer when the proxy is down, and health checks follow the same path as applications. The router reads the tenant from the verified identity and looks the shard up; tokens carry identity, never placement, because placement changes during a move while tokens live on. A move is: block the tenant's writes, copy in keyset batches, compare counts and hashes, flip one catalog row with a version check, verify routing, purge the source last. Routers cache placements for a few seconds; after a move the old shard keeps refusing the moved tenant's writes with a "moved" answer, so a stale cache drops its entry, looks up again and retries instead of writing to the old home. When the catalog does not answer, refuse the request with a temporary error; never route to a default shard.
 
-**Migrations per shard.** The runner reads its targets from the registry, never from hand-written host lists. It tries one low-risk shard first, then the rest one at a time, and halts on the first failure or drift. It fails when the registry does not answer or the migrations folder is missing, and "0 applied" when changes were expected is a failure, not a success. Judge a run by an explicit result line, not only the exit code. Promote a shard to serving through a checked step (schema version, roles, forced RLS, proxy health), never by editing the catalog by hand. Schema changes follow expand → deploy code that reads both shapes → backfill → contract; data fixes are idempotent, resumable, tenant-bound and recorded per shard.
+**Migrations per shard.** The runner reads its targets from the registry, never from hand-written host lists. It tries one low-risk shard first, then the rest one at a time, and halts on the first failure or drift. It fails when the registry does not answer or the migrations folder is missing, and "0 applied" when changes were expected is a failure, not a success. Judge a run by an explicit result line, not only the exit code. Promote a shard to serving through a checked step (schema version, roles, forced RLS, proxy health), never by editing the catalog by hand. The next run restarts from the shard still on the old version, so every step must be re-runnable (`ADD COLUMN IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`). Schema changes follow expand → deploy code that reads both shapes → backfill → contract; data fixes are idempotent, resumable, tenant-bound and recorded per shard.
 
 ```sql
 -- expect: [["11"]]
