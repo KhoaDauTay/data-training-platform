@@ -56,6 +56,8 @@ describe('axe-core (v15 Q10)', () => {
       for (const a of adv) expect(a.textContent).toContain(a.title);
     }
     // v24 R0 (L338): the full lesson page (its own lazy chunk) is drawn before axe looks at it
+    // F10 (L489): one icon = one destination: the Engine sidebar has one Best Practice row, not one star per track
+    if (hash === '#/engine/best/sql') await vi.waitFor(() => expect([...document.querySelectorAll('#side [data-side^="bp"]')].map((x) => x.getAttribute('data-side'))).toEqual(['bp', 'bp:habits']));
     if (hash === '#/learn/skill/select') await vi.waitFor(() => expect(document.querySelector('[data-lesson-page] [data-sec=recap]')).not.toBeNull(), { timeout: 20_000 });
     expect(await problems()).toEqual([]);
   });

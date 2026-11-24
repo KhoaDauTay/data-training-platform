@@ -523,12 +523,10 @@ export function subOf(): PageSub | undefined {
 export function sideRows(ui: { row: (r: Row) => HTMLElement; group: (text: string) => HTMLElement }): Node[] {
   const r = rt.of(location.hash);
   const ok = done();
+  // F10 (L489): one icon = one destination: one Best Practice row (its page has the track tabs), not four identical stars
   return [ui.group(bt('side.group')),
-    ...tracks.map((t) => {
-      const all = of(t.id);
-      return ui.row({ key: `bp:${t.id}`, href: rt.hash(t.id), lead: d.icon(BP_ICON), label: t.title[lang()],
-        full: `Best Practice · ${t.title[lang()]}`, sub: bt('progress', { k: all.filter((c) => ok.has(c.id)).length, n: all.length }), current: r?.track === t.id });
-    }),
+    ui.row({ key: 'bp', href: rt.hash(), lead: d.icon(BP_ICON), label: 'Best Practice',
+      sub: bt('progress', { k: index.filter((c) => ok.has(c.id)).length, n: index.length }), current: !!r && r.track !== 'habits' }),
     ui.row({ key: 'bp:habits', href: rt.hash('habits'), lead: d.icon('list'), label: bt('side.habits'), current: r?.track === 'habits' })];
 }
 
