@@ -383,6 +383,17 @@
   after:
     vi: viết policy để mỗi khách hàng chỉ thấy dòng của mình, và kiểm nó dưới đúng vai trò
     en: write policies so each tenant sees only its own rows, and test them under the right role
+- id: multi-tenant
+  module: multi-tenant
+  level: L5
+  vi: Nhiều khách trong một cụm
+  en: Many tenants in one cluster
+  title:
+    vi: Nhiều khách trong một cụm
+    en: Many tenants in one cluster
+  after:
+    vi: bắt mọi vai trò theo RLS, gắn khách theo transaction qua pool, xóa sạch một khách và chứng minh, và đặt hạn mức cho khách ồn ào
+    en: make every role follow RLS, bind the tenant per transaction through a pool, delete one tenant completely and prove it, and set quotas for a noisy tenant
 - id: observe-tune
   module: observe-tune
   level: L5

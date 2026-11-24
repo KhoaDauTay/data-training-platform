@@ -148,6 +148,7 @@ Sáu bước có chấm, một câu đoán kế hoạch trước bước 3, và 
 - Điều kiện khoảng trên khóa phân vùng cho pruning; ép kiểu khóa đó làm câu đọc mọi phân vùng.
 - Index nhiều cột: điều kiện bằng ở cột đầu, điều kiện khoảng ở cột sau.
 - BRIN rất nhỏ và hợp cột tăng dần theo thứ tự ghi (correlation gần 1).
+- Bảng nhiều khách: index dẫn đầu bằng `tenant_id` (`e-pg-l2-26`), RLS sâu hơn ở `e-pg-l5-19`.
 
 # EN
 
@@ -192,3 +193,4 @@ Six graded steps, one plan prediction before step 3, and three conclusion questi
 - A range on the partition key gives pruning; casting that key makes the query read every partition.
 - A multi-column index: equality on the leading column, the range on the next one.
 - BRIN is tiny and suits a column that grows in write order (correlation near 1).
+- Multi-tenant tables: indexes that lead with `tenant_id` (`e-pg-l2-26`), RLS in depth in `e-pg-l5-19`.

@@ -167,6 +167,7 @@ Lab hai bước trên bảng phân vùng theo tháng: thêm khóa chính đúng 
 - Không có index toàn cục: `PRIMARY KEY`/`UNIQUE` phải chứa mọi cột khóa phân vùng.
 - Index trên bảng cha là khuôn mẫu, được tạo xuống mọi phân vùng; `CONCURRENTLY` phải làm từng phân vùng.
 - Xóa dữ liệu cũ bằng `DETACH`/`DROP`; giữ phân vùng `DEFAULT` gần rỗng và tạo trước các phân vùng tương lai.
+- Khi vài khách lớn cần tách riêng hay chuyển đi, phân vùng theo khách: `e-pg-l4-20`.
 
 # EN
 
@@ -255,3 +256,4 @@ A two-step lab on a table partitioned by month: add a primary key that follows t
 - There is no global index: `PRIMARY KEY`/`UNIQUE` must contain every partition key column.
 - An index on the parent is a template created on every partition; `CONCURRENTLY` must be done partition by partition.
 - Remove old data with `DETACH`/`DROP`; keep the `DEFAULT` partition nearly empty and create future partitions ahead of time.
+- When a few big tenants must be isolated or moved, partition by tenant: `e-pg-l4-20`.

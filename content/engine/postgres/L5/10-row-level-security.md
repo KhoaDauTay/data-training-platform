@@ -14,6 +14,7 @@ objectives:
   - { vi: "Biết ai bỏ qua RLS: chủ bảng (trừ khi `FORCE`), superuser, `BYPASSRLS`", en: "Know who bypasses RLS: the table owner (unless `FORCE`), superusers, `BYPASSRLS`" }
   - { vi: "Phân biệt `USING` (dòng thấy được) và `WITH CHECK` (dòng được ghi)", en: "Tell `USING` (rows you can see) from `WITH CHECK` (rows you may write)" }
 requires: []
+viz: pg-rls-path
 sources:
   - https://www.postgresql.org/docs/18/ddl-rowsecurity.html
   - https://www.postgresql.org/docs/18/sql-createpolicy.html
@@ -140,13 +141,16 @@ CREATE ROLE app NOLOGIN;
 GRANT SELECT ON tickets TO app;
 CREATE POLICY app_rows ON tickets FOR SELECT TO app
   USING (tenant_id = current_setting('app.tenant_id')::int);
-SET app.tenant_id = '3';
+BEGIN;
+SET LOCAL app.tenant_id = '3';
 SET ROLE app;
-SELECT current_setting('app.tenant_id') AS tenant, count(*) AS rows_seen FROM tickets;
+SELECT current_setting('app.tenant_id') AS tenant,
+  count(*) AS rows_seen FROM tickets;
 RESET ROLE;
+COMMIT;
 ```
 
-`app` thấy 10 vé của khách 3; đổi `app.tenant_id` là đổi khách.
+`app` thấy 10 vé của khách 3; đổi `app.tenant_id` là đổi khách. `SET LOCAL` chỉ sống tới `COMMIT`: sau đó kết nối không còn khách nào, nên khi ứng dụng dùng chung kết nối qua pool, khách sau không nhận nhầm khách 3. Một `SET` thường thì ở lại trên kết nối.
 
 ## Lỗi hay gặp
 
@@ -198,6 +202,7 @@ Trong lab không dùng được `SET ROLE` (bước sau chạy lại bước tr�
 - `USING` lọc dòng đã có, `WITH CHECK` kiểm dòng mới; thiếu `WITH CHECK` thì `USING` làm thay.
 - Permissive gộp OR, restrictive gộp AND.
 - Superuser, `BYPASSRLS` và chủ bảng (trừ khi `FORCE`) bỏ qua RLS: kiểm thử dưới vai trò ứng dụng.
+- Đọc tiếp: `e-pg-l5-19` (RLS sâu hơn) và `e-pg-l5-20` (khách hiện tại qua pool).
 
 # EN
 
@@ -259,13 +264,16 @@ CREATE ROLE app NOLOGIN;
 GRANT SELECT ON tickets TO app;
 CREATE POLICY app_rows ON tickets FOR SELECT TO app
   USING (tenant_id = current_setting('app.tenant_id')::int);
-SET app.tenant_id = '3';
+BEGIN;
+SET LOCAL app.tenant_id = '3';
 SET ROLE app;
-SELECT current_setting('app.tenant_id') AS tenant, count(*) AS rows_seen FROM tickets;
+SELECT current_setting('app.tenant_id') AS tenant,
+  count(*) AS rows_seen FROM tickets;
 RESET ROLE;
+COMMIT;
 ```
 
-`app` sees the 10 tickets of tenant 3; changing `app.tenant_id` changes the tenant.
+`app` sees the 10 tickets of tenant 3; changing `app.tenant_id` changes the tenant. `SET LOCAL` lives only until `COMMIT`: after it the connection holds no tenant, so when the application shares connections through a pool, the next request does not inherit tenant 3. A plain `SET` stays on the connection.
 
 ## Common mistakes
 
@@ -317,3 +325,4 @@ The lab cannot use `SET ROLE` (each step replays the earlier ones), so each role
 - `USING` filters existing rows, `WITH CHECK` validates new ones; without `WITH CHECK`, `USING` stands in.
 - Permissive policies combine with OR, restrictive ones with AND.
 - Superusers, `BYPASSRLS` and the owner (unless `FORCE`) skip RLS: test under the application role.
+- Read next: `e-pg-l5-19` (RLS in depth) and `e-pg-l5-20` (the current tenant through a pool).
