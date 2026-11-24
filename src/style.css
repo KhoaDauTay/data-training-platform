@@ -27,15 +27,15 @@
   --eng-ink: var(--text); --eng-sub: var(--muted); --eng-cell: var(--panel); --eng-head: var(--surface-2); --eng-free: var(--surface-2);
   --eng-active: var(--accent); --eng-active-soft: var(--accent-soft); --eng-live: var(--good); --eng-dead: var(--bad); --eng-dead-soft: var(--bad-soft);
   --eng-hot: var(--warn); --eng-hot-soft: var(--warn-soft); --eng-frozen: var(--syn-type); --eng-frozen-soft: var(--info-soft);
-  --bg: #fbf7f0; --panel: #ffffff; --text: #2a2320; --muted: #6b5f57; --border: #e8dfd3;
+  --bg: #fbf7f0; --panel: #ffffff; --text: #2a2320; --muted: #5c5149; --border: #d8cab8;
   --accent: #0f766e; --accent-soft: #dcf2ee; --on-accent: #ffffff; --good: #17752f; --bad: #b42318; --warn: #9a4f00;
-  --code: #f4eee5; --sea: #e8f1f8; --land: #d9e2ea; --bar: #1f3b57; --disabled: #8a8a90;
+  --code: #f0e8dc; --sea: #e8f1f8; --land: #d9e2ea; --bar: #1f3b57; --disabled: #8a8a90;
   /* Boon's speech bubbles and the XP pill. */
   --sun: #ffe9bd; --sun-ink: #5c3d00;
   --r-card: 20px; --r-ctl: 14px; --r-chip: 999px; --r-inset: 10px;
   /* ui-ux-v7 T1 (L136): surfaces (0 = --bg, 1 = --panel, 2 = inset: code frame, table head, card in card), shadows, semantic soft
      backgrounds (text on them = --text/--muted or the matching --good/--bad/--warn), page widths, the one chart colour (C1, D-U2). */
-  --surface-2: #f6f0e7; --border-strong: #cfc2b2;
+  --surface-2: #f2ebe0; --border-strong: #b8a893;
   --shadow-1: 0 1px 2px rgb(42 35 32 / 0.06), 0 2px 8px rgb(42 35 32 / 0.06); --shadow-2: 0 12px 32px rgb(42 35 32 / 0.18);
   --good-soft: #edf8f0; --bad-soft: #fdecea; --warn-soft: #fcf0dc; --info-soft: #e4f0f7; --info: #0b5fa5; /* L238: information ink (engine diagrams: pointers, frozen, recorded results); = --syn-type's value */
   --w-read: 880px; --w-wide: 1120px;
@@ -82,9 +82,9 @@
      controls' edge (--border-strong) >= 3:1 on --bg and --panel; checked in tests/theme.test.ts. */
   --bg: #131110; --panel: #201c19; --text: #f8f3ed; --muted: #d0c5b9; --border: #4d443c;
   --accent: #62dccb; --accent-soft: #163a35; --on-accent: #082320; --good: #74de93; --bad: #ff968a; --warn: #ffc874;
-  --code: #2b2622; --sea: #14202b; --land: #2b3742; --bar: #0d1b29; --disabled: #8f8f97;
+  --code: #302a25; --sea: #14202b; --land: #2b3742; --bar: #0d1b29; --disabled: #8f8f97;
   --sun: #43350f; --sun-ink: #ffe6ad;
-  --surface-2: #2b2622; --border-strong: #7d7166;
+  --surface-2: #302a25; --border-strong: #7d7166;
   --shadow-1: 0 0 0 1px var(--border-strong); --shadow-2: 0 0 0 1px var(--border-strong), 0 12px 32px rgb(0 0 0 / 0.5);
   --good-soft: #163420; --bad-soft: #3d1f1b; --warn-soft: #3a2c10; --info-soft: #142c39; --info: #86ccff;
   --lily-fur: #f3f0eb; --lily-cream: #dcd5ca; --lily-ear: #1f1a17; --lily-spot: #1f1a17; --lily-line: #8a7e75; --lily-ink: #1f1a17; --lily-scarf: #2bb3a3;
@@ -499,8 +499,8 @@ svg[data-mascot].cq-hop { animation: cq-hop 320ms ease-out 80ms backwards; }
 /* v13 (product-design-v8 §2.1): the block a guide step talks about (the one right under its slot) gets a static sun outline; Boon's words name it too. */
 [data-guide-slot]:has(> [data-guide-mark]) + section { outline: 2px solid var(--sun); outline-offset: 2px; }
 /* L132: the "Your Lily" growth bar, the same in every engine (a native <progress> ignores accent-color in some). */
-.lily-bar { appearance: none; border: 0; border-radius: 999px; background: var(--code); overflow: hidden; }
-.lily-bar::-webkit-progress-bar { background: var(--code); }
+.lily-bar { appearance: none; border: 0; border-radius: 999px; background: var(--border); overflow: hidden; }
+.lily-bar::-webkit-progress-bar { background: var(--border); }
 .lily-bar::-webkit-progress-value { background: var(--accent); border-radius: 999px; }
 .lily-bar::-moz-progress-bar { background: var(--accent); border-radius: 999px; }
 

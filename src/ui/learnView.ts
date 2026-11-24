@@ -219,7 +219,7 @@ function skillPage(c: LearnCtx, s: Skill): HTMLElement {
 /** A thin bar with its numbers also in words beside it (never colour alone, L23). */
 function bar(k: number, m: number): HTMLElement {
   const pct = m ? Math.round((k / m) * 100) : 0;
-  return d$.h('div', { class: 'h-1.5 w-full overflow-hidden rounded-full bg-code', 'aria-hidden': 'true' },
+  return d$.h('div', { class: 'h-1.5 w-full overflow-hidden rounded-full bg-line', 'aria-hidden': 'true' },
     d$.h('div', { class: cx('h-1.5 rounded-full', k === m && m ? 'bg-good' : 'bg-accent'), style: `width:${pct}%` }));
 }
 

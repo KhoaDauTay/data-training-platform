@@ -131,7 +131,7 @@ function prose(text: string, marked = false): HTMLElement {
 /** A thin bar; its numbers are always in words beside it (never colour alone, L23). */
 function bar(k: number, n: number, cls = 'h-2'): HTMLElement {
   const pct = n ? Math.round((k / n) * 100) : 0;
-  return d.h('div', { class: d.cls.cx('w-full overflow-hidden rounded-full bg-code', cls), 'aria-hidden': 'true' },
+  return d.h('div', { class: d.cls.cx('w-full overflow-hidden rounded-full bg-line', cls), 'aria-hidden': 'true' },
     d.h('div', { class: d.cls.cx('h-full rounded-full', k && k === n ? 'bg-good' : 'bg-accent'), style: `width:${pct}%` }));
 }
 const tick = (on: boolean): Node | null => (on ? d.h('span', { class: 'ml-1 text-good' }, d.icon('check', 'inline size-4 align-[-2px]'), d.h('span', { class: 'sr-only' }, et('done'))) : null);

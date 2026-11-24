@@ -138,6 +138,20 @@ describe('theme', () => {
     expect(bad).toEqual([]);
   });
 
+  it('v30.2 (L500): theme sáng tách vùng rõ và chữ phụ ≥ 7:1', () => {
+    const light = tokens(':root');
+    const need: [string, string, number][] = [
+      ['muted', 'bg', 7], ['muted', 'panel', 7], ['muted', 'surface-2', 6], ['muted', 'code', 6],
+      ['border', 'bg', 1.45], ['border', 'panel', 1.55], // card and row edges (ring-line) on the page and inside a card
+      ['border-strong', 'bg', 2], ['border-strong', 'panel', 2.2],
+      ['surface-2', 'panel', 1.15], ['code', 'panel', 1.18], ['code', 'bg', 1.1], // inset and code block inside a card / on the page
+    ];
+    const bad = need.filter(([f, b, min]) => ratio(light[f], light[b]) < min).map(([f, b, min]) => `${f}/${b} ${ratio(light[f], light[b]).toFixed(2)} < ${min}`);
+    expect(bad).toEqual([]);
+    const dark = { ...light, ...tokens(':root[data-theme=dark]') };
+    expect(ratio(dark['surface-2'], dark.panel)).toBeGreaterThanOrEqual(1.18); // dark inset inside a card
+  });
+
   it('token ấm của v6 (L57) và bo góc 20/14', () => {
     expect(tokens(':root')).toMatchObject({ bg: '#fbf7f0', accent: '#0f766e', sun: '#ffe9bd', 'sun-ink': '#5c3d00' });
     expect(tokens(':root[data-theme=dark]')).toMatchObject({ bg: '#131110', accent: '#62dccb', sun: '#43350f' }); // K1 (L136)

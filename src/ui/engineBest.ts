@@ -101,7 +101,7 @@ const pill = (cls: string, ...kids: (Node | string | null)[]): HTMLElement => d.
 const linkBtn = (href: string, text: string, main = false): HTMLElement =>
   d.h('a', { href, class: d.cls.cx(main ? d.cls.BTN_SECONDARY : d.cls.BTN_GHOST, 'shrink-0 px-4 py-1.5 whitespace-nowrap no-underline') }, text);
 function bar(k: number, n: number): HTMLElement {
-  return d.h('div', { class: 'h-2 w-full overflow-hidden rounded-full bg-code', 'aria-hidden': 'true' },
+  return d.h('div', { class: 'h-2 w-full overflow-hidden rounded-full bg-line', 'aria-hidden': 'true' },
     d.h('div', { class: d.cls.cx('h-full rounded-full', k && k === n ? 'bg-good' : 'bg-accent'), style: `width:${n ? Math.round((k / n) * 100) : 0}%` }));
 }
 const lead = (on: boolean): HTMLElement => d.h('span', { class: d.cls.cx('grid size-10 shrink-0 place-items-center rounded-full', on ? 'bg-good text-on-accent' : 'bg-accent-soft text-accent') },
