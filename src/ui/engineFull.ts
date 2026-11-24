@@ -36,7 +36,7 @@ const SEC_ICON: Record<SectionId, IconName> = {
 const RT: Record<EngineId, string> = { postgres: 'PostgreSQL (PGlite)', design: 'PostgreSQL (PGlite)', mongodb: 'mingo', dynamodb: 'dynoxide' };
 const TOC_ROW = 'flex min-h-11 w-full items-center gap-2 border-0 border-l-4 px-3 py-1.5 text-left text-body-sm hover:bg-accent-soft';
 const TOC_IDLE = 'border-transparent bg-transparent text-ink';
-const TOC_NOW = 'border-accent bg-accent-soft font-bold text-accent';
+const TOC_NOW = 'border-accent bg-accent-soft font-bold text-accent-ink';
 const CHIP = 'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-body-sm font-bold';
 
 /** Session state: each block's last output, by `<lesson>-x<i>` ('busy' while it runs). */
@@ -100,7 +100,7 @@ function outView(b: DemoBlock, o: DemoOut | 'busy' | undefined): (Node | null)[]
   if ('result' in o) {
     const r = o.result;
     return [b.error ? line(false, ft('run.unexpected', { code: b.error })) : line(true, ft('run.rows', { n: r.rows.length, ms: Math.round(r.ms ?? 0) })),
-      h('div', { class: 'overflow-x-auto' }, d.renderResult(r, undefined, 5)), c.meta(r)];
+      h('div', { class: 'overflow-x-auto', tabindex: '0' }, d.renderResult(r, undefined, 5)), c.meta(r)];
   }
   const got = errCode(o.error);
   return [b.error && got === b.error ? line(true, ft('run.expected', { code: got, rt: RT[c.l.engine] })) : null,
@@ -120,7 +120,7 @@ function demoView(bs: DemoBlock[], i: number): HTMLElement {
     h('div', { class: 'flex flex-wrap items-center gap-2' }, chip,
       c.make ? h('button', { type: 'button', class: cls.cx(cls.BTN_SECONDARY, 'ml-auto inline-flex min-h-6 items-center gap-1 px-3 py-1'), 'data-ek': `${keyOf(c.l, i)}-run`,
         'aria-disabled': o === 'busy' ? 'true' : false, onclick: () => { if (outs.get(keyOf(x.l, i)) !== 'busy') void run(x, bs, i); } }, c.d.icon('run', 'size-4'), ft(b.mark === 'wrong' ? 'run.wrong' : b.mark === 'fix' ? 'run.fix' : 'run.run')) : null),
-    h('pre', { class: 'sql m-0 overflow-x-auto', lang: 'en' }, b.code),
+    h('pre', { tabindex: '0', class: 'sql m-0 overflow-x-auto', lang: 'en' }, b.code),
     ...outView(b, o).filter((n): n is Node => !!n));
 }
 
@@ -147,7 +147,7 @@ export function sections(x: FullCtx, keep: (id: SectionId) => boolean): HTMLElem
       s.id === 'example' && n && c.make ? h('p', { class: 'm-0 text-body-sm text-muted' }, ft('run.note', { rt: RT[l.engine] })) : null,
       ...blocksOf(s.text[c.lang]).map((b) => b.kind === 'p' ? h('p', { class: 'm-0' }, ...c.inline(b.text, true))
         : b.kind === 'ul' ? h('ul', { class: 'm-0 list-disc space-y-1 pl-5' }, ...b.items.map((t) => h('li', {}, ...c.inline(t, true))))
-          : live && bs[j]?.runs ? demoView(bs, j++) : (live && j++, h('pre', { class: 'sql m-0 overflow-x-auto', lang: 'en' }, b.code))));
+          : live && bs[j]?.runs ? demoView(bs, j++) : (live && j++, h('pre', { tabindex: '0', class: 'sql m-0 overflow-x-auto', lang: 'en' }, b.code))));
   });
 }
 

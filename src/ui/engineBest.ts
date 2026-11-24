@@ -195,7 +195,7 @@ function gridPage(t: Track): HTMLElement {
     h('div', { class: 'flex flex-col gap-4' },
       h('p', { class: 'm-0 text-muted' }, bt('intro')),
       tabs(t.id),
-      h('p', { class: 'm-0 rounded-(--r-inset) bg-info-soft px-4 py-3 text-body-sm text-ink' }, bt('after', { text: t.after[lang()] }))),
+      h('p', { class: 'm-0 rounded-(--r-inset) bg-info-soft px-4 py-3 text-body-sm text-ink ring-1 ring-info-line' }, bt('after', { text: t.after[lang()] }))),
     tipsBox(),
     h('ul', { class: d.ui.LIST }, d.ui.listRow({
       lead: h('span', { class: 'grid size-10 place-items-center rounded-full bg-accent-soft text-accent' }, d.icon('list', 'size-6')),
@@ -459,7 +459,7 @@ function cardPage(c: BpCard): HTMLElement {
           h('span', { class: 'text-caption text-muted' }, bt(p.runtime === 'lab' ? 'run.lab' : p.runtime === 'mingo' ? 'run.mingo' : p.runtime === 'dynoxide' ? 'run.dynoxide' : 'run.engine'), v.run === 'busy' ? ` · ${bt('run.first')}` : '')),
       h('p', {
         role: 'status', 'data-verdict': res ? (res.v.ok ? res.v.kind : 'odd') : false,
-        class: cls.cx('m-0 rounded-(--r-inset) text-body-sm text-ink', res && 'px-4 py-3 font-semibold', res && (!res.v.ok || res.v.kind === 'diff' || res.v.kind === 'error' ? 'bg-warn-soft' : 'bg-good-soft')),
+        class: cls.cx('m-0 rounded-(--r-inset) text-body-sm text-ink', res && 'px-4 py-3 font-semibold ring-1', res && (!res.v.ok || res.v.kind === 'diff' || res.v.kind === 'error' ? 'bg-warn-soft ring-warn-line' : 'bg-good-soft ring-good-line')),
       }, res ? conclusion(c, res.bad, res.good, res.v) : typeof v.run === 'object' && 'error' in v.run ? v.run.error : '')),
     example ? h('section', { class: 'flex flex-col gap-3', 'aria-labelledby': 'bp-ex' }, h('h2', { id: 'bp-ex', class: 'm-0 text-title font-bold' }, bt('example')), prose(example)) : null,
     h('section', { class: cls.cx(cls.CARD, 'flex flex-col gap-4 p-5 max-sm:p-4'), 'aria-labelledby': 'bp-quiz' },
@@ -469,7 +469,7 @@ function cardPage(c: BpCard): HTMLElement {
           v.passed.add(i);
           if (c.quiz.every((_, j) => v.passed.has(j))) complete(c);
         }))))),
-    h('section', { class: cls.cx('flex items-start gap-3 rounded-(--r-card) p-5 max-sm:p-4', isDone ? 'bg-good-soft' : 'bg-surface-2'), 'aria-labelledby': 'bp-avoid' },
+    h('section', { class: cls.cx('flex items-start gap-3 rounded-(--r-card) p-5 max-sm:p-4', isDone ? 'bg-good-soft ring-1 ring-good-line' : 'bg-surface-2'), 'aria-labelledby': 'bp-avoid' },
       isDone ? d.icon('check', 'size-5 shrink-0 text-good') : d.icon(BP_ICON, 'size-5 shrink-0 text-accent'),
       h('div', { class: 'flex flex-col gap-1' }, h('h2', { id: 'bp-avoid', class: 'm-0 text-body font-bold' }, bt('avoid')), h('p', { class: 'm-0' }, ...inline(c.avoid[lang()])))),
     links.length ? h('section', { class: 'flex flex-col gap-2', 'aria-labelledby': 'bp-links' },
@@ -502,7 +502,7 @@ function habitsPage(): HTMLElement {
             ...cards.map((c) => h('a', { href: rt.hash(c.track, c.id), class: cls.cx(cls.PILL, 'min-h-6 bg-code text-ink no-underline hover:bg-accent-soft'), title: c.title[lang()] },
               c.code.toUpperCase(), ok.has(c.id) ? d.icon('check', 'size-4 text-good') : null))) : null));
     })),
-    h('p', { class: 'm-0 rounded-(--r-inset) bg-info-soft px-4 py-3 text-body-sm text-ink' }, ...inline(habits.after[lang()])),
+    h('p', { class: 'm-0 rounded-(--r-inset) bg-info-soft px-4 py-3 text-body-sm text-ink ring-1 ring-info-line' }, ...inline(habits.after[lang()])),
     h('section', { class: 'flex flex-col gap-2', 'aria-labelledby': 'bp-hsrc' },
       h('h2', { id: 'bp-hsrc', class: 'm-0 text-body font-bold' }, bt('habits.sources')),
       h('ul', { class: 'm-0 list-none space-y-1 p-0 text-body-sm' }, ...habits.sources.map((u, i) => h('li', {}, `[${i + 1}] `, srcLink(u))))));

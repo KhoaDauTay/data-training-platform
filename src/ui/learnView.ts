@@ -146,7 +146,7 @@ function modulePage(c: LearnCtx, n: number): HTMLElement {
   };
   const list = (xs: Skill[]): HTMLElement => h('ul', { class: 'm-0 list-none divide-y divide-line overflow-hidden rounded-(--r-card) bg-panel p-0 ring-1 ring-line' }, ...xs.map(row));
   const chip = (f: PartFilter, count: number): HTMLElement => h('button', {
-    type: 'button', 'aria-pressed': String(partFilter === f), class: cx('min-h-6 rounded-full px-3 py-1 text-body-sm font-semibold ring-1', partFilter === f ? 'bg-accent-soft text-accent ring-accent' : 'bg-panel text-ink ring-line hover:ring-accent'),
+    type: 'button', 'aria-pressed': String(partFilter === f), class: cx('min-h-6 rounded-full px-3 py-1 text-body-sm font-semibold ring-1', partFilter === f ? 'bg-accent-soft text-accent-ink ring-accent' : 'bg-panel text-ink ring-line hover:ring-accent'),
     'data-fk': `part-${f}`, onclick: () => { partFilter = f; keepFocus(`part-${f}`); d$.actions.rerender(); d$.announce(lt('part.shown', { n: f === 'all' ? skills.length : todo.length })); },
   }, lt(f === 'all' ? 'part.filter.all' : 'part.filter.todo', { n: count }));
   return h('div', { class: 'space-y-4' },
@@ -161,7 +161,7 @@ function modulePage(c: LearnCtx, n: number): HTMLElement {
           h('details', { class: 'group rounded-(--r-card) bg-panel ring-1 ring-line' },
             h('summary', { class: 'flex min-h-11 cursor-pointer list-none items-center gap-2 px-4 [&::-webkit-details-marker]:hidden' },
               d$.icon('check', 'size-5 text-good'), h('span', { class: 'flex-1 font-semibold' }, lt('part.doneGroup', { n: learned.length })),
-              h('span', { class: 'text-body-sm font-semibold text-accent' }, lt('part.show', { n: learned.length })), d$.icon('down', 'size-4 text-muted [details[open]>summary>&]:rotate-180')),
+              h('span', { class: 'text-body-sm font-semibold text-accent-ink' }, lt('part.show', { n: learned.length })), d$.icon('down', 'size-4 text-muted [details[open]>summary>&]:rotate-180')),
             h('div', { class: 'p-2' }, list(learned))),
           list(todo))
         : list(skills));
@@ -255,7 +255,7 @@ function overview(c: LearnCtx): HTMLElement {
         h('div', { class: 'min-w-0 flex-1 space-y-1.5' },
           h('div', { class: 'flex items-center gap-2' },
             h('a', { href: `${d$.hashOf('learn')}/sql/${p.n}`, class: 'min-w-0 flex-1 font-bold text-ink no-underline after:absolute after:inset-0' }, lt('learn.moduleTitle', { n: p.n, title: d$.moduleTitle(p.n, lang) })),
-            ms.done ? d$.icon('check', 'size-5 shrink-0 text-good') : isCurrent ? h('span', { class: 'shrink-0 rounded-full bg-accent-soft px-2 text-caption font-semibold text-accent' }, lt('learn.current')) : null),
+            ms.done ? d$.icon('check', 'size-5 shrink-0 text-good') : isCurrent ? h('span', { class: 'shrink-0 rounded-full bg-accent-soft px-2 text-caption font-semibold text-accent-ink' }, lt('learn.current')) : null),
           h('p', { class: 'm-0 text-body-sm text-muted' }, lt('learn.moduleLine', { k: ms.learned, m: ms.skills.length })),
           bar(ms.learned, ms.skills.length)));
     })));

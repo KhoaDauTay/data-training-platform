@@ -123,7 +123,7 @@ function playerCard(c: Card, i: number, n: number, redraw: () => void): HTMLElem
     save();
   };
   if (c.slow) {
-    body.append(h('div', { class: 'rounded-(--r-inset) bg-warn-soft p-3 text-body-sm text-ink ring-1 ring-warn/40' },
+    body.append(h('div', { class: 'rounded-(--r-inset) bg-warn-soft p-3 text-body-sm text-ink ring-1 ring-warn-line' },
       h('p', { class: 'm-0 flex items-center gap-1.5 font-semibold' }, icon('alert', 'size-4'), t('dash.slowTitle')),
       h('p', { class: 'mt-1 mb-2' }, t('dash.slow')),
       h('button', { type: 'button', class: 'flex items-center gap-1.5 px-3 py-1', onclick: rerun }, icon('refresh', 'size-4'), t('dash.retrySlow'))));
@@ -354,7 +354,7 @@ function lockedRow(locked: KpiTile[]): HTMLElement | null {
         h('b', { class: 'block' }, t('dash.lockedRow', { n: locked.length })),
         h('span', { class: 'block text-body-sm text-muted' }, t('dash.lockedNext', { label: next.kpi.label[lang], why: lockedFoot(next) }))),
       h('span', { class: 'flex items-center gap-1 text-muted opacity-70 max-sm:hidden', 'aria-hidden': 'true' }, ...locked.slice(0, 8).map((x) => icon(kpiIcon(x.kpi), 'size-4'))),
-      h('span', { class: 'text-body-sm font-semibold text-accent' }, t('dash.seeAll'))),
+      h('span', { class: 'text-body-sm font-semibold text-accent-ink' }, t('dash.seeAll'))),
     h('ul', { class: 'mt-3 mb-0 list-none divide-y divide-line p-0' }, ...locked.map((x) => h('li', { class: 'flex items-start gap-3 py-2' },
       h('span', { class: 'mt-0.5 text-muted', 'aria-hidden': 'true' }, icon(kpiIcon(x.kpi), 'size-4')),
       h('span', { class: 'min-w-0' }, h('b', { class: 'block text-body-sm' }, x.kpi.label[lang]), h('span', { class: 'block text-caption text-muted' }, lockedFoot(x)))))));

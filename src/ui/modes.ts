@@ -377,7 +377,7 @@ async function shareLink(): Promise<void> {
 
 function sandboxPane(host: HTMLElement): void {
   const s = shared;
-  const strip = s && h('div', { class: 'mb-3 rounded-(--r-ctl) bg-warn-soft p-3 text-body-sm ring-1 ring-warn/40', role: 'status' },
+  const strip = s && h('div', { class: 'mb-3 rounded-(--r-ctl) bg-warn-soft p-3 text-body-sm ring-1 ring-warn-line', role: 'status' },
     h('p', { class: 'm-0' }, t(s.ask ? 'share.ask' : 'share.note')),
     s.ask ? h('div', { class: 'actions mb-0' },
       h('button', { type: 'button', class: 'primary', onclick: () => { s.ask = false; ctx?.work.setDoc(s.sql); ctx?.rerender(); } }, t('share.open')),
@@ -599,7 +599,7 @@ export function stumbleCard(): HTMLElement | null {
         'aria-label': t('stumble.aria', { title, n: x.wrong }), onclick: () => void startRetry(x.ticketId),
       }, h('span', { class: 'min-w-0 flex-1 font-semibold' }, title),
         h('span', { class: 'shrink-0 text-body-sm text-muted' }, t('stumble.wrong', { n: x.wrong })),
-        h('span', { class: 'shrink-0 text-body-sm font-semibold text-accent' }, t('stumble.go'))));
+        h('span', { class: 'shrink-0 text-body-sm font-semibold text-accent-ink' }, t('stumble.go'))));
     })));
 }
 registerHomeSection({ id: 'stumble', order: 25, span: 'full', pages: ['practice'], render: stumbleCard });
@@ -624,7 +624,7 @@ function sessionCard(m: HomeModel): HTMLElement | null {
     else if (it.kind === 'next') openResume(r!);
     else void startToday();
   };
-  return h('section', { class: cx(CARD, 'p-5'), 'aria-labelledby': 'session-title', 'data-session': '' },
+  return h('section', { class: cx(CARD, 'p-5 max-sm:p-4'), 'aria-labelledby': 'session-title', 'data-session': '' },
     h('div', { class: 'flex flex-wrap items-baseline justify-between gap-x-3' },
       h('h2', { id: 'session-title', class: 'm-0 text-title font-bold' }, t('session.title')),
       h('span', { class: 'text-body-sm text-muted' }, t('session.total', { n: plan.reduce((s, it) => s + it.min, 0) }))),
@@ -648,7 +648,7 @@ function goalBox(): HTMLElement {
   const day = g.weekday ?? 1;
   const time = g.remindAt ?? '19:00';
   const box = h('details', { class: goalOpen ? 'w-full' : 'min-w-0', open: goalOpen, ontoggle: () => { goalOpen = box.open; box.className = goalOpen ? 'w-full' : 'min-w-0'; } },
-    h('summary', { class: 'cursor-pointer text-body-sm font-semibold text-accent' }, t('session.more')),
+    h('summary', { class: 'cursor-pointer text-body-sm font-semibold text-accent-ink' }, t('session.more')),
     h('div', { class: 'mt-3 flex flex-wrap items-end gap-3' },
       lbl(t('goal.label'), h('select', { class: field, onchange: (e: Event) => {
         const n = Number((e.target as HTMLSelectElement).value);
