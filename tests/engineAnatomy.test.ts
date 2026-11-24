@@ -188,10 +188,12 @@ describe('Engine MongoDB/DynamoDB L1–L5: giải phẫu theo loại bài (R6, v
     if (l.kind !== 'capstone') expect(qs.some((q) => q.trap !== undefined), '≥ 1 câu có trap (hiểu lầm)').toBe(true);
   });
 
-  it('độ dài chữ VI (đích §2.2; không chặn, in ra để báo cáo)', () => {
+  it('độ dài chữ VI (đích §2.2; chặn ở L1–L2, L3–L5 chỉ in ra)', () => {
     const short = nsAll.map(({ l }) => [l.id, l.kind, words(l)] as const).filter(([, k, n]) => (k === 'concept' ? n < 500 : k === 'lab' ? n < 350 : false));
     if (short.length) console.log('dưới đích §2.2:', short.map((x) => x.join(' ')).join('; '));
     expect(nsAll.every(({ l }) => words(l) > 0)).toBe(true);
+    // v33 (L531): L1–L2 reached the floor, so there it blocks; L3–L5 concepts stay print-only until lengthened
+    expect(short.filter(([id]) => /-l[12]-/.test(id)), 'L1–L2 dưới đích §2.2').toEqual([]);
   });
 
   const lang = () => 'en' as const;
