@@ -94,11 +94,11 @@ Trong pool, ba lớp giữ dữ liệu các khách tách nhau, và mỗi lớp c
 
 Bản đồ chủ đề, mỗi dòng một lớp và các bài đào sâu lớp đó:
 
-- **Mô hình** (dữ liệu nằm ở đâu): `e-ds-l4-08` · `e-ds-l4-10` · `e-pg-l1-19` · `e-mg-l5-12`
+- **Mô hình** (dữ liệu nằm ở đâu): `e-ds-l4-08` · `e-ds-l4-10` · `e-pg-l1-19` · `e-mg-l5-12` · `e-ds-l5-08`
 - **Câu lọc** (chặn đọc nhầm, giữ câu nhanh): `e-pg-l2-26` · `e-pg-l4-20` · `e-mg-l3-19` · `e-bp-m39`
 - **Khóa** (chặn ghi sai): `e-ds-l2-06` · `e-ds-l2-07` · `e-dy-l3-14`
 - **Chính sách** (lưới khi câu quên lọc): `e-pg-l5-10` · `e-pg-l5-19` · `e-pg-l5-20` · `e-bp-s10` · `e-bp-x08` · `e-dy-l5-09`
-- **Vận hành** (khách rời đi, khách quá tải) và bài tổng hợp: `e-pg-l5-21` · `e-pg-l5-22` · `e-dy-l4-16` · `e-ds-l4-11`
+- **Vận hành** (khách rời đi, khách quá tải, đổi cấu trúc từng shard, định tuyến) và bài tổng hợp: `e-pg-l5-21` · `e-pg-l5-22` · `e-dy-l4-16` · `e-ds-l5-09` · `e-ds-l5-10` · `e-ds-l4-11` · `e-ds-l5-11`
 
 Nhiều người nghĩ có một lớp là đủ. Thật ra chúng không thay nhau được: chính sách không kiểm khóa ngoại trỏ đi đâu, kiểm duy nhất và khóa ngoại cũng không đi qua chính sách, còn khóa thì không ngăn một câu đọc thiếu điều kiện. Silo và bridge đẩy phần lớn việc cô lập xuống hạ tầng; pool đặt nó vào dữ liệu, nên cần đủ cả ba.
 
@@ -162,7 +162,7 @@ VALUES (1, 5, 9, 10);
 - Pool có ba lớp: câu lọc (kể cả điều kiện nối), khóa có `tenant_id`, chính sách theo dòng; mỗi lớp chặn một loại lỗi.
 - Nối hai bảng của khách bằng cả hai cột; thiếu vế `tenant_id` thì dòng bị nhân giữa các khách.
 - Kiểm khóa ngoại và kiểm duy nhất không đi qua chính sách, nên lớp khóa vẫn cần khi đã bật bảo mật theo dòng.
-- Bản đồ chủ đề ở phần Ý chính; nên đi tiếp `e-ds-l4-10`, rồi tổng hợp ở `e-ds-l4-11`.
+- Bản đồ chủ đề ở phần Ý chính; nên đi tiếp `e-ds-l4-10`, rồi tổng hợp ở `e-ds-l4-11` và, ở tầm nền tảng, `e-ds-l5-11`.
 
 # EN
 
@@ -176,11 +176,11 @@ In a pool, three layers keep tenants apart, and each layer stops one kind of mis
 
 The topic map, one row per layer with the lessons that go deep on it:
 
-- **Models** (where the data lives): `e-ds-l4-08` · `e-ds-l4-10` · `e-pg-l1-19` · `e-mg-l5-12`
+- **Models** (where the data lives): `e-ds-l4-08` · `e-ds-l4-10` · `e-pg-l1-19` · `e-mg-l5-12` · `e-ds-l5-08`
 - **Query filters** (stop wrong reads, keep queries fast): `e-pg-l2-26` · `e-pg-l4-20` · `e-mg-l3-19` · `e-bp-m39`
 - **Keys** (stop wrong writes): `e-ds-l2-06` · `e-ds-l2-07` · `e-dy-l3-14`
 - **Policies** (the net for a query that forgets its filter): `e-pg-l5-10` · `e-pg-l5-19` · `e-pg-l5-20` · `e-bp-s10` · `e-bp-x08` · `e-dy-l5-09`
-- **Operations** (a tenant leaves, a tenant overloads) and the capstone: `e-pg-l5-21` · `e-pg-l5-22` · `e-dy-l4-16` · `e-ds-l4-11`
+- **Operations** (a tenant leaves, a tenant overloads, per-shard migrations, routing) and the capstones: `e-pg-l5-21` · `e-pg-l5-22` · `e-dy-l4-16` · `e-ds-l5-09` · `e-ds-l5-10` · `e-ds-l4-11` · `e-ds-l5-11`
 
 Many people think one layer is enough. In fact they cannot replace each other: a policy does not check where a foreign key points, unique and foreign key checks do not go through the policy, and keys do not stop a query that reads without its condition. Silo and bridge push most isolation down into the infrastructure; a pool puts it into the data, so it needs all three.
 
@@ -244,4 +244,4 @@ VALUES (1, 5, 9, 10);
 - A pool has three layers: query filters (join conditions included), keys with `tenant_id`, row policies; each layer stops one kind of mistake.
 - Join two tenant tables on both columns; without the `tenant_id` term rows multiply across tenants.
 - Foreign key and unique checks do not go through the policy, so the key layer is still needed with row-level security on.
-- The topic map is in the Key idea; go on with `e-ds-l4-10`, then the capstone `e-ds-l4-11`.
+- The topic map is in the Key idea; go on with `e-ds-l4-10`, then the capstone `e-ds-l4-11` and, at platform level, `e-ds-l5-11`.

@@ -28,7 +28,7 @@ describe('Thiết kế CSDL: thẻ thứ tư và trang bài', () => {
     expect(await problems()).toEqual([]);
   });
 
-  it.each(['L1/e-ds-l1-01', 'L1/e-ds-l1-02', 'L2/e-ds-l2-05', 'L4/e-ds-l4-06', 'L5/e-ds-l5-05', 'L4/e-ds-l4-08', 'L4/e-ds-l4-09'])('axe: #/engine/design/%s', async (tail) => {
+  it.each(['L1/e-ds-l1-01', 'L1/e-ds-l1-02', 'L2/e-ds-l2-05', 'L4/e-ds-l4-06', 'L5/e-ds-l5-05', 'L4/e-ds-l4-08', 'L4/e-ds-l4-09', 'L5/e-ds-l5-10', 'L5/e-ds-l5-11'])('axe: #/engine/design/%s', async (tail) => {
     const hash = `#/engine/design/${tail}`;
     await visit(hash);
     expect(byId('engine-page')?.dataset.lesson).toBe(hash.split('/').pop());
@@ -43,7 +43,7 @@ describe('Thiết kế CSDL: thẻ thứ tư và trang bài', () => {
 
   it('v34 (L545): the hub links its lessons and the Best Practice card by id', async () => {
     await visit('#/engine/design/L4/e-ds-l4-09');
-    for (const href of ['#/engine/design/L2/e-ds-l2-06', '#/engine/design/L4/e-ds-l4-11', '#/engine/best/postgres/e-bp-s10'])
+    for (const href of ['#/engine/design/L2/e-ds-l2-06', '#/engine/design/L4/e-ds-l4-11', '#/engine/best/postgres/e-bp-s10', '#/engine/design/L5/e-ds-l5-08', '#/engine/design/L5/e-ds-l5-11'])
       expect(document.querySelector(`#engine-page a[href="${href}"]`), href).not.toBeNull();
     expect(document.querySelector('#engine-page a[href="#/engine/best/postgres/e-bp-s10"]')!.textContent).toBe('Best Practice · S10');
   });

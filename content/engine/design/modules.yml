@@ -37,3 +37,6 @@
 - id: internals
   vi: Xử lý truy vấn và phục hồi
   en: Query processing and recovery
+- id: tenant-platform
+  vi: Nền tảng nhiều khách hàng
+  en: A multi-tenant platform
