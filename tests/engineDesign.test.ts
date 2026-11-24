@@ -26,12 +26,12 @@ const all = Object.entries(files).map(([p, raw]) => {
 }).sort((a, b) => a.l.id.localeCompare(b.l.id));
 const ids = new Set(all.map((x) => x.l.id));
 
-/** §1.5: the 25 lessons, their kinds, by level. */
+/** §1.5: the 25 lessons, their kinds, by level (v32 adds L4-07: 26). */
 const PLAN: Record<string, EngineLesson['kind'][]> = {
   L1: ['concept', 'lab', 'quiz'],
   L2: ['concept', 'concept', 'lab', 'lab', 'quiz'],
   L3: ['concept', 'lab', 'concept', 'quiz'],
-  L4: ['concept', 'lab', 'lab', 'concept', 'concept', 'capstone'],
+  L4: ['concept', 'lab', 'lab', 'concept', 'concept', 'capstone', 'lab'], // v32 (L523): + 07 vertical partitioning
   L5: ['concept', 'lab', 'concept', 'quiz', 'concept', 'concept', 'concept'],
 };
 const ORDER = Object.keys(SECTIONS) as SectionId[];
@@ -48,8 +48,8 @@ const ERR = /^--\s*ERROR\s+([0-9A-Z]{5})\b/m;
 const isErr = (b: string): boolean => /^--\s*ERROR\b/m.test(b);
 const words = (l: EngineLesson): number => l.sections.reduce((n, s) => n + wordCount(s.text.vi.replace(/```[\s\S]*?```/g, '')), 0);
 
-describe('Engine Thiết kế CSDL (R4): 25 bài theo §1.5', () => {
-  it('25 bài, đúng loại từng cấp, id e-ds-', () => {
+describe('Engine Thiết kế CSDL (R4): 26 bài theo §1.5 (v32 +1)', () => {
+  it('26 bài, đúng loại từng cấp, id e-ds-', () => {
     const got = Object.fromEntries(Object.keys(PLAN).map((lv) => [lv, all.filter((x) => x.l.level === lv).sort((a, b) => a.l.order - b.l.order).map((x) => x.l.kind)]));
     expect(got).toEqual(PLAN);
     expect(all.every((x) => /^e-ds-l[1-5]-\d\d$/.test(x.l.id) && x.l.engine === 'design')).toBe(true);

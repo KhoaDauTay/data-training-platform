@@ -19,6 +19,9 @@
 - id: normal-forms
   vi: Các dạng chuẩn
   en: Normal forms
+- id: split
+  vi: Tách bảng theo cột
+  en: Splitting tables by column
 - id: denormalize
   vi: Phi chuẩn hóa và thiết kế trọn bộ
   en: Denormalising and a full design

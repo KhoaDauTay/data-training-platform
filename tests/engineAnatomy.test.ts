@@ -39,7 +39,7 @@ const isErr = (b: string): boolean => /^--\s*ERROR\b/m.test(b);
 const words = (l: EngineLesson): number => l.sections.reduce((n, s) => n + wordCount(s.text.vi.replace(/```[\s\S]*?```/g, '')), 0);
 
 describe('Engine PostgreSQL L1–L5: giải phẫu 8 mục (R3, R6)', () => {
-  it('đủ 95 bài L1–L5 (v28 thêm L4-17..19)', () => expect(all.length).toBe(95));
+  it('đủ 98 bài L1–L5 (v28 thêm L4-17..19; v32 thêm L1-18, L2-25, L5-18)', () => expect(all.length).toBe(98));
 
   it.each(all.map((x) => [x.l.id, x] as const))('%s: mục theo loại bài, thứ tự, độ dài, câu hỏi, nguồn', (_, { l, fm }) => {
     const ids = l.sections.map((s) => s.id);
