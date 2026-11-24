@@ -260,7 +260,7 @@ function practice(l: FullLesson, drills: readonly Drill[]): HTMLElement {
       h('h3', { class: 'm-0 text-body-sm font-bold text-muted' }, lt('fl.drills')),
       h('ul', { class: 'm-0 grid list-none gap-2 p-0 sm:grid-cols-2' }, ...drills.map((x) => {
         const ok = d$.app.save.completed.includes(x.id);
-        return h('li', {}, h('button', { type: 'button', class: 'flex min-h-11 w-full items-center gap-2 rounded-(--r-ctl) bg-panel px-3 py-2 text-left ring-1 ring-line hover:ring-accent', onclick: () => d$.actions.startDrill(x.id) },
+        return h('li', {}, h('button', { type: 'button', class: 'flex min-h-11 w-full items-center gap-2 rounded-(--r-ctl) border-0 bg-panel px-3 py-2 text-left ring-1 ring-line hover:ring-accent', onclick: () => d$.actions.startDrill(x.id) },
           d$.icon(ok ? 'check' : 'notStarted', cx('size-5 shrink-0', ok ? 'text-good' : 'text-muted')),
           h('span', { class: 'flex-1' }, lt(`drill.kind.${x.kind}`)),
           h('span', { class: 'sr-only' }, ok ? lt('fl.passed') : lt('fl.notYet'))));

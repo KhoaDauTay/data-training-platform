@@ -515,7 +515,7 @@ svg[data-mascot].cq-hop { animation: cq-hop 320ms ease-out 80ms backwards; }
   [data-fl-bar], [data-fl-toc] { display: none; }
 }
 
-/* v30.2 (L501): Tailwind v4 wraps space-y-* in :where() (specificity 0), so a child's own m-0 / my-0 / mb-0 cancelled the
+/* v30.2 (L502): Tailwind v4 wraps space-y-* in :where() (specificity 0), so a child's own m-0 / my-0 / mb-0 cancelled the
    gap and stacked text touched the next block. Give the gap back to those children (each step sets --sy; a 0 step at a
    breakpoint sets it to 0). */
 @layer utilities {
