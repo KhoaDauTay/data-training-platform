@@ -94,12 +94,11 @@ Trong pool, ba lớp giữ dữ liệu các khách tách nhau, và mỗi lớp c
 
 Bản đồ chủ đề, mỗi dòng một lớp và các bài đào sâu lớp đó:
 
-- **Mô hình** (dữ liệu nằm ở đâu): `e-ds-l4-08` · `e-ds-l4-10` · `e-pg-l1-19`
-- **Câu lọc** (chặn đọc nhầm, giữ câu nhanh): `e-pg-l2-26` · `e-pg-l4-20`
-- **Khóa** (chặn ghi sai): `e-ds-l2-06` · `e-ds-l2-07`
-- **Chính sách** (lưới khi câu quên lọc): `e-pg-l5-10` · `e-pg-l5-19` · `e-pg-l5-20` · `e-bp-s10` · `e-bp-x08`
-- **Vận hành** (khách rời đi, khách quá tải) và bài tổng hợp: `e-pg-l5-21` · `e-pg-l5-22` · `e-ds-l4-11`
-- **NoSQL** (khách nằm trong khóa): `e-mg-l3-19` · `e-mg-l5-12` · `e-bp-m39` · `e-dy-l3-14` · `e-dy-l4-16` · `e-dy-l5-09`
+- **Mô hình** (dữ liệu nằm ở đâu): `e-ds-l4-08` · `e-ds-l4-10` · `e-pg-l1-19` · `e-mg-l5-12`
+- **Câu lọc** (chặn đọc nhầm, giữ câu nhanh): `e-pg-l2-26` · `e-pg-l4-20` · `e-mg-l3-19` · `e-bp-m39`
+- **Khóa** (chặn ghi sai): `e-ds-l2-06` · `e-ds-l2-07` · `e-dy-l3-14`
+- **Chính sách** (lưới khi câu quên lọc): `e-pg-l5-10` · `e-pg-l5-19` · `e-pg-l5-20` · `e-bp-s10` · `e-bp-x08` · `e-dy-l5-09`
+- **Vận hành** (khách rời đi, khách quá tải) và bài tổng hợp: `e-pg-l5-21` · `e-pg-l5-22` · `e-dy-l4-16` · `e-ds-l4-11`
 
 Nhiều người nghĩ có một lớp là đủ. Thật ra chúng không thay nhau được: chính sách không kiểm khóa ngoại trỏ đi đâu, kiểm duy nhất và khóa ngoại cũng không đi qua chính sách, còn khóa thì không ngăn một câu đọc thiếu điều kiện. Silo và bridge đẩy phần lớn việc cô lập xuống hạ tầng; pool đặt nó vào dữ liệu, nên cần đủ cả ba.
 
@@ -177,12 +176,11 @@ In a pool, three layers keep tenants apart, and each layer stops one kind of mis
 
 The topic map, one row per layer with the lessons that go deep on it:
 
-- **Models** (where the data lives): `e-ds-l4-08` · `e-ds-l4-10` · `e-pg-l1-19`
-- **Query filters** (stop wrong reads, keep queries fast): `e-pg-l2-26` · `e-pg-l4-20`
-- **Keys** (stop wrong writes): `e-ds-l2-06` · `e-ds-l2-07`
-- **Policies** (the net for a query that forgets its filter): `e-pg-l5-10` · `e-pg-l5-19` · `e-pg-l5-20` · `e-bp-s10` · `e-bp-x08`
-- **Operations** (a tenant leaves, a tenant overloads) and the capstone: `e-pg-l5-21` · `e-pg-l5-22` · `e-ds-l4-11`
-- **NoSQL** (the tenant inside the key): `e-mg-l3-19` · `e-mg-l5-12` · `e-bp-m39` · `e-dy-l3-14` · `e-dy-l4-16` · `e-dy-l5-09`
+- **Models** (where the data lives): `e-ds-l4-08` · `e-ds-l4-10` · `e-pg-l1-19` · `e-mg-l5-12`
+- **Query filters** (stop wrong reads, keep queries fast): `e-pg-l2-26` · `e-pg-l4-20` · `e-mg-l3-19` · `e-bp-m39`
+- **Keys** (stop wrong writes): `e-ds-l2-06` · `e-ds-l2-07` · `e-dy-l3-14`
+- **Policies** (the net for a query that forgets its filter): `e-pg-l5-10` · `e-pg-l5-19` · `e-pg-l5-20` · `e-bp-s10` · `e-bp-x08` · `e-dy-l5-09`
+- **Operations** (a tenant leaves, a tenant overloads) and the capstone: `e-pg-l5-21` · `e-pg-l5-22` · `e-dy-l4-16` · `e-ds-l4-11`
 
 Many people think one layer is enough. In fact they cannot replace each other: a policy does not check where a foreign key points, unique and foreign key checks do not go through the policy, and keys do not stop a query that reads without its condition. Silo and bridge push most isolation down into the infrastructure; a pool puts it into the data, so it needs all three.
 

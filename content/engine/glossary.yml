@@ -39,6 +39,7 @@
   vi: "Một nhóm thao tác hoặc thành công hết hoặc không để lại gì. Postgres bọc bằng `BEGIN … COMMIT`; MongoDB và DynamoDB có transaction nhiều tài liệu / nhiều item với giới hạn riêng."
   en: "A group of operations that either all succeed or leave nothing behind. Postgres wraps it in `BEGIN … COMMIT`; MongoDB and DynamoDB offer multi-document / multi-item transactions with their own limits."
   doc: "https://www.postgresql.org/docs/18/tutorial-transactions.html"
+  docs: { mongodb: "https://www.mongodb.com/docs/manual/core/transactions/", dynamodb: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/transaction-apis.html" }
 - id: acid
   term: ACID
   engines: [postgres, mongodb, dynamodb]
@@ -172,6 +173,7 @@
   vi: "Cấu trúc phụ giúp tìm dòng/tài liệu mà không đọc hết. Đổi lại, mỗi lần ghi phải cập nhật thêm index và tốn thêm chỗ. Lần đầu viết \"index (chỉ mục)\"."
   en: "An extra structure that finds rows/documents without reading everything. The price: every write must also update it, and it takes space."
   doc: "https://www.postgresql.org/docs/18/indexes-intro.html"
+  docs: { mongodb: "https://www.mongodb.com/docs/manual/indexes/", dynamodb: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/SecondaryIndexes.html" }
 - id: b-tree
   term: B-tree
   engines: [postgres, mongodb]
