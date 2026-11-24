@@ -15,6 +15,12 @@ vi.mock('../src/engineSources', () => ({
 beforeAll(() => boot({ worker: EmptyWorker, storage: { 'cargo-query/coach-done': 'true', 'cargo-query/domain': '"logistics"' } }));
 const q = <T extends Element = HTMLElement>(sel: string): T | null => document.querySelector<T>(sel);
 const tick = (): Promise<void> => new Promise((r) => setTimeout(r, 20));
+/** The text a reader sees outside code (F02: no raw backtick pair may survive a renderer). */
+const proseText = (el: Element): string => {
+  const c = el.cloneNode(true) as Element;
+  c.querySelectorAll('code, pre, textarea, script').forEach((x) => x.remove());
+  return c.textContent ?? '';
+};
 
 describe('#/engine/terms', () => {
   it('the page: h1 under the Engine trail, grouped by level, search narrows the list in place', async () => {
@@ -22,6 +28,12 @@ describe('#/engine/terms', () => {
     expect(byId('home-title').textContent).toBe('Thuật ngữ');
     expect([...document.querySelectorAll('#home nav[aria-label="Đường dẫn"] a')].map((a) => a.getAttribute('href'))).toEqual(['#/engine']);
     expect(document.querySelectorAll('[data-terms-list] article').length).toBeGreaterThanOrEqual(296);
+    // F28: long identifiers wrap (jsdom has no layout: the page root carries the wrap rule); F15: no "Design" filter in VI
+    expect(q('[data-terms-list]')!.parentElement!.className).toContain('wrap-anywhere');
+    expect(q('[data-ek="terms-design"]')).toBeNull();
+    // F14: a jump to each level and a way back to the top
+    expect([...document.querySelectorAll('[data-terms-list] nav button')].map((b) => b.textContent)).toEqual(['L1', 'L2', 'L3', 'L4', 'L5']);
+    expect(document.querySelectorAll('[data-terms-list] section > p > button')).toHaveLength(5);
     expect(await problems()).toEqual([]);
     const box = q<HTMLInputElement>('#terms-q')!;
     box.value = 'tinh nguyen tu';
@@ -67,6 +79,9 @@ describe('#/engine/interview', () => {
     expect(byId('home-title').textContent).toBe('Phỏng vấn Engine');
     expect(document.querySelectorAll('#engine-page a[href^="#/engine/interview/pg-"]')).toHaveLength(12);
     expect(document.querySelectorAll('#engine-page a[href^="#/engine/interview/e-iv-pg-th-"]')).toHaveLength(4);
+    expect(proseText(byId('engine-page'))).not.toMatch(/`[^`]+`/); // F02: a take-home title with `orders` renders as code
+    expect([...document.querySelectorAll('#engine-page a[href^="#/engine/interview/e-iv-pg-th-"]')].some((a) => a.closest('li')?.querySelector('b code'))).toBe(true);
+    expect(q('#engine-page a[href="#/learn/interview"]')).not.toBeNull(); // F27: the other room
     expect(await problems()).toEqual([]);
   });
 

@@ -277,7 +277,10 @@
   body[data-route=play] .top-prefs { display: none; } /* compact header in the workspace: language and theme stay on every other page */
 }
 @media (min-width: 1024px) and (min-height: 700px) {
-  body { height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+  /* F29: the one-screen shell never scrolls the document: the viewport has nothing to scroll and body clips (no scroll box,
+     so scrollIntoView/focus moves only #home or a pane, never the top bar). */
+  html { overflow: hidden; }
+  body { height: 100dvh; display: flex; flex-direction: column; overflow: clip; }
   .shell { flex: 1; min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr) 12px minmax(0, var(--row, 40%)); padding-bottom: 12px; }
   .workspace { min-height: 0; grid-template-columns: minmax(0, var(--col, 40%)) 12px minmax(0, 1fr); }
   #ticket, #work { overflow: auto; min-height: 0; scrollbar-gutter: stable; } /* v21 U10: no shift of Submit when the pane grows a scrollbar */

@@ -14,7 +14,9 @@ import type { PageSub } from './homeView';
  */
 let d: EngineDeps;
 let terms: Term[] = [];
-const NAME: Record<EngineId, string> = { postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB', design: 'Design' }; // design: never a glossary engine (glossary.ts ENG)
+const NAME: Record<EngineId, string> = { postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB', design: '' };
+/** F15: design is never a glossary engine (glossary.ts ENG), so it gets no filter (it would match nothing). */
+const TERM_ENGINES = ENGINES.filter((e) => e !== 'design');
 const tt = (key: TermsKey, params?: I18n.Params): string => termsText(d.getLang(), d.locale(), key, params);
 const lang = (): 'vi' | 'en' => d.getLang();
 
@@ -38,6 +40,13 @@ export function initTerms(deps: EngineDeps, raw: unknown): void {
   const onPage = (): void => { if (d.engineTermsOf(location.hash) !== undefined) count((u) => { u.page++; }); };
   onPage();
   addEventListener('hashchange', onPage);
+}
+
+/** F29: scrolls only the page's own scroll box (#home), so the document and the top bar never move. */
+function scrollHome(el: HTMLElement): void {
+  const box = el.closest<HTMLElement>('#home');
+  if (!box || box.scrollHeight <= box.clientHeight) { el.scrollIntoView?.({ block: 'start' }); return; } // #home is no scroll box here: the page scrolls
+  box.scrollTo?.({ top: box.scrollTop + el.getBoundingClientRect().top - box.getBoundingClientRect().top - 16 });
 }
 
 /** `code` spans as <code>; nothing else is interpreted. */
@@ -133,10 +142,16 @@ function list(): HTMLElement[] {
       h('p', { class: 'm-0' }, tt('none')),
       h('button', { type: 'button', class: d.cls.cx(d.cls.BTN_SECONDARY, 'px-4 py-1.5'), onclick: () => { f.q = ''; f.engines = new Set(ENGINES); f.levels = new Set(LEVELS); d.rerender(); } }, tt('clear')))];
   }
-  return [status, ...LEVELS.filter((lv) => found.some((t) => t.level === lv)).map((lv) =>
-    h('section', { class: 'flex flex-col gap-3', 'aria-labelledby': `terms-${lv}` },
-      h('h2', { id: `terms-${lv}`, class: d.ui.GROUP_TITLE }, `${tt('group', { lv })} · ${found.filter((t) => t.level === lv).length}`),
-      ...found.filter((t) => t.level === lv).map(entry)))];
+  const lvs = LEVELS.filter((lv) => found.some((t) => t.level === lv));
+  // F14: jump to a level and back to the top (buttons: the router owns the hash); F29: only #home scrolls, never the document
+  const jump = (id: string): void => { const el = document.getElementById(id); if (el) scrollHome(el); el?.focus({ preventScroll: true }); };
+  const btn = (text: string, id: string, label?: string): HTMLElement => h('button', { type: 'button', class: d.cls.cx(d.cls.BTN_GHOST, 'px-3 py-1 text-body-sm'), 'aria-label': label ?? false, onclick: () => jump(id) }, text);
+  return [status, lvs.length > 1 ? h('nav', { class: 'flex flex-wrap items-center gap-1', 'aria-label': tt('jump') }, ...lvs.map((lv) => btn(lv, `terms-${lv}`, `${tt('jump')} ${lv}`))) : null,
+    ...lvs.map((lv) =>
+      h('section', { class: 'flex flex-col gap-3', 'aria-labelledby': `terms-${lv}` },
+        h('h2', { id: `terms-${lv}`, tabindex: '-1', class: d.ui.GROUP_TITLE }, `${tt('group', { lv })} · ${found.filter((t) => t.level === lv).length}`),
+        ...found.filter((t) => t.level === lv).map(entry),
+        h('p', { class: 'm-0' }, btn(tt('top'), 'terms-q'))))].filter((x): x is HTMLElement => !!x);
 }
 
 /** `#/engine/terms[/<id>]`: a known id loosens the filters until it shows, then gets the focus once. */
@@ -148,7 +163,7 @@ export function termsPage(id: string): HTMLElement {
     focused = id;
     queueMicrotask(() => {
       const el = document.getElementById(`term-${id}-h`);
-      el?.scrollIntoView?.({ block: 'start' });
+      if (el) scrollHome(el);
       el?.focus({ preventScroll: true });
     });
   }
@@ -159,12 +174,12 @@ export function termsPage(id: string): HTMLElement {
     h('input', { type: 'checkbox', checked: set.has(v), 'data-ek': `terms-${v}`, onchange: (e: Event) => { if ((e.target as HTMLInputElement).checked) set.add(v); else set.delete(v); redraw(); } }), label);
   const search = h('input', { type: 'search', id: 'terms-q', value: f.q, 'data-ek': 'terms-q', 'aria-describedby': 'terms-q-hint', autocomplete: 'off',
     class: 'min-h-11 w-full rounded-(--r-ctl) bg-panel px-3 ring-1 ring-line-strong', oninput: (e: Event) => { f.q = (e.target as HTMLInputElement).value; redraw(); } });
-  return h('div', { class: 'flex flex-col gap-6' },
+  return h('div', { class: 'flex min-w-0 flex-col gap-6 wrap-anywhere' }, // F28: long identifiers (`ProvisionedThroughputExceededException`) wrap at 375 px
     h('p', { class: 'm-0 text-muted' }, tt('intro')),
     h('search', { class: 'flex flex-col gap-3 rounded-(--r-card) bg-surface-2 p-4' },
       h('div', { class: 'flex flex-col gap-1' }, h('label', { for: 'terms-q', class: 'font-bold' }, tt('search')), search,
         h('p', { id: 'terms-q-hint', class: 'm-0 text-caption text-muted' }, tt('search.hint'))),
-      h('fieldset', { class: 'm-0 flex flex-wrap items-center gap-2 border-0 p-0' }, h('legend', { class: 'mb-1 p-0 text-body-sm font-bold' }, tt('engines')), ...ENGINES.map((e) => check(f.engines, e, NAME[e]))),
+      h('fieldset', { class: 'm-0 flex flex-wrap items-center gap-2 border-0 p-0' }, h('legend', { class: 'mb-1 p-0 text-body-sm font-bold' }, tt('engines')), ...TERM_ENGINES.map((e) => check(f.engines, e, NAME[e]))),
       h('fieldset', { class: 'm-0 flex flex-wrap items-center gap-2 border-0 p-0' }, h('legend', { class: 'mb-1 p-0 text-body-sm font-bold' }, tt('levels')), ...LEVELS.map((lv) => check(f.levels, lv, lv))),
       h('label', { class: 'inline-flex min-h-6 cursor-pointer items-center gap-2 text-body-sm' },
         h('input', { type: 'checkbox', checked: f.hide, 'data-ek': 'terms-hide', onchange: (e: Event) => { f.hide = (e.target as HTMLInputElement).checked; redraw(); } }), tt('hide'))),
