@@ -32,11 +32,12 @@ export function trySummary(attempts: Record<string, Attempt>): TrySummary {
   };
 }
 
-/** Learned skills with their Leitner box (0 = learned, no review card yet), the ones that most need review first. */
-export function strengths(known: Iterable<string>, review: Review): { id: string; box: number }[] {
-  return [...known].map((id) => ({ id, box: review[id]?.box ?? 0 }))
-    .sort((a, b) => (a.box || 9) - (b.box || 9) || (review[a.id]?.due ?? '').localeCompare(review[b.id]?.due ?? '') || a.id.localeCompare(b.id));
-}
+/**
+ * F03 (L485): "What to do next" names one skill on the 0–4 mastery scale: the first due for review, else the first one only met
+ * (route order). The Leitner box is the review schedule, never a second level.
+ */
+export const nextSkill = (ids: readonly string[], levels: ReadonlyMap<string, { level: number; review?: boolean }>): string | undefined =>
+  ids.find((id) => levels.get(id)?.review) ?? ids.find((id) => levels.get(id)?.level === 1);
 
 export const topErrors = (errors: Record<string, number>, n = 5): [string, number][] =>
   Object.entries(errors).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, n);

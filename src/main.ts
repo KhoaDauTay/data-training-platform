@@ -41,6 +41,7 @@ import { initLayout } from './ui/splitter';
 import { currentRoute, go, startRouter } from './ui/router';
 import { initSidebar, renderSidebar } from './ui/sidebar';
 import { initTopbar, renderTopbar, syncMenuCopies } from './ui/topbar';
+import { initSearch } from './ui/search';
 import { mountWork } from './ui/work';
 import { registerVizTabs } from './ui/vizTabs';
 import { initWhy } from './ui/whyButton';
@@ -184,6 +185,7 @@ app.stepIndex = resumeStep(app.save, selected()); // reloading mid-review keeps 
 const pick: BootPick | undefined = bootPick(domainOfHash(location.hash), readJson<unknown>(DOMAIN_KEY), welcomeNeeded(done().size, readTour(), coachDone()));
 if (pick) openSchema(pick === 'general' ? 'lab' : domainSchemaId(pick));
 initTopbar(); // icon slots first: applyStatic() then only touches the label spans
+initSearch(); // F12 (L490): {mod}+K and the ⋯ menu's search
 applyStatic();
 
 async function loadColumns(): Promise<void> {

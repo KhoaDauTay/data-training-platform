@@ -685,7 +685,8 @@ function metaView(r: LabOutput): HTMLElement | null {
   const { h } = d;
   const pairs: [EngineKey, string][] = [];
   if (m.table !== undefined) pairs.push(['meta.table', m.table]);
-  for (const k of ['scannedCount', 'count', 'consumedCapacity'] as const) if (m[k] !== undefined) pairs.push([`meta.${k}`, m[k]!.toLocaleString(d.locale())]);
+  // F18: capacity only in the DynamoDB cost panel (engineDynamo), never twice
+  for (const k of ['scannedCount', 'count'] as const) if (m[k] !== undefined) pairs.push([`meta.${k}`, m[k]!.toLocaleString(d.locale())]);
   if (m.explain) {
     pairs.push(['meta.stages', m.explain.stages.join(' → ')], ['meta.keysExamined', m.explain.keysExamined.toLocaleString(d.locale())],
       ['meta.docsExamined', m.explain.docsExamined.toLocaleString(d.locale())]);

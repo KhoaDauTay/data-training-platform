@@ -26,8 +26,9 @@ export function costPanel(deps: EngineDeps, r: LabOutput, key: string): HTMLElem
   const num = (n: number): string => n.toLocaleString(d.locale());
   const cap = m.capacity;
   const unit = t(m.write ? 'unit.write' : cap?.read !== undefined || !m.write ? 'unit.read' : 'unit.cu');
-  const split = cap && (cap.table !== undefined || cap.indexes)
-    ? t('cap.split', { table: num(cap.table ?? 0), idx: Object.entries(cap.indexes ?? {}).map(([name, n]) => t('cap.idx', { name, n: num(n) })).join(' · ') || '–' }) : '';
+  const idx = Object.entries(cap?.indexes ?? {}); // F18: no index read = no split line (the table is the whole total, never a dangling "–")
+  const split = cap && idx.length
+    ? t('cap.split', { table: num(cap.table ?? 0), idx: idx.map(([name, n]) => t('cap.idx', { name, n: num(n) })).join(' · ') }) : '';
   // The rule, recomputed only when the returned items are exactly what was read (no filter dropped any, nothing projected away).
   let calc = '';
   if (!m.write && cap && m.bytes.length === (r.meta?.count ?? -1) && m.bytes.length) {

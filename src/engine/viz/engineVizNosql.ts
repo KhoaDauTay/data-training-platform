@@ -152,7 +152,7 @@ define<PipeModel>('mg-aggregation-pipeline', {
   return {
     title: tr('Pipeline tổng hợp', 'The aggregation pipeline'), w: 340, h: 14 + (st.length + 1) * 36 + 4,
     frames: [
-      { say: fill(tr('Collection có {n} tài liệu đi vào pipeline.', 'The collection\'s {n} documents enter the pipeline.'), { n: m.input }), nodes: frame(0) },
+      { say: fill(tr('Collection có {n} tài liệu đi vào pipeline (số minh họa, không phải dữ liệu lab bên dưới).', 'The collection\'s {n} documents enter the pipeline (illustrative numbers, not the lab data below).'), { n: m.input }), nodes: frame(0) },
       ...st.map((s, i) => ({ say: sayOf(s, i ? st[i - 1].out : m.input), nodes: frame(i + 1) })),
     ],
   };

@@ -83,7 +83,7 @@ export function subOf(r: { set?: string; th?: string }): PageSub {
   const e = engineOfId(r.th!)!;
   const b = banks.get(e);
   const th = typeof b === 'object' ? b.takeHomes.find((x) => x.id === r.th) : undefined;
-  return { title: th ? th.title[lang()] : it('th'), trail: [top, room] };
+  return { title: th ? th.title[lang()].replace(/`/g, '') : it('th'), trail: [top, room] }; // F02: the h1 and tab title are plain text
 }
 
 export function ivPage(r: { set?: string; th?: string }): HTMLElement {
@@ -102,6 +102,7 @@ function room(): HTMLElement {
   const b = bankOf(picked);
   return h('div', { class: 'flex flex-col gap-8' },
     h('p', { class: 'm-0 text-muted' }, it('intro')),
+    h('p', { class: 'm-0 -mt-6 text-body-sm text-muted' }, it('other'), ' ', h('a', { href: `${d.hashOf('learn')}/interview` }, it('otherGo'))), // F27: the other room
     due.length ? card(h('h2', { class: 'm-0 text-title font-bold' }, it('again.card', { n: due.length })), h('p', { class: 'm-0 text-body-sm text-muted' }, it('again.line')),
       h('div', {}, h('a', { href: d.engineInterviewHash('again'), class: cls.cx(cls.BTN_GO, 'inline-flex px-4 py-2 no-underline') }, it('again.go')))) : null,
     h('div', { role: 'group', 'aria-label': it('pick'), class: 'flex flex-wrap gap-2' }, ...ENGINES.map((e) => h('button', {
@@ -133,7 +134,7 @@ function bandSection(b: Bank, e: EngineId, band: Band, p: IvPrefs): HTMLElement 
       });
     }), ...ths.map((th) => d.ui.listRow({
       lead: h('span', { class: 'grid size-10 place-items-center rounded-full bg-accent-soft text-accent' }, d.icon('secPractice', 'size-5')),
-      title: th.title[lang()], sub: `${it('th')} · ${p.th[th.id]?.at ? it('th.done') : it('th.self')}`,
+      title: h('span', {}, ...th.title[lang()].split(/`([^`]+)`/).map((x, i) => (i % 2 ? h('code', {}, x) : x))), sub: `${it('th')} · ${p.th[th.id]?.at ? it('th.done') : it('th.self')}`,
       action: h('a', { href: d.engineInterviewHash(th.id), class: d.cls.cx(d.cls.BTN_GHOST, 'shrink-0 px-4 py-1.5 whitespace-nowrap no-underline') }, it('th.open')),
     }))));
 }

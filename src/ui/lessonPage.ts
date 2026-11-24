@@ -277,7 +277,7 @@ function quiz(l: FullLesson): HTMLElement {
     const pick = picks.get(key);
     const name = `fl-${l.id}-q${i}`;
     return h('fieldset', { class: cx(CARD, 'm-0 flex flex-col gap-2 p-4') },
-      h('legend', { class: 'mb-1 text-body font-bold' }, `${lt('fl.quizQ', { i: i + 1, n: l.quiz.length })} · `, ...inline(q.q[lang])),
+      h('legend', { class: 'float-left mb-1 w-full p-0 text-body font-bold' }, `${lt('fl.quizQ', { i: i + 1, n: l.quiz.length })} · `, ...inline(q.q[lang])),
       ...q.options.map((o, j) => h('label', { class: cx('flex min-h-11 cursor-pointer items-center gap-2.5 rounded-(--r-ctl) px-3 py-2 ring-1', pick === j ? 'bg-accent-soft ring-2 ring-accent' : 'ring-line hover:ring-accent') },
         h('input', { type: 'radio', name, checked: pick === j, 'data-fk': `${key}#${j}`, onchange: () => { picks.set(key, j); keepFocus(`${key}#${j}`); d$.actions.rerender(); } }),
         h('span', {}, ...inline(o[lang])))),
@@ -395,7 +395,7 @@ export function lessonPage(deps: DrillDeps, l: FullLesson, c: LessonCtx): HTMLEl
       l.syntax.options.length ? h('div', { class: cx(CARD, 'overflow-x-auto') }, h('table', { class: 'w-full border-collapse text-body-sm' },
         h('thead', {}, h('tr', { class: 'bg-surface-2' }, h('th', { scope: 'col', class: 'px-3 py-2 text-left' }, lt('fl.optWrite')), h('th', { scope: 'col', class: 'px-3 py-2 text-left' }, lt('fl.optMeans')))),
         h('tbody', {}, ...l.syntax.options.map((o) => h('tr', { class: 'border-t border-line' },
-          h('td', { class: 'px-3 py-2 align-top' }, h('code', { lang: 'en' }, o.code)), h('td', { class: 'px-3 py-2 whitespace-normal' }, o.text[lang])))))) : null),
+          h('td', { class: 'px-3 py-2 align-top' }, h('code', { lang: 'en' }, o.code)), h('td', { class: 'px-3 py-2 whitespace-normal' }, ...inline(o.text[lang]))))))) : null),
     section('examples', undefined, ...l.examples.map((_, i) => exampleBlock(l, i, many && i > 0))),
     section('pitfalls', undefined, ...l.pitfalls.map((_, i) => pitfallBlock(l, i))),
     practice(l, c.drills),

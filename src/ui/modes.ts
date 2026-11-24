@@ -493,8 +493,7 @@ function reviewCard(m: HomeModel): HTMLElement {
       h('p', { class: 'mt-1 mb-0 text-[15px] text-muted' }, intro),
       p.solved + p.weak ? h('p', { class: 'mt-1 mb-0 text-body-sm text-muted' }, t('prac.stats', { solved: p.solved, weak: p.weak })) : null),
     due ? h('button', { type: 'button', class: cx(here ? BTN_GO : BTN_SECONDARY, 'px-4 py-2'), onclick: () => startToday() }, t('prac.today', { n: due })) : null,
-    // v4 §B.3: nothing learned yet → one way forward.
-    none ? h('button', { type: 'button', class: cx(here ? BTN_GO : BTN_SECONDARY, 'px-4 py-2'), onclick: () => { location.hash = '#/learn/sql/1'; } }, t('prac.toFirst')) : null,
+    // F19: nothing learned yet: the sentence only; the drills card below holds the one way forward ("Bắt đầu từ Phần 1").
     here ? guideHooks.replayBtn?.('practice') ?? null : null),
   here ? guideSlot('practice-review') : null);
 }

@@ -68,16 +68,17 @@ function axisCard(a: (typeof AXES)[number]): HTMLElement {
     h('p', { class: 'm-0 flex flex-wrap gap-x-4 gap-y-1 text-caption' }, h('span', { class: 'text-muted' }, `${ct('sources')}:`), ...a.sources.map((u) => extLink(u, host(u)))));
 }
 
-/** Axis × engine, one label per cell: the page's honesty at a glance (scrolls sideways inside its box on a phone). */
+/** Axis × engine, one label per cell: the page's honesty at a glance. F25: below 640 px each axis is a block of three labelled chips. */
 function summary(): HTMLElement {
   const { h } = c.d;
   return h('div', { class: 'overflow-x-auto' },
-    h('table', { class: 'w-full min-w-[36rem] text-body-sm', 'data-cmp-summary': '' },
+    h('table', { class: 'w-full text-body-sm max-sm:block sm:min-w-[36rem]', 'data-cmp-summary': '' },
       h('caption', { class: 'sr-only' }, ct('summary')),
-      h('thead', {}, h('tr', {}, h('th', { scope: 'col', class: 'text-left' }, ct('axis')), ...CMP_ENGINES.map((e) => h('th', { scope: 'col', class: 'text-left' }, NAME[e])))),
-      h('tbody', {}, ...AXES.map((a) => h('tr', {},
+      h('thead', { class: 'max-sm:sr-only' }, h('tr', {}, h('th', { scope: 'col', class: 'text-left' }, ct('axis')), ...CMP_ENGINES.map((e) => h('th', { scope: 'col', class: 'text-left' }, NAME[e])))),
+      h('tbody', { class: 'max-sm:block' }, ...AXES.map((a) => h('tr', { class: 'max-sm:flex max-sm:flex-col max-sm:gap-1 max-sm:border-t max-sm:border-line max-sm:py-2' },
         h('th', { scope: 'row', class: 'text-left font-normal' }, h('button', { type: 'button', class: 'border-0 bg-transparent p-0 text-left text-accent underline', onclick: () => { const t = document.getElementById(`cmp-${a.id.toLowerCase()}`); t?.scrollIntoView(); t?.focus(); } }, `${a.id} · ${a.title[lang()]}`)),
-        ...CMP_ENGINES.map((e) => h('td', {}, tierChip(a.cells[e].tier))))))));
+        ...CMP_ENGINES.map((e) => h('td', { class: 'max-sm:flex max-sm:items-center max-sm:gap-2' },
+          h('span', { class: 'w-24 shrink-0 text-muted sm:hidden' }, NAME[e]), tierChip(a.cells[e].tier))))))));
 }
 
 function scenarioCard(s: Scenario, n: number): HTMLElement {

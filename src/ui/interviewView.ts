@@ -442,6 +442,7 @@ export function listPage(): HTMLElement {
   return h('div', { class: 'flex flex-col gap-6' },
     // v21 U18: the breadcrumb and the h1 "Phòng phỏng vấn" are drawn above by homeView
     h('p', { class: 'm-0 text-[15px]' }, it('iv.intro')),
+    h('p', { class: 'm-0 text-body-sm text-muted' }, it('iv.other'), ' ', h('a', { href: `${d$.hashOf('engine')}/interview` }, it('iv.otherGo'))), // F27: the other room
     h('section', { class: 'flex flex-col gap-3', 'aria-labelledby': 'iv-sets' },
       h('h2', { id: 'iv-sets', class: 'm-0 text-title font-bold' }, it('iv.sets')),
       h('p', { class: 'm-0 text-body-sm text-muted' }, it('iv.setsIntro')),

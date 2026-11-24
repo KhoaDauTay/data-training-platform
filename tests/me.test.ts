@@ -3,9 +3,9 @@ import { loadTickets } from '../src/content';
 import { MAX_CARDS, readDashboard, type Card } from '../src/dashboard';
 import { DOMAINS } from '../src/domains';
 import { ATTEMPTS_KEY, ERRORS_KEY, notePass, noteTry, readAttempts, readErrors } from '../src/insights';
-import { ME_DICT } from '../src/i18n/me';
+import { ME_DICT, meText } from '../src/i18n/me';
 import {
-  calendar, dashFile, importDash, portfolioEntries, portfolioMd, strengths, topErrors, touchesSandbox, trySummary,
+  calendar, dashFile, importDash, portfolioEntries, portfolioMd, nextSkill, topErrors, touchesSandbox, trySummary,
 } from '../src/me';
 import { hashOf, parseRoute, SHARE_MAX, shareHash, sharedOf } from '../src/route';
 import type { KV } from '../src/storage';
@@ -75,8 +75,16 @@ describe('device-only statistics (src/insights.ts)', () => {
     expect(trySummary({})).toEqual({ passed: 0, first: 0, runs: 0, wrong: 0 });
     // L312: one wrong Submit (no Postgres error), then a pass: 0 % first time AND one wrong submit, never "no mistakes"
     expect(trySummary({ a: { runs: 1, submits: 2, passedOn: 2 } })).toMatchObject({ first: 0, wrong: 1 });
-    expect(strengths(['select', 'where', 'join'], { select: { box: 5, due: '2026-12-01' }, join: { box: 1, due: '2026-11-20' } }).map((s) => [s.id, s.box]))
-      .toEqual([['join', 1], ['select', 5], ['where', 0]]);
+    // F03 (L485): one scale (mastery 0-4): a skill due for review first, else the first one only met, in route order
+    const lv = new Map([['select', { level: 3 }], ['where', { level: 1 }], ['join', { level: 2, review: true }]]);
+    expect(nextSkill(['select', 'where', 'join'], lv)).toBe('join');
+    expect(nextSkill(['select', 'where'], lv)).toBe('where');
+    expect(nextSkill(['select'], lv)).toBeUndefined();
+    // F07/F21: derived counts, EN plurals as function messages
+    expect(meText('en', 'map.review', { n: 1 })).toBe('Review 1 skill that needs it');
+    expect(meText('en', 'map.review', { n: 3 })).toBe('Review 3 skills that need it');
+    expect(meText('vi', 'next.empty', { n: 4 })).toContain('4 bài luyện');
+    expect(meText('en', 'next.empty', { n: 4 })).toContain('4 drills');
     expect(topErrors({ a: 1, b: 5, c: 5 }, 2)).toEqual([['b', 5], ['c', 5]]);
     const cal = calendar(['2026-11-19', '2026-11-02', '2026-01-01'], new Date(2026, 10, 19), 8);
     expect(cal).toHaveLength(56);

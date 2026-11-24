@@ -26,7 +26,7 @@ const GAME_TONE = /boss|sự cố/i;
 
 /** Keys whose EN text is intentionally the same as VI (SQL keywords, product names). */
 // Plan 7: product, domain and module names read the same in both languages.
-const SAME_OK = new Set<string>(['nav.engine', 'nav.engineShort', 'work.runKeys', 'work.submitKeys', 'work.formatKeys', 'tab.explain', 'top.xp', 'nav.sandbox', 'top.chapterShort', 'top.chapterTiny', 'nav.task',
+const SAME_OK = new Set<string>(['nav.engine', 'nav.engineShort', 'search.keys', 'work.runKeys', 'work.submitKeys', 'work.formatKeys', 'tab.explain', 'top.xp', 'nav.sandbox', 'top.chapterShort', 'top.chapterTiny', 'nav.task',
   'app.name', 'domain.logistics', 'domain.finance', 'domain.ecommerce']);
 const placeholders = (s: string): string => [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort().join();
 
@@ -133,7 +133,7 @@ describe('chữ trang Tiến bộ của tôi (src/i18n/me.ts, v16 L142)', () => 
     const SAME = new Set(['badge.sql', 'badge.engine', 'badge.eng', 'badge.dom', 'eng.cell']); // names and placeholders only
     for (const [k, v] of Object.entries(ME_DICT.vi)) {
       const e = ME_DICT.en[k as keyof typeof ME_DICT.en];
-      expect([k, placeholders(e)]).toEqual([k, placeholders(v)]);
+      if (typeof e === 'string' && typeof v === 'string') expect([k, placeholders(e)]).toEqual([k, placeholders(v)]);
       if (!SAME.has(k)) expect([k, e]).not.toEqual([k, v]);
       expect(`${v} ${e}`).not.toMatch(GAME_TONE);
       expect(`${k}: ${e}`).not.toMatch(/[ăâđêôơưạảấầẩẫậắằẳẵặẹẻẽếềểễệỉịọỏốồổỗộớờởỡợụủứừửữựỳỵỷỹ]/i);
@@ -154,6 +154,18 @@ describe('chữ UI phần Chung (src/i18n/learn.ts, Plan 8a D8a-13)', () => {
       expect([k, placeholders(e)]).toEqual([k, placeholders(v)]);
       if (!SAME.has(k)) expect([k, e]).not.toEqual([k, v]);
       expect(`${v} ${e}`).not.toMatch(GAME_TONE);
+    }
+    // F11: the v24 learning path is a grid of Parts with the advanced track below, nothing left/right
+    expect(`${LEARN_DICT.vi['g.path.1']} ${LEARN_DICT.en['g.path.1']}`).not.toMatch(/trái|phải|left|right/);
+  });
+});
+
+describe('v30.1 derived counts (F05)', () => {
+  it('no hard-coded Part count for the NoSQL path; its intro takes {n}', async () => {
+    const { ENGINE_DICT } = await import('../src/i18n/engine');
+    for (const lang of ['vi', 'en'] as const) {
+      expect(ENGINE_DICT[lang]['nosql.short']).not.toMatch(/\d+ (Phần|parts|Parts)/);
+      expect(ENGINE_DICT[lang]['path.intro']).toContain('{n}');
     }
   });
 });

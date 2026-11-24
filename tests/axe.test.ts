@@ -56,6 +56,8 @@ describe('axe-core (v15 Q10)', () => {
       for (const a of adv) expect(a.textContent).toContain(a.title);
     }
     // v24 R0 (L338): the full lesson page (its own lazy chunk) is drawn before axe looks at it
+    // F10 (L489): one icon = one destination: the Engine sidebar has one Best Practice row, not one star per track
+    if (hash === '#/engine/best/sql') await vi.waitFor(() => expect([...document.querySelectorAll('#side [data-side^="bp"]')].map((x) => x.getAttribute('data-side'))).toEqual(['bp', 'bp:habits']));
     if (hash === '#/learn/skill/select') await vi.waitFor(() => expect(document.querySelector('[data-lesson-page] [data-sec=recap]')).not.toBeNull(), { timeout: 20_000 });
     expect(await problems()).toEqual([]);
   });
@@ -69,6 +71,26 @@ describe('axe-core (v15 Q10)', () => {
     const v = await problems();
     byId('fl-toc-sheet').closest('dialog')!.close();
     expect(v).toEqual([]);
+  });
+
+  it('dialog: the search palette (F12, L490): ⋯ menu button, search, axe, a result navigates and closes', async () => {
+    await visit('#/learn');
+    byId('search-btn').click();
+    await vi.waitFor(() => expect(document.querySelector('dialog#palette[open]')).not.toBeNull());
+    const box = document.querySelector<HTMLInputElement>('#palette-q')!;
+    expect(document.activeElement).toBe(box);
+    box.value = 'mvcc';
+    box.dispatchEvent(new Event('input'));
+    await vi.waitFor(() => expect(document.querySelector('#palette-list a[data-palette=term]')).not.toBeNull(), { timeout: 20_000 });
+    expect(await problems()).toEqual([]);
+    const link = document.querySelector<HTMLAnchorElement>('#palette-list a[href="#/engine/terms/mvcc"]')!;
+    link.click();
+    expect(document.querySelector('dialog#palette[open]')).toBeNull();
+    await vi.waitFor(() => expect(location.hash).toBe('#/engine/terms/mvcc'));
+    // {mod}+K opens it again (Ctrl here: jsdom is no Mac)
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, bubbles: true, cancelable: true }));
+    await vi.waitFor(() => expect(document.querySelector('dialog#palette[open]')).not.toBeNull());
+    byId('palette').closest('dialog')!.close();
   });
 
   it.each(DIALOGS)('dialog: %s', async (name, open) => {

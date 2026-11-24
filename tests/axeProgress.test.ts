@@ -10,6 +10,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import save from './fixtures/save-v5.json?raw';
 import { loadGeneral } from '../src/content';
 import { drillHash } from '../src/route';
+import { ROUTE_SKILLS } from '../src/progress';
 import { session } from '../src/session';
 import { boot, EmptyWorker, openModal, problems, visit } from './axeHarness';
 
@@ -33,6 +34,36 @@ describe('axe-core: a returning player, dark theme, 375 px (FIX-1)', () => {
     expect(window.innerWidth).toBe(375);
     expect(document.getElementById('home')?.textContent).toMatch(/\S/);
     expect(openModal()).toBeUndefined();
+  });
+
+  it('F04/F06: Home counts the route skills like #/learn and links the SQL path and Engine (secondary links only)', async () => {
+    await visit('#/');
+    const card = document.querySelector('#home [aria-labelledby=home-path]')!;
+    const home = /(\d+)\/(\d+)/.exec(card.textContent!)!;
+    expect(Number(home[2])).toBe(ROUTE_SKILLS.length);
+    expect([...card.querySelectorAll('a')].map((a) => a.getAttribute('href'))).toEqual(['#/learn', '#/engine']);
+    expect(card.querySelector('.bg-accent')).toBeNull();
+    await visit('#/learn', () => expect(document.getElementById('home')!.textContent).toContain(`Đã học ${home[1]}/${ROUTE_SKILLS.length} kỹ năng`));
+  });
+
+  it('F03 (L485): one skill scale: no memory level on #/me or #/practice, the review box is named "Lịch ôn"', async () => {
+    await visit('#/practice');
+    expect(document.getElementById('home')!.textContent).not.toMatch(/Mức nhớ/);
+    expect(document.getElementById('home')!.textContent).toMatch(/Lịch ôn: /);
+    await visit('#/me');
+    const home = document.getElementById('home')!;
+    expect(home.textContent).not.toMatch(/Mức nhớ|Độ vững kỹ năng|\/5\)/);
+    // F23: a badge not held is drawn not held (dashed edge), its condition in the tile
+    const not = home.querySelector<HTMLElement>('[data-badge][data-have=false]')!;
+    expect(not.className).toContain('border-dashed');
+    expect(not.className).not.toContain('bg-accent-soft');
+  });
+
+  it('F02: the full lesson page renders inline code in the Syntax table (no raw backtick pair)', async () => {
+    await visit('#/learn/skill/upsert', () => expect(document.querySelector('#home table')).not.toBeNull());
+    const c = document.getElementById('home')!.cloneNode(true) as Element;
+    c.querySelectorAll('code, pre, .cm-editor, textarea').forEach((x) => x.remove());
+    expect(c.textContent).not.toMatch(/`[^`]+`/);
   });
 
   it.each(PAGES)('page %s', async (hash) => {

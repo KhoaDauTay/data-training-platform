@@ -1,4 +1,4 @@
-import type { Lang, Params } from './index';
+import type { Lang, Msg, Params } from './index';
 
 /**
  * Text of the "My progress" page and its exports (v16 I2/I6, L142). Lives in the lazy `meView` chunk, not in vi.ts/en.ts.
@@ -12,13 +12,6 @@ const vi = {
   'stat.runs': 'Lần chạy trước khi đạt',
   'stat.hints': 'Gợi ý đã dùng',
   'stat.none': 'chưa có',
-  'skills.title': 'Độ vững kỹ năng',
-  'skills.intro': 'Mức nhớ 1–5 theo lịch ôn tập; kỹ năng cần ôn đứng đầu.',
-  'skills.none': 'Bạn chưa học kỹ năng nào. Bắt đầu từ Lộ trình: một bài học nhanh và ba bài luyện cho mỗi kỹ năng.',
-  'skills.box': '{box}/5',
-  'skills.noCard': 'chưa ôn',
-  'skills.sum': 'Vững (mức 4–5): {solid} · Cần ôn (mức 1–2): {weak} · Đã học: {n}',
-  'skills.all': 'Xem cả {n} kỹ năng',
   'err.title': 'Lỗi Postgres hay gặp',
   'err.none': 'Chưa có lỗi Postgres (câu SQL không chạy) nào trên máy này.',
   'err.wrong': 'Lần nộp chạy được nhưng chưa đúng kết quả: {n}.',
@@ -40,12 +33,14 @@ const vi = {
   'days.label': '{n} ngày có học trong {w} tuần qua',
   'days.total': 'Tổng cộng {n} ngày có học trên máy này.',
   'days.note': 'Không có chuỗi phạt, không so với người khác.',
-  'days.week': 'Tuần này: {t} việc xong, {r} kỹ năng lên mức nhớ.',
+  'days.week': 'Tuần này: {t} việc xong, {r} kỹ năng lên một bậc lịch ôn.',
   'next.title': 'Nên làm tiếp',
-  'next.skill': 'Kỹ năng cần ôn nhất của bạn là {skill} (mức {box}/5).',
+  'next.skill': 'Nên luyện tiếp: {skill} ({level}).',
+  'next.due': 'Nên ôn tiếp: {skill} ({level} · Cần ôn).',
   'next.err': 'Lỗi hay gặp nhất: {what} ({code}, {n} lần).',
   'next.go': 'Luyện {skill}',
-  'next.none': 'Học kỹ năng đầu tiên trong Lộ trình.',
+  'next.none': 'Học kỹ năng tiếp theo trong Lộ trình.',
+  'next.empty': 'Bạn chưa học kỹ năng nào. Bắt đầu từ Lộ trình: một bài học đầy đủ và {n} bài luyện cho mỗi kỹ năng.',
   'next.start': 'Mở Lộ trình',
   'pf.name': 'Tên trên portfolio',
   'pf.nameNote': 'Chỉ lưu ở máy này, không vào file tiến độ.',
@@ -106,7 +101,7 @@ const vi = {
   'lv.2': 'Làm được',
   'lv.3': 'Vững',
   'lv.4': 'Thành thạo',
-  'eng.none': 'Chưa mở',
+  'eng.none': 'Chưa bắt đầu',
   'eng.doing': 'Đang học {k}/{n}',
   'eng.done': 'Xong',
   'eng.empty': 'Chưa có bài',
@@ -141,7 +136,7 @@ const vi = {
 };
 export type MeKey = keyof typeof vi;
 
-const en: Record<MeKey, string> = {
+const en: Record<MeKey, Msg> = {
   intro: 'Worked out on this device from your progress and history; nothing is sent anywhere.',
   deviceOnly: 'This device only',
   'stat.done': 'Tasks done',
@@ -149,13 +144,6 @@ const en: Record<MeKey, string> = {
   'stat.runs': 'Runs before passing',
   'stat.hints': 'Hints used',
   'stat.none': 'none yet',
-  'skills.title': 'Skill strength',
-  'skills.intro': 'Memory level 1–5 from the review schedule; skills that need review come first.',
-  'skills.none': 'You have not learned a skill yet. Start on the learning path: one quick lesson and three drills per skill.',
-  'skills.box': 'level {box}/5',
-  'skills.noCard': 'not reviewed',
-  'skills.sum': 'Solid (level 4–5): {solid} · Needs review (level 1–2): {weak} · Learned: {n}',
-  'skills.all': 'Show all {n} skills',
   'err.title': 'Frequent Postgres errors',
   'err.none': 'No Postgres errors (SQL that did not run) on this device yet.',
   'err.wrong': 'Submits that ran but gave a different result: {n}.',
@@ -177,12 +165,14 @@ const en: Record<MeKey, string> = {
   'days.label': 'Study days in the last {w} weeks: {n}',
   'days.total': 'Study days on this device in total: {n}.', // L316: no plural to get wrong ("1 study days")
   'days.note': 'No streak to lose, no comparison with anyone.',
-  'days.week': 'This week: tasks done {t}, skills up a memory level {r}.',
+  'days.week': 'This week: tasks done {t}, skills moved up the review schedule {r}.',
   'next.title': 'What to do next',
-  'next.skill': 'The skill that most needs review is {skill} (level {box}/5).',
+  'next.skill': 'Practise next: {skill} ({level}).',
+  'next.due': 'Review next: {skill} ({level} · Needs review).',
   'next.err': 'Your most frequent mistake: {what} ({code}, {n} times).',
   'next.go': 'Practise {skill}',
-  'next.none': 'Learn your first skill on the learning path.',
+  'next.none': 'Learn the next skill on the learning path.',
+  'next.empty': (p) => `You have not learned a skill yet. Start on the learning path: one full lesson and ${p.n} drill${p.n === 1 ? '' : 's'} per skill.`,
   'next.start': 'Open the learning path',
   'pf.name': 'Name on your portfolios',
   'pf.nameNote': 'Kept on this device only, not in the progress file.',
@@ -229,7 +219,7 @@ const en: Record<MeKey, string> = {
   // v24 R0 (L323)
   'map.title': 'Skill map',
   'map.intro': 'Measured on this device from the work you did and your latest review. Not verified, not a certificate.',
-  'map.review': 'Review {n} skills that need it',
+  'map.review': (p) => `Review ${p.n} skill${p.n === 1 ? '' : 's'} that need${p.n === 1 ? 's' : ''} it`,
   'map.due': 'Needs review',
   'map.dueNote': '= review overdue, level down by 1 for now',
   'map.part': 'Part {n} · {title}',
@@ -277,11 +267,13 @@ const en: Record<MeKey, string> = {
   'pf.badges': 'Badges held',
 };
 
-export const ME_DICT = { vi: vi as Record<MeKey, string>, en };
+export const ME_DICT = { vi: vi as Record<MeKey, Msg>, en };
 
 export function meText(lang: Lang, key: MeKey, params: Params = {}): string {
   const locale = lang === 'en' ? 'en-US' : 'vi-VN';
-  return ME_DICT[lang][key].replace(/\{(\w+)\}/g, (m, name: string) => {
+  const msg = ME_DICT[lang][key];
+  if (typeof msg === 'function') return msg(params);
+  return msg.replace(/\{(\w+)\}/g, (m, name: string) => {
     const v = params[name];
     return v === undefined ? m : typeof v === 'number' ? v.toLocaleString(locale) : v;
   });

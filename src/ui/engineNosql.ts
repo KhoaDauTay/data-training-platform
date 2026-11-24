@@ -55,7 +55,7 @@ export function stepTop(deps: EngineDeps, s: LabStep): HTMLElement | null {
   return h('p', { class: 'm-0 flex flex-wrap items-center gap-2 text-body-sm', 'data-rule': s.rule ?? (cost ? 'cost' : 'error') },
     h('span', { class: cls.cx(cls.PILL, 'bg-sun text-sun-ink font-bold') }, ...inline(s.rule ? nt(`rule.${s.rule}`) : cost ? nt('rule.cost')
       : nt(/Exception$/.test(s.error!) ? 'error.noteDy' : 'error.note', { code: s.error! }))),
-    s.rule || cost ? h('span', { class: 'text-muted' }, nt(cost ? 'rule.costNote' : 'rule.note')) : null);
+    s.rule || cost ? h('span', { class: 'text-muted' }, ...inline(nt(cost ? 'rule.costNote' : 'rule.note'))) : null);
 }
 
 /** v26 (L380): the "Partition / Chi phí" panel lives in its own lazy chunk (engineDynamo), fetched on the first DynamoDB run. */

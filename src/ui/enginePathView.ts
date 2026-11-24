@@ -61,7 +61,7 @@ export function pathPage(ctx: PathCtx, slug: string): HTMLElement {
   const ok = c.done();
   const skill = path.skills.find((x) => slugOf(x.id) === slug);
   const page = skill ? skillPage(m, skill, ok) : h('div', { class: 'flex flex-col gap-8' },
-    h('p', { class: 'm-0 text-muted' }, et('path.intro')),
+    h('p', { class: 'm-0 text-muted' }, et('path.intro', { n: path.manifest.parts.length })),
     ...path.manifest.parts.map((p) => h('section', { class: 'flex flex-col gap-3', 'aria-labelledby': `part-${p.n}` },
       h('h2', { id: `part-${p.n}`, class: d.ui.GROUP_TITLE }, `${et('path.part', { n: p.n })} · ${p.title[lang()]}`),
       h('ul', { class: d.ui.LIST }, ...path.skills.filter((x) => x.part === p.n).map((x) => {

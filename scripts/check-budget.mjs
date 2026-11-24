@@ -100,6 +100,7 @@ const GROUPS = [
   ['bpindexDy', /^bestDynamoIndex-/, 8], // measured 4.7 KB gz at v26
   ['bpdynamo', /^bestDynamo-/, 48], // measured 45.5 KB gz at v26 (32 cards; the dynoxide setups carry their items, e.g. d06 48 orders)
   ['bpui', /^(engineBest|bpPref)-/, 15],
+  ['palette', /^palette-/, 4], // v30.1 F12 (L490): src/ui/palette.ts + src/palette.ts ({mod}+K search: skills, Engine lessons, terms; VI/EN inside), lazy on the first open; the Engine index and glossary are their own chunks
   ['rest', /./, 1560],
 ];
 
