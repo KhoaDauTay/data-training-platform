@@ -23,7 +23,7 @@ Per-chapter rows for the seven tutorials in scope:
 
 | Tutorial | covered | partial | missing | n/a | unmapped |
 |---|---|---|---|---|---|
-| sql | 102 | 4 | 1 | 15 | 0 |
+| sql | 104 | 3 | 0 | 15 | 0 |
 | postgresql | 74 | 0 | 0 | 16 | 0 |
 | mysql | 148 | 4 | 1 | 33 | 0 |
 | sqlite | 37 | 1 | 0 | 16 | 0 |
@@ -138,8 +138,8 @@ The proposals make lessons longer and denser than today's Engine and General pag
 | 1 | (no heading) | [Home](https://www.tutorialspoint.com/sql/index.htm) | n/a | intro page |  |
 | 2 | (no heading) | [Roadmap](https://www.tutorialspoint.com/sql/sql-roadmap.htm) | n/a | intro page |  |
 | 3 | (no heading) | [Overview](https://www.tutorialspoint.com/sql/sql-overview.htm) | n/a | intro page |  |
-| 4 | (no heading) | [RDBMS Concepts](https://www.tutorialspoint.com/sql/sql-rdbms-concepts.htm) | partial | no General lesson; Engine content/engine/postgres/L1/02-create-table.md | [dbms-theory.md#2-relational-model](dbms-theory.md#2-relational-model) |
-| 5 | (no heading) | [Databases](https://www.tutorialspoint.com/sql/sql-databases.htm) | partial | no General lesson; Engine content/engine/postgres/L1/02-create-table.md | [dbms-theory.md#2-relational-model](dbms-theory.md#2-relational-model) |
+| 4 | (no heading) | [RDBMS Concepts](https://www.tutorialspoint.com/sql/sql-rdbms-concepts.htm) | covered | Engine design track content/engine/design/L1/01-dbms-architecture.md, L1/02-relational-constraints.md (v28 R4); content/engine/postgres/L1/02-create-table.md | [dbms-theory.md#2-relational-model](dbms-theory.md#2-relational-model) |
+| 5 | (no heading) | [Databases](https://www.tutorialspoint.com/sql/sql-databases.htm) | covered | Engine design track content/engine/design/L1/01-dbms-architecture.md, L1/02-relational-constraints.md (v28 R4); content/engine/postgres/L1/02-create-table.md | [dbms-theory.md#2-relational-model](dbms-theory.md#2-relational-model) |
 | 6 | (no heading) | [Syntax](https://www.tutorialspoint.com/sql/sql-syntax.htm) | covered | General skill `select` (skills.yml, lessons.yml, sql.yml g-…) | [sql-core.md#2-logical-order-of-a-select](sql-core.md#2-logical-order-of-a-select) |
 | 7 | (no heading) | [Data Types](https://www.tutorialspoint.com/sql/sql-data-types.htm) | covered | Engine content/engine/postgres/L1/01-types.md; General skill `cast` (skills.yml, lessons.yml, sql.yml g-…) | [postgresql.md#1-data-types](postgresql.md#1-data-types) |
 | 8 | (no heading) | [Operators](https://www.tutorialspoint.com/sql/sql-operators.htm) | covered | General skill `where` (skills.yml, lessons.yml, sql.yml g-…) | [sql-core.md#4-filtering-and-expressions](sql-core.md#4-filtering-and-expressions) |
@@ -247,7 +247,7 @@ The proposals make lessons longer and denser than today's Engine and General pag
 | 110 | SQL Function Reference | [Text & Image Functions](https://www.tutorialspoint.com/sql/sql-text-image-functions.htm) | covered | General skill `string_fn` (skills.yml, lessons.yml, sql.yml g-…); adv `a8` (adv.yml) | [postgresql.md#6-built-in-functions-aggregate-string-array-numeric-datetime](postgresql.md#6-built-in-functions-aggregate-string-array-numeric-datetime) |
 | 111 | SQL Function Reference | [Statistical Functions](https://www.tutorialspoint.com/sql/sql-statistical-functions.htm) | covered | General skill `aggregate` (skills.yml, lessons.yml, sql.yml g-…); adv `a2`, `b7` (adv.yml) | [sql-core.md#6-grouping-and-aggregates](sql-core.md#6-grouping-and-aggregates) |
 | 112 | SQL Function Reference | [Logical Functions](https://www.tutorialspoint.com/sql/sql-logical-funtions.htm) | covered | General skill `cast`, `aggregate` (skills.yml, lessons.yml, sql.yml g-…) | [postgresql.md#6-built-in-functions-aggregate-string-array-numeric-datetime](postgresql.md#6-built-in-functions-aggregate-string-array-numeric-datetime) |
-| 113 | SQL Function Reference | [Cursor Functions](https://www.tutorialspoint.com/sql/sql-cursor-functions.htm) | missing | no lesson |  |
+| 113 | SQL Function Reference | [Cursor Functions](https://www.tutorialspoint.com/sql/sql-cursor-functions.htm) | partial | cursors (DECLARE, FETCH, loops) in Engine content/engine/postgres/L2/19-procedures-loops-cursors.md (v27 R3); the SQL Server @@CURSOR_* functions are dialect-specific and not taught (Q7) | [postgresql.md](postgresql.md) |
 | 114 | SQL Function Reference | [JSON Functions](https://www.tutorialspoint.com/sql/sql-json-functions.htm) | covered | adv `a7` (adv.yml); Engine content/engine/postgres/L2/11-jsonb.md | [postgresql.md#18-jsonb](postgresql.md#18-jsonb) |
 | 115 | SQL Function Reference | [Conversion Functions](https://www.tutorialspoint.com/sql/sql-conversion-functions.htm) | covered | General skill `cast`, `aggregate` (skills.yml, lessons.yml, sql.yml g-…) | [postgresql.md#6-built-in-functions-aggregate-string-array-numeric-datetime](postgresql.md#6-built-in-functions-aggregate-string-array-numeric-datetime) |
 | 116 | SQL Function Reference | [Datatype Functions](https://www.tutorialspoint.com/sql/sql-datatype-functions.htm) | covered | General skill `cast`, `aggregate` (skills.yml, lessons.yml, sql.yml g-…) | [postgresql.md#6-built-in-functions-aggregate-string-array-numeric-datetime](postgresql.md#6-built-in-functions-aggregate-string-array-numeric-datetime) |

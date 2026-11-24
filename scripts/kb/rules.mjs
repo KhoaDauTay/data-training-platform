@@ -17,7 +17,7 @@ const SQL_RULES = [
  [String.raw`^not null$`, "covered", "Engine content/engine/postgres/L1/04-constraints.md", "sql-core.md#12-constraints"],
  [String.raw`null|coalesce`, "covered", "General skill `null_logic`, `coalesce` (skills.yml, lessons.yml, sql.yml g-…); Engine content/engine/postgres/L1/05-null-semantics.md", "sql-core.md#3-null-and-three-valued-logic"],
  [String.raw`vertical partitioning`, "partial", "Engine content/engine/postgres/L3/03-toast-lab.md (large values stored apart); no modelling lesson", "design-normalization.md"],
- [String.raw`rdbms concepts|^databases$`, "partial", "no General lesson; Engine content/engine/postgres/L1/02-create-table.md", "dbms-theory.md#2-relational-model"],
+ [String.raw`rdbms concepts|^databases$`, "covered", "Engine design track content/engine/design/L1/01-dbms-architecture.md, L1/02-relational-constraints.md (v28 R4); content/engine/postgres/L1/02-create-table.md", "dbms-theory.md#2-relational-model"],
  [String.raw`^data ?types?$|varchar|boolean|^enum$|decimal|^int$|^float$|^bit$|tinyint|blob|^set$`, "covered", "Engine content/engine/postgres/L1/01-types.md; General skill `cast` (skills.yml, lessons.yml, sql.yml g-…)", "postgresql.md#1-data-types"],
  [String.raw`^operators$|expressions|arithmetic|and ?& ?or|and operator|or operator|^not operator|not equal|boolean \(bit\)`, "covered", "General skill `where` (skills.yml, lessons.yml, sql.yml g-…)", "sql-core.md#4-filtering-and-expressions"],
  [String.raw`syntax|comments|literals|alias`, "covered", "General skill `select` (skills.yml, lessons.yml, sql.yml g-…)", "sql-core.md#2-logical-order-of-a-select"],
@@ -80,7 +80,7 @@ const SQL_RULES = [
  [String.raw`partitioning`, "covered", "Engine content/engine/postgres/L4/07-partition-pruning.md, L4/08-partition-design.md", "postgresql.md#21-partitioning"],
  [String.raw`random`, "missing", "no lesson (ORDER BY random(), TABLESAMPLE)", "performance.md"],
  [String.raw`useful functions?$|^functions$`, "covered", "General skill `string_fn`, `date_math`, `aggregate` (skills.yml, lessons.yml, sql.yml g-…)", "postgresql.md#6-built-in-functions-aggregate-string-array-numeric-datetime"],
- [String.raw`cursor functions`, "missing", "no lesson", ""],
+ [String.raw`cursor functions`, "partial", "cursors (DECLARE, FETCH, loops) in Engine content/engine/postgres/L2/19-procedures-loops-cursors.md (v27 R3); the SQL Server @@CURSOR_* functions are dialect-specific and not taught (Q7)", "postgresql.md"],
 ];
 const MONGO_RULES = [
  [String.raw`^(home|overview|advantages)$`, "n/a", "intro page", ""],
