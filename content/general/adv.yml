@@ -949,6 +949,84 @@
     - { title: { vi: "PostgreSQL: Dùng EXPLAIN", en: "PostgreSQL: Using EXPLAIN" }, url: "https://www.postgresql.org/docs/current/using-explain.html" }
     - { title: { vi: "PostgreSQL: Chỉ mục nhiều cột", en: "PostgreSQL: Multicolumn indexes" }, url: "https://www.postgresql.org/docs/current/indexes-multicolumn.html" }
 
+- id: a11
+  group: A
+  status: in
+  title: { vi: "Lấy mẫu ngẫu nhiên", en: "Random sampling" }
+  why: { vi: "Bảng lớn thì xem thử một phần nhỏ trước: soát dữ liệu, ước lượng nhanh, chọn dòng để kiểm tay.", en: "With a big table you look at a small part first: to check the data, estimate fast, or pick rows to check by hand." }
+  needs: [aggregate, limit]
+  applies: { vi: "Soát chất lượng dữ liệu, ước lượng nhanh trên bảng lớn, chọn mẫu để đối chiếu tay.", en: "Data quality checks, fast estimates on big tables, picking rows to check by hand." }
+  lesson:
+    concept:
+      vi: "ORDER BY random() LIMIT n đọc và sắp cả bảng, mỗi lần chạy ra mẫu khác. TABLESAMPLE đặt ngay sau tên bảng và chỉ lấy một phần trăm: BERNOULLI xét từng dòng, SYSTEM lấy cả trang nên nhanh hơn nhưng dòng đi theo cụm. REPEATABLE (hạt giống) cho cùng mẫu khi dữ liệu không đổi. Số dòng của mẫu chỉ xấp xỉ phần trăm."
+      en: "ORDER BY random() LIMIT n reads and sorts the whole table, and every run gives another sample. TABLESAMPLE goes right after the table name and takes only a percentage: BERNOULLI decides row by row, SYSTEM takes whole pages, so it is faster but rows come in clumps. REPEATABLE (seed) gives the same sample while the data does not change. The sample size is only close to the percentage."
+    example: |-
+      SELECT id, kind, ts
+      FROM events_big TABLESAMPLE BERNOULLI (0.1) REPEATABLE (42)
+      ORDER BY id
+    explain:
+      vi: "① `events_big` có 25.000 dòng; `BERNOULLI (0.1)` giữ mỗi dòng với xác suất 0,1%, nên ra khoảng 25 dòng, không đúng 25. ② `REPEATABLE (42)`: chạy lại vẫn ra đúng các dòng đó, nên chấm được. ③ Bỏ `REPEATABLE` hay dùng `ORDER BY random() LIMIT 25` thì mỗi lần một mẫu khác, và cách sau còn đọc và sắp cả 25.000 dòng."
+      en: "① `events_big` has 25,000 rows; `BERNOULLI (0.1)` keeps each row with a 0.1% chance, so you get about 25 rows, not exactly 25. ② `REPEATABLE (42)`: running it again returns the same rows, so it can be graded. ③ Drop `REPEATABLE` or use `ORDER BY random() LIMIT 25` and every run gives another sample, and the latter also reads and sorts all 25,000 rows."
+    mistake:
+      sql: |-
+        SELECT id, kind, ts
+        FROM events_big
+        WHERE kind = 'paid' TABLESAMPLE BERNOULLI (0.1) REPEATABLE (42)
+        ORDER BY id
+      vi: "`TABLESAMPLE` thuộc về bảng, không phải mệnh đề lọc: đặt nó ngay sau `events_big`, trước `WHERE`, nếu không Postgres báo lỗi cú pháp (42601)."
+      en: "`TABLESAMPLE` belongs to the table, not to the filter: put it right after `events_big`, before `WHERE`, otherwise Postgres reports a syntax error (42601)."
+    try:
+      task:
+        vi: "Đổi sang mẫu theo trang (`SYSTEM`) 1% với hạt giống 7, và chỉ đếm số dòng của mẫu."
+        en: "Switch to a page sample (`SYSTEM`) of 1% with seed 7, and only count the rows of the sample."
+      starter: |-
+        SELECT id, kind, ts
+        FROM events_big TABLESAMPLE BERNOULLI (0.1) REPEATABLE (42)
+        ORDER BY id
+      solution: "SELECT count(*) FROM events_big TABLESAMPLE SYSTEM (1) REPEATABLE (7)"
+    docs: https://www.postgresql.org/docs/current/sql-select.html#SQL-FROM
+  drills:
+    - id: g-a11-1
+      kind: faded
+      task:
+        vi: "Mẫu xét từng dòng 0,2% của `events_big` với hạt giống 11: mã và loại sự kiện, xếp theo mã."
+        en: "A row-by-row 0.2% sample of `events_big` with seed 11: id and event kind, sorted by id."
+      starter: |-
+        SELECT id, kind
+        FROM events_big TABLESAMPLE BERNOULLI (___) REPEATABLE (11)
+        ORDER BY id
+      solution: "SELECT id, kind FROM events_big TABLESAMPLE BERNOULLI (0.2) REPEATABLE (11) ORDER BY id"
+      ordered: true
+      hint: { vi: "Phần trăm viết như số phần trăm: 0,2% là `0.2`, không phải `0.002`.", en: "The percentage is written as a percent: 0.2% is `0.2`, not `0.002`." }
+    - id: g-a11-2
+      kind: open
+      task:
+        vi: "Lấy mẫu theo trang 5% của `events_big` với hạt giống 42, rồi đếm số sự kiện mỗi loại trong mẫu. Cột: loại, số sự kiện."
+        en: "Take a 5% page sample of `events_big` with seed 42, then count the events of each kind in the sample. Columns: kind, number of events."
+      solution: "SELECT kind, count(*) FROM events_big TABLESAMPLE SYSTEM (5) REPEATABLE (42) GROUP BY kind"
+      hint: { vi: "Mẫu theo trang là `SYSTEM`; gom theo `kind` như với một bảng bình thường.", en: "A page sample is `SYSTEM`; group by `kind` as with a normal table." }
+    - id: g-a11-3
+      kind: trap
+      task:
+        vi: "Ước lượng tổng số sự kiện `refund` của cả `events_big` từ một mẫu xét từng dòng 10% với hạt giống 3. Một cột: số ước lượng."
+        en: "Estimate the total number of `refund` events in the whole of `events_big` from a row-by-row 10% sample with seed 3. One column: the estimate."
+      solution: "SELECT count(*) * 10 FROM events_big TABLESAMPLE BERNOULLI (10) REPEATABLE (3) WHERE kind = 'refund'"
+      hint: { vi: "Mẫu chỉ có khoảng một phần mười số dòng. Ước lượng cho cả bảng cần nhân lại.", en: "The sample holds about one tenth of the rows. An estimate for the whole table needs scaling back up." }
+      wrong:
+        - sql: "SELECT count(*) FROM events_big TABLESAMPLE BERNOULLI (10) REPEATABLE (3) WHERE kind = 'refund'"
+          vi: "Đây là số dòng trong mẫu, không phải ước lượng cho cả bảng. Mẫu 10% thì nhân với `10` (100 / phần trăm)."
+          en: "That is the row count in the sample, not an estimate for the whole table. A 10% sample is multiplied by `10` (100 / percentage)."
+    - id: g-a11-4
+      kind: challenge
+      task:
+        vi: "Từ một mẫu xét từng dòng 10% của `events_big` với hạt giống 3: ước lượng số sự kiện mỗi loại cho cả bảng. Cột: loại, số ước lượng. Xếp số ước lượng giảm dần, bằng nhau thì theo loại."
+        en: "From a row-by-row 10% sample of `events_big` with seed 3: estimate the number of events of each kind for the whole table. Columns: kind, estimate. Sort by the estimate descending, ties by kind."
+      solution: "SELECT kind, count(*) * 10 AS est FROM events_big TABLESAMPLE BERNOULLI (10) REPEATABLE (3) GROUP BY kind ORDER BY est DESC, kind"
+      ordered: true
+      hint: { vi: "`BERNOULLI (10) REPEATABLE (3)` sau tên bảng, gom theo `kind`, nhân số đếm với `10`.", en: "`BERNOULLI (10) REPEATABLE (3)` after the table name, group by `kind`, multiply the count by `10`." }
+  links:
+    - { title: { vi: "PostgreSQL: SELECT, mệnh đề TABLESAMPLE", en: "PostgreSQL: SELECT, the TABLESAMPLE clause" }, url: "https://www.postgresql.org/docs/current/sql-select.html#SQL-FROM" }
+    - { title: { vi: "PostgreSQL: Hàm toán học (random, setseed)", en: "PostgreSQL: Mathematical functions (random, setseed)" }, url: "https://www.postgresql.org/docs/current/functions-math.html#FUNCTIONS-MATH-RANDOM-TABLE" }
 
 - id: b1
   group: B

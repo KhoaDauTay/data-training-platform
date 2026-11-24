@@ -62,7 +62,7 @@ describe('không ngõ cụt trên phần Chung', () => {
       expect(parseRoute(`#/learn/skill/${s.id}`)).toBe('learn');
       expect(learnSkillOf(`#/learn/skill/${s.id}`)).toBe(s.id);
     }
-    expect(g.nodes).toHaveLength(28);
+    expect(g.nodes).toHaveLength(29);
     for (const n of g.nodes) {
       expect(parseRoute(`#/learn/adv/${n.id}`)).toBe('learn');
       expect(learnAdvOf(`#/learn/adv/${n.id}`)).toBe(n.id);
