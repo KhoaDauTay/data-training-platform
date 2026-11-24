@@ -22,7 +22,7 @@ export const initCompare = (ctx: CmpCtx): void => { c = ctx; };
 const NAME: Record<CmpEngine, string> = { postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB' };
 const ICON = { postgres: 'engRelational', mongodb: 'engDocument', dynamodb: 'engKeyValue' } as const;
 const TIER_CLS: Record<Tier, string> = { run: 'bg-good-soft text-ink', diff: 'bg-warn-soft text-ink', docs: 'bg-info-soft text-ink' };
-const TIER_ICON = { run: 'run', diff: 'partial', docs: 'docsOnly' } as const;
+const TIER_ICON = { run: 'inApp', diff: 'partial', docs: 'docsOnly' } as const; // F16: a label, not a Play button
 const ct = (key: CmpKey, params?: I18n.Params): string => cmpText(c.d.getLang(), c.d.locale(), key, params);
 const lang = (): 'vi' | 'en' => c.d.getLang();
 /** A fact value as text: numbers in the reader's locale, strings as they are. */

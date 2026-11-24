@@ -185,7 +185,7 @@ db.slowlog.aggregate([{ $project: { ratio: { $divide: ["$docsExamined", "$nRetur
 
 ## Thực hành
 
-Ba bước trên `slowlog`: xếp hạng theo tỉ lệ, tìm truy vấn đọc mà không trả gì, rồi cộng lượng đọc của các truy vấn quét cả collection. Tab "Pipeline từng bước" cho thấy số tài liệu sau mỗi stage: đặt `$match` đầu tiên để các stage sau xử lý ít hơn.
+Ba bước trên `slowlog`: xếp hạng theo tỉ lệ, tìm truy vấn đọc mà không trả gì, rồi cộng lượng đọc của các truy vấn quét cả collection. Phần "Pipeline từng bước" dưới kết quả cho thấy số tài liệu sau mỗi stage: đặt `$match` đầu tiên để các stage sau xử lý ít hơn.
 
 ## Tóm tắt
 
@@ -288,7 +288,7 @@ db.slowlog.aggregate([{ $project: { ratio: { $divide: ["$docsExamined", "$nRetur
 
 ## Practice
 
-Three steps on `slowlog`: rank by ratio, find queries that read and return nothing, then add up the reads of the full-scan queries. The "Pipeline step by step" tab shows the number of documents after each stage: put `$match` first so later stages handle fewer.
+Three steps on `slowlog`: rank by ratio, find queries that read and return nothing, then add up the reads of the full-scan queries. The "Pipeline step by step" part under the result shows the number of documents after each stage: put `$match` first so later stages handle fewer.
 
 ## Recap
 

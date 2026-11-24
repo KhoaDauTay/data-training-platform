@@ -3,6 +3,7 @@ import type { GradeResult } from '../grader';
 import type { slowVerdict } from '../planCheck';
 import { onPg, type EngineId, type EngineLesson, type Lab, type LabStep } from './content';
 import type { Capacity, ReadMode } from './dynamo/cost';
+import type { ScriptResult, ScriptStep } from './pglab/script';
 
 /**
  * ENG-CORE (L221): the seam every engine's lab runtime plugs into. The lesson page (src/ui/engineView.ts) calls `prepare`
@@ -57,6 +58,8 @@ export interface LabRunner {
   check(lab: Lab, step: LabStep, code: string): Promise<LabVerdict>;
   /** Postgres only: the real plan of `sql` on the lab's data (EXPLAIN (FORMAT JSON)), for a predict's answer. */
   explain?(lab: Lab, sql: string): Promise<PlanLine[]>;
+  /** Postgres only (v30.1, L480): a lesson's runnable examples as one script on a fresh lab database (src/engine/demo.ts). */
+  demo?(setup: string | undefined, steps: ScriptStep[]): Promise<ScriptResult>;
 }
 
 /** Main-bundle values a runner may use (passed by the engine UI chunk). */
@@ -155,9 +158,10 @@ export const LAB_RUNNERS: Partial<Record<EngineId, (env: LabEnv) => Promise<LabR
     // script, extensions on demand, rows/plan/catalog checks, L230), loaded only then.
     const onLab = pgLabRunner(env);
     let script: Promise<LabRunner> | undefined;
-    const pick = (lab: Lab): Promise<LabRunner> =>
-      lab.setup ? (script ??= import('./pglab/runner').then((m) => m.pgScriptRunner(env)).catch((e: unknown) => { script = undefined; throw e; })) : Promise.resolve(onLab);
+    const lab$ = (): Promise<LabRunner> => (script ??= import('./pglab/runner').then((m) => m.pgScriptRunner(env)).catch((e: unknown) => { script = undefined; throw e; }));
+    const pick = (lab: Lab): Promise<LabRunner> => (lab.setup ? lab$() : Promise.resolve(onLab));
     return {
+      demo: async (setup, steps) => (await lab$()).demo!(setup, steps),
       prepare: async (lab) => (await pick(lab)).prepare(lab),
       run: async (lab, code, step) => (await pick(lab)).run(lab, code, step),
       check: async (lab, step, code) => (await pick(lab)).check(lab, step, code),

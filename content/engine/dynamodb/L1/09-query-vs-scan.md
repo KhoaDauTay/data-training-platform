@@ -145,8 +145,8 @@ lab:
     ]}}
   steps:
     - task:
-        vi: Lấy mọi đơn của khách `C-12` bằng cách rẻ nhất. Để ý `ScannedCount` trong tab Kết quả.
-        en: Get every order of customer `C-12` the cheapest way. Watch `ScannedCount` in the Result tab.
+        vi: Lấy mọi đơn của khách `C-12` bằng cách rẻ nhất. Để ý `ScannedCount` dưới kết quả.
+        en: Get every order of customer `C-12` the cheapest way. Watch `ScannedCount` under the result.
       solution: |
         {"op": "Query", "input": {"TableName": "Orders",
           "KeyConditionExpression": "customerId = :c",
@@ -291,7 +291,7 @@ Scan:  Count 4, ScannedCount 120
 
 ## Thực hành
 
-Bảng `Orders` có 120 đơn. Mỗi bước có điều kiện về `Count` và `ScannedCount`: đọc chúng ở tab Kết quả.
+Bảng `Orders` có 120 đơn. Mỗi bước có điều kiện về `Count` và `ScannedCount`: đọc chúng dưới kết quả của bước.
 
 ## Tóm tắt
 
@@ -375,7 +375,7 @@ Counting one customer's orders with a `Scan` because "it only returns a number":
 
 ## Practice
 
-Table `Orders` holds 120 orders. Each step has conditions on `Count` and `ScannedCount`: read them in the Result tab.
+Table `Orders` holds 120 orders. Each step has conditions on `Count` and `ScannedCount`: read them under the step's result.
 
 ## Recap
 

@@ -17,6 +17,7 @@ import { pgcrypto } from '@electric-sql/pglite/contrib/pgcrypto';
 import { sqlErrorInfo } from '../../db/run';
 import type { ScriptResult, LabScript, PgExtension, StepResult } from './script';
 import { runCheck } from './check';
+import { splitSql } from './split';
 
 /**
  * ENG-PGLAB (L230): the lab runtime, run inside src/engine/pglab/pglabWorker.ts (Node tests call it directly). Never the
@@ -47,37 +48,7 @@ export function labTemplate(): Promise<Blob> {
   return template;
 }
 
-/**
- * Content SQL → statements, split on `;` outside '…', "…", $tag$…$tag$, -- and (nested) block comments. Setup runs one
- * statement at a time because a multi-statement string is one implicit transaction, where VACUUM fails (25001).
- */
-export function splitSql(sql: string): string[] {
-  const out: string[] = [];
-  let start = 0;
-  for (let i = 0; i < sql.length;) {
-    const c = sql[i];
-    if (sql.startsWith('--', i)) i = sql.indexOf('\n', i) < 0 ? sql.length : sql.indexOf('\n', i);
-    else if (sql.startsWith('/*', i)) {
-      let depth = 0;
-      do {
-        if (sql.startsWith('/*', i)) { depth++; i += 2; } else if (sql.startsWith('*/', i)) { depth--; i += 2; } else i++;
-      } while (depth > 0 && i < sql.length);
-    } else if (c === "'" || c === '"') {
-      i++;
-      while (i < sql.length && !(sql[i] === c && sql[i + 1] !== c)) i += sql[i] === c ? 2 : 1;
-      i++;
-    } else if (c === '$' && /^\$(?:[A-Za-z_][\w]*)?\$/.test(sql.slice(i, i + 64)) && !/[\w$]/.test(sql[i - 1] ?? '')) {
-      const tag = /^\$(?:[A-Za-z_][\w]*)?\$/.exec(sql.slice(i, i + 64))![0];
-      const end = sql.indexOf(tag, i + tag.length);
-      i = end < 0 ? sql.length : end + tag.length;
-    } else if (c === ';') {
-      out.push(sql.slice(start, i));
-      start = ++i;
-    } else i++;
-  }
-  out.push(sql.slice(start));
-  return out.map((s) => s.trim()).filter((s) => s && !/^(--[^\n]*\n?\s*)+$/.test(s + '\n'));
-}
+export { splitSql } from './split';
 
 const blank = (sql: string): StepResult => ({ sql, status: 'skipped', columns: [], types: [], rows: [], notices: [], ms: 0 });
 

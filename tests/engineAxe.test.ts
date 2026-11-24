@@ -57,8 +57,12 @@ describe('Database Engine lesson pages (fixtures)', () => {
     const links = [...document.querySelectorAll<HTMLAnchorElement>('#e-pg-l1-02-src ~ ul a')];
     expect(links.map((a) => a.textContent)).toEqual(['PostgreSQL · Infoschema columns (mở trong tab mới)', 'PostgreSQL · Datatype numeric (mở trong tab mới)']);
     for (const a of links) expect([a.target, a.rel, a.title === a.href, !!a.querySelector('svg')]).toEqual(['_blank', 'noopener noreferrer', true, true]);
-    const go = (i: number): boolean => document.querySelector(`[data-ek="e-pg-l1-02-s${i}-submit"]`)!.classList.contains('bg-accent');
-    expect([go(0), go(1)]).toEqual([true, false]);
+    expect(document.querySelector('[data-ek="e-pg-l1-02-s0-submit"]')!.classList.contains('bg-accent')).toBe(true);
+    // F13 (L480): a later step has no editor and no Submit until it is reached or opened
+    expect(document.querySelector('[data-ek="e-pg-l1-02-s1-submit"]')).toBeNull();
+    document.querySelector<HTMLElement>('[data-ek="e-pg-l1-02-s1-open"]')!.click();
+    expect(document.querySelector('[data-ek="e-pg-l1-02-s1-code"]')).not.toBeNull();
+    expect(document.querySelector('[data-ek="e-pg-l1-02-s1-submit"]')!.classList.contains('bg-accent')).toBe(false);
   });
 
   it('sourceTitle: AWS camelCase, MediaWiki anchors, a bad escape never throws', async () => {

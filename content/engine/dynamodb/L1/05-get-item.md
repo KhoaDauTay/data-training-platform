@@ -170,7 +170,7 @@ Gõ sai khóa rồi tưởng sách đã hết, vì không thấy lỗi:
 
 ## Thực hành
 
-Bảng `Books` có 8 cuốn, khóa đơn `isbn`. Kết quả hiện ở tab Kết quả dạng JSON thường; request của bạn vẫn viết bằng DynamoDB JSON.
+Bảng `Books` có 8 cuốn, khóa đơn `isbn`. Kết quả hiện ngay dưới bước, dạng JSON thường; request của bạn vẫn viết bằng DynamoDB JSON.
 
 ## Tóm tắt
 
@@ -254,7 +254,7 @@ Mistyping the key and concluding the book is gone, because no error shows:
 
 ## Practice
 
-Table `Books` holds 8 books with the simple key `isbn`. The Result tab shows items as plain JSON; your request is still written in DynamoDB JSON.
+Table `Books` holds 8 books with the simple key `isbn`. The result under the step shows items as plain JSON; your request is still written in DynamoDB JSON.
 
 ## Recap
 
