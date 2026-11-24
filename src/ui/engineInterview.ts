@@ -355,7 +355,7 @@ function exhibitView(q: IvQuestion, x: Exhibit, k: number, timed: boolean): HTML
     : x.source === 'aws-rules' ? chip(it('src.aws'), 'bg-info-soft text-ink') : chip(it('src.illus'), 'bg-warn-soft text-ink');
   return h('figure', { class: 'm-0 flex flex-col gap-2' },
     h('figcaption', { class: 'flex flex-wrap items-center gap-2 text-body-sm font-bold' }, h('span', {}, ...rich(x.label[lang()])), chipOf),
-    h('pre', { class: 'sql m-0 overflow-x-auto' }, x.shown),
+    h('pre', { tabindex: '0', class: 'sql m-0 overflow-x-auto' }, x.shown),
     x.source === 'mongodb-docs' && x.url ? h('p', { class: 'm-0 text-body-sm' }, ext(x.url, it('src.docsLink'))) : null,
     x.calc?.length ? h('table', { class: 'w-fit text-body-sm' }, h('caption', { class: 'text-left font-bold' }, it('calc.title')),
       h('thead', {}, h('tr', {}, h('th', { scope: 'col', class: 'pr-4 text-left' }, it('calc.expr')), h('th', { scope: 'col', class: 'text-left' }, it('calc.result')))),
@@ -366,7 +366,7 @@ function exhibitView(q: IvQuestion, x: Exhibit, k: number, timed: boolean): HTML
       state && state !== 'busy' ? ('text' in state
         ? h('div', { class: 'flex flex-col gap-1', role: 'status' }, h('p', { class: cls.cx('m-0 text-body-sm font-semibold', state.text.trim() === x.shown.trim() ? 'good' : 'warn') },
           state.text.trim() === x.shown.trim() ? it('rerun.same') : it('rerun.diff')),
-        state.text.trim() === x.shown.trim() ? null : h('pre', { class: 'sql m-0 overflow-x-auto' }, state.text))
+        state.text.trim() === x.shown.trim() ? null : h('pre', { tabindex: '0', class: 'sql m-0 overflow-x-auto' }, state.text))
         : h('p', { class: 'm-0 text-body-sm bad', role: 'status' }, it('rerun.failed', { e: state.error }))) : null) : null);
 }
 
@@ -419,7 +419,7 @@ function takeHomePage(id: string): HTMLElement {
       h('p', { class: 'm-0 text-body-sm text-muted' }, it('th.dataLine', { f: th.fixture })),
       ...th.queries.map((sql, k) => {
         const st = thRuns.get(`${th.id}-${k}`);
-        return h('div', { class: 'flex flex-col gap-2' }, h('pre', { class: 'sql m-0 overflow-x-auto' }, sql),
+        return h('div', { class: 'flex flex-col gap-2' }, h('pre', { tabindex: '0', class: 'sql m-0 overflow-x-auto' }, sql),
           h('div', {}, h('button', { type: 'button', class: cls.cx(cls.BTN_SECONDARY, 'px-4 py-1.5'), disabled: st === 'busy', 'data-ek': `iv-th-run-${k}`, onclick: () => void runQuery(b, th, k) }, st === 'busy' ? it('rerun.busy') : it('th.run'))),
           st && st !== 'busy' ? ('error' in st && !('rows' in st) ? h('p', { class: 'm-0 text-body-sm bad', role: 'status' }, it('rerun.failed', { e: st.error }))
             : (st as StepResult).status === 'ok' ? d.renderResult(st as StepResult) : h('p', { class: 'm-0 text-body-sm bad', role: 'status' }, it('rerun.failed', { e: (st as StepResult).error?.message ?? '?' }))) : null);

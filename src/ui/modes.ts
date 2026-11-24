@@ -624,7 +624,7 @@ function sessionCard(m: HomeModel): HTMLElement | null {
     else if (it.kind === 'next') openResume(r!);
     else void startToday();
   };
-  return h('section', { class: cx(CARD, 'p-5'), 'aria-labelledby': 'session-title', 'data-session': '' },
+  return h('section', { class: cx(CARD, 'p-5 max-sm:p-4'), 'aria-labelledby': 'session-title', 'data-session': '' },
     h('div', { class: 'flex flex-wrap items-baseline justify-between gap-x-3' },
       h('h2', { id: 'session-title', class: 'm-0 text-title font-bold' }, t('session.title')),
       h('span', { class: 'text-body-sm text-muted' }, t('session.total', { n: plan.reduce((s, it) => s + it.min, 0) }))),

@@ -82,7 +82,7 @@ function skillPage(m: PathChunk, skill: PathChunk['path']['skills'][number], ok:
   const { h, cls } = d;
   const lesson = m.path.lessons.find((x) => x.id === skill.id);
   const drills = m.path.drills.filter((x) => x.skill === skill.id);
-  const code = (s: string | undefined): HTMLElement | null => (s ? h('pre', { class: 'sql m-0 overflow-x-auto', lang: 'en' }, s) : null);
+  const code = (s: string | undefined): HTMLElement | null => (s ? h('pre', { tabindex: '0', class: 'sql m-0 overflow-x-auto', lang: 'en' }, s) : null);
   const block = (title: EngineKey, ...kids: (Node | null)[]): HTMLElement =>
     h('section', { class: cls.cx(cls.CARD, 'flex flex-col gap-3 p-5 max-sm:p-4') }, h('h2', { class: 'm-0 text-title font-bold' }, et(title)), ...kids);
   return h('article', { class: 'flex flex-col gap-6', 'aria-labelledby': 'home-title', 'data-skill': skill.id },
@@ -116,8 +116,8 @@ function drillCard(m: PathChunk, dr: Drill, i: number, ok: Set<string>): HTMLEle
       h('div', { class: 'min-w-0 flex-1 flex flex-col gap-1' },
         h('h3', { class: 'm-0 text-caption font-bold tracking-wider text-muted uppercase' }, et('path.drill', { i: i + 1, kind: kind ? et(`path.kind.${kind}`) : dr.kind })),
         h('p', { class: 'm-0' }, ...inline(dr.task[lang()])))),
-    dr.grade === 'esr' && dr.query ? h('div', { class: 'flex flex-col gap-1' }, h('p', { class: 'm-0 text-body-sm text-muted' }, ...inline(et('path.esr'))), h('pre', { class: 'sql m-0 overflow-x-auto', lang: 'en' }, dr.query)) : null,
-    choice && dr.shown ? h('div', { class: 'flex flex-col gap-1' }, h('p', { class: 'm-0 text-body-sm text-muted' }, et('path.shown')), h('pre', { class: 'sql m-0 overflow-x-auto', lang: 'en' }, dr.shown)) : null,
+    dr.grade === 'esr' && dr.query ? h('div', { class: 'flex flex-col gap-1' }, h('p', { class: 'm-0 text-body-sm text-muted' }, ...inline(et('path.esr'))), h('pre', { tabindex: '0', class: 'sql m-0 overflow-x-auto', lang: 'en' }, dr.query)) : null,
+    choice && dr.shown ? h('div', { class: 'flex flex-col gap-1' }, h('p', { class: 'm-0 text-body-sm text-muted' }, et('path.shown')), h('pre', { tabindex: '0', class: 'sql m-0 overflow-x-auto', lang: 'en' }, dr.shown)) : null,
     choice ? h('fieldset', { class: 'm-0 space-y-2 border-0 p-0' }, h('legend', { class: 'mb-1 p-0 text-body-sm font-semibold' }, et('path.choice')),
       ...(dr.options ?? []).map((o, j) => h('label', { class: 'flex min-h-11 cursor-pointer items-center gap-2 rounded-(--r-ctl) px-3 py-1 ring-1 ring-line hover:bg-accent-soft has-[:checked]:bg-accent-soft has-[:checked]:ring-2 has-[:checked]:ring-accent' },
         h('input', { type: 'radio', name: dr.id, value: String(j), checked: v.pick === j, 'data-ek': `${dr.id}-${j}`, onchange: () => { v.pick = j; } }),

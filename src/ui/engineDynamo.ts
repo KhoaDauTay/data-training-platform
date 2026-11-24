@@ -52,7 +52,7 @@ export function costPanel(deps: EngineDeps, r: LabOutput, key: string): HTMLElem
     h('div', { class: box, 'data-dy-measured': '' }, head('tag.measured'),
       cap ? line(t('cap.total', { n: num(cap.total), unit })) : line(t('cap.none')), split ? line(split) : null,
       PAGED.has(m.op) ? h('div', { 'data-dy-page': m.lastKey ? 'more' : 'last' }, line(t(m.lastKey ? 'page.more' : 'page.last')),
-        m.lastKey ? h('pre', { class: 'sql m-0 overflow-x-auto', lang: 'en' }, JSON.stringify({ ExclusiveStartKey: m.lastKey })) : null) : null),
+        m.lastKey ? h('pre', { tabindex: '0', class: 'sql m-0 overflow-x-auto', lang: 'en' }, JSON.stringify({ ExclusiveStartKey: m.lastKey })) : null) : null),
     h('div', { class: box, 'data-dy-rule': '' }, head('tag.rule'),
       line(t(m.write ? 'rule.write' : `mode.${m.mode}`)), m.write ? null : line(t(READS_ONE.has(m.op) ? 'rule.get' : 'rule.query')), calc ? line(calc) : null),
     groups.size ? h('div', { class: box, 'data-dy-illus': '' }, head('tag.illus', t('part.title', { pk: m.pk! })),

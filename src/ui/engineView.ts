@@ -125,7 +125,7 @@ function codeOrLink(c: string): Node {
 function prose(text: string, marked = false): HTMLElement {
   return d.h('div', { class: 'flex flex-col gap-3' }, ...blocksOf(text).map((b) => b.kind === 'p' ? d.h('p', { class: 'm-0' }, ...inline(b.text, marked))
     : b.kind === 'ul' ? d.h('ul', { class: 'm-0 list-disc space-y-1 pl-5' }, ...b.items.map((x) => d.h('li', {}, ...inline(x, marked))))
-      : d.h('pre', { class: 'sql m-0 overflow-x-auto' }, b.code)));
+      : d.h('pre', { tabindex: '0', class: 'sql m-0 overflow-x-auto' }, b.code)));
 }
 
 /** A thin bar; its numbers are always in words beside it (never colour alone, L23). */
@@ -665,7 +665,7 @@ function labView(l: EngineLesson, v: Visit): HTMLElement {
         h('details', {}, h('summary', { class: 'cursor-pointer text-body-sm font-semibold text-accent-ink' }, et('lab.hint')), h('p', { class: 'mt-2 mb-0 text-body-sm' }, ...inline(s.hint[lang()]))),
         h('p', { role: 'status', 'data-ek': `${key}-status`, class: cls.cx('m-0 text-body-sm', msg ? (msg.ok ? 'good' : 'bad') : '') }, ...inline(msg?.text ?? '')),
         s.fact && passed ? h('p', { class: 'm-0 rounded-(--r-inset) bg-good-soft p-3 text-body-sm ring-1 ring-good-line' }, h('b', {}, `${et('lab.fact')}: `), ...inline(s.fact[lang()])) : null,
-        out ? h('div', { class: 'overflow-x-auto' }, shown ? d.renderResult(shown) : d.errorView((out as { error: unknown }).error, false)) : null,
+        out ? h('div', { class: 'overflow-x-auto', tabindex: '0' }, shown ? d.renderResult(shown) : d.errorView((out as { error: unknown }).error, false)) : null,
         shown ? metaView(shown) : null,
         shown ? N()?.stepEnd(d, s, shown, passed, key) : null,
         shown ? insideView(shown, `${key}-inside`) : null,
@@ -697,9 +697,9 @@ function metaView(r: LabOutput): HTMLElement | null {
   return h('section', { class: 'flex flex-col gap-2', 'aria-label': et('meta.title') },
     pairs.length ? h('dl', { class: 'm-0 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 rounded-(--r-inset) bg-surface-2 p-3 text-body-sm' },
       ...pairs.flatMap(([k, v]) => [h('dt', { class: 'text-muted' }, et(k)), h('dd', { class: 'm-0 font-semibold tabular-nums' }, v)])) : null,
-    ...plans.map((k) => h('div', {}, h('p', { class: 'm-0 text-body-sm text-muted' }, et(`meta.${k}`)), h('pre', { class: 'sql m-0 overflow-x-auto' }, m[k]!))),
+    ...plans.map((k) => h('div', {}, h('p', { class: 'm-0 text-body-sm text-muted' }, et(`meta.${k}`)), h('pre', { tabindex: '0', class: 'sql m-0 overflow-x-auto' }, m[k]!))),
     m.catalog?.length ? h('div', {}, h('p', { class: 'm-0 text-body-sm text-muted' }, et('meta.catalog')),
-      h('pre', { class: 'sql m-0 overflow-x-auto' }, m.catalog.map((row) => row.map(String).join(' | ')).join('\n'))) : null);
+      h('pre', { tabindex: '0', class: 'sql m-0 overflow-x-auto' }, m.catalog.map((row) => row.map(String).join(' | ')).join('\n'))) : null);
 }
 
 /** "Bên trong" (engine-ux-spec §5.3): a pageinspect result as line pointers with decoded infomask flags, or the missing columns. */
@@ -714,7 +714,7 @@ function insideView(r: LabOutput, slot: string): HTMLElement | null {
   const head = ['lp', 'lp_flags', 't_xmin', 't_xmax', 't_ctid', 'infomask'];
   return h('figure', { class: 'm-0 flex flex-col gap-2', 'data-inside': '' },
     h('figcaption', { class: 'text-body-sm' }, h('b', {}, `${et('inside.title')}: `), et('inside.caption', { n: v.rows.length, dead: v.dead, hot: v.hot })),
-    h('div', { class: 'overflow-x-auto' }, h('table', { class: 'text-body-sm', lang: 'en' },
+    h('div', { class: 'overflow-x-auto', tabindex: '0' }, h('table', { class: 'text-body-sm', lang: 'en' },
       h('thead', {}, h('tr', {}, ...head.map((c) => h('th', { scope: 'col', class: 'px-2 text-left font-mono' }, c)))),
       h('tbody', {}, ...v.rows.map((x) => h('tr', { class: x.flag === 'dead' ? 'bad' : x.flags.includes('HOT_UPDATED') || x.flag === 'redirect' ? 'warn' : '' },
         ...[x.lp, x.flag, x.xmin, x.xmax, x.ctid, x.flags.join(' ')].map((c) => h('td', { class: 'px-2 font-mono whitespace-nowrap' }, c)))))),
@@ -824,7 +824,7 @@ function lessonBody(l: EngineLesson): HTMLElement {
           pass: () => passPart(l, v, 'p'),
           diagram: (json) => vizSlot(`${l.id}-pred`, 'pg-plan-tree', 'postgres', json, JSON.stringify(json), 'max-sm:-mx-8'),
         })]
-        : [h('pre', { class: 'sql m-0 overflow-x-auto', lang: 'en' }, l.predict.sql), question(l, v, l.predict, 'p', ''), P().recordedView(l, d, P().withPred(d, et))])) : null,
+        : [h('pre', { tabindex: '0', class: 'sql m-0 overflow-x-auto', lang: 'en' }, l.predict.sql), question(l, v, l.predict, 'p', ''), P().recordedView(l, d, P().withPred(d, et))])) : null,
     // review v23: the lab before the questions (capstone: "quiz = the closing questions", product-design-db-engine §capstone; the lessons' text says "then N questions")
     l.lab ? labView(l, v) : null,
     l.quiz?.length ? h('section', { class: cls.cx(cls.CARD, 'flex flex-col gap-4 p-5 max-sm:p-4'), 'aria-labelledby': `${l.id}-quiz` },

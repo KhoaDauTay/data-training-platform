@@ -83,8 +83,8 @@ export function predictView(l: EngineLesson, c: PredictCtx): HTMLElement {
   const status = h('p', { role: 'status', class: cls.cx('m-0 text-body-sm', st.say === 'right' ? 'good' : st.say === 'wrong' ? 'bad' : '') },
     st.say === 'right' ? et('predict.right') : st.say === 'wrong' ? et('predict.wrong') : st.say === 'pick' ? et('pick') : '');
   return h('div', { class: 'space-y-4' },
-    setup.length ? h('div', { class: 'space-y-1' }, h('p', { class: 'm-0 text-body-sm font-semibold text-muted' }, et('predict.have')), h('pre', { class: 'sql m-0 overflow-x-auto' }, setup.join(';\n'))) : null,
-    h('div', { class: 'space-y-1' }, h('p', { class: 'm-0 text-body-sm font-semibold text-muted' }, et('predict.asked')), h('pre', { class: 'sql m-0 overflow-x-auto' }, p.sql)),
+    setup.length ? h('div', { class: 'space-y-1' }, h('p', { class: 'm-0 text-body-sm font-semibold text-muted' }, et('predict.have')), h('pre', { tabindex: '0', class: 'sql m-0 overflow-x-auto' }, setup.join(';\n'))) : null,
+    h('div', { class: 'space-y-1' }, h('p', { class: 'm-0 text-body-sm font-semibold text-muted' }, et('predict.asked')), h('pre', { tabindex: '0', class: 'sql m-0 overflow-x-auto' }, p.sql)),
     h('fieldset', { class: 'm-0 space-y-3 border-0 p-0' },
       h('legend', { class: 'mb-3 p-0 text-body font-bold' }, ...c.inline(p.q[c.lang])),
       h('div', { class: 'grid gap-3 sm:grid-cols-2' }, ...d.optionOrder(`${id}#p`, p.options.length).map((i) => option(c, l, i))),
@@ -175,7 +175,7 @@ export function recordedView(l: EngineLesson, d: EngineDeps, et: Et): HTMLElemen
     h('p', { class: 'm-0 flex flex-wrap items-center gap-2' },
       h('span', { class: cls.cx(cls.PILL, 'bg-info-soft text-ink font-bold') }, d.icon('docsOnly', 'size-4'), et(docs ? 'rec.docs' : 'rec.mongod')),
       h('span', {}, et(docs ? 'rec.docsLine' : 'rec.mongodLine', { server: r.server, version: r.version, date: r.date }))),
-    r.output ? h('pre', { class: 'sql m-0 overflow-x-auto', lang: 'en', 'data-recorded-output': '' }, r.output.trimEnd()) : h('p', { class: 'm-0 text-muted' }, et('rec.noFigures')),
+    r.output ? h('pre', { tabindex: '0', class: 'sql m-0 overflow-x-auto', lang: 'en', 'data-recorded-output': '' }, r.output.trimEnd()) : h('p', { class: 'm-0 text-muted' }, et('rec.noFigures')),
     r.url ? h('p', { class: 'm-0' }, h('a', { href: r.url, target: '_blank', rel: 'noopener noreferrer', class: 'inline-flex items-center gap-1.5' },
       d.icon('external', 'size-4 shrink-0'), et('rec.source'), h('span', { class: 'sr-only' }, ` (${et('newTab')})`))) : null);
 }

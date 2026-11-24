@@ -567,9 +567,14 @@ try {
     await waitFor('pg-heap-page diagram with one line pointer per row', `(f => f && f.querySelectorAll('tbody tr').length === 5 && !!f.querySelector('[data-viz="pg-heap-page"] svg'))(document.querySelector('[data-inside]'))`, 60000);
     await shot('engine-heap');
   });
-  await step(`engine ${ENGINE.mongo.id}: every MongoDB step passes, lesson completed`, async () => {
+  await step(`engine ${ENGINE.mongo.id}: every MongoDB step passes, its questions answered, lesson completed`, async () => {
     await openLesson(ENGINE.mongo);
     for (const i of ENGINE.mongo.lab.steps.keys()) await submitStep(ENGINE.mongo, i);
+    // v31 (L516): since v30's R6 anatomy a lab lesson also has questions, and every part counts toward completion (lessonPassed)
+    for (const [i, q] of (ENGINE.mongo.quiz ?? []).entries()) {
+      await ev(`document.querySelector('[data-ek="${ENGINE.mongo.id}-q${i}-${q.answer}"]').click()`);
+      await ev(`document.querySelector('[data-ek="${ENGINE.mongo.id}-q${i}-check"]').click()`);
+    }
     await waitFor('the lesson in save.completed', `${completed}.includes(${S(ENGINE.mongo.id)})`, 10000);
     await shot('engine-mongo');
   });

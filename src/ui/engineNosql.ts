@@ -21,7 +21,7 @@ const inline = (s: string): (Node | string)[] => s.split(/`([^`]+)`/).map((x, i)
 const box = (name: string, line: string, body: Node): HTMLElement =>
   d.h('details', { class: 'rounded-(--r-inset) bg-canvas px-2 py-1 ring-1 ring-line' },
     d.h('summary', { class: 'cursor-pointer text-body-sm' }, d.h('code', {}, name), ` · ${line}`), body);
-const json = (x: unknown): HTMLElement => d.h('pre', { class: 'sql my-1 overflow-x-auto', lang: 'en' }, JSON.stringify(x, null, 2));
+const json = (x: unknown): HTMLElement => d.h('pre', { tabindex: '0', class: 'sql my-1 overflow-x-auto', lang: 'en' }, JSON.stringify(x, null, 2));
 
 export function tablesPanel(deps: EngineDeps, l: EngineLesson): HTMLElement | null {
   d = deps;
@@ -105,6 +105,6 @@ export function stepEnd(deps: EngineDeps, s: LabStep, r: LabOutput | undefined, 
       traps.length ? h('p', { class: 'm-0 text-caption font-bold text-muted' }, nt('cmp.traps')) : null,
       traps.length ? h('ul', { class: 'm-0 list-disc space-y-1 pl-5 text-body-sm' }, ...traps.map((t) => h('li', {}, ...inline(nt(`trap.${t}`))))) : null,
       s.sql ? (passed
-        ? h('div', {}, h('p', { class: 'm-0 text-caption font-bold text-muted' }, nt('cmp.sql')), h('pre', { class: 'sql m-0 overflow-x-auto', lang: 'en', 'data-sql-compare': '' }, s.sql))
+        ? h('div', {}, h('p', { class: 'm-0 text-caption font-bold text-muted' }, nt('cmp.sql')), h('pre', { tabindex: '0', class: 'sql m-0 overflow-x-auto', lang: 'en', 'data-sql-compare': '' }, s.sql))
         : h('p', { class: 'm-0 text-caption text-muted' }, nt('cmp.after'))) : null) : null);
 }

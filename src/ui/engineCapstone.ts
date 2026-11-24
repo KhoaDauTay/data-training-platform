@@ -112,7 +112,7 @@ export function capPlans(c: CapCtx): HTMLElement | null {
   const same = (a: PlanNode, b: PlanNode): boolean => JSON.stringify(a) === JSON.stringify(b);
   return h('section', { class: cls.cx(cls.CARD, 'space-y-3 p-4'), 'aria-labelledby': `${c.l.id}-plans` },
     h('h3', { id: `${c.l.id}-plans`, class: 'm-0 text-body font-bold' }, et('cap.plans')),
-    h('div', { class: 'space-y-1' }, h('p', { class: 'm-0 text-body-sm text-muted' }, et('cap.query')), h('pre', { class: 'sql m-0 overflow-x-auto' }, piv.query)),
+    h('div', { class: 'space-y-1' }, h('p', { class: 'm-0 text-body-sm text-muted' }, et('cap.query')), h('pre', { tabindex: '0', class: 'sql m-0 overflow-x-auto' }, piv.query)),
     !open ? h('p', { class: 'm-0 text-body-sm text-muted' }, et('cap.plansGate', { i: piv.gate + 1 }))
       : p === undefined || (typeof p === 'object' && 'error' in p) ? h('button', { type: 'button', class: cls.cx(cls.BTN_SECONDARY, 'px-4 py-1.5'), 'data-ek': `${c.l.id}-plans`, onclick: () => void load() }, et('cap.plansBtn'))
         : p === 'busy' ? h('p', { class: 'm-0 flex items-center gap-2 text-body-sm text-muted' }, d.loader(), et('lab.preparing'))

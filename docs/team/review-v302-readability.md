@@ -140,3 +140,13 @@ Ngân sách: css 20,46 KB gz / 22 (trước ~20,0); các nhóm khác không đ�
 Còn lại: ở 320 px nhãn sơ đồ 10,3 px (svg 280 px; muốn ≥ 12 phải ≥ 15 đơn vị, bố cục khác hẳn). Ô lưới giữ chỗ cho câu dài nhất nên sơ đồ có câu ngắn (B-tree) để trống vài dòng trên nút.
 
 Kiểm tra: `tsc` ok, build ok, `check-budget` ok (css 21/22, engineui 20/20, engineViz 23/30). Vitest từng file: theme 25, i18n 20, palette 3, engineCore 30, engineFull 9, engineViz 57, enginePgViz 3, engineIntegration (cùng viz) qua, engineAxe 14, engineV27Axe 7, engineDesignAxe 9, engineCompareAxe 4, enginePredict 30, axeProgress 16, axe 44. Không e2e, không cả bộ.
+
+### v31 tiếp: ba lỗi smoke bị che (`continue-on-error`)
+
+| Kiểm | Trước | Sau |
+|---|---|---|
+| e-mg-l1-04 xong bài | 4/4 bước đạt, không vào `completed` (smoke không trả lời 2 câu hỏi có từ v30) | smoke trả lời câu hỏi; bài vào `completed` (L516) |
+| axe `scrollable-region-focusable` e-dy-l1-09 | 6 khung `pre` cuộn không `tabindex` (5 ở 1280) | 0 (L517) |
+| Trang chủ ở 375 (V22-C) | 1425 px > 1185 | 1152 px (L518) |
+
+Đo bằng driver riêng `bd-wt/review-v31/smoke3.mjs` (ba kiểm của smoke.mjs) trên `npx vite build` + `vite preview` 5362. Vitest từng file: theme, axe, axeProgress, engineAxe, engineFull, engineV27Axe, engineDesignAxe, engineCompareAxe, engineCore, enginePredict, engineInterview, engineNosql, home, goal: qua. tsc, build, check-budget ok.

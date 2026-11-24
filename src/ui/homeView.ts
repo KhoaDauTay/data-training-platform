@@ -88,7 +88,8 @@ export const STRETCH = 'after:absolute after:inset-0';
 export const ABOVE = 'relative z-10';
 
 /** `stack` (ui-ux-v7 M2, the Overview's chapter rows): below sm the action drops under the text and the title stays one line. */
-export function listRow(r: { lead: Node; title: string | Node; sub?: string | Node; action?: Node | null; current?: boolean; id?: string; stack?: boolean }): HTMLLIElement {
+/** `dense` (v31, L518): Home's domain rows are 12 px shorter on phones. */
+export function listRow(r: { lead: Node; title: string | Node; sub?: string | Node; action?: Node | null; current?: boolean; id?: string; stack?: boolean; dense?: boolean }): HTMLLIElement {
   const act = r.action instanceof HTMLElement && /^(A|BUTTON)$/.test(r.action.tagName) && !r.action.hasAttribute('disabled') && r.action.getAttribute('aria-disabled') !== 'true' ? r.action : null;
   if (act) act.classList.add(...STRETCH.split(' '));
   if (r.stack && r.action instanceof HTMLElement) r.action.classList.add('max-sm:ml-14', 'max-sm:basis-full');
@@ -96,7 +97,7 @@ export function listRow(r: { lead: Node; title: string | Node; sub?: string | No
   return h('li', {
     id: r.id ?? false,
     // F09 (L489): below sm the row wraps once the text would get under 9rem, so a long action takes its own line at its own width
-    class: cx('flex items-center gap-4 border-l-4 px-5 py-4 max-sm:flex-wrap max-sm:gap-y-2', r.stack && 'max-sm:px-4', act && 'relative cursor-pointer hover:bg-code', r.current ? 'border-l-accent bg-accent-soft' : 'border-l-transparent'),
+    class: cx('flex items-center gap-4 border-l-4 px-5 py-4 max-sm:flex-wrap max-sm:gap-y-2', r.stack && 'max-sm:px-4', r.dense && 'max-sm:py-3', act && 'relative cursor-pointer hover:bg-code', r.current ? 'border-l-accent bg-accent-soft' : 'border-l-transparent'),
     'aria-current': r.current ? 'step' : false,
   },
     h('span', { class: 'grid size-10 shrink-0 place-items-center', 'aria-hidden': 'true' }, r.lead),
@@ -429,7 +430,7 @@ function helloSection(): HTMLElement {
   if (week.goal && goalWas !== undefined && goalWas < week.goal && week.k >= week.goal) setTimeout(() => pet.click(), 0);
   goalWas = week.k;
   // v21 U23: one card as wide as the cards below it: Lily left, the title, tagline and her progress right (one left edge).
-  return h('section', { class: cx(CARD, 'grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4 gap-y-3 p-5') }, pet, // phones: the card takes its own row
+  return h('section', { class: cx(CARD, 'grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4 gap-y-3 p-5 max-sm:p-4') }, pet, // phones: the card takes its own row
     h('div', { class: 'min-w-0' }, h('p', { class: 'm-0 text-display font-extrabold' }, t('app.name')), back ? null : h('p', { class: 'm-0 text-muted' }, t('home.tagline')), // V22-C: Boon's line below replaces the tagline
       h('p', { class: 'mt-2 mb-0 text-body-sm font-semibold' }, pre, h('span', { class: flip && 'cq-flip' }, String(dayCount())), post,
         grewPill ? h('span', { class: 'ml-2 rounded-full bg-sun px-2 py-0.5 text-caption font-bold text-sun-ink' }, t('lily.grewPill')) : null)),
@@ -478,7 +479,7 @@ function lilyCard(stage: LilyStage, known: number, next: number | undefined, wee
         h('p', { id: 'lily-grow', class: 'm-0 text-body-sm text-muted' }, line),
         week.goal ? h('p', { class: 'm-0 text-body-sm font-semibold', 'data-goal': '' },
           t(week.k >= week.goal ? 'goal.reached' : 'goal.week', { k: week.k, n: week.goal })) : null),
-      up === undefined ? null : h('div', { class: 'flex w-20 shrink-0 flex-col items-center gap-1 text-center text-caption text-muted' },
+      up === undefined ? null : h('div', { class: 'flex w-24 shrink-0 flex-col items-center gap-1 text-center text-caption text-muted' },
         mascot('lily', 'idle', 'size-10 lily-shadow-fig', undefined, up), t('lily.nextShadow', { stage: t(STAGE_NAME[up]) }))),
     lilyAlbum(stage));
 }
@@ -548,7 +549,11 @@ function domainsSection(): HTMLElement {
       lead: domainBadge(d.id, d.icon), // ui-ux-v7 I1: the domain's badge in its identity colour
       title: t(d.name),
       sub: domainLine(d.id),
-      action: h('a', { href: domainHash(d.id), class: cx(BTN_SECONDARY, 'px-4 py-2 whitespace-nowrap no-underline') }, t('home.enter')),
+      dense: true,
+      // v31 (L518): below 400 px the action is an arrow (its words stay for screen readers), so the row keeps one line and
+      // Home at 375 stays under 70 % of its v22 height; the whole row is the link anyway (STRETCH)
+      action: h('a', { href: domainHash(d.id), class: cx(BTN_SECONDARY, 'inline-flex items-center px-4 py-2 whitespace-nowrap no-underline max-[399px]:px-2.5') },
+        h('span', { class: 'max-[399px]:sr-only' }, t('home.enter')), icon('arrowRight', 'size-5 min-[400px]:hidden')),
     }))));
 }
 
@@ -560,7 +565,7 @@ export function routeSkillCount(): { n: number; total: number } {
 
 /** Platform Home (v5 §B.5 #4, F06 L486): the learning path General SQL → Database Engine, secondary links only (Home's one primary button is the resume card). */
 function skillsTeaser(): HTMLElement {
-  return h('section', { class: cx(CARD, 'flex flex-wrap items-center gap-3 p-4'), 'aria-labelledby': 'home-path' },
+  return h('section', { class: cx(CARD, 'flex flex-wrap items-center gap-3 p-4 max-sm:gap-y-2 max-sm:p-3'), 'aria-labelledby': 'home-path' },
     h('span', { class: 'grid size-9 shrink-0 place-items-center rounded-full bg-code', 'aria-hidden': 'true' }, icon('route')),
     h('span', { class: 'min-w-0 flex-1 basis-48' },
       h('h2', { id: 'home-path', class: 'm-0 text-body font-semibold' }, t('home.pathTitle')),
@@ -639,7 +644,7 @@ export function renderHome(host: HTMLElement): void {
       id: 'home-title', tabindex: '-1',
       class: page === 'home' || page === 'overview' ? 'sr-only' : cx('mx-auto mb-0 max-w-(--w-read) px-4 text-heading', sub ? 'mt-1' : 'mt-6'),
     }, sub?.title ?? t(PAGE_TITLE[page])),
-    h('div', { class: cx(grid ? 'mx-auto grid max-w-(--w-wide) gap-5 px-4 py-6 lg:grid-cols-3' : cx('mx-auto grid max-w-(--w-read) px-4 py-6', page === 'home' ? 'gap-6' : 'gap-8'), enter && 'cq-enter') },
+    h('div', { class: cx(grid ? 'mx-auto grid max-w-(--w-wide) gap-5 px-4 py-6 lg:grid-cols-3' : cx('mx-auto grid max-w-(--w-read) px-4 py-6', page === 'home' ? 'gap-6 max-sm:gap-4 max-sm:py-4' : 'gap-8'), enter && 'cq-enter') },
       ...nodes(...sections.filter((s) => s.pages.includes(page)).map((s) => {
         const el = s.render(m);
         return el && h('div', { class: cx('min-w-0', grid && SPAN[s.span]) }, el);
