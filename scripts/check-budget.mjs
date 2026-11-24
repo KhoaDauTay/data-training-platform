@@ -72,6 +72,7 @@ const GROUPS = [
   ['why', /^(why|whyView)-/, 6], // V22-B (L206): "Vì sao?" under a result row: src/ui/whyView.ts (VI/EN inside) + src/viz/why.ts (worker, beside the steps chunk), lazy on the first click
   ['mapteach', /^mapTeach-/, 9], // L311 + L304: label placement (~0.6 KB) + beginner skill gate (~0.3 KB); V22-A (L203): src/ui/mapTeach.ts + src/viz/geo.ts + src/mapQueries.ts (result map: Map tab and Map page questions, VI/EN inside), lazy on the first Map page or Map tab
   ['engineVizNosql', /^engineVizNosql-/, 15], // ENG-VIZ (L236): MongoDB + DynamoDB diagrams (src/engine/viz/engineVizNosql.ts), lazy from engineViz's loadViz()
+  ['engineVizTenant', /^engineVizTenant-/, 8], // v34 (L544): pg-tenancy-models (src/engine/viz/engineVizTenant.ts), lazy from engineViz's loadViz()
   ['engineVizPg', /^engineVizPgFlow-/, 12], // v23 PG-VIZ (L264): pg-query-path, pg-partition-prune, pg-replication (src/engine/viz/engineVizPgFlow.ts), lazy from engineViz's loadViz()
   ['engineViz', /^engineViz(Core|PlanJson)?-/, 30], // ENG-VIZ (L235/L236): diagram engine (engineVizCore-*, shared with the NoSQL chunk; engineVizPlanJson-*, EXPLAIN JSON helpers shared with engineVizPgFlow, v23 L264) + Postgres diagrams (engineViz-*), lazy; built as a second entry until ENG-CORE imports it
   ['ics', /^ics-/, 2], // V22-C (L209): src/ics.ts, the weekly reminder file, lazy on "Thêm nhắc vào lịch": 0.7 KB gz
