@@ -1082,6 +1082,18 @@
   vi: "Policy lọc dòng mỗi role thấy (`USING`) và được ghi (`WITH CHECK`); permissive cộng gộp, restrictive phải thỏa tất cả. Chủ bảng bỏ qua trừ khi `FORCE`."
   en: "Policies that filter the rows a role can see (`USING`) and write (`WITH CHECK`); permissive ones combine with OR, restrictive ones must all pass. The table owner bypasses them unless `FORCE` is set."
   doc: "https://www.postgresql.org/docs/18/ddl-rowsecurity.html"
+# v34 (L547): the multi-tenant theme's first term; the Design track lessons (e-ds-l4-09 = the theme map) get no term buttons (L425)
+- id: tenant
+  term: tenant
+  engines: [postgres]
+  level: L5
+  keep_en: true
+  vi_term: "tenant"
+  match: ["tenant", "multi-tenant"]
+  avoid: "người thuê nhà"
+  vi: "Một khách hàng tổ chức dùng chung hệ thống mà dữ liệu phải tách khỏi các khách khác. Trong mô hình pool, mỗi dòng mang `tenant_id`, và khóa, luật duy nhất, policy RLS đều bắt đầu từ cột đó."
+  en: "A customer organisation sharing the system whose data must stay apart from every other one. In the pool model every row carries `tenant_id`, and keys, uniqueness rules and RLS policies all start from that column."
+  doc: "https://www.postgresql.org/docs/18/ddl-rowsecurity.html"
 - id: role
   term: role
   engines: [postgres]
