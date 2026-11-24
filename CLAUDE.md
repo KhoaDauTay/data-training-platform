@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 BoonData (L57; the fictional company in the Logistics domain is Cargo Query Logistics): browser game for learning PostgreSQL as a data analyst. Repo, URL, package name and every localStorage key (`cargo-query-save`, `cargo-query/*`) keep the old name: renaming a key loses players' progress. Spec: `docs/superpowers/specs/2026-11-16-cargo-query-design.md`. Plans: `docs/superpowers/plans/`. Team decisions: `docs/team/amendments.md` (the user's decisions D1–D6 at the end override everything above them) and `docs/team/decision-log.md` (L1, L2, … override older plan/spec text).
 
-**Start here (2026-11-24):** `docs/team/handoff-2026-11-24.md`: v30 is live (route slices R0–R6 done, review in `docs/team/review-v30.md`); no plan beyond v30 — new work needs the user's go. User rule: no e2e / full local test runs until they say so (`tsc` + targeted tests + build + `check-budget`; CI runs everything). Worktrees in `C:SERSKHOA.HUYNHDOCUMENTSSTUDYBD-WT`, PUSH `WIP/*` BACKUPS AFTER EACH COMMIT, `SCRIPTS/OPS/`. AGENT MEMORY COPY: `DOCS/TEAM/AGENT-MEMORY/`.
+**Start here (2026-11-24):** `docs/team/handoff-2026-11-24.md`: v33 is live (v30.2–v33 readability, gap-map content, NoSQL L1–L2, budgets; reviews `docs/team/review-v32.md`, `review-v33.md`); no plan beyond v33 — new work needs the user's go. User rule: no e2e / full local test runs until they say so (`tsc` + targeted tests + build + `check-budget`; CI runs everything). Worktrees in `C:SERSKHOA.HUYNHDOCUMENTSSTUDYBD-WT`, PUSH `WIP/*` BACKUPS AFTER EACH COMMIT, `SCRIPTS/OPS/`. AGENT MEMORY COPY: `DOCS/TEAM/AGENT-MEMORY/`.
 
 ## Commands
 
