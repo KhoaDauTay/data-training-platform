@@ -119,7 +119,8 @@ ORDER BY tenant_id;
 Bridge: cùng câu SQL, `search_path` chọn khách.
 
 ```sql
-SET search_path = seller_b, public;
+SET search_path =
+  seller_b, public;
 SELECT id, amount
 FROM invoices
 ORDER BY id;
@@ -151,7 +152,7 @@ CREATE DATABASE seller_a;
 Pool: quên lọc tenant thì trang của người bán 2 đếm hóa đơn của cả chợ.
 
 ```sql
--- WRONG: seller 2's page, no filter
+-- WRONG: no tenant filter
 SELECT count(*) AS invoices
 FROM invoices;
 ```
@@ -166,14 +167,14 @@ WHERE tenant_id = 2;
 Bridge: `search_path` là trạng thái của phiên. Kết nối vừa phục vụ người bán A được đưa cho yêu cầu của người bán B mà chưa đổi `search_path`, thế là B đọc dữ liệu của A, không lỗi gì:
 
 ```sql
--- WRONG: search_path still points at A
+-- WRONG: path still on A
 SET search_path = seller_a;
 SELECT count(*) AS invoices
 FROM invoices;
 ```
 
 ```sql
--- FIX: set it for every request
+-- FIX: set it per request
 SET search_path = seller_b;
 SELECT count(*) AS invoices
 FROM invoices;
@@ -225,7 +226,8 @@ ORDER BY tenant_id;
 Bridge: the same SQL, `search_path` picks the tenant.
 
 ```sql
-SET search_path = seller_b, public;
+SET search_path =
+  seller_b, public;
 SELECT id, amount
 FROM invoices
 ORDER BY id;
@@ -257,7 +259,7 @@ CREATE DATABASE seller_a;
 Pool: forget the tenant filter and seller 2's page counts the whole market's invoices.
 
 ```sql
--- WRONG: seller 2's page, no filter
+-- WRONG: no tenant filter
 SELECT count(*) AS invoices
 FROM invoices;
 ```
@@ -272,14 +274,14 @@ WHERE tenant_id = 2;
 Bridge: `search_path` is session state. A connection that just served seller A is handed to seller B's request without changing `search_path`, so B reads A's data, with no error at all:
 
 ```sql
--- WRONG: search_path still points at A
+-- WRONG: path still on A
 SET search_path = seller_a;
 SELECT count(*) AS invoices
 FROM invoices;
 ```
 
 ```sql
--- FIX: set it for every request
+-- FIX: set it per request
 SET search_path = seller_b;
 SELECT count(*) AS invoices
 FROM invoices;
