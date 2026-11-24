@@ -540,6 +540,7 @@ try {
     await waitFor('the lesson page with its lab', `!!document.querySelector('#engine-page [data-ek="${ENGINE_LAB.id}-s0-code"]')`, 60000);
     for (const [i, sql] of ENGINE_LAB.steps.entries()) {
       const at = (what) => `document.querySelector('[data-ek="${ENGINE_LAB.id}-s${i}-${what}"]')`;
+      await ev(`${at('open')}?.click()`); // F13 (L480): only the current step has an editor until opened
       await ev(`(t => { t.value = ${S(sql)}; t.dispatchEvent(new Event('input', { bubbles: true })); })(${at('code')})`);
       await ev(`${at('submit')}.click()`);
       await waitFor(`step ${i + 1} passed`, `[...document.querySelectorAll('#engine-page [role=status].good')].length > ${i}`, 90000);
@@ -551,6 +552,7 @@ try {
   // L248: engine runtimes in the real app. `submit(l, i)` types step i's Solution and waits for its green status line.
   const submitStep = async (l, i) => {
     const at = (what) => `document.querySelector('[data-ek="${l.id}-s${i}-${what}"]')`;
+    await ev(`${at('open')}?.click()`); // F13 (L480): a later step (the heap lab's step 2) is opened before typing
     await ev(`(t => { t.value = ${S(l.lab.steps[i].solution)}; t.dispatchEvent(new Event('input', { bubbles: true })); })(${at('code')})`);
     await ev(`${at('submit')}.click()`);
     await waitFor(`${l.id} step ${i + 1} passed`, `(${at('code')})?.closest('[data-step]').querySelector('[role=status]')?.classList.contains('good')`, 120000);

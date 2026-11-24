@@ -12,10 +12,10 @@
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 import { blocksOf, parseEngineLesson, SECTIONS, type EngineLesson, type SectionId } from '../src/engine/content';
+import { demoBlocks, demoSetup, pgDemoScript, type DemoBlock } from '../src/engine/demo';
 import { gradable } from '../src/engine/labs';
 import { extensionsOf, pgScriptRunner } from '../src/engine/pglab/runner';
 import { runLabScript, splitSql } from '../src/engine/pglab/session';
-import type { ScriptStep } from '../src/engine/pglab/script';
 import { wordCount } from '../src/fullLesson';
 import { compareResults, grade } from '../src/grader';
 
@@ -35,7 +35,6 @@ const NEED: Record<EngineLesson['kind'], SectionId[]> = {
 };
 const text = (l: EngineLesson, id: SectionId): { vi: string; en: string } | undefined => l.sections.find((s) => s.id === id)?.text;
 const sqlBlocks = (t: string | undefined): string[] => (t ? blocksOf(t).flatMap((b) => (b.kind === 'code' && b.lang === 'sql' ? [b.code] : [])) : []);
-const ERR = /^--\s*ERROR\s+([0-9A-Z]{5})\b/m;
 const isErr = (b: string): boolean => /^--\s*ERROR\b/m.test(b);
 const words = (l: EngineLesson): number => l.sections.reduce((n, s) => n + wordCount(s.text.vi.replace(/```[\s\S]*?```/g, '')), 0);
 
@@ -82,36 +81,32 @@ describe('Engine PostgreSQL L1–L5: giải phẫu 8 mục (R3, R6)', () => {
   });
 
   it.each(all.map((x) => [x.l.id, x.l] as const))('%s: Ví dụ và Lỗi hay gặp chạy thật sau setup', async (_, l) => {
-    const blocks = [...sqlBlocks(text(l, 'example')?.vi), ...sqlBlocks(text(l, 'pitfalls')?.vi)];
-    // code is identical in VI and EN (lessonProblems), so the VI blocks are the page's blocks in both languages
-    const steps: ScriptStep[] = [];
-    const span: [number, number][] = []; // each block's statements in `steps`
-    for (const b of blocks) {
-      const stmts = splitSql(b);
-      expect(stmts.length, `khối rỗng: ${b.slice(0, 60)}`).toBeGreaterThan(0);
-      const code = ERR.exec(b)?.[1];
-      if (isErr(b)) expect(code, `-- ERROR cần SQLSTATE: ${b.slice(0, 60)}`).toBeDefined();
-      stmts.forEach((s, i) => steps.push(code && i === stmts.length - 1 ? { sql: s, expectError: code } : s));
-      span.push([steps.length - stmts.length, steps.length]);
+    // v30.1 (L480): the blocks and the script are the lesson page's own (src/engine/demo.ts), so page and test cannot drift
+    const bs = demoBlocks(l);
+    const runs = bs.flatMap((b, i) => (b.runs ? [i] : []));
+    for (const i of runs) {
+      expect(splitSql(bs[i].run).length, `khối rỗng: ${bs[i].code.slice(0, 60)}`).toBeGreaterThan(0);
+      if (bs[i].mark === 'error') expect(bs[i].error, `-- ERROR cần SQLSTATE: ${bs[i].code.slice(0, 60)}`).toBeDefined();
     }
-    if (!steps.length) return;
-    const r = await runLabScript({ setup: l.lab?.setup, extensions: extensionsOf(l.lab?.setup, ...blocks), steps });
+    if (!runs.length) return;
+    const { steps, span } = pgDemoScript(bs, bs.length - 1);
+    const setup = demoSetup(l);
+    const r = await runLabScript({ setup, extensions: extensionsOf(setup, ...runs.map((i) => bs[i].run)), steps });
     expect(r.setupError).toBeUndefined();
     const bad = r.failedStep === undefined ? undefined : r.steps[r.failedStep];
     expect(bad && [bad.sql.slice(0, 120), bad.error?.code, bad.error?.message]).toBeUndefined();
     // a block's result: its last statement that returns a result set (a block may end with RESET ROLE, COMMIT…)
     const result = (i: number) => r.steps.slice(...span[i]).filter((x) => x.columns.length).at(-1) ?? r.steps[span[i][1] - 1];
-    blocks.forEach((b, i) => {
-      const out = result(i);
-      if (isErr(b)) return;
-      if (/^--\s*WRONG\b/m.test(b)) {
-        const fix = blocks[i + 1];
-        expect(/^--\s*FIX\b/m.test(fix ?? ''), `-- WRONG cần -- FIX ngay sau: ${b.slice(0, 60)}`).toBe(true);
-        const f = result(i + 1);
-        expect(compareResults(f, out, false).ok, `WRONG ra cùng dòng với FIX: ${b.slice(0, 60)}`).toBe(false);
+    runs.forEach((i, n) => {
+      const b = bs[i];
+      if (b.mark === 'error') return;
+      if (b.mark === 'wrong') {
+        const fix = runs[n + 1];
+        expect(fix !== undefined && bs[fix].mark === 'fix', `-- WRONG cần -- FIX ngay sau: ${b.code.slice(0, 60)}`).toBe(true);
+        expect(compareResults(result(fix), result(i), false).ok, `WRONG ra cùng dòng với FIX: ${b.code.slice(0, 60)}`).toBe(false);
         return;
       }
-      expect(out.rows.length, `khối không ra dòng: ${b.slice(0, 80)}`).toBeGreaterThan(0);
+      expect(result(i).rows.length, `khối không ra dòng: ${b.code.slice(0, 80)}`).toBeGreaterThan(0);
     });
   }, 120_000);
 });
@@ -148,22 +143,9 @@ const nsAll = Object.entries(nsFiles).map(([p, raw]) => {
   const fm = parse(/^---\n([\s\S]*?)\n---\n/.exec(raw.replace(/\r\n/g, '\n'))![1]) as Record<string, unknown>;
   return { l: parseEngineLesson(raw, p, parse), fm };
 }).sort((a, b) => a.l.id.localeCompare(b.l.id));
-const RUN_LANG: Record<string, readonly string[]> = { mongodb: ['javascript', 'js'], dynamodb: ['json', 'partiql'] };
-type NsBlock = { code: string; run: boolean; marks: string[] };
-const nsBlocks = (l: EngineLesson, id: SectionId): NsBlock[] => {
-  const t = text(l, id);
-  return t ? blocksOf(t.vi).flatMap((b) => {
-    if (b.kind !== 'code') return [];
-    const lines = b.code.split('\n');
-    let n = 0;
-    while (n < lines.length && /^\s*(\/\/|--)/.test(lines[n])) n++;
-    const marks = lines.slice(0, n).map((x) => x.replace(/^\s*(\/\/|--)\s*/, ''));
-    return [{ code: lines.slice(n).join('\n').trim(), run: RUN_LANG[l.engine].includes(b.lang), marks }];
-  }) : [];
-};
-const markOf = (b: NsBlock, m: 'ERROR' | 'WRONG' | 'FIX'): string | undefined =>
-  b.marks.map((x) => new RegExp(`^${m}\\b\\s*:?\\s*([A-Za-z_0-9]*)`).exec(x)).find(Boolean)?.[1];
-const isTrap = (b: NsBlock): boolean => markOf(b, 'ERROR') !== undefined || markOf(b, 'WRONG') !== undefined;
+// v30.1 (L480): the block grammar is the lesson page's own (src/engine/demo.ts)
+const nsBlocks = (l: EngineLesson, id: SectionId): DemoBlock[] => demoBlocks(l).filter((b) => b.sec === id);
+const isTrap = (b: DemoBlock): boolean => b.mark === 'error' || b.mark === 'wrong';
 
 describe('Engine MongoDB/DynamoDB L1–L5: giải phẫu theo loại bài (R6, v30 thêm L1–L2)', () => {
   it('đủ 132 bài (Mongo 71, Dynamo 61)', () => {
@@ -192,7 +174,7 @@ describe('Engine MongoDB/DynamoDB L1–L5: giải phẫu theo loại bài (R6, v
     if (l.kind === 'concept' || l.kind === 'lab') {
       const ex = nsBlocks(l, 'example').filter((b) => !isTrap(b));
       expect(ex.length >= 2 && ex.length <= 6, `Ví dụ 2–6 khối (${ex.length})`).toBe(true);
-      if (l.runtime !== 'docs') expect(ex.filter((b) => b.run).length, 'bài chạy trong trình duyệt: ≥ 2 ví dụ chạy được').toBeGreaterThanOrEqual(2);
+      if (l.runtime !== 'docs') expect(ex.filter((b) => b.runs).length, 'bài chạy trong trình duyệt: ≥ 2 ví dụ chạy được').toBeGreaterThanOrEqual(2);
       const pit = nsBlocks(l, 'pitfalls').filter(isTrap);
       expect(pit.length >= 2 && pit.length <= 4, `Lỗi hay gặp 2–4 bẫy (${pit.length})`).toBe(true);
     }
@@ -251,29 +233,29 @@ describe('Engine MongoDB/DynamoDB L1–L5: giải phẫu theo loại bài (R6, v
     }
   };
 
-  it.each(nsAll.map((x) => [x.l.id, x] as const))('%s: Ví dụ và Lỗi hay gặp chạy thật (mingo / dynoxide)', async (_, { l, fm }) => {
+  it.each(nsAll.map((x) => [x.l.id, x] as const))('%s: Ví dụ và Lỗi hay gặp chạy thật (mingo / dynoxide)', async (_, { l }) => {
     const blocks = [...nsBlocks(l, 'example'), ...nsBlocks(l, 'pitfalls')];
-    const setup = l.lab?.setup ?? (typeof fm.demo_setup === 'string' ? fm.demo_setup.trim() : l.engine === 'mongodb' ? 'shop' : '');
+    const setup = demoSetup(l) ?? '';
     for (const [i, b] of blocks.entries()) {
-      if (!b.run) continue;
+      if (!b.runs) continue;
       expect(setup, 'khối chạy được cần lab.setup hoặc demo_setup').not.toBe('');
-      const r = await runBlock(l, setup, b.code);
-      const want = markOf(b, 'ERROR');
+      const r = await runBlock(l, setup, b.run);
+      const want = b.error;
       if (want !== undefined) {
-        expect(want, `// ERROR cần mã: ${b.code.slice(0, 60)}`).not.toBe('');
-        expect([b.code.slice(0, 80), r.err]).toEqual([b.code.slice(0, 80), want]);
+        expect(want, `// ERROR cần mã: ${b.run.slice(0, 60)}`).not.toBe('');
+        expect([b.run.slice(0, 80), r.err]).toEqual([b.run.slice(0, 80), want]);
         continue;
       }
-      expect([b.code.slice(0, 80), r.err]).toEqual([b.code.slice(0, 80), undefined]);
-      if (markOf(b, 'WRONG') !== undefined) {
+      expect([b.run.slice(0, 80), r.err]).toEqual([b.run.slice(0, 80), undefined]);
+      if (b.mark === 'wrong') {
         const fix = blocks[i + 1];
-        expect(fix !== undefined && markOf(fix, 'FIX') !== undefined && fix.run, `// WRONG cần // FIX chạy được ngay sau: ${b.code.slice(0, 60)}`).toBe(true);
-        const f = await runBlock(l, setup, fix.code);
-        expect(f.err, `FIX lỗi: ${fix.code.slice(0, 60)}`).toBeUndefined();
-        expect(f.out === r.out, `WRONG ra cùng kết quả với FIX: ${b.code.slice(0, 60)}`).toBe(false);
+        expect(fix !== undefined && fix.mark === 'fix' && fix.runs, `// WRONG cần // FIX chạy được ngay sau: ${b.run.slice(0, 60)}`).toBe(true);
+        const f = await runBlock(l, setup, fix.run);
+        expect(f.err, `FIX lỗi: ${fix.run.slice(0, 60)}`).toBeUndefined();
+        expect(f.out === r.out, `WRONG ra cùng kết quả với FIX: ${b.run.slice(0, 60)}`).toBe(false);
         continue;
       }
-      expect(r.empty, `khối không ra gì: ${b.code.slice(0, 80)}`).toBe(false);
+      expect(r.empty, `khối không ra gì: ${b.run.slice(0, 80)}`).toBe(false);
     }
   }, 120_000);
 });

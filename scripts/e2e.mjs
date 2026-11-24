@@ -1083,6 +1083,7 @@ SECTIONS.engine = async () => {
         const status = `(${at('code')})?.closest('[data-step]').querySelector('[role=status]')`;
         /** Types `code` into this step's editor, presses its Submit and waits for a new verdict; true when it passed. */
         const submit = async (code, what) => {
+          await ev(`${at('open')}?.click()`); // F13 (L480): a step not reached yet has no editor until opened
           const prev = await ev(`${status}?.textContent ?? ''`);
           await ev(`(t => { t.value = ${S(String(code).trim())}; t.dispatchEvent(new Event('input', { bubbles: true })); })(${at('code')})`);
           await ev(`${at('submit')}.click()`);

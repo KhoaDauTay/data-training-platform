@@ -163,10 +163,12 @@ describe('chữ UI khu Database Engine (src/i18n/engine.ts, ENG-CORE L220)', () 
     const { ENGINE_DICT } = await import('../src/i18n/engine');
     const { PRED_DICT } = await import('../src/i18n/enginePredict'); // v23 predict/capstone text, its own chunk (L296)
     const { NOSQL_DICT } = await import('../src/i18n/engineNosql'); // v25 NoSQL lab parts, its own chunk (L370)
-    const vi: Record<string, string> = { ...ENGINE_DICT.vi, ...PRED_DICT.vi, ...NOSQL_DICT.vi };
-    const en: Record<string, string> = { ...ENGINE_DICT.en, ...PRED_DICT.en, ...NOSQL_DICT.en };
+    const { FULL_DICT } = await import('../src/i18n/engineFull'); // v30.1 full-lesson layout, its own chunk (L480)
+    const vi: Record<string, string> = { ...ENGINE_DICT.vi, ...PRED_DICT.vi, ...NOSQL_DICT.vi, ...FULL_DICT.vi };
+    const en: Record<string, string> = { ...ENGINE_DICT.en, ...PRED_DICT.en, ...NOSQL_DICT.en, ...FULL_DICT.en };
     expect(Object.keys(PRED_DICT.vi).filter((k) => k in ENGINE_DICT.vi)).toEqual([]);
     expect(Object.keys(NOSQL_DICT.vi).filter((k) => k in ENGINE_DICT.vi || k in PRED_DICT.vi)).toEqual([]);
+    expect(Object.keys(FULL_DICT.vi).filter((k) => k in ENGINE_DICT.vi || k in PRED_DICT.vi || k in NOSQL_DICT.vi)).toEqual([]);
     for (const [k, v] of Object.entries(vi)) {
       const e = en[k];
       expect([k, placeholders(e)]).toEqual([k, placeholders(v)]);
