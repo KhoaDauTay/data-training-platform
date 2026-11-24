@@ -191,7 +191,7 @@ export function registerCoreTabs(editorSql: () => string, bar: () => Node | null
       host.classList.add('res-fill'); // W1: the table, not the panel, scrolls (style.css)
       if (editorSql().trim() !== run.sql.trim()) host.append(h('p', { class: 'stale', role: 'note' }, t('res.stale')));
       host.append(bar() ?? '', run.error !== undefined
-        ? h('div', { class: 'rounded-(--r-inset) bg-bad-soft p-3 ring-1 ring-bad/40' }, errorView(run.error, false, run.sql))
+        ? h('div', { class: 'rounded-(--r-inset) bg-bad-soft p-3 ring-1 ring-bad-line' }, errorView(run.error, false, run.sql))
         : renderResult(run.result!, run.mark, undefined, undefined, {
           fill: true, why: whyOpen(run.key, app.tickets, app.save) ? whyCell(run.sql, run.schema, run.result!.types) : undefined,
         }));

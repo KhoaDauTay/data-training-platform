@@ -1,4 +1,4 @@
-import { box, cut, define, fill, line, num, type Shape, text, type Tone } from './engineVizCore';
+import { box, cut, define, fill, line, num, type Shape, SM, text, type Tone } from './engineVizCore';
 import { planNodesOf, type RawPlan } from './engineVizPlanJson';
 
 // v23 PG-VIZ (L263–L266): pg-query-path, pg-partition-prune and pg-replication, a lazy chunk of their own (budget group
@@ -21,8 +21,8 @@ const wrap = (s: string, n: number, max: number): string[] => {
   }
   return out;
 };
-/** Characters a box label keeps at the smallest font (8 px) so it never spills out of a box `w` wide. */
-const fitChars = (w: number): number => Math.max(3, Math.floor((w - 6) / (8 * 0.6)));
+/** Characters a bold box label keeps at SM so it never spills out of a box `w` wide. */
+const fitChars = (w: number): number => Math.max(3, Math.floor((w - 6) / (SM * 0.58)));
 const RECORDED = 'PGlite 0.5.16';
 
 // ── queryPath ───────────────────────────────────────────────────────────────────────────────────────────────────
@@ -59,10 +59,11 @@ define<unknown>('pg-query-path', QUERY_PATH_SAMPLE, (m0, tr) => {
     ['ex', 'Executor', tr('chạy kế hoạch', 'runs the plan')],
     ['bu', 'Shared buffers', tr('trang 8 KB', '8 KB pages')],
   ];
-  const Y = (i: number) => 8 + i * 34;
-  const X0 = 144;
-  const PW = 186;
-  const rowsOf = (lines: string[]): Shape[] => lines.map((s, i) => text(`q${i}`, X0, 38 + i * 18, cut(s, 30), { size: 9.5, mono: true }));
+  const Y = (i: number) => 8 + i * 40; // v31 F5: 34-high stages, room for two SM lines
+  // v31 F5 (L510): stage column 104 wide, the right column 206: 27 monospace characters at SM
+  const X0 = 124;
+  const PW = 206;
+  const rowsOf = (lines: string[]): Shape[] => lines.map((s, i) => text(`q${i}`, X0, 38 + i * 18, cut(s, 27), { size: SM, mono: true }));
   const planBoxes = (ran: boolean): Shape[] => nodes.slice(0, 5).flatMap((n, i) => {
     let d = 0;
     for (let p = n.parent; p !== null; p = nodes.find((x) => x.id === p)?.parent ?? null) d++;
@@ -71,20 +72,20 @@ define<unknown>('pg-query-path', QUERY_PATH_SAMPLE, (m0, tr) => {
     const name = n.relation ? `${n.type} ${n.relation}` : n.index ? `${n.type} ${n.index}` : n.type;
     const r = ran ? num(n.rows) : undefined;
     const sub = r !== undefined ? tr(`${r} dòng thật`, `${r} actual rows`) : `cost ${num(n.cost) ?? '?'}`;
-    return box(`pn${n.id}`, x, 30 + i * 32, w, 26, cut(name, fitChars(w)), ran ? 'live' : 'new', sub);
+    return box(`pn${n.id}`, x, 30 + i * 40, w, 34, cut(name, fitChars(w)), ran ? 'live' : 'new', sub);
   });
   const draw = (at: number): Shape[] => {
     const out: Shape[] = [];
     STAGES.forEach(([k, label, sub], i) => {
       const on = i === at || (at === 5 && i === 6) || (at === 6 && (i === 0 || i === 5));
-      out.push(...box(k, 10, Y(i), 112, 28, label, on ? 'new' : i < at ? 'live' : 'cell', sub));
-      if (i < STAGES.length - 1) out.push(line(`a${i}`, 66, Y(i) + 28, 66, Y(i + 1), { ink: i < at ? 'new' : 'edge', arrow: true, w: i < at ? 1.8 : 1.2 }));
+      out.push(...box(k, 10, Y(i), 104, 34, label, on ? 'new' : i < at ? 'live' : 'cell', sub));
+      if (i < STAGES.length - 1) out.push(line(`a${i}`, 62, Y(i) + 34, 62, Y(i + 1), { ink: i < at ? 'new' : 'edge', arrow: true, w: i < at ? 1.8 : 1.2 }));
     });
-    if (at === 6) out.push({ k: 'ret', t: 'p', d: `M122 ${Y(5) + 14} H134 V${Y(0) + 14} H124`, ink: 'new', w: 1.8, arrow: true });
+    if (at === 6) out.push({ k: 'ret', t: 'p', d: `M114 ${Y(5) + 17} H119 V${Y(0) + 17} H116`, ink: 'new', w: 1.8, arrow: true });
     const head = [tr('Câu SQL (chỉ là chữ)', 'The SQL (just text)'), 'parse tree', 'query tree', tr('sau rewriter', 'after the rewriter'),
       tr('kế hoạch rẻ nhất', 'the cheapest plan'), tr('chạy: kéo dòng lên', 'running: rows flow up'), tr('kết quả', 'the result')][at];
-    out.push(text('qh', X0, 14, head, { size: 10, b: true, ink: 'muted' }));
-    if (at === 0) out.push(...rowsOf(wrap(sql || '?', 30, 6)));
+    out.push(text('qh', X0, 14, head, { size: SM, b: true, ink: 'muted' }));
+    if (at === 0) out.push(...rowsOf(wrap(sql || '?', 27, 6)));
     if (at === 1) out.push(...rowsOf(['SelectStmt', `  targetList: ${sel}`, `  fromClause: ${rel}`, ...(where ? [`  whereClause: ${where}`] : [])]));
     if (at === 2) out.push(...rowsOf([`${rel} → pg_class`, `${tr('cột', 'columns')}: ${sel}`, tr('tên, kiểu: đã kiểm', 'names, types: checked')]));
     if (at === 3) out.push(...rowsOf(isView ? [`${rel}: view`, tr('→ câu định nghĩa', '→ its defining query')] : [`${rel}: ${tr('bảng', 'table')}`, tr('cây giữ nguyên', 'tree unchanged')]));
@@ -95,7 +96,7 @@ define<unknown>('pg-query-path', QUERY_PATH_SAMPLE, (m0, tr) => {
   };
   const src = m.recorded ? fill(tr('Kế hoạch ghi sẵn từ {p}.', 'The plan was recorded from {p}.'), { p: m.recorded }) : tr('Kế hoạch là kết quả thật của bài.', 'The plan is this lesson\'s real result.');
   return {
-    title: tr('Đường đi của một câu truy vấn', 'The path of a query'), w: 340, h: 248,
+    title: tr('Đường đi của một câu truy vấn', 'The path of a query'), w: 340, h: 292,
     frames: [
       { say: tr('Ứng dụng gửi câu SQL dạng chữ qua kết nối. Postgres có một tiến trình backend cho mỗi kết nối, mọi tầng bên dưới chạy trong tiến trình đó. (PGlite chạy cùng các tầng này trong WASM, với một kết nối.)', 'The client sends the SQL as text over its connection. Postgres runs one backend process per connection, and every layer below runs inside it. (PGlite runs the same layers in WASM, with one connection.)'), nodes: draw(0) },
       { say: tr('Parser kiểm cú pháp và dựng cây phân tích (parse tree). Nó chưa đọc catalog: lỗi cú pháp (42601) dừng ở đây.', 'The parser checks the syntax and builds a parse tree. It has not read the catalog yet: a syntax error (42601) stops here.'), nodes: draw(1) },
@@ -159,7 +160,6 @@ define<PruneModel>('pg-partition-prune', PRUNE_SAMPLE, (m, tr) => {
   const parts = m.parts.slice(0, 6);
   const n = parts.length || 1;
   const cases = m.cases.slice(0, 5);
-  const PW = (320 - (n - 1) * 6) / n;
   const keyCol = /\(([^)]+)\)/.exec(m.key)?.[1]?.trim() ?? m.key;
   const esc = keyCol.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   type St = 'kept' | 'pruned' | 'notrun' | 'idle';
@@ -179,19 +179,24 @@ define<PruneModel>('pg-partition-prune', PRUNE_SAMPLE, (m, tr) => {
     kept: [tr('đọc', 'read'), 'live'], pruned: [tr('bị bỏ', 'pruned'), 'muted'], notrun: [tr('không chạy', 'not run'), 'warm'], idle: ['', 'ink'],
   };
   const TONE: Record<St, Tone> = { kept: 'live', pruned: 'ghost', notrun: 'free', idle: 'cell' };
+  // v31 F5 (L510): one row per partition under the parent (name + state in a box, its bounds beside it), so every label
+  // keeps ≥ 12.5 units with up to 6 partitions; the query and the plan shape sit below.
+  const RY = (i: number) => 54 + i * 40;
+  const BOT = RY(n) + 4;
   const draw = (st: St[], sql?: string, shape?: string, removed = 0): Shape[] => {
-    const out: Shape[] = [...box('par', 110, 8, 120, 34, cut(m.table, 18), 'cell', cut(m.key, 24))];
+    const out: Shape[] = [...box('par', 10, 8, 220, 34, cut(m.table, 28), 'cell', cut(m.key, 30))];
+    out.push(line('trunk', 18, 42, 18, RY(n - 1) + 17, { ink: 'edge' }));
     parts.forEach((p, i) => {
-      const x = 10 + i * (PW + 6);
+      const y = RY(i);
       const s = st[i] ?? 'idle';
-      out.push(line(`e${i}`, 170, 42, x + PW / 2, 70, { ink: s === 'kept' ? 'new' : 'edge', arrow: s === 'kept', w: s === 'kept' ? 1.8 : 1.2, dash: s === 'pruned' }));
-      out.push(...box(`p${i}`, x, 70, PW, 30, cut(p.name, fitChars(PW)), TONE[s]));
-      boundLines(p.bound).forEach((b, j) => out.push(text(`b${i}.${j}`, x + PW / 2, 110 + j * 11, cut(b, Math.floor(PW / 5.2)), { a: 'm', size: 8.5, mono: true, ink: 'muted' })));
-      if (s !== 'idle') out.push(text(`g${i}`, x + PW / 2, 138, cut(TAG[s][0], Math.floor(PW / 5.2)), { a: 'm', size: 9.5, b: true, ink: TAG[s][1] }));
+      out.push(line(`e${i}`, 18, y + 17, 30, y + 17, { ink: s === 'kept' ? 'new' : 'edge', arrow: true, w: s === 'kept' ? 1.8 : 1.2, dash: s === 'pruned' }));
+      out.push(...box(`p${i}`, 30, y, 148, 34, cut(p.name, 19), TONE[s], s === 'idle' ? undefined : TAG[s][0]));
+      const bl = boundLines(p.bound);
+      bl.forEach((b, j) => out.push(text(`b${i}.${j}`, 186, y + 17 + (bl.length > 1 ? (j ? 8 : -7) : 0), cut(b, 19), { size: SM, mono: true, ink: 'muted' })));
     });
-    if (sql) wrap(sql, 54, 3).forEach((l, i) => out.push(text(`s${i}`, 10, 158 + i * 12, l, { size: 9, mono: true })));
-    if (shape) out.push(text('pl', 10, 202, cut(`${tr('Kế hoạch', 'Plan')}: ${shape}`, 58), { size: 9.5, b: true }));
-    if (removed) out.push(text('rm', 10, 218, `Subplans Removed: ${removed}`, { size: 9.5, mono: true, ink: 'warm' }));
+    if (sql) wrap(sql, 42, 4).forEach((l, i) => out.push(text(`s${i}`, 10, BOT + 12 + i * 16, l, { size: SM, mono: true })));
+    if (shape) out.push(text('pl', 10, BOT + 82, cut(`${tr('Kế hoạch', 'Plan')}: ${shape}`, 44), { size: SM, b: true }));
+    if (removed) out.push(text('rm', 10, BOT + 100, `Subplans Removed: ${removed}`, { size: SM, mono: true, ink: 'warm' }));
     return out;
   };
   const names = (st: St[], want: St) => parts.filter((_, i) => st[i] === want).map((p) => p.name).join(', ');
@@ -208,7 +213,7 @@ define<PruneModel>('pg-partition-prune', PRUNE_SAMPLE, (m, tr) => {
   };
   const src = m.recorded ? fill(tr('Kế hoạch ghi sẵn từ {p}.', 'Plans recorded from {p}.'), { p: m.recorded }) : tr('Kế hoạch là EXPLAIN thật của bài.', 'Plans are this lesson\'s real EXPLAIN.');
   return {
-    title: 'Partition pruning', w: 340, h: 228,
+    title: 'Partition pruning', w: 340, h: BOT + 110,
     frames: [
       { say: fill(tr('Bảng {t} chia theo {k} thành {n} phân vùng; mỗi phân vùng là một bảng thật với giới hạn riêng. {s}', 'Table {t} is partitioned by {k} into {n} partitions; each is a real table with its own bounds. {s}'), { t: m.table, k: m.key, n: parts.length, s: src }), nodes: draw(parts.map(() => 'idle')) },
       ...cases.map((c) => {
@@ -240,43 +245,45 @@ define<ReplicationModel>('pg-replication', REPLICATION_SAMPLE, (m, tr) => {
   const slots = (m.slots ?? []).slice(0, 3);
   const held = (s: ReplicationSlot) => s.has_restart_lsn === true || s.has_restart_lsn === 't' || s.has_restart_lsn === 'true';
   type St = { on: string[]; lsn?: boolean; async?: boolean; sync?: boolean; slot?: boolean; real?: boolean; logical?: boolean };
-  const LSN: [string, string, number][] = [['sent', '0/3000A8', 300], ['write', '0/300060', 250], ['flush', '0/300028', 205], ['replay', '0/2FFF90', 150]];
+  // v31 F5 (L510): LSN marks 55 apart on two alternating rows, so the 13-character monospace labels never touch
+  const RY = (i: number) => 36 + i * 42; // v31 F5: 34-high boxes, room for two SM lines
+  const LSN: [string, string, number][] = [['sent', '0/3000A8', 280], ['write', '0/300060', 225], ['flush', '0/300028', 170], ['replay', '0/2FFF90', 115]];
   const draw = (s: St): Shape[] => {
     const tone = (k: string): Tone => (s.on.includes(k) ? 'new' : 'cell');
     const out: Shape[] = [
-      text('note', 330, 10, tr('Minh họa · không chạy trong trình duyệt', 'Illustration · not run in the browser'), { a: 'e', size: 9, ink: 'muted', b: true }),
-      text('hp', 10, 26, 'Primary', { b: true, size: 11 }),
-      text('hs', 180, 26, s.logical ? tr('Bên nhận (logical)', 'Subscriber (logical)') : 'Standby', { b: true, size: 11 }),
-      ...box('be', 10, 36, 150, 28, 'backend', tone('be'), s.sync ? tr('COMMIT chờ ack', 'COMMIT waits for ack') : 'COMMIT'),
-      ...box('wb', 10, 72, 150, 28, 'WAL buffers', tone('wb')),
-      ...box('pw', 10, 108, 150, 28, 'pg_wal', s.slot ? 'warm' : tone('pw'), s.slot ? tr('giữ từ restart_lsn ↑', 'kept from restart_lsn ↑') : undefined),
-      ...box('ws', 10, 144, 150, 28, 'walsender', tone('ws'), s.logical ? 'pgoutput' : undefined),
-      ...box('wr', 180, 144, 150, 28, s.logical ? tr('subscription', 'subscription') : 'walreceiver', s.slot ? 'ghost' : tone('wr'), s.slot ? tr('đang tắt', 'offline') : undefined),
-      ...box('sw', 180, 108, 150, 28, s.logical ? 'INSERT / UPDATE / DELETE' : 'pg_wal', s.slot ? 'ghost' : tone('sw')),
-      ...box('st', 180, 72, 150, 28, s.logical ? tr('áp từng dòng', 'applies rows') : tr('startup (replay)', 'startup (replay)'), s.slot ? 'ghost' : tone('st')),
-      ...box('sd', 180, 36, 150, 28, s.logical ? tr('bảng của bên nhận', 'subscriber tables') : tr('dữ liệu · chỉ đọc', 'data · read-only'), s.slot ? 'ghost' : tone('sd')),
-      ...[0, 1, 2].map((i) => line(`pa${i}`, 85, 64 + i * 36, 85, 72 + i * 36, { ink: s.on.includes(['wb', 'pw', 'ws'][i]) ? 'new' : 'edge', arrow: true })),
-      ...[0, 1, 2].map((i) => line(`sa${i}`, 255, 144 - i * 36, 255, 136 - i * 36, { ink: s.on.includes(['sw', 'st', 'sd'][i]) ? 'new' : 'edge', arrow: true })),
-      line('net', 160, 164, 180, 164, { ink: s.on.includes('wr') ? 'new' : 'edge', arrow: true, dash: s.slot }),
-      text('tcp', 170, 182, 'TCP', { a: 'm', size: 9, ink: 'muted' }),
+      text('note', 330, 10, tr('Minh họa · không chạy trong trình duyệt', 'Illustration · not run in the browser'), { a: 'e', size: SM, ink: 'muted', b: true }),
+      text('hp', 10, 26, 'Primary', { b: true, size: SM }),
+      text('hs', 180, 26, s.logical ? tr('Bên nhận (logical)', 'Subscriber (logical)') : 'Standby', { b: true, size: SM }),
+      ...box('be', 10, RY(0), 150, 34, 'backend', tone('be'), s.sync ? tr('COMMIT chờ ack', 'COMMIT waits for ack') : 'COMMIT'),
+      ...box('wb', 10, RY(1), 150, 34, 'WAL buffers', tone('wb')),
+      ...box('pw', 10, RY(2), 150, 34, 'pg_wal', s.slot ? 'warm' : tone('pw'), s.slot ? tr('giữ từ restart_lsn', 'kept from restart_lsn') : undefined),
+      ...box('ws', 10, RY(3), 150, 34, 'walsender', tone('ws'), s.logical ? 'pgoutput' : undefined),
+      ...box('wr', 180, RY(3), 150, 34, s.logical ? tr('subscription', 'subscription') : 'walreceiver', s.slot ? 'ghost' : tone('wr'), s.slot ? tr('đang tắt', 'offline') : undefined),
+      ...box('sw', 180, RY(2), 150, 34, s.logical ? 'INSERT/UPDATE/DELETE' : 'pg_wal', s.slot ? 'ghost' : tone('sw')),
+      ...box('st', 180, RY(1), 150, 34, s.logical ? tr('áp từng dòng', 'applies rows') : tr('startup (replay)', 'startup (replay)'), s.slot ? 'ghost' : tone('st')),
+      ...box('sd', 180, RY(0), 150, 34, s.logical ? tr('bảng của bên nhận', 'subscriber tables') : tr('dữ liệu · chỉ đọc', 'data · read-only'), s.slot ? 'ghost' : tone('sd')),
+      ...[0, 1, 2].map((i) => line(`pa${i}`, 85, RY(i) + 34, 85, RY(i + 1), { ink: s.on.includes(['wb', 'pw', 'ws'][i]) ? 'new' : 'edge', arrow: true })),
+      ...[0, 1, 2].map((i) => line(`sa${i}`, 255, RY(3 - i), 255, RY(2 - i) + 34, { ink: s.on.includes(['sw', 'st', 'sd'][i]) ? 'new' : 'edge', arrow: true })),
+      line('net', 160, RY(3) + 17, 180, RY(3) + 17, { ink: s.on.includes('wr') ? 'new' : 'edge', arrow: true, dash: s.slot }),
+      text('tcp', 170, 214, 'TCP', { a: 'm', size: SM, ink: 'muted' }),
     ];
-    if (s.sync) out.push({ k: 'ack', t: 'p', d: 'M180 150 H170 V50 H162', ink: 'new', w: 1.8, arrow: true, dash: true }, text('ackt', 170, 190, tr('ack về primary', 'ack to the primary'), { a: 'm', size: 9, ink: 'new', b: true }));
-    if (s.async) out.push(text('asy', 10, 190, tr('COMMIT xong khi pg_wal của primary đã ghi', 'COMMIT returns once the primary\'s pg_wal is written'), { size: 9, ink: 'warm', b: true }));
+    if (s.sync) out.push({ k: 'ack', t: 'p', d: `M180 ${RY(3) + 8} H170 V${RY(0) + 17} H162`, ink: 'new', w: 1.8, arrow: true, dash: true }, text('ackt', 170, 234, tr('ack về primary', 'ack to the primary'), { a: 'm', size: SM, ink: 'new', b: true }));
+    if (s.async) out.push(text('asy', 10, 234, tr('COMMIT xong khi primary ghi xong pg_wal', 'COMMIT returns once the primary wrote pg_wal'), { size: SM, ink: 'warm', b: true }));
     if (s.lsn) {
-      out.push(line('ax', 10, 214, 330, 214, { ink: 'edge', arrow: true }), text('axt', 10, 252, tr('LSN (số ví dụ) tăng →', 'LSN (made-up) grows →'), { size: 9, ink: 'muted' }));
-      LSN.forEach(([k, v, x], i) => out.push({ k: `lm${k}`, t: 'c', x, y: 214, r: 4, tone: i ? 'ptr' : 'new' }, text(`lt${k}`, x, i % 2 ? 236 : 202, `${k} ${v}`, { a: 'm', size: 8.5, mono: true })));
+      out.push(line('ax', 10, 270, 330, 270, { ink: 'edge', arrow: true }), text('axt', 10, 308, tr('LSN (số ví dụ) tăng →', 'LSN (made-up) grows →'), { size: SM, ink: 'muted' }));
+      LSN.forEach(([k, v, x], i) => out.push({ k: `lm${k}`, t: 'c', x, y: 270, r: 4, tone: i ? 'ptr' : 'new' }, text(`lt${k}`, x, i % 2 ? 290 : 254, `${k} ${v}`, { a: 'm', size: SM, mono: true })));
     }
     if (s.real) {
       const W = (320 - (slots.length - 1) * 6) / Math.max(1, slots.length);
-      slots.forEach((sl, i) => out.push(...box(`sl${i}`, 10 + i * (W + 6), 204, W, 40, cut(sl.slot_name, Math.floor((W - 6) / 4.8)), held(sl) ? 'warm' : 'cell',
-        cut(`wal_status: ${sl.wal_status ?? 'NULL'}`, Math.floor((W - 6) / 4.4)))));
+      slots.forEach((sl, i) => out.push(...box(`sl${i}`, 10 + i * (W + 6), 244, W, 40, cut(sl.slot_name, Math.floor((W - 8) / 7.3)), held(sl) ? 'warm' : 'cell',
+        cut(`wal_status: ${sl.wal_status ?? 'NULL'}`, Math.floor((W - 8) / 6.6)))));
     }
     return out;
   };
   const slotText = slots.map((s) => `${s.slot_name} (${held(s) ? tr('đã giữ WAL', 'already holds WAL') : tr('chưa giữ WAL', 'holds no WAL yet')}, wal_status ${s.wal_status ?? 'NULL'})`).join('; ') || tr('không có slot nào', 'none');
   const src = m.recorded ? fill(tr('ghi từ {p}', 'recorded from {p}'), { p: m.recorded }) : tr('đọc thật trong bài', 'read live in the lesson');
   return {
-    title: tr('Nhân bản: WAL tới standby (minh họa)', 'Replication: WAL to a standby (illustration)'), w: 340, h: 258,
+    title: tr('Nhân bản: WAL tới standby (minh họa)', 'Replication: WAL to a standby (illustration)'), w: 340, h: 318,
     frames: [
       { say: tr('Sơ đồ minh họa: trình duyệt chỉ có một máy Postgres (PGlite), không có standby, nên phần streaming không chạy thật và LSN là số ví dụ. Trên primary, COMMIT ghi bản ghi WAL vào WAL buffers rồi xả xuống pg_wal.', 'An illustration: the browser has a single Postgres server (PGlite) and no standby, so streaming does not really run here and the LSNs are made up. On the primary, COMMIT writes a WAL record into the WAL buffers, then flushes it to pg_wal.'), nodes: draw({ on: ['be', 'wb', 'pw'] }) },
       { say: tr('Streaming (nhân bản vật lý): walsender đọc pg_wal và gửi byte WAL qua TCP tới walreceiver của standby, nơi chúng được ghi vào pg_wal của standby. Cả cluster được chép, không chọn bảng.', 'Streaming (physical replication): the walsender reads pg_wal and ships the WAL bytes over TCP to the standby\'s walreceiver, which writes them into the standby\'s pg_wal. The whole cluster is copied; no table is picked.'), nodes: draw({ on: ['pw', 'ws', 'wr', 'sw'] }) },

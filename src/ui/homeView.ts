@@ -497,7 +497,7 @@ function lilyAlbum(stage: LilyStage): HTMLElement {
       h('span', { class: 'text-caption text-muted' }, on === undefined ? t('lily.albumSoon') : on === null ? t('lily.albumOld') : t('lily.albumAt', { date: fmt(on) })));
   });
   const box = h('details', { class: 'mt-2', open: albumOpen, ontoggle: () => { albumOpen = box.open; } },
-    h('summary', { class: 'cursor-pointer text-body-sm font-semibold text-accent' }, t('lily.album')),
+    h('summary', { class: 'cursor-pointer text-body-sm font-semibold text-accent-ink' }, t('lily.album')),
     h('ol', { class: 'm-0 mt-2 grid list-none grid-cols-3 gap-2 p-0 sm:grid-cols-6' }, ...shots),
     stage >= ACC_AT[0] ? accPicker(stage, accAt(pref, stage)) : null);
   return box;

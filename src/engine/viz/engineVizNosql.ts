@@ -1,4 +1,4 @@
-import { box, cut, define, fill, line, type Shape, text, type Tone } from './engineVizCore';
+import { box, cut, define, fill, line, type Shape, SM, text, type Tone } from './engineVizCore';
 
 // ENG-VIZ MongoDB and DynamoDB diagrams (knowledge map §5–§6). Its own lazy chunk `engineVizNosql`, imported by
 // engineViz's loadViz(); it reuses the engine from the engineViz chunk.
@@ -38,18 +38,18 @@ define<Record<string, unknown>>('mg-bson-doc', {
   const top = rows.filter((r) => r.depth === 0);
   type St = { types?: boolean; sizes?: boolean; nest?: boolean; strip?: boolean };
   const draw = (s: St): Shape[] => {
-    const out: Shape[] = [text('h1', 10, 12, tr('trường', 'field'), { size: 9.5, ink: 'muted' })];
-    if (s.types) out.push(text('h2', 124, 12, tr('kiểu BSON', 'BSON type'), { size: 9.5, ink: 'muted' }));
-    if (s.sizes) out.push(text('h3', 330, 12, tr('byte', 'bytes'), { size: 9.5, ink: 'muted', a: 'e' }));
+    const out: Shape[] = [text('h1', 10, 12, tr('trường', 'field'), { size: SM, ink: 'muted' })];
+    if (s.types) out.push(text('h2', 124, 12, tr('kiểu BSON', 'BSON type'), { size: SM, ink: 'muted' }));
+    if (s.sizes) out.push(text('h3', 330, 12, tr('byte', 'bytes'), { size: SM, ink: 'muted', a: 'e' }));
     rows.forEach((r, i) => {
       const y = 22 + i * 21;
       const nested = r.depth > 0;
       const hot = s.nest && (nested || r.type === 'array' || r.type === 'object');
       out.push({ k: `row${i}`, t: 'r', x: 10 + r.depth * 12, y, w: 320 - r.depth * 12, h: 18, tone: hot ? 'new' : 'plain' });
-      out.push(text(`n${i}`, 16 + r.depth * 12, y + 9, cut(r.name, 10), { size: 10, b: true, mono: true }));
-      out.push(text(`v${i}`, s.types ? 196 : 100, y + 9, cut(r.preview, s.types ? 13 : 24), { size: 10, mono: true, ink: 'muted' }));
+      out.push(text(`n${i}`, 16 + r.depth * 12, y + 9, cut(r.name, 10), { size: SM, b: true, mono: true }));
+      out.push(text(`v${i}`, s.types ? 196 : 100, y + 9, cut(r.preview, s.types ? 13 : 24), { size: SM, mono: true, ink: 'muted' }));
       if (s.types) out.push(...box(`ty${i}`, 122, y + 2, 64, 14, r.type, r.type === 'array' || r.type === 'object' ? 'ptr' : 'cell'));
-      if (s.sizes) out.push(text(`b${i}`, 326, y + 9, String(r.size), { size: 10, mono: true, a: 'e' }));
+      if (s.sizes) out.push(text(`b${i}`, 326, y + 9, String(r.size), { size: SM, mono: true, a: 'e' }));
     });
     if (s.strip) {
       const y = 22 + rows.length * 21 + 10;
@@ -61,7 +61,7 @@ define<Record<string, unknown>>('mg-bson-doc', {
         at += r.size;
       });
       out.push(...box('eoo', sx(size - 1), y, Math.max(4, sx(size) - sx(size - 1)), 20, '', 'ptr'));
-      out.push(text('tot', 330, y + 32, fill(tr('tổng {n} byte', 'total {n} bytes'), { n: size }), { a: 'e', size: 10, b: true }));
+      out.push(text('tot', 330, y + 32, fill(tr('tổng {n} byte', 'total {n} bytes'), { n: size }), { a: 'e', size: SM, b: true }));
     }
     return out;
   };
@@ -91,18 +91,18 @@ define<EsrModel>('mg-compound-index-esr', {
   const scanned = (o: Ord) => sorted(o).filter((d) => d.status === m.eq && (o === 'esr' || d.total > m.min));
   const draw = (o: Ord | undefined, s: { scan?: boolean; result?: boolean }): Shape[] => {
     const out: Shape[] = [...box('q', 10, 4, 320, 34, `find({ status: "${m.eq}", total: { $gt: ${m.min} } })`, 'cell', '.sort({ created: -1 })')];
-    if (!o) return [...out, ...box('e', 10, 46, 100, 30, 'E · status', 'ptr', tr('bằng', 'equality')), ...box('s', 120, 46, 100, 30, 'S · created', 'new', tr('sắp xếp', 'sort')), ...box('r', 230, 46, 100, 30, 'R · total', 'warm', tr('khoảng', 'range'))];
+    if (!o) return [...out, ...box('e', 10, 46, 100, 34, 'E · status', 'ptr', tr('bằng', 'equality')), ...box('s', 120, 46, 100, 34, 'S · created', 'new', tr('sắp xếp', 'sort')), ...box('r', 230, 46, 100, 34, 'R · total', 'warm', tr('khoảng', 'range'))];
     const cols = o === 'esr' ? ['status', 'created', 'total'] : ['status', 'total', 'created'];
-    out.push(text('ih', 10, 50, `index { ${cols.map((c) => `${c}: ${c === 'created' ? -1 : 1}`).join(', ')} }`, { size: 10, mono: true, b: true }));
+    out.push(text('ih', 10, 50, `index { ${cols.map((c) => `${c}: ${c === 'created' ? -1 : 1}`).join(', ')} }`, { size: SM, mono: true, b: true }));
     const sc = scanned(o);
     sorted(o).forEach((d, i) => {
       const y = 60 + i * 17;
       const inScan = s.scan && sc.includes(d);
       const tone: Tone = inScan ? (match(d) ? 'new' : 'warm') : 'plain';
       out.push({ k: `row${d.status}${d.created}`, t: 'r', x: 10, y, w: 200, h: 15, tone });
-      cols.forEach((c, j) => out.push(text(`c${d.status}${d.created}${c}`, 20 + j * 64, y + 8, `${c[0]}=${(d as Record<string, unknown>)[c]}`, { size: 10, mono: true })));
+      cols.forEach((c, j) => out.push(text(`c${d.status}${d.created}${c}`, 20 + j * 64, y + 8, `${c[0]}=${(d as Record<string, unknown>)[c]}`, { size: SM, mono: true })));
     });
-    if (s.scan) out.push(text('ks', 222, 70, `keysExamined ${sc.length}`, { size: 10, mono: true }), text('nr', 222, 86, `nReturned ${sc.filter(match).length}`, { size: 10, mono: true }));
+    if (s.scan) out.push(text('ks', 222, 70, `keysExamined ${sc.length}`, { size: SM, mono: true }), text('nr', 222, 86, `nReturned ${sc.filter(match).length}`, { size: SM, mono: true }));
     if (s.result) out.push(...box('stage', 222, 100, 108, 30, o === 'esr' ? tr('không SORT', 'no SORT') : 'SORT', o === 'esr' ? 'live' : 'dead', o === 'esr' ? tr('đã đúng thứ tự', 'already in order') : tr('sắp trong RAM', 'in-memory sort')));
     return out;
   };
@@ -129,18 +129,23 @@ define<PipeModel>('mg-aggregation-pipeline', {
 }, (m, tr) => {
   const st = m.stages.slice(0, 7);
   const max = Math.max(m.input, ...st.map((s) => s.out), 1);
-  const row = (k: string, i: number, label: string, sub: string, n: number, tone: Tone, prev?: number): Shape[] => {
-    const y = 14 + i * 36;
-    const w = Math.max(3, (n / max) * 100);
+  // v31 F5 + S5 (L510, L513): bars ≤ 70 units so "1000 docs" stays inside 340 at SM; the stages still to come are drawn
+  // as dashed ghosts from step 1, so the frame is the whole pipeline (no empty space) and later steps only change tone.
+  const row = (k: string, i: number, label: string, sub: string, n: number | undefined, tone: Tone, prev?: number): Shape[] => {
+    const y = 14 + i * 40;
+    const w = Math.max(3, ((n ?? 0) / max) * 70);
     return [
-      ...box(k, 10, y, 132, 30, label, tone, cut(sub, 22)),
-      { k: `${k}.bar`, t: 'r', x: 152, y: y + 8, w, h: 14, tone: prev !== undefined && n > prev ? 'warm' : 'live' },
-      text(`${k}.n`, 158 + w, y + 15, tr(`${n} tài liệu`, `${n} docs`), { size: 10, b: true }),
+      ...box(k, 10, y, 132, 34, label, tone, cut(sub, 18)),
+      ...(n === undefined ? [] : [
+        { k: `${k}.bar`, t: 'r', x: 152, y: y + 10, w, h: 14, tone: prev !== undefined && n > prev ? 'warm' : 'live' } as Shape,
+        text(`${k}.n`, 158 + w, y + 17, tr(`${n} tài liệu`, `${n} docs`), { size: SM, b: true }),
+      ]),
     ];
   };
   const frame = (upto: number): Shape[] => [
     ...row('src', 0, 'collection', 'orders', m.input, 'cell'),
-    ...st.slice(0, upto).flatMap((s, i) => [line(`ln${i}`, 76, 44 + i * 36, 76, 50 + i * 36, { ink: 'ptr', arrow: true }), ...row(`s${i}`, i + 1, s.op, s.arg ?? '', s.out, i === upto - 1 ? 'new' : 'cell', i ? st[i - 1].out : m.input)]),
+    ...st.flatMap((s, i) => [line(`ln${i}`, 76, 48 + i * 40, 76, 54 + i * 40, { ink: i < upto ? 'ptr' : 'edge', arrow: true }),
+      ...row(`s${i}`, i + 1, s.op, s.arg ?? '', i < upto ? s.out : undefined, i >= upto ? 'ghost' : i === upto - 1 ? 'new' : 'cell', i ? st[i - 1].out : m.input)]),
   ];
   const sayOf = (s: PipeModel['stages'][number], prev: number): string => {
     const base = fill(tr('{op}: nhận {a}, chuyển {b} tài liệu cho bước sau.', '{op}: takes {a}, passes {b} documents on.'), { op: s.op, a: prev, b: s.out });
@@ -150,7 +155,7 @@ define<PipeModel>('mg-aggregation-pipeline', {
     return base;
   };
   return {
-    title: tr('Pipeline tổng hợp', 'The aggregation pipeline'), w: 340, h: 14 + (st.length + 1) * 36 + 4,
+    title: tr('Pipeline tổng hợp', 'The aggregation pipeline'), w: 340, h: 14 + (st.length + 1) * 40 + 2,
     frames: [
       { say: fill(tr('Collection có {n} tài liệu đi vào pipeline (số minh họa, không phải dữ liệu lab bên dưới).', 'The collection\'s {n} documents enter the pipeline (illustrative numbers, not the lab data below).'), { n: m.input }), nodes: frame(0) },
       ...st.map((s, i) => ({ say: sayOf(s, i ? st[i - 1].out : m.input), nodes: frame(i + 1) })),
@@ -168,8 +173,8 @@ define<{ writes: string[] }>('mg-replica-set-oplog', { writes: ['insert x:1', 'u
       const [x, y] = N[k];
       const dead = s.down && k === 'P';
       out.push({ k: `n${k}`, t: 'c', x, y, r: 24, tone: dead ? 'dead' : s.names[i] === 'PRIMARY' ? 'new' : 'cell' }, text(`t${k}`, x, y, dead ? tr('sập', 'down') : s.names[i] === 'PRIMARY' ? 'P' : 'S', { a: 'm', b: true, size: 13 }));
-      out.push(text(`r${k}`, x, y + 34, s.names[i], { a: 'm', size: 9.5, ink: 'muted', b: true }));
-      for (let j = 0; j < s.logs[i]; j++) out.push(...box(`o${k}${j}`, k === 'P' ? x + 34 : x - 50, k === 'P' ? y - 18 + j * 20 : y + 44 + j * 20, 100, 17, cut(`ts ${j + 1} · ${m.writes[j] ?? 'op'}`, 20), dead ? 'ghost' : 'plain'));
+      out.push(text(`r${k}`, x, y + 34, s.names[i], { a: 'm', size: SM, ink: 'muted', b: true }));
+      for (let j = 0; j < s.logs[i]; j++) out.push(...box(`o${k}${j}`, k === 'P' ? x + 34 : x - 62, k === 'P' ? y - 18 + j * 20 : y + 44 + j * 20, 124, 17, cut(`ts ${j + 1} · ${m.writes[j] ?? 'op'}`, 20), dead ? 'ghost' : 'plain'));
     });
     if (s.pull) {
       const from = s.names.indexOf('PRIMARY');
@@ -181,7 +186,7 @@ define<{ writes: string[] }>('mg-replica-set-oplog', { writes: ['insert x:1', 'u
         out.push(line(`p${k}`, x1 + (x2 - x1) * 0.2, y1 + (y2 - y1) * 0.2, x1 + (x2 - x1) * 0.78, y1 + (y2 - y1) * 0.78, { ink: 'ptr', arrow: true, dash: true }));
       });
     }
-    if (s.ack) out.push(...box('ack', 236, 14, 94, 30, 'ack w:majority', 'live'));
+    if (s.ack) out.push(...box('ack', 10, 14, 112, 30, 'ack w:majority', 'live'));
     return out;
   };
   const w = m.writes.length >= 2 ? 2 : 1;
@@ -209,14 +214,14 @@ define<{ shards: number }>('mg-shard-chunks', { shards: 3 }, (m, tr) => {
     { k: 'c2', label: '[200, 300)', shard: 2 % S, slot: S > 2 ? 0 : 1 }, { k: 'c3', label: '[300, max)', shard: 0, slot: 1 },
   ];
   const draw = (chunks: Chunk[], o: { route?: number[]; scatter?: boolean; hot?: string; note?: string } = {}): Shape[] => {
-    const out: Shape[] = [...box('mongos', 120, 8, 100, 28, 'mongos', 'ptr', tr('bộ định tuyến', 'router'))];
+    const out: Shape[] = [...box('mongos', 120, 8, 100, 34, 'mongos', 'ptr', tr('bộ định tuyến', 'router'))];
     for (let i = 0; i < S; i++) {
-      out.push({ k: `sh${i}`, t: 'r', x: sx(i), y: 70, w: cw, h: 140, tone: 'plain' }, text(`sht${i}`, sx(i) + cw / 2, 84, `shard ${i + 1}`, { a: 'm', b: true, size: 10.5 }));
+      out.push({ k: `sh${i}`, t: 'r', x: sx(i), y: 70, w: cw, h: 140, tone: 'plain' }, text(`sht${i}`, sx(i) + cw / 2, 84, `shard ${i + 1}`, { a: 'm', b: true, size: SM }));
       const on = o.scatter || o.route?.includes(i);
-      out.push(line(`rt${i}`, 170, 36, sx(i) + cw / 2, 68, { ink: on ? 'new' : 'edge', arrow: !!on, w: on ? 1.8 : 1, dash: !on }));
+      out.push(line(`rt${i}`, 170, 42, sx(i) + cw / 2, 68, { ink: on ? 'new' : 'edge', arrow: !!on, w: on ? 1.8 : 1, dash: !on }));
     }
     chunks.forEach((c) => out.push(...box(c.k, sx(c.shard) + 8, 96 + c.slot * 34, cw - 16, 28, c.label, c.k === o.hot ? 'dead' : c.tone ?? 'cell')));
-    if (o.note) out.push(text('note', 10, 226, o.note, { size: 10, ink: 'muted' }));
+    if (o.note) out.push(text('note', 10, 226, o.note, { size: SM, ink: 'muted' }));
     return out;
   };
   const split: Chunk[] = [...ranged.slice(0, 3), { k: 'c3', label: '[300, 400)', shard: 0, slot: 1, tone: 'new' }, { k: 'c4', label: '[400, max)', shard: 0, slot: 2, tone: 'new' }];
@@ -286,28 +291,33 @@ define<{ items: Item[] }>('dy-gsi-projection', {
 }, (m, tr) => {
   const items = m.items.slice(0, 5);
   const fresh: Item = { pk: 'CUST#3', sk: 'ORDER#2026-10-31', status: 'PAID', total: 60, note: '' };
-  const COLS = [10, 76, 188, 252, 288];
-  const table = (k: string, y: number, head: string[], rows: string[][], tones: Tone[] = []): Shape[] => [
-    text(`${k}h`, 10, y, head[0], { b: true, size: 10.5 }),
-    ...head.slice(1).map((h, j) => text(`${k}c${j}`, COLS[j] + 4, y + 16, h, { size: 9, ink: 'muted', b: true })),
-    ...rows.flatMap((r, i) => [
-      { k: `${k}r${r[0]}${r[1]}`, t: 'r' as const, x: 10, y: y + 24 + i * 18, w: 320, h: 16, tone: tones[i] ?? 'plain' },
-      ...r.map((v, j) => text(`${k}v${r[0]}${r[1]}${j}`, COLS[j] + 4, y + 32 + i * 18, cut(v, j === 1 ? 19 : j === 0 ? 10 : j === 2 ? 8 : 6), { size: 9.5, mono: true })),
+  // v31 F5 (L510): two-line item rows (keys in monospace, then the attributes) instead of five columns, so every value
+  // keeps ≥ 12.5 units inside 340.
+  const RP = 34;
+  const table = (k: string, y: number, head: [string, string], rows: [string, string, string][], tones: Tone[] = []): Shape[] => [
+    text(`${k}h`, 10, y, head[0], { b: true, size: SM }),
+    text(`${k}c`, 10, y + 16, head[1], { size: SM, ink: 'muted' }),
+    ...rows.flatMap(([id, l1, l2], i) => [
+      { k: `${k}r${id}`, t: 'r' as const, x: 10, y: y + 26 + i * RP, w: 320, h: RP - 2, tone: tones[i] ?? 'plain' },
+      text(`${k}v${id}0`, 16, y + 35 + i * RP, cut(l1, 41), { size: SM, mono: true }),
+      text(`${k}v${id}1`, 16, y + 50 + i * RP, cut(l2, 46), { size: SM }),
     ]),
   ];
-  const base = (extra: Item[] = []) => [...items, ...extra].map((it) => [it.pk, it.sk, it.status ?? '', String(it.total), it.note]);
-  const gsi = (list: Item[], all: boolean) => list.filter((it) => it.status).sort((a, b) => (a.status! + a.sk).localeCompare(b.status! + b.sk)).map((it) => [it.status!, it.sk.replace('ORDER#', ''), it.pk, String(it.total), all ? it.note : '']);
-  const BH = ['', 'PK', 'SK', 'status', 'total', 'note'];
-  const GY = 34 + (items.length + 1) * 18 + 18;
-  const G = (list: Item[], all = false, tones?: Tone[]) => table('g', GY, [`GSI byStatus · ${tr('chiếu', 'projects')} total`, 'status (PK)', 'date (SK)', 'PK', 'total', ''], gsi(list, all), tones);
+  const attrs = (it: Item, note: boolean) => [it.status ? `status ${it.status}` : '', `total ${it.total}`, note && it.note ? `note ${it.note}` : ''].filter(Boolean).join(' · ');
+  const base = (extra: Item[] = []): [string, string, string][] => [...items, ...extra].map((it) => [it.pk + it.sk, `${it.pk}  ${it.sk}`, attrs(it, true)]);
+  const gsi = (list: Item[], all: boolean): [string, string, string][] => list.filter((it) => it.status).sort((a, b) => (a.status! + a.sk).localeCompare(b.status! + b.sk))
+    .map((it) => [it.status! + it.sk, `${it.status}  ${it.sk.replace('ORDER#', '')}`, [`PK ${it.pk}`, `total ${it.total}`, all && it.note ? `note ${it.note}` : ''].filter(Boolean).join(' · ')]);
+  const BH = tr('khóa PK  SK, rồi thuộc tính', 'key PK  SK, then attributes');
+  const GY = 12 + 26 + (items.length + 1) * RP + 22;
+  const G = (list: Item[], all = false, tones?: Tone[]) => table('g', GY, [`GSI byStatus · ${tr('chiếu', 'projects')} total`, tr('khóa status (PK)  ngày (SK)', 'key status (PK)  date (SK)')], gsi(list, all), tones);
   return {
-    title: tr('DynamoDB: GSI và projection', 'DynamoDB: a GSI and its projection'), w: 340, h: GY + 24 + (gsi(items, false).length + 1) * 18 + 6,
+    title: tr('DynamoDB: GSI và projection', 'DynamoDB: a GSI and its projection'), w: 340, h: GY + 26 + (gsi(items, false).length + 1) * RP + 4,
     frames: [
-      { say: tr('Bảng gốc: khóa là khách (PK) và đơn (SK). Query theo khách thì rẻ.', 'The base table: the key is the customer (PK) and the order (SK). Querying by customer is cheap.'), nodes: table('b', 12, [tr('Bảng gốc', 'Base table'), ...BH.slice(1)], base()) },
-      { say: tr('"Mọi đơn PAID" không có trong khóa: trên bảng gốc chỉ còn Scan, đọc (và trả tiền) mọi item.', '"Every PAID order" is not in the key: on the base table that is a Scan, reading (and paying for) every item.'), nodes: table('b', 12, [tr('Bảng gốc · Scan', 'Base table · Scan'), ...BH.slice(1)], base(), items.map(() => 'warm')) },
-      { say: tr('GSI byStatus: một bảng phụ khóa (status, ngày) do DynamoDB tự chép từ bảng gốc. Item không có status (PROFILE) không vào GSI: index thưa.', 'GSI byStatus: a second table keyed by (status, date) that DynamoDB copies from the base table. An item without status (PROFILE) is left out: a sparse index.'), nodes: [...table('b', 12, [tr('Bảng gốc', 'Base table'), ...BH.slice(1)], base()), ...G(items)] },
-      { say: tr('Projection INCLUDE total: GSI chỉ giữ khóa và total, không có note. Cần note thì phải đọc thêm bảng gốc; chiếu nhiều thì tốn chỗ và WCU hơn.', 'Projection INCLUDE total: the GSI keeps only the keys and total, not note. Needing note means another read on the base table; projecting more costs storage and WCU.'), nodes: [...table('b', 12, [tr('Bảng gốc', 'Base table'), ...BH.slice(1)], base()), ...G(items, false, gsi(items, false).map((r) => (r[0] === 'PAID' ? 'new' : 'plain')))] },
-      { say: tr('GSI cập nhật bất đồng bộ: đơn mới vừa ghi chưa thấy ngay trong GSI. Đọc GSI chỉ là eventually consistent.', 'A GSI is updated asynchronously: a brand-new order is not in the GSI yet. GSI reads are eventually consistent only.'), nodes: [...table('b', 12, [tr('Bảng gốc', 'Base table'), ...BH.slice(1)], base([fresh]), [...items.map(() => 'plain' as Tone), 'new']), ...G(items), ...box('lag', 10, GY + 24 + gsi(items, false).length * 18, 320, 16, tr('CUST#3 · đang chép sang GSI…', 'CUST#3 · on its way to the GSI…'), 'ghost')] },
+      { say: tr('Bảng gốc: khóa là khách (PK) và đơn (SK). Query theo khách thì rẻ.', 'The base table: the key is the customer (PK) and the order (SK). Querying by customer is cheap.'), nodes: table('b', 12, [tr('Bảng gốc', 'Base table'), BH], base()) },
+      { say: tr('"Mọi đơn PAID" không có trong khóa: trên bảng gốc chỉ còn Scan, đọc (và trả tiền) mọi item.', '"Every PAID order" is not in the key: on the base table that is a Scan, reading (and paying for) every item.'), nodes: table('b', 12, [tr('Bảng gốc · Scan', 'Base table · Scan'), BH], base(), items.map(() => 'warm')) },
+      { say: tr('GSI byStatus: một bảng phụ khóa (status, ngày) do DynamoDB tự chép từ bảng gốc. Item không có status (PROFILE) không vào GSI: index thưa.', 'GSI byStatus: a second table keyed by (status, date) that DynamoDB copies from the base table. An item without status (PROFILE) is left out: a sparse index.'), nodes: [...table('b', 12, [tr('Bảng gốc', 'Base table'), BH], base()), ...G(items)] },
+      { say: tr('Projection INCLUDE total: GSI chỉ giữ khóa và total, không có note. Cần note thì phải đọc thêm bảng gốc; chiếu nhiều thì tốn chỗ và WCU hơn.', 'Projection INCLUDE total: the GSI keeps only the keys and total, not note. Needing note means another read on the base table; projecting more costs storage and WCU.'), nodes: [...table('b', 12, [tr('Bảng gốc', 'Base table'), BH], base()), ...G(items, false, gsi(items, false).map((r) => (r[0] === 'PAID' ? 'new' : 'plain')))] },
+      { say: tr('GSI cập nhật bất đồng bộ: đơn mới vừa ghi chưa thấy ngay trong GSI. Đọc GSI chỉ là eventually consistent.', 'A GSI is updated asynchronously: a brand-new order is not in the GSI yet. GSI reads are eventually consistent only.'), nodes: [...table('b', 12, [tr('Bảng gốc', 'Base table'), BH], base([fresh]), [...items.map(() => 'plain' as Tone), 'new']), ...G(items), ...box('lag', 10, GY + 26 + gsi(items, false).length * RP, 320, RP - 2, tr('CUST#3 · đang chép sang GSI…', 'CUST#3 · on its way to the GSI…'), 'ghost')] },
     ],
   };
 });
@@ -321,24 +331,26 @@ define<{ items: [string, string, string][] }>('dy-single-table-items', {
 }, (m, tr) => {
   const items = [...m.items].slice(0, 10).sort((a, b) => a[0].localeCompare(b[0]) || a[1].localeCompare(b[1]));
   const pks = [...new Set(items.map((i) => i[0]))];
+  const RP = 34;
   const draw = (pick: (it: [string, string, string]) => boolean, o: { groups?: boolean; q?: string } = {}): Shape[] => {
-    const out: Shape[] = [text('hpk', 14, 12, 'PK', { size: 9, b: true, ink: 'muted' }), text('hsk', 132, 12, 'SK', { size: 9, b: true, ink: 'muted' }), text('hat', 268, 12, tr('thuộc tính', 'attributes'), { size: 9, b: true, ink: 'muted' })];
+    // v31 F5 (L510): two-line rows (PK, then SK indented; attributes at the right) keep monospace keys ≥ 12.5 units
+    const out: Shape[] = [text('hpk', 14, 12, 'PK / SK', { size: SM, b: true, ink: 'muted' }), text('hat', 326, 12, tr('thuộc tính', 'attributes'), { size: SM, b: true, ink: 'muted', a: 'e' })];
     items.forEach((it, i) => {
-      const y = 20 + i * 20;
+      const y = 22 + i * RP;
       const on = pick(it);
-      out.push({ k: `r${i}`, t: 'r', x: 10, y, w: 320, h: 18, tone: on ? 'new' : it[1] === 'PROFILE' ? 'ptr' : 'plain' });
-      out.push(text(`a${i}`, 14, y + 9, cut(it[0], 17), { size: 9.5, mono: true }), text(`b${i}`, 132, y + 9, cut(it[1], 20), { size: 9.5, mono: true }), text(`c${i}`, 268, y + 9, cut(it[2], 10), { size: 9.5 }));
+      out.push({ k: `r${i}`, t: 'r', x: 10, y, w: 320, h: RP - 2, tone: on ? 'new' : it[1] === 'PROFILE' ? 'ptr' : 'plain' });
+      out.push(text(`a${i}`, 16, y + 9, cut(it[0], 22), { size: SM, mono: true }), text(`b${i}`, 34, y + 24, cut(it[1], 38), { size: SM, mono: true }), text(`c${i}`, 326, y + 9, cut(it[2], 12), { size: SM, a: 'e' }));
     });
     if (o.groups) pks.forEach((pk, g) => {
       const idx = items.map((it, i) => (it[0] === pk ? i : -1)).filter((i) => i >= 0);
-      out.push(line(`g${g}`, 6, 21 + idx[0] * 20, 6, 37 + idx[idx.length - 1] * 20, { ink: 'ptr', w: 3 }));
+      out.push(line(`g${g}`, 6, 23 + idx[0] * RP, 6, 20 + idx[idx.length - 1] * RP + RP - 2, { ink: 'ptr', w: 3 }));
     });
-    if (o.q) out.push(...box('q', 10, 28 + items.length * 20, 320, 24, o.q, 'cell'));
+    if (o.q) out.push(...box('q', 10, 28 + items.length * RP, 320, 24, cut(o.q, 44), 'cell'));
     return out;
   };
   const c1 = pks[0];
   return {
-    title: tr('DynamoDB: thiết kế một bảng', 'DynamoDB: single-table design'), w: 340, h: 20 + items.length * 20 + 40,
+    title: tr('DynamoDB: thiết kế một bảng', 'DynamoDB: single-table design'), w: 340, h: 28 + items.length * RP + 30,
     frames: [
       { say: tr('Một bảng chứa nhiều loại thực thể (khách, đơn, dòng đơn). Khóa đặt tên chung PK/SK, giá trị có tiền tố loại: CUST#, ORDER#, ITEM#.', 'One table holds several entity types (customers, orders, order lines). The keys are named generically PK/SK and values carry a type prefix: CUST#, ORDER#, ITEM#.'), nodes: draw(() => false) },
       { say: tr('Item cùng PK là một item collection, nằm cạnh nhau và sắp theo SK.', 'Items that share a PK form an item collection, stored together and sorted by SK.'), nodes: draw(() => false, { groups: true }) },

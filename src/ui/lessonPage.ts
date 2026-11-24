@@ -24,13 +24,13 @@ const cx = (...c: (string | false | undefined)[]): string => c.filter(Boolean).j
 
 const BTN_GO = 'rounded-full border-0 bg-accent px-4 py-1.5 font-bold text-on-accent shadow-(--shadow-1) hover:bg-accent/90';
 const BTN_SECONDARY = 'rounded-full border border-accent bg-panel px-3 py-1 font-bold text-accent hover:bg-accent-soft';
-const BTN_GHOST = 'inline-flex min-h-6 items-center gap-1.5 rounded-full border-0 bg-transparent px-2.5 py-1 font-semibold text-accent hover:bg-accent-soft';
+const BTN_GHOST = 'inline-flex min-h-6 items-center gap-1.5 rounded-full border-0 bg-transparent px-2.5 py-1 font-semibold text-accent-ink hover:bg-accent-soft';
 const CARD = 'rounded-(--r-card) bg-panel ring-1 ring-line';
 const TOC_ROW = 'flex min-h-11 w-full items-center gap-2 border-0 border-l-4 px-3 py-1.5 text-left text-body-sm hover:bg-accent-soft';
 /** A section not being read; either this set or TOC_NOW, never both (stylesheet order would pick the winner). */
 const TOC_IDLE = 'border-transparent bg-transparent text-ink';
 /** The section being read (set at draw and by the observer; classes, not aria variants, to keep the CSS small). */
-const TOC_NOW = 'border-accent bg-accent-soft font-bold text-accent';
+const TOC_NOW = 'border-accent bg-accent-soft font-bold text-accent-ink';
 const CHIP = 'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-body-sm';
 
 type Out = { result?: QueryResult; error?: unknown; sql: string };
@@ -203,9 +203,9 @@ function pitfallBlock(l: FullLesson, i: number): HTMLElement {
   };
   const inner = [one('wrong'), prose(p.why[lang]), one('fix')];
   const title = h('h3', { class: 'm-0 flex items-center gap-2 text-body font-bold' }, d$.icon('secPitfall', 'size-5 shrink-0 text-ink'), lt('fl.pitfall', { i: i + 1, title: p.title[lang] }));
-  if (i === 0) return h('article', { class: 'flex flex-col gap-3 rounded-(--r-card) bg-warn-soft p-4' }, title, ...inner);
+  if (i === 0) return h('article', { class: 'flex flex-col gap-3 rounded-(--r-card) bg-warn-soft p-4 ring-1 ring-warn-line' }, title, ...inner);
   const key = `${l.id}#pit${i}`;
-  const det = h('details', { class: 'group rounded-(--r-card) bg-warn-soft', open: opened.has(key), ontoggle: () => (det.open ? opened.add(key) : opened.delete(key)) },
+  const det = h('details', { class: 'group rounded-(--r-card) bg-warn-soft ring-1 ring-warn-line', open: opened.has(key), ontoggle: () => (det.open ? opened.add(key) : opened.delete(key)) },
     h('summary', { class: 'flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 px-4 py-2 [&::-webkit-details-marker]:hidden' }, title, d$.icon('down', 'size-4 text-muted [details[open]>summary>&]:rotate-180')),
     h('div', { class: 'flex flex-col gap-3 px-4 py-3' }, ...inner)) as HTMLDetailsElement;
   return det;
@@ -355,7 +355,7 @@ export function lessonPage(deps: DrillDeps, l: FullLesson, c: LessonCtx): HTMLEl
   // ux §7: phone/tablet lesson bar (sticky under the top bar) + the TOC sheet
   const sheet = h('dialog', { id: 'fl-toc-sheet', class: 'm-0 mt-auto max-h-[calc(100dvh-2rem)] w-full max-w-none rounded-(--r-card) bg-panel p-0 text-ink shadow-(--shadow-2)', 'aria-labelledby': 'fl-sheet-title',
     onclick: (ev: Event) => { if (ev.target === sheet) sheet.close(); } }) as HTMLDialogElement;
-  const opener = h('button', { type: 'button', class: 'flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-full border-0 bg-transparent px-3 text-body-sm font-semibold text-ink hover:bg-accent-soft', 'aria-haspopup': 'dialog',
+  const opener = h('button', { type: 'button', class: 'flex min-h-11 flex-1 shrink-0 items-center gap-2 rounded-full border-0 bg-transparent px-3 text-left text-body-sm font-semibold text-ink hover:bg-accent-soft', 'aria-haspopup': 'dialog',
     onclick: () => {
       sheet.replaceChildren(h('div', { class: 'flex items-center justify-between border-b border-line px-4 py-3' },
         h('h2', { id: 'fl-sheet-title', class: 'm-0 text-title font-bold' }, lt('fl.toc')),
@@ -363,10 +363,10 @@ export function lessonPage(deps: DrillDeps, l: FullLesson, c: LessonCtx): HTMLEl
       h('nav', { class: 'overflow-auto py-2', 'aria-label': lt('fl.toc') }, tocList(l, current, () => sheet.close())));
       sheet.showModal();
     } }, d$.icon('toc', 'size-5 shrink-0 text-accent'),
-  h('span', { class: 'truncate', 'data-fl-bar-sec': '' }, lt('fl.barSec', { k: LESSON_SECTIONS.indexOf(current) + 1, n: LESSON_SECTIONS.length, name: secName(current) })));
+  h('span', { class: 'whitespace-nowrap', 'data-fl-bar-sec': '' }, lt('fl.barSec', { k: LESSON_SECTIONS.indexOf(current) + 1, n: LESSON_SECTIONS.length, name: secName(current) })));
   sheet.addEventListener('close', () => opener.focus());
   const bar = h('div', { class: 'sticky top-0 z-20 flex min-h-11 items-center gap-1 border-b border-line bg-panel', 'data-fl-bar': '' },
-    c.part ? h('a', { href: `${d$.hashOf('learn')}/sql/${c.part.n}`, class: 'inline-flex min-h-11 min-w-0 items-center gap-1 px-2 text-body-sm font-semibold no-underline' },
+    c.part ? h('a', { href: `${d$.hashOf('learn')}/sql/${c.part.n}`, class: 'inline-flex min-h-11 min-w-0 items-center gap-1 px-2 text-body-sm font-semibold no-underline', title: lt('learn.moduleTitle', { n: c.part.n, title: c.part.title }) },
       d$.icon('chevronLeft', 'size-4 shrink-0'), h('span', { class: 'truncate' }, lt('learn.moduleTitle', { n: c.part.n, title: c.part.title }))) : null,
     opener, sheet);
 
@@ -376,7 +376,7 @@ export function lessonPage(deps: DrillDeps, l: FullLesson, c: LessonCtx): HTMLEl
     h('span', { class: cx(CHIP, 'bg-surface-2 text-ink') }, d$.icon('time', 'size-4'), lt('fl.minutes', { n: l.minutes })),
     c.prev && c.part && d$.ROUTE_PARTS.find((p) => p.n === c.part!.n)?.skills.includes(c.prev.id)
       ? h('span', { class: 'inline-flex items-center gap-1.5 text-body-sm text-muted' }, lt('fl.before'),
-        h('a', { href: `${d$.hashOf('learn')}/skill/${c.prev.id}`, class: cx(CHIP, 'bg-accent-soft font-semibold text-accent no-underline') }, c.prev.label[lang]))
+        h('a', { href: `${d$.hashOf('learn')}/skill/${c.prev.id}`, class: cx(CHIP, 'bg-accent-soft font-semibold text-accent-ink no-underline') }, c.prev.label[lang]))
       : null);
 
   const inBodyToc = h('details', { class: CARD, 'data-fl-toc': '' },

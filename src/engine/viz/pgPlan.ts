@@ -1,5 +1,5 @@
 import { planNodesOf, type PlanVizNode } from './engineVizPlanJson';
-import { arc, box, cut, define, fill, line, num, type Shape, text, type Tone } from './engineVizCore';
+import { arc, box, cut, define, fill, line, num, type Shape, SM, text, type Tone } from './engineVizCore';
 
 // ENG-VIZ Postgres planner and concurrency diagrams (knowledge map P12, C4): plan tree, locks, isolation anomalies.
 // The query path and partition pruning live in the lazy chunk engineVizPgFlow (v23, L263).
@@ -20,25 +20,21 @@ define<unknown>('pg-plan-tree', PLAN_SAMPLE, (m, tr) => {
   const kids = (id: number) => nodes.filter((n) => n.parent === id);
   const root = nodes.find((n) => n.parent === null || !nodes.some((p) => p.id === n.parent)) ?? nodes[0];
   const depth = new Map<number, number>();
-  const xs = new Map<number, number>();
-  let leaf = 0;
-  const walk = (n: PlanVizNode, d: number): void => {
-    depth.set(n.id, d);
-    const c = kids(n.id);
-    c.forEach((k) => walk(k, d + 1));
-    xs.set(n.id, c.length ? c.reduce((a, k) => a + xs.get(k.id)!, 0) / c.length : leaf++);
-  };
+  const walk = (n: PlanVizNode, d: number): void => { depth.set(n.id, d); kids(n.id).forEach((k) => walk(k, d + 1)); };
   walk(root, 0);
-  const leaves = Math.max(1, leaf);
-  const maxD = Math.max(...depth.values());
-  const BW = Math.min(124, 320 / leaves - 8);
-  const slot = 320 / leaves;
-  const bx = (n: PlanVizNode) => 10 + (xs.get(n.id)! + 0.5) * slot - BW / 2;
-  const by = (n: PlanVizNode) => 14 + depth.get(n.id)! * 62;
+  // v31 F5 (L510): an indented tree, one full-width row per node in EXPLAIN's own order (parent first, children below and
+  // to the right), so labels keep ≥ 12.5 units however many leaves the plan has; an elbow joins each child to its parent.
+  const pre: PlanVizNode[] = [];
+  const first = (n: PlanVizNode): void => { pre.push(n); kids(n.id).forEach(first); };
+  first(root);
+  const RH = 40;
+  const row = (n: PlanVizNode) => pre.indexOf(n);
+  const bx = (n: PlanVizNode) => 10 + Math.min(depth.get(n.id)!, 6) * 18;
+  const by = (n: PlanVizNode) => 10 + row(n) * (RH + 8);
   const post: PlanVizNode[] = [];
   const order = (n: PlanVizNode): void => { kids(n.id).forEach(order); post.push(n); };
   order(root);
-  const label = (n: PlanVizNode) => cut(n.relation ? `${n.type} ${n.relation}` : n.type, Math.floor(BW / 6.2));
+  const label = (n: PlanVizNode) => cut(n.relation ? `${n.type} ${n.relation}` : n.type, Math.floor((330 - bx(n) - 8) / 7.3));
   const facts = (n: PlanVizNode) => {
     const cost = num(n.cost);
     const rows = num(n.estRows) ?? num(n.rows);
@@ -46,24 +42,24 @@ define<unknown>('pg-plan-tree', PLAN_SAMPLE, (m, tr) => {
   };
   const draw = (done: number, cur?: PlanVizNode): Shape[] => {
     const out: Shape[] = [];
-    nodes.forEach((n) => {
+    pre.forEach((n) => {
       const p = nodes.find((x) => x.id === n.parent);
-      if (p && depth.has(n.id)) {
+      if (p && depth.has(p.id)) {
         const ran = post.indexOf(n) < done;
-        out.push(line(`e${n.id}`, bx(n) + BW / 2, by(n), bx(p) + BW / 2, by(p) + 38, { ink: ran ? 'new' : 'edge', arrow: ran, w: ran ? 1.8 : 1.2 }));
+        out.push({ k: `e${n.id}`, t: 'p', d: `M${bx(n)} ${by(n) + RH / 2} H${bx(p) + 9} V${by(p) + RH}`, ink: ran ? 'new' : 'edge', arrow: ran, w: ran ? 1.8 : 1.2 });
       }
     });
-    nodes.filter((n) => depth.has(n.id)).forEach((n) => {
+    pre.forEach((n) => {
       const i = post.indexOf(n);
       const tone: Tone = n === cur ? 'new' : i < done ? 'live' : 'cell';
-      out.push(...box(`n${n.id}`, bx(n), by(n), BW, 38, label(n), tone, cut(facts(n), Math.floor(BW / 5))));
+      out.push(...box(`n${n.id}`, bx(n), by(n), 330 - bx(n), RH, label(n), tone, cut(facts(n), Math.floor((330 - bx(n) - 8) / 6.6))));
     });
     return out;
   };
   const say = (n: PlanVizNode) => fill(tr('{t}{r}: ước lượng {e} dòng, chi phí tổng {c} (gồm cả nút con). Nó chuyển dòng lên nút cha.', '{t}{r}: an estimated {e} rows at a total cost of {c} (children included). It hands its rows up to its parent.'),
     { t: n.type, r: n.relation ? tr(` trên ${n.relation}`, ` on ${n.relation}`) : '', e: num(n.estRows) ?? num(n.rows) ?? '?', c: num(n.cost) ?? '?' });
   return {
-    title: tr('Cây kế hoạch EXPLAIN', 'The EXPLAIN plan tree'), w: 340, h: 14 + maxD * 62 + 46,
+    title: tr('Cây kế hoạch EXPLAIN', 'The EXPLAIN plan tree'), w: 340, h: 14 + pre.length * (RH + 8),
     frames: [
       { say: tr('EXPLAIN vẽ kế hoạch thành cây: nút gốc trả kết quả, lá đọc bảng. Thực thi kéo dòng từ dưới lên.', 'EXPLAIN draws the plan as a tree: the root returns the result and the leaves read tables. Execution pulls rows from the bottom up.'), nodes: draw(0) },
       ...post.map((n, i) => ({ say: say(n), nodes: draw(i, n) })),
@@ -82,12 +78,13 @@ export interface LockModel { waits: [string, string][]; cycle?: [string, string]
 define<LockModel>('pg-lock-matrix', { waits: [['T2', 'T1'], ['T3', 'T1'], ['T3', 'T2']], cycle: [['T1', 'T2'], ['T2', 'T1']] }, (m, tr) => {
   const C = 22;
   const X0 = 46;
-  const Y0 = 30;
+  const Y0 = 34;
+  // v31 F5 (L510): column labels alternate two rows, since a 3-letter label at SM is wider than a 22-unit cell
   const matrix = (hlRow?: number, hlCol?: number): Shape[] => {
     const out: Shape[] = [];
     ABBR.forEach((a, i) => {
-      out.push(text(`rl${i}`, X0 - 4, Y0 + i * C + C / 2, a, { a: 'e', size: 10, b: true, ink: i === hlRow ? 'new' : 'ink' }));
-      out.push(text(`cl${i}`, X0 + i * C + C / 2, Y0 - 9, a, { a: 'm', size: 9, b: true, ink: i === hlCol ? 'new' : 'ink' }));
+      out.push(text(`rl${i}`, X0 - 4, Y0 + i * C + C / 2, a, { a: 'e', size: SM, b: true, ink: i === hlRow ? 'new' : 'ink' }));
+      out.push(text(`cl${i}`, X0 + i * C + C / 2, i % 2 ? Y0 - 22 : Y0 - 9, a, { a: 'm', size: SM, b: true, ink: i === hlCol ? 'new' : 'ink' }));
       ABBR.forEach((_, j) => {
         const bad = LOCK_CONFLICTS[i][j] === '1';
         const on = (hlRow === i && (hlCol === undefined || hlCol === j)) || (hlCol === j && hlRow === undefined);
@@ -99,10 +96,10 @@ define<LockModel>('pg-lock-matrix', { waits: [['T2', 'T1'], ['T3', 'T1'], ['T3',
   };
   const NODES: Record<string, [number, number]> = { T1: [60, 262], T2: [170, 262], T3: [280, 262] };
   const graph = (edges: [string, string][], tone: 'warm' | 'dead', holds: Record<string, string>): Shape[] => {
-    const out: Shape[] = [text('gh', 10, 222, tr('Đồ thị chờ (ai chờ ai)', 'Waits-for graph (who waits for whom)'), { size: 9.5, ink: 'muted' })];
+    const out: Shape[] = [text('gh', 10, 222, tr('Đồ thị chờ (ai chờ ai)', 'Waits-for graph (who waits for whom)'), { size: SM, ink: 'muted' })];
     Object.entries(NODES).forEach(([n, [x, y]]) => {
       out.push({ k: `g${n}`, t: 'c', x, y, r: 16, tone: edges.some(([a]) => a === n) ? tone : 'live' }, text(`gt${n}`, x, y, n, { a: 'm', b: true }));
-      if (holds[n]) out.push(text(`gh${n}`, x, y + 28, holds[n], { a: 'm', size: 9.5, mono: true }));
+      if (holds[n]) out.push(text(`gh${n}`, x, y + 28, holds[n], { a: 'm', size: SM, mono: true }));
     });
     edges.forEach(([a, b], i) => {
       const [x1, y1] = NODES[a];
@@ -136,27 +133,35 @@ define<LockModel>('pg-lock-matrix', { waits: [['T2', 'T1'], ['T3', 'T1'], ['T3',
 // ── isolationAnomalies ──────────────────────────────────────────────────────────────────────────────────────────
 type Ev = [lane: 0 | 1, label: string, tone?: Tone];
 define<Record<string, never>>('pg-isolation-anomalies', {}, (_m, tr) => {
-  const lanes: Shape[] = [text('l1', 10, 52, 'T1', { b: true }), text('l2', 10, 108, 'T2', { b: true }), line('r1', 34, 52, 330, 52, { ink: 'edge' }), line('r2', 34, 108, 330, 108, { ink: 'edge' })];
-  const story = (id: string, head: string, evs: Ev[], verdict: string, ok: boolean): Shape[] => [
-    ...lanes,
-    text(`${id}h`, 10, 16, head, { b: true, size: 12 }),
-    ...evs.flatMap(([l, s, tone], i) => box(`${id}${i}`, 38 + i * (292 / evs.length), l ? 94 : 38, 292 / evs.length - 6, 28, s, tone ?? 'cell')),
-    ...box(`${id}v`, 10, 140, 320, 26, verdict, ok ? 'live' : 'dead'),
-  ];
-  const LEVELS = ['READ UNCOMMITTED', 'READ COMMITTED', 'REPEATABLE READ', 'SERIALIZABLE'];
-  // PostgreSQL docs, "Transaction Isolation" table: 1 = possible in PostgreSQL.
+  // v31 F5 (L510): time runs down the page, T1 left and T2 right (150 units each), so every event label keeps ≥ 12.5 units;
+  // the summary table puts anomalies in rows and RU/RC/RR/SER in columns.
+  const lanes: Shape[] = [text('l1', 85, 34, 'T1', { b: true, a: 'm' }), text('l2', 255, 34, 'T2', { b: true, a: 'm' }),
+    line('r1', 85, 44, 85, 176, { ink: 'edge' }), line('r2', 255, 44, 255, 176, { ink: 'edge' })];
+  const story = (id: string, head: string, evs: Ev[], verdict: string, ok: boolean): Shape[] => {
+    const [v1, v2] = verdict.split(' · ');
+    return [
+      ...lanes,
+      text(`${id}h`, 10, 14, head, { b: true, size: SM }),
+      ...evs.flatMap(([l, s, tone], i) => box(`${id}${i}`, l ? 180 : 10, 48 + i * 32, 150, 26, s, tone ?? 'cell')),
+      ...box(`${id}v`, 10, 180, 320, v2 ? 40 : 28, v1, ok ? 'live' : 'dead', v2),
+    ];
+  };
+  const LEVELS = ['RU', 'RC', 'RR', 'SER'];
+  // PostgreSQL docs, "Transaction Isolation" table: 1 = possible in PostgreSQL (POSSIBLE[level][anomaly]).
   const POSSIBLE = ['0111', '0111', '0001', '0000'];
-  const cols = [tr('đọc bẩn', 'dirty'), tr('đọc lại', 'non-rep.'), 'phantom', tr('tuần tự', 'serial.')];
+  const rows = [tr('Đọc bẩn', 'Dirty read'), tr('Đọc không lặp lại', 'Non-repeatable'), 'Phantom', tr('Bất thường tuần tự', 'Serialization')];
   const table: Shape[] = [
-    ...cols.map((c, j) => text(`th${j}`, 160 + j * 46 + 22, 22, c, { a: 'm', size: 8.5, b: true })),
-    ...LEVELS.flatMap((lv, i) => [
-      text(`tl${i}`, 10, 48 + i * 30, cut(lv, 18), { size: 9.5, b: true, mono: true }),
-      ...[0, 1, 2, 3].flatMap((j) => box(`tc${i}.${j}`, 160 + j * 46, 36 + i * 30, 42, 24, POSSIBLE[i][j] === '1' ? tr('có thể', 'yes') : tr('không', 'no'), POSSIBLE[i][j] === '1' ? 'dead' : 'live')),
+    ...LEVELS.map((c, i) => text(`th${i}`, 146 + i * 46 + 22, 22, c, { a: 'm', size: SM, b: true, mono: true })),
+    ...rows.flatMap((r, j) => [
+      text(`tl${j}`, 10, 48 + j * 30, r, { size: SM, b: true }),
+      ...[0, 1, 2, 3].flatMap((i) => box(`tc${i}.${j}`, 146 + i * 46, 36 + j * 30, 44, 24, POSSIBLE[i][j] === '1' ? tr('có', 'yes') : tr('không', 'no'), POSSIBLE[i][j] === '1' ? 'dead' : 'live')),
     ]),
-    text('tn', 10, 164, tr('Postgres: không đọc bẩn; RR không có phantom.', 'Postgres: no dirty reads; no phantoms in RR.'), { size: 9.5, ink: 'muted' }),
+    text('tk1', 10, 168, 'RU, RC: READ UNCOMMITTED, READ COMMITTED', { size: SM, ink: 'muted' }),
+    text('tk2', 10, 186, 'RR, SER: REPEATABLE READ, SERIALIZABLE', { size: SM, ink: 'muted' }),
+    text('tn', 10, 208, tr('Postgres: không đọc bẩn; RR không có phantom.', 'Postgres: no dirty reads; no phantoms in RR.'), { size: SM, ink: 'muted' }),
   ];
   return {
-    title: tr('Mức cô lập và các bất thường', 'Isolation levels and anomalies'), w: 340, h: 176,
+    title: tr('Mức cô lập và các bất thường', 'Isolation levels and anomalies'), w: 340, h: 226,
     frames: [
       { say: tr('Đọc bẩn: T2 ghi x = 2 nhưng chưa commit, T1 đọc x. Trong Postgres T1 vẫn thấy 1 ở mọi mức, kể cả READ UNCOMMITTED (chạy như READ COMMITTED).', 'Dirty read: T2 writes x = 2 without committing, T1 reads x. In Postgres T1 still sees 1 at every level, even READ UNCOMMITTED (it acts as READ COMMITTED).'),
         nodes: story('a', tr('Đọc bẩn', 'Dirty read'), [[1, 'x := 2', 'warm'], [0, tr('đọc x = 1', 'read x = 1'), 'live'], [1, 'ROLLBACK']], tr('Postgres: không bao giờ xảy ra', 'Postgres: never happens'), true) },

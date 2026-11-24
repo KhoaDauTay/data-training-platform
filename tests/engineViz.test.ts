@@ -27,6 +27,7 @@ const NOSQL = V.NOSQL_VIZ;
 function checkFrame(svg: SVGSVGElement, name: string, step: number): string[] {
   const [, , w, hh] = svg.getAttribute('viewBox')!.split(' ').map(Number);
   const bad: string[] = [];
+  const boxes: { s: string; x0: number; x1: number; y0: number; y1: number }[] = [];
   const at = (el: Element, a: string) => Number(el.getAttribute(a));
   for (const el of svg.querySelectorAll('rect, text, line, circle, path')) {
     if (el.closest('defs')) continue;
@@ -51,8 +52,22 @@ function checkFrame(svg: SVGSVGElement, name: string, step: number): string[] {
       const len = (el.textContent ?? '').length * size * (/monospace/.test(el.getAttribute('style') ?? '') ? 0.6 : /700/.test(el.getAttribute('style') ?? '') ? 0.56 : 0.52);
       if (len > at(owner, 'width') - 2) bad.push(`${name}#${step} label wider than its box "${el.textContent}" ${len.toFixed(0)} > ${at(owner, 'width')}`);
     }
+    if (tag === 'text' && Number(el.getAttribute('opacity') ?? 1) > 0.05) {
+      const size = Number(/font-size:([\d.]+)px/.exec(el.getAttribute('style') ?? '')?.[1] ?? 0);
+      // v31 F5 (L510): ≥ 12.5 of 340 units = ≥ 12 px once the svg is ≥ 327 px wide (a 375 px phone)
+      if (size * 327 / w < 12) bad.push(`${name}#${step} label under 12 px at 375 "${el.textContent}" ${size}`);
+      const len = (el.textContent ?? '').length * size * (/monospace/.test(el.getAttribute('style') ?? '') ? 0.6 : /700/.test(el.getAttribute('style') ?? '') ? 0.56 : 0.52);
+      const anchor = el.getAttribute('text-anchor');
+      const x0 = anchor === 'middle' ? at(el, 'x') - len / 2 : anchor === 'end' ? at(el, 'x') - len : at(el, 'x');
+      boxes.push({ s: el.textContent ?? '', x0, x1: x0 + len, y0: at(el, 'y') - size * 0.42, y1: at(el, 'y') + size * 0.42 });
+    }
     if (tag === 'line' && [at(el, 'x1'), at(el, 'x2')].some((x) => x < -1 || x > w + 1)) bad.push(`${name}#${step} line out of bounds`);
     if (tag === 'circle' && (at(el, 'cx') < 0 || at(el, 'cx') > w || at(el, 'cy') < 0 || at(el, 'cy') > hh)) bad.push(`${name}#${step} circle out of bounds`);
+  }
+  // v31 F5: no two visible labels overlap (estimated extents, 1 unit of slack)
+  for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) {
+    const p = boxes[i], q = boxes[j];
+    if (Math.min(p.x1, q.x1) - Math.max(p.x0, q.x0) > 1 && Math.min(p.y1, q.y1) - Math.max(p.y0, q.y0) > 1) bad.push(`${name}#${step} labels overlap "${p.s}" / "${q.s}"`);
   }
   return bad;
 }

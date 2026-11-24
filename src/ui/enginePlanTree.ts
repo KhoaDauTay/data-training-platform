@@ -16,7 +16,7 @@ export function planTreeView(h: typeof Dom.h, root: PlanNode, text: TreeText, ma
       h('p', { class: 'm-0 font-mono text-body-sm', lang: 'en' }, h('b', {}, n.node),
         n.index ? ` using ${n.index}` : '', n.relation ? ` on ${n.relation}` : ''),
       h('p', { class: 'm-0 font-mono text-caption text-muted', lang: 'en' }, `cost=${num(n.startup)}..${num(n.cost)} rows=${num(n.rows)}`),
-      n === mark ? h('p', { class: 'm-0 mt-1 text-caption font-bold text-accent' }, text.answer) : null),
+      n === mark ? h('p', { class: 'm-0 mt-1 text-caption font-bold text-accent-ink' }, text.answer) : null),
     n.children.length ? h('ul', { class: 'm-0 ml-3 list-none space-y-2 border-l-2 border-line py-0 pr-0 pl-3' }, ...n.children.map(box)) : null);
   return h('ul', { class: 'm-0 list-none p-0', 'aria-label': text.label, 'data-plan': '' }, box(root));
 }

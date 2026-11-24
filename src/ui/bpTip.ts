@@ -85,7 +85,7 @@ export function lintable(tk: Ticket | undefined, step: number, keeps: boolean, p
  */
 export function mountBp(after: HTMLElement, wd: WorkDeps, here: () => [Ticket | undefined, number], d: BpDeps): void {
   const { h, app } = d;
-  const el = h('div', { hidden: true, class: 'mt-2 rounded-(--r-ctl) bg-info-soft px-3 py-2 text-body-sm text-ink ring-1 ring-line' });
+  const el = h('div', { hidden: true, class: 'mt-2 rounded-(--r-ctl) bg-info-soft px-3 py-2 text-body-sm text-ink ring-1 ring-info-line' });
   const status = h('div', { role: 'status', class: 'text-caption text-muted' });
   after.after(el, status);
   const read = (): BpPref => {

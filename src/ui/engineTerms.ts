@@ -128,7 +128,7 @@ function entry(t: Term): HTMLElement {
   return h('article', { id: `term-${t.id}`, class: 'flex flex-col gap-2 rounded-(--r-card) bg-panel p-4 ring-1 ring-line', 'aria-labelledby': `term-${t.id}-h` },
     h('h3', { id: `term-${t.id}-h`, tabindex: '-1', class: 'm-0 flex flex-wrap items-baseline gap-x-2 text-title font-bold' }, h('span', { lang: 'en' }, t.term), viLine(t) ? h('span', { class: 'text-body font-normal' }, viLine(t)) : null),
     h('p', { class: 'm-0 flex flex-wrap items-center gap-2 text-body-sm' }, ...t.engines.map((e) => h('span', { class: d.cls.cx(d.cls.PILL, 'bg-accent-soft text-ink') }, NAME[e])), levelChip(t.level)),
-    f.hide ? h('details', {}, h('summary', { class: 'cursor-pointer text-body-sm font-semibold text-accent' }, tt('show')), text) : text,
+    f.hide ? h('details', {}, h('summary', { class: 'cursor-pointer text-body-sm font-semibold text-accent-ink' }, tt('show')), text) : text,
     lang() === 'vi' && t.avoid ? h('p', { class: 'm-0 text-body-sm text-muted' }, tt('avoid', { x: t.avoid })) : null,
     h('p', { class: 'm-0 text-body-sm' }, docLink(t)));
 }

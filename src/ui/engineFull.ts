@@ -36,7 +36,7 @@ const SEC_ICON: Record<SectionId, IconName> = {
 const RT: Record<EngineId, string> = { postgres: 'PostgreSQL (PGlite)', design: 'PostgreSQL (PGlite)', mongodb: 'mingo', dynamodb: 'dynoxide' };
 const TOC_ROW = 'flex min-h-11 w-full items-center gap-2 border-0 border-l-4 px-3 py-1.5 text-left text-body-sm hover:bg-accent-soft';
 const TOC_IDLE = 'border-transparent bg-transparent text-ink';
-const TOC_NOW = 'border-accent bg-accent-soft font-bold text-accent';
+const TOC_NOW = 'border-accent bg-accent-soft font-bold text-accent-ink';
 const CHIP = 'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-body-sm font-bold';
 
 /** Session state: each block's last output, by `<lesson>-x<i>` ('busy' while it runs). */

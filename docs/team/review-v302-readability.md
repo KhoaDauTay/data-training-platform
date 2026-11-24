@@ -121,3 +121,22 @@ Ngân sách: css 20,46 KB gz / 22 (trước ~20,0); các nhóm khác không đ�
 - Vitest, từng file, `--no-file-parallelism`: theme 24, axe 44, axeProgress 16, engineAxe 14, engineFull 9, engineV27Axe 7, engineDesignAxe 9, engineCompareAxe 4, palette 3, i18n 20: tất cả qua.
 - Không chạy e2e hay cả bộ vitest (luật user).
 - Quyết định: `docs/team/decision-log.md` L500 (màu), L501 (chữ), L502 (khoảng cách `space-y`).
+
+## v31 (vòng 2: điện thoại)
+
+Đo trên bản build (`vite preview` 5362, Edge headless, giảm chuyển động), 23 sơ đồ, mỗi sơ đồ đi hết mọi bước. Script và ảnh: `bd-wt/review-v31/` (`viz.mjs`, `pages.mjs`, `before/`, `after/`).
+
+| Mục | Trước | Sau |
+|---|---|---|
+| F5 nhãn sơ đồ ở 375 | nhỏ nhất 7,9–9,1 px, svg 327 px | 12,3 px ở cả 23 sơ đồ (svg 335 px), 0 nhãn chồng nhau, 0 nhãn ra ngoài; 1280: 17,6 px (svg 480); 320: 10,3 px (L510) |
+| S5 pipeline bước 1 | khung cao cho 6 stage, vẽ một hàng | 6 stage hiện dạng khung đứt từ bước 1 (L513) |
+| A5 nút sơ đồ lệch giữa các bước | 18–58 px (20/23 sơ đồ) | 0 px ở 23/23 (L515) |
+| O4 "1/8 · Mở bài" ở 320 | cắt 75/72 px, không `title` | đủ chữ (127 px); link Phần cắt có `title` (L514) |
+| C4 hộp nền màu | tách bằng sắc, 1,06–1,09:1 | viền cùng sắc 1,5–1,7:1 (sáng), 1,7–2,2:1 (tối) (L511) |
+| Chữ nhấn nhỏ | `--accent` 5,47:1 trên panel, 4,69 trên accent-soft | `--accent-ink` 7,52 / 6,44 (sáng); tối 10,16 / 7,46 (L512) |
+| G3 lỗi lab nói hai lần | dòng trạng thái + khung lỗi | dòng trạng thái chỉ trỏ xuống khung lỗi; predict bỏ pill lặp (L515) |
+| Dòng Lộ trình NoSQL 375 | (review-v23) mô tả bị ép | đã đúng từ F09, kiểm lại, không đổi |
+
+Còn lại: ở 320 px nhãn sơ đồ 10,3 px (svg 280 px; muốn ≥ 12 phải ≥ 15 đơn vị, bố cục khác hẳn). Ô lưới giữ chỗ cho câu dài nhất nên sơ đồ có câu ngắn (B-tree) để trống vài dòng trên nút.
+
+Kiểm tra: `tsc` ok, build ok, `check-budget` ok (css 21/22, engineui 20/20, engineViz 23/30). Vitest từng file: theme 25, i18n 20, palette 3, engineCore 30, engineFull 9, engineViz 57, enginePgViz 3, engineIntegration (cùng viz) qua, engineAxe 14, engineV27Axe 7, engineDesignAxe 9, engineCompareAxe 4, enginePredict 30, axeProgress 16, axe 44. Không e2e, không cả bộ.

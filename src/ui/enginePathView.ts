@@ -129,7 +129,7 @@ function drillCard(m: PathChunk, dr: Drill, i: number, ok: Set<string>): HTMLEle
       choice || dr.grade === 'esr' ? null : h('button', { type: 'button', class: cls.cx(cls.BTN_SECONDARY, 'px-4 py-1.5'), 'data-ek': `${dr.id}-run`, disabled: !!v.busy, onclick: () => void drillAction(m, dr, false) }, et('lab.run')),
       h('button', { type: 'button', class: cls.cx(cls.BTN_GO, 'px-4 py-1.5 disabled:bg-code disabled:text-disabled disabled:shadow-none'), 'data-ek': `${dr.id}-submit`, disabled: !!v.busy, onclick: () => void drillAction(m, dr, true) }, choice ? et('check') : et('lab.submit')),
       v.busy ? h('span', { class: 'flex items-center gap-2 text-body-sm text-muted' }, d.loader(), et('lab.preparing')) : null),
-    h('details', {}, h('summary', { class: 'cursor-pointer text-body-sm font-semibold text-accent' }, et('lab.hint')), h('p', { class: 'mt-2 mb-0 text-body-sm' }, ...inline(dr.hint[lang()]))),
+    h('details', {}, h('summary', { class: 'cursor-pointer text-body-sm font-semibold text-accent-ink' }, et('lab.hint')), h('p', { class: 'mt-2 mb-0 text-body-sm' }, ...inline(dr.hint[lang()]))),
     status,
     choice && v.msg?.ok && dr.why ? h('p', { class: 'm-0 rounded-(--r-inset) bg-surface-2 p-3 text-body-sm' }, ...inline(dr.why[lang()])) : null,
     v.out ? h('div', { class: 'overflow-x-auto' }, 'result' in v.out ? d.renderResult(v.out.result) : d.errorView(v.out.error)) : null);

@@ -122,7 +122,7 @@ export function capPlans(c: CapCtx): HTMLElement | null {
               side(et('cap.after'), p.after),
               same(p.before, p.after) ? h('p', { class: 'm-0 text-body-sm lg:col-span-3' }, et('cap.same')) : null),
     p && typeof p === 'object' && 'error' in p ? d.errorView(p.error) : null,
-    h('p', { class: 'm-0 rounded-(--r-ctl) bg-info-soft p-3 text-body-sm' }, et('cap.fresh')));
+    h('p', { class: 'm-0 rounded-(--r-ctl) bg-info-soft p-3 text-body-sm ring-1 ring-info-line' }, et('cap.fresh')));
 }
 
 /** The finish (engine-ux-spec §5.6): Lily cheers beside the level's done badge; react() runs at the completion event, not here. */

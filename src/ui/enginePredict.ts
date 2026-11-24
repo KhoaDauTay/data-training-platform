@@ -126,11 +126,10 @@ function resultCard(l: EngineLesson, c: PredictCtx): HTMLElement {
   const { h, cls } = d;
   const p = l.predict!;
   const plan = st.plan;
-  const right = st.say === 'right';
   const tree = plan && plan !== 'busy' && !('error' in plan) ? plan : undefined;
   return h('section', { class: 'space-y-3 rounded-(--r-card) bg-surface-2 p-4', 'aria-labelledby': `${l.id}-plan` },
+    // v31 G3 (L515): the verdict is said once, in the status line under the options (no pill repeating it here)
     h('div', { class: 'flex flex-wrap items-center gap-2' },
-      h('span', { class: cls.cx(cls.PILL, right ? 'bg-good-soft text-good' : 'bg-bad-soft text-bad', 'font-bold') }, right ? `✓ ${et('predict.right')}` : `✗ ${et('predict.wrong')}`),
       h('h3', { id: `${l.id}-plan`, class: 'm-0 text-body font-bold', tabindex: '-1', 'data-ek': `${l.id}-plan` }, et(showsRows(l) ? 'predict.rowsTitle' : 'predict.realTitle'))),
     plan === 'busy' ? h('p', { class: 'm-0 flex items-center gap-2 text-body-sm text-muted' }, d.loader(), et('lab.preparing'))
       : plan && 'error' in plan ? d.errorView(plan.error) : null,
