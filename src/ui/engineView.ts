@@ -125,7 +125,7 @@ function codeOrLink(c: string): Node {
 function prose(text: string, marked = false): HTMLElement {
   return d.h('div', { class: 'flex flex-col gap-3' }, ...blocksOf(text).map((b) => b.kind === 'p' ? d.h('p', { class: 'm-0' }, ...inline(b.text, marked))
     : b.kind === 'ul' ? d.h('ul', { class: 'm-0 list-disc space-y-1 pl-5' }, ...b.items.map((x) => d.h('li', {}, ...inline(x, marked))))
-      : d.h('pre', { class: 'sql m-0 overflow-x-auto' }, b.code)));
+      : d.h('pre', { tabindex: '0', class: 'sql m-0 overflow-x-auto' }, b.code)));
 }
 
 /** A thin bar; its numbers are always in words beside it (never colour alone, L23). */
@@ -216,7 +216,7 @@ function continueCard(ok: Set<string>): HTMLElement | null {
   if (!next) return null;
   const started = all.some((x) => ok.has(x.id));
   return h('section', { class: cls.cx(cls.CARD, 'flex flex-col gap-3 p-6 max-sm:p-4'), 'aria-labelledby': 'engine-cont' },
-    h('p', { class: 'm-0 flex items-center gap-2 text-body-sm font-semibold text-accent' }, d.icon(ENGINE_ICON[e], 'size-4'),
+    h('p', { class: 'm-0 flex items-center gap-2 text-body-sm font-semibold text-accent-ink' }, d.icon(ENGINE_ICON[e], 'size-4'),
       `${et(started ? 'cont.resume' : 'cont.start')} · ${nameOf(e)} · ${next.level}`),
     h('h2', { id: 'engine-cont', class: 'm-0 text-title font-bold' }, next.title[lang()]),
     h('p', { class: 'm-0 flex flex-wrap items-center gap-2 text-body-sm text-muted' }, kindChip(next.kind), h('span', {}, et('minutes', { n: next.minutes }))),
@@ -501,7 +501,9 @@ async function labAction(l: EngineLesson, v: Visit, i: number, submit: boolean):
     }
     if (submit) {
       const verdict = await r.check(l.lab!, l.lab!.steps[i], code);
-      v.msg[i] = { ok: verdict.ok, text: verdictLine(verdict) };
+      // v31 G3 (L515): a run that failed shows its error once, in the error box under the editor; the status line only points to it
+      const failed = !verdict.ok && verdict.reason === 'error' && !!v.out[i] && 'error' in v.out[i]!;
+      v.msg[i] = { ok: verdict.ok, text: failed ? et('lab.errBelow') : verdictLine(verdict) };
       if (verdict.ok) {
         v.good[i] = code;
         passPart(l, v, `s${i}`);
@@ -628,7 +630,7 @@ function labView(l: EngineLesson, v: Visit): HTMLElement {
   return h('section', { class: 'flex flex-col gap-4', 'aria-labelledby': `${l.id}-lab` },
     cardHead(`${l.id}-lab`, 'kindLab', et('lab.title')),
     cap && cc ? cap.capBar(cc) : null,
-    h('div', { class: 'flex flex-col gap-3 rounded-(--r-ctl) bg-info-soft p-4 text-body-sm' },
+    h('div', { class: 'flex flex-col gap-3 rounded-(--r-ctl) bg-info-soft p-4 text-body-sm ring-1 ring-info-line' },
       h('p', { class: 'm-0' }, !live ? et('lab.noRunner') : l.engine === 'mongodb' ? et('lab.dataMongo') : l.engine === 'dynamodb' ? et('lab.dataDynamo') : l.lab!.setup ? et('lab.dataPg') : et('lab.data')),
       live && l.runtime !== 'docs' ? tablesPanel(l, v) : null),
     cap && cc ? cap.capChecks(cc) : null,
@@ -648,7 +650,7 @@ function labView(l: EngineLesson, v: Visit): HTMLElement {
           leadDisc(passed ? 'done' : i === cur ? 'current' : 'todo', String(i + 1)),
           h('div', { class: 'min-w-0 flex-1 flex flex-col gap-1' },
             h('h3', { class: 'm-0 text-caption font-bold tracking-wider text-muted uppercase' }, et('lab.step', { i: i + 1, n: steps.length }),
-              i === cur ? h('span', { class: 'ml-2 text-accent' }, `· ${et('cap.current')}`) : null),
+              i === cur ? h('span', { class: 'ml-2 text-accent-ink' }, `· ${et('cap.current')}`) : null),
             h('p', { class: 'm-0' }, ...inline(s.task[lang()])), N()?.stepTop(d, s))),
         ed ? codeBox(`${key}-code`, v.code[i] ?? '', et('lab.code', { i: i + 1 }), onPg(l.engine), {
           change: (x) => { v.code[i] = x; }, run: () => void labAction(l, v, i, false), submit: () => void labAction(l, v, i, true),
@@ -660,10 +662,10 @@ function labView(l: EngineLesson, v: Visit): HTMLElement {
           h('button', { type: 'button', class: cls.cx(cls.BTN_SECONDARY, 'px-4 py-1.5'), 'data-ek': `${key}-run`, disabled: v.busy !== undefined, onclick: () => void labAction(l, v, i, false) }, et('lab.run')),
           h('button', { type: 'button', class: cls.cx(i === main ? cls.BTN_GO : cls.BTN_SECONDARY, 'px-4 py-1.5 disabled:bg-code disabled:text-disabled disabled:shadow-none'), 'data-ek': `${key}-submit`, disabled: v.busy !== undefined, onclick: () => void labAction(l, v, i, true) }, et('lab.submit')),
           v.busy === i ? h('span', { class: 'flex items-center gap-2 text-body-sm text-muted' }, d.loader(), et('lab.preparing')) : null) : null,
-        h('details', {}, h('summary', { class: 'cursor-pointer text-body-sm font-semibold text-accent' }, et('lab.hint')), h('p', { class: 'mt-2 mb-0 text-body-sm' }, ...inline(s.hint[lang()]))),
+        h('details', {}, h('summary', { class: 'cursor-pointer text-body-sm font-semibold text-accent-ink' }, et('lab.hint')), h('p', { class: 'mt-2 mb-0 text-body-sm' }, ...inline(s.hint[lang()]))),
         h('p', { role: 'status', 'data-ek': `${key}-status`, class: cls.cx('m-0 text-body-sm', msg ? (msg.ok ? 'good' : 'bad') : '') }, ...inline(msg?.text ?? '')),
-        s.fact && passed ? h('p', { class: 'm-0 rounded-(--r-inset) bg-good-soft p-3 text-body-sm' }, h('b', {}, `${et('lab.fact')}: `), ...inline(s.fact[lang()])) : null,
-        out ? h('div', { class: 'overflow-x-auto' }, shown ? d.renderResult(shown) : d.errorView((out as { error: unknown }).error, false)) : null,
+        s.fact && passed ? h('p', { class: 'm-0 rounded-(--r-inset) bg-good-soft p-3 text-body-sm ring-1 ring-good-line' }, h('b', {}, `${et('lab.fact')}: `), ...inline(s.fact[lang()])) : null,
+        out ? h('div', { class: 'overflow-x-auto', tabindex: '0' }, shown ? d.renderResult(shown) : d.errorView((out as { error: unknown }).error, false)) : null,
         shown ? metaView(shown) : null,
         shown ? N()?.stepEnd(d, s, shown, passed, key) : null,
         shown ? insideView(shown, `${key}-inside`) : null,
@@ -695,9 +697,9 @@ function metaView(r: LabOutput): HTMLElement | null {
   return h('section', { class: 'flex flex-col gap-2', 'aria-label': et('meta.title') },
     pairs.length ? h('dl', { class: 'm-0 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 rounded-(--r-inset) bg-surface-2 p-3 text-body-sm' },
       ...pairs.flatMap(([k, v]) => [h('dt', { class: 'text-muted' }, et(k)), h('dd', { class: 'm-0 font-semibold tabular-nums' }, v)])) : null,
-    ...plans.map((k) => h('div', {}, h('p', { class: 'm-0 text-body-sm text-muted' }, et(`meta.${k}`)), h('pre', { class: 'sql m-0 overflow-x-auto' }, m[k]!))),
+    ...plans.map((k) => h('div', {}, h('p', { class: 'm-0 text-body-sm text-muted' }, et(`meta.${k}`)), h('pre', { tabindex: '0', class: 'sql m-0 overflow-x-auto' }, m[k]!))),
     m.catalog?.length ? h('div', {}, h('p', { class: 'm-0 text-body-sm text-muted' }, et('meta.catalog')),
-      h('pre', { class: 'sql m-0 overflow-x-auto' }, m.catalog.map((row) => row.map(String).join(' | ')).join('\n'))) : null);
+      h('pre', { tabindex: '0', class: 'sql m-0 overflow-x-auto' }, m.catalog.map((row) => row.map(String).join(' | ')).join('\n'))) : null);
 }
 
 /** "Bên trong" (engine-ux-spec §5.3): a pageinspect result as line pointers with decoded infomask flags, or the missing columns. */
@@ -708,11 +710,11 @@ function insideView(r: LabOutput, slot: string): HTMLElement | null {
   if ('missing' in v) return h('p', { class: 'm-0 text-body-sm text-muted' }, et('inside.missing', { cols: v.missing.join(', ') }));
   // The real page as ENG-VIZ's heap diagram (L237: heap_page_items rows as they come), above the decoded table.
   const rows = r.rows.map((row) => Object.fromEntries(r.columns.map((c, i) => [c, row[i]])));
-  const diagram = vizSlot(slot, 'pg-heap-page', 'postgres', { rows }, JSON.stringify(r.rows));
+  const diagram = vizSlot(slot, 'pg-heap-page', 'postgres', { rows }, JSON.stringify(r.rows), 'max-sm:-mx-3');
   const head = ['lp', 'lp_flags', 't_xmin', 't_xmax', 't_ctid', 'infomask'];
   return h('figure', { class: 'm-0 flex flex-col gap-2', 'data-inside': '' },
     h('figcaption', { class: 'text-body-sm' }, h('b', {}, `${et('inside.title')}: `), et('inside.caption', { n: v.rows.length, dead: v.dead, hot: v.hot })),
-    h('div', { class: 'overflow-x-auto' }, h('table', { class: 'text-body-sm', lang: 'en' },
+    h('div', { class: 'overflow-x-auto', tabindex: '0' }, h('table', { class: 'text-body-sm', lang: 'en' },
       h('thead', {}, h('tr', {}, ...head.map((c) => h('th', { scope: 'col', class: 'px-2 text-left font-mono' }, c)))),
       h('tbody', {}, ...v.rows.map((x) => h('tr', { class: x.flag === 'dead' ? 'bad' : x.flags.includes('HOT_UPDATED') || x.flag === 'redirect' ? 'warn' : '' },
         ...[x.lp, x.flag, x.xmin, x.xmax, x.ctid, x.flags.join(' ')].map((c) => h('td', { class: 'px-2 font-mono whitespace-nowrap' }, c)))))),
@@ -728,8 +730,8 @@ function planViz(l: EngineLesson, r: LabOutput, sql: string, slot: string): HTML
   const json = r.columns.length === 1 ? r.rows[0]?.[0] : undefined;
   if (!l.viz || !onPg(l.engine) || typeof predMod !== 'object' || !predMod.planTree(json)) return null;
   const key = JSON.stringify(json);
-  if (/query-path/.test(l.viz)) return vizSlot(slot, 'pg-query-path', 'postgres', { sql: sql.replace(/^\s*EXPLAIN\s*(\([^)]*\))?\s*/i, ''), plan: json }, key);
-  if (/plan-tree|explain/.test(l.viz)) return vizSlot(slot, 'pg-plan-tree', 'postgres', json, key);
+  if (/query-path/.test(l.viz)) return vizSlot(slot, 'pg-query-path', 'postgres', { sql: sql.replace(/^\s*EXPLAIN\s*(\([^)]*\))?\s*/i, ''), plan: json }, key, 'max-sm:-mx-3');
+  if (/plan-tree|explain/.test(l.viz)) return vizSlot(slot, 'pg-plan-tree', 'postgres', json, key, 'max-sm:-mx-3');
   return null;
 }
 
@@ -738,7 +740,8 @@ function planViz(l: EngineLesson, r: LabOutput, sql: string, slot: string): HTML
  * model changes (vizRegistry contract, L238): the old one is destroyed and the new one opens on the same step.
  */
 const vizHosts = new Map<string, { key: string; host: HTMLElement; mounted?: VizMounted }>();
-function vizSlot(slot: string, name: string | undefined, engine: EngineId, model?: unknown, modelKey = ''): HTMLElement | null {
+/** `bleed` (v31 F5, L510): on phones a diagram inside a padded card spans the card's padding, so its svg stays ≥ 335 px wide at 375. */
+function vizSlot(slot: string, name: string | undefined, engine: EngineId, model?: unknown, modelKey = '', bleed = ''): HTMLElement | null {
   if (!name) return null;
   const ctx = { lang: lang(), dark: d.isDark(), reducedMotion: d.reducedMotion() };
   const key = `${ctx.lang}|${ctx.dark}|${modelKey}`;
@@ -746,7 +749,7 @@ function vizSlot(slot: string, name: string | undefined, engine: EngineId, model
   if (old?.key === key) return old.host;
   const step = old?.mounted?.index;
   old?.mounted?.destroy();
-  const entry: { key: string; host: HTMLElement; mounted?: VizMounted } = { key, host: d.h('div', { class: 'min-w-0', 'data-viz': name }) };
+  const entry: { key: string; host: HTMLElement; mounted?: VizMounted } = { key, host: d.h('div', { class: d.cls.cx('min-w-0', bleed), 'data-viz': name }) };
   vizHosts.set(slot, entry);
   void vizMountFor(name, SHORT_OF[engine], d.viz, model).then((mount) => {
     if (mount && vizHosts.get(slot) === entry) entry.mounted = mount(entry.host, { ...ctx, step });
@@ -819,9 +822,9 @@ function lessonBody(l: EngineLesson): HTMLElement {
           explain: async () => (await (await runnerFor(l, v)!).run(l.lab ?? { steps: [] }, P().explainSql(l.predict!.sql))).rows[0]?.[0],
           run: async () => (await runnerFor(l, v)!).run(l.lab ?? { steps: [] }, l.predict!.sql),
           pass: () => passPart(l, v, 'p'),
-          diagram: (json) => vizSlot(`${l.id}-pred`, 'pg-plan-tree', 'postgres', json, JSON.stringify(json)),
+          diagram: (json) => vizSlot(`${l.id}-pred`, 'pg-plan-tree', 'postgres', json, JSON.stringify(json), 'max-sm:-mx-8'),
         })]
-        : [h('pre', { class: 'sql m-0 overflow-x-auto', lang: 'en' }, l.predict.sql), question(l, v, l.predict, 'p', ''), P().recordedView(l, d, P().withPred(d, et))])) : null,
+        : [h('pre', { tabindex: '0', class: 'sql m-0 overflow-x-auto', lang: 'en' }, l.predict.sql), question(l, v, l.predict, 'p', ''), P().recordedView(l, d, P().withPred(d, et))])) : null,
     // review v23: the lab before the questions (capstone: "quiz = the closing questions", product-design-db-engine §capstone; the lessons' text says "then N questions")
     l.lab ? labView(l, v) : null,
     l.quiz?.length ? h('section', { class: cls.cx(cls.CARD, 'flex flex-col gap-4 p-5 max-sm:p-4'), 'aria-labelledby': `${l.id}-quiz` },

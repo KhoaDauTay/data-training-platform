@@ -1,4 +1,4 @@
-import { arc, box, cut, define, fill, line, num, type Frame, type Shape, text, type Tone } from './engineVizCore';
+import { arc, box, cut, define, fill, type Frame, line, num, type Shape, SM, text, type Tone } from './engineVizCore';
 
 // ENG-VIZ Postgres storage diagrams (knowledge map P2–P5): heap page, HOT chain, MVCC, VACUUM, WAL.
 
@@ -29,15 +29,16 @@ define<HeapModel | HeapRow[]>('pg-heap-page', HEAP_SAMPLE, (m0, tr) => {
   const shown = [...normal, ...others].sort((a, b) => a.lp - b.lp).slice(0, 6);
   const more = rows.length - shown.length;
   const W = 340;
-  const Y = 58;
+  const Y = 72; // v31 F5 (L510): the pd_lower/pd_upper line has its own row under the title
   const lpX = (i: number) => 40 + i * 18;
   const tX = (j: number) => W - 10 - (j + 1) * 30;
+  const CY = Y + 62;
   const head = (lower: number, upper: number): Shape[] => [
-    text('title', 10, 14, tr(`Trang ${m.page ?? 0} · 8192 byte`, `Page ${m.page ?? 0} · 8192 bytes`), { b: true, size: 12 }),
-    text('lu', W - 10, 14, `pd_lower ${lower} · pd_upper ${upper}`, { a: 'e', mono: true, size: 10, ink: 'muted' }),
+    text('title', 10, 14, tr(`Trang ${m.page ?? 0} · 8192 byte`, `Page ${m.page ?? 0} · 8192 bytes`), { b: true, size: SM }),
+    text('lu', 10, 32, `pd_lower ${lower} · pd_upper ${upper}`, { mono: true, size: SM, ink: 'muted' }),
     ...box('hdr', 10, Y, 28, 36, 'hdr', 'cell'),
-    text('r0', 10, Y + 46, '0', { size: 9.5, ink: 'muted', mono: true }),
-    text('r1', W - 10, Y + 46, '8192', { size: 9.5, ink: 'muted', a: 'e', mono: true }),
+    text('r0', 10, Y + 46, '0', { size: SM, ink: 'muted', mono: true }),
+    text('r1', W - 10, Y + 46, '8192', { size: SM, ink: 'muted', a: 'e', mono: true }),
   ];
   /** The page with the first `k` shown pointers and tuples; `deadOn` paints xmax ≠ 0 tuples dead. */
   const page = (k: number, deadOn: boolean, othersOn: boolean): Shape[] => {
@@ -53,23 +54,22 @@ define<HeapModel | HeapRow[]>('pg-heap-page', HEAP_SAMPLE, (m0, tr) => {
     });
     const freeX = lpX(vis.length ? Math.max(...vis.map((r) => shown.indexOf(r))) + 1 : 0);
     const freeEnd = tup.length ? tX(tup.length - 1) : W - 10;
-    if (freeEnd - freeX > 26) out.push(...box('free', freeX + 2, Y, freeEnd - freeX - 4, 36, tr('trống', 'free'), 'free'));
+    if (freeEnd - freeX > 44) out.push(...box('free', freeX + 2, Y, freeEnd - freeX - 4, 36, tr('trống', 'free'), 'free'));
     tup.forEach((r, j) => {
       out.push(...box(`t${r.lp}`, tX(j), Y, 28, 36, `t${r.lp}`, tone(r)));
       out.push(arc(`a${r.lp}`, lpX(shown.indexOf(r)) + 8, Y - 1, tX(j) + 14, Y - 1, -(26 + 7 * j), { ink: tone(r) === 'dead' ? 'dead' : 'ptr', w: 1.2 }));
     });
-    // detail cards, two columns
+    // detail cards, one full-width row each (v31 F5: two columns could not hold the monospace line at SM)
     vis.forEach((r) => {
       const i = shown.indexOf(r);
-      const x = i % 2 ? 174 : 10;
-      const y = 120 + Math.floor(i / 2) * 46;
+      const y = CY + i * 26;
       const t = tone(r);
-      out.push({ k: `c${r.lp}`, t: 'r', x, y, w: 156, h: 40, tone: t });
-      out.push(text(`c${r.lp}.a`, x + 8, y + 13, r.flags === 1 ? `lp ${r.lp} · off ${r.off} · ${r.len} B` : `lp ${r.lp} · ${FLAG[r.flags] ?? r.flags}`, { b: true, size: 10.5 }));
-      const sub = r.flags === 1 ? `xmin ${r.xmin ?? '–'}  xmax ${r.xmax ?? 0}${r.xmax && r.ctid ? ` → ${r.ctid}` : ''}` : r.flags === 2 ? `→ lp ${r.off}` : tr('không có tuple', 'no tuple');
-      out.push(text(`c${r.lp}.b`, x + 8, y + 29, cut(sub, 28), { mono: true, size: 10 }));
+      out.push({ k: `c${r.lp}`, t: 'r', x: 10, y, w: 320, h: 24, tone: t });
+      out.push(text(`c${r.lp}.a`, 16, y + 12, r.flags === 1 ? `lp ${r.lp} · off ${r.off}` : `lp ${r.lp} · ${FLAG[r.flags] ?? r.flags}`, { b: true, size: SM }));
+      const sub = r.flags === 1 ? `xmin ${r.xmin ?? '–'} xmax ${r.xmax ?? 0}${r.xmax && r.ctid ? ` → ${r.ctid}` : ''}` : r.flags === 2 ? `→ lp ${r.off}` : tr('không có tuple', 'no tuple');
+      out.push(text(`c${r.lp}.b`, 324, y + 12, cut(sub, 25), { mono: true, size: SM, a: 'e' }));
     });
-    if (more > 0 && k >= shown.length) out.push(text('more', W - 10, 114, tr(`+${more} dòng nữa`, `+${more} more rows`), { a: 'e', size: 10, ink: 'muted' }));
+    if (more > 0 && k >= shown.length) out.push(text('more', W - 10, CY + shown.length * 26 + 10, tr(`+${more} dòng nữa`, `+${more} more rows`), { a: 'e', size: SM, ink: 'muted' }));
     return out;
   };
   const frames: Frame[] = [{
@@ -116,7 +116,7 @@ define<HeapModel | HeapRow[]>('pg-heap-page', HEAP_SAMPLE, (m0, tr) => {
     { upper, lower, free: Math.max(0, upper - lower) }),
     nodes: [...page(shown.length, true, true), line('brace', lpX(shown.length) + 2, Y + 42, (tup.length ? tX(tup.length - 1) : W - 10) - 2, Y + 42, { ink: 'new', w: 2 })],
   });
-  return { title: tr('Trang heap: line pointer và tuple', 'Heap page: line pointers and tuples'), w: W, h: 262, frames };
+  return { title: tr('Trang heap: line pointer và tuple', 'Heap page: line pointers and tuples'), w: W, h: CY + shown.length * 26 + 22, frames };
 });
 
 // ── hotChain ────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -157,11 +157,13 @@ define<HotModel>('pg-hot-chain', { xids: [740, 741, 742], index: 'notes_pkey', k
       : [[s.n > 1 ? 't1 · HOT_UPDATED' : 't1', `xmin ${x1} · xmax ${s.n > 1 ? x2 : 0}`, s.n > 1 ? 'dead' : 'live'],
         ['t2 · HEAP_ONLY', `xmin ${x2} · xmax ${s.n > 2 ? x3 : 0}`, s.n > 2 ? 'dead' : 'live'],
         ['t3 · HEAP_ONLY', `xmin ${x3} · xmax 0`, 'live']].slice(0, s.n) as [string, string, Tone][];
-    notes.forEach(([a, b, tone], i) => out.push(...box(`n${i}`, 10 + i * 108, 196, 104, 40, a, tone, b)));
+    // v31 F5 (L510): one full-width row per tuple note (three side-by-side boxes could not hold them at SM)
+    notes.forEach(([a, b, tone], i) => out.push({ k: `n${i}`, t: 'r', x: 10, y: 190 + i * 26, w: 320, h: 24, tone },
+      text(`n${i}.t`, 16, 202 + i * 26, a, { b: true, size: SM }), text(`n${i}.s`, 324, 202 + i * 26, b, { mono: true, size: SM, a: 'e' })));
     return out;
   };
   return {
-    title: tr('Chuỗi HOT trong một trang', 'A HOT chain inside one page'), w: W, h: 246,
+    title: tr('Chuỗi HOT trong một trang', 'A HOT chain inside one page'), w: W, h: 270,
     frames: [
       { say: fill(tr('INSERT bởi {a}: tuple t1 ở lp1. Index {i} có một mục trỏ tới (0,1).', 'INSERT by {a}: tuple t1 sits at lp1. Index {i} has one entry pointing at (0,1).'), { a: x1, i: m.index }), nodes: draw({ n: 1 }) },
       { say: fill(tr('UPDATE bởi {b} không đổi cột nào có index, và trang còn chỗ: bản mới t2 nằm cùng trang (heap-only), t1 có xmax {b} và t_ctid trỏ tới t2. Không thêm mục index nào.', 'UPDATE by {b} changes no indexed column and the page has room: the new version t2 stays on the page (heap-only), t1 gets xmax {b} and its t_ctid points at t2. No new index entry.'), { b: x2 }), nodes: draw({ n: 2 }) },
@@ -179,23 +181,23 @@ define<MvccModel>('pg-mvcc-timeline', { xids: [100, 101], before: 'price 10', af
   const [a, b] = m.xids;
   const LA = 44;
   const LB = 96;
-  const T = [92, 156, 220, 288];
+  const T = [104, 166, 228, 292]; // v31 F5: clear of the lane names at SM
   const lanes: Shape[] = [
     text('la', 10, LA, tr('Phiên A', 'Session A'), { b: true }), text('lb', 10, LB, tr('Phiên B', 'Session B'), { b: true }),
-    line('ra', 70, LA, 330, LA, { ink: 'edge' }), line('rb', 70, LB, 330, LB, { ink: 'edge' }),
-    line('ax', 70, 122, 330, 122, { ink: 'muted', arrow: true, w: 1 }), text('axt', 330, 132, tr('thời gian', 'time'), { a: 'e', size: 9.5, ink: 'muted' }),
+    line('ra', 78, LA, 330, LA, { ink: 'edge' }), line('rb', 78, LB, 330, LB, { ink: 'edge' }),
+    line('ax', 70, 122, 330, 122, { ink: 'muted', arrow: true, w: 1 }), text('axt', 330, 132, tr('thời gian', 'time'), { a: 'e', size: SM, ink: 'muted' }),
   ];
   const ev = (k: string, x: number, y: number, label: string, tone: Tone = 'cell'): Shape[] => box(k, x - 28, y - 12, 56, 24, label, tone);
   const v = (st: 0 | 1 | 2, sees?: 1 | 2): Shape[] => {
     const out: Shape[] = [
       ...box('v1', 10, 150, 150, 44, `v1 · ${cut(m.before, 12)}`, sees === 1 ? 'new' : st ? 'dead' : 'live', `xmin ${a} · xmax ${st ? b : 0}`),
-      text('cap', 10, 210, tr('Hai phiên bản của cùng một dòng trong heap', 'Two versions of the same row in the heap'), { size: 10, ink: 'muted' }),
+      text('cap', 10, 210, tr('Hai phiên bản của cùng một dòng trong heap', 'Two versions of the same row in the heap'), { size: SM, ink: 'muted' }),
     ];
     if (st) out.push(...box('v2', 180, 150, 150, 44, `v2 · ${cut(m.after, 12)}`, sees === 2 ? 'new' : st === 2 ? 'live' : 'warm', `xmin ${b} · xmax 0`));
     if (st) out.push(arc('ct', 160, 172, 180, 172, -14, { ink: 'ptr' }));
     return out;
   };
-  const snap = (x: number): Shape[] => [{ k: 'snap', t: 'r', x, y: LA - 16, w: 330 - x, h: 32, tone: 'ptr', o: 0.35 }, text('snapt', 328, LA - 22, 'snapshot', { a: 'e', size: 9.5, ink: 'ptr' })];
+  const snap = (x: number): Shape[] => [{ k: 'snap', t: 'r', x, y: LA - 16, w: 330 - x, h: 32, tone: 'ptr', o: 0.35 }, text('snapt', 328, LA - 22, 'snapshot', { a: 'e', size: SM, ink: 'ptr' })];
   const A1 = ev('a1', T[0], LA, 'SELECT', 'new');
   const B1 = ev('b1', T[1], LB, 'UPDATE', 'warm');
   const B2 = ev('b2', T[2], LB, 'COMMIT', 'live');
@@ -221,23 +223,23 @@ define<VacuumModel>('pg-vacuum-flow', { pages: ['ldld', 'llln', 'ddll'] }, (m, t
   const px = (i: number) => 10 + i * (PW + 10);
   type St = { vac?: boolean; fsm?: boolean; vm?: boolean; ios?: boolean; frozen?: boolean };
   const draw = (s: St): Shape[] => {
-    const out: Shape[] = [text('vmh', 10, 186, tr('Visibility map', 'Visibility map'), { size: 10, ink: 'muted' }), text('fsmh', 10, 236, tr('Free space map', 'Free space map'), { size: 10, ink: 'muted' })];
+    const out: Shape[] = [text('vmh', 10, 186, tr('Visibility map', 'Visibility map'), { size: SM, ink: 'muted' }), text('fsmh', 10, 236, tr('Free space map', 'Free space map'), { size: SM, ink: 'muted' })];
     pages.forEach((p, i) => {
       const x = px(i);
-      out.push({ k: `pg${i}`, t: 'r', x, y: 28, w: PW, h: 136, tone: 'plain' }, text(`pgt${i}`, x + 6, 40, tr(`trang ${i}`, `page ${i}`), { size: 10, b: true }));
+      out.push({ k: `pg${i}`, t: 'r', x, y: 28, w: PW, h: 136, tone: 'plain' }, text(`pgt${i}`, x + 6, 40, tr(`trang ${i}`, `page ${i}`), { size: SM, b: true }));
       [...p.slice(0, 5)].forEach((c, j) => {
         const gone = s.vac && c === 'd';
         const tone: Tone = gone ? 'free' : c === 'd' ? 'dead' : c === 'n' ? 'warm' : s.frozen ? 'ptr' : 'live';
-        out.push(...box(`t${i}.${j}`, x + 6, 50 + j * 22, PW - 12, 18, '', tone), text(`tl${i}.${j}`, x + 12, 59 + j * 22, gone ? tr('trống', 'free') : c === 'd' ? tr('chết', 'dead') : c === 'n' ? tr('đang chạy', 'in progress') : s.frozen ? 'frozen' : tr('sống', 'live'), { size: 9.5 }));
+        out.push(...box(`t${i}.${j}`, x + 6, 50 + j * 22, PW - 12, 18, '', tone), text(`tl${i}.${j}`, x + 12, 59 + j * 22, gone ? tr('trống', 'free') : c === 'd' ? tr('chết', 'dead') : c === 'n' ? tr('đang chạy', 'in progress') : s.frozen ? 'frozen' : tr('sống', 'live'), { size: SM }));
       });
       const allVis = s.vm && !p.includes('n') && (s.vac || !p.includes('d'));
       out.push(...box(`av${i}`, x, 194, PW / 2 - 2, 22, 'AV', allVis ? (s.ios ? 'new' : 'live') : 'ghost'));
       out.push(...box(`af${i}`, x + PW / 2 + 2, 194, PW / 2 - 2, 22, 'AF', s.frozen && allVis ? 'ptr' : 'ghost'));
       const free = (s.fsm ? [...p].filter((c) => c === 'd').length + 1 : 1) / 6;
       out.push({ k: `fb${i}`, t: 'r', x, y: 244, w: PW, h: 10, tone: 'ghost' }, { k: `ff${i}`, t: 'r', x, y: 244, w: Math.max(4, PW * free), h: 10, tone: s.fsm ? 'new' : 'cell' });
-      if (s.ios && !allVis) out.push({ k: `hf${i}`, t: 'r', x: x - 2, y: 26, w: PW + 4, h: 140, tone: 'warm', o: 0.5 }, text(`hft${i}`, x + PW - 4, 40, 'Heap Fetch', { a: 'e', size: 9.5, ink: 'warm', b: true }));
+      if (s.ios && !allVis) out.push({ k: `hf${i}`, t: 'r', x: x - 2, y: 26, w: PW + 4, h: 140, tone: 'warm', o: 0.5 }, text(`hft${i}`, x + PW / 2, 14, 'Heap Fetch', { a: 'm', size: SM, ink: 'warm', b: true }));
     });
-    if (s.ios) out.push(text('iot', 330, 186, tr('Index Only Scan đọc AV trước', 'Index Only Scan reads AV first'), { a: 'e', size: 9.5, ink: 'new', b: true }));
+    if (s.ios) out.push(text('iot', 330, 186, tr('Index Only Scan đọc AV trước', 'Index Only Scan reads AV first'), { a: 'e', size: SM, ink: 'new', b: true }));
     return out;
   };
   const deadN = pages.join('').split('d').length - 1;
@@ -269,9 +271,9 @@ define<WalModel>('pg-wal-flow', {
   const last = recs[recs.length - 1]?.start_lsn ?? m.redo;
   type St = { n: number; dirty?: boolean; flushed?: boolean; crash?: boolean; replay?: number };
   const lanes: Shape[] = [
-    text('lm', 10, 16, tr('Bộ nhớ (shared buffers)', 'Memory (shared buffers)'), { size: 10, ink: 'muted', b: true }),
-    text('lw', 10, 92, 'WAL', { size: 10, ink: 'muted', b: true }),
-    text('ld', 10, 196, tr('Đĩa (file dữ liệu)', 'Disk (data file)'), { size: 10, ink: 'muted', b: true }),
+    text('lm', 10, 16, tr('Bộ nhớ (shared buffers)', 'Memory (shared buffers)'), { size: SM, ink: 'muted', b: true }),
+    text('lw', 10, 92, 'WAL', { size: SM, ink: 'muted', b: true }),
+    text('ld', 10, 196, tr('Đĩa (file dữ liệu)', 'Disk (data file)'), { size: SM, ink: 'muted', b: true }),
   ];
   const draw = (s: St): Shape[] => {
     const out = [...lanes];
@@ -279,15 +281,15 @@ define<WalModel>('pg-wal-flow', {
     if (!s.crash || s.replay !== undefined) out.push(...box('mem', 10, 26, 150, 42, tr('trang 7', 'page 7'), s.replay !== undefined ? 'new' : s.dirty ? 'warm' : 'live', `pd_lsn ${memLsn}`));
     else out.push(...box('mem', 10, 26, 150, 42, tr('mất khi sập', 'lost in the crash'), 'ghost'));
     out.push(...box('disk', 10, 206, 150, 42, tr('trang 7', 'page 7'), s.crash && s.replay === undefined ? 'dead' : 'cell', `pd_lsn ${m.redo}`));
-    out.push(line('ck', 12, 100, 12, 158, { ink: 'ptr', w: 2.4 }), text('ckt', 18, 166, `checkpoint · redo ${m.redo}`, { size: 9.5, mono: true, ink: 'ptr' }));
+    out.push(line('ck', 12, 100, 12, 158, { ink: 'ptr', w: 2.4 }), text('ckt', 18, 166, `checkpoint · redo ${m.redo}`, { size: SM, mono: true, ink: 'ptr' }));
     recs.slice(0, s.n).forEach((r, i) => {
       const fpi = (num(r.fpi_length) ?? 0) > 0;
       const tone: Tone = s.replay !== undefined && i <= s.replay ? 'new' : fpi ? 'ptr' : 'cell';
       out.push(...box(`r${i}`, 20 + i * 106, 104, 100, 44, cut(r.record_type, 13), tone, fpi ? `+FPI ${num(r.fpi_length)} B` : cut(r.start_lsn, 14)));
     });
-    if (s.flushed) out.push(line('fl', 20, 154, 20 + recs.length * 106 - 6, 154, { ink: 'live', w: 3 }), text('flt', 330, 92, `fsync → ${last}`, { a: 'e', size: 9.5, mono: true, ink: 'live' }));
-    if (s.dirty && !s.crash) out.push(text('dt', 170, 47, tr('bẩn: chưa ghi xuống đĩa', 'dirty: not on disk yet'), { size: 10, ink: 'warm' }));
-    if (s.replay !== undefined) out.push(arc('rp', 250, 102, 164, 50, -24, { ink: 'new', w: 2 }), text('rpt', 170, 30, tr('REDO từ điểm redo', 'REDO from the redo point'), { size: 10, ink: 'new' }));
+    if (s.flushed) out.push(line('fl', 20, 154, 20 + recs.length * 106 - 6, 154, { ink: 'live', w: 3 }), text('flt', 330, 92, `fsync → ${last}`, { a: 'e', size: SM, mono: true, ink: 'live' }));
+    if (s.dirty && !s.crash) out.push(text('dt', 170, 47, tr('bẩn: chưa ghi xuống đĩa', 'dirty: not on disk yet'), { size: SM, ink: 'warm' }));
+    if (s.replay !== undefined) out.push(arc('rp', 250, 102, 164, 50, -24, { ink: 'new', w: 2 }), text('rpt', 170, 30, tr('REDO từ điểm redo', 'REDO from the redo point'), { size: SM, ink: 'new' }));
     return out;
   };
   return {

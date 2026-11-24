@@ -74,8 +74,8 @@ export function planFailText(f: PlanFail, lab: boolean): string {
 }
 
 const FEEDBACK: Record<'good' | 'bad', string> = {
-  good: 'mt-2 rounded-(--r-ctl) bg-good-soft px-3 py-1.5 text-body-sm font-semibold text-ink ring-1 ring-good/40',
-  bad: 'mt-2 rounded-(--r-ctl) bg-bad-soft p-3 text-body-sm text-ink ring-1 ring-bad/40',
+  good: 'mt-2 rounded-(--r-ctl) bg-good-soft px-3 py-1.5 text-body-sm font-semibold text-ink ring-1 ring-good-line',
+  bad: 'mt-2 rounded-(--r-ctl) bg-bad-soft p-3 text-body-sm text-ink ring-1 ring-bad-line',
 };
 
 /**

@@ -1,4 +1,4 @@
-import { box, cut, define, fill, line, num, type Shape, text, type Tone } from './engineVizCore';
+import { box, cut, define, fill, line, num, type Shape, SM, text, type Tone } from './engineVizCore';
 
 // ENG-VIZ Postgres index diagrams (knowledge map P6, P7, P9): B-tree, GIN, BRIN, GiST.
 
@@ -19,18 +19,18 @@ define<BtreeModel>('pg-btree', { leaves: [[3, 8, 12, 15], [20, 25, 28, 29], [41,
     const seps = leaves.slice(1).map((l) => l[0]);
     const rw = Math.max(48, seps.length * 22 + 14);
     const rx = 170 - rw / 2;
-    const out: Shape[] = [{ k: 'root', t: 'r', x: rx, y: 26, w: rw, h: 28, tone: o.hl !== undefined ? 'new' : 'cell' }, text('rootl', rx, 18, tr('gốc', 'root'), { size: 9.5, ink: 'muted' })];
-    seps.forEach((s, i) => out.push(text(`s${s.k}`, rx + 14 + i * 22, 40, s.v, { a: 'm', b: true, size: 11, ink: o.rootNew === s.k ? 'new' : 'ink' })));
+    const out: Shape[] = [{ k: 'root', t: 'r', x: rx, y: 26, w: rw, h: 28, tone: o.hl !== undefined ? 'new' : 'cell' }, text('rootl', rx, 18, tr('gốc', 'root'), { size: SM, ink: 'muted' })];
+    seps.forEach((s, i) => out.push(text(`s${s.k}`, rx + 14 + i * 22, 40, s.v, { a: 'm', b: true, size: SM, ink: o.rootNew === s.k ? 'new' : 'ink' })));
     leaves.forEach((l, i) => {
       const cx = xs[i] + ws[i] / 2;
       const hot = o.hl === i;
       out.push(line(`e${i}`, 170 - rw / 2 + 7 + i * (rw - 14) / Math.max(1, leaves.length - 1), 54, cx, 110, { ink: hot ? 'new' : 'edge', w: hot ? 2.2 : 1.2, dash: o.edgeGhost === i }));
       out.push({ k: `leaf${i}`, t: 'r', x: xs[i], y: 112, w: ws[i], h: 30, tone: o.leafTone?.[i] ?? (hot ? 'new' : 'cell') });
       let kx = xs[i] + 4;
-      l.forEach((key) => { kx += kw(key); out.push(text(key.k, kx - kw(key) / 2, 127, key.v, { a: 'm', size: 11, b: true, ink: key.tone === 'dead' ? 'dead' : key.tone === 'new' ? 'new' : 'ink' })); });
+      l.forEach((key) => { kx += kw(key); out.push(text(key.k, kx - kw(key) / 2, 127, key.v, { a: 'm', size: SM, b: true, ink: key.tone === 'dead' ? 'dead' : key.tone === 'new' ? 'new' : 'ink' })); });
       if (i) out.push(line(`sib${i}`, xs[i - 1] + ws[i - 1], 152, xs[i], 152, { ink: 'ptr', arrow: true, w: 1 }));
     });
-    out.push(text('leafl', 10, 166, tr('lá (nối anh em →)', 'leaves (sibling links →)'), { size: 9.5, ink: 'muted' }));
+    out.push(text('leafl', 10, 166, tr('lá (nối anh em →)', 'leaves (sibling links →)'), { size: SM, ink: 'muted' }));
     return out;
   };
   const K = (v: number, tone?: Tone, suffix = ''): Key => ({ v: String(v), k: `k${v}${suffix}`, tone });
@@ -90,19 +90,19 @@ define<GinModel>('pg-gin-postings', { docs: ['red apple pie', 'green apple', 'ap
   type St = { entries?: boolean; tree?: boolean; q?: boolean; and?: boolean; pending?: boolean; merged?: boolean };
   const draw = (s: St): Shape[] => {
     const all = s.merged ? [...docs, m.added] : docs;
-    const out: Shape[] = [text('dh', 10, 12, tr('Dòng (tài liệu)', 'Rows (documents)'), { size: 9.5, ink: 'muted' })];
+    const out: Shape[] = [text('dh', 10, 12, tr('Dòng (tài liệu)', 'Rows (documents)'), { size: SM, ink: 'muted' })];
     all.forEach((d, i) => {
       const on = s.and && hit.includes(i + 1);
-      out.push(...box(`d${i}`, 10, 22 + i * 24, 128, 20, '', on ? 'new' : 'cell'), text(`dt${i}`, 16, 32 + i * 24, `${i + 1}  ${cut(d, 17)}`, { size: 10, mono: true }));
+      out.push(...box(`d${i}`, 10, 22 + i * 24, 128, 20, '', on ? 'new' : 'cell'), text(`dt${i}`, 16, 32 + i * 24, `${i + 1} ${cut(d, 15)}`, { size: SM, mono: true }));
     });
     if (!s.entries) return out;
-    out.push(text('eh', 150, 12, tr('Mục từ → danh sách TID', 'Entry → posting list'), { size: 9.5, ink: 'muted' }));
+    out.push(text('eh', 150, 12, tr('Mục từ → danh sách TID', 'Entry → posting list'), { size: SM, ink: 'muted' }));
     index(all).forEach(([w, ids], r) => {
       const y = 22 + r * 22;
       const q = s.q && (w === qa || w === qb);
       out.push(...box(`w${w}`, 150, y, 62, 18, cut(w, 8), q ? 'ptr' : 'cell'));
       if (s.tree && ids.length >= 3) {
-        out.push(...box(`pt${w}`, 218, y, 110, 18, tr(`posting tree · ${ids.length}`, `posting tree · ${ids.length}`), q ? 'ptr' : 'new'));
+        out.push(...box(`pt${w}`, 214, y, 116, 18, tr(`posting tree · ${ids.length}`, `posting tree · ${ids.length}`), q ? 'ptr' : 'new'));
         return;
       }
       ids.slice(0, 6).forEach((id, j) => out.push(...box(`p${w}.${id}`, 218 + j * 19, y, 17, 18, String(id), s.and && q && hit.includes(id) ? 'new' : q ? 'ptr' : 'plain')));
@@ -142,13 +142,13 @@ define<BrinModel>('pg-brin-ranges', {
   const sx = (v: number) => X0 + (v / hi) * (X1 - X0);
   const [lo, up] = m.query;
   const draw = (list: typeof sorted, s: { bars?: boolean; q?: boolean; pick?: boolean }): Shape[] => {
-    const out: Shape[] = [line('ax', X0, 210, X1, 210, { ink: 'edge' }), text('a0', X0, 222, '0', { size: 9.5, ink: 'muted', a: 'm' }), text('a1', X1, 222, String(hi), { size: 9.5, ink: 'muted', a: 'e' })];
-    if (s.q) out.push({ k: 'band', t: 'r', x: sx(lo), y: 18, w: Math.max(2, sx(up) - sx(lo)), h: 188, tone: 'ptr', o: 0.4 }, text('bandt', 330, 10, `${lo}–${up}`, { a: 'e', size: 9.5, ink: 'ptr', mono: true }));
+    const out: Shape[] = [line('ax', X0, 210, X1, 210, { ink: 'edge' }), text('a0', X0, 222, '0', { size: SM, ink: 'muted', a: 'm' }), text('a1', X1, 222, String(hi), { size: SM, ink: 'muted', a: 'e' })];
+    if (s.q) out.push({ k: 'band', t: 'r', x: sx(lo), y: 18, w: Math.max(2, sx(up) - sx(lo)), h: 188, tone: 'ptr', o: 0.4 }, text('bandt', 330, 10, `${lo}–${up}`, { a: 'e', size: SM, ink: 'ptr', mono: true }));
     list.forEach((r, i) => {
       const y = 22 + i * 23;
       const overlap = r.max >= lo && r.min <= up;
       const tone: Tone = s.pick ? (overlap ? 'new' : 'ghost') : 'cell';
-      out.push(...box(`r${i}`, 10, y, 94, 19, '', tone), text(`rt${i}`, 16, y + 10, `blk ${r.blk}–${r.blk + ppr - 1}`, { size: 9.5, mono: true }));
+      out.push(...box(`r${i}`, 10, y, 94, 19, '', tone), text(`rt${i}`, 16, y + 10, `blk ${r.blk}–${r.blk + ppr - 1}`, { size: SM, mono: true }));
       if (s.bars) out.push({ k: `b${i}`, t: 'r', x: sx(r.min), y: y + 4, w: Math.max(3, sx(r.max) - sx(r.min)), h: 11, tone: s.pick ? (overlap ? 'new' : 'ghost') : 'live' });
     });
     return out;
@@ -211,13 +211,13 @@ define<GistModel>('pg-gist-boxes', {
     if (s.q) out.push({ k: 'q', t: 'c', x: sx(qx), y: sy(qy), r: 5, tone: 'warm' }, text('qt', sx(qx) + 8, sy(qy), 'q', { b: true, ink: 'warm' }));
     if (s.done) best.forEach((p, j) => out.push(line(`nn${j}`, sx(qx), sy(qy), sx(p.x), sy(p.y), { ink: 'new', w: 1.6 })));
     // the tree on the right
-    out.push(text('th', 232, 20, tr('cây GiST', 'GiST tree'), { size: 9.5, ink: 'muted' }));
+    out.push(text('th', 232, 20, tr('cây GiST', 'GiST tree'), { size: SM, ink: 'muted' }));
     if (s.root) out.push(...box('tr', 252, 30, 56, 22, 'root', 'cell'));
     if (s.leaf) boxes.forEach((_, i) => {
       out.push(...box(`tl${i}`, 232 + i * 34, 80, 30, 22, `L${i + 1}`, s.first && visited.includes(i) ? 'new' : 'ptr'));
       if (s.root) out.push(line(`te${i}`, 280, 52, 247 + i * 34, 78, { ink: 'edge', w: 1 }));
     });
-    if (s.first) order.forEach((o, j) => out.push(text(`od${o.i}`, 232, 124 + j * 16, tr(`L${o.i + 1}: cách ${o.d.toFixed(1)}`, `L${o.i + 1}: dist ${o.d.toFixed(1)}`), { size: 9.5, mono: true, ink: visited.includes(o.i) ? 'new' : 'muted' })));
+    if (s.first) order.forEach((o, j) => out.push(text(`od${o.i}`, 232, 124 + j * 16, tr(`L${o.i + 1}: cách ${o.d.toFixed(1)}`, `L${o.i + 1}: dist ${o.d.toFixed(1)}`), { size: SM, mono: true, ink: visited.includes(o.i) ? 'new' : 'muted' })));
     return out;
   };
   return {

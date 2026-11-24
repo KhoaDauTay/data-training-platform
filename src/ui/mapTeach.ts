@@ -257,7 +257,7 @@ export function view(d: DomainId, r: QueryResult, at: Promise<Base>, places: Art
     fig,
     summary,
     ...notes.map((n) => h('p', { class: 'm-0 text-caption text-muted' }, n)),
-    h('details', {}, h('summary', { class: 'cursor-pointer text-body-sm font-semibold text-accent' }, tx('list')),
+    h('details', {}, h('summary', { class: 'cursor-pointer text-body-sm font-semibold text-accent-ink' }, tx('list')),
       h('table', { class: 'mt-1 text-body-sm' },
         h('thead', {}, h('tr', {}, h('th', { class: 'pr-3 text-left' }, tx('place')), h('th', { class: 'text-right' }, r.columns[sel.value]))), list)));
 }

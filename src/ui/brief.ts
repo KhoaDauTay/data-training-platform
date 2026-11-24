@@ -279,7 +279,7 @@ function recap(tk: Ticket, x: TicketText): HTMLElement {
   const skills = SKILLS.filter((s) => ids.includes(s.id));
   const next = nextTicket(app.tickets, done());
   const hintsUsed = app.save.hintsUsed[tk.id] ?? 0;
-  return h('section', { class: 'recap my-3 rounded-(--r-ctl) bg-good-soft p-4 ring-1 ring-good/40' },
+  return h('section', { class: 'recap my-3 rounded-(--r-ctl) bg-good-soft p-4 ring-1 ring-good-line' },
     h('h3', { tabindex: '-1', class: 'mt-0 text-good' }, t('recap.title')),
     h('p', {}, tk.lane ? t('lane.xp', { n: LANE_XP }) : t('recap.xp', { n: xpFor(tk, hintsUsed), hints: hintsUsed })),
     h('h4', {}, t(tk.grants.length ? 'recap.learned' : 'recap.review')),

@@ -46,7 +46,7 @@ registerNav({ id: 'dashboard', area: 'domain', order: 60, label: 'nav.dashboard'
 registerNav({ id: 'map', area: 'domain', order: 70, label: 'nav.map', icon: NAV_ICON.map, get href() { return hashOf('map'); }, current: (r) => r === 'map' });
 
 /** Mobile bottom bar (v6 §3.2): 56 px targets; the current one is --accent on --panel (5.5:1) and keeps its label. */
-const BOTTOM_LINK = 'flex min-h-14 min-w-0 flex-col items-center justify-center gap-0.5 px-0.5 text-center text-[0.75rem] leading-snug font-bold text-muted no-underline aria-[current=page]:text-accent'; // U3 (v21): five columns, one row
+const BOTTOM_LINK = 'flex min-h-14 min-w-0 flex-col items-center justify-center gap-0.5 px-0.5 text-center text-[0.75rem] leading-snug font-bold text-muted no-underline aria-[current=page]:bg-accent-soft aria-[current=page]:text-accent-ink'; // U3 (v21): five columns, one row
 const MENU_ITEM = 'flex w-full items-center gap-2 rounded-(--r-ctl) px-3 py-2 text-ink no-underline hover:bg-code';
 
 /**

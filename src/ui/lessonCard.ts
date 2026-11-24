@@ -254,7 +254,7 @@ function card(l: Lesson, titleId: string, actions: HTMLElement[], tour = false, 
 /** Where the lesson's data comes from (L303): the shop chain on `lab`, and which of its tables share a name with a table the player has opened in this domain. */
 function labNote(l: Lesson): HTMLElement {
   const same = tablesIn([l.example, l.mistake.sql, l.try.solution].join('\n'), unlockedTables());
-  return h('p', { class: 'mt-0 mb-4 flex gap-2 rounded-(--r-ctl) bg-info-soft p-3 text-body-sm', 'data-lab-note': '' }, icon('info', 'size-5 shrink-0'),
+  return h('p', { class: 'mt-0 mb-4 flex gap-2 rounded-(--r-ctl) bg-info-soft p-3 text-body-sm ring-1 ring-info-line', 'data-lab-note': '' }, icon('info', 'size-5 shrink-0'),
     h('span', {}, t('lesson.labNote'), same.length ? ` ${t('lesson.labSame', { tables: same.join(', ') })}` : ''));
 }
 

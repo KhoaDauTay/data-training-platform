@@ -102,7 +102,7 @@ export function errorView(e: unknown, withNote = true, sql?: string): HTMLElemen
     h('p', { class: 'm-0 flex flex-wrap items-baseline gap-2' },
       h('span', { lang: 'en', class: 'rounded-(--r-chip) bg-panel px-2 text-caption font-bold tabular-nums text-bad ring-1 ring-bad/40' }, info.code),
       h('span', { lang: 'en', class: 'error font-mono text-body-sm' }, info.message)),
-    at ? h('pre', { lang: 'en', class: 'm-0 overflow-x-auto font-mono text-body-sm text-ink' }, at.line, '\n',
+    at ? h('pre', { lang: 'en', tabindex: '0', class: 'm-0 overflow-x-auto font-mono text-body-sm text-ink' }, at.line, '\n',
       h('span', { class: 'font-bold text-bad', 'aria-hidden': 'true' }, at.caret), h('span', { class: 'sr-only' }, ` ${t('err.at', { n: at.col })}`)) : null,
     info.hint ? h('p', { class: 'muted m-0' }, `HINT: ${info.hint}`) : null,
     note ? h('p', { class: 'm-0 border-l-4 border-accent pl-2' }, t(note)) : null);

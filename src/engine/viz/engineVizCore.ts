@@ -37,6 +37,12 @@ export type Shape =
   | (Base & { t: 'c'; x: number; y: number; r: number; tone?: Tone })
   | (Base & { t: 'p'; d: string; ink?: Ink; w?: number; arrow?: boolean; dash?: boolean; tone?: Tone });
 export interface Frame { say: string; nodes: Shape[] }
+/**
+ * v31 F5 (L510): the smallest label, in viewBox units. Every diagram is 340 units wide and its svg is ≥ 335 px wide at a
+ * 375 px phone (figure padding 4 px there), so 12.5 units render ≥ 12 px; tests/engineViz.test.ts checks every frame.
+ * Labels never shrink below it: a long one is cut (`cut`) or its box grows. On wide screens the svg stops at 480 px.
+ */
+export const SM = 12.5;
 export interface Diagram { title: string; w: number; h: number; frames: Frame[] }
 export type Tr = (vi: string, en: string) => string;
 
@@ -69,7 +75,7 @@ function look(el: SVGElement, n: Shape, id: string): void {
     set('style', `fill:var(${f});stroke:var(${e});stroke-width:${n.t === 'r' && n.bold ? 2.2 : 1.2}${dash ? ';stroke-dasharray:3 2' : ''}`);
     if (n.t === 'r') set('rx', String(n.rx ?? 3));
   } else if (n.t === 't') {
-    set('style', `fill:var(${INK[n.ink ?? 'ink']});font-size:${n.size ?? 11}px${n.b ? ';font-weight:700' : ''}${n.mono ? ';font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace' : ''}`);
+    set('style', `fill:var(${INK[n.ink ?? 'ink']});font-size:${Math.max(SM, n.size ?? SM)}px${n.b ? ';font-weight:700' : ''}${n.mono ? ';font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace' : ''}`);
     set('text-anchor', n.a === 'm' ? 'middle' : n.a === 'e' ? 'end' : false);
     set('dominant-baseline', 'middle');
     if (el.textContent !== n.s) el.textContent = n.s;
@@ -90,7 +96,7 @@ function stage(d: Diagram): { svg: SVGSVGElement; draw(f: Frame, animate: boolea
   const marker = (ink: Ink) => D.s('marker', { id: `${id}-${ink}`, viewBox: '0 0 8 8', refX: 7, refY: 4, markerWidth: 6, markerHeight: 6, orient: 'auto-start-reverse' },
     D.s('path', { d: 'M0 0 L8 4 L0 8 z', style: `fill:var(${INK[ink]})` }));
   const svg = D.s('svg', {
-    viewBox: `0 0 ${d.w} ${d.h}`, role: 'img', class: 'block h-auto w-full', style: 'max-width:600px;font-family:inherit;overflow:visible',
+    viewBox: `0 0 ${d.w} ${d.h}`, role: 'img', class: 'block h-auto w-full', style: 'max-width:480px;font-family:inherit;overflow:visible',
   }, D.s('defs', {}, ...(Object.keys(INK) as Ink[]).map(marker)));
   const els = new Map<string, SVGElement>();
   let end: (() => void) | undefined;
@@ -166,7 +172,7 @@ export function mount(host: HTMLElement, d: Diagram, lang: Lang, start = 0): Viz
   const ui = UI[lang];
   const n = d.frames.length;
   const st = stage(d);
-  const say = D.h('p', { role: 'status', 'aria-live': 'polite', class: 'm-0 min-h-[3em] text-body-sm' });
+  const say = D.h('p', { role: 'status', 'aria-live': 'polite', class: 'm-0 text-body-sm [grid-area:1/1]' });
   const counter = D.h('span', { class: 'muted tabular-nums', 'aria-hidden': 'true' });
   const back = D.h('button', { type: 'button', class: BTN }, `‹ ${ui.back}`);
   const play = D.h('button', { type: 'button', class: BTN, 'aria-pressed': 'false' }, ui.play);
@@ -177,8 +183,10 @@ export function mount(host: HTMLElement, d: Diagram, lang: Lang, start = 0): Viz
     'aria-label': `${d.title}. ${ui.keys}`, 'data-viz': '',
   },
   D.h('figcaption', { class: 'font-bold' }, d.title),
-  D.h('div', { class: 'overflow-hidden rounded-(--r-ctl) bg-panel p-2 ring-1 ring-line' }, st.svg),
-  say,
+  D.h('div', { class: 'overflow-hidden rounded-(--r-ctl) bg-panel p-2 ring-1 ring-line max-sm:p-1' }, st.svg),
+  // A5 (v31, L515): every step's sentence sits in the same grid cell, hidden but the shown one, so the cell is as tall as the
+  // longest and the buttons below never move between steps
+  D.h('div', { class: 'grid' }, say, ...d.frames.map((f) => D.h('p', { class: 'invisible m-0 text-body-sm [grid-area:1/1]', 'aria-hidden': 'true' }, f.say))),
   D.h('div', { class: 'flex flex-wrap items-center gap-2' }, back, play, next, counter),
   D.h('details', { class: 'text-body-sm' }, D.h('summary', {}, ui.all), D.h('ol', {}, ...items)));
   let at = -1;
@@ -254,13 +262,11 @@ export function define<M>(name: string, sample: M, build: (m: M, tr: Tr, lang: L
 }
 
 // ── drawing helpers shared by the diagrams (pure: they only return shapes) ─────────────────────────────────────
-/** Font size that keeps s inside w (estimated: k × size per character), never under 8. */
-const fit = (s: string, w: number, size: number, k: number): number => Math.max(8, Math.min(size, Math.floor(((w - 6) / (s.length * k)) * 10) / 10));
 /** A labelled box: rect + centred text (`sub` = a second, smaller line). */
 export function box(k: string, x: number, y: number, w: number, h: number, label: string, tone: Tone = 'cell', sub?: string, o?: number): Shape[] {
   const out: Shape[] = [{ k, t: 'r', x, y, w, h, tone, o }];
-  if (label) out.push({ k: `${k}.t`, t: 't', x: x + w / 2, y: y + h / 2 - (sub ? 6 : 0), s: label, a: 'm', size: fit(label, w, 11, 0.58), b: true, o });
-  if (sub) out.push({ k: `${k}.s`, t: 't', x: x + w / 2, y: y + h / 2 + 7, s: sub, a: 'm', size: fit(sub, w, 9.5, 0.55), ink: 'ink', o });
+  if (label) out.push({ k: `${k}.t`, t: 't', x: x + w / 2, y: y + h / 2 - (sub ? 7 : 0), s: label, a: 'm', size: SM, b: true, o });
+  if (sub) out.push({ k: `${k}.s`, t: 't', x: x + w / 2, y: y + h / 2 + 8, s: sub, a: 'm', size: SM, ink: 'ink', o });
   return out;
 }
 export const text = (k: string, x: number, y: number, s: string, more: Partial<Extract<Shape, { t: 't' }>> = {}): Shape => ({ k, t: 't', x, y, s, ...more });

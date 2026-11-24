@@ -154,6 +154,20 @@ describe('theme', () => {
     expect(css).toMatch(/pre\.sql \{[^}]*font-size: 14px/);
   });
 
+  it('v31 (L511, L512): hộp nền màu có viền cùng sắc ≥ 1,3:1; chữ nhấn nhỏ --accent-ink ≥ 7:1 trên panel, ≥ 4,5:1 trên accent-soft', () => {
+    const light = tokens(':root');
+    const dark = { ...light, ...tokens(':root[data-theme=dark]') };
+    for (const [name, tk] of [['light', light], ['dark', dark]] as const) {
+      const need: [string, string, number][] = [
+        ...['good', 'bad', 'warn', 'info'].flatMap((k): [string, string, number][] => [[`${k}-line`, 'bg', 1.3], [`${k}-line`, 'panel', 1.3]]),
+        ['accent-ink', 'panel', 7], ['accent-ink', 'bg', 7], ['accent-ink', 'accent-soft', 4.5], ['accent-ink', 'surface-2', 4.5],
+      ];
+      const bad = need.filter(([f, b, min]) => !tk[f] || ratio(tk[f], tk[b]) < min).map(([f, b, min]) => `${name} ${f}/${b} ${tk[f] ? ratio(tk[f], tk[b]).toFixed(2) : 'thiếu'} < ${min}`);
+      expect(bad).toEqual([]);
+    }
+    expect(tokens(':root[data-theme=dark]')['accent-ink']).toBeTruthy(); // dark sets its own, never inherits the light one
+  });
+
   it('token ấm của v6 (L57) và bo góc 20/14', () => {
     expect(tokens(':root')).toMatchObject({ bg: '#fbf7f0', accent: '#0f766e', sun: '#ffe9bd', 'sun-ink': '#5c3d00' });
     expect(tokens(':root[data-theme=dark]')).toMatchObject({ bg: '#131110', accent: '#62dccb', sun: '#43350f' }); // K1 (L136)

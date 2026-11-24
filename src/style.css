@@ -38,6 +38,8 @@
   --surface-2: #f2ebe0; --border-strong: #b8a893;
   --shadow-1: 0 1px 2px rgb(42 35 32 / 0.06), 0 2px 8px rgb(42 35 32 / 0.06); --shadow-2: 0 12px 32px rgb(42 35 32 / 0.18);
   --good-soft: #edf8f0; --bad-soft: #fdecea; --warn-soft: #fcf0dc; --info-soft: #e4f0f7; --info: #0b5fa5; /* L238: information ink (engine diagrams: pointers, frozen, recorded results); = --syn-type's value */
+  /* v31 C4 (L511): the same-hue edge of a soft box (≥ 1.3:1 on --bg and --panel); v31 (L512): --accent-ink = small accent text (≥ 7:1 on --panel, ≥ 4.5:1 on --accent-soft) */
+  --good-line: #a8d7b4; --bad-line: #efb3ab; --warn-line: #e7c28d; --info-line: #a9cde3; --accent-ink: #0b5f58;
   --w-read: 880px; --w-wide: 1120px;
   --chart-1: var(--accent); --chart-grid: var(--border);
   /* Mascot palette (v6 §1.2–1.3): SVG only, never text. */
@@ -87,6 +89,7 @@
   --surface-2: #302a25; --border-strong: #7d7166;
   --shadow-1: 0 0 0 1px var(--border-strong); --shadow-2: 0 0 0 1px var(--border-strong), 0 12px 32px rgb(0 0 0 / 0.5);
   --good-soft: #163420; --bad-soft: #3d1f1b; --warn-soft: #3a2c10; --info-soft: #142c39; --info: #86ccff;
+  --good-line: #285636; --bad-line: #6a332c; --warn-line: #5a4620; --info-line: #28506a; --accent-ink: #62dccb;
   --lily-fur: #f3f0eb; --lily-cream: #dcd5ca; --lily-ear: #1f1a17; --lily-spot: #1f1a17; --lily-line: #8a7e75; --lily-ink: #1f1a17; --lily-scarf: #2bb3a3;
   --boon-body: #f2f2ef; --boon-plume: #d3d9dc; --boon-line: #858e95; --boon-wing: #3a8391; --boon-belly: #e1e6e7; --boon-bill: #e9ad3e; --boon-ink: #1d1916;
   --boon-shade: #b9c2c7; --boon-bill-dark: #b8741f;
@@ -134,6 +137,8 @@
   --color-bad-soft: var(--bad-soft);
   --color-warn-soft: var(--warn-soft);
   --color-info-soft: var(--info-soft);
+  --color-good-line: var(--good-line); --color-bad-line: var(--bad-line); --color-warn-line: var(--warn-line); --color-info-line: var(--info-line);
+  --color-accent-ink: var(--accent-ink);
   --color-chart: var(--chart-1);
   --color-chart-grid: var(--chart-grid);
   --color-dom-logistics: var(--dom-logistics);
