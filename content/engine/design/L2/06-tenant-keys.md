@@ -1,0 +1,370 @@
+---
+id: e-ds-l2-06
+engine: design
+level: L2
+module: er-mapping
+title: Khóa cho nhiều khách hàng - tenant_id trong khóa chính và khóa ngoại
+title_en: Keys for many tenants - tenant_id in the primary and foreign keys
+kind: lab
+runtime: browser
+minutes: 18
+objectives:
+  - vi: Đặt `tenant_id` đầu khóa chính của mọi bảng thuộc về một khách hàng.
+    en: Put `tenant_id` first in the primary key of every table a tenant owns.
+  - vi: Viết khóa ngoại ghép để một dòng không thể trỏ sang dữ liệu của khách hàng khác.
+    en: Write a composite foreign key so a row can never point at another tenant's data.
+  - vi: Nối hai bảng của một khách hàng bằng cả hai cột khóa.
+    en: Join two of a tenant's tables on both key columns.
+requires: [e-ds-l2-03]
+sources:
+  - https://www.postgresql.org/docs/18/ddl-constraints.html#DDL-CONSTRAINTS-FK
+  - https://www.postgresql.org/docs/18/sql-createtable.html
+  - https://docs.aws.amazon.com/wellarchitected/latest/saas-lens/silo-pool-and-bridge-models.html
+lab:
+  setup: |
+    CREATE TABLE sellers (id int PRIMARY KEY, name text NOT NULL);
+    INSERT INTO sellers VALUES (1, 'Lan Silk'), (2, 'Minh Tea'), (3, 'Hoa Lamp');
+    CREATE TABLE customers (
+      tenant_id int NOT NULL REFERENCES sellers (id),
+      id int NOT NULL,
+      name text NOT NULL,
+      PRIMARY KEY (tenant_id, id)
+    );
+    INSERT INTO customers
+    SELECT t, c, 'Customer ' || t || '-' || c
+    FROM generate_series(1, 3) t, generate_series(1, 10) c;
+  steps:
+    - task:
+        vi: "Tạo bảng `orders` theo đúng thứ tự cột: `tenant_id int NOT NULL`, `id int NOT NULL`, `customer_id int NOT NULL`, `total int NOT NULL`. Khóa chính `(tenant_id, id)`, khóa ngoại `(tenant_id, customer_id)` trỏ tới `customers (tenant_id, id)`. Đừng đặt tên ràng buộc."
+        en: "Create table `orders` with these columns in this order: `tenant_id int NOT NULL`, `id int NOT NULL`, `customer_id int NOT NULL`, `total int NOT NULL`. Primary key `(tenant_id, id)`, foreign key `(tenant_id, customer_id)` pointing to `customers (tenant_id, id)`. Do not name the constraints."
+      solution: CREATE TABLE orders (tenant_id int NOT NULL, id int NOT NULL, customer_id int NOT NULL, total int NOT NULL, PRIMARY KEY (tenant_id, id), FOREIGN KEY (tenant_id, customer_id) REFERENCES customers (tenant_id, id))
+      check: catalog
+      hint:
+        vi: "Khóa ghép viết ở cuối danh sách cột: `PRIMARY KEY (tenant_id, id)`, rồi `FOREIGN KEY (tenant_id, customer_id) REFERENCES customers (tenant_id, id)`."
+        en: "Composite keys go at the end of the column list: `PRIMARY KEY (tenant_id, id)`, then `FOREIGN KEY (tenant_id, customer_id) REFERENCES customers (tenant_id, id)`."
+    - task:
+        vi: "Đánh index cho khóa ngoại ghép ở bảng con: một index trên `orders (tenant_id, customer_id)`. Đừng đặt tên index."
+        en: "Index the composite foreign key on the child side: one index on `orders (tenant_id, customer_id)`. Do not name the index."
+      solution: CREATE INDEX ON orders (tenant_id, customer_id)
+      check: catalog
+      hint:
+        vi: "`CREATE INDEX ON orders (tenant_id, customer_id)`: không có tên thì Postgres tự đặt."
+        en: "`CREATE INDEX ON orders (tenant_id, customer_id)`: without a name Postgres picks one."
+    - task:
+        vi: "Người bán 2 ghi hai đơn cho khách số 7 của mình: đơn 1 tổng `120000`, đơn 2 tổng `80000`. Bài chấm bằng toàn bộ bảng `orders`."
+        en: "Seller 2 records two orders for its own customer 7: order 1 with total `120000`, order 2 with total `80000`. It is graded on the whole `orders` table."
+      solution: INSERT INTO orders VALUES (2, 1, 7, 120000), (2, 2, 7, 80000)
+      after: SELECT tenant_id, id, customer_id, total FROM orders ORDER BY tenant_id, id
+      check: rows
+      ordered: true
+      hint:
+        vi: "Giá trị theo thứ tự cột: `tenant_id`, `id`, `customer_id`, `total`."
+        en: "Values in column order: `tenant_id`, `id`, `customer_id`, `total`."
+    - task:
+        vi: "Trang đơn hàng của người bán 2: `tenant_id`, mã đơn `id`, tên khách `name`, `total`, xếp theo mã đơn. Nối `orders` với `customers` bằng cả hai cột."
+        en: "Seller 2's order page: `tenant_id`, order `id`, customer `name`, `total`, ordered by order id. Join `orders` to `customers` on both columns."
+      solution: SELECT o.tenant_id, o.id, c.name, o.total FROM orders o JOIN customers c ON c.tenant_id = o.tenant_id AND c.id = o.customer_id WHERE o.tenant_id = 2 ORDER BY o.id
+      check: rows
+      ordered: true
+      hint:
+        vi: "Khách số 7 có ở cả ba người bán; chỉ nối theo `id` thì mỗi đơn ra ba dòng. Thêm `c.tenant_id = o.tenant_id` vào điều kiện nối."
+        en: "Customer 7 exists at all three sellers; joining on `id` alone gives three rows per order. Add `c.tenant_id = o.tenant_id` to the join condition."
+quiz:
+  - q:
+      vi: "Bảng `orders` có `customer_id int REFERENCES customers (id)`, với `customers.id` là khóa chính chung cho mọi người bán. Cả hai bảng đều có cột `tenant_id`. Database có chặn đơn của người bán 1 trỏ tới khách của người bán 2 không?"
+      en: "Table `orders` has `customer_id int REFERENCES customers (id)`, where `customers.id` is one primary key across all sellers. Both tables have a `tenant_id` column. Does the database stop an order of seller 1 from pointing at a customer of seller 2?"
+    options:
+      - { vi: "Có, vì cả hai bảng đều có tenant_id", en: "Yes, because both tables have tenant_id" }
+      - { vi: "Không: khóa ngoại một cột chỉ kiểm mã khách có tồn tại; phải là khóa ngoại ghép trên cả hai cột", en: "No: a single-column foreign key only checks that the customer id exists; it takes a composite foreign key on both columns" }
+      - { vi: "Có, nếu bảng bật bảo mật theo dòng", en: "Yes, if the table has row-level security on" }
+    answer: 1
+    trap: 0
+    why:
+      vi: "Nghe hợp lý vì cột chủ có mặt ở cả hai bảng, nhưng database chỉ kiểm những cột nằm trong ràng buộc. Khóa ngoại trên `id` không nhìn `tenant_id`; theo tài liệu Postgres, kiểm khóa ngoại cũng không đi qua bảo mật theo dòng."
+      en: "It sounds right because the owner column is in both tables, but the database only checks the columns inside the constraint. A foreign key on `id` never looks at `tenant_id`; per the Postgres docs, foreign key checks also do not go through row-level security."
+  - q:
+      vi: "Vì sao khóa chính là `(tenant_id, id)` mà không phải `(id, tenant_id)`?"
+      en: "Why is the primary key `(tenant_id, id)` and not `(id, tenant_id)`?"
+    options:
+      - { vi: "Thứ tự cột trong khóa không quan trọng", en: "The column order in a key does not matter" }
+      - { vi: "Mọi câu đều lọc theo khách hàng; cột đầu của index B-tree giữ dữ liệu một khách nằm liền nhau và phục vụ được điều kiện chỉ có tenant_id", en: "Every query filters by tenant; the first column of the B-tree index keeps one tenant's rows together and serves a condition on tenant_id alone" }
+      - { vi: "Postgres bắt cột NOT NULL đứng đầu khóa", en: "Postgres requires NOT NULL columns first in a key" }
+    answer: 1
+    trap: 0
+    why:
+      vi: "Nhiều người nghĩ khóa chỉ là luật duy nhất, nên thứ tự không đổi gì. Thật ra khóa chính tạo một index B-tree theo đúng thứ tự cột: đặt `tenant_id` đầu thì mọi câu `WHERE tenant_id = …` đọc một đoạn liền của index."
+      en: "Many people think a key is only a uniqueness rule, so the order changes nothing. In fact the primary key builds a B-tree index in exactly that column order: with `tenant_id` first, every `WHERE tenant_id = …` query reads one contiguous range of the index."
+---
+## Mở bài
+
+Ở Chợ Lồng Đèn, khách số 7 của Lan Silk không phải khách số 7 của Minh Tea. Nếu khóa chỉ là `id`, một đơn của người bán này có thể lặng lẽ trỏ sang khách của người bán kia, và trang quản lý hiện tên người lạ. Bài này đặt `tenant_id` vào chính các khóa, để database tự chặn chuyện đó.
+
+## Ý chính
+
+Một **tenant** (khách hàng thuê hệ thống) là một tổ chức mà dữ liệu phải tách khỏi các tổ chức khác; ở đây mỗi người bán là một tenant. Khi mọi tenant dùng chung bảng (mô hình pool, bài `e-ds-l4-08`), mỗi dòng mang `tenant_id`. Nhiều người nghĩ thêm cột là đủ. Thật ra cột chỉ ghi chủ của dòng; khóa mới là thứ database kiểm.
+
+Khóa chính `(tenant_id, id)` cho mỗi tenant đánh số riêng, giữ dữ liệu một tenant nằm liền nhau trong index, và khi chuyển một tenant sang máy khác thì số của họ không đụng số của ai. Khóa ngoại ghép `(tenant_id, customer_id)` trỏ tới `(tenant_id, id)` của bảng cha: hai cột phải khớp cùng lúc, nên một đơn chỉ trỏ được tới khách của chính người bán đó. Khóa ngoại một cột trên `id` không biết chủ là ai, nên nó nhận cả tham chiếu chéo.
+
+Ba thói quen đi kèm: đánh index cho khóa ngoại ghép ở bảng con (xóa dòng cha khỏi phải quét cả bảng con), nối hai bảng bằng cả hai cột, và giữ khóa ngoại một chiều cha → con để chép hay xóa trọn một tenant theo đúng thứ tự.
+
+## Cú pháp
+
+```sql
+CREATE TABLE child (
+  tenant_id int NOT NULL,
+  id int NOT NULL,
+  parent_id int NOT NULL,
+  PRIMARY KEY (tenant_id, id),
+  FOREIGN KEY (tenant_id, parent_id)
+    REFERENCES parent (tenant_id, id)
+);
+CREATE INDEX ON child
+  (tenant_id, parent_id);
+```
+
+- Bảng cha phải có khóa chính hoặc `UNIQUE` trên đúng `(tenant_id, id)` thì khóa ngoại ghép mới tạo được.
+- Khóa ngoại ghép không tự có index ở bảng con; tạo nó bằng tay.
+- Câu nối: `ON c.tenant_id = o.tenant_id AND c.id = o.customer_id`.
+
+## Ví dụ
+
+Mỗi người bán có khách số 7 của riêng mình: cùng `id`, khác `tenant_id`.
+
+```sql
+SELECT tenant_id, id, name
+FROM customers
+WHERE id = 7
+ORDER BY tenant_id;
+```
+
+Bảng con mang khóa ghép ở cả hai đầu:
+
+```sql
+CREATE TABLE ex_orders (
+  tenant_id int NOT NULL,
+  id int NOT NULL,
+  customer_id int NOT NULL,
+  PRIMARY KEY (tenant_id, id),
+  FOREIGN KEY (tenant_id, customer_id)
+    REFERENCES customers (tenant_id, id)
+);
+INSERT INTO ex_orders VALUES (1, 1, 7);
+SELECT * FROM ex_orders;
+```
+
+Một cổng kiểm trong CI có thể đọc `pg_constraint` và báo bảng nào có khóa không bắt đầu bằng `tenant_id`:
+
+```sql
+SELECT conname,
+  pg_get_constraintdef(oid) AS def
+FROM pg_constraint
+WHERE conrelid = 'ex_orders'::regclass
+ORDER BY conname;
+```
+
+## Lỗi hay gặp
+
+Khóa ngoại một cột nhận tham chiếu sang tenant khác:
+
+```sql
+-- WRONG: the key knows no tenant
+CREATE TABLE ex_clients (
+  id int PRIMARY KEY,
+  tenant_id int NOT NULL
+);
+INSERT INTO ex_clients
+VALUES (10, 1), (20, 2);
+CREATE TABLE ex_sales (
+  tenant_id int NOT NULL,
+  id int NOT NULL,
+  client_id int REFERENCES ex_clients,
+  PRIMARY KEY (tenant_id, id)
+);
+INSERT INTO ex_sales VALUES (1, 1, 20);
+SELECT count(*) AS cross_tenant
+FROM ex_sales s
+JOIN ex_clients c ON c.id = s.client_id
+WHERE c.tenant_id <> s.tenant_id;
+```
+
+```sql
+-- FIX: carry tenant_id into the key
+DELETE FROM ex_sales;
+ALTER TABLE ex_clients
+  ADD UNIQUE (tenant_id, id);
+ALTER TABLE ex_sales
+  ADD FOREIGN KEY (tenant_id, client_id)
+  REFERENCES ex_clients (tenant_id, id);
+SELECT count(*) AS cross_tenant
+FROM ex_sales s
+JOIN ex_clients c ON c.id = s.client_id
+WHERE c.tenant_id <> s.tenant_id;
+```
+
+Câu sai đếm được 1 đơn chéo; sau khi sửa còn 0, và đơn chéo không vào được nữa:
+
+```sql
+-- ERROR 23503: client 20 is seller 2's
+INSERT INTO ex_sales VALUES (1, 1, 20);
+```
+
+Khóa chính chỉ trên `id` thì hai tenant không thể cùng có hóa đơn số 1, và số hóa đơn lộ ra tổng số của cả chợ:
+
+```sql
+CREATE TABLE ex_invoices (
+  id int PRIMARY KEY,
+  tenant_id int NOT NULL
+);
+INSERT INTO ex_invoices VALUES (1, 1);
+-- ERROR 23505: seller 2 needs no. 1
+INSERT INTO ex_invoices VALUES (1, 2);
+```
+
+## Thực hành
+
+Bốn bước: tạo `orders` với khóa ghép ở cả hai đầu, đánh index cho khóa ngoại, ghi hai đơn của người bán 2, rồi nối lại bằng cả hai cột cho trang đơn hàng. Sau đó là hai câu hỏi.
+
+## Tóm tắt
+
+- Mỗi bảng của tenant: `tenant_id` đầu khóa chính, `PRIMARY KEY (tenant_id, id)`.
+- Khóa ngoại ghép `(tenant_id, x)` → `(tenant_id, id)`: database tự chặn tham chiếu chéo (lỗi 23503).
+- Đánh index cho khóa ngoại ghép ở bảng con, và nối bảng bằng cả hai cột.
+- Đọc tiếp: `e-ds-l2-07` (duy nhất theo từng tenant) và `e-ds-l4-09` (bản đồ chủ đề nhiều khách hàng).
+
+# EN
+
+## Opening
+
+At Lantern Market, customer 7 of Lan Silk is not customer 7 of Minh Tea. If the key is only `id`, an order of one seller can quietly point at another seller's customer, and the seller page shows a stranger's name. This lesson puts `tenant_id` into the keys themselves, so the database stops that on its own.
+
+## Key idea
+
+A **tenant** is an organisation whose data must stay apart from every other organisation's; here each seller is a tenant. When all tenants share tables (the pool model, lesson `e-ds-l4-08`), every row carries `tenant_id`. Many people think adding the column is enough. In fact the column only records the row's owner; the keys are what the database checks.
+
+A primary key `(tenant_id, id)` lets each tenant number its own rows, keeps one tenant's rows together in the index, and when a tenant moves to another server its numbers collide with no one's. A composite foreign key `(tenant_id, customer_id)` points to the parent's `(tenant_id, id)`: both columns must match at once, so an order can only point at its own seller's customer. A single-column foreign key on `id` does not know the owner, so it accepts a cross-tenant reference too.
+
+Three habits come with it: index the composite foreign key on the child side (deleting a parent then does not scan the whole child table), join two tables on both columns, and keep foreign keys one way, parent → child, so a whole tenant can be copied or deleted in the right order.
+
+## Syntax
+
+```sql
+CREATE TABLE child (
+  tenant_id int NOT NULL,
+  id int NOT NULL,
+  parent_id int NOT NULL,
+  PRIMARY KEY (tenant_id, id),
+  FOREIGN KEY (tenant_id, parent_id)
+    REFERENCES parent (tenant_id, id)
+);
+CREATE INDEX ON child
+  (tenant_id, parent_id);
+```
+
+- The parent needs a primary key or a `UNIQUE` on exactly `(tenant_id, id)` before the composite foreign key can be created.
+- A composite foreign key gets no index on the child side by itself; create it by hand.
+- The join: `ON c.tenant_id = o.tenant_id AND c.id = o.customer_id`.
+
+## Example
+
+Each seller has its own customer 7: the same `id`, a different `tenant_id`.
+
+```sql
+SELECT tenant_id, id, name
+FROM customers
+WHERE id = 7
+ORDER BY tenant_id;
+```
+
+The child table carries composite keys at both ends:
+
+```sql
+CREATE TABLE ex_orders (
+  tenant_id int NOT NULL,
+  id int NOT NULL,
+  customer_id int NOT NULL,
+  PRIMARY KEY (tenant_id, id),
+  FOREIGN KEY (tenant_id, customer_id)
+    REFERENCES customers (tenant_id, id)
+);
+INSERT INTO ex_orders VALUES (1, 1, 7);
+SELECT * FROM ex_orders;
+```
+
+A CI gate can read `pg_constraint` and report every table whose keys do not start with `tenant_id`:
+
+```sql
+SELECT conname,
+  pg_get_constraintdef(oid) AS def
+FROM pg_constraint
+WHERE conrelid = 'ex_orders'::regclass
+ORDER BY conname;
+```
+
+## Common mistakes
+
+A single-column foreign key accepts a reference to another tenant:
+
+```sql
+-- WRONG: the key knows no tenant
+CREATE TABLE ex_clients (
+  id int PRIMARY KEY,
+  tenant_id int NOT NULL
+);
+INSERT INTO ex_clients
+VALUES (10, 1), (20, 2);
+CREATE TABLE ex_sales (
+  tenant_id int NOT NULL,
+  id int NOT NULL,
+  client_id int REFERENCES ex_clients,
+  PRIMARY KEY (tenant_id, id)
+);
+INSERT INTO ex_sales VALUES (1, 1, 20);
+SELECT count(*) AS cross_tenant
+FROM ex_sales s
+JOIN ex_clients c ON c.id = s.client_id
+WHERE c.tenant_id <> s.tenant_id;
+```
+
+```sql
+-- FIX: carry tenant_id into the key
+DELETE FROM ex_sales;
+ALTER TABLE ex_clients
+  ADD UNIQUE (tenant_id, id);
+ALTER TABLE ex_sales
+  ADD FOREIGN KEY (tenant_id, client_id)
+  REFERENCES ex_clients (tenant_id, id);
+SELECT count(*) AS cross_tenant
+FROM ex_sales s
+JOIN ex_clients c ON c.id = s.client_id
+WHERE c.tenant_id <> s.tenant_id;
+```
+
+The wrong version counts 1 cross-tenant order; after the fix it is 0, and a cross-tenant order can no longer get in:
+
+```sql
+-- ERROR 23503: client 20 is seller 2's
+INSERT INTO ex_sales VALUES (1, 1, 20);
+```
+
+With a primary key on `id` alone, two tenants cannot both have invoice 1, and the invoice number gives away the count of the whole market:
+
+```sql
+CREATE TABLE ex_invoices (
+  id int PRIMARY KEY,
+  tenant_id int NOT NULL
+);
+INSERT INTO ex_invoices VALUES (1, 1);
+-- ERROR 23505: seller 2 needs no. 1
+INSERT INTO ex_invoices VALUES (1, 2);
+```
+
+## Practice
+
+Four steps: create `orders` with composite keys at both ends, index the foreign key, record two orders of seller 2, then join back on both columns for the order page. Then two questions.
+
+## Recap
+
+- Every tenant table: `tenant_id` first in the primary key, `PRIMARY KEY (tenant_id, id)`.
+- A composite foreign key `(tenant_id, x)` → `(tenant_id, id)`: the database blocks cross-tenant references itself (error 23503).
+- Index the composite foreign key on the child side, and join tables on both columns.
+- Read next: `e-ds-l2-07` (unique per tenant) and `e-ds-l4-09` (the multi-tenant theme map).

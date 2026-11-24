@@ -23,9 +23,10 @@ export type { PlanVizNode, RawPlan } from './engineVizPlanJson';
 export const NOSQL_VIZ = ['mg-bson-doc', 'mg-compound-index-esr', 'mg-aggregation-pipeline', 'mg-replica-set-oplog', 'mg-shard-chunks', 'dy-partitions-hash', 'dy-gsi-projection', 'dy-single-table-items'];
 /** v23 PG-VIZ (L263): query path, partition pruning and replication, the lazy chunk engineVizPgFlow (budget engineVizPg). */
 export const PG_FLOW_VIZ = ['pg-query-path', 'pg-partition-prune', 'pg-replication'];
-/** v35 (L553, D8): multi-tenant diagrams, the lazy chunk engineVizTenant (budget engineVizTenant). */
-export const TENANT_VIZ = ['pg-rls-path'];
-const LAZY: [string[], () => Promise<unknown>][] = [[NOSQL_VIZ, () => import('./engineVizNosql')], [PG_FLOW_VIZ, () => import('./engineVizPgFlow')], [TENANT_VIZ, () => import('./engineVizTenant')]];
+/** v34 (L544) + v35 (L553): the multi-tenant diagrams, the lazy chunk engineVizTenant (budget engineVizTenant). */
+export const TENANT_VIZ = ['pg-tenancy-models', 'pg-rls-path'];
+const LAZY: [string[], () => Promise<unknown>][] = [[NOSQL_VIZ, () => import('./engineVizNosql')], [PG_FLOW_VIZ, () => import('./engineVizPgFlow')],
+  [TENANT_VIZ, () => import('./engineVizTenant')]];
 const lazy = new Map<string[], Promise<unknown>>();
 /** vizFor() that also fetches the chunk holding the name (or old alias) when it is a lazy diagram; a failed load retries next call. */
 export async function loadViz(name: string): Promise<VizFactory | undefined> {

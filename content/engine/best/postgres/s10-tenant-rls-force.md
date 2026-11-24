@@ -70,7 +70,7 @@ Nhiều khách thuê (tenant: một khách hàng doanh nghiệp dùng chung data
 
 ## Ví dụ
 
-Phiên đặt `app.tenant_id = '1'` rồi `SET ROLE app_owner`. Bảng chỉ `ENABLE` cho owner thấy 4 hóa đơn của 2 tenant. Bảng có `FORCE` cho thấy 2 hóa đơn của tenant 1.
+Phiên đặt `app.tenant_id = '1'` rồi `SET ROLE app_owner`. Bảng chỉ `ENABLE` cho owner thấy 4 hóa đơn của 2 tenant. Bảng có `FORCE` cho thấy 2 hóa đơn của tenant 1. Đọc thêm: `e-pg-l5-19` (RLS sâu hơn), bản đồ chủ đề `e-ds-l4-09`.
 
 # EN
 
@@ -86,4 +86,4 @@ When tenants (business customers sharing one database) share tables, every table
 
 ## Example
 
-The session sets `app.tenant_id = '1'` and then `SET ROLE app_owner`. The table with only `ENABLE` shows the owner 4 invoices from 2 tenants. The table with `FORCE` shows the 2 invoices of tenant 1.
+The session sets `app.tenant_id = '1'` and then `SET ROLE app_owner`. The table with only `ENABLE` shows the owner 4 invoices from 2 tenants. The table with `FORCE` shows the 2 invoices of tenant 1. Read more: `e-pg-l5-19` (RLS in depth), the theme map `e-ds-l4-09`.

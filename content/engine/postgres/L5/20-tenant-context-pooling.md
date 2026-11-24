@@ -221,7 +221,7 @@ Bốn bước trên hóa đơn của người bán: policy đóng an toàn, đ�
 - Thiết lập phiên thuộc về kết nối; qua pool, `SET` thường rò sang yêu cầu sau.
 - Gắn khách theo transaction: `SET LOCAL` hoặc `set_config(…, true)` trong `BEGIN … COMMIT`.
 - `current_setting(…, true)` trả NULL hoặc `''`; `NULLIF(…, '')::int` làm policy đóng an toàn.
-- Đọc tiếp: `e-pg-l5-19`, `e-pg-l5-21`.
+- Đọc tiếp: `e-pg-l5-19`, `e-pg-l5-21`, bản đồ chủ đề `e-ds-l4-09`.
 
 # EN
 
@@ -359,4 +359,4 @@ Four steps on the sellers' invoices: a policy that fails closed, a count with no
 - A session setting belongs to the connection; through a pool, a plain `SET` leaks into the next request.
 - Bind the tenant per transaction: `SET LOCAL` or `set_config(…, true)` inside `BEGIN … COMMIT`.
 - `current_setting(…, true)` returns NULL or `''`; `NULLIF(…, '')::int` makes the policy fail closed.
-- Read next: `e-pg-l5-19`, `e-pg-l5-21`.
+- Read next: `e-pg-l5-19`, `e-pg-l5-21`, the theme map `e-ds-l4-09`.

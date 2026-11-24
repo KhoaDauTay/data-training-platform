@@ -213,7 +213,7 @@ Bốn bước: phần trăm dòng đọc của từng người bán, hàm hạn 
 - Đo tải theo khách bằng việc làm thật (dòng đọc, thời gian), không bằng số câu.
 - Hạn mức dữ liệu kiểm lúc ghi: trigger báo `P0001` khi vượt hạn mức của hạng.
 - `ALTER ROLE … SET statement_timeout` và `CONNECTION LIMIT` theo vai trò, nạp ở phiên mới; PGlite không hủy câu.
-- Giới hạn tần suất, hàng đợi công bằng và đổi hạng nằm trên database. Đọc tiếp: `e-pg-l2-26`.
+- Giới hạn tần suất, hàng đợi công bằng và đổi hạng nằm trên database. Đọc tiếp: `e-pg-l2-26`, `e-ds-l4-09`.
 
 # EN
 
@@ -345,4 +345,4 @@ Four steps: each seller's share of rows read, the quota function, the trigger, t
 - Measure load per tenant by real work (rows read, time), not by query count.
 - A data quota is checked at write time: a trigger raises `P0001` past the tier's quota.
 - `ALTER ROLE … SET statement_timeout` and `CONNECTION LIMIT` work per role, loaded in new sessions; PGlite never cancels.
-- Rate limits, fair queues and tier changes live above the database. Read next: `e-pg-l2-26`.
+- Rate limits, fair queues and tier changes live above the database. Read next: `e-pg-l2-26`, `e-ds-l4-09`.

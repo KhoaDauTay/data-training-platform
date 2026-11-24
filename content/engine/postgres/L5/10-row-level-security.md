@@ -205,7 +205,7 @@ Trong lab không dùng được `SET ROLE` (bước sau chạy lại bước tr�
 - `USING` lọc dòng đã có, `WITH CHECK` kiểm dòng mới; thiếu `WITH CHECK` thì `USING` làm thay.
 - Permissive gộp OR, restrictive gộp AND.
 - Superuser, `BYPASSRLS` và chủ bảng (trừ khi `FORCE`) bỏ qua RLS: kiểm thử dưới vai trò ứng dụng.
-- Đọc tiếp: `e-pg-l5-19` (RLS sâu hơn) và `e-pg-l5-20` (khách hiện tại qua pool).
+- Đọc tiếp: `e-pg-l5-19` (RLS sâu hơn) và `e-pg-l5-20` (khách hiện tại qua pool); bản đồ chủ đề `e-ds-l4-09`.
 
 # EN
 
@@ -331,4 +331,4 @@ The lab cannot use `SET ROLE` (each step replays the earlier ones), so each role
 - `USING` filters existing rows, `WITH CHECK` validates new ones; without `WITH CHECK`, `USING` stands in.
 - Permissive policies combine with OR, restrictive ones with AND.
 - Superusers, `BYPASSRLS` and the owner (unless `FORCE`) skip RLS: test under the application role.
-- Read next: `e-pg-l5-19` (RLS in depth) and `e-pg-l5-20` (the current tenant through a pool).
+- Read next: `e-pg-l5-19` (RLS in depth) and `e-pg-l5-20` (the current tenant through a pool); the theme map `e-ds-l4-09`.

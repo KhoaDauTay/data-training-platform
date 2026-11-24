@@ -225,7 +225,7 @@ Database có bảng `public.notes`. Tạo schema `archive`, tạo một bảng `
 - Không đọc chéo database được; dữ liệu cần JOIN nên nằm ở các schema của cùng database.
 - `CREATE DATABASE` không chạy trong transaction; `current_database()` cho biết bạn đang ở đâu.
 - `CREATE SCHEMA ... AUTHORIZATION` đặt chủ; `DROP SCHEMA ... CASCADE` xóa cả nội dung.
-- Tên ngắn đi theo `search_path`, schema đầu tiên thắng; ghi `schema.table` khi cần chắc chắn.
+- Tên ngắn đi theo `search_path`, schema đầu tiên thắng; ghi `schema.table` khi cần chắc chắn. Mỗi khách một schema: `e-pg-l1-19`.
 
 # EN
 
@@ -365,4 +365,4 @@ The database has table `public.notes`. Create schema `archive`, create a second 
 - Queries cannot cross databases; data that must be JOINed belongs in schemas of one database.
 - `CREATE DATABASE` cannot run inside a transaction; `current_database()` tells you where you are.
 - `CREATE SCHEMA ... AUTHORIZATION` sets the owner; `DROP SCHEMA ... CASCADE` drops the contents too.
-- A short name follows `search_path`, the first schema wins; write `schema.table` when you need certainty.
+- A short name follows `search_path`, the first schema wins; write `schema.table` when you need certainty. One schema per tenant: `e-pg-l1-19`.

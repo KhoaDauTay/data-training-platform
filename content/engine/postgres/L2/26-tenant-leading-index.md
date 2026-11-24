@@ -181,7 +181,7 @@ Ba bước: tạo index dẫn đầu bằng khách, lấy 10 hóa đơn mới nh
 - Index cho bảng nhiều khách: `tenant_id` trước, cột lọc bằng, rồi cột khoảng hoặc sắp xếp.
 - Thời gian đứng đầu thì câu của một khách lướt qua mọi khách: một khách lớn làm chậm tất cả.
 - Viết `tenant_id = 7`; `tenant_id + 0` làm mất index.
-- Dưới RLS, policy thêm điều kiện khách vào mọi câu; đọc tiếp: `e-pg-l5-19`, `e-pg-l5-22`.
+- Dưới RLS, policy thêm điều kiện khách vào mọi câu; đọc tiếp: `e-pg-l5-19`, `e-pg-l5-22`, `e-ds-l4-09`.
 
 # EN
 
@@ -298,4 +298,4 @@ Three steps: create an index that leads with the tenant, fetch the 10 newest inv
 - An index for a multi-tenant table: `tenant_id` first, the equality columns, then the range or sort column.
 - With time first, one tenant's query skims every tenant: one big tenant slows them all.
 - Write `tenant_id = 7`; `tenant_id + 0` loses the index.
-- Under RLS the policy adds the tenant condition to every query; read next: `e-pg-l5-19`, `e-pg-l5-22`.
+- Under RLS the policy adds the tenant condition to every query; read next: `e-pg-l5-19`, `e-pg-l5-22`, `e-ds-l4-09`.

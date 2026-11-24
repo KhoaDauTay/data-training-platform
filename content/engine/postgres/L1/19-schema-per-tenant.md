@@ -189,7 +189,7 @@ Bốn bước: mở schema cho người bán 3, tạo bảng của họ, đổi 
 - Mỗi khách một schema: cùng bảng, khác tên schema; chọn bằng tên đầy đủ hoặc `search_path`.
 - Đổi cấu trúc chạy N lần; ghi phiên bản cho từng schema và kiểm lệch bằng catalog.
 - `search_path` là trạng thái của phiên: qua pool nó rò sang yêu cầu sau.
-- Hợp với vài chục khách cần tùy biến; nhiều khách nhỏ thì dùng chung bảng. Đọc tiếp: `e-pg-l5-20`.
+- Hợp với vài chục khách cần tùy biến; nhiều khách nhỏ thì dùng chung bảng. Đọc tiếp: `e-pg-l5-20`, `e-ds-l4-09`.
 
 # EN
 
@@ -314,4 +314,4 @@ Four steps: open a schema for seller 3, create their table, migrate seller 1, th
 - One schema per tenant: the same tables, a different schema name; pick it by full name or `search_path`.
 - A migration runs N times; record the version per schema and check drift in the catalog.
 - `search_path` is session state: through a pool it leaks into the next request.
-- It suits a few dozen tenants that need customisation; many small ones share tables. Read next: `e-pg-l5-20`.
+- It suits a few dozen tenants that need customisation; many small ones share tables. Read next: `e-pg-l5-20`, `e-ds-l4-09`.

@@ -20,7 +20,7 @@ beforeAll(async () => {
   for (const n of [...V.NOSQL_VIZ, ...V.PG_FLOW_VIZ, ...V.TENANT_VIZ]) expect(await V.loadViz(n)).toBeTypeOf('function');
 });
 
-const POSTGRES = ['pg-heap-page', 'pg-mvcc-timeline', 'pg-hot-chain', 'pg-vacuum-flow', 'pg-btree', 'pg-wal-flow', 'pg-gin-postings', 'pg-brin-ranges', 'pg-gist-boxes', 'pg-plan-tree', 'pg-lock-matrix', 'pg-isolation-anomalies', 'pg-query-path', 'pg-partition-prune', 'pg-replication', 'pg-rls-path'];
+const POSTGRES = ['pg-heap-page', 'pg-mvcc-timeline', 'pg-hot-chain', 'pg-vacuum-flow', 'pg-btree', 'pg-wal-flow', 'pg-gin-postings', 'pg-brin-ranges', 'pg-gist-boxes', 'pg-plan-tree', 'pg-lock-matrix', 'pg-isolation-anomalies', 'pg-query-path', 'pg-partition-prune', 'pg-replication', ...V.TENANT_VIZ];
 const NOSQL = V.NOSQL_VIZ;
 
 /** Checks one drawn frame: finite numbers, shapes and (estimated) labels inside the viewBox. */
@@ -156,7 +156,7 @@ describe('engineViz shell', () => {
     };
     for (let i = 1; i < 4; i++) expect(draw(true, i)).toBe(draw(false, i));
     // v23 PG-VIZ: the same for the three new diagrams, every step
-    for (const name of ['pg-query-path', 'pg-partition-prune', 'pg-replication', 'pg-rls-path']) {
+    for (const name of ['pg-query-path', 'pg-partition-prune', 'pg-replication', ...V.TENANT_VIZ]) {
       const at = (motion: boolean, i: number): string => {
         reduced = !motion;
         const host = document.createElement('div');
@@ -213,6 +213,38 @@ describe('engineViz shell', () => {
       expect(v.texts[0]).toMatch(lang === 'vi' ? /không chạy thật/ : /does not really run/);
       v.destroy();
     }
+  });
+
+  it('v34 pg-tenancy-models: 5 steps, tenants named by letter, other columns ghosted in steps 2–4, a model relabels it', () => {
+    reduced = true;
+    for (const lang of ['vi', 'en'] as const) {
+      const host = document.createElement('div');
+      const v = V.vizFor('pg-tenancy-models')!(host, { lang });
+      expect(v.count).toBe(5);
+      const svg = host.querySelector('svg')!;
+      const words = () => [...svg.querySelectorAll('text')].map((t) => t.textContent);
+      expect(words()).toEqual(expect.arrayContaining(['DB A', 'DB B', 'DB C', 'schema a', 'schema b', 'schema c', 'invoices', 'tenant_id A', 'Silo', 'Bridge', 'Pool']));
+      const dashed = (k: string) => /stroke-dasharray/.test(svg.querySelector(`rect[data-k="${k}"]`)!.getAttribute('style') ?? '');
+      for (const [step, focus] of [[1, 'silo0'], [2, 'sch0'], [3, 'ps0']] as const) {
+        v.go(step);
+        expect(dashed(focus), `${lang} step ${step + 1} focus`).toBe(false);
+        expect(['silo0', 'sch0', 'ps0'].filter((k) => k !== focus).every(dashed), `${lang} step ${step + 1} others ghosted`).toBe(true);
+      }
+      v.go(0);
+      expect(['silo0', 'sch0', 'ps0'].some(dashed)).toBe(false);
+      v.destroy();
+    }
+    const host = document.createElement('div');
+    const v = V.vizFor('pg-tenancy-models')!(host, { lang: 'en', model: { tenants: ['X', 'Y'], table: 'seller_orders_with_a_long_name' } });
+    const svg = host.querySelector('svg')!;
+    const words = [...svg.querySelectorAll('text')].map((t) => t.textContent);
+    expect(words).toEqual(expect.arrayContaining(['DB X', 'DB Y', 'DB C', 'schema x']));
+    expect(v.texts[0]).toContain('X, Y and C');
+    for (let i = 0; i < v.count; i++) {
+      v.go(i);
+      expect(checkFrame(svg, 'tenancy(model)', i)).toEqual([]);
+    }
+    v.destroy();
   });
 
   it('a lab model with NULL pointer columns and numeric strings draws without NaN', () => {

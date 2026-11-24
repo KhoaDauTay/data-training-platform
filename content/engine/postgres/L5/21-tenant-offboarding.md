@@ -210,6 +210,7 @@ Năm bước trên dữ liệu người bán: xuất đơn ra CSV, bảng đếm
 - `COPY (SELECT … WHERE tenant_id = …) TO` xuất một khách; file nằm trên máy chủ.
 - CASCADE chỉ đi theo khóa ngoại; bảng không nối tới vẫn giữ dữ liệu.
 - Chứng minh bằng câu quét mọi bảng có `tenant_id`; phân vùng riêng thì `DETACH` rồi `DROP`.
+- Đọc tiếp: `e-pg-l5-22`, bản đồ chủ đề `e-ds-l4-09`.
 
 # EN
 
@@ -336,3 +337,4 @@ Five steps on the sellers' data: export the orders to CSV, the manifest, delete 
 - `COPY (SELECT … WHERE tenant_id = …) TO` exports one tenant; the file is on the server.
 - CASCADE only follows foreign keys; a table nobody linked keeps its data.
 - Prove it with a query over every table with `tenant_id`; a partition of its own takes `DETACH` then `DROP`.
+- Read next: `e-pg-l5-22`, the theme map `e-ds-l4-09`.

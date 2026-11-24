@@ -17,6 +17,7 @@ import { runLabScript, splitSql } from '../src/engine/pglab/session';
 import type { ScriptStep } from '../src/engine/pglab/script';
 import { wordCount } from '../src/fullLesson';
 import { compareResults, grade } from '../src/grader';
+import { slowVerdict } from '../src/planCheck';
 
 const files = import.meta.glob<string>('../content/engine/design/L*/*.md', { query: '?raw', import: 'default', eager: true });
 const moduleRaw = import.meta.glob<string>('../content/engine/design/modules.yml', { query: '?raw', import: 'default', eager: true });
@@ -29,9 +30,10 @@ const ids = new Set(all.map((x) => x.l.id));
 /** §1.5: the 25 lessons, their kinds, by level (v32 adds L4-07: 26). */
 const PLAN: Record<string, EngineLesson['kind'][]> = {
   L1: ['concept', 'lab', 'quiz'],
-  L2: ['concept', 'concept', 'lab', 'lab', 'quiz'],
+  L2: ['concept', 'concept', 'lab', 'lab', 'quiz', 'lab', 'lab'], // v34 (L541): + 06 tenant keys, 07 unique per tenant
   L3: ['concept', 'lab', 'concept', 'quiz'],
-  L4: ['concept', 'lab', 'lab', 'concept', 'concept', 'capstone', 'lab'], // v32 (L523): + 07 vertical partitioning
+  L4: ['concept', 'lab', 'lab', 'concept', 'concept', 'capstone', 'lab', // v32 (L523): + 07 vertical partitioning
+    'concept', 'concept', 'quiz', 'capstone'], // v34 (L541): multi-tenant 08 models, 09 hub, 10 choose, 11 capstone
   L5: ['concept', 'lab', 'concept', 'quiz', 'concept', 'concept', 'concept'],
 };
 const ORDER = Object.keys(SECTIONS) as SectionId[];
@@ -48,8 +50,8 @@ const ERR = /^--\s*ERROR\s+([0-9A-Z]{5})\b/m;
 const isErr = (b: string): boolean => /^--\s*ERROR\b/m.test(b);
 const words = (l: EngineLesson): number => l.sections.reduce((n, s) => n + wordCount(s.text.vi.replace(/```[\s\S]*?```/g, '')), 0);
 
-describe('Engine Thiết kế CSDL (R4): 26 bài theo §1.5 (v32 +1)', () => {
-  it('26 bài, đúng loại từng cấp, id e-ds-', () => {
+describe('Engine Thiết kế CSDL (R4): 32 bài theo §1.5 (v32 +1, v34 +6)', () => {
+  it('32 bài, đúng loại từng cấp, id e-ds-', () => {
     const got = Object.fromEntries(Object.keys(PLAN).map((lv) => [lv, all.filter((x) => x.l.level === lv).sort((a, b) => a.l.order - b.l.order).map((x) => x.l.kind)]));
     expect(got).toEqual(PLAN);
     expect(all.every((x) => /^e-ds-l[1-5]-\d\d$/.test(x.l.id) && x.l.engine === 'design')).toBe(true);
@@ -158,5 +160,18 @@ describe('Engine Thiết kế CSDL: mọi bước lab qua bằng lời giải, k
       expect(r.steps.at(-1)!.rows.length, 'Solution trả 0 dòng').toBeGreaterThan(0);
       if (s.ordered) expect(s.solution).toMatch(/ORDER BY/i);
     }
+  }, 120_000);
+
+  // v34 (L543): tests/perfGateEngine.test.ts reads postgres/ only, so a design `perf:` bar is proven here: the Solution
+  // passes, `slow:` (same rows) is refused by the bar, and without the bar it would pass.
+  const slowRunner = pgScriptRunner({ grade, verdict: (x) => JSON.stringify(x).slice(0, 300), slow: slowVerdict }, { run: runLabScript, reset: () => undefined });
+  const bars = all.flatMap(({ l }) => l.lab!.steps.flatMap((s, i) => (s.perf ? [[`${l.id} s${i + 1} perf`, l, i] as const] : [])));
+  it('v34: capstone nhiều khách hàng có bước thanh', () => expect(bars.map(([n]) => n)).toContain('e-ds-l4-11 s5 perf'));
+  it.each(bars)('%s: lời giải qua, slow: trượt vì chậm', async (_, l, i) => {
+    const s = l.lab!.steps[i];
+    expect(s.check).toBe('rows');
+    expect(await slowRunner.check(l.lab!, s, s.solution)).toMatchObject({ ok: true });
+    expect(await slowRunner.check(l.lab!, s, s.slow!)).toMatchObject({ ok: false, reason: 'wrong', why: expect.stringMatching(/^slow/) });
+    expect(await runner.check(l.lab!, s, s.slow!)).toMatchObject({ ok: true });
   }, 120_000);
 });

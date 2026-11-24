@@ -172,6 +172,7 @@ Ba bước: một câu bị pruning còn một phân vùng, một lần đọc c
 - Pruning lúc lập kế hoạch cần điều kiện so khóa với hằng số; với tham số hay truy vấn con thì pruning xảy ra lúc chạy.
 - Hàm hay ép kiểu trên khóa phân vùng làm mất pruning; viết điều kiện khoảng trên chính cột.
 - Phân vùng không tự làm câu nhanh hơn; lợi ích chính là xóa và bảo trì từng phần.
+- Phân vùng theo khách: `e-pg-l4-20`.
 
 # EN
 
@@ -284,3 +285,4 @@ Three steps: a query pruned to one partition, a read of the partition tree, then
 - Plan-time pruning needs a condition comparing the key with a constant; with a parameter or a sub-query, pruning happens at run time.
 - A function or cast on the partition key loses pruning; write a range condition on the column itself.
 - Partitioning does not make queries faster by itself; its main benefit is removing and maintaining data piece by piece.
+- Partitioning by tenant: `e-pg-l4-20`.

@@ -272,7 +272,7 @@ Lab không dùng được `SET ROLE` (bước sau chạy lại bước trước)
 - Chủ bảng bỏ qua RLS trừ khi `FORCE`; khi đó nó cũng cần policy riêng, không thì thấy 0 dòng.
 - Policy permissive gộp OR: thêm một policy rộng là mở thêm đường; luật bắt buộc viết `AS RESTRICTIVE`.
 - Thiếu `WITH CHECK` thì `USING` làm thay; lỗ thật là policy `FOR INSERT` không có điều kiện khách.
-- View đọc bằng quyền chủ view; dùng `security_invoker = true`. Đọc tiếp: `e-pg-l5-20`, `e-bp-x08`.
+- View đọc bằng quyền chủ view; dùng `security_invoker = true`. Đọc tiếp: `e-pg-l5-20`, `e-bp-x08`, `e-ds-l4-09`.
 
 # EN
 
@@ -454,4 +454,4 @@ The lab cannot use `SET ROLE` (each step replays the earlier ones), so each side
 - The owner skips RLS unless `FORCE`; then it needs a policy of its own, or it sees 0 rows.
 - Permissive policies combine with OR: one broad policy opens one more way in; must-hold rules are `AS RESTRICTIVE`.
 - Without `WITH CHECK`, `USING` stands in; the real hole is a `FOR INSERT` policy with no tenant condition.
-- A view reads with its owner's rights; use `security_invoker = true`. Read next: `e-pg-l5-20`, `e-bp-x08`.
+- A view reads with its owner's rights; use `security_invoker = true`. Read next: `e-pg-l5-20`, `e-bp-x08`, `e-ds-l4-09`.

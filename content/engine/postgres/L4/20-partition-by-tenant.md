@@ -196,7 +196,7 @@ Bốn bước trên đơn của người bán: phân vùng nào giữ ai, kế h
 - `PARTITION BY LIST (tenant_id)`: mỗi khách lớn một phân vùng, khách nhỏ chung `DEFAULT`.
 - Lọc `tenant_id = …` chỉ đọc phân vùng của khách đó; tách khách là `DETACH`.
 - HASH lệch khi ít khách và không cho chọn chỗ cho một khách.
-- Xóa theo thời gian thì RANGE theo thời gian vẫn đúng, như `e-pg-l4-08`. Đọc tiếp: `e-pg-l5-21`.
+- Xóa theo thời gian thì RANGE theo thời gian vẫn đúng, như `e-pg-l4-08`. Đọc tiếp: `e-pg-l5-21`, `e-ds-l4-09`.
 
 # EN
 
@@ -324,4 +324,4 @@ Four steps on the sellers' orders: which partition holds whom, a plan that reads
 - `PARTITION BY LIST (tenant_id)`: one partition per big tenant, the small ones share `DEFAULT`.
 - Filtering `tenant_id = …` reads only that tenant's partition; isolating a tenant is a `DETACH`.
 - HASH skews with few tenants and cannot place one tenant on purpose.
-- For time-based deletion, RANGE by time is still right, as in `e-pg-l4-08`. Read next: `e-pg-l5-21`.
+- For time-based deletion, RANGE by time is still right, as in `e-pg-l4-08`. Read next: `e-pg-l5-21`, `e-ds-l4-09`.
