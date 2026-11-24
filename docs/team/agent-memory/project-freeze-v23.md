@@ -1,15 +1,12 @@
 ---
 name: project-freeze-v23
-description: User froze BoonData at v23 (2026-11-20) for review; no v24+ work until they say so
+description: "Release gating — v24→v30 approved and shipped 2026-11-24; anything after v30 needs the user's approval"
 metadata:
-  node_type: memory
   type: project
-  originSessionId: e927c5e6-22a4-40fa-bff6-3a9e8af9fcbc
-  modified: 2026-11-20T09:08:31.873Z
 ---
 
-2026-11-20 the user said "Tôi cần version ổn định. Dừng ở 23. Để review." The overnight loop to v30 (decision-log L215–L218) is paused: finish v22 and v23 releases (gate + UI/UX/Product review + release), then stop. v24 work sits on branch `v24-best` / `wip/v24-best`, unmerged; v25 content on `v25-nosql-content`. Heartbeat cron removed.
+2026-11-20 the user froze BoonData at v23; 2026-11-23 approved v23.1 and v24; 2026-11-24 asked for v30 by morning and approved ("Duyệt") the plan `bd-wt/tools/run-v30.md` (each of v25–v29 = route slice R1–R6 from product-route-v24 §4 as the primary content, old roadmap item secondary). All shipped the same night (v30 = final).
 
-**Why:** the user wants a stable version to review before more features.
+**Why:** the user wants releases they approve version by version.
 
-**How to apply:** do not launch new feature/research agents or start v24 without the user's go; only fix what the v23 review finds. See [[feedback-push-wip-backup]].
+**How to apply:** do not start a v31 or new feature work without the user's go. See [[project-handoff]].

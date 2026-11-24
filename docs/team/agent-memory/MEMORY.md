@@ -1,4 +1,5 @@
 - [Push wip backups](feedback-push-wip-backup.md) — commit + push work branches to origin wip/*; worktrees in Documents\study\bd-wt, not Temp
-- [Freeze at v23](project-freeze-v23.md) — 2026-11-20 user paused the loop at v23 for review; no v24+ until told
-- [Handoff](project-handoff.md) — v23 live and frozen; read docs/team/handoff-2026-11-20.md first
+- [Release gating](project-freeze-v23.md) — v24→v30 shipped 2026-11-24 on the approved plan; anything after v30 needs the user's go
+- [Handoff](project-handoff.md) — v30 live; start from docs/team/handoff-2026-11-24.md and review-v30.md
 - [SQL knowledge + skill](reference-sql-knowledge.md) — docs/knowledge/database is source of truth; ~/.claude/skills/sql copies it
+- [No e2e / long tests](feedback-no-e2e-long-tests.md) — 2026-11-24: skip e2e and long local test runs; tsc + targeted tests, CI does the rest
