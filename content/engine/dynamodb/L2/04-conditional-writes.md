@@ -144,11 +144,15 @@ Ghi có điều kiện idempotent khi điều kiện kiểm chính thuộc tính
 {"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-06"}}, "UpdateExpression": "SET price = :new", "ConditionExpression": "price = :old", "ExpressionAttributeValues": {":new": {"N": "75000"}, ":old": {"N": "70000"}}, "ReturnValues": "ALL_NEW"}}
 ```
 
+Giá vẫn là 70000 nên điều kiện đúng và giá mới 75000 được ghi, tốn 1 WCU.
+
 Xóa cuốn `978-0-03` chỉ khi đã hết hàng:
 
 ```json
 {"op": "DeleteItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-03"}}, "ConditionExpression": "stock = :z", "ExpressionAttributeValues": {":z": {"N": "0"}}, "ReturnValues": "ALL_OLD"}}
 ```
+
+Kho của `978-0-03` là 0, nên item bị xóa; `ALL_OLD` trả lại item như trước khi xóa.
 
 ## Lỗi hay gặp
 
@@ -159,12 +163,16 @@ Xóa cuốn `978-0-03` chỉ khi đã hết hàng:
 {"op": "PutItem", "input": {"TableName": "Books", "Item": {"isbn": {"S": "978-0-01"}, "title": {"S": "Data at Rest"}}, "ConditionExpression": "attribute_not_exists(isbn)"}}
 ```
 
+`978-0-01` đã có, nên điều kiện sai và không có gì được ghi. Engine không báo capacity cho lần ghi bị từ chối; dòng WCU dưới lỗi là ước tính theo luật của AWS.
+
 Bán 5 cuốn `978-0-02` khi kho chỉ còn 3:
 
 ```json
 // ERROR ConditionalCheckFailedException
 {"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-02"}}, "UpdateExpression": "SET stock = stock - :q", "ConditionExpression": "stock >= :q", "ExpressionAttributeValues": {":q": {"N": "5"}}}}
 ```
+
+Kho chỉ còn 3 nên `stock >= :q` sai và `stock` giữ nguyên 3: không bao giờ âm.
 
 Đổi giá bằng `PutItem`:
 
@@ -178,9 +186,11 @@ Bán 5 cuốn `978-0-02` khi kho chỉ còn 3:
 {"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-02"}}, "UpdateExpression": "SET price = :p", "ExpressionAttributeValues": {":p": {"N": "90000"}}}}
 ```
 
+Bản sai để `978-0-02` chỉ còn `isbn`, `title` và `price`; bản sửa đổi giá và giữ mọi thuộc tính khác.
+
 ## Thực hành
 
-Bảng `Books` có 8 cuốn. Mỗi bước chạy lại từ dữ liệu gốc và được chấm bằng trạng thái bảng sau khi ghi.
+Bảng `Books` có 8 cuốn. Mỗi bước chạy lại từ dữ liệu gốc và được chấm bằng trạng thái bảng sau khi ghi. Bước 1 chỉ thêm khi khóa chưa có. Bước 2 trừ kho có giới hạn. Bước 3 là optimistic locking trên giá bạn đã đọc.
 
 ## Tóm tắt
 
@@ -230,11 +240,15 @@ Change the price of `978-0-06` only if it is still the price you read:
 {"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-06"}}, "UpdateExpression": "SET price = :new", "ConditionExpression": "price = :old", "ExpressionAttributeValues": {":new": {"N": "75000"}, ":old": {"N": "70000"}}, "ReturnValues": "ALL_NEW"}}
 ```
 
+The price is still 70000, so the condition holds and the new price 75000 is written, for 1 WCU.
+
 Delete book `978-0-03` only if it is sold out:
 
 ```json
 {"op": "DeleteItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-03"}}, "ConditionExpression": "stock = :z", "ExpressionAttributeValues": {":z": {"N": "0"}}, "ReturnValues": "ALL_OLD"}}
 ```
+
+The stock of `978-0-03` is 0, so the item is deleted; `ALL_OLD` returns the item as it was before the delete.
 
 ## Common mistakes
 
@@ -245,12 +259,16 @@ Delete book `978-0-03` only if it is sold out:
 {"op": "PutItem", "input": {"TableName": "Books", "Item": {"isbn": {"S": "978-0-01"}, "title": {"S": "Data at Rest"}}, "ConditionExpression": "attribute_not_exists(isbn)"}}
 ```
 
+`978-0-01` exists, so the condition is false and nothing is written. The engine reports no capacity for a refused write; the WCU line under the error is an estimate by the AWS rule.
+
 Selling 5 copies of `978-0-02` when only 3 are left:
 
 ```json
 // ERROR ConditionalCheckFailedException
 {"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-02"}}, "UpdateExpression": "SET stock = stock - :q", "ConditionExpression": "stock >= :q", "ExpressionAttributeValues": {":q": {"N": "5"}}}}
 ```
+
+Only 3 are left, so `stock >= :q` is false and `stock` stays 3: it never goes negative.
 
 Changing a price with `PutItem`:
 
@@ -264,9 +282,11 @@ Changing a price with `PutItem`:
 {"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-02"}}, "UpdateExpression": "SET price = :p", "ExpressionAttributeValues": {":p": {"N": "90000"}}}}
 ```
 
+The wrong version leaves `978-0-02` with only `isbn`, `title` and `price`; the fix changes the price and keeps every other attribute.
+
 ## Practice
 
-Table `Books` holds 8 books. Each step runs again from the original data and is graded by the table's state after the write.
+Table `Books` holds 8 books. Each step runs again from the original data and is graded by the table's state after the write. Step 1 inserts only when the key is new. Step 2 lowers the stock with a limit. Step 3 is optimistic locking on the price you read.
 
 ## Recap
 

@@ -140,11 +140,15 @@ Bán 3 cuốn `978-0-06`: `ADD` với số âm:
 {"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-06"}}, "UpdateExpression": "ADD stock :n", "ExpressionAttributeValues": {":n": {"N": "-3"}}, "ReturnValues": "UPDATED_NEW"}}
 ```
 
+`stock` của `978-0-06` từ 41 còn 38, không cần đọc trước.
+
 Tạo tập `formats` cho cuốn `978-0-02`:
 
 ```json
 {"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-02"}}, "UpdateExpression": "ADD formats :f", "ExpressionAttributeValues": {":f": {"SS": ["ebook", "audio"]}}, "ReturnValues": "UPDATED_NEW"}}
 ```
+
+Thuộc tính `formats` chưa có nên được tạo thành tập `{"audio", "ebook"}`. Tập hợp không giữ thứ tự bạn viết.
 
 ## Lỗi hay gặp
 
@@ -154,6 +158,8 @@ Tạo tập `formats` cho cuốn `978-0-02`:
 // ERROR ValidationException
 {"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-01"}}, "UpdateExpression": "ADD tags :t", "ExpressionAttributeValues": {":t": {"SS": ["new"]}}}}
 ```
+
+`tags` là danh sách `L`, không phải tập hợp, nên DynamoDB báo toán hạng sai kiểu. Muốn thêm vào danh sách, dùng `SET tags = list_append(tags, :t)`.
 
 Dùng `SET` khi muốn cộng thêm hàng về:
 
@@ -167,9 +173,11 @@ Dùng `SET` khi muốn cộng thêm hàng về:
 {"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-02"}}, "UpdateExpression": "ADD stock :n", "ExpressionAttributeValues": {":n": {"N": "10"}}, "ReturnValues": "UPDATED_NEW"}}
 ```
 
+Bản sai cho `stock` 10, bản sửa cho 13. Nhưng nhớ: gửi lại bản sửa thêm lần nữa sẽ thành 23, vì `ADD` không idempotent.
+
 ## Thực hành
 
-Bảng `Books` có 8 cuốn; `tags` là danh sách `L`, chưa cuốn nào có tập hợp. Làm ba bước.
+Bảng `Books` có 8 cuốn; `tags` là danh sách `L`, chưa cuốn nào có tập hợp. Làm ba bước. Bước 1 cộng vào kho bằng `ADD`. Bước 2 tạo một tập chuỗi mới. Bước 3 đếm từ một thuộc tính số chưa có, không cần `if_not_exists`.
 
 ## Tóm tắt
 
@@ -214,11 +222,15 @@ Sell 3 copies of `978-0-06`: `ADD` with a negative number:
 {"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-06"}}, "UpdateExpression": "ADD stock :n", "ExpressionAttributeValues": {":n": {"N": "-3"}}, "ReturnValues": "UPDATED_NEW"}}
 ```
 
+The `stock` of `978-0-06` goes from 41 to 38 without a read first.
+
 Create the set `formats` for book `978-0-02`:
 
 ```json
 {"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-02"}}, "UpdateExpression": "ADD formats :f", "ExpressionAttributeValues": {":f": {"SS": ["ebook", "audio"]}}, "ReturnValues": "UPDATED_NEW"}}
 ```
+
+The attribute `formats` did not exist, so it is created as the set `{"audio", "ebook"}`. A set does not keep the order you wrote.
 
 ## Common mistakes
 
@@ -228,6 +240,8 @@ Create the set `formats` for book `978-0-02`:
 // ERROR ValidationException
 {"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-01"}}, "UpdateExpression": "ADD tags :t", "ExpressionAttributeValues": {":t": {"SS": ["new"]}}}}
 ```
+
+`tags` is an `L` list, not a set, so DynamoDB reports an operand of the wrong type. To add to a list, use `SET tags = list_append(tags, :t)`.
 
 Using `SET` when new stock arrives:
 
@@ -241,9 +255,11 @@ Using `SET` when new stock arrives:
 {"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-02"}}, "UpdateExpression": "ADD stock :n", "ExpressionAttributeValues": {":n": {"N": "10"}}, "ReturnValues": "UPDATED_NEW"}}
 ```
 
+The wrong version gives `stock` 10, the fix 13. But remember: sending the fix once more makes it 23, because `ADD` is not idempotent.
+
 ## Practice
 
-Table `Books` holds 8 books; `tags` is an `L` list and no book has a set yet. Do the three steps.
+Table `Books` holds 8 books; `tags` is an `L` list and no book has a set yet. Do the three steps. Step 1 adds to the stock with `ADD`. Step 2 creates a new string set. Step 3 counts from a number attribute that does not exist yet, without `if_not_exists`.
 
 ## Recap
 

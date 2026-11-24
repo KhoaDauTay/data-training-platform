@@ -258,11 +258,15 @@ Ba đơn đầu của `C-03`, cũ trước; phản hồi có `LastEvaluatedKey`:
 {"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-03"}}, "Limit": 3}}
 ```
 
+Ba đơn `O-109`, `O-110`, `O-111` về với `ScannedCount` 3, và `LastEvaluatedKey` là khóa của `O-111`, item cuối đã đọc.
+
 Trang tiếp theo bắt đầu ngay sau `2026-09-28#O-111`, còn một đơn:
 
 ```json
 {"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-03"}}, "Limit": 3, "ExclusiveStartKey": {"customerId": {"S": "C-03"}, "orderId": {"S": "2026-09-28#O-111"}}}}
 ```
+
+Trang này có một đơn, `O-112`, và phản hồi không còn `LastEvaluatedKey`: đã đọc hết.
 
 ## Lỗi hay gặp
 
@@ -272,6 +276,8 @@ Chỉ đưa partition key vào `ExclusiveStartKey`:
 // ERROR ValidationException
 {"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-03"}}, "Limit": 2, "ExclusiveStartKey": {"customerId": {"S": "C-03"}}}}
 ```
+
+Dynoxide báo "The provided starting key is invalid": khóa bắt đầu phải là khóa chính đầy đủ. Chép nguyên `LastEvaluatedKey` vào, đừng tự dựng.
 
 Dùng `Limit` cùng bộ lọc rồi tưởng trang rỗng là hết đơn `NEW`:
 
@@ -284,6 +290,8 @@ Dùng `Limit` cùng bộ lọc rồi tưởng trang rỗng là hết đơn `NEW`
 // FIX: no Limit (or keep paging until there is no LastEvaluatedKey)
 {"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "FilterExpression": "#s = :n", "ExpressionAttributeNames": {"#s": "status"}, "ExpressionAttributeValues": {":c": {"S": "C-03"}, ":n": {"S": "NEW"}}}}
 ```
+
+Bản sai đọc 2 item, bộ lọc bỏ cả hai, nên trang trả 0 item mà vẫn có `LastEvaluatedKey`. Bản sửa đọc cả 4 item và trả đơn `O-112`. Trang rỗng chưa phải là hết; chỉ khi không còn `LastEvaluatedKey` mới là hết.
 
 ## Thực hành
 
@@ -337,11 +345,15 @@ The first three orders of `C-03`, oldest first; the response carries a `LastEval
 {"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-03"}}, "Limit": 3}}
 ```
 
+Orders `O-109`, `O-110`, `O-111` come back with `ScannedCount` 3, and the `LastEvaluatedKey` is the key of `O-111`, the last item read.
+
 The next page starts right after `2026-09-28#O-111`, with one order left:
 
 ```json
 {"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-03"}}, "Limit": 3, "ExclusiveStartKey": {"customerId": {"S": "C-03"}, "orderId": {"S": "2026-09-28#O-111"}}}}
 ```
+
+This page has one order, `O-112`, and the response has no `LastEvaluatedKey` any more: everything has been read.
 
 ## Common mistakes
 
@@ -351,6 +363,8 @@ Putting only the partition key into `ExclusiveStartKey`:
 // ERROR ValidationException
 {"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-03"}}, "Limit": 2, "ExclusiveStartKey": {"customerId": {"S": "C-03"}}}}
 ```
+
+Dynoxide reports "The provided starting key is invalid": the start key must be the full primary key. Copy the `LastEvaluatedKey` as it is; do not build it yourself.
 
 Using `Limit` with a filter and taking an empty page to mean there are no `NEW` orders:
 
@@ -363,6 +377,8 @@ Using `Limit` with a filter and taking an empty page to mean there are no `NEW` 
 // FIX: no Limit (or keep paging until there is no LastEvaluatedKey)
 {"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "FilterExpression": "#s = :n", "ExpressionAttributeNames": {"#s": "status"}, "ExpressionAttributeValues": {":c": {"S": "C-03"}, ":n": {"S": "NEW"}}}}
 ```
+
+The wrong version reads 2 items, the filter drops both, so the page returns 0 items yet still has a `LastEvaluatedKey`. The fix reads all 4 items and returns order `O-112`. An empty page is not the end; only a missing `LastEvaluatedKey` is.
 
 ## Practice
 

@@ -255,11 +255,15 @@ Các đơn của `C-07`, một Query:
 SELECT * FROM Orders WHERE customerId = 'C-07'
 ```
 
+Bốn đơn của `C-07` trở về theo thứ tự `orderId`, như một Query, với 0.5 RCU.
+
 Chỉ `orderId` và `total` của `C-02`, với `"total"` trong nháy kép:
 
 ```partiql
 SELECT orderId, "total" FROM Orders WHERE customerId = 'C-02'
 ```
+
+Mỗi đơn chỉ còn `orderId` và `total`. Bọc nháy kép mọi tên trùng từ dành riêng; engine trong trình duyệt nhận cả `total` không nháy, nên đừng lấy điều đó làm chuẩn cho AWS.
 
 ## Lỗi hay gặp
 
@@ -269,6 +273,8 @@ SELECT orderId, "total" FROM Orders WHERE customerId = 'C-02'
 // ERROR ValidationException
 UPDATE Orders SET "status" = 'DELIVERED' WHERE customerId = 'C-04'
 ```
+
+Thông báo nói `WHERE` phải có điều kiện bằng trên mọi thuộc tính khóa: ở đây thiếu `orderId`. PartiQL không sửa nhiều item một lúc như `UPDATE` của SQL.
 
 Lọc khách bằng hàm thay vì điều kiện bằng:
 
@@ -282,11 +288,20 @@ SELECT * FROM Orders WHERE begins_with(customerId, 'C-04')
 SELECT * FROM Orders WHERE customerId = 'C-04'
 ```
 
-`ScannedCount` của bản sai là 120, của bản sửa là 4.
+Hai câu trả cùng 4 đơn. `ExecuteStatement` không trả `ScannedCount`, nhưng capacity cho thấy khác biệt: bản sai tốn 1 RCU vì đọc cả 120 đơn, bản sửa 0.5 RCU. Bảng càng lớn, khoảng cách càng lớn.
+
+`INSERT` một đơn đã có:
+
+```partiql
+// ERROR DuplicateItemException
+INSERT INTO Orders VALUE {'customerId': 'C-04', 'orderId': '2026-07-15#O-113', 'status': 'NEW'}
+```
+
+`PutItem` sẽ ghi đè im lặng; `INSERT` từ chối khi khóa đã có. Tên lỗi khớp tài liệu API của AWS cho `ExecuteStatement`.
 
 ## Thực hành
 
-Mỗi bước là một câu PartiQL, chạy thẳng qua `ExecuteStatement`. Bước ghi được chấm bằng trạng thái bảng sau khi ghi.
+Mỗi bước là một câu PartiQL, chạy thẳng qua `ExecuteStatement`. Bước ghi được chấm bằng trạng thái bảng sau khi ghi. Bước 1 và 2 là `SELECT` có thanh hiệu năng: câu thành Scan thì không đạt dù ra cùng đơn. Bước 3 `UPDATE` một đơn với khóa đầy đủ. Bước 4 `INSERT` một đơn mới.
 
 ## Tóm tắt
 
@@ -330,11 +345,15 @@ The orders of `C-07`, a Query:
 SELECT * FROM Orders WHERE customerId = 'C-07'
 ```
 
+The four orders of `C-07` come back in `orderId` order, like a Query, for 0.5 RCU.
+
 Only `orderId` and `total` of `C-02`, with `"total"` in double quotes:
 
 ```partiql
 SELECT orderId, "total" FROM Orders WHERE customerId = 'C-02'
 ```
+
+Each order keeps only `orderId` and `total`. Put every name that clashes with a reserved word in double quotes; the in-browser engine also accepts `total` without quotes, so do not take that as the rule for AWS.
 
 ## Common mistakes
 
@@ -344,6 +363,8 @@ An `UPDATE` without the sort key:
 // ERROR ValidationException
 UPDATE Orders SET "status" = 'DELIVERED' WHERE customerId = 'C-04'
 ```
+
+The message says `WHERE` needs an equality on every key attribute: `orderId` is missing here. PartiQL does not change many items at once the way an SQL `UPDATE` does.
 
 Filtering the customer with a function instead of an equality:
 
@@ -357,11 +378,20 @@ SELECT * FROM Orders WHERE begins_with(customerId, 'C-04')
 SELECT * FROM Orders WHERE customerId = 'C-04'
 ```
 
-The wrong version has a `ScannedCount` of 120, the fix 4.
+Both return the same 4 orders. `ExecuteStatement` does not return a `ScannedCount`, but the capacity shows the gap: the wrong version costs 1 RCU because it reads all 120 orders, the fix 0.5 RCU. The larger the table, the wider the gap.
+
+An `INSERT` of an order that already exists:
+
+```partiql
+// ERROR DuplicateItemException
+INSERT INTO Orders VALUE {'customerId': 'C-04', 'orderId': '2026-07-15#O-113', 'status': 'NEW'}
+```
+
+`PutItem` would overwrite silently; `INSERT` refuses a key that already exists. The error name matches the AWS API reference for `ExecuteStatement`.
 
 ## Practice
 
-Each step is one PartiQL statement, run directly through `ExecuteStatement`. A write step is graded by the table's state after the write.
+Each step is one PartiQL statement, run directly through `ExecuteStatement`. A write step is graded by the table's state after the write. Steps 1 and 2 are `SELECT`s with a performance bar: a statement that becomes a Scan does not pass even with the same orders. Step 3 `UPDATE`s one order with its full key. Step 4 `INSERT`s a new order.
 
 ## Recap
 

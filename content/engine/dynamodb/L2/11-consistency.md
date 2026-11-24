@@ -70,6 +70,8 @@ Không có đọc nhất quán mạnh trên **GSI** (global secondary index) và
 
 Chọn đọc nhất quán mạnh cho chỗ cần "đọc ngay sau khi ghi" (giỏ hàng, số dư), nhất quán cuối cho phần còn lại. Bộ mô phỏng trong trình duyệt chạy một nút, nên không bao giờ cho thấy đọc cũ; nhưng nó vẫn từ chối `ConsistentRead` trên GSI như DynamoDB thật.
 
+Nhiều người nghĩ cứ bật `ConsistentRead` ở mọi nơi cho chắc. Thật ra phần lớn màn hình chịu được dữ liệu cũ trong chốc lát: danh sách sản phẩm, lịch sử đơn, báo cáo. Bật đọc mạnh ở đó chỉ làm tiền đọc gấp đôi, còn trên GSI thì bị từ chối hẳn. Hãy bật nó đúng chỗ người dùng vừa ghi và nhìn lại ngay kết quả của mình.
+
 ## Cú pháp
 
 ```text
@@ -89,17 +91,23 @@ Query / Scan on a GSI:                     eventual only
 {"op": "GetItem", "input": {"TableName": "Users", "Key": {"userId": {"S": "U-01"}}}}
 ```
 
+Hồ sơ `U-01` trở về và tốn 0.5 RCU: item nhỏ hơn 4 KB, đọc nhất quán cuối.
+
 Đọc nhất quán mạnh ngay sau khi người dùng sửa hồ sơ:
 
 ```json
 {"op": "GetItem", "input": {"TableName": "Users", "Key": {"userId": {"S": "U-01"}}, "ConsistentRead": true}}
 ```
 
+Cùng một item, nhưng engine báo 1 RCU: đọc nhất quán mạnh có giá gấp đôi.
+
 Tìm người dùng theo email qua GSI `byEmail`, chỉ nhất quán cuối:
 
 ```json
 {"op": "Query", "input": {"TableName": "Users", "IndexName": "byEmail", "KeyConditionExpression": "email = :e", "ExpressionAttributeValues": {":e": {"S": "binh@example.com"}}}}
 ```
+
+Kết quả chỉ có `email` và `userId`, vì GSI `byEmail` chỉ chiếu khóa. 0.5 RCU được tính trên index, không trên bảng.
 
 Trên DynamoDB thật, theo thời gian:
 
@@ -109,6 +117,8 @@ t1  GetItem                            -> may return the old address
 t1  GetItem ConsistentRead = true      -> returns "Hue"
 ```
 
+Trong trình duyệt, hai dòng t1 luôn cho cùng kết quả: engine chỉ có một bản sao, nên bước này chỉ đọc được, không thấy được.
+
 ## Lỗi hay gặp
 
 Đòi đọc nhất quán mạnh trên GSI:
@@ -117,6 +127,8 @@ t1  GetItem ConsistentRead = true      -> returns "Hue"
 // ERROR ValidationException
 {"op": "Query", "input": {"TableName": "Users", "IndexName": "byEmail", "KeyConditionExpression": "email = :e", "ExpressionAttributeValues": {":e": {"S": "binh@example.com"}}, "ConsistentRead": true}}
 ```
+
+Thông báo nói thẳng: GSI không hỗ trợ đọc nhất quán mạnh. GSI được cập nhật bất đồng bộ từ bảng, nên không có "bản mới nhất" nào để đọc mạnh.
 
 Đọc lại hồ sơ vừa sửa qua GSI:
 
@@ -130,7 +142,7 @@ t1  GetItem ConsistentRead = true      -> returns "Hue"
 {"op": "GetItem", "input": {"TableName": "Users", "Key": {"userId": {"S": "U-01"}}, "ConsistentRead": true}}
 ```
 
-Bản sai chỉ trả `userId` và `email` (GSI chiếu `KEYS_ONLY`), và trên AWS có thể còn cũ.
+Bản sai chỉ trả `userId` và `email` (GSI chiếu `KEYS_ONLY`), và trên AWS có thể còn cũ. Bản sửa đọc bảng theo khóa với `ConsistentRead`: tốn 1 RCU, có đủ thuộc tính và luôn là bản mới nhất.
 
 ## Tóm tắt
 
@@ -156,6 +168,8 @@ There are no strong reads on **GSIs** (global secondary indexes) and **Streams**
 
 Use strong reads where you must "read right after a write" (cart, balance) and eventual reads elsewhere. The in-browser emulator runs as one node, so it never shows a stale read; it still rejects `ConsistentRead` on a GSI like real DynamoDB.
 
+Many people think you should turn on `ConsistentRead` everywhere to be safe. In fact most screens can live with slightly old data for a moment: product lists, order history, reports. A strong read there only doubles the read bill, and on a GSI it is refused outright. Turn it on exactly where users have just written and look straight at their own result.
+
 ## Syntax
 
 ```text
@@ -175,17 +189,23 @@ A default (eventually consistent) read of profile `U-01`:
 {"op": "GetItem", "input": {"TableName": "Users", "Key": {"userId": {"S": "U-01"}}}}
 ```
 
+Profile `U-01` comes back for 0.5 RCU: the item is under 4 KB and the read is eventually consistent.
+
 A strong read right after the user edits the profile:
 
 ```json
 {"op": "GetItem", "input": {"TableName": "Users", "Key": {"userId": {"S": "U-01"}}, "ConsistentRead": true}}
 ```
 
+The same item, but the engine reports 1 RCU: a strong read costs twice as much.
+
 Finding a user by email through the GSI `byEmail`, eventually consistent only:
 
 ```json
 {"op": "Query", "input": {"TableName": "Users", "IndexName": "byEmail", "KeyConditionExpression": "email = :e", "ExpressionAttributeValues": {":e": {"S": "binh@example.com"}}}}
 ```
+
+The result holds only `email` and `userId`, because the GSI `byEmail` projects only the keys. The 0.5 RCU is charged on the index, not on the table.
 
 On real DynamoDB, over time:
 
@@ -195,6 +215,8 @@ t1  GetItem                            -> may return the old address
 t1  GetItem ConsistentRead = true      -> returns "Hue"
 ```
 
+In the browser both t1 lines always give the same result: the engine has only one copy, so this step can be read about but not seen.
+
 ## Common mistakes
 
 Asking for a strong read on a GSI:
@@ -203,6 +225,8 @@ Asking for a strong read on a GSI:
 // ERROR ValidationException
 {"op": "Query", "input": {"TableName": "Users", "IndexName": "byEmail", "KeyConditionExpression": "email = :e", "ExpressionAttributeValues": {":e": {"S": "binh@example.com"}}, "ConsistentRead": true}}
 ```
+
+The message says it plainly: a GSI does not support strongly consistent reads. A GSI is updated asynchronously from the table, so there is no "latest copy" to read strongly.
 
 Reading a profile you just edited through the GSI:
 
@@ -216,7 +240,7 @@ Reading a profile you just edited through the GSI:
 {"op": "GetItem", "input": {"TableName": "Users", "Key": {"userId": {"S": "U-01"}}, "ConsistentRead": true}}
 ```
 
-The wrong version returns only `userId` and `email` (the GSI projects `KEYS_ONLY`), and on AWS it may still be stale.
+The wrong version returns only `userId` and `email` (the GSI projects `KEYS_ONLY`), and on AWS it may still be stale. The fix reads the table by key with `ConsistentRead`: 1 RCU, every attribute, and always the latest copy.
 
 ## Recap
 

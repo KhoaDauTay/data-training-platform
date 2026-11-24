@@ -271,11 +271,15 @@ Các đơn tháng 8 của `C-03`, theo tiền tố của sort key:
 {"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c AND begins_with(orderId, :m)", "ExpressionAttributeValues": {":c": {"S": "C-03"}, ":m": {"S": "2026-08"}}}}
 ```
 
+Kết quả là một đơn, `2026-08-03#O-110`, và `ScannedCount` bằng 1: `Query` chỉ chạm đúng item khớp khóa, không đọc 119 đơn còn lại.
+
 Hai đơn mới nhất của `C-02`:
 
 ```json
 {"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-02"}}, "ScanIndexForward": false, "Limit": 2}}
 ```
+
+Đơn `O-108` (3/10) về trước, rồi `O-107` (17/9). Vì `Limit` dừng việc đọc khi còn item, phản hồi kèm `LastEvaluatedKey`: dấu cho trang sau (bài 10).
 
 ## Lỗi hay gặp
 
@@ -283,8 +287,10 @@ Hai đơn mới nhất của `C-02`:
 
 ```json
 // ERROR ValidationException
-{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c AND total > :t", "ExpressionAttributeValues": {":c": {"S": "C-03"}, ":t": {"N": "500000"}}}}
+{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c AND city = :t", "ExpressionAttributeValues": {":c": {"S": "C-03"}, ":t": {"S": "Da Nang"}}}}
 ```
+
+`city` không phải khóa, nên DynamoDB báo thiếu sort key trong điều kiện. Điều kiện trên thuộc tính thường đi vào `FilterExpression`; nó vẫn cần một `Query` đọc hết item collection trước.
 
 Lấy cận trên đúng bằng ngày cuối:
 
@@ -298,9 +304,11 @@ Lấy cận trên đúng bằng ngày cuối:
 {"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c AND orderId BETWEEN :a AND :b", "ExpressionAttributeValues": {":c": {"S": "C-03"}, ":a": {"S": "2026-08-01"}, ":b": {"S": "2026-09-28~"}}}}
 ```
 
+Bản sai trả một đơn, bản sửa trả hai (`O-110` và `O-111` ngày 28/9). Không có lỗi nào báo cho bạn: đơn bị thiếu chỉ lộ ra khi đếm lại. Khi sort key ghép ngày với mã, hãy nghĩ cận trên như một chuỗi, không như một ngày.
+
 ## Thực hành
 
-Bảng `Orders` có 120 đơn của 30 khách, mỗi khách 4 đơn từ tháng 7 tới tháng 10/2026. Kết quả Query có thứ tự, nên bước được chấm theo đúng thứ tự.
+Bảng `Orders` có 120 đơn của 30 khách, mỗi khách 4 đơn từ tháng 7 tới tháng 10/2026. Kết quả Query có thứ tự, nên bước được chấm theo đúng thứ tự. Bước 1 đọc cả item collection của một khách. Bước 2 thu hẹp bằng tiền tố tháng. Bước 3 dùng `BETWEEN` với cận trên đủ lớn và đảo thứ tự. Bước 4 lấy đúng một item mới nhất. Hai bước đầu có thanh hiệu năng: một `Scan` có lọc ra cùng item vẫn không đạt.
 
 ## Tóm tắt
 
@@ -349,11 +357,15 @@ The August orders of `C-03`, by a sort key prefix:
 {"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c AND begins_with(orderId, :m)", "ExpressionAttributeValues": {":c": {"S": "C-03"}, ":m": {"S": "2026-08"}}}}
 ```
 
+The result is one order, `2026-08-03#O-110`, and `ScannedCount` is 1: `Query` touches only the item that matches the key and never reads the other 119 orders.
+
 The two most recent orders of `C-02`:
 
 ```json
 {"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-02"}}, "ScanIndexForward": false, "Limit": 2}}
 ```
+
+Order `O-108` (3 October) comes first, then `O-107` (17 September). Because `Limit` stopped the read while items were left, the response carries a `LastEvaluatedKey`: the marker for the next page (lesson 10).
 
 ## Common mistakes
 
@@ -361,8 +373,10 @@ Putting a condition on an ordinary attribute into the key condition:
 
 ```json
 // ERROR ValidationException
-{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c AND total > :t", "ExpressionAttributeValues": {":c": {"S": "C-03"}, ":t": {"N": "500000"}}}}
+{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c AND city = :t", "ExpressionAttributeValues": {":c": {"S": "C-03"}, ":t": {"S": "Da Nang"}}}}
 ```
+
+`city` is not a key, so DynamoDB reports that the sort key is missing from the condition. A condition on an ordinary attribute goes into a `FilterExpression`; it still needs a `Query` that reads the whole item collection first.
 
 Using the last day itself as the upper bound:
 
@@ -376,9 +390,11 @@ Using the last day itself as the upper bound:
 {"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c AND orderId BETWEEN :a AND :b", "ExpressionAttributeValues": {":c": {"S": "C-03"}, ":a": {"S": "2026-08-01"}, ":b": {"S": "2026-09-28~"}}}}
 ```
 
+The wrong version returns one order, the fix returns two (`O-110` and `O-111` of 28 September). No error tells you: the missing order shows only when you count again. When the sort key joins a date and an id, treat the upper bound as a string, not as a date.
+
 ## Practice
 
-Table `Orders` holds 120 orders of 30 customers, 4 orders each from July to October 2026. Query results have an order, so each step is graded in that order.
+Table `Orders` holds 120 orders of 30 customers, 4 orders each from July to October 2026. Query results have an order, so each step is graded in that order. Step 1 reads one customer's whole item collection. Step 2 narrows it with a month prefix. Step 3 uses `BETWEEN` with a large enough upper bound and reverses the order. Step 4 takes exactly the newest item. The first two steps have a performance bar: a filtered `Scan` that returns the same items still does not pass.
 
 ## Recap
 

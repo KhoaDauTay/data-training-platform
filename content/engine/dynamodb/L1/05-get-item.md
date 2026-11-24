@@ -133,11 +133,15 @@ Mặc định `GetItem` đọc **nhất quán cuối** (eventually consistent): 
 {"op": "GetItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-01"}}}}
 ```
 
+Item về đủ sáu thuộc tính và lần đọc tốn 0.5 RCU, giá của một lần đọc nhất quán cuối.
+
 Chỉ lấy `title` và `stock` của `978-0-06`:
 
 ```json
 {"op": "GetItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-06"}}, "ProjectionExpression": "title, stock"}}
 ```
+
+Phản hồi chỉ còn `title` và `stock` (41), nhưng engine vẫn ghi 0.5 RCU, đúng bằng lần đọc cả item: projection làm phản hồi gọn, không làm lần đọc rẻ hơn.
 
 Với bảng khóa kép như `Orders` (partition key `customerId`, sort key `orderId`), `Key` có hai thuộc tính:
 
@@ -154,7 +158,7 @@ Với bảng khóa kép như `Orders` (partition key `customerId`, sort key `ord
 {"op": "GetItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-04"}, "title": {"S": "Query Not Scan"}}}}
 ```
 
-`Key` chỉ nhận đúng các thuộc tính của khóa chính.
+`Key` chỉ nhận đúng các thuộc tính của khóa chính. Thông báo là "The provided key element does not match the schema", như khi thiếu một phần khóa.
 
 Gõ sai khóa rồi tưởng sách đã hết, vì không thấy lỗi:
 
@@ -168,9 +172,11 @@ Gõ sai khóa rồi tưởng sách đã hết, vì không thấy lỗi:
 {"op": "GetItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-04"}}}}
 ```
 
+Bản sai trả về một phản hồi chỉ có `ConsumedCapacity` 0.5: không `Item`, không lỗi, và vẫn tốn tiền. Trước khi kết luận "hết hàng", code phải kiểm phản hồi có `Item` hay không, rồi mới đọc `stock`.
+
 ## Thực hành
 
-Bảng `Books` có 8 cuốn, khóa đơn `isbn`. Kết quả hiện ngay dưới bước, dạng JSON thường; request của bạn vẫn viết bằng DynamoDB JSON.
+Bảng `Books` có 8 cuốn, khóa đơn `isbn`. Bước 1 đọc cả item, bước 2 thêm `ProjectionExpression`; cả hai có thanh hiệu năng, nên một `Scan` lọc theo `isbn` ra cùng item vẫn không đạt. Bước 3 đọc nhất quán mạnh và được chấm thêm theo capacity: phải đúng 1 RCU. Kết quả hiện ngay dưới bước, dạng JSON thường; request của bạn vẫn viết bằng DynamoDB JSON.
 
 ## Tóm tắt
 
@@ -217,11 +223,15 @@ Read the whole item `978-0-01`:
 {"op": "GetItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-01"}}}}
 ```
 
+The item comes back with all six attributes and the read costs 0.5 RCU, the price of an eventually consistent read.
+
 Return only `title` and `stock` of `978-0-06`:
 
 ```json
 {"op": "GetItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-06"}}, "ProjectionExpression": "title, stock"}}
 ```
+
+The response holds only `title` and `stock` (41), but the engine still records 0.5 RCU, the same as reading the whole item: a projection makes the response smaller, not the read cheaper.
 
 For a table with a composite key such as `Orders` (partition key `customerId`, sort key `orderId`), `Key` holds two attributes:
 
@@ -238,7 +248,7 @@ Putting a non-key attribute into `Key`, as you would filter in SQL:
 {"op": "GetItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-04"}, "title": {"S": "Query Not Scan"}}}}
 ```
 
-`Key` takes exactly the attributes of the primary key.
+`Key` takes exactly the attributes of the primary key. The message is "The provided key element does not match the schema", as when part of the key is missing.
 
 Mistyping the key and concluding the book is gone, because no error shows:
 
@@ -252,9 +262,11 @@ Mistyping the key and concluding the book is gone, because no error shows:
 {"op": "GetItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-04"}}}}
 ```
 
+The wrong version returns a response with only `ConsumedCapacity` 0.5: no `Item`, no error, and it still costs money. Before concluding "out of stock", the code must check whether the response has an `Item`, and only then read `stock`.
+
 ## Practice
 
-Table `Books` holds 8 books with the simple key `isbn`. The result under the step shows items as plain JSON; your request is still written in DynamoDB JSON.
+Table `Books` holds 8 books with the simple key `isbn`. Step 1 reads the whole item, step 2 adds a `ProjectionExpression`; both have a performance bar, so a `Scan` filtered on `isbn` that returns the same item still does not pass. Step 3 reads with strong consistency and is also graded on capacity: it must be exactly 1 RCU. The result under the step shows items as plain JSON; your request is still written in DynamoDB JSON.
 
 ## Recap
 

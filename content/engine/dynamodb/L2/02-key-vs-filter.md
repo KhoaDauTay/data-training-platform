@@ -263,11 +263,15 @@ Bộ lọc của Query không được nhắc tới partition key hay sort key. 
 {"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "FilterExpression": "#t > :x", "ExpressionAttributeNames": {"#t": "total"}, "ExpressionAttributeValues": {":c": {"S": "C-02"}, ":x": {"N": "500000"}}}}
 ```
 
+Đơn `O-107` (210000) đã được đọc rồi mới bị bộ lọc bỏ, nên bạn vẫn trả tiền cho nó.
+
 Tháng nằm ở đầu sort key, nên đơn tháng 9 của `C-03` chỉ đọc một item:
 
 ```json
 {"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c AND begins_with(orderId, :m)", "ExpressionAttributeValues": {":c": {"S": "C-03"}, ":m": {"S": "2026-09"}}}}
 ```
+
+Kết quả là đơn `O-111`, `ScannedCount` bằng 1: điều kiện tháng nằm trong khóa, nên không có item nào bị đọc thừa.
 
 ## Lỗi hay gặp
 
@@ -277,6 +281,8 @@ Tháng nằm ở đầu sort key, nên đơn tháng 9 của `C-03` chỉ đọc 
 // ERROR ValidationException
 {"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "FilterExpression": "begins_with(orderId, :m)", "ExpressionAttributeValues": {":c": {"S": "C-21"}, ":m": {"S": "2026-10"}}}}
 ```
+
+Thông báo nói rõ bộ lọc chỉ chứa được thuộc tính không thuộc khóa chính, và nêu tên `orderId`. Chuyển `begins_with(orderId, :m)` sang `KeyConditionExpression`.
 
 Lọc theo khách bằng `Scan`:
 
@@ -290,11 +296,11 @@ Lọc theo khách bằng `Scan`:
 {"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-02"}}}}
 ```
 
-`ScannedCount` của `Scan` là 120, của Query là 4.
+`ScannedCount` của `Scan` là 120, của Query là 4. Engine tính `Scan` 1 RCU, Query 0.5 RCU: bảng chỉ có 120 item nhỏ nên chênh lệch còn nhỏ, nhưng `Scan` lớn dần theo cỡ bảng, còn Query chỉ theo cỡ item collection.
 
 ## Thực hành
 
-Bảng `Orders` có 120 đơn của 30 khách, sort key `orderId` bắt đầu bằng ngày. So `Count` với `ScannedCount` sau mỗi lần chạy.
+Bảng `Orders` có 120 đơn của 30 khách, sort key `orderId` bắt đầu bằng ngày. So `Count` với `ScannedCount` sau mỗi lần chạy. Bước 1 lọc theo `total` qua `#t`. Bước 2 đưa tháng vào điều kiện khóa để chỉ đọc đúng item cần. Bước 3 thêm `ProjectionExpression` với tên thay thế. Cả ba bước có thanh hiệu năng: một `Scan` có lọc ra cùng item vẫn không đạt.
 
 ## Tóm tắt
 
@@ -340,11 +346,15 @@ The orders of `C-02` above 500000: `Count` 3, `ScannedCount` 4:
 {"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "FilterExpression": "#t > :x", "ExpressionAttributeNames": {"#t": "total"}, "ExpressionAttributeValues": {":c": {"S": "C-02"}, ":x": {"N": "500000"}}}}
 ```
 
+Order `O-107` (210000) is read and only then dropped by the filter, so you still pay for it.
+
 The month sits at the front of the sort key, so the September order of `C-03` reads one item:
 
 ```json
 {"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c AND begins_with(orderId, :m)", "ExpressionAttributeValues": {":c": {"S": "C-03"}, ":m": {"S": "2026-09"}}}}
 ```
+
+The result is order `O-111` with a `ScannedCount` of 1: the month condition is in the key, so no item is read for nothing.
 
 ## Common mistakes
 
@@ -354,6 +364,8 @@ Putting a sort key condition into the Query filter:
 // ERROR ValidationException
 {"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "FilterExpression": "begins_with(orderId, :m)", "ExpressionAttributeValues": {":c": {"S": "C-21"}, ":m": {"S": "2026-10"}}}}
 ```
+
+The message says a filter can only hold attributes outside the primary key, and names `orderId`. Move `begins_with(orderId, :m)` into the `KeyConditionExpression`.
 
 Filtering on the customer with a `Scan`:
 
@@ -367,11 +379,11 @@ Filtering on the customer with a `Scan`:
 {"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-02"}}}}
 ```
 
-The `Scan` has a `ScannedCount` of 120, the Query 4.
+The `Scan` has a `ScannedCount` of 120, the Query 4. The engine charges the `Scan` 1 RCU and the Query 0.5 RCU: with only 120 small items the gap is still small, but a `Scan` grows with the table while a Query grows only with its item collection.
 
 ## Practice
 
-Table `Orders` holds 120 orders of 30 customers; the sort key `orderId` starts with the date. Compare `Count` with `ScannedCount` after each run.
+Table `Orders` holds 120 orders of 30 customers; the sort key `orderId` starts with the date. Compare `Count` with `ScannedCount` after each run. Step 1 filters on `total` through `#t`. Step 2 moves the month into the key condition so only the needed item is read. Step 3 adds a `ProjectionExpression` with substitute names. All three steps have a performance bar: a filtered `Scan` that returns the same items does not pass.
 
 ## Recap
 

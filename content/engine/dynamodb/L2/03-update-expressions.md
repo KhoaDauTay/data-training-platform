@@ -151,11 +151,15 @@ Tăng giá cuốn `978-0-02` thêm 5000 và trả về phần đã đổi:
 {"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-02"}}, "UpdateExpression": "SET price = price + :d", "ExpressionAttributeValues": {":d": {"N": "5000"}}, "ReturnValues": "UPDATED_NEW"}}
 ```
 
+Giá cuốn `978-0-02` từ 95000 lên 100000. `UPDATED_NEW` chỉ trả các thuộc tính vừa đổi, ở đây là `price`.
+
 Hai mệnh đề trong một request: đặt `stock` mới và xóa phần tử đầu của `tags`:
 
 ```json
 {"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-04"}}, "UpdateExpression": "SET stock = :s REMOVE tags[0]", "ExpressionAttributeValues": {":s": {"N": "30"}}, "ReturnValues": "ALL_NEW"}}
 ```
+
+Sau lệnh, `stock` là 30 và `tags` từ `["nosql", "perf"]` chỉ còn `["perf"]`: hai mệnh đề chạy trong cùng một lần ghi.
 
 ## Lỗi hay gặp
 
@@ -165,6 +169,8 @@ Viết số thẳng vào biểu thức như trong SQL:
 // ERROR ValidationException
 {"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-05"}}, "UpdateExpression": "SET price = price - 12000"}}
 ```
+
+DynamoDB báo lỗi cú pháp ngay ở con số: số cũng phải đi qua chỗ giữ chỗ, như `SET price = price - :d` với `:d` là `12000`.
 
 Gán thẳng danh sách mới khi chỉ muốn thêm một nhãn:
 
@@ -178,9 +184,11 @@ Gán thẳng danh sách mới khi chỉ muốn thêm một nhãn:
 {"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-01"}}, "UpdateExpression": "SET tags = list_append(tags, :t)", "ExpressionAttributeValues": {":t": {"L": [{"S": "classic"}]}}, "ReturnValues": "ALL_NEW"}}
 ```
 
+Bản sai để `tags` chỉ còn `["classic"]`, bản sửa cho `["db", "storage", "classic"]`. Không có lỗi nào báo cho bạn: nhãn bị mất chỉ lộ ra khi đọc lại item.
+
 ## Thực hành
 
-Bảng `Books` có 8 cuốn. Mỗi bước chạy lại từ dữ liệu gốc và được chấm bằng trạng thái bảng sau khi ghi.
+Bảng `Books` có 8 cuốn. Mỗi bước chạy lại từ dữ liệu gốc và được chấm bằng trạng thái bảng sau khi ghi. Bước 1 trừ giá ngay trên server. Bước 2 xóa hẳn một thuộc tính bằng `REMOVE`. Bước 3 nối một nhãn vào cuối danh sách. Bước 4 dùng `if_not_exists` để đếm từ một thuộc tính chưa có.
 
 ## Tóm tắt
 
@@ -227,11 +235,15 @@ Raise the price of `978-0-02` by 5000 and return what changed:
 {"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-02"}}, "UpdateExpression": "SET price = price + :d", "ExpressionAttributeValues": {":d": {"N": "5000"}}, "ReturnValues": "UPDATED_NEW"}}
 ```
 
+The price of `978-0-02` goes from 95000 to 100000. `UPDATED_NEW` returns only the attributes that changed, here `price`.
+
 Two clauses in one request: set a new `stock` and remove the first element of `tags`:
 
 ```json
 {"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-04"}}, "UpdateExpression": "SET stock = :s REMOVE tags[0]", "ExpressionAttributeValues": {":s": {"N": "30"}}, "ReturnValues": "ALL_NEW"}}
 ```
+
+Afterwards `stock` is 30 and `tags` goes from `["nosql", "perf"]` to `["perf"]`: both clauses run in the same write.
 
 ## Common mistakes
 
@@ -241,6 +253,8 @@ Writing a number straight into the expression, as in SQL:
 // ERROR ValidationException
 {"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-05"}}, "UpdateExpression": "SET price = price - 12000"}}
 ```
+
+DynamoDB reports a syntax error right at the number: numbers go through a placeholder too, as in `SET price = price - :d` with `:d` set to `12000`.
 
 Assigning a new list when you only meant to add one tag:
 
@@ -254,9 +268,11 @@ Assigning a new list when you only meant to add one tag:
 {"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-01"}}, "UpdateExpression": "SET tags = list_append(tags, :t)", "ExpressionAttributeValues": {":t": {"L": [{"S": "classic"}]}}, "ReturnValues": "ALL_NEW"}}
 ```
 
+The wrong version leaves `tags` as just `["classic"]`, the fix gives `["db", "storage", "classic"]`. No error tells you: the lost tags show only when you read the item again.
+
 ## Practice
 
-Table `Books` holds 8 books. Each step runs again from the original data and is graded by the table's state after the write.
+Table `Books` holds 8 books. Each step runs again from the original data and is graded by the table's state after the write. Step 1 lowers a price on the server. Step 2 removes an attribute with `REMOVE`. Step 3 appends a tag to the end of the list. Step 4 uses `if_not_exists` to count from an attribute that does not exist yet.
 
 ## Recap
 

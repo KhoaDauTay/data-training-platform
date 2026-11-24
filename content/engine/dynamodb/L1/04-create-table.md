@@ -138,11 +138,15 @@ Bảng `Authors` chỉ cần khóa đơn:
 {"op": "CreateTable", "input": {"TableName": "Authors", "KeySchema": [{"AttributeName": "authorId", "KeyType": "HASH"}], "AttributeDefinitions": [{"AttributeName": "authorId", "AttributeType": "S"}], "BillingMode": "PAY_PER_REQUEST"}}
 ```
 
+Phản hồi là một `TableDescription`: `KeySchema` có đúng một dòng `HASH`, chế độ tính tiền là `PAY_PER_REQUEST`, và `TableStatus` là `CREATING`. Trên AWS, bạn chờ bảng chuyển sang `ACTIVE` rồi mới đọc ghi.
+
 Bảng `Reviews` cần mọi đánh giá của một cuốn sách, mới nhất trước, nên dùng khóa kép:
 
 ```json
 {"op": "CreateTable", "input": {"TableName": "Reviews", "KeySchema": [{"AttributeName": "isbn", "KeyType": "HASH"}, {"AttributeName": "reviewedAt", "KeyType": "RANGE"}], "AttributeDefinitions": [{"AttributeName": "isbn", "AttributeType": "S"}, {"AttributeName": "reviewedAt", "AttributeType": "S"}], "BillingMode": "PAY_PER_REQUEST"}}
 ```
+
+Lần này `KeySchema` có hai dòng, và `AttributeDefinitions` khai đúng hai thuộc tính khóa, cả hai kiểu `S`. Một chuỗi thời gian dạng ISO 8601 sắp theo byte cũng là sắp theo thời gian, nên sort key chuỗi là đủ.
 
 ## Lỗi hay gặp
 
@@ -153,6 +157,8 @@ Khai một thuộc tính thường trong `AttributeDefinitions`, như khai cột
 {"op": "CreateTable", "input": {"TableName": "Authors", "KeySchema": [{"AttributeName": "authorId", "KeyType": "HASH"}], "AttributeDefinitions": [{"AttributeName": "authorId", "AttributeType": "S"}, {"AttributeName": "name", "AttributeType": "S"}], "BillingMode": "PAY_PER_REQUEST"}}
 ```
 
+Thông báo nói số thuộc tính trong `KeySchema` không khớp số thuộc tính trong `AttributeDefinitions`. Bỏ dòng `name`: thuộc tính thường chỉ xuất hiện khi bạn ghi item.
+
 Tạo lại một bảng đã có:
 
 ```json
@@ -160,11 +166,11 @@ Tạo lại một bảng đã có:
 {"op": "CreateTable", "input": {"TableName": "Books", "KeySchema": [{"AttributeName": "isbn", "KeyType": "HASH"}], "AttributeDefinitions": [{"AttributeName": "isbn", "AttributeType": "S"}], "BillingMode": "PAY_PER_REQUEST"}}
 ```
 
-Tên bảng là duy nhất trong một Region của một tài khoản; khóa chính cũng không đổi được sau khi tạo.
+Tên bảng là duy nhất trong một Region của một tài khoản; khóa chính cũng không đổi được sau khi tạo. Trong lab, `Books` đã có sẵn nên lệnh bị từ chối; muốn đổi khóa, bạn phải tạo bảng mới rồi chép dữ liệu sang.
 
 ## Thực hành
 
-Ba bước, mỗi bước tạo một bảng. Bài được chấm bằng `DescribeTable`: khóa, kiểu khóa và index phải khớp.
+Ba bước, mỗi bước tạo một bảng. Bài được chấm bằng `DescribeTable`: khóa, kiểu khóa và index phải khớp. Bước 1 là khóa kép cho "mọi đơn của một khách", bước 2 là khóa đơn cho tra sách theo mã. Bước 3 dễ sai nhất: `ts` là số giây, nên kiểu là `N`. Nếu khai `S`, các giá trị sẽ sắp như chuỗi, và chuỗi `"1000"` đứng trước `"999"`.
 
 ## Tóm tắt
 
@@ -211,11 +217,15 @@ Table `Authors` needs only a simple key:
 {"op": "CreateTable", "input": {"TableName": "Authors", "KeySchema": [{"AttributeName": "authorId", "KeyType": "HASH"}], "AttributeDefinitions": [{"AttributeName": "authorId", "AttributeType": "S"}], "BillingMode": "PAY_PER_REQUEST"}}
 ```
 
+The response is a `TableDescription`: `KeySchema` has exactly one `HASH` line, the billing mode is `PAY_PER_REQUEST`, and `TableStatus` is `CREATING`. On AWS you wait until the table turns `ACTIVE` before reading or writing.
+
 Table `Reviews` needs every review of one book, newest first, so it uses a composite key:
 
 ```json
 {"op": "CreateTable", "input": {"TableName": "Reviews", "KeySchema": [{"AttributeName": "isbn", "KeyType": "HASH"}, {"AttributeName": "reviewedAt", "KeyType": "RANGE"}], "AttributeDefinitions": [{"AttributeName": "isbn", "AttributeType": "S"}, {"AttributeName": "reviewedAt", "AttributeType": "S"}], "BillingMode": "PAY_PER_REQUEST"}}
 ```
+
+This time `KeySchema` has two lines, and `AttributeDefinitions` declares exactly the two key attributes, both of type `S`. An ISO 8601 time string sorted by bytes is also sorted by time, so a string sort key is enough.
 
 ## Common mistakes
 
@@ -226,6 +236,8 @@ Declaring an ordinary attribute in `AttributeDefinitions`, as if it were a colum
 {"op": "CreateTable", "input": {"TableName": "Authors", "KeySchema": [{"AttributeName": "authorId", "KeyType": "HASH"}], "AttributeDefinitions": [{"AttributeName": "authorId", "AttributeType": "S"}, {"AttributeName": "name", "AttributeType": "S"}], "BillingMode": "PAY_PER_REQUEST"}}
 ```
 
+The message says the number of attributes in `KeySchema` does not match the number in `AttributeDefinitions`. Drop the `name` line: ordinary attributes only appear when you write items.
+
 Creating a table that already exists:
 
 ```json
@@ -233,11 +245,11 @@ Creating a table that already exists:
 {"op": "CreateTable", "input": {"TableName": "Books", "KeySchema": [{"AttributeName": "isbn", "KeyType": "HASH"}], "AttributeDefinitions": [{"AttributeName": "isbn", "AttributeType": "S"}], "BillingMode": "PAY_PER_REQUEST"}}
 ```
 
-A table name is unique within one Region of an account; the primary key cannot change after creation either.
+A table name is unique within one Region of an account; the primary key cannot change after creation either. In the lab, `Books` already exists so the command is refused; to change a key you create a new table and copy the data over.
 
 ## Practice
 
-Three steps, each creates one table. Each step is graded with `DescribeTable`: the keys, key types and indexes must match.
+Three steps, each creates one table. Each step is graded with `DescribeTable`: the keys, key types and indexes must match. Step 1 is a composite key for "every order of one customer", step 2 a simple key for looking books up by code. Step 3 is the easiest to get wrong: `ts` is a number of seconds, so its type is `N`. Declared as `S`, the values would sort as strings, and the string `"1000"` comes before `"999"`.
 
 ## Recap
 

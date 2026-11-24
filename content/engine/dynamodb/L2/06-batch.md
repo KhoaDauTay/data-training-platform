@@ -131,11 +131,15 @@ Phần chưa xử lý được trả lại trong `UnprocessedKeys` / `Unprocesse
 {"op": "BatchGetItem", "input": {"RequestItems": {"Books": {"Keys": [{"isbn": {"S": "978-0-02"}}, {"isbn": {"S": "978-0-05"}}], "ProjectionExpression": "isbn, title, stock"}}}}
 ```
 
+Hai cuốn trở về với đúng ba thuộc tính đã chọn. Engine tính 1 RCU cho cả lô: mỗi item nhỏ tốn 0.5 RCU như một `GetItem` riêng.
+
 Thêm một cuốn và xóa một cuốn trong cùng lô:
 
 ```json
 {"op": "BatchWriteItem", "input": {"RequestItems": {"Books": [{"PutRequest": {"Item": {"isbn": {"S": "978-0-15"}, "title": {"S": "Batch Day"}, "price": {"N": "60000"}}}}, {"DeleteRequest": {"Key": {"isbn": {"S": "978-0-06"}}}}]}}}
 ```
+
+Bảng có thêm `978-0-15` và mất `978-0-06`; engine tính 2 WCU, một cho mỗi yêu cầu. Nếu một phần không xử lý được, nó nằm trong `UnprocessedItems`, còn phần kia vẫn đã được ghi.
 
 ## Lỗi hay gặp
 
@@ -145,6 +149,8 @@ Lặp một khóa trong cùng `BatchGetItem`:
 // ERROR ValidationException
 {"op": "BatchGetItem", "input": {"RequestItems": {"Books": {"Keys": [{"isbn": {"S": "978-0-02"}}, {"isbn": {"S": "978-0-02"}}]}}}}
 ```
+
+Một khóa chỉ được xuất hiện một lần trong lô; thông báo nói danh sách khóa có phần tử trùng. Bỏ bản lặp trước khi gửi.
 
 Dùng `PutRequest` để "sửa" giá trong lô:
 
@@ -158,9 +164,11 @@ Dùng `PutRequest` để "sửa" giá trong lô:
 {"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-01"}}, "UpdateExpression": "SET price = :p", "ExpressionAttributeValues": {":p": {"N": "110000"}}}}
 ```
 
+Bản sai để `978-0-01` chỉ còn `isbn` và `price`; bản sửa giữ tên sách, tác giả, kho và nhãn. Lô không có Update, nên muốn sửa một phần thì gọi `UpdateItem` cho từng item.
+
 ## Thực hành
 
-Bước 1 trả 3 item không theo thứ tự khóa, nên được chấm như một tập. Bước ghi được chấm bằng trạng thái bảng sau khi ghi.
+Bước 1 trả 3 item không theo thứ tự khóa, nên được chấm như một tập. Bước ghi được chấm bằng trạng thái bảng sau khi ghi. Bước 1 đọc ba cuốn trong một `BatchGetItem`. Bước 2 trộn hai `PutRequest` với một `DeleteRequest` trong cùng lô. Bước 3 xóa hai cuốn trong một lô.
 
 ## Tóm tắt
 
@@ -202,11 +210,15 @@ Read two books in one request:
 {"op": "BatchGetItem", "input": {"RequestItems": {"Books": {"Keys": [{"isbn": {"S": "978-0-02"}}, {"isbn": {"S": "978-0-05"}}], "ProjectionExpression": "isbn, title, stock"}}}}
 ```
 
+Both books come back with exactly the three chosen attributes. The engine charges 1 RCU for the batch: each small item costs 0.5 RCU, like its own `GetItem`.
+
 Add one book and delete another in the same batch:
 
 ```json
 {"op": "BatchWriteItem", "input": {"RequestItems": {"Books": [{"PutRequest": {"Item": {"isbn": {"S": "978-0-15"}, "title": {"S": "Batch Day"}, "price": {"N": "60000"}}}}, {"DeleteRequest": {"Key": {"isbn": {"S": "978-0-06"}}}}]}}}
 ```
+
+The table gains `978-0-15` and loses `978-0-06`; the engine charges 2 WCU, one per request. If one part cannot be processed, it comes back in `UnprocessedItems` while the other part is already written.
 
 ## Common mistakes
 
@@ -216,6 +228,8 @@ Repeating a key in the same `BatchGetItem`:
 // ERROR ValidationException
 {"op": "BatchGetItem", "input": {"RequestItems": {"Books": {"Keys": [{"isbn": {"S": "978-0-02"}}, {"isbn": {"S": "978-0-02"}}]}}}}
 ```
+
+A key may appear only once in a batch; the message says the list of keys holds duplicates. Drop the repeat before sending.
 
 Using a `PutRequest` to "change" a price in a batch:
 
@@ -229,9 +243,11 @@ Using a `PutRequest` to "change" a price in a batch:
 {"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-01"}}, "UpdateExpression": "SET price = :p", "ExpressionAttributeValues": {":p": {"N": "110000"}}}}
 ```
 
+The wrong version leaves `978-0-01` with only `isbn` and `price`; the fix keeps the title, author, stock and tags. A batch has no Update, so to change part of an item call `UpdateItem` for each item.
+
 ## Practice
 
-Step 1 returns 3 items in no particular key order, so it is graded as a set. The write steps are graded by the table's state after the write.
+Step 1 returns 3 items in no particular key order, so it is graded as a set. The write steps are graded by the table's state after the write. Step 1 reads three books in one `BatchGetItem`. Step 2 mixes two `PutRequest`s with one `DeleteRequest` in the same batch. Step 3 deletes two books in one batch.
 
 ## Recap
 

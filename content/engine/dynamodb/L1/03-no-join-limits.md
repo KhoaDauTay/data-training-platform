@@ -113,11 +113,23 @@ Bảng `Shop` đặt hồ sơ và đơn của khách chung một item collection
 {"op": "Query", "input": {"TableName": "Shop", "KeyConditionExpression": "PK = :pk", "ExpressionAttributeValues": {":pk": {"S": "CUST#C-01"}}}}
 ```
 
+Ba item về: hai đơn `ORDER#…` rồi hồ sơ `PROFILE`, vì sort key chuỗi sắp theo byte và `O` đứng trước `P`. `ScannedCount` là 3: không item nào của khách khác bị đọc.
+
 Doanh thu tháng 10 đã được cộng sẵn lúc ghi, nên chỉ cần đọc một item:
 
 ```json
 {"op": "GetItem", "input": {"TableName": "Shop", "Key": {"PK": {"S": "STATS"}, "SK": {"S": "MONTH#2026-10"}}}}
 ```
+
+Item tổng có `orders` 2 và `revenue` 330000. Phần cộng dồn đã làm ở lúc ghi đơn, nên báo cáo chỉ tốn một lần đọc 0.5 RCU, dù tháng có bao nhiêu đơn.
+
+PartiQL cũng đọc được, miễn câu chỉ chạm một bảng và có điều kiện bằng trên partition key:
+
+```partiql
+SELECT PK, SK FROM Shop WHERE PK = 'CUST#C-01'
+```
+
+Kết quả là ba cặp khóa của `C-01`. Cú pháp trông như SQL, nhưng đằng sau vẫn là một lần đọc theo khóa.
 
 ## Lỗi hay gặp
 
@@ -125,10 +137,10 @@ Viết JOIN trong PartiQL vì PartiQL trông giống SQL:
 
 ```partiql
 // ERROR ValidationException
-SELECT * FROM Shop a JOIN Shop b ON a.PK = b.PK
+SELECT * FROM Shop JOIN Shop ON Shop.PK = Shop.PK
 ```
 
-PartiQL của DynamoDB chỉ đọc một bảng (hoặc một index) mỗi câu.
+PartiQL của DynamoDB chỉ đọc một bảng (hoặc một index) mỗi câu. Trong trình duyệt, dynoxide báo câu "không đúng dạng" ngay ở chữ `JOIN`; AWS cũng trả `ValidationException`, câu chữ có thể khác.
 
 Đọc cả bảng rồi tự gom trong code thay vì đọc một item collection:
 
@@ -142,7 +154,7 @@ PartiQL của DynamoDB chỉ đọc một bảng (hoặc một index) mỗi câu
 {"op": "Query", "input": {"TableName": "Shop", "KeyConditionExpression": "PK = :pk", "ExpressionAttributeValues": {":pk": {"S": "CUST#C-01"}}}}
 ```
 
-Cùng ba item, nhưng `ScannedCount` của Scan là 6 (cả bảng), của Query là 3.
+Cùng ba item, nhưng `ScannedCount` của Scan là 6 (cả bảng), của Query là 3. Ở đây Scan tốn 0.5 RCU như Query, vì sáu item nhỏ nằm gọn trong một khối 4 KB; với bảng thật, số item Scan phải đọc tăng theo cả bảng, còn Query chỉ tăng theo một khách.
 
 ## Tóm tắt
 
@@ -193,11 +205,23 @@ Table `Shop` keeps a customer's profile and orders in one item collection. One `
 {"op": "Query", "input": {"TableName": "Shop", "KeyConditionExpression": "PK = :pk", "ExpressionAttributeValues": {":pk": {"S": "CUST#C-01"}}}}
 ```
 
+Three items come back: two `ORDER#…` orders, then the `PROFILE`, because string sort keys sort by bytes and `O` comes before `P`. `ScannedCount` is 3: no item of another customer is read.
+
 October revenue was added up at write time, so reading one item is enough:
 
 ```json
 {"op": "GetItem", "input": {"TableName": "Shop", "Key": {"PK": {"S": "STATS"}, "SK": {"S": "MONTH#2026-10"}}}}
 ```
+
+The total item holds `orders` 2 and `revenue` 330000. The adding up happened when the orders were written, so the report costs one 0.5 RCU read, however many orders the month has.
+
+PartiQL can read too, as long as the statement touches one table and has an equality on the partition key:
+
+```partiql
+SELECT PK, SK FROM Shop WHERE PK = 'CUST#C-01'
+```
+
+The result is the three key pairs of `C-01`. The syntax looks like SQL, but underneath it is still one read by key.
 
 ## Common mistakes
 
@@ -205,10 +229,10 @@ Writing a JOIN in PartiQL because PartiQL looks like SQL:
 
 ```partiql
 // ERROR ValidationException
-SELECT * FROM Shop a JOIN Shop b ON a.PK = b.PK
+SELECT * FROM Shop JOIN Shop ON Shop.PK = Shop.PK
 ```
 
-DynamoDB PartiQL reads one table (or one index) per statement.
+DynamoDB PartiQL reads one table (or one index) per statement. In the browser, dynoxide reports the statement as "not well formed" right at the word `JOIN`; AWS also returns a `ValidationException`, possibly worded differently.
 
 Reading the whole table and grouping in code instead of reading one item collection:
 
@@ -222,7 +246,7 @@ Reading the whole table and grouping in code instead of reading one item collect
 {"op": "Query", "input": {"TableName": "Shop", "KeyConditionExpression": "PK = :pk", "ExpressionAttributeValues": {":pk": {"S": "CUST#C-01"}}}}
 ```
 
-Same three items, but the Scan has a `ScannedCount` of 6 (the whole table) and the Query 3.
+Same three items, but the Scan has a `ScannedCount` of 6 (the whole table) and the Query 3. Here the Scan costs 0.5 RCU like the Query, because six small items fit in one 4 KB block; on a real table the items a Scan reads grow with the whole table, while a Query grows only with one customer.
 
 ## Recap
 

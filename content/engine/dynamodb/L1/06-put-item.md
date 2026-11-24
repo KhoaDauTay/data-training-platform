@@ -106,6 +106,8 @@ Nhà phát hành gửi bản cập nhật của một cuốn sách, nhưng chỉ
 
 Đây là chỗ khác `UPDATE` của SQL. Muốn chỉ sửa vài thuộc tính, dùng `UpdateItem` (bài sau). Muốn "chỉ thêm, không bao giờ ghi đè", thêm điều kiện `attribute_not_exists` (bài L2).
 
+Nhiều người nghĩ `PutItem` lên một khóa đã có sẽ báo trùng khóa, như `INSERT` của SQL. Thật ra nó ghi đè im lặng: không lỗi, không cảnh báo, và phản hồi mặc định cũng không cho biết đã có item cũ.
+
 `ReturnValues: "ALL_OLD"` trả về item trước khi bị thay. Khi khóa còn mới, phản hồi không có `Attributes`. `PutItem` chỉ nhận `NONE` hoặc `ALL_OLD`.
 
 ## Cú pháp
@@ -127,11 +129,15 @@ Thêm một cuốn mới:
 {"op": "PutItem", "input": {"TableName": "Books", "Item": {"isbn": {"S": "978-0-12"}, "title": {"S": "Wide Rows"}, "price": {"N": "80000"}}}}
 ```
 
+Bảng giờ có chín cuốn; cuốn mới chỉ mang ba thuộc tính đã ghi. Lần ghi tốn 1 WCU.
+
 Ghi đè `978-0-02`: sau lệnh, cuốn đó mất `author`, `stock` và `tags`, vì item mới không có chúng. Kết quả dưới khối cho thấy cả bảng sau khi ghi:
 
 ```json
 {"op": "PutItem", "input": {"TableName": "Books", "Item": {"isbn": {"S": "978-0-02"}, "title": {"S": "Keys and Values"}, "price": {"N": "90000"}}, "ReturnValues": "ALL_OLD"}}
 ```
+
+Cuốn `978-0-02` giờ chỉ còn `isbn`, `title` và `price` 90000. Nhờ `ALL_OLD`, phản hồi trả bản cũ có `author` "Tran Binh" và `stock` 3: nơi duy nhất còn thấy dữ liệu vừa mất.
 
 ## Lỗi hay gặp
 
@@ -141,6 +147,8 @@ Xin bản mới từ `PutItem`:
 // ERROR ValidationException
 {"op": "PutItem", "input": {"TableName": "Books", "Item": {"isbn": {"S": "978-0-12"}, "title": {"S": "Wide Rows"}}, "ReturnValues": "ALL_NEW"}}
 ```
+
+Dynoxide báo "ReturnValues can only be ALL_OLD or NONE". `ALL_NEW` chỉ có ở `UpdateItem`; với `PutItem`, bản mới chính là `Item` bạn vừa gửi.
 
 Dùng `PutItem` để đổi một thuộc tính:
 
@@ -154,9 +162,11 @@ Dùng `PutItem` để đổi một thuộc tính:
 {"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-05"}}, "UpdateExpression": "SET price = :p", "ExpressionAttributeValues": {":p": {"N": "125000"}}}}
 ```
 
+Bản sai để cuốn `978-0-05` chỉ còn `isbn` và `price`. Bản sửa đổi giá thành 125000 mà vẫn giữ `title`, `author`, `stock` và `tags`.
+
 ## Thực hành
 
-Bước ghi được chấm bằng cách so **cả bảng** sau khi ghi với bảng sau đáp án. Mỗi bước bắt đầu lại từ dữ liệu gốc.
+Bước 1 thêm một cuốn mới, bước 2 ghi đè một cuốn có sẵn và xin bản cũ, bước 3 ghi một danh sách `L`. Trước bước 2, hãy đoán cuốn đó còn những thuộc tính nào rồi so với kết quả. Bước ghi được chấm bằng cách so **cả bảng** sau khi ghi với bảng sau đáp án. Mỗi bước bắt đầu lại từ dữ liệu gốc.
 
 ## Tóm tắt
 
@@ -176,6 +186,8 @@ The publisher sends an update for a book, but with only the title and the price.
 `PutItem` writes **a whole item**. If the key is new, the item is added. If the key exists, the old item is **replaced entirely**: any attribute missing from the new item is gone.
 
 This differs from SQL `UPDATE`. To change only some attributes, use `UpdateItem` (next lesson). For "insert only, never overwrite", add an `attribute_not_exists` condition (level L2).
+
+Many people think a `PutItem` on an existing key reports a duplicate key, like an SQL `INSERT`. In fact it overwrites without a word: no error, no warning, and by default the response does not even say an old item was there.
 
 `ReturnValues: "ALL_OLD"` returns the item as it was before the replace. When the key is new, the response has no `Attributes`. `PutItem` accepts only `NONE` or `ALL_OLD`.
 
@@ -198,11 +210,15 @@ Add a new book:
 {"op": "PutItem", "input": {"TableName": "Books", "Item": {"isbn": {"S": "978-0-12"}, "title": {"S": "Wide Rows"}, "price": {"N": "80000"}}}}
 ```
 
+The table now holds nine books; the new one carries only the three attributes written. The write costs 1 WCU.
+
 Overwrite `978-0-02`: afterwards the book has lost `author`, `stock` and `tags`, because the new item does not have them. The result under the block shows the whole table after the write:
 
 ```json
 {"op": "PutItem", "input": {"TableName": "Books", "Item": {"isbn": {"S": "978-0-02"}, "title": {"S": "Keys and Values"}, "price": {"N": "90000"}}, "ReturnValues": "ALL_OLD"}}
 ```
+
+Book `978-0-02` now holds only `isbn`, `title` and `price` 90000. Thanks to `ALL_OLD`, the response returns the old image with `author` "Tran Binh" and `stock` 3: the only place the lost data still shows.
 
 ## Common mistakes
 
@@ -212,6 +228,8 @@ Asking `PutItem` for the new image:
 // ERROR ValidationException
 {"op": "PutItem", "input": {"TableName": "Books", "Item": {"isbn": {"S": "978-0-12"}, "title": {"S": "Wide Rows"}}, "ReturnValues": "ALL_NEW"}}
 ```
+
+Dynoxide reports "ReturnValues can only be ALL_OLD or NONE". `ALL_NEW` exists only on `UpdateItem`; with `PutItem` the new image is the `Item` you just sent.
 
 Using `PutItem` to change one attribute:
 
@@ -225,9 +243,11 @@ Using `PutItem` to change one attribute:
 {"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-05"}}, "UpdateExpression": "SET price = :p", "ExpressionAttributeValues": {":p": {"N": "125000"}}}}
 ```
 
+The wrong version leaves book `978-0-05` with only `isbn` and `price`. The fix changes the price to 125000 and keeps `title`, `author`, `stock` and `tags`.
+
 ## Practice
 
-A write step is graded by comparing the **whole table** after your write with the table after the solution. Every step starts again from the original data.
+Step 1 adds a new book, step 2 overwrites an existing one and asks for the old image, step 3 writes an `L` list. Before step 2, guess which attributes the book keeps, then compare with the result. A write step is graded by comparing the **whole table** after your write with the table after the solution. Every step starts again from the original data.
 
 ## Recap
 

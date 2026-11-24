@@ -84,6 +84,8 @@ Hai bảng thay thế đi kèm:
 
 Danh sách từ dành riêng có hơn 500 từ, gồm nhiều tên rất hay gặp như `status`, `total`, `name`, `date`, `data`, `count`. Thói quen an toàn: luôn dùng một tên thay thế như `#n` trong biểu thức. Giới hạn: mỗi biểu thức tối đa 4 KB và 300 toán tử (so sánh, `AND`/`OR`/`NOT`, `BETWEEN`, `IN`, hàm, `+`/`-`); `IN` tối đa 100 toán hạng.
 
+Nhiều người nghĩ `FilterExpression` làm request rẻ hơn, vì phản hồi có ít item hơn. Thật ra DynamoDB tính capacity theo lượng đã đọc, trước khi lọc: bộ lọc chỉ làm phản hồi gọn lại. `ProjectionExpression` cũng vậy: item vẫn được đọc đủ rồi mới bị cắt thuộc tính. Muốn đọc ít hơn, phải đưa điều kiện vào khóa, tức vào `KeyConditionExpression`.
+
 ## Cú pháp
 
 ```text
@@ -104,11 +106,15 @@ Các đơn của `C-02` trên 500000, `total` qua tên `#t`:
 {"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "FilterExpression": "#t > :x", "ExpressionAttributeNames": {"#t": "total"}, "ExpressionAttributeValues": {":c": {"S": "C-02"}, ":x": {"N": "500000"}}}}
 ```
 
+Kết quả có 3 đơn (`O-105`, `O-106`, `O-108`), nhưng `ScannedCount` là 4: Query đọc cả bốn đơn của `C-02`, rồi bộ lọc mới bỏ đơn `O-107` (210000). Capacity 0.5 RCU được tính trên cả 4 item đã đọc.
+
 Cùng khách, chỉ trả `orderId` và `status`:
 
 ```json
 {"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ProjectionExpression": "orderId, #s", "ExpressionAttributeNames": {"#s": "status"}, "ExpressionAttributeValues": {":c": {"S": "C-02"}}}}
 ```
+
+Bốn đơn trở về, mỗi đơn chỉ còn `orderId` và `status`. Tên `#s` vừa né từ dành riêng, vừa dùng lại được ở nhiều chỗ trong cùng request.
 
 ## Lỗi hay gặp
 
@@ -119,12 +125,16 @@ Dùng thẳng từ dành riêng `status` trong biểu thức:
 {"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "FilterExpression": "status = :s", "ExpressionAttributeValues": {":c": {"S": "C-02"}, ":s": {"S": "NEW"}}}}
 ```
 
+Thông báo lỗi nêu đúng từ bị vướng: `status` là từ dành riêng. Sửa bằng `#s = :s` và khai `"#s": "status"` trong `ExpressionAttributeNames`.
+
 Khai một chỗ giữ chỗ mà không dùng:
 
 ```json
 // ERROR ValidationException
 {"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-02"}, ":x": {"N": "500000"}}}}
 ```
+
+DynamoDB báo `:x` là giá trị đã khai mà không biểu thức nào dùng. Lỗi này hay gặp khi bạn bỏ bộ lọc mà quên xóa giá trị của nó: xóa `:x`, hoặc dùng lại nó trong `FilterExpression`.
 
 Viết số thẳng vào biểu thức cũng là `ValidationException`: giá trị chỉ đi qua `:x`.
 
@@ -159,6 +169,8 @@ Two substitution maps come with them:
 
 The reserved word list has over 500 words, including very common names such as `status`, `total`, `name`, `date`, `data`, `count`. A safe habit: always use a stand-in name such as `#n` in expressions. Limits: each expression is at most 4 KB and 300 operators (comparisons, `AND`/`OR`/`NOT`, `BETWEEN`, `IN`, functions, `+`/`-`); `IN` takes at most 100 operands.
 
+Many people think a `FilterExpression` makes a request cheaper, because the response holds fewer items. In fact DynamoDB charges capacity for what it read, before the filter: the filter only makes the response smaller. A `ProjectionExpression` is the same: the whole item is read and then trimmed to the listed attributes. To read less, the condition has to go into the key, that is into the `KeyConditionExpression`.
+
 ## Syntax
 
 ```text
@@ -179,11 +191,15 @@ The orders of `C-02` above 500000, with `total` through the name `#t`:
 {"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "FilterExpression": "#t > :x", "ExpressionAttributeNames": {"#t": "total"}, "ExpressionAttributeValues": {":c": {"S": "C-02"}, ":x": {"N": "500000"}}}}
 ```
 
+The result holds 3 orders (`O-105`, `O-106`, `O-108`), but `ScannedCount` is 4: the Query reads all four orders of `C-02`, and only then does the filter drop order `O-107` (210000). The 0.5 RCU consumed is charged on all 4 items read.
+
 The same customer, returning only `orderId` and `status`:
 
 ```json
 {"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ProjectionExpression": "orderId, #s", "ExpressionAttributeNames": {"#s": "status"}, "ExpressionAttributeValues": {":c": {"S": "C-02"}}}}
 ```
+
+Four orders come back, each with only `orderId` and `status`. The name `#s` both avoids the reserved word and can be reused in several places of the same request.
 
 ## Common mistakes
 
@@ -194,12 +210,16 @@ Using the reserved word `status` directly in an expression:
 {"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "FilterExpression": "status = :s", "ExpressionAttributeValues": {":c": {"S": "C-02"}, ":s": {"S": "NEW"}}}}
 ```
 
+The error message names the word that clashes: `status` is reserved. Fix it with `#s = :s` and declare `"#s": "status"` in `ExpressionAttributeNames`.
+
 Declaring a placeholder and not using it:
 
 ```json
 // ERROR ValidationException
 {"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-02"}, ":x": {"N": "500000"}}}}
 ```
+
+DynamoDB reports `:x` as a declared value that no expression uses. It often happens when you drop a filter and forget to delete its value: delete `:x`, or use it again in a `FilterExpression`.
 
 Writing a number straight into an expression is a `ValidationException` too: values only go through `:x`.
 

@@ -75,6 +75,8 @@ Thuộc tính khóa chỉ được là chuỗi, số hoặc nhị phân. Với k
 
 **Partition key chọn chỗ ở.** DynamoDB đưa giá trị partition key qua một hàm băm nội bộ. Kết quả băm quyết định item nằm ở **partition** (phân vùng vật lý) nào. Partition là một đơn vị lưu trữ, được nhân bản sang nhiều Availability Zone.
 
+Chọn partition key có nhiều giá trị khác nhau, như mã khách, để request rải đều trên các partition. Một thuộc tính chỉ có vài giá trị, như trạng thái đơn, sẽ dồn mọi đơn cùng trạng thái vào một chỗ; các bài sau quay lại chuyện "partition nóng" này.
+
 **Sort key chọn thứ tự.** Các item cùng partition key được lưu cạnh nhau, sắp theo sort key. Nhóm đó gọi là một **item collection**. Cả bảng không có thứ tự chung, và không có "tìm theo thuộc tính bất kỳ" rẻ: muốn đọc nhanh, câu hỏi phải bắt đầu bằng partition key.
 
 ## Cú pháp
@@ -96,13 +98,15 @@ Bấm "Tiếp" trên sơ đồ: `C-01`, `C-02`, `C-03` đi qua hàm băm và rơ
 {"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-02"}}}}
 ```
 
-Vì `orderId` bắt đầu bằng ngày, thứ tự sort key cũng là thứ tự thời gian. Đây là mẹo thiết kế đầu tiên: đặt thứ bạn muốn sắp vào đầu sort key.
+Bốn đơn về theo `orderId` tăng dần, từ `2026-07-25#O-105` tới `2026-10-03#O-108`, và `ScannedCount` là 4: chỉ item collection của `C-02` được đọc. Vì `orderId` bắt đầu bằng ngày, thứ tự sort key cũng là thứ tự thời gian. Đây là mẹo thiết kế đầu tiên: đặt thứ bạn muốn sắp vào đầu sort key.
 
 Một đơn cụ thể cần cả hai phần khóa:
 
 ```json
 {"op": "GetItem", "input": {"TableName": "Orders", "Key": {"customerId": {"S": "C-02"}, "orderId": {"S": "2026-08-26#O-106"}}}}
 ```
+
+Kết quả là đúng một item, đơn `O-106`, với giá 0.5 RCU: cặp khóa đầy đủ chỉ tới một item duy nhất.
 
 ## Lỗi hay gặp
 
@@ -113,7 +117,7 @@ Một đơn cụ thể cần cả hai phần khóa:
 {"op": "GetItem", "input": {"TableName": "Orders", "Key": {"customerId": {"S": "C-02"}}}}
 ```
 
-`GetItem` cần khóa đầy đủ; muốn mọi đơn của khách thì dùng `Query`.
+`GetItem` cần khóa đầy đủ; muốn mọi đơn của khách thì dùng `Query`. Thông báo ở đây là "The provided key element does not match the schema": khóa gửi lên không khớp `KeySchema` của bảng.
 
 Ghi đơn mới nhưng dùng lại một `orderId` đã có của khách:
 
@@ -127,7 +131,7 @@ Ghi đơn mới nhưng dùng lại một `orderId` đã có của khách:
 {"op": "PutItem", "input": {"TableName": "Orders", "Item": {"customerId": {"S": "C-02"}, "orderId": {"S": "2026-10-30#O-109"}, "total": {"N": "150000"}}}}
 ```
 
-Bản sai không báo lỗi; bảng vẫn còn 6 đơn và đơn `O-108` mất giá trị cũ.
+Bản sai không báo lỗi; bảng vẫn còn 6 đơn và đơn `O-108` mất giá trị cũ. Bản sửa thêm đơn thứ bảy. Muốn DynamoDB từ chối thay vì ghi đè, thêm điều kiện ghi (L2).
 
 ## Tóm tắt
 
@@ -153,6 +157,8 @@ Key attributes can only be strings, numbers or binary. With a composite key the 
 
 **The partition key picks the home.** DynamoDB passes the partition key value through an internal hash function. The hash decides which **partition** the item lives in. A partition is a unit of storage, replicated across several Availability Zones.
 
+Pick a partition key with many distinct values, such as the customer id, so requests spread evenly across partitions. An attribute with only a few values, such as the order status, would pile every order with the same status into one place; later lessons come back to this "hot partition".
+
 **The sort key picks the order.** Items with the same partition key are stored next to each other, sorted by sort key. That group is called an **item collection**. The table as a whole has no order, and there is no cheap "find by any attribute": to read fast, a question must start with the partition key.
 
 ## Syntax
@@ -174,13 +180,15 @@ Press "Next" on the diagram: `C-01`, `C-02`, `C-03` go through the hash and land
 {"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-02"}}}}
 ```
 
-Because `orderId` starts with the date, sort key order is also time order. That is the first design trick: put what you want to sort by at the front of the sort key.
+The four orders come back in ascending `orderId`, from `2026-07-25#O-105` to `2026-10-03#O-108`, and `ScannedCount` is 4: only the item collection of `C-02` is read. Because `orderId` starts with the date, sort key order is also time order. That is the first design trick: put what you want to sort by at the front of the sort key.
 
 One specific order needs both parts of the key:
 
 ```json
 {"op": "GetItem", "input": {"TableName": "Orders", "Key": {"customerId": {"S": "C-02"}, "orderId": {"S": "2026-08-26#O-106"}}}}
 ```
+
+The result is exactly one item, order `O-106`, at 0.5 RCU: the full key pair points to a single item.
 
 ## Common mistakes
 
@@ -191,7 +199,7 @@ Reading one item with only the partition key on a composite-key table:
 {"op": "GetItem", "input": {"TableName": "Orders", "Key": {"customerId": {"S": "C-02"}}}}
 ```
 
-`GetItem` needs the full key; for every order of a customer, use `Query`.
+`GetItem` needs the full key; for every order of a customer, use `Query`. The message here is "The provided key element does not match the schema": the key sent does not match the table's `KeySchema`.
 
 Writing a new order that reuses one of the customer's existing `orderId` values:
 
@@ -205,7 +213,7 @@ Writing a new order that reuses one of the customer's existing `orderId` values:
 {"op": "PutItem", "input": {"TableName": "Orders", "Item": {"customerId": {"S": "C-02"}, "orderId": {"S": "2026-10-30#O-109"}, "total": {"N": "150000"}}}}
 ```
 
-The wrong version raises no error; the table still holds 6 orders and order `O-108` has lost its old values.
+The wrong version raises no error; the table still holds 6 orders and order `O-108` has lost its old values. The fix adds a seventh order. To make DynamoDB refuse instead of overwrite, add a write condition (L2).
 
 ## Recap
 

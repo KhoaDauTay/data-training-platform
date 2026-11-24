@@ -71,6 +71,8 @@ Bảng không khai báo cột. Lúc tạo bảng bạn chỉ khai báo **khóa c
 
 Câu hỏi cũng đổi. Với SQL bạn hỏi "mọi dòng thỏa điều kiện X". Với DynamoDB bạn hỏi "đưa tôi item có khóa này" hoặc "mọi item có partition key (khóa phân vùng) này". Bài sau nói về khóa.
 
+Nhiều người nghĩ "không schema" nghĩa là không cần thiết kế. Thật ra schema chuyển sang code của bạn: ứng dụng quyết định item nào mang thuộc tính gì, kiểu gì, và DynamoDB không kiểm hộ ngoài thuộc tính khóa. Hai đoạn code ghi `price` với hai nhãn kiểu khác nhau đều thành công; lỗi chỉ lộ ra khi đọc hay so sánh. Vì vậy các đội thường giữ một mô tả item duy nhất trong code và kiểm dữ liệu ở đó trước khi ghi.
+
 Trong các lab, dữ liệu mẫu được ghi bằng JSON thường cho dễ đọc. Request bạn viết vẫn là DynamoDB JSON có nhãn kiểu, đúng như SDK cấp thấp gửi đi, bọc trong `{"op": …, "input": …}`.
 
 ## Cú pháp
@@ -93,17 +95,23 @@ Bảng `Books` nhỏ có hai cuốn. Cuốn `978-0-04` có `tags`:
 {"op": "GetItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-04"}}}}
 ```
 
+Phản hồi có một `Item` với bốn thuộc tính: `isbn`, `title`, `price` và danh sách `tags`. Lần đọc tốn 0.5 RCU, con số engine trả về.
+
 Cuốn `978-0-05` không có `tags`, và bảng không phàn nàn gì:
 
 ```json
 {"op": "GetItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-05"}}}}
 ```
 
+Item này chỉ có ba thuộc tính. Không có ô `tags` mang giá trị rỗng nào: thuộc tính vắng mặt thì đơn giản là không có trong item.
+
 Thêm một cuốn có thuộc tính mới `pages` mà không cần sửa bảng:
 
 ```json
 {"op": "PutItem", "input": {"TableName": "Books", "Item": {"isbn": {"S": "978-0-06"}, "title": {"S": "Small Items Fast"}, "pages": {"N": "212"}}}}
 ```
+
+Bảng giờ có ba cuốn, và chỉ cuốn mới mang `pages`. Không cần lệnh nào giống `ALTER TABLE`; lần ghi tốn 1 WCU.
 
 ## Lỗi hay gặp
 
@@ -114,7 +122,7 @@ Quên thuộc tính khóa, vì nghĩ bảng không có schema thì thuộc tính
 {"op": "PutItem", "input": {"TableName": "Books", "Item": {"title": {"S": "No Key"}}}}
 ```
 
-Khóa chính là phần schema duy nhất, và item nào cũng phải có nó.
+Khóa chính là phần schema duy nhất, và item nào cũng phải có nó. Trong trình duyệt, dynoxide báo thiếu khóa `isbn`; AWS cũng trả `ValidationException`, câu chữ có thể khác.
 
 Ghi số bằng nhãn `S`:
 
@@ -128,7 +136,7 @@ Ghi số bằng nhãn `S`:
 {"op": "PutItem", "input": {"TableName": "Books", "Item": {"isbn": {"S": "978-0-07"}, "price": {"N": "160000"}}}}
 ```
 
-Chuỗi `"160000"` đứng trước chuỗi `"88000"` khi so, nên lọc hay sắp theo giá sẽ sai.
+Chuỗi `"160000"` đứng trước chuỗi `"88000"` khi so, nên lọc hay sắp theo giá sẽ sai. Bản sai vẫn được ghi im lặng, vì DynamoDB chỉ ép kiểu cho thuộc tính khóa; hãy kiểm kiểu ở code trước khi ghi.
 
 ## Tóm tắt
 
@@ -150,6 +158,8 @@ DynamoDB stores data in **tables**. A table holds **items**, much like rows. Eac
 A table declares no columns. When you create it you declare only the **primary key**: the name and type of the key attributes. Every other attribute belongs to the item that carries it. So two books in the `Books` table can differ: one has `tags`, the other does not.
 
 The question changes too. In SQL you ask "every row that matches X". In DynamoDB you ask "give me the item with this key" or "every item with this partition key". The next lesson is about keys.
+
+Many people think "schemaless" means no design is needed. In fact the schema moves into your code: the application decides which item carries which attributes and of what type, and DynamoDB checks nothing beyond the key attributes. Two pieces of code that write `price` with two different type tags both succeed; the mistake shows only when you read or compare. That is why teams usually keep one description of each item in their code and check the data there before writing.
 
 In the labs the sample data is written as plain JSON so it is easy to read. The requests you write are still DynamoDB JSON with type tags, exactly what a low-level SDK sends, wrapped in `{"op": …, "input": …}`.
 
@@ -173,17 +183,23 @@ A small `Books` table with two books. Book `978-0-04` has `tags`:
 {"op": "GetItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-04"}}}}
 ```
 
+The response holds one `Item` with four attributes: `isbn`, `title`, `price` and the `tags` list. The read costs 0.5 RCU, the figure the engine returns.
+
 Book `978-0-05` has no `tags`, and the table does not mind:
 
 ```json
 {"op": "GetItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-05"}}}}
 ```
 
+This item has only three attributes. There is no empty `tags` cell: an absent attribute is simply not in the item.
+
 Add a book with a new attribute `pages` without changing the table:
 
 ```json
 {"op": "PutItem", "input": {"TableName": "Books", "Item": {"isbn": {"S": "978-0-06"}, "title": {"S": "Small Items Fast"}, "pages": {"N": "212"}}}}
 ```
+
+The table now holds three books, and only the new one carries `pages`. Nothing like `ALTER TABLE` is needed; the write costs 1 WCU.
 
 ## Common mistakes
 
@@ -194,7 +210,7 @@ Leaving out the key attribute, thinking a schemaless table takes any attributes:
 {"op": "PutItem", "input": {"TableName": "Books", "Item": {"title": {"S": "No Key"}}}}
 ```
 
-The primary key is the only schema there is, and every item must carry it.
+The primary key is the only schema there is, and every item must carry it. In the browser, dynoxide reports the missing key `isbn`; AWS also returns a `ValidationException`, possibly worded differently.
 
 Writing a number with the `S` tag:
 
@@ -208,7 +224,7 @@ Writing a number with the `S` tag:
 {"op": "PutItem", "input": {"TableName": "Books", "Item": {"isbn": {"S": "978-0-07"}, "price": {"N": "160000"}}}}
 ```
 
-The string `"160000"` sorts before the string `"88000"`, so filtering or sorting by price goes wrong.
+The string `"160000"` sorts before the string `"88000"`, so filtering or sorting by price goes wrong. The wrong version is still written without a word, because DynamoDB enforces types only on key attributes; check types in your code before writing.
 
 ## Recap
 

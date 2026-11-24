@@ -234,7 +234,7 @@ Phản hồi cho biết hai con số:
 
 `Select: "COUNT"` chỉ trả con số, nhưng vẫn phải đọc từng item, nên giá không đổi.
 
-Bảng 120 item thì `Scan` đắt gấp 30 lần `Query` cho cùng 4 đơn. Bảng 10 triệu item thì `Scan` phải phân trang qua hàng nghìn lần gọi 1 MB. Scan vẫn có chỗ dùng: bảng nhỏ, việc chạy một lần, xuất dữ liệu. Với câu hỏi lặp lại, hãy thiết kế khóa (hoặc index (chỉ mục) ở L3) để thành `Query`.
+Bảng 120 item thì `Scan` đọc nhiều gấp 30 lần `Query` cho cùng 4 đơn. Bảng 10 triệu item thì `Scan` phải phân trang qua hàng nghìn lần gọi 1 MB. Scan vẫn có chỗ dùng: bảng nhỏ, việc chạy một lần, xuất dữ liệu. Với câu hỏi lặp lại, hãy thiết kế khóa (hoặc index (chỉ mục) ở L3) để thành `Query`.
 
 ## Cú pháp
 
@@ -261,6 +261,14 @@ Chỉ đếm, vẫn đọc 4 item:
 {"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-05"}}, "Select": "COUNT"}}
 ```
 
+`Count` và `ScannedCount` cùng là 4, giá 0.5 RCU như khi lấy cả item.
+
+Bộ lọc trên `status` áp sau khi đọc: `Count` 3 (đơn `DELIVERED` bị bỏ), `ScannedCount` vẫn 4:
+
+```json
+{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "FilterExpression": "#s = :n", "ExpressionAttributeNames": {"#s": "status"}, "ExpressionAttributeValues": {":c": {"S": "C-12"}, ":n": {"S": "SHIPPED"}}}}
+```
+
 So hai request trên cùng 4 đơn của `C-12`:
 
 ```text
@@ -277,6 +285,8 @@ Scan:  Count 4, ScannedCount 120
 {"op": "Scan", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-12"}}}}
 ```
 
+Theo tài liệu API, `Scan` không có tham số `KeyConditionExpression`. Dynoxide bỏ qua tham số lạ đó và từ chối vì `ExpressionAttributeValues` không có biểu thức nào dùng; bỏ cả hai thì nó lặng lẽ Scan cả bảng. Điều kiện của `Scan` luôn đi vào `FilterExpression`.
+
 Đếm đơn của một khách bằng `Scan` vì "chỉ lấy con số":
 
 ```json
@@ -289,9 +299,11 @@ Scan:  Count 4, ScannedCount 120
 {"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-12"}}, "Select": "COUNT"}}
 ```
 
+Engine ghi 1 RCU cho Scan, 0.5 cho Query. Trên bảng nhỏ này chênh lệch capacity còn nhỏ vì capacity tính theo 4 KB dữ liệu đọc, nhưng `ScannedCount` 120 so với 4 cho thấy Scan tăng theo cả bảng.
+
 ## Thực hành
 
-Bảng `Orders` có 120 đơn. Mỗi bước có điều kiện về `Count` và `ScannedCount`: đọc chúng dưới kết quả của bước.
+Bảng `Orders` có 120 đơn. Bước 1 có thanh hiệu năng: một `Scan` ra cùng 4 đơn vẫn không đạt. Mỗi bước có điều kiện về `Count` và `ScannedCount`: đọc chúng dưới kết quả của bước.
 
 ## Tóm tắt
 
@@ -318,7 +330,7 @@ The response carries two numbers:
 
 `Select: "COUNT"` returns only the number, but each item still has to be read, so the price is the same.
 
-With 120 items a `Scan` costs 30 times more than a `Query` for the same 4 orders. With 10 million items a `Scan` has to page through thousands of 1 MB calls. Scan still has its uses: small tables, one-off jobs, exports. For a question you ask again and again, design the key (or an index, in L3) so that it becomes a `Query`.
+With 120 items a `Scan` reads 30 times more items than a `Query` for the same 4 orders. With 10 million items a `Scan` has to page through thousands of 1 MB calls. Scan still has its uses: small tables, one-off jobs, exports. For a question you ask again and again, design the key (or an index, in L3) so that it becomes a `Query`.
 
 ## Syntax
 
@@ -345,6 +357,14 @@ Only the count, still 4 items read:
 {"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-05"}}, "Select": "COUNT"}}
 ```
 
+`Count` and `ScannedCount` are both 4, at 0.5 RCU, as when the items themselves are returned.
+
+A filter on `status` applies after the read: `Count` 3 (the `DELIVERED` order is dropped), `ScannedCount` still 4:
+
+```json
+{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "FilterExpression": "#s = :n", "ExpressionAttributeNames": {"#s": "status"}, "ExpressionAttributeValues": {":c": {"S": "C-12"}, ":n": {"S": "SHIPPED"}}}}
+```
+
 The two requests compared on the same 4 orders of `C-12`:
 
 ```text
@@ -361,6 +381,8 @@ Giving a `Scan` a key condition:
 {"op": "Scan", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-12"}}}}
 ```
 
+According to the API reference, `Scan` has no `KeyConditionExpression` parameter. Dynoxide ignores that unknown parameter and refuses because no expression uses the `ExpressionAttributeValues`; drop both and it quietly scans the whole table. A `Scan` condition always goes into a `FilterExpression`.
+
 Counting one customer's orders with a `Scan` because "it only returns a number":
 
 ```json
@@ -373,9 +395,11 @@ Counting one customer's orders with a `Scan` because "it only returns a number":
 {"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-12"}}, "Select": "COUNT"}}
 ```
 
+The engine records 1 RCU for the Scan and 0.5 for the Query. On this small table the capacity gap is small because capacity counts 4 KB blocks of data read, but a `ScannedCount` of 120 against 4 shows the Scan grows with the whole table.
+
 ## Practice
 
-Table `Orders` holds 120 orders. Each step has conditions on `Count` and `ScannedCount`: read them under the step's result.
+Table `Orders` holds 120 orders. Step 1 has a performance bar: a `Scan` that returns the same 4 orders still does not pass. Each step has conditions on `Count` and `ScannedCount`: read them under the step's result.
 
 ## Recap
 

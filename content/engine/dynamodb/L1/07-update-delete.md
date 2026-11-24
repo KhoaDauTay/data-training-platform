@@ -138,11 +138,15 @@ Hai điều khác SQL:
 {"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-01"}}, "UpdateExpression": "SET price = :p, stock = :s", "ExpressionAttributeValues": {":p": {"N": "99000"}, ":s": {"N": "4"}}, "ReturnValues": "ALL_NEW"}}
 ```
 
+Phản hồi `ALL_NEW` là cả item sau khi sửa: `price` 99000, `stock` 4, các thuộc tính khác giữ nguyên. Một request, hai thuộc tính, vẫn chỉ 1 WCU.
+
 Xóa cuốn `978-0-08` và giữ lại bản đã xóa:
 
 ```json
 {"op": "DeleteItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-08"}}, "ReturnValues": "ALL_OLD"}}
 ```
+
+Bảng còn bảy cuốn, và phản hồi kèm bản đã xóa của cuốn "Eventually": đủ để hoàn tác bằng một `PutItem` nếu xóa nhầm.
 
 ## Lỗi hay gặp
 
@@ -152,6 +156,8 @@ Viết giá trị thẳng vào biểu thức như SQL:
 // ERROR ValidationException
 {"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-03"}}, "UpdateExpression": "SET stock = 25"}}
 ```
+
+Biểu thức chỉ nhận tên thuộc tính và chỗ giữ chỗ, không nhận hằng số, nên dynoxide báo lỗi cú pháp ngay ở `25`. Đưa giá trị vào `ExpressionAttributeValues` dưới tên `:s`.
 
 Gõ sai khóa: không có lỗi, mà có một item mới:
 
@@ -165,9 +171,11 @@ Gõ sai khóa: không có lỗi, mà có một item mới:
 {"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-03"}}, "UpdateExpression": "SET stock = :s", "ExpressionAttributeValues": {":s": {"N": "25"}}}}
 ```
 
+Bản sai để lại item mới `978-0-3` chỉ có `stock` 25, còn cuốn `978-0-03` vẫn `stock` 0. Bảng có thêm một item rác mà không ai thấy lỗi. Muốn `UpdateItem` từ chối khóa chưa có, thêm điều kiện `attribute_exists` (L2).
+
 ## Thực hành
 
-Ba bước độc lập, mỗi bước chạy trên dữ liệu gốc. Bước được chấm bằng trạng thái bảng sau khi ghi.
+Ba bước độc lập, mỗi bước chạy trên dữ liệu gốc. Bước được chấm bằng trạng thái bảng sau khi ghi. Bước 1 sửa tồn kho và xin bản mới, bước 2 dùng chính tính upsert để tạo một item chưa có, bước 3 xóa một cuốn và xin bản cũ. Bước 2 cho thấy mặt tốt của điều vừa là bẫy ở trên.
 
 ## Tóm tắt
 
@@ -216,11 +224,15 @@ Change the price and stock of `978-0-01` in one command and see the new image:
 {"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-01"}}, "UpdateExpression": "SET price = :p, stock = :s", "ExpressionAttributeValues": {":p": {"N": "99000"}, ":s": {"N": "4"}}, "ReturnValues": "ALL_NEW"}}
 ```
 
+The `ALL_NEW` response is the whole item after the change: `price` 99000, `stock` 4, every other attribute unchanged. One request, two attributes, still only 1 WCU.
+
 Delete book `978-0-08` and keep the deleted image:
 
 ```json
 {"op": "DeleteItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-08"}}, "ReturnValues": "ALL_OLD"}}
 ```
+
+The table holds seven books, and the response carries the deleted image of "Eventually": enough to undo with a `PutItem` if it was a mistake.
 
 ## Common mistakes
 
@@ -230,6 +242,8 @@ Writing the value straight into the expression, as in SQL:
 // ERROR ValidationException
 {"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-03"}}, "UpdateExpression": "SET stock = 25"}}
 ```
+
+An expression takes attribute names and placeholders, not literals, so dynoxide reports a syntax error right at `25`. Put the value in `ExpressionAttributeValues` under the name `:s`.
 
 Mistyping the key: no error, but a new item:
 
@@ -243,9 +257,11 @@ Mistyping the key: no error, but a new item:
 {"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-03"}}, "UpdateExpression": "SET stock = :s", "ExpressionAttributeValues": {":s": {"N": "25"}}}}
 ```
 
+The wrong version leaves a new item `978-0-3` with only `stock` 25, while book `978-0-03` still has `stock` 0. The table gains a junk item and nobody sees an error. To make `UpdateItem` refuse a key that does not exist yet, add an `attribute_exists` condition (L2).
+
 ## Practice
 
-The three steps are independent; each runs on the original data. A step is graded by the table's state after the write.
+The three steps are independent; each runs on the original data. A step is graded by the table's state after the write. Step 1 changes the stock and asks for the new image, step 2 uses the upsert itself to create a missing item, step 3 deletes a book and asks for the old image. Step 2 shows the good side of what was a trap above.
 
 ## Recap
 
