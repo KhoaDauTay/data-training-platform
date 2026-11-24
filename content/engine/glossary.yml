@@ -1082,17 +1082,6 @@
   vi: "Policy lọc dòng mỗi role thấy (`USING`) và được ghi (`WITH CHECK`); permissive cộng gộp, restrictive phải thỏa tất cả. Chủ bảng bỏ qua trừ khi `FORCE`."
   en: "Policies that filter the rows a role can see (`USING`) and write (`WITH CHECK`); permissive ones combine with OR, restrictive ones must all pass. The table owner bypasses them unless `FORCE` is set."
   doc: "https://www.postgresql.org/docs/18/ddl-rowsecurity.html"
-- id: tenant
-  term: tenant
-  engines: [postgres]
-  level: L1
-  keep_en: true
-  vi_term: "tenant"
-  match: ["tenant", "multi-tenant"]
-  avoid: "người thuê nhà"
-  vi: "Một khách hàng (một công ty, một người bán) có dữ liệu phải tách khỏi khách khác trong cùng hệ thống; ở bảng dùng chung, mỗi dòng mang `tenant_id`."
-  en: "One customer (a company, a seller) whose data must be kept apart from the other customers of the same system; in shared tables every row carries `tenant_id`."
-  doc: "https://www.postgresql.org/docs/18/ddl-rowsecurity.html"
 - id: noisy-neighbour
   term: noisy neighbour
   engines: [postgres]

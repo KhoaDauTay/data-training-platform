@@ -141,10 +141,12 @@ Quét mọi bảng có `tenant_id`:
 
 ```sql
 SELECT c.table_name::text,
-  (xpath('/row/n/text()', query_to_xml(
-    format('SELECT count(*) AS n FROM %I
-      WHERE tenant_id = 7', c.table_name),
-    false, true, '')))[1]::text::int AS n
+  (xpath('/row/n/text()',
+    query_to_xml(format(
+      'SELECT count(*) AS n FROM %I
+       WHERE tenant_id = 7',
+      c.table_name), false, true, '')
+  ))[1]::text::int AS n
 FROM information_schema.columns c
 WHERE c.column_name = 'tenant_id'
   AND c.table_schema = 'public'
@@ -154,15 +156,19 @@ ORDER BY 1;
 `payouts` còn 3 dòng. Khách lớn có phân vùng riêng thì tách ra:
 
 ```sql
-CREATE TABLE events (tenant_id int, id int)
+CREATE TABLE events (
+  tenant_id int, id int)
   PARTITION BY LIST (tenant_id);
-CREATE TABLE events_t5 PARTITION OF events
+CREATE TABLE events_t5
+  PARTITION OF events
   FOR VALUES IN (5);
-CREATE TABLE events_rest PARTITION OF events
-  DEFAULT;
+CREATE TABLE events_rest
+  PARTITION OF events DEFAULT;
 INSERT INTO events
-  SELECT g % 8 + 1, g FROM generate_series(1, 80) g;
-ALTER TABLE events DETACH PARTITION events_t5;
+  SELECT g % 8 + 1, g
+  FROM generate_series(1, 80) g;
+ALTER TABLE events
+  DETACH PARTITION events_t5;
 SELECT count(*) AS t5_left FROM events
 WHERE tenant_id = 5;
 ```
@@ -174,7 +180,7 @@ WHERE tenant_id = 5;
 Kiểm bằng những bảng mình nhớ:
 
 ```sql
--- WRONG: proof on the tables you remember
+-- WRONG: only the tables you remember
 SELECT count(*) AS rows_left
 FROM seller_orders WHERE tenant_id = 7;
 ```
@@ -261,10 +267,12 @@ Scan every table with `tenant_id`:
 
 ```sql
 SELECT c.table_name::text,
-  (xpath('/row/n/text()', query_to_xml(
-    format('SELECT count(*) AS n FROM %I
-      WHERE tenant_id = 7', c.table_name),
-    false, true, '')))[1]::text::int AS n
+  (xpath('/row/n/text()',
+    query_to_xml(format(
+      'SELECT count(*) AS n FROM %I
+       WHERE tenant_id = 7',
+      c.table_name), false, true, '')
+  ))[1]::text::int AS n
 FROM information_schema.columns c
 WHERE c.column_name = 'tenant_id'
   AND c.table_schema = 'public'
@@ -274,15 +282,19 @@ ORDER BY 1;
 `payouts` still holds 3 rows. A big tenant with its own partition is detached:
 
 ```sql
-CREATE TABLE events (tenant_id int, id int)
+CREATE TABLE events (
+  tenant_id int, id int)
   PARTITION BY LIST (tenant_id);
-CREATE TABLE events_t5 PARTITION OF events
+CREATE TABLE events_t5
+  PARTITION OF events
   FOR VALUES IN (5);
-CREATE TABLE events_rest PARTITION OF events
-  DEFAULT;
+CREATE TABLE events_rest
+  PARTITION OF events DEFAULT;
 INSERT INTO events
-  SELECT g % 8 + 1, g FROM generate_series(1, 80) g;
-ALTER TABLE events DETACH PARTITION events_t5;
+  SELECT g % 8 + 1, g
+  FROM generate_series(1, 80) g;
+ALTER TABLE events
+  DETACH PARTITION events_t5;
 SELECT count(*) AS t5_left FROM events
 WHERE tenant_id = 5;
 ```
@@ -294,7 +306,7 @@ WHERE tenant_id = 5;
 Checking the tables you remember:
 
 ```sql
--- WRONG: proof on the tables you remember
+-- WRONG: only the tables you remember
 SELECT count(*) AS rows_left
 FROM seller_orders WHERE tenant_id = 7;
 ```

@@ -108,7 +108,8 @@ Mỗi phân vùng giữ bao nhiêu đơn:
 ```sql
 SELECT tableoid::regclass::text AS part,
   count(*) AS n
-FROM seller_orders GROUP BY 1 ORDER BY 1;
+FROM seller_orders
+GROUP BY 1 ORDER BY 1;
 ```
 
 Câu của khách 1 chỉ đọc phân vùng của khách 1:
@@ -133,10 +134,13 @@ HASH theo khách với ít khách:
 CREATE TABLE h (tenant_id int NOT NULL)
   PARTITION BY HASH (tenant_id);
 CREATE TABLE h0 PARTITION OF h
-  FOR VALUES WITH (MODULUS 2, REMAINDER 0);
+  FOR VALUES WITH (
+    MODULUS 2, REMAINDER 0);
 CREATE TABLE h1 PARTITION OF h
-  FOR VALUES WITH (MODULUS 2, REMAINDER 1);
-INSERT INTO h SELECT generate_series(1, 10);
+  FOR VALUES WITH (
+    MODULUS 2, REMAINDER 1);
+INSERT INTO h
+  SELECT generate_series(1, 10);
 SELECT tableoid::regclass::text AS part,
   count(*) AS tenants
 FROM h GROUP BY 1 ORDER BY 1;
@@ -155,7 +159,7 @@ CREATE TABLE seller_orders_t3
   FOR VALUES IN (3);
 ```
 
-Postgres không tự chuyển dòng ra khỏi `DEFAULT`. Tách `DEFAULT` ra, tạo phân vùng mới, chép dòng của khách 3 sang, rồi gắn lại; hoặc tạo phân vùng trước khi khách có dữ liệu. Khóa chính thiếu khóa phân vùng:
+Postgres không tự chuyển dòng ra khỏi `DEFAULT`. Tách `DEFAULT` ra, tạo phân vùng mới, chép dòng của khách 3 sang rồi xóa chúng khỏi bảng vừa tách, rồi mới gắn lại (còn sót một dòng là lệnh gắn bị từ chối); hoặc tạo phân vùng trước khi khách có dữ liệu. Khóa chính thiếu khóa phân vùng:
 
 ```sql
 -- ERROR 0A000
@@ -168,7 +172,7 @@ CREATE TABLE bad_orders (
 Bọc cột khóa trong biểu thức:
 
 ```sql
--- WRONG: an expression on the key, no pruning
+-- WRONG: the key inside an expression
 EXPLAIN (COSTS OFF)
 SELECT count(*) FROM seller_orders
 WHERE tenant_id + 0 = 1;
@@ -232,7 +236,8 @@ How many orders each partition holds:
 ```sql
 SELECT tableoid::regclass::text AS part,
   count(*) AS n
-FROM seller_orders GROUP BY 1 ORDER BY 1;
+FROM seller_orders
+GROUP BY 1 ORDER BY 1;
 ```
 
 Tenant 1's query reads only tenant 1's partition:
@@ -257,10 +262,13 @@ HASH on the tenant with few tenants:
 CREATE TABLE h (tenant_id int NOT NULL)
   PARTITION BY HASH (tenant_id);
 CREATE TABLE h0 PARTITION OF h
-  FOR VALUES WITH (MODULUS 2, REMAINDER 0);
+  FOR VALUES WITH (
+    MODULUS 2, REMAINDER 0);
 CREATE TABLE h1 PARTITION OF h
-  FOR VALUES WITH (MODULUS 2, REMAINDER 1);
-INSERT INTO h SELECT generate_series(1, 10);
+  FOR VALUES WITH (
+    MODULUS 2, REMAINDER 1);
+INSERT INTO h
+  SELECT generate_series(1, 10);
 SELECT tableoid::regclass::text AS part,
   count(*) AS tenants
 FROM h GROUP BY 1 ORDER BY 1;
@@ -279,7 +287,7 @@ CREATE TABLE seller_orders_t3
   FOR VALUES IN (3);
 ```
 
-Postgres does not move rows out of `DEFAULT` by itself. Detach `DEFAULT`, create the new partition, copy tenant 3's rows over, then attach it again; or create the partition before the tenant has data. A primary key without the partition key:
+Postgres does not move rows out of `DEFAULT` by itself. Detach `DEFAULT`, create the new partition, copy tenant 3's rows over and delete them from the detached table, and only then attach it again (one row left behind and the attach is refused); or create the partition before the tenant has data. A primary key without the partition key:
 
 ```sql
 -- ERROR 0A000
@@ -292,7 +300,7 @@ CREATE TABLE bad_orders (
 Wrapping the key column in an expression:
 
 ```sql
--- WRONG: an expression on the key, no pruning
+-- WRONG: the key inside an expression
 EXPLAIN (COSTS OFF)
 SELECT count(*) FROM seller_orders
 WHERE tenant_id + 0 = 1;

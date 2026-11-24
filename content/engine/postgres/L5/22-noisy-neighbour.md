@@ -118,7 +118,8 @@ CREATE TRIGGER name BEFORE INSERT ON t
 Hai người bán đọc nhiều nhất:
 
 ```sql
-SELECT tenant_id, sum(rows_read) AS rows_read
+SELECT tenant_id,
+  sum(rows_read) AS rows_read
 FROM usage_log
 GROUP BY tenant_id
 ORDER BY rows_read DESC
@@ -133,18 +134,20 @@ RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF (SELECT count(*) FROM products
       WHERE tenant_id = NEW.tenant_id)
-     >= (SELECT row_quota FROM plans
-         WHERE tenant_id = NEW.tenant_id)
+   >= (SELECT row_quota FROM plans
+       WHERE tenant_id = NEW.tenant_id)
   THEN
-    RAISE EXCEPTION 'tenant % over quota',
-      NEW.tenant_id USING ERRCODE = 'P0001';
+    RAISE EXCEPTION 'over quota: %',
+      NEW.tenant_id
+      USING ERRCODE = 'P0001';
   END IF;
   RETURN NEW;
 END $$;
 CREATE TRIGGER products_quota
   BEFORE INSERT ON products FOR EACH ROW
   EXECUTE FUNCTION check_row_quota();
-INSERT INTO products VALUES (3, 200, 'lamp')
+INSERT INTO products
+  VALUES (3, 200, 'lamp')
 RETURNING tenant_id, id;
 ```
 
@@ -159,16 +162,18 @@ SELECT r.rolname::text, r.rolconnlimit,
 FROM pg_roles r
 LEFT JOIN pg_db_role_setting s
   ON s.setrole = r.oid
-WHERE r.rolname IN ('app_basic', 'app_pro')
+WHERE r.rolname IN
+  ('app_basic', 'app_pro')
 ORDER BY 1;
 ```
 
 Trên server thật, một câu chạy quá 2 giây của `app_basic` bị hủy. PGlite không làm điều này, nên đây chỉ là chữ:
 
 ```text
--- a real server, a session of app_basic:
+-- real server, as app_basic:
 SELECT pg_sleep(5);
-ERROR:  canceling statement due to statement timeout
+ERROR:  canceling statement due to
+        statement timeout
 ```
 
 ## Lỗi hay gặp
@@ -184,7 +189,7 @@ INSERT INTO products
 Đây là điều bạn muốn: ứng dụng bắt `P0001` và mời họ nâng gói. Đo tải bằng số câu:
 
 ```sql
--- WRONG: the busiest tenant by query count
+-- WRONG: busiest by query count
 SELECT tenant_id, sum(queries) AS load
 FROM usage_log GROUP BY tenant_id
 ORDER BY load DESC LIMIT 1;
@@ -245,7 +250,8 @@ CREATE TRIGGER name BEFORE INSERT ON t
 The two sellers that read the most:
 
 ```sql
-SELECT tenant_id, sum(rows_read) AS rows_read
+SELECT tenant_id,
+  sum(rows_read) AS rows_read
 FROM usage_log
 GROUP BY tenant_id
 ORDER BY rows_read DESC
@@ -260,18 +266,20 @@ RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF (SELECT count(*) FROM products
       WHERE tenant_id = NEW.tenant_id)
-     >= (SELECT row_quota FROM plans
-         WHERE tenant_id = NEW.tenant_id)
+   >= (SELECT row_quota FROM plans
+       WHERE tenant_id = NEW.tenant_id)
   THEN
-    RAISE EXCEPTION 'tenant % over quota',
-      NEW.tenant_id USING ERRCODE = 'P0001';
+    RAISE EXCEPTION 'over quota: %',
+      NEW.tenant_id
+      USING ERRCODE = 'P0001';
   END IF;
   RETURN NEW;
 END $$;
 CREATE TRIGGER products_quota
   BEFORE INSERT ON products FOR EACH ROW
   EXECUTE FUNCTION check_row_quota();
-INSERT INTO products VALUES (3, 200, 'lamp')
+INSERT INTO products
+  VALUES (3, 200, 'lamp')
 RETURNING tenant_id, id;
 ```
 
@@ -286,16 +294,18 @@ SELECT r.rolname::text, r.rolconnlimit,
 FROM pg_roles r
 LEFT JOIN pg_db_role_setting s
   ON s.setrole = r.oid
-WHERE r.rolname IN ('app_basic', 'app_pro')
+WHERE r.rolname IN
+  ('app_basic', 'app_pro')
 ORDER BY 1;
 ```
 
 On a real server, a statement of `app_basic` running past 2 seconds is cancelled. PGlite does not do this, so this is text only:
 
 ```text
--- a real server, a session of app_basic:
+-- real server, as app_basic:
 SELECT pg_sleep(5);
-ERROR:  canceling statement due to statement timeout
+ERROR:  canceling statement due to
+        statement timeout
 ```
 
 ## Common mistakes
@@ -311,7 +321,7 @@ INSERT INTO products
 That is what you want: the application catches `P0001` and offers an upgrade. Measuring load by query count:
 
 ```sql
--- WRONG: the busiest tenant by query count
+-- WRONG: busiest by query count
 SELECT tenant_id, sum(queries) AS load
 FROM usage_log GROUP BY tenant_id
 ORDER BY load DESC LIMIT 1;

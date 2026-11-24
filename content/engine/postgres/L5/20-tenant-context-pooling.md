@@ -108,8 +108,8 @@ SET LOCAL app.tenant_id = '3';
 --   'app.tenant_id', '3', true);
 COMMIT;
 USING (tenant_id = NULLIF(
-  current_setting('app.tenant_id', true),
-  '')::int)
+  current_setting(
+    'app.tenant_id', true), '')::int)
 ```
 
 - `SET LOCAL` / `set_config(…, true)`: tới hết transaction.
@@ -123,8 +123,8 @@ Policy đóng an toàn, chưa yêu cầu nào đặt khách:
 ```sql
 CREATE POLICY seller_rows ON invoices
   TO app USING (tenant_id = NULLIF(
-    current_setting('app.tenant_id', true),
-    '')::int);
+    current_setting(
+      'app.tenant_id', true), '')::int);
 SET ROLE app;
 SELECT count(*) AS seen FROM invoices;
 RESET ROLE;
@@ -165,7 +165,8 @@ Sau `COMMIT`, yêu cầu kế tiếp không còn khách nào:
 
 ```sql
 SET ROLE app;
-SELECT current_setting('app.tenant_id', true)
+SELECT current_setting(
+    'app.tenant_id', true)
   AS tenant, count(*) AS seen
 FROM invoices;
 RESET ROLE;
@@ -193,18 +194,20 @@ SELECT current_setting('app.tenantid');
 Không có `true` thì lỗi ồn ào, dễ thấy. Cùng lỗi gõ đó với `true` thì im lặng mãi mãi:
 
 ```sql
--- WRONG: a typo with missing_ok = true is silent
+-- WRONG: a silent typo (missing_ok)
 SET app.tenant_id = '2';
 SELECT count(*) AS seen FROM invoices
-WHERE tenant_id = NULLIF(current_setting(
-  'app.tenantid', true), '')::int;
+WHERE tenant_id = NULLIF(
+  current_setting(
+    'app.tenantid', true), '')::int;
 ```
 
 ```sql
 -- FIX: one name, written once
 SELECT count(*) AS seen FROM invoices
-WHERE tenant_id = NULLIF(current_setting(
-  'app.tenant_id', true), '')::int;
+WHERE tenant_id = NULLIF(
+  current_setting(
+    'app.tenant_id', true), '')::int;
 ```
 
 Câu sai thấy 0, câu đúng thấy 10. Giữ tên thiết lập ở một chỗ duy nhất trong code.
@@ -243,8 +246,8 @@ SET LOCAL app.tenant_id = '3';
 --   'app.tenant_id', '3', true);
 COMMIT;
 USING (tenant_id = NULLIF(
-  current_setting('app.tenant_id', true),
-  '')::int)
+  current_setting(
+    'app.tenant_id', true), '')::int)
 ```
 
 - `SET LOCAL` / `set_config(…, true)`: until the transaction ends.
@@ -258,8 +261,8 @@ A policy that fails closed, before any request has set a tenant:
 ```sql
 CREATE POLICY seller_rows ON invoices
   TO app USING (tenant_id = NULLIF(
-    current_setting('app.tenant_id', true),
-    '')::int);
+    current_setting(
+      'app.tenant_id', true), '')::int);
 SET ROLE app;
 SELECT count(*) AS seen FROM invoices;
 RESET ROLE;
@@ -300,7 +303,8 @@ After `COMMIT`, the next request holds no tenant:
 
 ```sql
 SET ROLE app;
-SELECT current_setting('app.tenant_id', true)
+SELECT current_setting(
+    'app.tenant_id', true)
   AS tenant, count(*) AS seen
 FROM invoices;
 RESET ROLE;
@@ -328,18 +332,20 @@ SELECT current_setting('app.tenantid');
 Without `true` the failure is loud and easy to spot. The same typo with `true` stays silent forever:
 
 ```sql
--- WRONG: a typo with missing_ok = true is silent
+-- WRONG: a silent typo (missing_ok)
 SET app.tenant_id = '2';
 SELECT count(*) AS seen FROM invoices
-WHERE tenant_id = NULLIF(current_setting(
-  'app.tenantid', true), '')::int;
+WHERE tenant_id = NULLIF(
+  current_setting(
+    'app.tenantid', true), '')::int;
 ```
 
 ```sql
 -- FIX: one name, written once
 SELECT count(*) AS seen FROM invoices
-WHERE tenant_id = NULLIF(current_setting(
-  'app.tenant_id', true), '')::int;
+WHERE tenant_id = NULLIF(
+  current_setting(
+    'app.tenant_id', true), '')::int;
 ```
 
 The wrong one sees 0, the fixed one 10. Keep the setting name in one single place in the code.

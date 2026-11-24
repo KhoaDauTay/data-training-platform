@@ -154,7 +154,8 @@ CREATE POLICY live_only ON tickets
   AS RESTRICTIVE FOR SELECT TO app
   USING (NOT archived);
 SET ROLE app;
-SELECT count(*) AS app_sees FROM tickets;
+SELECT count(*) AS app_sees
+FROM tickets;
 RESET ROLE;
 ```
 
@@ -197,11 +198,12 @@ RESET ROLE;
 Thêm một policy permissive "cho đội hỗ trợ":
 
 ```sql
--- WRONG: a second PERMISSIVE policy is OR-ed in
+-- WRONG: one more PERMISSIVE policy
 CREATE POLICY support_read ON tickets
   FOR SELECT TO app USING (true);
 SET ROLE app;
-SELECT count(*) AS app_sees FROM tickets;
+SELECT count(*) AS app_sees
+FROM tickets;
 RESET ROLE;
 ```
 
@@ -210,14 +212,15 @@ RESET ROLE;
 ALTER POLICY support_read ON tickets
   TO support;
 SET ROLE app;
-SELECT count(*) AS app_sees FROM tickets;
+SELECT count(*) AS app_sees
+FROM tickets;
 RESET ROLE;
 ```
 
 Câu sai thấy 25 vé của cả ba khách, câu đúng còn 9. Policy `FOR INSERT` không có điều kiện khách:
 
 ```sql
--- WRONG: an INSERT policy with no tenant check
+-- WRONG: INSERT policy, no tenant
 CREATE POLICY import_rows ON tickets
   FOR INSERT TO app WITH CHECK (true);
 SET ROLE app;
@@ -230,11 +233,12 @@ WHERE title = 'pushed';
 
 ```sql
 -- FIX: check the tenant on every write
-DELETE FROM tickets WHERE title = 'pushed';
+DELETE FROM tickets
+WHERE title = 'pushed';
 ALTER POLICY import_rows ON tickets
   WITH CHECK (tenant_id = NULLIF(
-    current_setting('app.tenant_id', true),
-    '')::int);
+    current_setting(
+      'app.tenant_id', true), '')::int);
 SELECT count(*) AS pushed FROM tickets
 WHERE title = 'pushed';
 ```
@@ -242,7 +246,7 @@ WHERE title = 'pushed';
 Khách 2 vừa ghi được vé vào khách 3; sửa xong thì không còn. View thường đọc bằng quyền của chủ view (ở đây là superuser):
 
 ```sql
--- WRONG: a plain view reads as its owner
+-- WRONG: a plain view reads as owner
 CREATE VIEW report_plain AS
   SELECT tenant_id, count(*) AS n
   FROM tickets GROUP BY tenant_id;
@@ -253,7 +257,7 @@ RESET ROLE;
 ```
 
 ```sql
--- FIX: security_invoker checks the caller
+-- FIX: security_invoker = the caller
 SET ROLE app;
 SELECT * FROM open_by_tenant;
 RESET ROLE;
@@ -332,7 +336,8 @@ CREATE POLICY live_only ON tickets
   AS RESTRICTIVE FOR SELECT TO app
   USING (NOT archived);
 SET ROLE app;
-SELECT count(*) AS app_sees FROM tickets;
+SELECT count(*) AS app_sees
+FROM tickets;
 RESET ROLE;
 ```
 
@@ -375,11 +380,12 @@ RESET ROLE;
 Adding a permissive policy "for the support team":
 
 ```sql
--- WRONG: a second PERMISSIVE policy is OR-ed in
+-- WRONG: one more PERMISSIVE policy
 CREATE POLICY support_read ON tickets
   FOR SELECT TO app USING (true);
 SET ROLE app;
-SELECT count(*) AS app_sees FROM tickets;
+SELECT count(*) AS app_sees
+FROM tickets;
 RESET ROLE;
 ```
 
@@ -388,14 +394,15 @@ RESET ROLE;
 ALTER POLICY support_read ON tickets
   TO support;
 SET ROLE app;
-SELECT count(*) AS app_sees FROM tickets;
+SELECT count(*) AS app_sees
+FROM tickets;
 RESET ROLE;
 ```
 
 The wrong one sees 25 tickets of all three tenants, the fixed one 9. A `FOR INSERT` policy with no tenant condition:
 
 ```sql
--- WRONG: an INSERT policy with no tenant check
+-- WRONG: INSERT policy, no tenant
 CREATE POLICY import_rows ON tickets
   FOR INSERT TO app WITH CHECK (true);
 SET ROLE app;
@@ -408,11 +415,12 @@ WHERE title = 'pushed';
 
 ```sql
 -- FIX: check the tenant on every write
-DELETE FROM tickets WHERE title = 'pushed';
+DELETE FROM tickets
+WHERE title = 'pushed';
 ALTER POLICY import_rows ON tickets
   WITH CHECK (tenant_id = NULLIF(
-    current_setting('app.tenant_id', true),
-    '')::int);
+    current_setting(
+      'app.tenant_id', true), '')::int);
 SELECT count(*) AS pushed FROM tickets
 WHERE title = 'pushed';
 ```
@@ -420,7 +428,7 @@ WHERE title = 'pushed';
 Tenant 2 just wrote a ticket into tenant 3; after the fix there is none. A plain view reads with its owner's rights (a superuser here):
 
 ```sql
--- WRONG: a plain view reads as its owner
+-- WRONG: a plain view reads as owner
 CREATE VIEW report_plain AS
   SELECT tenant_id, count(*) AS n
   FROM tickets GROUP BY tenant_id;
@@ -431,7 +439,7 @@ RESET ROLE;
 ```
 
 ```sql
--- FIX: security_invoker checks the caller
+-- FIX: security_invoker = the caller
 SET ROLE app;
 SELECT * FROM open_by_tenant;
 RESET ROLE;

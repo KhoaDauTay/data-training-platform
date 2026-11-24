@@ -134,7 +134,7 @@ Cả hai điều kiện nằm trong `Index Cond`.
 Đặt thời gian đứng đầu:
 
 ```sql
--- WRONG: time first, every tenant in between
+-- WRONG: time first in the index
 CREATE INDEX invoices_created_tenant_idx
   ON invoices (created_at, tenant_id);
 DROP INDEX invoices_tenant_created_idx;
@@ -251,7 +251,7 @@ Both conditions are in the `Index Cond`.
 Putting time first:
 
 ```sql
--- WRONG: time first, every tenant in between
+-- WRONG: time first in the index
 CREATE INDEX invoices_created_tenant_idx
   ON invoices (created_at, tenant_id);
 DROP INDEX invoices_tenant_created_idx;

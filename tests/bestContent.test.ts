@@ -1,4 +1,4 @@
-// BP-T (v24, L345): Best Practice cards (product-design-best-practice §4.3). Every card parses (all 130: the hidden MongoDB and
+// BP-T (v24, L345): Best Practice cards (product-design-best-practice §4.3). Every card parses (all 131: the hidden MongoDB and
 // DynamoDB tracks too); every released card's pair runs on real PGlite and shows what its `check` claims, through the same
 // judge() the page uses. `lab` pairs run on the seeded `lab` schema in BEGIN … ROLLBACK; `engine`/`engine-hb` pairs run each
 // side as its own script on a fresh database (runLabScript), so P05 (CREATE INDEX CONCURRENTLY) and S04 (inserts) start clean.
@@ -120,7 +120,7 @@ async function labSide(p: Pair, sql: string): Promise<Side> {
   }
 }
 
-describe('thẻ Best Practice: cặp Không nên / Nên chạy thật (130 thẻ phát hành)', () => {
+describe('thẻ Best Practice: cặp Không nên / Nên chạy thật (131 thẻ phát hành)', () => {
   const runnable = released.filter((c) => c.pair.runtime !== 'none' && c.pair.runtime !== 'mingo' && c.pair.runtime !== 'dynoxide');
   it('mỗi thẻ "none" là check syntax; mọi thẻ chạy được là một câu mỗi bên (trang không có splitSql, nó nằm cạnh PGlite)', () => {
     for (const c of released) if (c.pair.runtime === 'none') expect([c.id, c.pair.check]).toEqual([c.id, 'syntax']);

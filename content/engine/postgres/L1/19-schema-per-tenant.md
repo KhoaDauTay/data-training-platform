@@ -100,13 +100,15 @@ Cùng một câu, hai khách, đổi bằng `search_path`:
 
 ```sql
 SET search_path = seller_2;
-SELECT count(*) AS products FROM products;
+SELECT count(*) AS products
+FROM products;
 RESET search_path;
 ```
 
 ```sql
 SET search_path = seller_1;
-SELECT count(*) AS products FROM products;
+SELECT count(*) AS products
+FROM products;
 RESET search_path;
 ```
 
@@ -119,12 +121,14 @@ CREATE TABLE public.schema_version (
 DO $$
 DECLARE s text;
 BEGIN
-  FOR s IN SELECT nspname FROM pg_namespace
+  FOR s IN SELECT nspname
+    FROM pg_namespace
     WHERE nspname ~ '^seller_[0-9]+$'
   LOOP
     EXECUTE format(
       'ALTER TABLE %I.products
-       ADD COLUMN IF NOT EXISTS note text', s);
+       ADD COLUMN IF NOT EXISTS
+       note text', s);
     INSERT INTO public.schema_version
       VALUES (s, 2)
       ON CONFLICT (tenant_schema)
@@ -141,7 +145,8 @@ Catalog lớn theo số khách:
 SELECT n.nspname::text AS tenant_schema,
   count(*) AS relations
 FROM pg_class c
-JOIN pg_namespace n ON n.oid = c.relnamespace
+JOIN pg_namespace n
+  ON n.oid = c.relnamespace
 WHERE n.nspname ~ '^seller_[0-9]+$'
 GROUP BY 1 ORDER BY 1;
 ```
@@ -153,9 +158,10 @@ Mỗi khách đã có bảng, khóa chính và bảng TOAST; nhân với số kh
 Phiên vẫn giữ `search_path` của khách trước:
 
 ```sql
--- WRONG: seller 2's request, seller 1's path
+-- WRONG: seller 1's path left behind
 SET search_path = seller_1;
-SELECT count(*) AS products FROM products;
+SELECT count(*) AS products
+FROM products;
 ```
 
 ```sql
@@ -219,13 +225,15 @@ The same query, two tenants, switched with `search_path`:
 
 ```sql
 SET search_path = seller_2;
-SELECT count(*) AS products FROM products;
+SELECT count(*) AS products
+FROM products;
 RESET search_path;
 ```
 
 ```sql
 SET search_path = seller_1;
-SELECT count(*) AS products FROM products;
+SELECT count(*) AS products
+FROM products;
 RESET search_path;
 ```
 
@@ -238,12 +246,14 @@ CREATE TABLE public.schema_version (
 DO $$
 DECLARE s text;
 BEGIN
-  FOR s IN SELECT nspname FROM pg_namespace
+  FOR s IN SELECT nspname
+    FROM pg_namespace
     WHERE nspname ~ '^seller_[0-9]+$'
   LOOP
     EXECUTE format(
       'ALTER TABLE %I.products
-       ADD COLUMN IF NOT EXISTS note text', s);
+       ADD COLUMN IF NOT EXISTS
+       note text', s);
     INSERT INTO public.schema_version
       VALUES (s, 2)
       ON CONFLICT (tenant_schema)
@@ -260,7 +270,8 @@ The catalog grows with the tenants:
 SELECT n.nspname::text AS tenant_schema,
   count(*) AS relations
 FROM pg_class c
-JOIN pg_namespace n ON n.oid = c.relnamespace
+JOIN pg_namespace n
+  ON n.oid = c.relnamespace
 WHERE n.nspname ~ '^seller_[0-9]+$'
 GROUP BY 1 ORDER BY 1;
 ```
@@ -272,9 +283,10 @@ Each tenant already has a table, a primary key and a TOAST table; multiply by th
 The session still holds the previous tenant's `search_path`:
 
 ```sql
--- WRONG: seller 2's request, seller 1's path
+-- WRONG: seller 1's path left behind
 SET search_path = seller_1;
-SELECT count(*) AS products FROM products;
+SELECT count(*) AS products
+FROM products;
 ```
 
 ```sql

@@ -139,13 +139,16 @@ Mẫu ứng dụng: một vai trò `app`, khách hiện tại nằm trong một 
 ```sql
 CREATE ROLE app NOLOGIN;
 GRANT SELECT ON tickets TO app;
-CREATE POLICY app_rows ON tickets FOR SELECT TO app
-  USING (tenant_id = current_setting('app.tenant_id')::int);
+CREATE POLICY app_rows ON tickets
+  FOR SELECT TO app
+  USING (tenant_id = current_setting(
+    'app.tenant_id')::int);
 BEGIN;
 SET LOCAL app.tenant_id = '3';
 SET ROLE app;
-SELECT current_setting('app.tenant_id') AS tenant,
-  count(*) AS rows_seen FROM tickets;
+SELECT current_setting('app.tenant_id')
+  AS tenant, count(*) AS rows_seen
+FROM tickets;
 RESET ROLE;
 COMMIT;
 ```
@@ -262,13 +265,16 @@ The application pattern: one role `app`, the current tenant held in a session se
 ```sql
 CREATE ROLE app NOLOGIN;
 GRANT SELECT ON tickets TO app;
-CREATE POLICY app_rows ON tickets FOR SELECT TO app
-  USING (tenant_id = current_setting('app.tenant_id')::int);
+CREATE POLICY app_rows ON tickets
+  FOR SELECT TO app
+  USING (tenant_id = current_setting(
+    'app.tenant_id')::int);
 BEGIN;
 SET LOCAL app.tenant_id = '3';
 SET ROLE app;
-SELECT current_setting('app.tenant_id') AS tenant,
-  count(*) AS rows_seen FROM tickets;
+SELECT current_setting('app.tenant_id')
+  AS tenant, count(*) AS rows_seen
+FROM tickets;
 RESET ROLE;
 COMMIT;
 ```
