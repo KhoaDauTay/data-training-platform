@@ -17,10 +17,10 @@ beforeAll(async () => {
   const g = await import('../src/art/gsap');
   V.init({ h, s, getLang, reducedMotion: () => reduced, loadedGsap: () => gsapMod, loadGsap: () => void (gsapMod = g) });
   gsapMod = g;
-  for (const n of [...V.NOSQL_VIZ, ...V.PG_FLOW_VIZ]) expect(await V.loadViz(n)).toBeTypeOf('function');
+  for (const n of [...V.NOSQL_VIZ, ...V.PG_FLOW_VIZ, ...V.TENANT_VIZ]) expect(await V.loadViz(n)).toBeTypeOf('function');
 });
 
-const POSTGRES = ['pg-heap-page', 'pg-mvcc-timeline', 'pg-hot-chain', 'pg-vacuum-flow', 'pg-btree', 'pg-wal-flow', 'pg-gin-postings', 'pg-brin-ranges', 'pg-gist-boxes', 'pg-plan-tree', 'pg-lock-matrix', 'pg-isolation-anomalies', 'pg-query-path', 'pg-partition-prune', 'pg-replication'];
+const POSTGRES = ['pg-heap-page', 'pg-mvcc-timeline', 'pg-hot-chain', 'pg-vacuum-flow', 'pg-btree', 'pg-wal-flow', 'pg-gin-postings', 'pg-brin-ranges', 'pg-gist-boxes', 'pg-plan-tree', 'pg-lock-matrix', 'pg-isolation-anomalies', 'pg-query-path', 'pg-partition-prune', 'pg-replication', 'pg-rls-path'];
 const NOSQL = V.NOSQL_VIZ;
 
 /** Checks one drawn frame: finite numbers, shapes and (estimated) labels inside the viewBox. */
@@ -156,7 +156,7 @@ describe('engineViz shell', () => {
     };
     for (let i = 1; i < 4; i++) expect(draw(true, i)).toBe(draw(false, i));
     // v23 PG-VIZ: the same for the three new diagrams, every step
-    for (const name of ['pg-query-path', 'pg-partition-prune', 'pg-replication']) {
+    for (const name of ['pg-query-path', 'pg-partition-prune', 'pg-replication', 'pg-rls-path']) {
       const at = (motion: boolean, i: number): string => {
         reduced = !motion;
         const host = document.createElement('div');

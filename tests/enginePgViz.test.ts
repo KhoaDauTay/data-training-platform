@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { runLabScript } from '../src/engine/pglab/session';
 import { planNodesOf, slimPlan } from '../src/engine/viz/engineViz';
 import { PRUNE_SAMPLE, QUERY_PATH_SAMPLE, REPLICATION_SAMPLE } from '../src/engine/viz/engineVizPgFlow';
+import { RLS_PATH_SAMPLE, RLS_PATH_SETUP } from '../src/engine/viz/engineVizTenant';
 
 const ORDERS = `CREATE TABLE orders (id bigint PRIMARY KEY, status text NOT NULL, amount numeric(10,2) NOT NULL);
 INSERT INTO orders SELECT g, CASE g % 20 WHEN 0 THEN 'cancelled' WHEN 1 THEN 'new' ELSE 'paid' END, (g % 500) + 0.99 FROM generate_series(1, 20000) AS g;
@@ -55,5 +56,24 @@ describe('PG-VIZ samples = PGlite', () => {
     ok(r);
     expect(r.steps[0].rows.map(([slot_name, slot_type, active, has_restart_lsn, wal_status]) => ({ slot_name, slot_type, active, has_restart_lsn, wal_status }))).toEqual(REPLICATION_SAMPLE.slots);
     expect(r.steps[1].rows[0][0]).toBe(REPLICATION_SAMPLE.wal_level);
+  });
+
+  // v35 (L553, product-map v35 exit criterion): pg-rls-path's numbers, and "a plain SET leaks to the next borrower, SET LOCAL does not"
+  it('pg-rls-path: 30 / 10 / 8 under role app; SET LOCAL ends with the transaction, a plain SET stays on the connection', async () => {
+    const as = (sql: string) => ['SET ROLE app', sql, 'RESET ROLE'];
+    const r = await runLabScript({ setup: RLS_PATH_SETUP, steps: [
+      'SELECT count(*)::int FROM tickets', // superuser: every row
+      "SELECT count(*)::int FROM tickets WHERE tenant_id = 2",
+      'BEGIN', "SET LOCAL app.tenant_id = '2'", ...as('SELECT count(*)::int FROM tickets'), 'COMMIT',
+      "SELECT current_setting('app.tenant_id', true)", // the next borrower: '' (defined, empty), no tenant
+      "SET app.tenant_id = '2'", // request 1, plain SET
+      ...as('SELECT count(*)::int FROM tickets'), // request 2 never set a tenant, yet sees tenant 2
+    ] });
+    ok(r);
+    const n = (i: number) => r.steps[i].rows[0][0];
+    expect([n(0), n(1), n(5)]).toEqual([RLS_PATH_SAMPLE.total, RLS_PATH_SAMPLE.owned, RLS_PATH_SAMPLE.seen]);
+    expect([RLS_PATH_SAMPLE.total, RLS_PATH_SAMPLE.owned, RLS_PATH_SAMPLE.seen]).toEqual([30, 10, 8]);
+    expect(n(8)).toBe('');
+    expect(n(11)).toBe(RLS_PATH_SAMPLE.seen);
   });
 });
