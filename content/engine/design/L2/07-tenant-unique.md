@@ -1,0 +1,342 @@
+---
+id: e-ds-l2-07
+engine: design
+level: L2
+module: er-mapping
+title: Duy nhất theo từng khách hàng - UNIQUE (tenant_id, email)
+title_en: Unique per tenant - UNIQUE (tenant_id, email)
+kind: lab
+runtime: browser
+minutes: 16
+objectives:
+  - vi: Viết luật duy nhất trong phạm vi một khách hàng thay vì cho cả hệ thống.
+    en: Write a uniqueness rule scoped to one tenant instead of the whole system.
+  - vi: Làm luật đó không phân biệt hoa thường bằng index duy nhất trên biểu thức.
+    en: Make that rule case-insensitive with a unique index on an expression.
+  - vi: Dùng index duy nhất một phần cho giá trị không bắt buộc.
+    en: Use a partial unique index for an optional value.
+requires: [e-ds-l2-06]
+sources:
+  - https://www.postgresql.org/docs/18/ddl-constraints.html#DDL-CONSTRAINTS-UNIQUE-CONSTRAINTS
+  - https://www.postgresql.org/docs/18/indexes-unique.html
+  - https://www.postgresql.org/docs/18/indexes-partial.html
+  - https://www.postgresql.org/docs/18/ddl-rowsecurity.html
+lab:
+  setup: |
+    CREATE TABLE sellers (id int PRIMARY KEY, name text NOT NULL);
+    INSERT INTO sellers VALUES (1, 'Lan Silk'), (2, 'Minh Tea'), (3, 'Hoa Lamp');
+    CREATE TABLE shoppers (
+      tenant_id int NOT NULL REFERENCES sellers (id),
+      id int NOT NULL,
+      email text NOT NULL,
+      tax_code text NOT NULL DEFAULT '',
+      PRIMARY KEY (tenant_id, id)
+    );
+    INSERT INTO shoppers VALUES
+      (1, 1, 'an@mail.vn', ''), (1, 2, 'binh@mail.vn', '0101'), (1, 3, 'dung@mail.vn', ''),
+      (2, 1, 'an@mail.vn', '0101'), (2, 2, 'chi@mail.vn', ''),
+      (3, 1, 'An@Mail.vn', ''), (3, 2, 'giang@mail.vn', '0202');
+  steps:
+    - task:
+        vi: "Mỗi người bán chỉ có một người mua với mỗi email: thêm ràng buộc duy nhất trên `shoppers (tenant_id, email)`. Đừng đặt tên ràng buộc."
+        en: "Each seller has one shopper per email: add a unique constraint on `shoppers (tenant_id, email)`. Do not name the constraint."
+      solution: ALTER TABLE shoppers ADD UNIQUE (tenant_id, email)
+      check: catalog
+      hint:
+        vi: "`ALTER TABLE shoppers ADD UNIQUE (tenant_id, email)`: `tenant_id` đầu, như khóa chính."
+        en: "`ALTER TABLE shoppers ADD UNIQUE (tenant_id, email)`: `tenant_id` first, like the primary key."
+    - task:
+        vi: "`An@mail.vn` và `an@mail.vn` là một người. Tạo index duy nhất tên `shoppers_email_ci` trên `shoppers (tenant_id, lower(email))`."
+        en: "`An@mail.vn` and `an@mail.vn` are one person. Create a unique index named `shoppers_email_ci` on `shoppers (tenant_id, lower(email))`."
+      solution: CREATE UNIQUE INDEX shoppers_email_ci ON shoppers (tenant_id, lower(email))
+      check: catalog
+      hint:
+        vi: "`CREATE UNIQUE INDEX shoppers_email_ci ON shoppers (tenant_id, lower(email))`: biểu thức đứng ngay trong danh sách cột."
+        en: "`CREATE UNIQUE INDEX shoppers_email_ci ON shoppers (tenant_id, lower(email))`: the expression sits right in the column list."
+    - task:
+        vi: "Mã số thuế không bắt buộc (`''` = chưa có), nhưng đã có thì không trùng trong một người bán. Tạo index duy nhất tên `shoppers_tax` trên `shoppers (tenant_id, tax_code)`, chỉ cho các dòng `tax_code <> ''`."
+        en: "A tax code is optional (`''` = none yet), but once given it is unique within a seller. Create a unique index named `shoppers_tax` on `shoppers (tenant_id, tax_code)`, only for rows with `tax_code <> ''`."
+      solution: CREATE UNIQUE INDEX shoppers_tax ON shoppers (tenant_id, tax_code) WHERE tax_code <> ''
+      check: catalog
+      hint:
+        vi: "Index một phần: thêm `WHERE tax_code <> ''` sau danh sách cột. Không có nó thì hai dòng `''` của người bán 1 làm lệnh lỗi 23505."
+        en: "A partial index: add `WHERE tax_code <> ''` after the column list. Without it, seller 1's two `''` rows make the command fail with 23505."
+quiz:
+  - q:
+      vi: "Chợ có 300 người bán. Một bạn đề xuất `UNIQUE (email)` trên bảng người mua cho chắc. Chuyện gì xảy ra khi người mua `an@mail.vn` của Lan Silk đăng ký ở Minh Tea?"
+      en: "The market has 300 sellers. Someone proposes `UNIQUE (email)` on the shopper table to be safe. What happens when Lan Silk's shopper `an@mail.vn` signs up at Minh Tea?"
+    options:
+      - { vi: "Không sao: luật càng chặt càng an toàn", en: "Nothing bad: the stricter the rule, the safer" }
+      - { vi: "Bị từ chối với lỗi 23505, và thông báo lỗi cho Minh Tea biết email đó đã có ở một người bán khác", en: "It is refused with error 23505, and the error tells Minh Tea that the email already exists at another seller" }
+      - { vi: "Được nhận, vì mỗi người bán có tenant_id khác nhau", en: "It is accepted, because each seller has a different tenant_id" }
+    answer: 1
+    trap: 0
+    why:
+      vi: "Nghe hợp lý vì luật duy nhất thường là để bảo vệ dữ liệu. Thật ra phạm vi của luật là phạm vi của tenant: luật toàn cục chặn khách hợp lệ, và vì kiểm duy nhất không đi qua bảo mật theo dòng, nó còn tiết lộ dữ liệu của tenant khác."
+      en: "It sounds right because uniqueness rules usually protect data. In fact the rule's scope is the tenant's scope: a global rule blocks a valid shopper, and since unique checks do not go through row-level security, it also reveals another tenant's data."
+  - q:
+      vi: "Vì sao luật mã số thuế cần `WHERE tax_code <> ''`?"
+      en: "Why does the tax code rule need `WHERE tax_code <> ''`?"
+    options:
+      - { vi: "Để index nhỏ hơn, ngoài ra không đổi gì", en: "To make the index smaller, nothing else changes" }
+      - { vi: "Vì `''` nghĩa là chưa có mã và lặp lại hợp lệ; luật chỉ áp lên mã thật", en: "Because `''` means no code yet and may repeat; the rule applies only to real codes" }
+      - { vi: "Vì index duy nhất không nhận chuỗi rỗng", en: "Because a unique index does not accept empty strings" }
+    answer: 1
+    trap: 0
+    why:
+      vi: "Nhiều người nghĩ điều kiện của index một phần chỉ để tiết kiệm chỗ. Thật ra nó đổi luật: các dòng ngoài điều kiện không bị kiểm, nên nhiều dòng `''` cùng sống được. Với `NULL` thay cho `''` thì không cần điều kiện, vì `NULL` mặc định không trùng nhau."
+      en: "Many people think a partial index's condition only saves space. In fact it changes the rule: rows outside the condition are not checked, so many `''` rows can live together. With `NULL` instead of `''` no condition is needed, since `NULL` values are not equal by default."
+---
+## Mở bài
+
+Người mua `an@mail.vn` thích cả lụa của Lan Silk lẫn trà của Minh Tea. Nếu bảng người mua có luật email duy nhất cho cả chợ, lần đăng ký thứ hai bị từ chối, và thông báo lỗi tiết lộ cho Minh Tea rằng email này đã là khách ở đâu đó. Luật duy nhất của hệ thống nhiều khách hàng phải có cùng phạm vi với tenant.
+
+## Ý chính
+
+Trong mô hình pool, "duy nhất" gần như luôn có nghĩa "duy nhất trong một tenant". Viết luật ấy là đặt `tenant_id` lên đầu: `UNIQUE (tenant_id, email)`. Hai người bán có thể cùng có `an@mail.vn`; một người bán thì không thể có nó hai lần. Index đứng sau luật cũng bắt đầu bằng `tenant_id`, đúng thứ tự mà mọi câu tra cứu dùng.
+
+Nhiều người nghĩ luật toàn cục chỉ chặt hơn, không hại gì. Thật ra nó chặn khách hợp lệ, và tài liệu Postgres nói rõ kiểm duy nhất, khóa chính và khóa ngoại không đi qua bảo mật theo dòng: lỗi 23505 cho người bán này biết một giá trị đã có ở người bán khác. Đó là một kênh rò rỉ, dù không ai đọc được dòng kia.
+
+Hai biến thể hay gặp. Email không phân biệt hoa thường: index duy nhất trên biểu thức `(tenant_id, lower(email))`. Giá trị không bắt buộc ghi bằng `''`: index duy nhất một phần `WHERE tax_code <> ''`. Một luật thật sự toàn cục (một số sê-ri chỉ được một tenant đăng ký) không có chỗ trong bảng chia theo tenant; nó cần một bảng chỉ mục riêng.
+
+## Cú pháp
+
+```sql
+ALTER TABLE t
+  ADD UNIQUE (tenant_id, email);
+CREATE UNIQUE INDEX name
+  ON t (tenant_id, lower(email));
+CREATE UNIQUE INDEX name
+  ON t (tenant_id, code)
+  WHERE code <> '';
+UNIQUE NULLS NOT DISTINCT
+  (tenant_id, code)
+```
+
+- `tenant_id` đứng đầu mọi luật duy nhất của bảng thuộc tenant.
+- Index trên biểu thức chỉ giúp câu dùng đúng biểu thức đó: tra bằng `lower(email)`.
+- `NULLS NOT DISTINCT` (Postgres 15+) coi hai `NULL` là trùng; mặc định chúng không trùng.
+
+## Ví dụ
+
+Cùng một email ở ba người bán là ba người mua hợp lệ:
+
+```sql
+SELECT tenant_id, id, email
+FROM shoppers
+WHERE lower(email) = 'an@mail.vn'
+ORDER BY tenant_id;
+```
+
+Luật theo tenant nhận email lặp ở tenant khác:
+
+```sql
+CREATE TABLE ex_buyers (
+  tenant_id int NOT NULL,
+  email text NOT NULL,
+  UNIQUE (tenant_id, email)
+);
+INSERT INTO ex_buyers
+VALUES (1, 'an@mail.vn'),
+       (2, 'an@mail.vn');
+SELECT * FROM ex_buyers
+ORDER BY tenant_id;
+```
+
+## Lỗi hay gặp
+
+Luật toàn cục chặn khách của người bán thứ hai:
+
+```sql
+CREATE TABLE ex_global (
+  tenant_id int NOT NULL,
+  email text NOT NULL UNIQUE
+);
+INSERT INTO ex_global
+VALUES (1, 'an@mail.vn');
+-- ERROR 23505: taken at seller 1
+INSERT INTO ex_global
+VALUES (2, 'an@mail.vn');
+```
+
+Luật phân biệt hoa thường để lọt một người thành hai:
+
+```sql
+-- WRONG: case makes a second shopper
+CREATE TABLE ex_case (
+  tenant_id int NOT NULL,
+  email text NOT NULL,
+  UNIQUE (tenant_id, email)
+);
+INSERT INTO ex_case
+VALUES (1, 'an@mail.vn');
+INSERT INTO ex_case
+VALUES (1, 'An@mail.vn');
+SELECT count(*) AS shoppers
+FROM ex_case;
+```
+
+```sql
+-- FIX: unique on lower(email)
+CREATE TABLE ex_case2 (
+  tenant_id int NOT NULL,
+  email text NOT NULL
+);
+CREATE UNIQUE INDEX ex_case2_ci
+  ON ex_case2 (tenant_id, lower(email));
+INSERT INTO ex_case2
+VALUES (1, 'an@mail.vn');
+INSERT INTO ex_case2
+VALUES (1, 'An@mail.vn')
+ON CONFLICT (tenant_id, lower(email))
+DO NOTHING;
+SELECT count(*) AS shoppers
+FROM ex_case2;
+```
+
+Câu sai đếm 2 người mua, câu sửa đếm 1. Luật mã số thuế không có điều kiện thì không tạo được, vì người bán 1 đã có hai dòng `''`:
+
+```sql
+-- ERROR 23505: two '' rows at seller 1
+CREATE UNIQUE INDEX ex_tax
+  ON shoppers (tenant_id, tax_code);
+```
+
+## Thực hành
+
+Ba bước, đều chấm bằng catalog: luật email theo người bán, luật email không phân biệt hoa thường, và luật mã số thuế một phần. Sau đó là hai câu hỏi.
+
+## Tóm tắt
+
+- "Duy nhất" trong pool là duy nhất trong một tenant: `UNIQUE (tenant_id, email)`.
+- Luật toàn cục chặn khách hợp lệ và để lỗi 23505 tiết lộ dữ liệu của tenant khác.
+- Không phân biệt hoa thường: index trên `(tenant_id, lower(email))`; giá trị không bắt buộc: index một phần.
+- Đọc tiếp: thẻ `e-bp-s07` (`NULLS NOT DISTINCT`), bài `e-ds-l2-06` (khóa ghép) và `e-ds-l4-09` (bản đồ chủ đề).
+
+# EN
+
+## Opening
+
+Shopper `an@mail.vn` likes both Lan Silk's silk and Minh Tea's tea. If the shopper table has one unique email rule for the whole market, the second sign-up is refused, and the error tells Minh Tea that this email is already a customer somewhere. A uniqueness rule in a multi-tenant system must have the same scope as the tenant.
+
+## Key idea
+
+In the pool model, "unique" almost always means "unique within one tenant". Writing that rule means putting `tenant_id` first: `UNIQUE (tenant_id, email)`. Two sellers can both have `an@mail.vn`; one seller cannot have it twice. The index behind the rule also starts with `tenant_id`, the order every lookup uses.
+
+Many people think a global rule is only stricter and does no harm. In fact it blocks valid customers, and the Postgres docs say plainly that unique, primary key and foreign key checks do not go through row-level security: error 23505 tells this seller that a value exists at another seller. That is a leak channel, even though no one can read the other row.
+
+Two common variants. Case-insensitive email: a unique index on the expression `(tenant_id, lower(email))`. An optional value written as `''`: a partial unique index `WHERE tax_code <> ''`. A truly global rule (a serial number only one tenant may register) has no home in a table split by tenant; it needs a separate lookup table.
+
+## Syntax
+
+```sql
+ALTER TABLE t
+  ADD UNIQUE (tenant_id, email);
+CREATE UNIQUE INDEX name
+  ON t (tenant_id, lower(email));
+CREATE UNIQUE INDEX name
+  ON t (tenant_id, code)
+  WHERE code <> '';
+UNIQUE NULLS NOT DISTINCT
+  (tenant_id, code)
+```
+
+- `tenant_id` comes first in every uniqueness rule of a tenant table.
+- An index on an expression only helps queries that use the same expression: look up by `lower(email)`.
+- `NULLS NOT DISTINCT` (Postgres 15+) treats two `NULL` values as equal; by default they are not.
+
+## Example
+
+The same email at three sellers is three valid shoppers:
+
+```sql
+SELECT tenant_id, id, email
+FROM shoppers
+WHERE lower(email) = 'an@mail.vn'
+ORDER BY tenant_id;
+```
+
+A per-tenant rule accepts the email again at another tenant:
+
+```sql
+CREATE TABLE ex_buyers (
+  tenant_id int NOT NULL,
+  email text NOT NULL,
+  UNIQUE (tenant_id, email)
+);
+INSERT INTO ex_buyers
+VALUES (1, 'an@mail.vn'),
+       (2, 'an@mail.vn');
+SELECT * FROM ex_buyers
+ORDER BY tenant_id;
+```
+
+## Common mistakes
+
+A global rule blocks the second seller's shopper:
+
+```sql
+CREATE TABLE ex_global (
+  tenant_id int NOT NULL,
+  email text NOT NULL UNIQUE
+);
+INSERT INTO ex_global
+VALUES (1, 'an@mail.vn');
+-- ERROR 23505: taken at seller 1
+INSERT INTO ex_global
+VALUES (2, 'an@mail.vn');
+```
+
+A case-sensitive rule lets one person in twice:
+
+```sql
+-- WRONG: case makes a second shopper
+CREATE TABLE ex_case (
+  tenant_id int NOT NULL,
+  email text NOT NULL,
+  UNIQUE (tenant_id, email)
+);
+INSERT INTO ex_case
+VALUES (1, 'an@mail.vn');
+INSERT INTO ex_case
+VALUES (1, 'An@mail.vn');
+SELECT count(*) AS shoppers
+FROM ex_case;
+```
+
+```sql
+-- FIX: unique on lower(email)
+CREATE TABLE ex_case2 (
+  tenant_id int NOT NULL,
+  email text NOT NULL
+);
+CREATE UNIQUE INDEX ex_case2_ci
+  ON ex_case2 (tenant_id, lower(email));
+INSERT INTO ex_case2
+VALUES (1, 'an@mail.vn');
+INSERT INTO ex_case2
+VALUES (1, 'An@mail.vn')
+ON CONFLICT (tenant_id, lower(email))
+DO NOTHING;
+SELECT count(*) AS shoppers
+FROM ex_case2;
+```
+
+The wrong version counts 2 shoppers, the fix counts 1. A tax code rule without a condition cannot be created, because seller 1 already has two `''` rows:
+
+```sql
+-- ERROR 23505: two '' rows at seller 1
+CREATE UNIQUE INDEX ex_tax
+  ON shoppers (tenant_id, tax_code);
+```
+
+## Practice
+
+Three steps, all graded on the catalog: the per-seller email rule, the case-insensitive email rule, and the partial tax code rule. Then two questions.
+
+## Recap
+
+- "Unique" in a pool means unique within one tenant: `UNIQUE (tenant_id, email)`.
+- A global rule blocks valid customers and lets error 23505 reveal another tenant's data.
+- Case-insensitive: an index on `(tenant_id, lower(email))`; optional values: a partial index.
+- Read next: card `e-bp-s07` (`NULLS NOT DISTINCT`), lessons `e-ds-l2-06` (composite keys) and `e-ds-l4-09` (the theme map).

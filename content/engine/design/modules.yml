@@ -25,6 +25,9 @@
 - id: denormalize
   vi: Phi chuẩn hóa và thiết kế trọn bộ
   en: Denormalising and a full design
+- id: multi-tenant
+  vi: Nhiều khách hàng trong một hệ thống
+  en: Many tenants in one system
 - id: algebra
   vi: Đại số và phép tính quan hệ
   en: Relational algebra and calculus
