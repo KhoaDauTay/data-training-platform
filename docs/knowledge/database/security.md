@@ -114,7 +114,13 @@ SELECT count(*) FROM app.orders;
 RESET ROLE;
 ```
 
-BoonData: Engine lesson `content/engine/postgres/L5/10-row-level-security.md`; best-practice cards `content/engine/best/postgres/s10-tenant-rls-force.md`, `x02-least-privilege.md`, `x06-read-only-analyst.md`.
+Multi-tenant pitfalls (verified on PGlite 18.6, 2026-11-25):
+- A session `SET` stays on a pooled connection and leaks into the next request; bind the tenant per transaction with `SET LOCAL` or `set_config(name, value, true)` (https://www.postgresql.org/docs/18/sql-set.html).
+- Once a custom setting has been set in a session, even by a `SET LOCAL` that ended, `current_setting(name, true)` returns `''`, not NULL, and `''::int` fails with 22P02. `NULLIF(current_setting('app.tenant_id', true), '')::int` makes the policy fail closed (0 rows, no error).
+- Omitting `WITH CHECK` does not leak: `USING` is reused as the check. The real holes are a second PERMISSIVE policy (OR-ed in; use `AS RESTRICTIVE` for must-hold rules) and a `FOR INSERT` policy with no tenant condition.
+- A default view reads its table with the view owner's rights; `WITH (security_invoker = true)` checks the caller (https://www.postgresql.org/docs/18/sql-createview.html).
+
+BoonData: Engine lessons `content/engine/postgres/L5/10-row-level-security.md`, `L5/19-rls-deep-dive.md`, `L5/20-tenant-context-pooling.md` (more in module `multi-tenant`); best-practice cards `x08-security-invoker.md`, `content/engine/best/postgres/s10-tenant-rls-force.md`, `x02-least-privilege.md`, `x06-read-only-analyst.md`.
 
 ## 4. Other controls (not run)
 

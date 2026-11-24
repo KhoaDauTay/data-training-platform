@@ -35,12 +35,12 @@ const cards = Object.entries(raw).map(([path, text]) => {
 const released = cards.filter((c) => RELEASED.includes(c.track));
 const DIACRITIC = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i;
 
-describe('thẻ Best Practice: cấu trúc (130 thẻ, cả track chưa phát hành)', () => {
-  it('130 thẻ, id duy nhất; phát hành cả 130 (SQL 30 + PostgreSQL 30 + MongoDB 38 + DynamoDB 32, v26 L383)', () => {
-    expect(cards).toHaveLength(130);
-    expect(new Set(cards.map((c) => c.id)).size).toBe(130);
+describe('thẻ Best Practice: cấu trúc (131 thẻ, cả track chưa phát hành)', () => {
+  it('131 thẻ, id duy nhất; phát hành cả 131 (SQL 30 + PostgreSQL 31 + MongoDB 38 + DynamoDB 32, v26 L383; v35 + X08)', () => {
+    expect(cards).toHaveLength(131);
+    expect(new Set(cards.map((c) => c.id)).size).toBe(131);
     expect(released.filter((c) => c.track === 'sql')).toHaveLength(30);
-    expect(released.filter((c) => c.track === 'postgres')).toHaveLength(30);
+    expect(released.filter((c) => c.track === 'postgres')).toHaveLength(31);
     expect(released.filter((c) => c.track === 'mongodb')).toHaveLength(38);
     expect(released.filter((c) => c.track === 'dynamodb')).toHaveLength(32);
   });
@@ -66,7 +66,7 @@ describe('thẻ Best Practice: cấu trúc (130 thẻ, cả track chưa phát h�
 
   it('index (bpindex + bpindexMg + bpindexDy) chỉ chứa thẻ đã phát hành, mỗi track một chunk', () => {
     const paths = Object.keys(sources.meta);
-    expect(paths).toHaveLength(60);
+    expect(paths).toHaveLength(61);
     expect(paths.every((p) => /\/best\/(sql|postgres)\//.test(p))).toBe(true);
     const mg = Object.keys(mongoIndex.meta);
     expect(mg).toHaveLength(38);
