@@ -13,6 +13,8 @@ Status: concept.
 3. Fix the cause: missing/unused index, non-sargable predicate, stale statistics, fan-out join, too little `work_mem` for a sort/hash.
 4. Re-measure with the same parameters.
 
+BoonData: the whole loop (EXPLAIN → index → `ANALYZE` / `n_distinct` → `work_mem`, two steps graded by plan) is Engine lesson `content/engine/postgres/L5/18-tuning-loop.md` (v32).
+
 ## 2. Write predicates the index can use (sargable)
 
 Status: verified.
@@ -104,11 +106,23 @@ SELECT reltuples BETWEEN 45000 AND 55000 FROM pg_class WHERE relname = 'ev';
 Status: verified (examples here and in postgresql.md §16).
 
 - `ANALYZE` samples each column (MCV list, histogram, n_distinct, correlation) into `pg_stats` (https://www.postgresql.org/docs/18/planner-stats.html). Autovacuum runs it after enough changes; run it yourself after a bulk load.
+- `ALTER TABLE t ALTER COLUMN c SET (n_distinct = v)` overrides the sampled estimate (positive = a count, `-1`…`0` = a ratio of the row count) and `SET STATISTICS n` samples more; both are column options that reach `pg_stats` only at the next `ANALYZE` (https://www.postgresql.org/docs/18/sql-altertable.html).
 - Correlated columns (city and postcode) fool the independence assumption; `CREATE STATISTICS … (dependencies, ndistinct, mcv)` fixes estimates (https://www.postgresql.org/docs/18/planner-stats.html#PLANNER-STATS-EXTENDED).
 
 ```sql
 -- expect: [["50"]]
 SELECT n_distinct::int FROM pg_stats WHERE tablename = 'sales' AND attname = 'store';
+```
+
+```sql
+-- expect: [["1000","5000"]]
+-- the override is stored at once but applied by the next ANALYZE
+CREATE TABLE nd AS SELECT g % 1000 AS k FROM generate_series(1, 20000) g;
+ANALYZE nd;
+CREATE TEMP TABLE nd_before AS SELECT n_distinct::int AS v FROM pg_stats WHERE tablename = 'nd';
+ALTER TABLE nd ALTER COLUMN k SET (n_distinct = 5000);
+ANALYZE nd;
+SELECT (SELECT v FROM nd_before), n_distinct::int FROM pg_stats WHERE tablename = 'nd';
 ```
 
 Three planner facts the Engine L4 lessons rely on (all asserted below or in [postgresql.md §16](postgresql.md#16-explain-and-the-planner)):
@@ -148,6 +162,23 @@ Status: summary, see the engine files.
 - DynamoDB: design keys so every read is a `Query`/`GetItem`, never a `Scan` ([nosql-dynamodb.md §3](nosql-dynamodb.md#3-query-and-scan)).
 
 BoonData: General skills `explain_read`, `sargable`, `index_design`; Logistics chapter 11 grades plans; Engine L2 (indexes), L4 (planner, joins), L5 (`pg_stat_statements`, memory tuning, unused indexes).
+
+## 9. Random samples
+
+Status: verified.
+
+- `ORDER BY random() LIMIT n` gives a uniform sample but reads and sorts every row, and every run differs (`setseed()` repeats it only inside one session) (https://www.postgresql.org/docs/18/functions-math.html#FUNCTIONS-MATH-RANDOM-TABLE).
+- `FROM t TABLESAMPLE SYSTEM (p)` keeps whole pages (fast, rows come in clumps); `BERNOULLI (p)` keeps each row with probability p % (reads every page). Both take a percentage, so the sample size is only close to p %; `REPEATABLE (seed)` returns the same sample while the table does not change (https://www.postgresql.org/docs/18/sql-select.html#SQL-FROM).
+- An estimate for the whole table scales the sample by 100 / p; `tsm_system_rows` (an extension, not in PGlite's preload) samples a fixed number of rows.
+
+```sql
+-- expect: [["true","true"]]
+CREATE TABLE smp AS SELECT g AS id FROM generate_series(1, 20000) g;
+SELECT (SELECT count(*) FROM smp TABLESAMPLE BERNOULLI (10) REPEATABLE (7)) = (SELECT count(*) FROM smp TABLESAMPLE BERNOULLI (10) REPEATABLE (7)),
+       (SELECT count(*) FROM smp TABLESAMPLE BERNOULLI (10) REPEATABLE (7)) BETWEEN 1500 AND 2500;
+```
+
+BoonData: adv node `a11` (`content/general/adv.yml`, v32), drills graded on rows thanks to `REPEATABLE`.
 
 ## Sources
 

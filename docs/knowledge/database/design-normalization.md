@@ -89,6 +89,15 @@ Status: summary; details in [postgresql.md](postgresql.md#1-data-types).
 - Put rules in constraints (`NOT NULL`, `CHECK`, `UNIQUE`, `FOREIGN KEY`, `EXCLUDE`) so the database rejects bad data (catalogue S06).
 - Record history explicitly when you need it (valid-from/valid-to columns, SCD type 2: adv node `c3`).
 - Model money as `numeric`, instants as `timestamptz`.
+- Vertical partitioning: move rarely read, medium-sized columns into a 1:1 side table whose primary key is also the foreign key (`id int PRIMARY KEY REFERENCES main (id)`). It stores nothing twice, so it is not denormalisation; the cost is a join for the full row. TOAST does this by itself only for rows over about 2 KB (https://www.postgresql.org/docs/18/storage-toast.html), and `DROP COLUMN` shrinks nothing until the table is rewritten (`VACUUM FULL`). BoonData: design lesson `content/engine/design/L4/07-vertical-partitioning.md` (v32).
+
+```sql
+-- expect: [["0"]]
+-- rows of about 1 KB stay in the main pages: the TOAST table is empty
+CREATE TABLE wide (id int PRIMARY KEY, bio text);
+INSERT INTO wide SELECT g, repeat(md5(g::text), 25) FROM generate_series(1, 200) g;
+SELECT pg_relation_size(reltoastrelid) FROM pg_class WHERE relname = 'wide';
+```
 
 ## Sources
 

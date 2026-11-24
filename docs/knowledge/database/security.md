@@ -30,6 +30,21 @@ Dynamic SQL inside the database, done safely:
 SELECT format('SELECT count(*) FROM %I WHERE note = %L', 'Odd Table', 'x''; DROP TABLE t; --');
 ```
 
+Inside PL/pgSQL, `EXECUTE … USING` is the bind-parameter form: the attack string matches nobody, and a real name with a quote still works (concatenation fails on it with 42601).
+
+```sql
+-- expect: [["0","1"]]
+CREATE TABLE acct (owner text);
+INSERT INTO acct VALUES ('An'), ('O''Hara');
+CREATE FUNCTION find_owner(p text) RETURNS SETOF acct LANGUAGE plpgsql STABLE AS $$
+BEGIN
+  RETURN QUERY EXECUTE 'SELECT * FROM acct WHERE owner = $1' USING p;
+END $$;
+SELECT (SELECT count(*) FROM find_owner($$x' OR true --$$)), (SELECT count(*) FROM find_owner($$O'Hara$$));
+```
+
+BoonData: Engine lesson `content/engine/postgres/L2/25-sql-injection.md` (v32: concatenated `EXECUTE` vs `USING`, `%L`/`%I`, `quote_literal`/`quote_ident`, `PREPARE`); best-practice cards `x01-parameterise.md`, `x09-dynamic-sql-format.md`.
+
 PGlite rejects multi-statement input in `query()`, which is one reason BoonData can run player SQL inside `BEGIN … ROLLBACK` safely (`runSandboxed`, `src/db/run.ts`); the index lab re-checks its statement with `isCreateIndex` before running it.
 
 ## 2. Roles and privileges

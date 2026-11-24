@@ -132,6 +132,20 @@ RETURNING merge_action(), s.sku;
 DELETE FROM stock WHERE sku = 'E';
 ```
 
+- `COPY t TO 'file'` / `COPY (query) TO 'file'` / `COPY t FROM 'file'` move rows in bulk; `FORMAT csv` with `HEADER`, `DELIMITER`, `NULL 'NA'`, `FORCE_QUOTE`. The file is on the **server** and needs superuser or `pg_read_server_files` / `pg_write_server_files`; a client uses `COPY … TO STDOUT` / `FROM STDIN` (psql's `\copy`). One bad line aborts the whole `COPY`; in CSV an unquoted empty field is NULL, `""` is an empty string (https://www.postgresql.org/docs/18/sql-copy.html).
+
+```sql
+-- expect: [["3","2"]]
+CREATE TABLE cp (id int, note text);
+INSERT INTO cp VALUES (1, 'a, b'), (2, NULL), (3, 'say "hi"');
+COPY cp TO '/tmp/cp.csv' WITH (FORMAT csv, HEADER);
+CREATE TABLE cp2 (LIKE cp);
+COPY cp2 FROM '/tmp/cp.csv' WITH (FORMAT csv, HEADER);
+SELECT count(*), count(note) FROM cp2;
+```
+
+BoonData: Engine lesson `content/engine/postgres/L1/18-copy-csv.md` (v32; PGlite's server is the browser tab, so `/tmp` is in memory and `pg_read_file` shows the file); the Sandbox's "My data" loads CSV with `COPY … FROM '/dev/blob'`.
+
 ## 5. Constraints, transactions, views
 
 Status: verified. Generic rules are in [sql-core.md §12–14](sql-core.md#12-constraints); PostgreSQL-specific additions:

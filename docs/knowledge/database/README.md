@@ -36,12 +36,12 @@ Every ```` ```sql ```` block in the PostgreSQL-dialect files runs in file order 
 | File | Blocks | Asserted rows | Expected errors (SQLSTATE checked) | Failed |
 |---|---|---|---|---|
 | sql-core.md | 37 | 29 | 6 | 0 |
-| postgresql.md | 57 | 39 | 6 | 0 |
-| performance.md | 11 | 7 | 0 | 0 |
-| security.md | 9 | 4 | 1 | 0 |
-| design-normalization.md | 3 | 3 | 0 | 0 |
+| postgresql.md | 58 | 40 | 6 | 0 |
+| performance.md | 13 | 9 | 0 | 0 |
+| security.md | 10 | 5 | 1 | 0 |
+| design-normalization.md | 4 | 4 | 0 | 0 |
 | dbms-theory.md | 3 | 3 | 0 | 0 |
-| **Total** | **120** | **85** | **13** | **0** |
+| **Total** | **125** | **90** | **13** | **0** |
 
 Plus 8 MongoDB query/aggregation behaviours asserted on mingo 7.2.6 ([nosql-mongodb.md](nosql-mongodb.md)).
 
