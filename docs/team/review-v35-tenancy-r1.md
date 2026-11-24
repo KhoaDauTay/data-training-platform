@@ -2,6 +2,8 @@
 
 2026-11-25. Repo copy of the two R1 reports, written by fresh agents that did not build the work: a pass by eye (findings `E01`–`E18`) and a measuring pass (findings `T1-<check>-<n>`). The full reports, screenshots and capture scripts stay outside the repo; this page keeps the findings, their severity and what happened to them.
 
+Status "not in the R1 fix commits" means the fix commits and decision log rows do not mention it; it was not re-checked on the page.
+
 Severity: **P1** blocks learning or is unreadable · **P2** clearly hurts · **P3** polish. Fixes landed in `397c96b`, `1ee2ee9`, `51d8e9c` and `e489907` (decision log L558, L558a, L558b, L559).
 
 ## How it was measured
@@ -29,17 +31,17 @@ Clean results: contrast of HTML text 0 findings; one `h1` per page, no skipped h
 | E08 | P2 | PostgreSQL tenancy lessons | One fictional company under three names; English sentences in code comments of VI pages | **Fixed in part** (L558a, L564): VI says "Chợ Lồng Đèn" everywhere; comments stay English because code must be identical in VI and EN (`lessonProblems`), and from v36 they are bare markers (`-- WRONG`, `-- FIX`, `-- ERROR <code>`) with the explanation in the VI sentence above |
 | E09 | P2 | glossary popovers, Đọc thêm | "Official docs" of a Postgres lesson opened MongoDB or DynamoDB pages; an AWS SaaS page was labelled DynamoDB | **Fixed** (L558b): `docFor(term, engine)` picks the lesson's engine or shows no link; AWS pages outside DynamoDB are labelled "AWS" / "AWS SaaS Lens" |
 | T1-C3-01 | P2 | capstone `e-ds-l4-11` at 1280 | Step names truncated with no `title` | **Fixed** (L558b): `title` on the step bar, two names shortened. v37's capstone keeps names ≤ 16 characters |
-| E10 | P3 | all lessons | "Đọc thêm" labels are raw URL slugs | Open (only the AWS labels changed) |
-| E11 | P3 | level pages Design L4, PostgreSQL L5 | Level blurbs do not mention the multi-tenant modules; module names differ between tracks | Open |
-| E12 | P3 | every lab | Every later step says "Làm sau bước 1" | Open |
-| E13 | P3 | hub example run | Result caption squeezed; a `WRONG` block shows a green check | Open |
-| E14 | P3 | `e-ds-l4-11` step 5 | A date splits inside an inline code chip | Open (L559 made inline code wrap anywhere, which fixes overflow but can still split a value) |
-| E15 | P3 | `e-ds-l4-09`, `e-ds-l4-08`, `e-ds-l2-06` | Walls of text where a list would scan better | Fixed for the hub (L558); open elsewhere |
-| E16 | P3 | `e-ds-l2-06`, `e-pg-l5-10`, hub EN | Translated-sounding VI phrases; "theme map" in EN | EN "topic map" fixed (L558); the VI phrasing notes are open |
-| E17 | P3 | `e-ds-l4-08` at 1280 | The on-page table of contents stayed on "Mở bài" after a programmatic scroll | Open, needs a manual check |
-| E18 | P3 | `e-pg-l5-19` | Long stacks of example cards with an empty header strip | Open |
+| E10 | P3 | all lessons | "Đọc thêm" labels are raw URL slugs | Not in the R1 fix commits (only the AWS labels changed) |
+| E11 | P3 | level pages Design L4, PostgreSQL L5 | Level blurbs do not mention the multi-tenant modules; module names differ between tracks | Not in the R1 fix commits (not re-checked) |
+| E12 | P3 | every lab | Every later step says "Làm sau bước 1" | Not in the R1 fix commits (not re-checked) |
+| E13 | P3 | hub example run | Result caption squeezed; a `WRONG` block shows a green check | Not in the R1 fix commits (not re-checked) |
+| E14 | P3 | `e-ds-l4-11` step 5 | A date splits inside an inline code chip | Not in the R1 fix commits (L559 made inline code wrap anywhere, which fixes overflow but can still split a value) |
+| E15 | P3 | `e-ds-l4-09`, `e-ds-l4-08`, `e-ds-l2-06` | Walls of text where a list would scan better | Fixed for the hub (L558); not in the R1 fix commits elsewhere |
+| E16 | P3 | `e-ds-l2-06`, `e-pg-l5-10`, hub EN | Translated-sounding VI phrases; "theme map" in EN | EN "topic map" fixed (L558); the VI phrasing notes are not in the R1 fix commits |
+| E17 | P3 | `e-ds-l4-08` at 1280 | The on-page table of contents stayed on "Mở bài" after a programmatic scroll | Not in the R1 fix commits; needs a manual check |
+| E18 | P3 | `e-pg-l5-19` | Long stacks of example cards with an empty header strip | Not in the R1 fix commits (not re-checked) |
 | T1-C5-01 | P3 | all 17 pages | 20 px tall targets: breadcrumb, source links, a lesson link in a quiz legend | No change: shared components, the inline-link exception of WCAG 2.5.8 |
-| T1-C8-04 | P3 | 9 lessons at 375 | A demo `pre` holds 39 characters, so exactly-40-character lines scroll a few px | Open as a rule change; new content since v35 keeps every code line ≤ 39 |
+| T1-C8-04 | P3 | 9 lessons at 375 | A demo `pre` holds 39 characters, so exactly-40-character lines scroll a few px | Rule not changed; new content since v35 keeps every code line ≤ 39 |
 | T1-C7-01 | P3 | diagram pages at 320 | Labels 10.3 px | Accepted (L510) |
 | T1-C9-01 | P3 | `pg-tenancy-models` step 5 at 375/320 | Rating headings sat 2–3 px under the previous row | **Fixed** (L558a): 14 units between a row's cells and the next heading |
 | T1-C7-02 | P3 | diagram pages at 1280 | SVG stops at 480 px in a ~720 px card; label line boxes touch (no ink overlap) | Accepted (core) |
