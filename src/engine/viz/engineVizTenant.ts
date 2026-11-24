@@ -72,6 +72,78 @@ define<TenancyModel>('pg-tenancy-models', {}, (m, tr) => {
   };
 });
 
+// v37 (L573, uiux-design §2.3): pg-tenant-placement, the platform view. An illustration (nothing here runs in the
+// browser), so every frame carries the "Minh họa" note. Tenants are their catalog ids (as in e-ds-l5-10's lab), tones
+// only repeat the words. 4 shards, 12 units apart; every arrow stops 3 units short of the box it points at (R1 E04).
+// ── tenantPlacement ─────────────────────────────────────────────────────────────────────────────────────────────
+export interface PlacementModel { tenants: { id: string; tier: string; shard: number }[]; move: { tenant: string; to: number } }
+export const PLACEMENT_SAMPLE: PlacementModel = {
+  tenants: [['t-01', 'free', 0], ['t-02', 'free', 0], ['t-03', 'pro', 0], ['t-04', 'pro', 1], ['t-05', 'free', 1], ['t-06', 'enterprise', 2]]
+    .map(([id, tier, shard]) => ({ id: id as string, tier: tier as string, shard: shard as number })),
+  move: { tenant: 't-04', to: 3 },
+};
+const SX = [6, 92, 178, 264];
+const SW = 74;
+
+define<PlacementModel>('pg-tenant-placement', PLACEMENT_SAMPLE, (m, tr) => {
+  const ts = (Array.isArray(m?.tenants) ? m.tenants : PLACEMENT_SAMPLE.tenants).slice(0, 6)
+    .map((t) => ({ id: cut(String(t.id), 5), tier: cut(String(t.tier), 10), shard: Math.min(3, Math.max(0, Number(t.shard) || 0)) }));
+  const mv = ts.find((t) => t.id === m?.move?.tenant) ?? ts[3];
+  const to = Math.min(3, Math.max(0, Number(m?.move?.to ?? 3)));
+  const from = mv.shard;
+  const kind = [tr('chung', 'pool'), tr('chung', 'pool'), tr('riêng', 'dedicated'), tr('riêng', 'dedicated')];
+  const ROW = (i: number) => 98 + i * 16;
+  const draw = (step: number): Shape[] => {
+    const moved = step >= 4;
+    const home = (t: { id: string; shard: number }) => (moved && t === mv ? to : t.shard);
+    const focusShards = [[from], [0, 1], [2], [from], [from, to], [0, 1, 2, 3]][step];
+    const pick = step === 0 || step >= 3 ? mv : undefined;
+    const out: Shape[] = [text('note', 334, 10, tr('Minh họa · không chạy trong trình duyệt', 'Illustration · not run in the browser'), { a: 'e', ink: 'muted' })];
+    out.push(...box('router', 110, 22, 120, 28, tr('Bộ định tuyến', 'Router'), step === 0 ? 'new' : 'cell'));
+    out.push(line('a0', 170, 53, 170, 63, { arrow: true, ink: step === 0 ? 'new' : 'edge' }));
+    out.push({ k: 'cat', t: 'r', x: 60, y: 66, w: 220, h: 128, tone: 'plain' });
+    if (step === 5) {
+      out.push(text('ch', 72, 82, tr('khóa bắt đầu bằng khách', 'keys start with the tenant'), { b: true, ink: 'muted' }));
+      ['SQL  (tenant_id, id)', 'Mongo  { tenantId, … }', 'Dynamo  TENANT#t-04#…'].forEach((s, i) => out.push(text(`n${i}`, 72, ROW(i) + 8, s, { mono: true })));
+    } else {
+      [tr('khách', 'tenant'), tr('gói', 'tier'), 'shard'].forEach((s, i) => out.push(text(`h${i}`, [72, 120, 232][i], 82, s, { b: true, ink: 'muted' })));
+      ts.forEach((t, i) => {
+        const on = t === pick;
+        if (on) out.push({ k: 'hl', t: 'r', x: 64, y: ROW(i) - 8, w: 212, h: 16, tone: 'new', rx: 2 });
+        [t.id, t.tier, `s${home(t) + 1}`].forEach((s, c) => out.push(text(`r${i}c${c}`, [72, 120, 232][c], ROW(i), s, { mono: true, b: on })));
+      });
+    }
+    if (step < 4) {
+      const cx = SX[pick ? home(pick) : focusShards[0]] + SW / 2;
+      if (pick) out.push(line('a1', 170, 197, cx, 223, { arrow: true, ink: 'new' }));
+    } else {
+      out.push({ k: 'mv', t: 'p', d: `M${SX[from] + SW / 2} 223 C${SX[from] + 60} 204 ${SX[to] - 20} 204 ${SX[to] + SW / 2} 223`, ink: 'new', w: 1.8, arrow: true, dash: true });
+    }
+    SX.forEach((x, s) => {
+      const on = focusShards.includes(s);
+      const hot = step === 3 && s === from;
+      out.push({ k: `sh${s}`, t: 'r', x, y: 226, w: SW, h: 86, tone: !on ? 'ghost' : hot ? 'dead' : s >= 2 ? 'new' : 'cell', bold: hot });
+      out.push(text(`sl${s}`, x + SW / 2, 240, `s${s + 1}`, { a: 'm', b: true, ink: on ? 'ink' : 'muted' }));
+      out.push(text(`ss${s}`, x + SW / 2, 256, hot ? tr('quá tải', 'overloaded') : kind[s], { a: 'm', ink: hot ? 'dead' : on ? 'ink' : 'muted' }));
+      ts.filter((t) => home(t) === s).forEach((t, j) => out.push(...box(`c${t.id}`, x + 4 + (j % 2) * 35, 266 + Math.floor(j / 2) * 22, 31, 18, t.id,
+        !on ? 'ghost' : t === mv && step >= 3 ? 'warm' : 'plain')));
+    });
+    return out;
+  };
+  const v = { t: mv.id, a: `s${from + 1}`, b: `s${to + 1}` };
+  return {
+    title: tr('Minh họa: khách nào ở shard nào', 'Illustration: which tenant lives on which shard'), w: 340, h: 318,
+    frames: [
+      { say: fill(tr('Mỗi yêu cầu mang tenant_id. Bộ định tuyến tra bảng danh mục để biết khách ở shard nào: {t} ở {a}.', 'Every request carries tenant_id. The router looks the tenant up in a catalog table: {t} lives on {a}.'), v), nodes: draw(0) },
+      { say: tr('Khách nhỏ gói free và pro dùng chung hai shard s1 và s2: mô hình pool, rẻ cho mỗi khách.', 'Small tenants on the free and pro tiers share shards s1 and s2: the pool model, cheap per tenant.'), nodes: draw(1) },
+      { say: tr('Khách enterprise có shard riêng s3: silo trong cùng hệ thống. Trộn hai mô hình theo gói là chuyện thường.', 'The enterprise tenant gets its own shard s3: a silo inside the same system. Mixing models by tier is common.'), nodes: draw(2) },
+      { say: fill(tr('Khách {t} lớn nhanh: shard {a} quá tải và hàng xóm của nó chậm theo, dù họ không làm gì sai.', 'Tenant {t} grows fast: shard {a} is overloaded and its neighbours slow down, though they did nothing wrong.'), v), nodes: draw(3) },
+      { say: fill(tr('Chuyển {t} sang shard riêng {b}: chép dữ liệu, rồi sửa một dòng danh mục. Mọi khóa bắt đầu bằng tenant_id nên dữ liệu đi cùng nhau.', 'Move {t} to its own shard {b}: copy its data, then change one catalog row. Every key starts with tenant_id, so the data moves together.'), v), nodes: draw(4) },
+      { say: tr('Cùng ý ở NoSQL: MongoDB đặt tenantId đầu shard key, DynamoDB đặt tiền tố khách trong partition key.', 'The same idea in NoSQL: MongoDB puts tenantId first in the shard key, DynamoDB prefixes the partition key with the tenant.'), nodes: draw(5) },
+    ],
+  };
+});
+
 // v35 (L553, uiux-design §2.2): pg-rls-path draws its own pinned setup (below), not a lab model; its numbers are
 // checked on PGlite by tests/enginePgViz.test.ts.
 // ── rlsPath ─────────────────────────────────────────────────────────────────────────────────────────────────────

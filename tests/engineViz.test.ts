@@ -247,6 +247,36 @@ describe('engineViz shell', () => {
     v.destroy();
   });
 
+  it('v37 pg-tenant-placement: an illustration on every step, tenants by catalog id, the hot shard said in words, arrows clear of boxes', () => {
+    reduced = true;
+    for (const lang of ['vi', 'en'] as const) {
+      const host = document.createElement('div');
+      const v = V.vizFor('pg-tenant-placement')!(host, { lang });
+      expect(v.count).toBe(6);
+      expect(host.querySelector('figcaption')!.textContent).toMatch(lang === 'vi' ? /Minh họa/ : /Illustration/);
+      const svg = host.querySelector('svg')!;
+      const words = () => [...svg.querySelectorAll('text')].map((t) => t.textContent);
+      const at = (el: Element, a: string) => Number(el.getAttribute(a));
+      for (let i = 0; i < v.count; i++) {
+        v.go(i);
+        expect(svg.querySelector('[data-k=note]')!.textContent).toMatch(lang === 'vi' ? /Minh họa/ : /Illustration/);
+        // R1 E04: an arrow's ends stay ≥ 2 units outside every box
+        const rects = [...svg.querySelectorAll('rect')].filter((r) => !r.closest('defs') && Number(r.getAttribute('opacity') ?? 1) > 0.05);
+        for (const l of svg.querySelectorAll('line')) for (const [x, y] of [[at(l, 'x1'), at(l, 'y1')], [at(l, 'x2'), at(l, 'y2')]]) for (const r of rects) {
+          const inside = x > at(r, 'x') - 2 && x < at(r, 'x') + at(r, 'width') + 2 && y > at(r, 'y') - 2 && y < at(r, 'y') + at(r, 'height') + 2;
+          expect(inside, `${lang} step ${i + 1}: arrow end ${x},${y} touches ${r.getAttribute('data-k')}`).toBe(false);
+        }
+      }
+      expect(words()).toEqual(expect.arrayContaining(['t-04', 's4']));
+      v.go(3);
+      expect(words()).toContain(lang === 'vi' ? 'quá tải' : 'overloaded');
+      v.go(4);
+      expect(svg.querySelector('[data-k=mv]')).not.toBeNull();
+      expect(v.texts[4]).toMatch(/t-04/);
+      v.destroy();
+    }
+  });
+
   it('a lab model with NULL pointer columns and numeric strings draws without NaN', () => {
     reduced = true;
     const host = document.createElement('div');
