@@ -142,7 +142,7 @@ const en: Record<BestKey, string> = {
   'entry.engine': 'Best Practice for {name}',
   'side.group': 'Best Practice cards',
   'side.habits': '8 habits',
-  'honest.run': 'Really runs · {version}',
+  'honest.run': 'Runs for real · {version}',
   'honest.none': 'Syntax only · checked against the docs on {date}',
   'rule': 'Rule',
   'why': 'Why',

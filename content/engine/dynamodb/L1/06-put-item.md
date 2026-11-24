@@ -127,7 +127,7 @@ Thêm một cuốn mới:
 {"op": "PutItem", "input": {"TableName": "Books", "Item": {"isbn": {"S": "978-0-12"}, "title": {"S": "Wide Rows"}, "price": {"N": "80000"}}}}
 ```
 
-Ghi đè `978-0-02`: sau lệnh, cuốn đó mất `author`, `stock` và `tags`, vì item mới không có chúng. Tab Kết quả cho thấy cả bảng sau khi ghi:
+Ghi đè `978-0-02`: sau lệnh, cuốn đó mất `author`, `stock` và `tags`, vì item mới không có chúng. Kết quả dưới khối cho thấy cả bảng sau khi ghi:
 
 ```json
 {"op": "PutItem", "input": {"TableName": "Books", "Item": {"isbn": {"S": "978-0-02"}, "title": {"S": "Keys and Values"}, "price": {"N": "90000"}}, "ReturnValues": "ALL_OLD"}}
@@ -198,7 +198,7 @@ Add a new book:
 {"op": "PutItem", "input": {"TableName": "Books", "Item": {"isbn": {"S": "978-0-12"}, "title": {"S": "Wide Rows"}, "price": {"N": "80000"}}}}
 ```
 
-Overwrite `978-0-02`: afterwards the book has lost `author`, `stock` and `tags`, because the new item does not have them. The Result tab shows the whole table after the write:
+Overwrite `978-0-02`: afterwards the book has lost `author`, `stock` and `tags`, because the new item does not have them. The result under the block shows the whole table after the write:
 
 ```json
 {"op": "PutItem", "input": {"TableName": "Books", "Item": {"isbn": {"S": "978-0-02"}, "title": {"S": "Keys and Values"}, "price": {"N": "90000"}}, "ReturnValues": "ALL_OLD"}}

@@ -1,5 +1,5 @@
 import {
-  blocksOf, ENGINES, engineXp, isRight, onPg, lessonPassed, parseEngineLesson, parseModules, partsOf, progressOf, SECTIONS, treeOf,
+  blocksOf, ENGINES, engineXp, isRight, onPg, lessonPassed, parseEngineLesson, parseModules, partsOf, progressOf, treeOf,
   type EngineId, type EngineLesson, type Kind, type LessonSource, type Level, type ModuleName, type Question, type SectionId, type Tree,
 } from '../engine/content';
 import { heapView } from '../engine/inside';
@@ -23,6 +23,7 @@ import type * as Mascots from './mascots';
 import type * as Storage from '../storage';
 import type { CapState } from './engineCapstone';
 import type { PredictState } from './enginePredict';
+import type { FullCtx } from './engineFull';
 
 /**
  * ENG-CORE (L220), redesign L280: the Database Engine pages (#/engine, #/engine/<engine>, #/engine/<engine>/<level>,
@@ -196,7 +197,7 @@ export function enginePage(): HTMLElement {
   const f = extra && extra !== 'ready' ? extra : terms === 'loading' && typeof full === 'object' ? 'loading' : full;
   const page = !lesson ? (engine ? (lv ? levelPage(engine, lv.level) : enginePg(engine)) : overview())
     : f === 'loading' ? loadingLine()
-      : f === 'failed' ? failedBox(() => { fulls.delete(lesson.id); if (predMod === 'failed') predMod = undefined; if (capMod === 'failed') capMod = undefined; if (nosqlMod === 'failed') nosqlMod = undefined; d.rerender(); })
+      : f === 'failed' ? failedBox(() => { fulls.delete(lesson.id); if (predMod === 'failed') predMod = undefined; if (capMod === 'failed') capMod = undefined; if (nosqlMod === 'failed') nosqlMod = undefined; if (fullMod === 'failed') fullMod = undefined; d.rerender(); })
         : lessonPage(f!);
   if (f === 'loading' || f === 'failed') return page; // not #engine-page yet: smoke and the axe harness wait for the drawn lesson
   page.id = 'engine-page'; // drawn (not the loading line): tests/axeHarness.ts and scripts/smoke.mjs wait for it
@@ -363,12 +364,14 @@ interface Visit {
   /** "Tables used" (L280): the lab's tables and columns after its setup, read once when the panel first opens. */
   tables?: { t: string; cols: string }[] | { error: unknown } | 'busy';
   tablesOpen?: boolean;
+  /** F13 (ux-route-v24 §5.3 #6): the steps whose editor is built: the current one, and any the learner opened (kept for the visit). */
+  opened: Set<number>;
 }
 /** Per lesson, for the session: a redraw (seed done, language switch) rebuilds the page from here, never from the DOM. */
 const visits = new Map<string, Visit>();
 const visitOf = (id: string): Visit => {
   let v = visits.get(id);
-  if (!v) visits.set(id, (v = { picks: {}, says: {}, wrongs: {}, passed: new Set(), code: [], out: [], msg: [], pred: {}, cap: {}, good: [] }));
+  if (!v) visits.set(id, (v = { picks: {}, says: {}, wrongs: {}, passed: new Set(), code: [], out: [], msg: [], pred: {}, cap: {}, good: [], opened: new Set() }));
   return v;
 };
 
@@ -529,6 +532,8 @@ type CapChunk = typeof import('./engineCapstone');
 let predMod: PredChunk | 'loading' | 'failed' | undefined;
 let capMod: CapChunk | 'loading' | 'failed' | undefined;
 let nosqlMod: typeof import('./engineNosql') | 'loading' | 'failed' | undefined;
+/** v30.1 (F01, L480): the full-lesson layout (contents, icon sections, runnable examples), loaded for every lesson. */
+let fullMod: typeof import('./engineFull') | 'loading' | 'failed' | undefined;
 /** v25: the NoSQL lab parts (tables used, MongoDB rule bar, pipeline by step, compared with SQL), once loaded. */
 const N = () => (typeof nosqlMod === 'object' ? nosqlMod : undefined);
 /** The predict chunk, once chunksFor() said 'ready' (callers run only on a drawn lesson that needed it). */
@@ -543,6 +548,10 @@ function chunksFor(l: EngineLesson): 'ready' | 'loading' | 'failed' {
     nosqlMod = 'loading';
     import('./engineNosql').then((m) => { nosqlMod = m; }, () => { nosqlMod = 'failed'; }).finally(() => d.rerender());
   }
+  if (fullMod === undefined) {
+    fullMod = 'loading';
+    import('./engineFull').then((m) => { fullMod = m; }, () => { fullMod = 'failed'; }).finally(() => d.rerender());
+  }
   if (wantPred && predMod === undefined) {
     predMod = 'loading';
     import('./enginePredict').then((m) => { predMod = m; }, () => { predMod = 'failed'; }).finally(() => d.rerender());
@@ -551,7 +560,7 @@ function chunksFor(l: EngineLesson): 'ready' | 'loading' | 'failed' {
     capMod = 'loading';
     import('./engineCapstone').then((m) => { capMod = m; }, () => { capMod = 'failed'; }).finally(() => d.rerender());
   }
-  const st = [wantPred ? predMod : 'ok', wantCap ? capMod : 'ok', wantNosql ? nosqlMod : 'ok'];
+  const st = [wantPred ? predMod : 'ok', wantCap ? capMod : 'ok', wantNosql ? nosqlMod : 'ok', fullMod];
   return st.includes('failed') ? 'failed' : st.includes('loading') ? 'loading' : 'ready';
 }
 const capChunk = (): CapChunk | undefined => (typeof capMod === 'object' ? capMod : undefined);
@@ -631,6 +640,8 @@ function labView(l: EngineLesson, v: Visit): HTMLElement {
       const res = out && 'result' in out ? out.result : undefined;
       // A passed step drops the "result too large, add a LIMIT" caption (blind-pg l4-01/l4-04): the step is already right.
       const shown = res && passed && res.truncated ? { ...res, truncated: undefined } : res;
+      if (i === main) v.opened.add(i);
+      const ed = live && v.opened.has(i);
       // v23 CAP (L257): a capstone's current step (the first not passed) gets the accent ring and says so in words.
       return h('li', { class: cls.cx(cls.CARD, 'flex flex-col gap-3 p-4 max-sm:p-3', i === cur && 'ring-2 ring-accent'), 'data-step': key, 'aria-current': i === cur ? 'step' : false },
         h('div', { class: 'flex items-start gap-3' },
@@ -639,10 +650,13 @@ function labView(l: EngineLesson, v: Visit): HTMLElement {
             h('h3', { class: 'm-0 text-caption font-bold tracking-wider text-muted uppercase' }, et('lab.step', { i: i + 1, n: steps.length }),
               i === cur ? h('span', { class: 'ml-2 text-accent' }, `· ${et('cap.current')}`) : null),
             h('p', { class: 'm-0' }, ...inline(s.task[lang()])), N()?.stepTop(d, s))),
-        live ? codeBox(`${key}-code`, v.code[i] ?? '', et('lab.code', { i: i + 1 }), onPg(l.engine), {
+        ed ? codeBox(`${key}-code`, v.code[i] ?? '', et('lab.code', { i: i + 1 }), onPg(l.engine), {
           change: (x) => { v.code[i] = x; }, run: () => void labAction(l, v, i, false), submit: () => void labAction(l, v, i, true),
         }) : null,
-        live ? h('div', { class: 'flex flex-wrap items-center gap-2' },
+        live && !ed ? h('div', { class: 'flex flex-wrap items-center gap-3' },
+          main >= 0 && i > main ? h('span', { class: 'text-body-sm text-muted' }, et('lab.later', { n: main + 1 })) : null,
+          h('button', { type: 'button', class: cls.cx(cls.BTN_GHOST, 'px-3 py-1'), 'data-ek': `${key}-open`, onclick: (e: Event) => { (e.currentTarget as HTMLElement).blur(); v.opened.add(i); focusKey = `${key}-code`; d.rerender(); } }, et('lab.open'))) : null,
+        ed ? h('div', { class: 'flex flex-wrap items-center gap-2' },
           h('button', { type: 'button', class: cls.cx(cls.BTN_SECONDARY, 'px-4 py-1.5'), 'data-ek': `${key}-run`, disabled: v.busy !== undefined, onclick: () => void labAction(l, v, i, false) }, et('lab.run')),
           h('button', { type: 'button', class: cls.cx(i === main ? cls.BTN_GO : cls.BTN_SECONDARY, 'px-4 py-1.5 disabled:bg-code disabled:text-disabled disabled:shadow-none'), 'data-ek': `${key}-submit`, disabled: v.busy !== undefined, onclick: () => void labAction(l, v, i, true) }, et('lab.submit')),
           v.busy === i ? h('span', { class: 'flex items-center gap-2 text-body-sm text-muted' }, d.loader(), et('lab.preparing')) : null) : null,
@@ -747,15 +761,11 @@ const HONEST_CLS: Record<Honest, string> = {
 function honestChip(l: EngineLesson): HTMLElement {
   const k = honestOf(l);
   return d.h('span', { class: d.cls.cx(d.cls.PILL, HONEST_CLS[k]), 'data-honest': k },
-    k === 'docs' ? d.icon('docsOnly', 'size-4') : d.h('span', { class: 'inline-block size-2 rounded-full bg-current', 'aria-hidden': 'true' }), et(`honest.${k}`));
+    k === 'docs' ? d.icon('docsOnly', 'size-4') : k === 'diagram' ? d.h('span', { class: 'inline-block size-2 rounded-full bg-current', 'aria-hidden': 'true' }) : d.icon('inApp', 'size-4'), et(`honest.${k}`));
 }
 const kindChip = (k: Kind): HTMLElement => d.h('span', { class: d.cls.cx(d.cls.PILL, 'bg-code text-ink') }, d.icon(KIND_ICON[k], 'size-4'), et(`kind.${k}`));
 const cardHead = (id: string, icon: Icons.IconName, text: string): HTMLElement =>
   d.h('h2', { id, class: 'm-0 flex items-center gap-2 text-title font-bold' }, d.icon(icon, 'size-5 text-accent'), text);
-
-/** v27 R3: the body sections a filter keeps, in file order (Opening above the objectives, Recap after the questions). */
-const secs = (l: EngineLesson, keep: (id: SectionId) => boolean): HTMLElement[] => l.sections.filter((s) => keep(s.id)).map((s) => d.h('section', { class: 'flex flex-col gap-3' },
-  d.h('h2', { class: 'm-0 text-title font-bold' }, SECTIONS[s.id][lang() === 'vi' ? 0 : 1]), prose(s.text[lang()], true)));
 
 /** v27: the open lesson's term marker (first mentions in objectives and sections), set only while lessonBody draws. */
 let mark: ReturnType<TermsView['lessonMarker']> | undefined;
@@ -781,7 +791,11 @@ function lessonBody(l: EngineLesson): HTMLElement {
   const module = levelOf(l.engine, l.level)!.modules.find((m) => m.id === l.module)!;
   const req = l.requires.map((id) => lessons.find((x) => x.id === id)).filter((x): x is EngineLesson => !!x);
   const isDone = ok.has(l.id);
-  return h('article', { class: 'flex flex-col gap-8', 'aria-labelledby': 'home-title', 'data-lesson': l.id },
+  const n = (pre: string): string | undefined => { const ps = parts.filter((p) => p.startsWith(pre)); return ps.length ? `${ps.filter((p) => isDone || v.passed.has(p)).length}/${ps.length}` : undefined; };
+  const fc: FullCtx = { d, l, lang: lang(), inline, make: LAB_RUNNERS[l.engine], meta: metaView, counts: { lab: n('s'), quiz: n('q') } };
+  const F = fullMod as typeof import('./engineFull');
+  const secs = (keep: (id: SectionId) => boolean): HTMLElement[] => F.sections(fc, keep);
+  return F.wrap(fc, h('article', { class: 'flex min-w-0 flex-col gap-8', 'aria-labelledby': 'home-title' },
     h('div', { class: 'flex flex-col gap-2' },
       h('p', { class: 'm-0 flex flex-wrap items-center gap-2 text-body-sm text-muted' },
         honestChip(l), kindChip(l.kind), h('span', {}, et('minutes', { n: l.minutes })), h('span', { 'aria-hidden': 'true' }, '·'),
@@ -790,11 +804,11 @@ function lessonBody(l: EngineLesson): HTMLElement {
       l.runtime === 'docs' ? h('p', { class: 'm-0 text-body-sm text-muted', 'data-runtime': 'docs' }, et(l.docsWhy ? `runtime.docs.${l.docsWhy}` : 'runtime.docs')) : null,
       req.length ? h('p', { class: 'm-0 flex flex-wrap items-center gap-2 text-body-sm' }, h('span', { class: 'text-muted' }, `${et('requires')}:`),
         ...req.map((x) => h('a', { href: lessonHash(x), class: cls.cx(cls.PILL, 'min-h-6 bg-code text-ink no-underline hover:bg-accent-soft') }, x.title[lang()], tick(ok.has(x.id))))) : null),
-    ...secs(l, (id) => id === 'open'),
+    ...secs((id) => id === 'open'),
     h('section', { class: cls.cx(cls.CARD, 'flex flex-col gap-2 p-5 max-sm:p-4'), 'aria-labelledby': `${l.id}-obj` },
       h('h2', { id: `${l.id}-obj`, class: 'm-0 text-caption font-bold tracking-wider text-muted uppercase' }, et('objectives')),
       h('ul', { class: 'm-0 list-disc space-y-1 pl-5' }, ...l.objectives.map((o) => h('li', {}, ...inline(o[lang()], true))))),
-    ...secs(l, (id) => id !== 'open' && id !== 'recap'),
+    ...secs((id) => id !== 'open' && id !== 'recap'),
     vizSlot(l.id, l.viz, l.engine),
     l.predict ? h('section', { class: cls.cx(cls.CARD, 'flex flex-col gap-3 p-5 max-sm:p-4'), 'aria-labelledby': `${l.id}-pred` },
       cardHead(`${l.id}-pred`, 'kindPredict', et('predict.title')),
@@ -814,7 +828,7 @@ function lessonBody(l: EngineLesson): HTMLElement {
       h('div', { class: 'divide-y divide-line [&>*]:py-4 [&>*:first-child]:pt-0 [&>*:last-child]:pb-0' },
         ...l.quiz.map((q, i) => h('div', {}, question(l, v, q, `q${i}`, et('quiz.n', { i: i + 1, n: l.quiz!.length })))))) : null,
     capDoneView(l, v), // review v23 P3: the finish card after the closing questions, the capstone's last part
-    ...secs(l, (id) => id === 'recap'),
+    ...secs((id) => id === 'recap'),
     h('section', { class: cls.cx(cls.CARD, 'flex flex-wrap items-center gap-3 p-5 max-sm:p-4'), 'aria-label': et('done') },
       isDone ? h('p', { class: 'm-0 flex items-center gap-2 font-bold good' }, d.icon('check', 'size-5'), et('complete.done'))
         : parts.length ? h('p', { class: 'm-0 text-body-sm' }, et('complete.parts', { k: parts.filter((p) => v.passed.has(p)).length, n: parts.length }))
@@ -828,7 +842,7 @@ function lessonBody(l: EngineLesson): HTMLElement {
       h('h2', { id: `${l.id}-src`, class: 'm-0 text-body font-bold' }, et('sources')),
       h('ul', { class: 'm-0 list-disc space-y-1 pl-5 text-body-sm' }, ...l.sources.map((u) =>
         h('li', {}, h('a', { href: u, target: '_blank', rel: 'noopener noreferrer', title: u, class: 'inline-flex items-center gap-1.5' },
-          d.icon('external', 'size-4 shrink-0'), sourceTitle(u), h('span', { class: 'sr-only' }, ` (${et('newTab')})`)))))) : null);
+          d.icon('external', 'size-4 shrink-0'), sourceTitle(u), h('span', { class: 'sr-only' }, ` (${et('newTab')})`)))))) : null));
 }
 
 const SITE: Record<string, string> = {

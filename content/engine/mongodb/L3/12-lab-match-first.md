@@ -184,7 +184,7 @@ Câu sai ra 10 vì cộng cả dòng `B` của đơn `1` và dòng `C` của đ�
 
 ## Thực hành
 
-Ba bước trên cùng collection `orders`: doanh thu theo cửa hàng, số lượng theo mã hàng, số đơn theo cửa hàng. Hai bước đầu có thanh quy tắc: `$match` phải đứng trước `$unwind`. Mở tab "Pipeline từng bước" để so số tài liệu sau mỗi stage.
+Ba bước trên cùng collection `orders`: doanh thu theo cửa hàng, số lượng theo mã hàng, số đơn theo cửa hàng. Hai bước đầu có thanh quy tắc: `$match` phải đứng trước `$unwind`. Xem phần "Pipeline từng bước" dưới kết quả để so số tài liệu sau mỗi stage.
 
 ## Tóm tắt
 
@@ -283,7 +283,7 @@ The wrong one gives 10 because it also adds the `B` line of order `1` and the `C
 
 ## Practice
 
-Three steps on the same `orders` collection: revenue per store, units per item code, orders per store. The first two have a rule bar: `$match` must come before `$unwind`. Open the "Pipeline step by step" tab to compare document counts after each stage.
+Three steps on the same `orders` collection: revenue per store, units per item code, orders per store. The first two have a rule bar: `$match` must come before `$unwind`. Look at the "Pipeline step by step" part under the result to compare document counts after each stage.
 
 ## Recap
 

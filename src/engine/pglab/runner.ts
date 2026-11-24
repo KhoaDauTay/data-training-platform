@@ -89,6 +89,7 @@ export function pgScriptRunner(env: Env, client: Pick<PgLabClient, 'run' | 'rese
       if (r.setupError) throw Object.assign(new Error(r.setupError.message), r.setupError);
     },
     run: (lab, code, step) => exec(lab, code, step),
+    demo: (setup, steps) => client.run({ setup, extensions: extensionsOf(setup, ...steps.map((s) => (typeof s === 'string' ? s : s.sql))), steps }),
     explain: async (lab, sql) => planLines((await exec(lab, explainSql(sql), undefined)).rows[0]?.[0]),
     check: async (lab: Lab, step: LabStep, code: string): Promise<LabVerdict> => {
       const i = stepIndex(lab, step);

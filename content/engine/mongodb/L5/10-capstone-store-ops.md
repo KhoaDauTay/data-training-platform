@@ -147,7 +147,7 @@ Bài gồm hai phần với hai nhãn khác nhau. Ba bước lab chạy thật b
 
 ## Thực hành
 
-Làm ba bước lab theo thứ tự, rồi chọn index cho truy vấn bảng điều khiển và write concern cho luồng thanh toán. Ở bước 3, mở "Pipeline từng bước" để so số tài liệu sau mỗi stage khi `$match` đứng đầu và khi nó đứng sau `$lookup`.
+Làm ba bước lab theo thứ tự, rồi chọn index cho truy vấn bảng điều khiển và write concern cho luồng thanh toán. Ở bước 3, xem phần "Pipeline từng bước" dưới kết quả để so số tài liệu sau mỗi stage khi `$match` đứng đầu và khi nó đứng sau `$lookup`.
 
 ## Tóm tắt
 
@@ -168,7 +168,7 @@ The lesson has two parts with two different labels. Three lab steps really run o
 
 ## Practice
 
-Do the three lab steps in order, then pick the index for the dashboard query and the write concern for the payment path. In step 3, open "Pipeline step by step" to compare the documents after each stage with `$match` first and with it after `$lookup`.
+Do the three lab steps in order, then pick the index for the dashboard query and the write concern for the payment path. In step 3, look at the "Pipeline step by step" part under the result to compare the documents after each stage with `$match` first and with it after `$lookup`.
 
 ## Recap
 

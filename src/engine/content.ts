@@ -95,6 +95,8 @@ export interface EngineLesson {
   lab?: Lab;
   quiz?: Question[];
   predict?: Predict;
+  /** Frontmatter `demo_setup`: the data the runnable examples use when the lesson has no `lab.setup` (src/engine/demo.ts). */
+  demoSetup?: string;
   sections: Section[];
   /** File order inside its level (the NN of the file name). */
   order: number;
@@ -198,6 +200,7 @@ export function parseEngineLesson(source: string | LessonSource, path: string, y
     if (!steps.length) fail('lab cần ít nhất một bước');
     lesson.lab = { steps, ...(typeof lab.setup === 'string' && lab.setup.trim() ? { setup: lab.setup.trim() } : {}) };
   }
+  if (typeof fm.demo_setup === 'string' && fm.demo_setup.trim()) lesson.demoSetup = fm.demo_setup.trim();
   if (fm.quiz !== undefined) lesson.quiz = list(fm.quiz, 'quiz').map((q, i) => question(q, `quiz[${i}]`));
   if (fm.predict !== undefined) {
     const p = fm.predict as Record<string, unknown>;
