@@ -182,13 +182,15 @@ Kiểm thử policy bằng vai trò quản trị:
 ```sql
 -- WRONG: the owner skips RLS
 RESET ROLE;
-SELECT count(*) AS rows_seen FROM tickets;
+SELECT count(*) AS rows_seen
+FROM tickets;
 ```
 
 ```sql
 -- FIX: test as the app's role
 SET ROLE tenant_1;
-SELECT count(*) AS rows_seen FROM tickets;
+SELECT count(*) AS rows_seen
+FROM tickets;
 RESET ROLE;
 ```
 
@@ -320,13 +322,15 @@ Testing policies with an admin role:
 ```sql
 -- WRONG: the owner skips RLS
 RESET ROLE;
-SELECT count(*) AS rows_seen FROM tickets;
+SELECT count(*) AS rows_seen
+FROM tickets;
 ```
 
 ```sql
 -- FIX: test as the app's role
 SET ROLE tenant_1;
-SELECT count(*) AS rows_seen FROM tickets;
+SELECT count(*) AS rows_seen
+FROM tickets;
 RESET ROLE;
 ```
 
