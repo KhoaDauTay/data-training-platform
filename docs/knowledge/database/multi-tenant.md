@@ -282,6 +282,7 @@ SELECT run_id FROM job_runs WHERE exit_code = 0 AND applied = expected AND expec
 - AWS Well-Architected SaaS Lens, silo, pool and bridge models: https://docs.aws.amazon.com/wellarchitected/latest/saas-lens/silo-pool-and-bridge-models.html
 - AWS SaaS Tenant Isolation Strategies (PDF): https://docs.aws.amazon.com/pdfs/whitepapers/latest/saas-tenant-isolation-strategies/saas-tenant-isolation-strategies.pdf
 - PostgreSQL 18, constraints: https://www.postgresql.org/docs/18/ddl-constraints.html
+- PostgreSQL 18, ALTER TABLE (`NOT VALID`, `VALIDATE CONSTRAINT`, `ADD CONSTRAINT … USING INDEX`) and CREATE INDEX (`CONCURRENTLY`): https://www.postgresql.org/docs/18/sql-altertable.html, https://www.postgresql.org/docs/18/sql-createindex.html
 - PostgreSQL 18, schemas and `search_path`: https://www.postgresql.org/docs/18/ddl-schemas.html
 - PostgreSQL 18, databases: https://www.postgresql.org/docs/18/manage-ag-overview.html
 - PostgreSQL 18, row security policies: https://www.postgresql.org/docs/18/ddl-rowsecurity.html

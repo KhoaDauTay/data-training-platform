@@ -46,5 +46,9 @@ describe('Thiết kế CSDL: thẻ thứ tư và trang bài', () => {
     for (const href of ['#/engine/design/L2/e-ds-l2-06', '#/engine/design/L4/e-ds-l4-11', '#/engine/best/postgres/e-bp-s10', '#/engine/design/L5/e-ds-l5-08', '#/engine/design/L5/e-ds-l5-11'])
       expect(document.querySelector(`#engine-page a[href="${href}"]`), href).not.toBeNull();
     expect(document.querySelector('#engine-page a[href="#/engine/best/postgres/e-bp-s10"]')!.textContent).toBe('Best Practice · S10');
+    // v38 (L582): a `{ url, title }` source shows its title, never the URL slug
+    expect([...document.querySelectorAll('#e-ds-l4-09-src ~ ul a')].map((a) => a.textContent)).toEqual([
+      'AWS SaaS Lens · Silo, Pool, and Bridge Models (mở trong tab mới)', 'PostgreSQL · Constraints › Foreign Keys (mở trong tab mới)',
+      'PostgreSQL · Row Security Policies (mở trong tab mới)']);
   });
 });

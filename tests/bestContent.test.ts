@@ -45,6 +45,12 @@ describe('thẻ Best Practice: cấu trúc (132 thẻ, cả track chưa phát h�
     expect(released.filter((c) => c.track === 'dynamodb')).toHaveLength(32);
   });
 
+  it('v38 (L582): `{ url, title }` sources keep the URL in `sources` and the title beside it', () => {
+    const x08 = cards.find((c) => c.id === 'e-bp-x08')!;
+    expect(x08.sources).toEqual(['https://www.postgresql.org/docs/18/sql-createview.html', 'https://www.postgresql.org/docs/18/ddl-rowsecurity.html']);
+    expect(x08.sourceTitles).toEqual({ 'https://www.postgresql.org/docs/18/sql-createview.html': 'CREATE VIEW', 'https://www.postgresql.org/docs/18/ddl-rowsecurity.html': 'Row Security Policies' });
+  });
+
   it.each(cards.map((c) => [c.id, c]))('%s: luật nội dung §4.3', (_id, c) => {
     expect(cardProblems(c)).toEqual([]);
     const ids = new Set(SKILLS.map((s) => s.id));

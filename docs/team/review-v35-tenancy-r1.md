@@ -46,6 +46,8 @@ Clean results: contrast of HTML text 0 findings; one `h1` per page, no skipped h
 | T1-C9-01 | P3 | `pg-tenancy-models` step 5 at 375/320 | Rating headings sat 2–3 px under the previous row | **Fixed** (L558a): 14 units between a row's cells and the next heading |
 | T1-C7-02 | P3 | diagram pages at 1280 | SVG stops at 480 px in a ~720 px card; label line boxes touch (no ink overlap) | Accepted (core) |
 
+v38 (L580–L589): E10 (titled sources, L582) and E12 (the step before, L583) are fixed; E15 is fixed for the hub and the other tenancy lessons got new paragraphs, not lists; E16's VI phrasing was rewritten only where R2 named it (L584). E11, E13 (caption), E14, E17 and E18 stay open.
+
 ## What reads well (keep)
 
 - Design-track code wrapped short reads fine at 375; the Sai / Sửa / Lỗi mong đợi chips are clear in both themes.

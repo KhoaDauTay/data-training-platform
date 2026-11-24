@@ -66,6 +66,16 @@ Their reports and screenshots are kept outside the repo, with the coordinator. T
 - **Targets:** T2-C5-01/02 (term button and breadcrumb targets are 20 px tall).
 - **Not checked:** the interview question views were not rendered, because they need Start.
 
+### v38 status (decision log L580–L589)
+
+- **Fixed in code or content, not yet seen in a browser:**
+  - E08: titled sources (L582);
+  - E10: Sai/Sửa cards on text blocks, and the mg-l5-12 FIX line (L585);
+  - E12: "Làm sau bước" names the step before (L583);
+  - E17/E18: units per engine, terms (L584);
+  - E21, E23, T2-C5-01 (L586).
+- **Still open:** E04, E09 (code must be identical in VI and EN), E11, E14, E19, E20, E22, T2-C5-02, T2-C7-02/03, T2-C12-01.
+
 ## Checks run
 
 - `npx tsc --noEmit`.
