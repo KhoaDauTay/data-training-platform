@@ -100,3 +100,12 @@ Không đưa vào repo. Đường dẫn cục bộ:
 - Lượt 3: `C:\Users\khoa.huynh\Documents\study\bd-wt\review-v30\shots3\` (`mg-viz-runall-*`, `interview-started-*`, `report3.json`)
 - Lượt 2: `C:\Users\khoa.huynh\Documents\study\bd-wt\review-v30\shots2\` (popover `pg-l2-02-term-*`, Pipeline `mg-l3-12-run-*`, bài không guide `*-noguide-*`, EN `en-*`, người mới `new-*`, `report.json` có tràn ngang, số nút chính, chữ chứng nhận)
 - Script: `C:\Users\khoa.huynh\Documents\study\bd-wt\review-v30\shoot.mjs`, `pass2.mjs`, `pass3.mjs`
+
+## Trạng thái sau v30.1 (2026-11-24)
+
+Sửa trong v30.1 (nhánh `v301-engine` + `v301-fixes`, decision-log L480–L490):
+
+- **Đã sửa:** F01 (bài Engine dùng bố cục bài đầy đủ: mục lục, khối Ví dụ / Lỗi hay gặp chạy được trên runtime của bài, chunk `engineFull`), F02, F03 (một thang đo kỹ năng 0–4; hộp Leitner gọi là "Lịch ôn"), F04, F05, F06, F07, F08, F10, F11, F12 (tìm kiếm Ctrl/⌘K, chunk `palette`), F13, F14, F16, F17, F18, F19, F20, F21, F22, F27.
+- **Đã sửa, chưa xem bằng mắt** (CSS/bố cục; jsdom không có layout, luật no-e2e): F09, F23, F25, F26, F28 (`wrap-anywhere`, nguyên nhân 123 px còn là phỏng đoán), F29.
+- **Sửa khác đề xuất:** F15 (bỏ bộ lọc "Design" vì glossary không có thuật ngữ nào của thẻ thiết kế).
+- **Còn mở:** F24 phần hàng dày và chip lọc ở trang cấp Engine; F01 phần điện thoại (thanh bài dính, sheet mục lục), "Sửa thử" và tô màu cú pháp cho ví dụ Engine (L484).
