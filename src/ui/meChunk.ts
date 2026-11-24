@@ -6,7 +6,7 @@ import { getLang, locale, t } from '../i18n';
 import { readAttempts, readErrors } from '../insights';
 import { INTERVIEW_KEY, parseInterviewPrefs, passedTakeHomes } from '../interviewPrefs';
 import { DAYS_KEY, parseDays } from '../lily';
-import { badges, engineLevels, FAST_PART, masteryOf, perfDrills } from '../mastery';
+import { badges, DRILL_KINDS, engineLevels, FAST_PART, masteryOf, perfDrills } from '../mastery';
 import { ALL_PARTS, chaptersOf, moduleTitle, PARTS, rankOf, ROUTE_SKILLS, SKILLS } from '../progress';
 import { hashOf } from '../route';
 import { domainSlot } from '../save';
@@ -41,7 +41,7 @@ export function meChunk(): Promise<MeView> {
       run: (sql, dom) => app.run(sql, { schema: domainSchemaId(dom) }), cardBody, ranHere: (c) => ranHere(c),
       loadInterview, interviewPrefs: () => parseInterviewPrefs(readJson<unknown>(INTERVIEW_KEY)), passedTakeHomes,
       // v24 (L323): skill map and badges
-      mastery: { masteryOf, badges, engineLevels, perfDrills, FAST_PART }, ROUTE_PARTS: PARTS, ALL_PARTS, ROUTE_SKILLS, generalNow, loadGeneral, today, moduleTitle, startToday: () => void startToday(), engineTrees,
+      mastery: { masteryOf, badges, engineLevels, perfDrills, FAST_PART, DRILL_KINDS }, ROUTE_PARTS: PARTS, ALL_PARTS, ROUTE_SKILLS, generalNow, loadGeneral, today, moduleTitle, startToday: () => void startToday(), engineTrees,
     });
     return (meView = m);
   }, (e: unknown) => {

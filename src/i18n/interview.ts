@@ -7,7 +7,9 @@ import type { Lang, Params } from './index';
  */
 const vi = {
   'iv.back': '‹ Lộ trình',
-  'iv.title': 'Phòng phỏng vấn',
+  'iv.title': 'Phòng phỏng vấn SQL',
+  'iv.other': 'Câu hỏi về bên trong PostgreSQL, MongoDB và DynamoDB (viết câu trả lời, so với đáp án mẫu) ở phòng kia:',
+  'iv.otherGo': 'Phỏng vấn Engine',
   'iv.intro': 'Luyện như một vòng phỏng vấn Data Analyst: câu hỏi không có khung, không có thẻ "Kết quả mong đợi". 0 XP, không phạt; kết quả chỉ lưu trên máy này, không vào tiến độ học.',
   'iv.sets': 'Bộ đề tính giờ',
   'iv.setsIntro': 'Năm câu SQL trên dữ liệu chuỗi cửa hàng. Đồng hồ tùy chọn: hết giờ bạn vẫn làm tiếp, không bị trừ gì.',
@@ -75,7 +77,9 @@ export type IvKey = keyof typeof vi;
 
 const en: Record<IvKey, string> = {
   'iv.back': '‹ Learning path',
-  'iv.title': 'Interview room',
+  'iv.title': 'SQL interview room',
+  'iv.other': 'Questions on the insides of PostgreSQL, MongoDB and DynamoDB (write an answer, compare with the model) are in the other room:',
+  'iv.otherGo': 'Engine interviews',
   'iv.intro': 'Practise like a Data Analyst interview round: no frame and no "Expected result" card. 0 XP, no penalty; results stay on this device and are not part of your progress.',
   'iv.sets': 'Timed question sets',
   'iv.setsIntro': 'Five SQL questions on the store chain data. The timer is optional: when time is up you keep going, nothing is taken off.',

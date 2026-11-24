@@ -22,7 +22,7 @@ import type { Badge, SkillLevel } from '../mastery';
 import type { Drill } from '../general';
 import { meText, type MeKey } from '../i18n/me';
 import {
-  calendar, dashFile, importDash as readDashFile, portfolioEntries, portfolioMd, strengths, topErrors, touchesSandbox,
+  calendar, dashFile, importDash as readDashFile, portfolioEntries, portfolioMd, nextSkill, topErrors, touchesSandbox,
   trySummary, pictureCards, type PortfolioEntry, type PortfolioLevels,
 } from '../me';
 
@@ -52,7 +52,7 @@ export interface MeDeps {
   loadInterview: typeof Content.loadInterview; interviewPrefs: () => IvPrefs.InterviewPrefs; passedTakeHomes: typeof IvPrefs.passedTakeHomes;
   cls: { CARD: string; BTN_GO: string; BTN_SECONDARY: string; cx: (...p: (string | false | null | undefined)[]) => string };
   /** v24 (L323, L330–L334): skill map and badges (src/mastery.ts, main). */
-  mastery: Pick<typeof Mastery, 'masteryOf' | 'badges' | 'engineLevels' | 'perfDrills' | 'FAST_PART'>; today: () => string;
+  mastery: Pick<typeof Mastery, 'masteryOf' | 'badges' | 'engineLevels' | 'perfDrills' | 'FAST_PART' | 'DRILL_KINDS'>; today: () => string;
   /** v24 integration (L330): the skill map's Parts and skills come from content/general/route.yml; perf drills from the General chunk. */
   ROUTE_PARTS: typeof Progress.PARTS; ALL_PARTS: typeof Progress.ALL_PARTS; ROUTE_SKILLS: typeof Progress.ROUTE_SKILLS;
   generalNow: typeof Content.generalNow; loadGeneral: typeof Content.loadGeneral;
@@ -133,29 +133,6 @@ function statsCard(): HTMLElement {
       stat(m('stat.hints'), num(Object.values(save.hintsUsed).reduce((a, b) => a + b, 0)))));
 }
 
-function skillsCard(all: Ticket[]): HTMLElement {
-  const lang = d.getLang();
-  const ids = d.SKILLS.map((s) => s.id);
-  const list = strengths(d.knownSkills(d.app.save, all, ids), d.app.save.review);
-  const row = (s: { id: string; box: number }) => {
-    const skill = d.SKILLS.find((x) => x.id === s.id);
-    return d.h('li', { class: 'grid grid-cols-[minmax(0,10rem)_1fr_4.5rem] items-center gap-3 max-sm:grid-cols-[minmax(0,8rem)_1fr_4rem]' },
-      d.h('a', { href: `${d.hashOf('learn')}/skill/${s.id}`, class: 'truncate text-body-sm', title: skill?.label[lang] ?? s.id }, skill?.label[lang] ?? s.id), // U33: the cut label in full
-      d.h('span', { class: 'block h-2.5 rounded-full bg-code', 'aria-hidden': 'true' }, // U33: no card yet = the empty track only
-        s.box ? d.h('span', { class: s.box <= 2 ? 'block h-full rounded-full bg-warn' : 'block h-full rounded-full bg-accent', style: `width:${s.box * 20}%` }) : null),
-      d.h('span', { class: 'text-right text-body-sm text-muted tabular-nums' }, s.box ? m('skills.box', { box: s.box }) : m('skills.noCard')));
-  };
-  return card(title(m('skills.title'), 'sigma'),
-    list.length
-      ? d.h('div', {},
-        d.h('p', { class: 'mt-0 mb-3 text-body-sm text-muted' }, m('skills.intro'), ' ',
-          m('skills.sum', { solid: list.filter((s) => s.box >= 4).length, weak: list.filter((s) => s.box && s.box <= 2).length, n: list.length })),
-        d.h('ul', { class: 'm-0 list-none space-y-2 p-0' }, ...list.slice(0, 8).map(row)),
-        list.length > 8 ? d.h('details', { class: 'mt-2' }, d.h('summary', { class: 'cursor-pointer text-body-sm text-muted' }, m('skills.all', { n: list.length })),
-          d.h('ul', { class: 'mt-2 mb-0 list-none space-y-2 p-0' }, ...list.slice(8).map(row))) : null)
-      : d.h('p', { class: 'm-0 text-body-sm text-muted' }, m('skills.none')));
-}
-
 const ERR = ['42703', '42P01', '42601', '42803', '42702', '42883', '42804', '22P02', '22012', '22007', '21000', '42P20'] as const;
 const errLabel = (code: string): string => (ERR.includes(code as (typeof ERR)[number]) ? m(`err.${code as (typeof ERR)[number]}`) : m('err.other'));
 
@@ -185,17 +162,19 @@ function daysCard(): HTMLElement {
     d.h('p', { class: 'm-0 text-caption text-muted' }, m('days.note')));
 }
 
-function nextCard(all: Ticket[]): HTMLElement {
+function nextCard(x: Measured): HTMLElement {
   const lang = d.getLang();
-  const weak = strengths(d.knownSkills(d.app.save, all, d.SKILLS.map((s) => s.id)), d.app.save.review).find((s) => s.box > 0 && s.box <= 3);
+  const id = nextSkill(d.ROUTE_SKILLS.map((s) => s.id), x.levels);
+  const skill = id ? d.ROUTE_SKILLS.find((s) => s.id === id) : undefined;
+  const lv = id ? x.levels.get(id) : undefined;
   const err = topErrors(d.readErrors(), 1)[0];
-  const skill = weak && d.SKILLS.find((s) => s.id === weak.id);
   const link = (href: string, text: string) => d.h('a', { href, class: d.cls.cx(d.cls.BTN_SECONDARY, 'inline-flex px-4 py-1.5 text-body-sm no-underline') }, text);
+  const none = [...x.levels.values()].every((s) => !s.level);
   return card(title(m('next.title'), 'route'),
-    skill ? d.h('p', { class: 'm-0 text-body-sm' }, m('next.skill', { skill: skill.label[lang], box: weak.box })) : null,
+    skill && lv ? d.h('p', { class: 'm-0 text-body-sm' }, m(lv.review ? 'next.due' : 'next.skill', { skill: skill.label[lang], level: m(`lv.${lv.level}`) })) : null,
     err ? d.h('p', { class: 'm-0 text-body-sm' }, m('next.err', { what: errLabel(err[0]), code: err[0], n: err[1] })) : null,
     skill ? link(`${d.hashOf('learn')}/skill/${skill.id}`, m('next.go', { skill: skill.label[lang] }))
-      : d.h('div', { class: 'space-y-2' }, d.h('p', { class: 'm-0 text-body-sm' }, m('next.none')), link(d.hashOf('learn'), m('next.start'))));
+      : d.h('div', { class: 'space-y-2' }, d.h('p', { class: 'm-0 text-body-sm' }, none ? m('next.empty', { n: d.mastery.DRILL_KINDS.length }) : m('next.none')), link(d.hashOf('learn'), m('next.start'))));
 }
 
 // ---------- v24 (L323): skill map and badges, derived on every draw ----------
@@ -331,10 +310,10 @@ function badgesCard(x: Measured, list: Scope[]): HTMLElement {
     const state = b.have ? m('badge.have') : m('badge.not');
     return d.h('li', {}, d.h('button', {
       type: 'button', 'aria-describedby': `badge-${pre}${b.id}`, title: `${t.cond} (${state})`, 'data-badge': b.id, 'data-have': String(b.have),
-      class: d.cls.cx('flex h-full w-full flex-col items-center gap-1 rounded-(--r-inset) p-2 text-center text-caption', b.have ? 'bg-accent-soft font-semibold text-ink' : 'text-muted ring-1 ring-line'),
+      class: d.cls.cx('flex h-full w-full flex-col items-center gap-1 rounded-(--r-inset) p-2 text-center text-caption', b.have ? 'bg-accent-soft font-semibold text-ink' : 'border border-dashed border-line-strong text-muted'), // F23: not held = dashed, faded icon
       onclick: () => { badgeSay = `${t.name}: ${t.cond} (${state})`; d.rerender(); },
-    }, d.icon(t.icon, d.cls.cx('size-6', b.have ? 'text-accent' : 'text-muted')), d.h('span', {}, t.name),
-    d.h('span', { id: `badge-${pre}${b.id}`, class: 'sr-only' }, `${t.cond} (${state})`)));
+    }, d.icon(t.icon, d.cls.cx('size-6', b.have ? 'text-accent' : 'text-muted opacity-40')), d.h('span', {}, t.name),
+    d.h('span', { id: `badge-${pre}${b.id}`, class: b.have ? 'sr-only' : 'leading-tight font-normal max-sm:sr-only' }, `${t.cond} (${state})`)));
   };
   const grid = (bs: Badge[], pre = ''): HTMLElement => d.h('ul', { class: 'm-0 grid list-none grid-cols-3 gap-2 p-0 sm:grid-cols-6' }, ...bs.map((b) => tile(b, pre)));
   const group = (key: MeKey, kinds: Badge['kind'][]): HTMLElement => d.h('div', { class: 'space-y-2' },
@@ -436,7 +415,7 @@ async function saveTakeHomes(): Promise<void> {
 function portfolioCard(list: Scope[], x: Measured, waiting: boolean): HTMLElement {
   const lang = d.getLang();
   const go = (label: string, onclick: () => void, busy: boolean): HTMLElement =>
-    d.h('button', { type: 'button', class: d.cls.cx(d.cls.BTN_GO, 'flex items-center gap-1.5 px-4 py-1.5 text-body-sm'), onclick, disabled: !!pfBusy, 'aria-busy': busy ? 'true' : false },
+    d.h('button', { type: 'button', class: d.cls.cx(d.cls.BTN_SECONDARY, 'flex items-center gap-1.5 px-4 py-1.5 text-body-sm'), onclick, disabled: !!pfBusy, 'aria-busy': busy ? 'true' : false },
       d.icon('download', 'size-4'), label);
   const item = (s: Scope): HTMLElement | null => {
     if (s.scope === 'general') {
@@ -474,12 +453,10 @@ function portfolioCard(list: Scope[], x: Measured, waiting: boolean): HTMLElemen
 export function mePage(): HTMLElement {
   const list = scopes();
   const waiting = d.DOMAINS.some((x) => ticketsOf(x.id) === undefined);
-  const all = list.flatMap((s) => s.tickets);
   const x = measure(list);
   return d.h('div', { class: 'space-y-6' },
     statsCard(),
-    nextCard(all),
-    skillsCard(all),
+    nextCard(x),
     d.h('div', { class: 'grid gap-6 md:grid-cols-2' }, errorsCard(), daysCard()),
     skillMapCard(x),
     badgesCard(x, list),

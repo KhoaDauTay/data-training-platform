@@ -1,11 +1,11 @@
 import { generalNow, loadTickets } from '../content';
 import { activeDomain, DOMAINS, domainText } from '../domains';
-import { homeModel, knownSkills, kpisOf, kpiTiles, LEVELS, reliesOn, resumeTarget, type ChapterCard, type HomeModel, type Resume } from '../home';
+import { homeModel, knownSkills, kpisOf, kpiTiles, reliesOn, resumeTarget, type ChapterCard, type HomeModel, type Resume } from '../home';
 import { awayDays, readGoal, weekCount } from '../goal';
 import { loadHistory } from '../history';
 import { localStore, readJson } from '../storage';
 import { sqlOnly } from '../onboarding';
-import { getLang, t, type Key } from '../i18n';
+import { getLang, locale, t, type Key } from '../i18n';
 import { CHAPTERS, chaptersOf, chapterTitle, domainSkills, moduleTitle, nextTicket, PARTS, partOf, rankOf, ROUTE_SKILLS, SKILLS, type Bilingual } from '../progress';
 import { domainSlot } from '../save';
 import { domainArt } from './domainArt';
@@ -88,17 +88,19 @@ export const STRETCH = 'after:absolute after:inset-0';
 export const ABOVE = 'relative z-10';
 
 /** `stack` (ui-ux-v7 M2, the Overview's chapter rows): below sm the action drops under the text and the title stays one line. */
-export function listRow(r: { lead: Node; title: string; sub?: string | Node; action?: Node | null; current?: boolean; id?: string; stack?: boolean }): HTMLLIElement {
+export function listRow(r: { lead: Node; title: string | Node; sub?: string | Node; action?: Node | null; current?: boolean; id?: string; stack?: boolean }): HTMLLIElement {
   const act = r.action instanceof HTMLElement && /^(A|BUTTON)$/.test(r.action.tagName) && !r.action.hasAttribute('disabled') && r.action.getAttribute('aria-disabled') !== 'true' ? r.action : null;
   if (act) act.classList.add(...STRETCH.split(' '));
   if (r.stack && r.action instanceof HTMLElement) r.action.classList.add('max-sm:ml-14', 'max-sm:basis-full');
+  else if (r.action instanceof HTMLElement) r.action.classList.add('max-sm:ml-auto');
   return h('li', {
     id: r.id ?? false,
-    class: cx('flex items-center gap-4 border-l-4 px-5 py-4', r.stack && 'max-sm:flex-wrap max-sm:gap-y-2 max-sm:px-4', act && 'relative cursor-pointer hover:bg-code', r.current ? 'border-l-accent bg-accent-soft' : 'border-l-transparent'),
+    // F09 (L489): below sm the row wraps once the text would get under 9rem, so a long action takes its own line at its own width
+    class: cx('flex items-center gap-4 border-l-4 px-5 py-4 max-sm:flex-wrap max-sm:gap-y-2', r.stack && 'max-sm:px-4', act && 'relative cursor-pointer hover:bg-code', r.current ? 'border-l-accent bg-accent-soft' : 'border-l-transparent'),
     'aria-current': r.current ? 'step' : false,
   },
     h('span', { class: 'grid size-10 shrink-0 place-items-center', 'aria-hidden': 'true' }, r.lead),
-    h('span', { class: 'min-w-0 flex-1' }, h('b', { class: cx('block', r.stack && 'max-sm:truncate'), title: r.stack ? r.title : false }, r.title), r.sub ? h('span', { class: 'block text-body-sm text-muted' }, r.sub) : null),
+    h('span', { class: 'min-w-0 flex-1 max-sm:min-w-36' }, h('b', { class: cx('block', r.stack && 'max-sm:truncate'), title: r.stack && typeof r.title === 'string' ? r.title : false }, r.title), r.sub ? h('span', { class: 'block text-body-sm text-muted' }, r.sub) : null),
     r.action ?? null);
 }
 
@@ -244,6 +246,13 @@ function chaptersSection(m: HomeModel): HTMLElement {
     h('ul', { class: LIST }, ...m.chapters.map(chapterRow)));
 }
 
+/** F03 (L485): the Leitner box is the review schedule ("Lịch ôn"), never a second skill level: the row says when it is due. */
+function reviewOn(id: string): string {
+  const due = app.save.review[id]?.due;
+  if (!due || due <= localDay(new Date())) return t('home.reviewNow');
+  return t('home.reviewOn', { day: new Date(`${due}T00:00:00`).toLocaleDateString(locale(), { day: 'numeric', month: 'short' }) });
+}
+
 /** Practise SQL (v6 §3.3–3.4): skills grouped by module, one row each, one action ("Practise") once learned. */
 function skillsSection(m: HomeModel): HTMLElement {
   const lang = getLang();
@@ -260,7 +269,7 @@ function skillsSection(m: HomeModel): HTMLElement {
         // v12 (L82): one tint for every module, no chapter colour or "Chapter N": General never points at a domain.
         lead: h('span', { class: 'grid size-10 place-items-center rounded-full bg-accent-soft text-accent' }, skillIcon(s.skill.id)),
         title: s.skill.label[lang],
-        sub: s.state === 'learned' ? t('home.level', { n: s.level, max: LEVELS }) : t(known.has(s.skill.id) ? 'home.skillDrilled' : 'home.skillOpen'),
+        sub: s.state === 'learned' ? reviewOn(s.skill.id) : t(known.has(s.skill.id) ? 'home.skillDrilled' : 'home.skillOpen'),
         // Not under review yet: the row opens the skill's page (lesson + drills), never a row with no way forward (L93).
         action: onSkill && s.state === 'learned' ? h('button', { type: 'button', class: 'rounded-full px-4 whitespace-nowrap', onclick: () => onSkill(s.skill.id) }, t('prac.skillGo'))
           : h('a', { href: `${hashOf('learn')}/skill/${s.skill.id}`, class: OUTLINE_LINK }, t('prac.skillLearn')),
@@ -543,12 +552,22 @@ function domainsSection(): HTMLElement {
     }))));
 }
 
-/** Platform Home (v5 §B.5 #4): one line, the full list is on the learning path. */
-function skillsTeaser(m: HomeModel): HTMLElement {
-  return h('a', { href: hashOf('learn'), class: cx(CARD_ACTION, 'group flex items-center gap-3 p-4 text-ink no-underline') },
+/** Learned General skills over the route's skills: the same source and count as #/learn's stats line (F04, L486). */
+export function routeSkillCount(): { n: number; total: number } {
+  const ids = ROUTE_SKILLS.map((s) => s.id);
+  return { n: knownSkills(app.save, loadTickets('logistics'), ids).size, total: ids.length };
+}
+
+/** Platform Home (v5 §B.5 #4, F06 L486): the learning path General SQL → Database Engine, secondary links only (Home's one primary button is the resume card). */
+function skillsTeaser(): HTMLElement {
+  return h('section', { class: cx(CARD, 'flex flex-wrap items-center gap-3 p-4'), 'aria-labelledby': 'home-path' },
     h('span', { class: 'grid size-9 shrink-0 place-items-center rounded-full bg-code', 'aria-hidden': 'true' }, icon('route')),
-    h('span', { class: 'min-w-0 flex-1 font-semibold' }, t('home.skillsTeaser', { n: m.learned, total: m.skills.length }), h('span', { class: 'sr-only' }, t('home.skillsTeaserGo'))),
-    icon('arrowRight', 'size-4 text-muted transition group-hover:translate-x-0.5 group-hover:text-accent'));
+    h('span', { class: 'min-w-0 flex-1 basis-48' },
+      h('h2', { id: 'home-path', class: 'm-0 text-body font-semibold' }, t('home.pathTitle')),
+      h('span', { class: 'block text-body-sm text-muted' }, t('home.skillsTeaser', routeSkillCount()))),
+    h('span', { class: 'flex flex-wrap gap-2' },
+      h('a', { href: hashOf('learn'), class: cx(BTN_SECONDARY, 'px-4 py-1.5 text-body-sm whitespace-nowrap no-underline') }, t('home.pathSql')),
+      h('a', { href: hashOf('engine'), class: cx(BTN_SECONDARY, 'px-4 py-1.5 text-body-sm whitespace-nowrap no-underline') }, t('nav.engine'))));
 }
 
 registerHomeSection({ id: 'teach', order: 5, span: 'full', pages: ['learn'], render: teachSection });

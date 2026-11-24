@@ -8,6 +8,8 @@ import type { Lang, Params } from './index';
 const vi = {
   'title': 'Phỏng vấn Engine',
   'intro': 'Luyện trả lời câu phỏng vấn về PostgreSQL, MongoDB và DynamoDB: mỗi bộ 5 câu. Viết câu trả lời của bạn trước, rồi mới xem đáp án mẫu đặt cạnh và tự tích rubric. Không có XP, không ghi vào tiến độ; kết quả chỉ lưu trên máy này và không đi theo khi xuất tiến độ.',
+  'other': 'Bài SQL chạy thật, có chấm máy, ở phòng kia:',
+  'otherGo': 'Phòng phỏng vấn SQL',
   'pick': 'Chọn engine',
   'band.junior': 'Junior',
   'band.mid': 'Mid',
@@ -90,6 +92,8 @@ export type IvKey = keyof typeof vi;
 const en: Record<IvKey, string> = {
   'title': 'Engine interviews',
   'intro': 'Practise answering interview questions on PostgreSQL, MongoDB and DynamoDB: 5 questions per set. Write your own answer first, then see the model answer beside it and tick the rubric yourself. No XP, nothing in your progress; results stay on this device only and are not part of Export progress.',
+  'other': 'SQL questions that run and are graded by the app are in the other room:',
+  'otherGo': 'SQL interview room',
   'pick': 'Pick an engine',
   'band.junior': 'Junior level',
   'band.mid': 'Mid level',
