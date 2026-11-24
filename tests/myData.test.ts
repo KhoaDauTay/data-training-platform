@@ -149,7 +149,7 @@ describe('FIX-1 (L147): exports never carry SQL on imported tables, even before 
     { id: 'b', title: 'B', kind: 'table', sql: 'SELECT * FROM ports' },
   ];
   it('names() lists stored files while their replay is still running, and after a replay that hit a restart', async () => {
-    const { dashFile } = await import('../src/me');
+    const { dashFile } = await import('../src/meExport');
     const hanging: ImportDb = { ...failingDb(new Error('unused')), importCsv: () => new Promise(() => {}) };
     const slow = new MyData(hanging, memoryStore([MINE]), () => {});
     void slow.restore(); // never settles: the DB is still booting

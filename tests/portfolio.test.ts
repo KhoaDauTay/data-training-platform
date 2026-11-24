@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Card } from '../src/dashboard';
-import { pictureCards, portfolioMd } from '../src/me';
+import { pictureCards, portfolioMd } from '../src/meExport';
 import { crc32, takeHomeMd, zip } from '../src/portfolio';
 
 /** V19-D (L170): portfolio card pictures (zip) and the take-home portfolio. */

@@ -130,9 +130,13 @@ describe('nhãn phím tắt theo hệ điều hành', () => {
 describe('chữ trang Tiến bộ của tôi (src/i18n/me.ts, v16 L142)', () => {
   it('placeholder khớp, EN khác VI, không giọng game; bản đồ kỹ năng và huy hiệu nói "không xác minh" (v24 L323)', async () => {
     const { ME_DICT } = await import('../src/i18n/me');
+    const { EXPORT_DICT } = await import('../src/i18n/meExport'); // v33 (L536): the export text, its own chunk
     const SAME = new Set(['badge.sql', 'badge.engine', 'badge.eng', 'badge.dom', 'eng.cell']); // names and placeholders only
-    for (const [k, v] of Object.entries(ME_DICT.vi)) {
-      const e = ME_DICT.en[k as keyof typeof ME_DICT.en];
+    const vi: Record<string, unknown> = { ...ME_DICT.vi, ...EXPORT_DICT.vi };
+    const en: Record<string, unknown> = { ...ME_DICT.en, ...EXPORT_DICT.en };
+    expect(Object.keys(EXPORT_DICT.vi).filter((k) => k in ME_DICT.vi)).toEqual([]);
+    for (const [k, v] of Object.entries(vi)) {
+      const e = en[k];
       if (typeof e === 'string' && typeof v === 'string') expect([k, placeholders(e)]).toEqual([k, placeholders(v)]);
       if (!SAME.has(k)) expect([k, e]).not.toEqual([k, v]);
       expect(`${v} ${e}`).not.toMatch(GAME_TONE);
@@ -176,8 +180,9 @@ describe('chữ UI khu Database Engine (src/i18n/engine.ts, ENG-CORE L220)', () 
     const { PRED_DICT } = await import('../src/i18n/enginePredict'); // v23 predict/capstone text, its own chunk (L296)
     const { NOSQL_DICT } = await import('../src/i18n/engineNosql'); // v25 NoSQL lab parts, its own chunk (L370)
     const { FULL_DICT } = await import('../src/i18n/engineFull'); // v30.1 full-lesson layout, its own chunk (L480)
-    const vi: Record<string, string> = { ...ENGINE_DICT.vi, ...PRED_DICT.vi, ...NOSQL_DICT.vi, ...FULL_DICT.vi };
-    const en: Record<string, string> = { ...ENGINE_DICT.en, ...PRED_DICT.en, ...NOSQL_DICT.en, ...FULL_DICT.en };
+    const { RESULT_DICT } = await import('../src/i18n/engineResult'); // v33 engine numbers + "Inside" under a result, its own chunk (L537)
+    const vi: Record<string, string> = { ...ENGINE_DICT.vi, ...PRED_DICT.vi, ...NOSQL_DICT.vi, ...FULL_DICT.vi, ...RESULT_DICT.vi };
+    const en: Record<string, string> = { ...ENGINE_DICT.en, ...PRED_DICT.en, ...NOSQL_DICT.en, ...FULL_DICT.en, ...RESULT_DICT.en };
     expect(Object.keys(PRED_DICT.vi).filter((k) => k in ENGINE_DICT.vi)).toEqual([]);
     expect(Object.keys(NOSQL_DICT.vi).filter((k) => k in ENGINE_DICT.vi || k in PRED_DICT.vi)).toEqual([]);
     expect(Object.keys(FULL_DICT.vi).filter((k) => k in ENGINE_DICT.vi || k in PRED_DICT.vi || k in NOSQL_DICT.vi)).toEqual([]);

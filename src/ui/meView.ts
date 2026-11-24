@@ -21,10 +21,7 @@ import type * as Mastery from '../mastery';
 import type { Badge, SkillLevel } from '../mastery';
 import type { Drill } from '../general';
 import { meText, type MeKey } from '../i18n/me';
-import {
-  calendar, dashFile, importDash as readDashFile, portfolioEntries, portfolioMd, nextSkill, topErrors, touchesSandbox,
-  trySummary, pictureCards, type PortfolioEntry, type PortfolioLevels,
-} from '../me';
+import { calendar, portfolioEntries, nextSkill, topErrors, trySummary, type PortfolioEntry, type PortfolioLevels } from '../me';
 
 /**
  * v16 "Của tôi" (I2 + I6, L142): the #/me page, skill map and badges (v24, L323: they replaced the certificates), portfolio
@@ -69,8 +66,16 @@ const readName = (): string => {
   return typeof v === 'string' ? v.slice(0, 60) : '';
 };
 const isDrill = (id: string): boolean => id.startsWith('g-') || id.startsWith('e-'); // ENG-CORE (L220): Database Engine lessons are no tasks either
-/** V19-D (L170): card pictures, the zip and the take-home file, a lazy chunk of their own (`me` is near its budget). */
-const pngChunk = (): Promise<typeof import('./portfolioPng')> => import('./portfolioPng');
+/**
+ * v33 (L536): the exports (portfolio, take-home file, dashboard card file, card pictures, the share guard) are their own lazy
+ * chunk (`meExport`), loaded on the first click that needs one; a failed load is retried by the next click, never in a loop.
+ */
+type Exp = typeof import('./meExport');
+let exp: Promise<Exp> | undefined;
+const exporter = (): Promise<Exp> => (exp ??= import('./meExport').then((x) => (x.initExport(d, readName), x), (e: unknown) => {
+  exp = undefined;
+  throw e;
+}));
 
 // ---------- domain content: loaded once, only for domains the player has played ----------
 
@@ -103,13 +108,6 @@ function scopes(): Scope[] {
   return out;
 }
 
-// ---------- pictures and files ----------
-
-function download(name: string, blob: Blob): void {
-  const url = URL.createObjectURL(blob);
-  d.h('a', { href: url, download: name }).click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
 // ---------- the page ----------
 
 const card = (...kids: (Node | string | null)[]): HTMLElement => d.h('section', { class: d.cls.cx(d.cls.CARD, 'space-y-3 p-5') }, ...kids);
@@ -351,65 +349,17 @@ function pfSay(msg: string): void {
   d.rerender();
 }
 
-/**
- * V19-D (L170): a domain portfolio is a zip, README.md + cards/<id>.png (GitHub strips `data:` images in Markdown). Only
- * cards that ran on this device, are not marked slow and read no imported data are run again for a picture (imported SQL
- * never runs by itself, review-log Plan 5); the others keep their SQL only.
- */
-async function savePortfolio(s: Scope & { scope: DomainId }, entries: PortfolioEntry[], levels: PortfolioLevels): Promise<void> {
-  const dom = s.scope;
-  const lang = d.getLang();
-  pfBusy = dom;
+/** V19-D (L170): one portfolio file at a time (the chunk builds it; its sentence, or pf.failed, goes in the status line). */
+async function fileJob(scope: ScopeId, job: (x: Exp) => Promise<string>): Promise<void> {
+  pfBusy = scope;
+  let msg: string;
   try {
-    const imported = await d.importedNames(); // FIX-1: stored imports too, even before restore ends
-    const cards = d.domainSlot(d.app.save, dom).dashboard.cards;
-    const shoot = pictureCards(cards, imported, d.ranHere);
-    const pp = await pngChunk();
-    const pics = await pp.cardPictures(dom, shoot, {
-      run: d.run, cardBody: d.cardBody, cardClass: d.cls.cx(d.cls.CARD, 'flex flex-col gap-3 p-4'), footer: m('png.footer'),
-      onCard: (i) => pfSay(m('pf.shooting', { i: i + 1, n: shoot.length })),
-    });
-    const at = new Date();
-    const md = portfolioMd({
-      lang, scope: dom, what: s.what, name: readName(), date: at.toLocaleDateString(d.locale()), entries, cards, imported, pics: new Set(pics.keys()), levels,
-    });
-    download(`boondata-${dom}-portfolio.zip`, pp.portfolioZip(md, pics, at));
-    pfBusy = undefined;
-    pfSay(m('pf.saved', { n: entries.length, p: pics.size }));
+    msg = await job(await exporter());
   } catch {
-    pfBusy = undefined;
-    pfSay(m('pf.failed'));
+    msg = m('pf.failed');
   }
-}
-
-/** V19-D (L170): the take-homes the learner handed in, as one Markdown file; only on their own click (interviewPrefs). */
-async function saveTakeHomes(): Promise<void> {
-  const lang = d.getLang();
-  pfBusy = 'general';
-  try {
-    const [content, pp, imported] = await Promise.all([d.loadInterview(), pngChunk(), d.importedNames()]);
-    const prefs = d.interviewPrefs();
-    const entries = d.passedTakeHomes(prefs).flatMap((r) => {
-      const th = content.takeHomes.find((x) => x.id === r.id);
-      if (!th) return [];
-      const live = prefs.live[r.id]?.phase === 'done' ? prefs.live[r.id] : undefined; // a run started again holds drafts, not passed SQL
-      return [{
-        title: th.title[lang], brief: th.brief[lang], text: r.text,
-        steps: th.steps.map((st) => {
-          const sql = live?.passed[st.id];
-          return { title: st.title[lang], ...(sql && !touchesSandbox(sql, imported) ? { sql } : {}) };
-        }),
-        rubric: th.rubric.map((line, i) => ({ line: line[lang], ticked: r.checks.includes(i) })),
-      }];
-    });
-    const md = pp.takeHomeMd({ lang, name: readName(), date: new Date().toLocaleDateString(d.locale()), entries });
-    download('boondata-take-home-portfolio.md', new Blob([md], { type: 'text/markdown' }));
-    pfBusy = undefined;
-    pfSay(m('pf.th.saved', { n: entries.length }));
-  } catch {
-    pfBusy = undefined;
-    pfSay(m('pf.failed'));
-  }
+  pfBusy = undefined;
+  pfSay(msg);
 }
 
 function portfolioCard(list: Scope[], x: Measured, waiting: boolean): HTMLElement {
@@ -421,7 +371,7 @@ function portfolioCard(list: Scope[], x: Measured, waiting: boolean): HTMLElemen
     if (s.scope === 'general') {
       const n = d.passedTakeHomes(d.interviewPrefs()).length;
       return n
-        ? d.h('li', { class: 'flex flex-wrap items-center gap-3' }, go(m('pf.th.download'), () => void saveTakeHomes(), pfBusy === 'general'),
+        ? d.h('li', { class: 'flex flex-wrap items-center gap-3' }, go(m('pf.th.download'), () => void fileJob('general', (x) => x.saveTakeHomes()), pfBusy === 'general'),
           d.h('span', { class: 'text-body-sm text-muted' }, m('pf.th.count', { n })))
         : d.h('li', { class: 'flex items-start gap-2 text-body-sm text-muted' }, d.icon('lock', 'mt-0.5 size-4 shrink-0'), // v21 U17: the icon stays beside its sentence
           d.h('span', {}, m('pf.th.none'), ' ', d.h('a', { href: `${d.hashOf('learn')}/interview` }, m('pf.th.go'))));
@@ -431,7 +381,7 @@ function portfolioCard(list: Scope[], x: Measured, waiting: boolean): HTMLElemen
     if (!entries.length) return d.h('li', { class: 'flex items-start gap-2 text-body-sm text-muted' }, d.icon('lock', 'mt-0.5 size-4 shrink-0'), d.h('span', {}, m('pf.locked', { domain: s.what })));
     const dom = { ...s, scope: s.scope };
     return d.h('li', { class: 'flex flex-wrap items-center gap-3' },
-      go(m('pf.download', { domain: s.what }), () => void savePortfolio(dom, entries, levelsForPortfolio(x, list)), pfBusy === s.scope),
+      go(m('pf.download', { domain: s.what }), () => void fileJob(dom.scope, (e) => e.savePortfolio(dom.scope, s.what, entries, levelsForPortfolio(x, list), pfSay)), pfBusy === s.scope),
       d.h('span', { class: 'text-body-sm text-muted' }, m('pf.count', { n: entries.length })));
   };
   const name = d.h('input', {
@@ -466,44 +416,27 @@ export function mePage(): HTMLElement {
 
 // ---------- dashboard: file export/import and card pictures (v7 §5.1) ----------
 
+// v33 (L536): the work is in the lazy meExport chunk; these keep the names ui/dashboard.ts and ui/modes.ts call.
 /** Downloads the open domain's cards (title, kind, SQL); cards on imported data stay out. Returns the sentence to show. */
-export async function exportDash(): Promise<string> {
-  const dom = d.activeDomain();
-  const { file, dropped } = dashFile(dom, d.domainSlot(d.app.save, dom).dashboard.cards, await d.importedNames());
-  if (file.cards.length) download(`boondata-${dom}.boondash.json`, new Blob([JSON.stringify(file, null, 2)], { type: 'application/json' }));
-  return [file.cards.length ? m('dash.exported', { n: file.cards.length }) : m('dash.nothing'), dropped ? m('dash.dropped', { n: dropped }) : ''].join(' ').trim();
-}
+export const exportDash = async (): Promise<string> => (await exporter()).exportDash();
 
-/** Opens the file picker; `done` gets the sentence to show (cards added at the end, never run by themselves). */
+/**
+ * Opens the file picker inside the click (the chunk is loaded only once a file is picked, so the picker never waits for the
+ * network); `done` gets the sentence to show (cards added at the end, never run by themselves).
+ */
 export function importDashFile(done: (msg: string) => void): void {
   const input = d.h('input', { type: 'file', accept: '.json,application/json', class: 'hidden' });
-  input.addEventListener('change', async () => {
+  input.addEventListener('change', () => {
     const f = input.files?.[0];
     input.remove();
-    if (!f || f.size > 1e6) return void (f && done(m('dash.badFile')));
-    const dom = d.activeDomain();
-    const slot = d.domainSlot(d.app.save, dom).dashboard;
-    const r = readDashFile(await f.text(), dom, slot.cards, d.readDashboard, d.DOMAINS.map((x) => x.id));
-    if ('error' in r) {
-      const other = r.error === 'domain' ? d.t(d.DOMAINS.find((x) => x.id === r.domain)!.name) : '';
-      return done(r.error === 'domain' ? m('dash.otherDomain', { domain: other }) : m('dash.badFile'));
-    }
-    slot.cards = r.cards;
-    d.persist(true);
-    done([m('dash.imported', { n: r.added }), r.skipped ? m('dash.full', { n: r.skipped, max: d.MAX_CARDS }) : ''].join(' ').trim());
+    exporter().then((x) => x.importDashFile(f)).then((msg) => msg && done(msg), () => done(d.t('me.failed')));
   });
   document.body.append(input);
   input.click();
 }
 
-/** FIX-1 (L147): a share link never carries SQL that reads the player's imported tables (stored ones too) or `sandbox.`. */
-export const readsImported = async (sql: string): Promise<boolean> => touchesSandbox(sql, await d.importedNames());
+/** FIX-1 (L147): a share link never carries SQL that reads the player's imported tables (stored ones too) or `sandbox.`; undefined = unsure. */
+export const readsImported = (sql: string): Promise<boolean | undefined> => exporter().then((x) => x.readsImported(sql), () => undefined);
 
 /** One card as a PNG (title, what the card shows, "BoonData · fictional data"); refused for cards on imported data. */
-export async function cardPng(article: HTMLElement, c: Card): Promise<string> {
-  if (touchesSandbox(c.sql, await d.importedNames())) return m('dash.pngSandbox');
-  const blob = await (await pngChunk()).cardBlob(article, c, m('png.footer')); // V19-D: the drawing lives in the portfolioPng chunk
-  if (!blob) return m('dash.pngWait');
-  download(`boondata-${d.activeDomain()}-${c.id}.png`, blob);
-  return m('dash.pngDone', { title: c.title });
-}
+export const cardPng = async (article: HTMLElement, c: Card): Promise<string> => (await exporter()).cardPng(article, c);

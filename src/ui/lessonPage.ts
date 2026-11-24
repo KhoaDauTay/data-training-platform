@@ -1,9 +1,10 @@
 import type { QueryResult } from '../db/run';
 import type { FullLesson, LessonSection } from '../fullLesson';
 import { LESSON_SECTIONS } from '../fullLesson';
+export { parseFullLesson } from '../fullLesson';
 import type { Drill } from '../general';
 import type { Params } from '../i18n';
-import { learnText, type LearnKey } from '../i18n/learn';
+import type { LearnKey } from '../i18n/learn';
 import type { Skill } from '../progress';
 import type { Editor } from './editor';
 import type { DrillDeps } from './drillBrief';
@@ -17,9 +18,15 @@ import type { IconName } from './icons';
  * app.lastRun, drafts, history or XP); "Try editing" swaps one for an editor in place. Practice holds the page's one live
  * editor and its one main button (Submit). `#home` is redrawn by rerender(): everything the player did lives in the maps
  * below (session only, nothing saved) and live editors are reused, so a redraw keeps them.
+ *
+ * v33 (L535): its own lazy chunk (`learnLesson`), imported by learnView beside the lesson's gl-<skill> chunk; learnView's
+ * text (`lt`) and focus helper come in through `LessonTools`, so no value of the learnui chunk is imported here (a shared
+ * module would be split into a third chunk). The full-lesson parser (src/fullLesson.ts) lives only here.
  */
 let d$: DrillDeps;
-const lt = (key: LearnKey, params?: Params): string => learnText(d$.getLang(), d$.locale(), key, params);
+export interface LessonTools { lt: (key: LearnKey, params?: Params) => string; keepFocus: (key: string) => void }
+let lt: LessonTools['lt'];
+let keepFocus: LessonTools['keepFocus'];
 const cx = (...c: (string | false | undefined)[]): string => c.filter(Boolean).join(' ');
 
 const BTN_GO = 'rounded-full border-0 bg-accent px-4 py-1.5 font-bold text-on-accent shadow-(--shadow-1) hover:bg-accent/90';
@@ -110,20 +117,6 @@ function drawOut(key: string, out: HTMLElement, read?: string): void {
     d$.renderResult(o.result, undefined, 5),
     read ? h('p', { class: 'm-0 text-body-sm' }, h('b', {}, lt('fl.read')), ' ', ...inline(read)) : null]
     : [h('div', { role: 'status' }, d$.errorView(o.error, true, o.sql))]).filter((x): x is HTMLElement => !!x));
-}
-
-/**
- * Focus across rerender() (#home is rebuilt): the control that asked for the redraw is focused again by its `data-fk`
- * once the new page is in (like engineView's focusKey). Exported: learnView's filter chips use it too.
- */
-let focusKey: string | null = null;
-export function keepFocus(key: string): void {
-  focusKey = key;
-  requestAnimationFrame(() => {
-    if (focusKey !== key) return;
-    focusKey = null;
-    document.querySelector<HTMLElement>(`#home [data-fk="${key}"]`)?.focus();
-  });
 }
 
 /** One live editor per key, reused across redraws (a redraw must never drop what the player typed). */
@@ -328,8 +321,9 @@ let current: LessonSection = 'open';
 export interface LessonCtx { skill: Skill; drills: readonly Drill[]; part?: { n: number; title: string }; prev?: Skill; next?: Skill; level: HTMLElement; done: boolean }
 
 /** The whole page. Called by learnView's skill page when the skill has a full lesson (loaded and parsed by the caller). */
-export function lessonPage(deps: DrillDeps, l: FullLesson, c: LessonCtx): HTMLElement {
+export function lessonPage(deps: DrillDeps, tools: LessonTools, l: FullLesson, c: LessonCtx): HTMLElement {
   d$ = deps;
+  ({ lt, keepFocus } = tools);
   const { h } = d$;
   const lang = d$.getLang();
   if (lessonNow?.id !== l.id) current = 'open';

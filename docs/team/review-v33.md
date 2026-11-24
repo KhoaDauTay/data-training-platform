@@ -66,3 +66,18 @@ Tổng chữ VI của 53 bài L1–L2: 16.160 → 23.232. Mọi concept/lab L1�
 **Kiểm:** `tsc` sạch; `engineAnatomy` 546/546, `engineContent` 554, `engineIntegration` 235, `engineNosql` 9, `mongoPath` 217, `i18n` 20, `bpLint` 17; `npm run build` + `check-budget` ok, `engineLesson` lớn nhất 7 KB / 8 KB (bài NoSQL lớn nhất `e-dy-l1-08` 6,44 KB gz). Không chạy e2e/smoke/ux-audit (luật user).
 
 **Chưa làm:** bẫy `// ERROR` của `e-dy-l1-09` (`KeyConditionExpression` trên `Scan`) vẫn hỏng vì `ExpressionAttributeValues` thừa, không vì `Scan` không nhận điều kiện khóa (dynoxide bỏ qua tham số đó; bài đã ghi rõ AWS không có tham số này trên `Scan`): ngoại lệ duy nhất của L532, chưa có khối thay thế hỏng đúng lý do; 21 concept L3–L5 dưới 500 từ (danh sách in ra trong test); e2e/smoke chưa chạy; hiển thị trang của các khối mới chưa xem bằng mắt.
+
+## Budgets (L535–L539)
+
+Ba nhóm đang chạm trần được tách phần ít dùng ra chunk lười riêng; không nâng ngân sách nào, thêm ba nhóm mới. Đo bằng `node scripts/check-budget.mjs` (gzip -9).
+
+| Nhóm | Trước | Sau | Trần | Phần chuyển đi | Nhóm mới |
+|---|---|---|---|---|---|
+| `learnui` | 24,2 KB | 18,4 KB | 25 | `src/ui/lessonPage.ts` + `src/fullLesson.ts` (trang bài đầy đủ General) | `learnLesson` 7,2 / 9 |
+| `me` | 12,1 KB | 9,3 KB | 13 | xuất portfolio/take-home/file thẻ/PNG, `readsImported`, `touchesSandbox`, `portfolioMd`, 31 khóa chữ (`src/ui/meExport.ts`, `src/meExport.ts`, `src/i18n/meExport.ts`) | `meExport` 3,9 / 5 |
+| `engineui` | 19,3 KB | 17,9 KB | 20 | `metaView`, `insideView` + `src/engine/inside.ts`, 13 khóa chữ (`src/ui/engineResult.ts`, `src/i18n/engineResult.ts`) | `engineResult` 2,1 / 3 |
+| main (`index-*.js`) | 311 KB | 311 KB | 500 | không đổi (chunk vào chính 316.941 → 316.940 B gz) | — |
+
+Không có trạng thái tải mới: trang bài General nạp `learnLesson` cùng chunk `gl-<skill>` dưới dòng "đang tải"/Thử lại sẵn có; `engineResult` nạp cùng `engineFull` trong `chunksFor()`; `meExport` chỉ nạp khi bấm (nút bận, `pf.failed`, `me.failed` như cũ; hộp chọn file vẫn mở trong cú bấm). Không chunk mới nào import giá trị từ main hay chunk mẹ (giá trị đi qua `LessonTools`, `initExport`, tham số `d`).
+
+**Kiểm:** `tsc` sạch; từng file với `--no-file-parallelism`: `engineCore` 32, `engineFull` 9, `engineAxe` 14, `axe` 44, `axeProgress` 16, `me` 14, `home` 13, `learn` 13, `palette` 3, `engineCompare` 9, `i18n` 20, `portfolio` 7, `myData` 11, `fullLesson` 130, `boundary` 13, `noDeadEnds` 10, `engineCompareAxe` 4, `engineNosql` 9, `engineQuizWhy` 1, `notebookV10c` 4, `workRace` 30, `bootDrill` 1, `engineContent` 554 (tất cả đạt); `npm run build` + `check-budget` ok. Không chạy e2e/smoke/ux-audit (luật user); chưa xem bằng mắt trang bài General, xuất ở #/me, bài pageinspect.

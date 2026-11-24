@@ -5,9 +5,9 @@ import { CHALLENGE_XP, moduleState, nodeState, placementItems, skillState, stamp
 import type { Skill } from '../progress';
 import type { SkillLevel } from '../mastery';
 import type { DrillDeps } from './drillBrief';
-import { parseFullLesson, type FullLesson } from '../fullLesson';
+import type { FullLesson } from '../fullLesson';
 import { fullLessons, lessonIdOf } from '../generalLessonSources';
-import { keepFocus, lessonPage } from './lessonPage';
+import type * as LessonPageMod from './lessonPage';
 import { replayBtn } from './guideList';
 
 /**
@@ -17,6 +17,21 @@ import { replayBtn } from './guideList';
  */
 let d$: DrillDeps;
 const lt = (key: LearnKey, params?: Params): string => learnText(d$.getLang(), d$.locale(), key, params);
+
+/**
+ * Focus across rerender() (#home is rebuilt): the control that asked for the redraw is focused again by its `data-fk`
+ * once the new page is in (like engineView's focusKey). Handed to the lazy lessonPage chunk (LessonTools, v33 L535).
+ */
+let focusKey: string | null = null;
+function keepFocus(key: string): void {
+  focusKey = key;
+  requestAnimationFrame(() => {
+    if (focusKey !== key) return;
+    focusKey = null;
+    document.querySelector<HTMLElement>(`#home [data-fk="${key}"]`)?.focus();
+  });
+}
+
 
 const LIST = 'm-0 list-none space-y-2 p-0';
 const BTN = 'rounded-full px-4 whitespace-nowrap';
@@ -170,14 +185,18 @@ function modulePage(c: LearnCtx, n: number): HTMLElement {
 const hasFull = (id: string): boolean => Object.keys(fullLessons).some((p) => lessonIdOf(p) === id);
 /** A full lesson (content/general/lessons/<id>.md), parsed once per session; `failed` keeps a Retry instead of a loop. */
 const lessons = new Map<string, FullLesson | 'loading' | 'failed'>();
+/** v33 (L535): the full lesson page is its own lazy chunk (`learnLesson`), fetched beside the lesson's gl-<skill> chunk, so
+ * the loading line and Retry below cover both and nothing is drawn before either is in. */
+let page: typeof LessonPageMod | undefined;
 function fullLesson(id: string): FullLesson | 'loading' | 'failed' | undefined {
   const load = Object.entries(fullLessons).find(([path]) => lessonIdOf(path) === id)?.[1];
   if (!load) return undefined;
   const have = lessons.get(id);
   if (have) return have;
   lessons.set(id, 'loading');
-  load().then((src) => {
-    const l = parseFullLesson(src, id);
+  Promise.all([load(), import('./lessonPage')]).then(([src, mod]) => {
+    page = mod;
+    const l = mod.parseFullLesson(src, id);
     lessons.set(id, l);
     d$.learnTitles.set(id, l.title);
   }, () => lessons.set(id, 'failed')).finally(() => d$.actions.rerender());
@@ -192,7 +211,7 @@ function skillPage(c: LearnCtx, s: Skill): HTMLElement {
     const i = order.indexOf(s);
     const n = d$.partOf(s.id);
     return h('div', { class: 'space-y-4' }, slot('skill-head'),
-      lessonPage(d$, full, { skill: s, drills: c.general.bySkill.get(s.id) ?? [], part: n ? { n, title: d$.moduleTitle(n, d$.getLang()) } : undefined,
+      page!.lessonPage(d$, { lt, keepFocus }, full, { skill: s, drills: c.general.bySkill.get(s.id) ?? [], part: n ? { n, title: d$.moduleTitle(n, d$.getLang()) } : undefined,
         prev: order[i - 1], next: order[i + 1], level: levelLine(s.id), done: c.known.has(s.id) }),
       d$.deepDive(s.id), slot('skill-card'));
   }

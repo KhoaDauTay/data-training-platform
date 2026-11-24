@@ -2,7 +2,6 @@ import {
   blocksOf, ENGINES, engineXp, isRight, onPg, lessonPassed, parseEngineLesson, parseModules, partsOf, progressOf, treeOf,
   type EngineId, type EngineLesson, type Kind, type LessonSource, type Level, type ModuleName, type Question, type SectionId, type Tree,
 } from '../engine/content';
-import { heapView } from '../engine/inside';
 import { gradable, honestOf, honestRow, LAB_RUNNERS, type Honest, type LabEnv, type LabOutput, type LabRunner, type LabVerdict } from '../engine/labs';
 import { vizMountFor, type VizDeps, type VizMounted } from '../engine/vizRegistry';
 import type * as I18n from '../i18n';
@@ -197,7 +196,7 @@ export function enginePage(): HTMLElement {
   const f = extra && extra !== 'ready' ? extra : terms === 'loading' && typeof full === 'object' ? 'loading' : full;
   const page = !lesson ? (engine ? (lv ? levelPage(engine, lv.level) : enginePg(engine)) : overview())
     : f === 'loading' ? loadingLine()
-      : f === 'failed' ? failedBox(() => { fulls.delete(lesson.id); if (predMod === 'failed') predMod = undefined; if (capMod === 'failed') capMod = undefined; if (nosqlMod === 'failed') nosqlMod = undefined; if (fullMod === 'failed') fullMod = undefined; d.rerender(); })
+      : f === 'failed' ? failedBox(() => { fulls.delete(lesson.id); if (predMod === 'failed') predMod = undefined; if (capMod === 'failed') capMod = undefined; if (nosqlMod === 'failed') nosqlMod = undefined; if (fullMod === 'failed') fullMod = undefined; if (resMod === 'failed') resMod = undefined; d.rerender(); })
         : lessonPage(f!);
   if (f === 'loading' || f === 'failed') return page; // not #engine-page yet: smoke and the axe harness wait for the drawn lesson
   page.id = 'engine-page'; // drawn (not the loading line): tests/axeHarness.ts and scripts/smoke.mjs wait for it
@@ -536,6 +535,9 @@ let capMod: CapChunk | 'loading' | 'failed' | undefined;
 let nosqlMod: typeof import('./engineNosql') | 'loading' | 'failed' | undefined;
 /** v30.1 (F01, L480): the full-lesson layout (contents, icon sections, runnable examples), loaded for every lesson. */
 let fullMod: typeof import('./engineFull') | 'loading' | 'failed' | undefined;
+/** v33 (L537): the parts under a lab or example result (engine numbers, the pageinspect "Inside" table), loaded with engineFull for every lesson. */
+let resMod: typeof import('./engineResult') | 'loading' | 'failed' | undefined;
+const R = () => resMod as typeof import('./engineResult');
 /** v25: the NoSQL lab parts (tables used, MongoDB rule bar, pipeline by step, compared with SQL), once loaded. */
 const N = () => (typeof nosqlMod === 'object' ? nosqlMod : undefined);
 /** The predict chunk, once chunksFor() said 'ready' (callers run only on a drawn lesson that needed it). */
@@ -554,6 +556,10 @@ function chunksFor(l: EngineLesson): 'ready' | 'loading' | 'failed' {
     fullMod = 'loading';
     import('./engineFull').then((m) => { fullMod = m; }, () => { fullMod = 'failed'; }).finally(() => d.rerender());
   }
+  if (resMod === undefined) {
+    resMod = 'loading';
+    import('./engineResult').then((m) => { resMod = m; }, () => { resMod = 'failed'; }).finally(() => d.rerender());
+  }
   if (wantPred && predMod === undefined) {
     predMod = 'loading';
     import('./enginePredict').then((m) => { predMod = m; }, () => { predMod = 'failed'; }).finally(() => d.rerender());
@@ -562,7 +568,7 @@ function chunksFor(l: EngineLesson): 'ready' | 'loading' | 'failed' {
     capMod = 'loading';
     import('./engineCapstone').then((m) => { capMod = m; }, () => { capMod = 'failed'; }).finally(() => d.rerender());
   }
-  const st = [wantPred ? predMod : 'ok', wantCap ? capMod : 'ok', wantNosql ? nosqlMod : 'ok', fullMod];
+  const st = [wantPred ? predMod : 'ok', wantCap ? capMod : 'ok', wantNosql ? nosqlMod : 'ok', fullMod, resMod];
   return st.includes('failed') ? 'failed' : st.includes('loading') ? 'loading' : 'ready';
 }
 const capChunk = (): CapChunk | undefined => (typeof capMod === 'object' ? capMod : undefined);
@@ -666,9 +672,9 @@ function labView(l: EngineLesson, v: Visit): HTMLElement {
         h('p', { role: 'status', 'data-ek': `${key}-status`, class: cls.cx('m-0 text-body-sm', msg ? (msg.ok ? 'good' : 'bad') : '') }, ...inline(msg?.text ?? '')),
         s.fact && passed ? h('p', { class: 'm-0 rounded-(--r-inset) bg-good-soft p-3 text-body-sm ring-1 ring-good-line' }, h('b', {}, `${et('lab.fact')}: `), ...inline(s.fact[lang()])) : null,
         out ? h('div', { class: 'overflow-x-auto', tabindex: '0' }, shown ? d.renderResult(shown) : d.errorView((out as { error: unknown }).error, false)) : null,
-        shown ? metaView(shown) : null,
+        shown ? R().metaView(d, shown) : null,
         shown ? N()?.stepEnd(d, s, shown, passed, key) : null,
-        shown ? insideView(shown, `${key}-inside`) : null,
+        shown ? R().insideView(d, vizSlot, shown, `${key}-inside`) : null,
         shown ? planViz(l, shown, v.code[i] ?? '', `${key}-plan`) : null);
     })),
     cap && cc ? cap.capPlans(cc) : null);
@@ -678,47 +684,6 @@ function labView(l: EngineLesson, v: Visit): HTMLElement {
 function capDoneView(l: EngineLesson, v: Visit): HTMLElement | null {
   const cap = l.kind === 'capstone' && l.lab && LAB_RUNNERS[l.engine] ? capChunk() : undefined;
   return cap ? cap.capDone(capCtx(l, v)) : null;
-}
-
-/** Engine numbers beside the result (LabMeta); nothing when the runner gave none. */
-function metaView(r: LabOutput): HTMLElement | null {
-  const m = r.meta;
-  if (!m) return null;
-  const { h } = d;
-  const pairs: [EngineKey, string][] = [];
-  if (m.table !== undefined) pairs.push(['meta.table', m.table]);
-  // F18: capacity only in the DynamoDB cost panel (engineDynamo), never twice
-  for (const k of ['scannedCount', 'count'] as const) if (m[k] !== undefined) pairs.push([`meta.${k}`, m[k]!.toLocaleString(d.locale())]);
-  if (m.explain) {
-    pairs.push(['meta.stages', m.explain.stages.join(' → ')], ['meta.keysExamined', m.explain.keysExamined.toLocaleString(d.locale())],
-      ['meta.docsExamined', m.explain.docsExamined.toLocaleString(d.locale())]);
-  }
-  const plans = (['planBefore', 'planAfter'] as const).filter((k) => m[k]);
-  return h('section', { class: 'flex flex-col gap-2', 'aria-label': et('meta.title') },
-    pairs.length ? h('dl', { class: 'm-0 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 rounded-(--r-inset) bg-surface-2 p-3 text-body-sm' },
-      ...pairs.flatMap(([k, v]) => [h('dt', { class: 'text-muted' }, et(k)), h('dd', { class: 'm-0 font-semibold tabular-nums' }, v)])) : null,
-    ...plans.map((k) => h('div', {}, h('p', { class: 'm-0 text-body-sm text-muted' }, et(`meta.${k}`)), h('pre', { tabindex: '0', class: 'sql m-0 overflow-x-auto' }, m[k]!))),
-    m.catalog?.length ? h('div', {}, h('p', { class: 'm-0 text-body-sm text-muted' }, et('meta.catalog')),
-      h('pre', { tabindex: '0', class: 'sql m-0 overflow-x-auto' }, m.catalog.map((row) => row.map(String).join(' | ')).join('\n'))) : null);
-}
-
-/** "Bên trong" (engine-ux-spec §5.3): a pageinspect result as line pointers with decoded infomask flags, or the missing columns. */
-function insideView(r: LabOutput, slot: string): HTMLElement | null {
-  const v = heapView(r);
-  if (!v) return null;
-  const { h } = d;
-  if ('missing' in v) return h('p', { class: 'm-0 text-body-sm text-muted' }, et('inside.missing', { cols: v.missing.join(', ') }));
-  // The real page as ENG-VIZ's heap diagram (L237: heap_page_items rows as they come), above the decoded table.
-  const rows = r.rows.map((row) => Object.fromEntries(r.columns.map((c, i) => [c, row[i]])));
-  const diagram = vizSlot(slot, 'pg-heap-page', 'postgres', { rows }, JSON.stringify(r.rows), 'max-sm:-mx-3');
-  const head = ['lp', 'lp_flags', 't_xmin', 't_xmax', 't_ctid', 'infomask'];
-  return h('figure', { class: 'm-0 flex flex-col gap-2', 'data-inside': '' },
-    h('figcaption', { class: 'text-body-sm' }, h('b', {}, `${et('inside.title')}: `), et('inside.caption', { n: v.rows.length, dead: v.dead, hot: v.hot })),
-    h('div', { class: 'overflow-x-auto', tabindex: '0' }, h('table', { class: 'text-body-sm', lang: 'en' },
-      h('thead', {}, h('tr', {}, ...head.map((c) => h('th', { scope: 'col', class: 'px-2 text-left font-mono' }, c)))),
-      h('tbody', {}, ...v.rows.map((x) => h('tr', { class: x.flag === 'dead' ? 'bad' : x.flags.includes('HOT_UPDATED') || x.flag === 'redirect' ? 'warn' : '' },
-        ...[x.lp, x.flag, x.xmin, x.xmax, x.ctid, x.flags.join(' ')].map((c) => h('td', { class: 'px-2 font-mono whitespace-nowrap' }, c)))))),
-    diagram));
 }
 
 /**
@@ -796,7 +761,7 @@ function lessonBody(l: EngineLesson): HTMLElement {
   const req = l.requires.map((id) => lessons.find((x) => x.id === id)).filter((x): x is EngineLesson => !!x);
   const isDone = ok.has(l.id);
   const n = (pre: string): string | undefined => { const ps = parts.filter((p) => p.startsWith(pre)); return ps.length ? `${ps.filter((p) => isDone || v.passed.has(p)).length}/${ps.length}` : undefined; };
-  const fc: FullCtx = { d, l, lang: lang(), inline, make: LAB_RUNNERS[l.engine], meta: metaView, counts: { lab: n('s'), quiz: n('q') } };
+  const fc: FullCtx = { d, l, lang: lang(), inline, make: LAB_RUNNERS[l.engine], meta: (r) => R().metaView(d, r), counts: { lab: n('s'), quiz: n('q') } };
   const F = fullMod as typeof import('./engineFull');
   const secs = (keep: (id: SectionId) => boolean): HTMLElement[] => F.sections(fc, keep);
   return F.wrap(fc, h('article', { class: 'flex min-w-0 flex-col gap-8', 'aria-labelledby': 'home-title' },

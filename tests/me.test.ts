@@ -4,9 +4,9 @@ import { MAX_CARDS, readDashboard, type Card } from '../src/dashboard';
 import { DOMAINS } from '../src/domains';
 import { ATTEMPTS_KEY, ERRORS_KEY, notePass, noteTry, readAttempts, readErrors } from '../src/insights';
 import { ME_DICT, meText } from '../src/i18n/me';
-import {
-  calendar, dashFile, importDash, portfolioEntries, portfolioMd, nextSkill, topErrors, touchesSandbox, trySummary,
-} from '../src/me';
+import { EXPORT_DICT } from '../src/i18n/meExport';
+import { calendar, portfolioEntries, nextSkill, topErrors, trySummary } from '../src/me';
+import { dashFile, importDash, portfolioMd, touchesSandbox } from '../src/meExport';
 import { hashOf, parseRoute, SHARE_MAX, shareHash, sharedOf } from '../src/route';
 import type { KV } from '../src/storage';
 import { textOf } from '../src/tickets';
@@ -171,15 +171,15 @@ describe('portfolio (I6)', () => {
     expect(md).not.toMatch(/my_sales|sandbox/);
     expect(md).toMatch(/fictional/);
     expect(md).toMatch(/not verified/);
-    expect(md).toContain(ME_DICT.en['pf.anon']);
+    expect(md).toContain(EXPORT_DICT.en['pf.anon']);
   });
   it('v24 (L323): a "current skill levels" section, self-measured, only when there is something to show', () => {
     const base = { lang: 'vi' as const, scope: 'logistics' as const, what: 'L', name: 'An', date: 'x', entries: [], cards: [], imported: [] };
     const md = portfolioMd({ ...base, levels: { skills: [{ label: 'A | B', level: 'Vững' }], badges: ['Phần 1 vững'] } });
-    expect(md).toContain(ME_DICT.vi['pf.levels']);
+    expect(md).toContain(EXPORT_DICT.vi['pf.levels']);
     expect(md).toContain(String.raw`| A \| B | Vững |`);
     expect(md).toContain('Phần 1 vững');
-    expect(portfolioMd({ ...base, levels: { skills: [], badges: [] } })).not.toContain(ME_DICT.vi['pf.levels']);
+    expect(portfolioMd({ ...base, levels: { skills: [], badges: [] } })).not.toContain(EXPORT_DICT.vi['pf.levels']);
   });
 });
 
