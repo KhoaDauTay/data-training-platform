@@ -90,7 +90,7 @@ function stage(d: Diagram): { svg: SVGSVGElement; draw(f: Frame, animate: boolea
   const marker = (ink: Ink) => D.s('marker', { id: `${id}-${ink}`, viewBox: '0 0 8 8', refX: 7, refY: 4, markerWidth: 6, markerHeight: 6, orient: 'auto-start-reverse' },
     D.s('path', { d: 'M0 0 L8 4 L0 8 z', style: `fill:var(${INK[ink]})` }));
   const svg = D.s('svg', {
-    viewBox: `0 0 ${d.w} ${d.h}`, role: 'img', class: 'block h-auto w-full', style: `max-width:600px;min-width:${Math.min(d.w, 600)}px;font-family:inherit;overflow:visible`, // v30.2 (L502): never shrunk below its own size, so its 12-unit labels stay >= 12 px; phones scroll it sideways
+    viewBox: `0 0 ${d.w} ${d.h}`, role: 'img', class: 'block h-auto w-full', style: 'max-width:600px;font-family:inherit;overflow:visible',
   }, D.s('defs', {}, ...(Object.keys(INK) as Ink[]).map(marker)));
   const els = new Map<string, SVGElement>();
   let end: (() => void) | undefined;
@@ -173,11 +173,11 @@ export function mount(host: HTMLElement, d: Diagram, lang: Lang, start = 0): Viz
   const next = D.h('button', { type: 'button', class: BTN }, `${ui.next} ›`);
   const items = d.frames.map((f, i) => D.h('li', {}, f.say));
   const fig = D.h('figure', {
-    class: 'm-0 grid min-w-0 grid-cols-[minmax(0,1fr)] gap-2', tabindex: '0', 'aria-roledescription': lang === 'vi' ? 'sơ đồ từng bước' : 'step-through diagram',
+    class: 'm-0 grid gap-2', tabindex: '0', 'aria-roledescription': lang === 'vi' ? 'sơ đồ từng bước' : 'step-through diagram',
     'aria-label': `${d.title}. ${ui.keys}`, 'data-viz': '',
   },
   D.h('figcaption', { class: 'font-bold' }, d.title),
-  D.h('div', { class: 'min-w-0 overflow-x-auto overflow-y-hidden rounded-(--r-ctl) bg-panel p-2 ring-1 ring-line' }, st.svg),
+  D.h('div', { class: 'overflow-hidden rounded-(--r-ctl) bg-panel p-2 ring-1 ring-line' }, st.svg),
   say,
   D.h('div', { class: 'flex flex-wrap items-center gap-2' }, back, play, next, counter),
   D.h('details', { class: 'text-body-sm' }, D.h('summary', {}, ui.all), D.h('ol', {}, ...items)));
