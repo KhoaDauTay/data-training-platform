@@ -47,7 +47,9 @@ export const replayOf = (lab: Lab, step: number | undefined): string[] =>
 /**
  * What a DDL step left behind, one row per object: index definitions, columns, constraints, views, statistics, and (v27
  * R3) schemas with their ACL, functions and procedures (definition + ACL; not those an extension installs, so the probe stays under MAX_LAB_ROWS), triggers, table and column ACLs, roles, memberships and
- * default privileges, in every non-system schema. A `catalog` step
+ * default privileges, in every non-system schema; v35 (L550, D3): row-level security policies, the RLS/FORCE flags,
+ * relation options (`security_invoker`, `fillfactor`), partition keys and bounds, role settings, `BYPASSRLS` and connection
+ * limits (only non-default state, so the probe stays small). A `catalog` step
  * whose statement is not a read is graded on this (the statement itself returns no rows).
  */
 export const CATALOG_PROBE = `SELECT * FROM (
@@ -62,9 +64,15 @@ export const CATALOG_PROBE = `SELECT * FROM (
   UNION ALL SELECT 'trigger', tgrelid::regclass::text || '.' || tgname, pg_get_triggerdef(oid) FROM pg_trigger WHERE NOT tgisinternal
   UNION ALL SELECT 'acl', c.oid::regclass::text, c.relacl::text FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE c.relacl IS NOT NULL AND n.nspname !~ '^pg_' AND n.nspname <> 'information_schema'
   UNION ALL SELECT 'column acl', attrelid::regclass::text || '.' || attname, attacl::text FROM pg_attribute WHERE attacl IS NOT NULL
-  UNION ALL SELECT 'role', rolname::text, rolcanlogin::text || rolinherit::text || rolcreaterole::text || rolcreatedb::text FROM pg_roles WHERE rolname !~ '^pg_' AND NOT rolsuper
+  UNION ALL SELECT 'role', rolname::text, rolcanlogin::text || rolinherit::text || rolcreaterole::text || rolcreatedb::text || rolbypassrls::text || ' ' || rolconnlimit FROM pg_roles WHERE rolname !~ '^pg_' AND NOT rolsuper
   UNION ALL SELECT 'member', roleid::regrole::text || ' > ' || member::regrole::text, admin_option::text || inherit_option::text FROM pg_auth_members WHERE roleid::regrole::text !~ '^pg_'
   UNION ALL SELECT 'default acl', defaclrole::regrole::text || ' ' || defaclobjtype::text, defaclacl::text FROM pg_default_acl
+  UNION ALL SELECT 'policy', schemaname || '.' || tablename || '.' || policyname, permissive || ' ' || cmd || ' ' || roles::text || ' ' || coalesce(qual, '') || ' ' || coalesce(with_check, '') FROM pg_policies
+  UNION ALL SELECT 'rls', c.oid::regclass::text, c.relrowsecurity::text || ' ' || c.relforcerowsecurity::text FROM pg_class c WHERE c.relrowsecurity OR c.relforcerowsecurity
+  UNION ALL SELECT 'reloptions', c.oid::regclass::text, c.reloptions::text FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE c.reloptions IS NOT NULL AND n.nspname !~ '^pg_' AND n.nspname <> 'information_schema'
+  UNION ALL SELECT 'partition key', partrelid::regclass::text, pg_get_partkeydef(partrelid) FROM pg_partitioned_table
+  UNION ALL SELECT 'partition', c.oid::regclass::text, i.inhparent::regclass::text || ' ' || pg_get_expr(c.relpartbound, c.oid) FROM pg_class c JOIN pg_inherits i ON i.inhrelid = c.oid WHERE c.relispartition AND c.relkind IN ('r', 'p')
+  UNION ALL SELECT 'role setting', coalesce(s.setrole::regrole::text, '*') || ' ' || coalesce(d.datname::text, '*'), s.setconfig::text FROM pg_db_role_setting s LEFT JOIN pg_database d ON d.oid = s.setdatabase
 ) c ORDER BY 1, 2, 3`;
 
 const stepIndex = (lab: Lab, step: LabStep): number => lab.steps.indexOf(step);
