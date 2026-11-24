@@ -65,4 +65,4 @@ Tổng chữ VI của 53 bài L1–L2: 16.160 → 23.232. Mọi concept/lab L1�
 
 **Kiểm:** `tsc` sạch; `engineAnatomy` 546/546, `engineContent` 554, `engineIntegration` 235, `engineNosql` 9, `mongoPath` 217, `i18n` 20, `bpLint` 17; `npm run build` + `check-budget` ok, `engineLesson` lớn nhất 7 KB / 8 KB (bài NoSQL lớn nhất `e-dy-l1-08` 6,44 KB gz). Không chạy e2e/smoke/ux-audit (luật user).
 
-**Chưa làm:** 21 concept L3–L5 dưới 500 từ (danh sách in ra trong test); e2e/smoke chưa chạy; hiển thị trang của các khối mới chưa xem bằng mắt.
+**Chưa làm:** bẫy `// ERROR` của `e-dy-l1-09` (`KeyConditionExpression` trên `Scan`) vẫn hỏng vì `ExpressionAttributeValues` thừa, không vì `Scan` không nhận điều kiện khóa (dynoxide bỏ qua tham số đó; bài đã ghi rõ AWS không có tham số này trên `Scan`): ngoại lệ duy nhất của L532, chưa có khối thay thế hỏng đúng lý do; 21 concept L3–L5 dưới 500 từ (danh sách in ra trong test); e2e/smoke chưa chạy; hiển thị trang của các khối mới chưa xem bằng mắt.

@@ -290,7 +290,7 @@ Hai đơn mới nhất của `C-02`:
 {"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c AND city = :t", "ExpressionAttributeValues": {":c": {"S": "C-03"}, ":t": {"S": "Da Nang"}}}}
 ```
 
-`city` không phải khóa, nên DynamoDB báo thiếu sort key trong điều kiện. Điều kiện trên thuộc tính thường đi vào `FilterExpression`; nó vẫn cần một `Query` đọc hết item collection trước.
+`city` không phải khóa, nên DynamoDB báo thiếu sort key trong điều kiện. Điều kiện trên thuộc tính thường đi vào `FilterExpression`, áp sau khi `Query` đã đọc các item mà điều kiện khóa chọn; item bị lọc bỏ vẫn tính vào capacity.
 
 Lấy cận trên đúng bằng ngày cuối:
 
@@ -376,7 +376,7 @@ Putting a condition on an ordinary attribute into the key condition:
 {"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c AND city = :t", "ExpressionAttributeValues": {":c": {"S": "C-03"}, ":t": {"S": "Da Nang"}}}}
 ```
 
-`city` is not a key, so DynamoDB reports that the sort key is missing from the condition. A condition on an ordinary attribute goes into a `FilterExpression`; it still needs a `Query` that reads the whole item collection first.
+`city` is not a key, so DynamoDB reports that the sort key is missing from the condition. A condition on an ordinary attribute goes into a `FilterExpression`, applied after the `Query` has read the items the key condition selects; items filtered out still count toward capacity.
 
 Using the last day itself as the upper bound:
 
