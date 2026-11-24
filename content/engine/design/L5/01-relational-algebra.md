@@ -91,6 +91,8 @@ Khác biệt quan trọng: đại số làm trên tập, SQL làm trên đa tậ
 
 SQL không chỉ có truy vấn. Lệnh chia thành bốn nhóm: DDL định nghĩa cấu trúc (`CREATE`, `ALTER`, `DROP`), DML đọc và ghi dữ liệu (`SELECT`, `INSERT`, `UPDATE`, `DELETE`), DCL phân quyền (`GRANT`, `REVOKE`), TCL điều khiển giao dịch (`BEGIN`, `COMMIT`, `ROLLBACK`). Đại số chỉ mô tả phần đọc.
 
+Hai biểu thức **tương đương** khi cho cùng kết quả trên mọi dữ liệu, và optimizer sống nhờ điều đó. Nó đẩy phép chọn xuống sát bảng (σ trước ⋈) để phép nối nhận ít bộ hơn, đổi chỗ và nhóm lại các phép nối (⋈ giao hoán và kết hợp) để tìm thứ tự rẻ nhất, gộp các phép chiếu liên tiếp thành một. Trong `EXPLAIN`, dòng `Filter` ngay dưới một `Seq Scan` là phép chọn đã được đẩy xuống, và thứ tự các nút `Join` là thứ tự nối planner chọn. Planner làm việc trên cây đại số, nên viết bảng nào trước trong `FROM` thường không đổi kế hoạch. Ngoại lệ là chỗ luật không cho đổi: nối ngoài không giao hoán tùy ý, và điều kiện đặt ở `ON` khác ở `WHERE`. Bài `e-pg-l4-05` xem điều này trên kế hoạch thật.
+
 ## Ví dụ
 
 Ký hiệu đại số và câu SQL tương ứng:
@@ -185,6 +187,8 @@ The **join** ⋈ is derived from the basic operators: a product, then a selectio
 An important difference: the algebra works on sets, SQL on multisets. `SELECT city FROM emp` keeps duplicate rows; the true projection needs `DISTINCT`. `UNION` removes duplicates like the algebra, `UNION ALL` does not.
 
 SQL is more than queries. Statements fall into four groups: DDL defines structure (`CREATE`, `ALTER`, `DROP`), DML reads and writes data (`SELECT`, `INSERT`, `UPDATE`, `DELETE`), DCL grants access (`GRANT`, `REVOKE`), TCL controls transactions (`BEGIN`, `COMMIT`, `ROLLBACK`). The algebra describes only the reading part.
+
+Two expressions are **equivalent** when they give the same result on every database, and the optimizer lives on that. It pushes selections down next to the tables (σ before ⋈) so joins receive fewer tuples, swaps and regroups joins (⋈ is commutative and associative) to find the cheapest order, and merges consecutive projections into one. In `EXPLAIN`, a `Filter` line right under a `Seq Scan` is a selection that was pushed down, and the order of the `Join` nodes is the join order the planner chose. Because the planner works on the algebra tree, not on the order of the words you typed, which table you write first in `FROM` usually does not change the plan. The exceptions are where the rules forbid a swap: outer joins do not commute freely, and a condition in `ON` is not the same as one in `WHERE`. Lesson `e-pg-l4-05` looks at this on real plans.
 
 ## Example
 

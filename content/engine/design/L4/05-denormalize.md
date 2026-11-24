@@ -104,6 +104,8 @@ Báo cáo dùng **star schema**: một bảng **fact** ở giữa (mỗi dòng l
 
 Ba cách giữ bản sao trong Postgres. **Materialized view**: lưu kết quả một truy vấn, đọc nhanh như bảng, cũ cho tới khi `REFRESH`. **Cột generated**: tính từ các cột cùng dòng, database tự cập nhật, không ghi tay được. **Trigger**: chạy code mỗi khi nguồn đổi, mạnh nhất và cũng dễ sai nhất. Với dữ liệu luôn đọc cả khối, một tài liệu `jsonb` gom các phần lại cũng là một dạng phi chuẩn hóa hợp lý.
 
+Khi nào đáng làm: đọc nhiều hơn ghi rất nhiều, phép nối hay phép gom đo được là chậm bằng `EXPLAIN ANALYZE` chứ không phải đoán, và người dùng chấp nhận số hơi cũ. Thử theo thứ tự rẻ trước: viết lại câu và thêm index, rồi materialized view, cuối cùng mới tới cột hay bảng bản sao giữ bằng trigger. Mỗi bản sao cần ba dòng ghi chú: nguồn là bảng nào, làm mới lúc nào, và trễ bao lâu thì chấp nhận được. Thiếu ba dòng đó, bản sao sớm muộn sẽ nói dối mà không ai biết. Vòng đo và sửa đó là bài `e-pg-l5-18`.
+
 ## Ví dụ
 
 Đọc star schema: fact `sales` nối hai chiều, gom theo thành phố và nhóm hàng.
@@ -189,6 +191,8 @@ Denormalising means storing one fact in several places on purpose so reads need 
 Reporting uses a **star schema**: a **fact** table in the middle (each row a measured event: one item sold) and **dimension** tables around it (product, store, date). The first thing to settle is the **grain**: what one fact row means. Every measure must share that grain, or `sum` adds things twice. The advanced node C2 "Star schemas and grain" on the learning path goes deeper.
 
 Three ways to keep copies in Postgres. **Materialized view**: stores a query's result, reads as fast as a table, stale until `REFRESH`. **Generated column**: computed from columns of the same row, updated by the database, never written by hand. **Trigger**: runs code whenever the source changes, the most powerful and the easiest to get wrong. For data always read as a whole, a `jsonb` document that gathers the parts is a sound form of denormalisation too.
+
+When it is worth it: reads far outnumber writes, the join or aggregation is measured as slow with `EXPLAIN ANALYZE` rather than guessed, and users accept slightly old numbers. Try the cheap things first: rewrite the query and add an index, then a materialized view, and only last a copied column or table kept by a trigger. Every copy needs three lines of notes: which table is its source, when it is refreshed, and how much delay is acceptable. Without those three lines a copy will sooner or later lie and nobody will notice. That measure-and-fix loop is lesson `e-pg-l5-18`.
 
 ## Example
 
