@@ -60,25 +60,25 @@ lab:
 quiz:
   - q: { vi: "Bật RLS trên bảng nhưng chưa có policy nào cho vai trò `support`. `support` thấy gì?", en: "RLS is enabled on the table but there is no policy for role `support`. What does `support` see?" }
     options:
-      - { vi: "Mọi dòng", en: "Every row" }
-      - { vi: "Không dòng nào: không có policy nghĩa là từ chối mặc định", en: "No rows: no policy means default deny" }
-      - { vi: "Lỗi quyền", en: "A permission error" }
+      - { vi: "Mọi dòng, vì chưa có policy nào giới hạn", en: "Every row, since no policy limits it" }
+      - { vi: "Không dòng nào: từ chối mặc định", en: "No rows: default deny" }
+      - { vi: "Lỗi quyền khi đọc bảng", en: "A permission error on read" }
     answer: 1
     trap: 0
     why: { vi: "Nghe hợp lý vì không có policy thì tưởng không có giới hạn, nhưng RLS hiểu ngược lại. Docs chính thức: khi RLS bật mà không có policy áp dụng, bảng hành xử như từ chối mặc định: không dòng nào thấy hay sửa được. Lab cho `support` = 0.", en: "It sounds right because no policy looks like no restriction, but RLS reads it the other way round. The docs: with RLS on and no applicable policy, the table is default-deny: no row can be seen or changed. The lab gives `support` = 0." }
   - q: { vi: "Policy `FOR UPDATE ... USING (tenant_id = 1)` không có `WITH CHECK`. Khách 1 chạy `UPDATE tickets SET tenant_id = 2 WHERE id = 3`. Chuyện gì xảy ra?", en: "A policy `FOR UPDATE ... USING (tenant_id = 1)` has no `WITH CHECK`. Tenant 1 runs `UPDATE tickets SET tenant_id = 2 WHERE id = 3`. What happens?" }
     options:
-      - { vi: "Dòng được chuyển sang khách 2", en: "The row moves to tenant 2" }
-      - { vi: "Bị từ chối: khi chỉ có `USING`, biểu thức đó cũng được dùng làm `WITH CHECK`, nên dòng mới phải vẫn có tenant_id = 1", en: "It is rejected: with only `USING`, that expression is also used as `WITH CHECK`, so the new row must still have tenant_id = 1" }
-      - { vi: "Dòng biến mất", en: "The row disappears" }
+      - { vi: "Dòng chuyển sang khách 2, vì không có `WITH CHECK`", en: "The row moves to tenant 2, as there is no `WITH CHECK`" }
+      - { vi: "Bị từ chối: `USING` được dùng làm `WITH CHECK`", en: "Rejected: `USING` also serves as `WITH CHECK`" }
+      - { vi: "Dòng biến mất khỏi tầm nhìn của khách 1", en: "The row vanishes from tenant 1's view" }
     answer: 1
     trap: 0
     why: { vi: "Nghe hợp lý vì thiếu `WITH CHECK` thì tưởng không có gì kiểm dòng mới, nhưng Postgres tự điền nó. `USING` lọc dòng cũ được nhắm tới; `WITH CHECK` kiểm dòng mới. Không ghi `WITH CHECK` thì Postgres dùng lại `USING`, chặn việc \"đẩy\" dòng sang khách khác.", en: "It sounds right because without `WITH CHECK` nothing seems to check the new row, but Postgres fills it in. `USING` filters the existing rows you can target; `WITH CHECK` validates the new row. Without `WITH CHECK`, Postgres reuses `USING`, which stops a row being \"pushed\" to another tenant." }
   - q: { vi: "Ứng dụng kết nối bằng chính vai trò sở hữu bảng. Policy không có tác dụng. Sửa thế nào?", en: "The application connects as the role that owns the table. The policies have no effect. How do you fix it?" }
     options:
-      - { vi: "`ALTER TABLE tickets FORCE ROW LEVEL SECURITY`, hoặc tốt hơn: cho ứng dụng một vai trò riêng không sở hữu bảng", en: "`ALTER TABLE tickets FORCE ROW LEVEL SECURITY`, or better: give the application its own role that does not own the table" }
-      - { vi: "Tạo lại policy", en: "Recreate the policies" }
-      - { vi: "Đặt `row_security = off`", en: "Set `row_security = off`" }
+      - { vi: "`FORCE ROW LEVEL SECURITY`, hoặc vai trò riêng cho ứng dụng", en: "`FORCE ROW LEVEL SECURITY`, or a separate role for the app" }
+      - { vi: "Xóa rồi tạo lại các policy cho đúng", en: "Drop and recreate the policies correctly" }
+      - { vi: "Đặt `row_security = off` cho vai trò ứng dụng", en: "Set `row_security = off` for the app role" }
     answer: 0
     trap: 1
     why: { vi: "Tạo lại policy nghe hợp lý vì có vẻ policy bị sai, nhưng policy không sai: chủ bảng không bị nó áp dụng. Chủ bảng bỏ qua RLS trừ khi bật `FORCE`. Superuser và vai trò `BYPASSRLS` luôn bỏ qua. `row_security = off` không tắt được RLS: nó báo lỗi khi câu bị policy lọc.", en: "Recreating the policy sounds right because the policy seems broken, but it is not: the owner is just not subject to it. The table owner bypasses RLS unless `FORCE` is on. Superusers and `BYPASSRLS` roles always bypass it. `row_security = off` cannot switch RLS off: it raises an error when a query would be filtered by a policy." }
@@ -98,10 +98,13 @@ Nhiều người nghĩ bật RLS là mọi người đều bị lọc. Thật ra
 ## Cú pháp
 
 ```sql
-ALTER TABLE table_name { ENABLE | FORCE } ROW LEVEL SECURITY;
+ALTER TABLE table_name
+  { ENABLE | FORCE }
+  ROW LEVEL SECURITY;
 CREATE POLICY name ON table_name
   [ AS { PERMISSIVE | RESTRICTIVE } ]
-  [ FOR { ALL | SELECT | INSERT | UPDATE | DELETE } ]
+  [ FOR { ALL | SELECT | INSERT
+        | UPDATE | DELETE } ]
   [ TO role_name [, ...] ]
   [ USING ( condition ) ]
   [ WITH CHECK ( condition ) ];
@@ -118,7 +121,9 @@ CREATE POLICY name ON table_name
 
 ```sql
 SET ROLE tenant_2;
-SELECT current_user, count(*) AS rows_seen FROM tickets;
+SELECT current_user,
+  count(*) AS rows_seen
+FROM tickets;
 RESET ROLE;
 ```
 
@@ -128,9 +133,13 @@ Cho khách 1 thêm vé, nhưng chỉ vé của chính mình:
 
 ```sql
 GRANT INSERT ON tickets TO tenant_1;
-CREATE POLICY tenant_1_insert ON tickets FOR INSERT TO tenant_1 WITH CHECK (tenant_id = 1);
+CREATE POLICY tenant_1_insert
+  ON tickets FOR INSERT TO tenant_1
+  WITH CHECK (tenant_id = 1);
 SET ROLE tenant_1;
-INSERT INTO tickets VALUES (31, 1, false, 'new ticket') RETURNING id, tenant_id;
+INSERT INTO tickets
+VALUES (31, 1, false, 'new ticket')
+RETURNING id, tenant_id;
 RESET ROLE;
 ```
 
@@ -161,8 +170,9 @@ Khách 1 thử đẩy một vé sang khách 2:
 
 ```sql
 SET ROLE tenant_1;
--- ERROR 42501: new row violates row-level security policy for table "tickets"
-INSERT INTO tickets VALUES (32, 2, false, 'pushed to tenant 2');
+-- ERROR 42501: new row violates RLS
+INSERT INTO tickets
+VALUES (32, 2, false, 'to tenant 2');
 ```
 
 `WITH CHECK` chặn dòng mới không thỏa điều kiện. Đó là điều bạn muốn; lỗi `42501` báo rằng policy đang làm việc.
@@ -170,13 +180,13 @@ INSERT INTO tickets VALUES (32, 2, false, 'pushed to tenant 2');
 Kiểm thử policy bằng vai trò quản trị:
 
 ```sql
--- WRONG: the owner and superusers skip RLS
+-- WRONG: the owner skips RLS
 RESET ROLE;
 SELECT count(*) AS rows_seen FROM tickets;
 ```
 
 ```sql
--- FIX: test under the role the application uses
+-- FIX: test as the app's role
 SET ROLE tenant_1;
 SELECT count(*) AS rows_seen FROM tickets;
 RESET ROLE;
@@ -189,7 +199,7 @@ Tắt RLS bằng `row_security`:
 ```sql
 SET row_security = off;
 SET ROLE tenant_1;
--- ERROR 42501: query would be affected by row-level security policy for table "tickets"
+-- ERROR 42501: affected by RLS
 SELECT count(*) FROM tickets;
 ```
 
@@ -198,6 +208,8 @@ SELECT count(*) FROM tickets;
 ## Thực hành
 
 Trong lab không dùng được `SET ROLE` (bước sau chạy lại bước trước), nên mỗi vai trò được thử qua một view do chính nó sở hữu: view mặc định áp policy của chủ view. Ba bước: đếm theo vai trò, đọc policy, giải thích vì sao vai trò hiện tại thấy tất cả.
+
+Sơ đồ ngay dưới đây đi lại đường của một câu qua RLS trên mẫu 30 vé: policy thêm điều kiện, executor lọc còn 8 dòng, và ai bỏ qua bước policy. Hai bước đầu (pool, `SET LOCAL`) được nói kỹ ở `e-pg-l5-20`.
 
 ## Tóm tắt
 
@@ -224,10 +236,13 @@ Many people think turning RLS on filters everyone. In fact superusers, `BYPASSRL
 ## Syntax
 
 ```sql
-ALTER TABLE table_name { ENABLE | FORCE } ROW LEVEL SECURITY;
+ALTER TABLE table_name
+  { ENABLE | FORCE }
+  ROW LEVEL SECURITY;
 CREATE POLICY name ON table_name
   [ AS { PERMISSIVE | RESTRICTIVE } ]
-  [ FOR { ALL | SELECT | INSERT | UPDATE | DELETE } ]
+  [ FOR { ALL | SELECT | INSERT
+        | UPDATE | DELETE } ]
   [ TO role_name [, ...] ]
   [ USING ( condition ) ]
   [ WITH CHECK ( condition ) ];
@@ -244,7 +259,9 @@ Act as tenant 2 with `SET ROLE`:
 
 ```sql
 SET ROLE tenant_2;
-SELECT current_user, count(*) AS rows_seen FROM tickets;
+SELECT current_user,
+  count(*) AS rows_seen
+FROM tickets;
 RESET ROLE;
 ```
 
@@ -254,9 +271,13 @@ Let tenant 1 add tickets, but only its own:
 
 ```sql
 GRANT INSERT ON tickets TO tenant_1;
-CREATE POLICY tenant_1_insert ON tickets FOR INSERT TO tenant_1 WITH CHECK (tenant_id = 1);
+CREATE POLICY tenant_1_insert
+  ON tickets FOR INSERT TO tenant_1
+  WITH CHECK (tenant_id = 1);
 SET ROLE tenant_1;
-INSERT INTO tickets VALUES (31, 1, false, 'new ticket') RETURNING id, tenant_id;
+INSERT INTO tickets
+VALUES (31, 1, false, 'new ticket')
+RETURNING id, tenant_id;
 RESET ROLE;
 ```
 
@@ -287,8 +308,9 @@ Tenant 1 tries to push a ticket to tenant 2:
 
 ```sql
 SET ROLE tenant_1;
--- ERROR 42501: new row violates row-level security policy for table "tickets"
-INSERT INTO tickets VALUES (32, 2, false, 'pushed to tenant 2');
+-- ERROR 42501: new row violates RLS
+INSERT INTO tickets
+VALUES (32, 2, false, 'to tenant 2');
 ```
 
 `WITH CHECK` blocks a new row that fails its condition. That is what you want; error `42501` says the policy is doing its job.
@@ -296,13 +318,13 @@ INSERT INTO tickets VALUES (32, 2, false, 'pushed to tenant 2');
 Testing policies with an admin role:
 
 ```sql
--- WRONG: the owner and superusers skip RLS
+-- WRONG: the owner skips RLS
 RESET ROLE;
 SELECT count(*) AS rows_seen FROM tickets;
 ```
 
 ```sql
--- FIX: test under the role the application uses
+-- FIX: test as the app's role
 SET ROLE tenant_1;
 SELECT count(*) AS rows_seen FROM tickets;
 RESET ROLE;
@@ -315,7 +337,7 @@ Switching RLS off with `row_security`:
 ```sql
 SET row_security = off;
 SET ROLE tenant_1;
--- ERROR 42501: query would be affected by row-level security policy for table "tickets"
+-- ERROR 42501: affected by RLS
 SELECT count(*) FROM tickets;
 ```
 
@@ -325,10 +347,12 @@ SELECT count(*) FROM tickets;
 
 The lab cannot use `SET ROLE` (each step replays the earlier ones), so each role is tried through a view it owns: a default view applies the policies of its owner. Three steps: count per role, read the policies, explain why the current role sees everything.
 
+The diagram right below walks a query's path through RLS on a 30-ticket sample: the policy adds its condition, the executor keeps 8 rows, and who skips the policy step. Its first two stages (the pool, `SET LOCAL`) are covered in `e-pg-l5-20`.
+
 ## Recap
 
 - RLS on with no applicable policy is default deny.
 - `USING` filters existing rows, `WITH CHECK` validates new ones; without `WITH CHECK`, `USING` stands in.
 - Permissive policies combine with OR, restrictive ones with AND.
 - Superusers, `BYPASSRLS` and the owner (unless `FORCE`) skip RLS: test under the application role.
-- Read next: `e-pg-l5-19` (RLS in depth) and `e-pg-l5-20` (the current tenant through a pool); the theme map `e-ds-l4-09`.
+- Read next: `e-pg-l5-19` (RLS in depth) and `e-pg-l5-20` (the current tenant through a pool); the topic map `e-ds-l4-09`.

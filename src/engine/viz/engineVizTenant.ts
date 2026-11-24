@@ -17,10 +17,11 @@ define<TenancyModel>('pg-tenancy-models', {}, (m, tr) => {
   while (ts.length < 3) ts.push(String.fromCharCode(65 + ts.length));
   const table = cut(typeof m?.table === 'string' && m.table ? m.table : 'invoices', fitChars(92));
   const heads: [string, string][] = [['Silo', tr('DB riêng', 'own database')], ['Bridge', tr('schema riêng', 'own schema')], ['Pool', tr('chung bảng', 'shared tables')]];
-  const rates: [string, string[]][] = [
-    [tr('Cô lập', 'Isolation'), [tr('cao', 'high'), tr('vừa', 'medium'), tr('thấp', 'low')]],
-    [tr('Chi phí mỗi khách', 'Cost per tenant'), [tr('cao', 'high'), tr('vừa', 'medium'), tr('thấp', 'low')]],
-    [tr('Công vận hành', 'Operations work'), [tr('cao', 'high'), tr('vừa', 'medium'), tr('thấp', 'low')]],
+  // v35 R1 (E05): the word says good or bad on its own (mạnh/yếu, đắt/rẻ, nhiều/ít), the tone only repeats it (never colour alone)
+  const rates: [string, string[], Tone[]][] = [
+    [tr('Cô lập', 'Isolation'), [tr('mạnh', 'strong'), tr('vừa', 'medium'), tr('yếu', 'weak')], ['live', 'cell', 'dead']],
+    [tr('Chi phí mỗi khách', 'Cost per tenant'), [tr('đắt', 'expensive'), tr('vừa', 'medium'), tr('rẻ', 'cheap')], ['dead', 'cell', 'live']],
+    [tr('Công vận hành', 'Operations work'), [tr('nhiều', 'a lot'), tr('vừa', 'some'), tr('ít', 'little')], ['dead', 'cell', 'live']],
   ];
   const POOL = [0, 1, 2, 0, 2, 1]; // the strips' tenants, as the spec's A, B, C, A, C, B
 
@@ -49,10 +50,10 @@ define<TenancyModel>('pg-tenancy-models', {}, (m, tr) => {
       out.push(text(`pt${i}`, COLS[2] + 10, 113 + i * 16, `tenant_id ${ts[ti]}`, { ink: on(2) ? 'ink' : 'muted' }));
     });
     // The three rating rows: a full-width heading, then one word per column (the word carries the meaning)
-    rates.forEach(([head, words], r) => {
-      const y = 222 + r * 40;
+    rates.forEach(([head, words, good], r) => {
+      const y = 222 + r * 46; // T1-C9-01: 14 units between a row's cells and the next heading
       out.push(text(`rh${r}`, 6, y, head, { b: rated, ink: rated ? 'ink' : 'muted' }));
-      COLS.forEach((x, c) => out.push(...box(`r${r}c${c}`, x, y + 10, W, 22, words[c], rated ? 'new' : on(c) ? 'cell' : 'ghost')));
+      COLS.forEach((x, c) => out.push(...box(`r${r}c${c}`, x, y + 10, W, 22, words[c], rated ? good[c] : on(c) ? 'cell' : 'ghost')));
     });
     return out;
   };
@@ -60,7 +61,7 @@ define<TenancyModel>('pg-tenancy-models', {}, (m, tr) => {
   return {
     title: tr('Ba mô hình nhiều khách hàng', 'Three tenancy models'),
     w: 340,
-    h: 340,
+    h: 352,
     frames: [
       { say: tr(`Ba khách ${names} dùng chung một ứng dụng. Câu hỏi: dữ liệu của họ nằm ở đâu?`, `Three tenants ${names} share one application. The question: where does their data live?`), nodes: draw(-1, false, true) },
       { say: tr('Silo: mỗi khách một database. Cô lập mạnh nhất, nhưng mỗi khách mới là một database phải tạo, sao lưu và nâng cấp.', 'Silo: one database per tenant. The strongest isolation, but every new tenant is a database to create, back up and upgrade.'), nodes: draw(0, false, false) },
@@ -97,7 +98,7 @@ define<RlsPathModel>('pg-rls-path', RLS_PATH_SAMPLE, (m, tr) => {
     ['Executor', tr('lọc dòng', 'filters rows')],
     ['COMMIT', tr('trả kết nối', 'returns it')],
   ];
-  const Y = (i: number) => 8 + i * 40;
+  const Y = (i: number) => 8 + i * 46; // E04: 12 units between boxes, so an arrowhead never meets a box edge
   const X0 = 124;
   const BYPASS = 6;
   const draw = (at: number): Shape[] => {
@@ -143,7 +144,7 @@ define<RlsPathModel>('pg-rls-path', RLS_PATH_SAMPLE, (m, tr) => {
   };
   const v = { t: m.tenant, n: m.total, k: m.owned, s: m.seen, d: m.owned - m.seen };
   return {
-    title: tr('Đường đi của một câu qua RLS', 'A query\'s path through RLS'), w: 340, h: 250,
+    title: tr('Đường đi của một câu qua RLS', 'A query\'s path through RLS'), w: 340, h: 282,
     frames: [
       { say: tr('Ứng dụng mượn một kết nối từ pool, chạy bằng vai trò app (không sở hữu bảng). Kết nối chưa biết khách nào.', 'The application borrows a pooled connection that runs as role app (not the table owner). The connection knows no tenant yet.'), nodes: draw(0) },
       { say: fill(tr('BEGIN rồi SET LOCAL app.tenant_id = \'{t}\': khách hiện tại chỉ sống trong transaction này.', 'BEGIN, then SET LOCAL app.tenant_id = \'{t}\': the current tenant lives only inside this transaction.'), v), nodes: draw(1) },

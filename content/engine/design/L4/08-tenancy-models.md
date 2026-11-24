@@ -71,8 +71,8 @@ quiz:
       en: "A large seller's contract requires its data in its own database, backed up and restored on its own. Which model fits?"
     options:
       - { vi: "Pool: mọi câu đã lọc theo tenant_id nên đủ tách", en: "Pool: every query already filters on tenant_id, so it is separate enough" }
-      - { vi: "Silo cho người bán đó: database riêng, sao lưu và khôi phục một khách là việc của chính database ấy", en: "Silo for that seller: its own database, so backing up and restoring one tenant is that database's own job" }
-      - { vi: "Bridge: schema riêng là database riêng", en: "Bridge: its own schema is its own database" }
+      - { vi: "Silo: database riêng, sao lưu và khôi phục riêng", en: "Silo: its own database, backed up and restored alone" }
+      - { vi: "Bridge: schema riêng cũng tính là database riêng", en: "Bridge: its own schema counts as its own database" }
     answer: 1
     trap: 0
     why:
@@ -83,7 +83,7 @@ quiz:
       en: "The market has 5,000 small sellers, 40 tables per schema. Someone proposes the bridge (a schema per tenant). What grows first?"
     options:
       - { vi: "Không gì cả: schema chỉ là tên, không tốn gì", en: "Nothing: a schema is only a name and costs nothing" }
-      - { vi: "Catalog hệ thống: 200.000 bảng cộng index, và mỗi lần đổi cấu trúc phải chạy 5.000 lần", en: "The system catalog: 200,000 tables plus indexes, and every schema change must run 5,000 times" }
+      - { vi: "Catalog hệ thống: 200.000 bảng, đổi cấu trúc 5.000 lần", en: "The system catalog: 200,000 tables, every change run 5,000 times" }
       - { vi: "Số kết nối, vì mỗi schema cần một kết nối riêng", en: "The connection count, because each schema needs its own connection" }
     answer: 1
     trap: 0
@@ -93,7 +93,7 @@ quiz:
 ---
 ## Mở bài
 
-Chợ Lồng Đèn bắt đầu bán phần mềm quản lý cho người bán, và câu hỏi đầu tiên của nhóm thiết kế là: hóa đơn của mỗi người bán nằm ở đâu? Có ba câu trả lời quen thuộc, mỗi câu đổi cô lập lấy chi phí theo một tỉ lệ khác. Sơ đồ dưới đây đi qua cả ba trước khi bạn chạy chúng.
+Chợ Lồng Đèn bắt đầu bán phần mềm quản lý cho người bán, và câu hỏi đầu tiên của nhóm thiết kế là: hóa đơn của mỗi người bán nằm ở đâu? Có ba câu trả lời quen thuộc, mỗi câu đổi cô lập lấy chi phí theo một tỉ lệ khác. Sơ đồ ở cuối bài, sau phần Lỗi hay gặp, gói cả ba vào năm bước.
 
 ## Ý chính
 
@@ -183,8 +183,9 @@ RESET search_path;
 Bridge: khách mới chưa có schema thì mọi câu của họ hỏng cho tới khi việc tạo và đổi cấu trúc chạy xong:
 
 ```sql
--- ERROR 42P01: no schema for C yet
-SELECT count(*) FROM seller_c.invoices;
+-- ERROR 42P01: C has no schema
+SELECT count(*)
+FROM seller_c.invoices;
 ```
 
 ## Tóm tắt
@@ -198,7 +199,7 @@ SELECT count(*) FROM seller_c.invoices;
 
 ## Opening
 
-Lantern Market starts selling management software to its sellers, and the design team's first question is: where does each seller's invoice data live? There are three familiar answers, each trading isolation for cost at a different rate. The diagram below walks through all three before you run them.
+Lantern Market starts selling management software to its sellers, and the design team's first question is: where does each seller's invoice data live? There are three familiar answers, each trading isolation for cost at a different rate. The diagram at the end, after Common mistakes, sums up all three in five steps.
 
 ## Key idea
 
@@ -288,8 +289,9 @@ RESET search_path;
 Bridge: a new tenant without a schema breaks every query until creating and migrating it is done:
 
 ```sql
--- ERROR 42P01: no schema for C yet
-SELECT count(*) FROM seller_c.invoices;
+-- ERROR 42P01: C has no schema
+SELECT count(*)
+FROM seller_c.invoices;
 ```
 
 ## Recap
@@ -297,4 +299,4 @@ SELECT count(*) FROM seller_c.invoices;
 - Silo: its own database, the strongest isolation, the most expensive, every operations job times N.
 - Bridge (here: a schema per tenant): one database, the catalog and schema changes times N, `search_path` must be right on every request.
 - Pool: shared tables with `tenant_id`, the cheapest, isolation lives in keys, uniqueness rules and query filters.
-- Read next: `e-ds-l4-09` (the theme map), `e-ds-l4-10` (choosing a model by scenario).
+- Read next: `e-ds-l4-09` (the topic map), `e-ds-l4-10` (choosing a model by scenario).

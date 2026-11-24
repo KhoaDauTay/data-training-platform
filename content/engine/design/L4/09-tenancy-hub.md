@@ -4,7 +4,7 @@ engine: design
 level: L4
 module: multi-tenant
 title: Nhiều khách hàng - ba lớp bảo vệ và bản đồ chủ đề
-title_en: Multi-tenant - three layers of protection and the theme map
+title_en: Multi-tenant - three layers of protection and the topic map
 kind: concept
 runtime: browser
 minutes: 12
@@ -63,9 +63,9 @@ quiz:
       vi: "Bảng đã bật bảo mật theo dòng, mỗi người bán chỉ đọc được dòng của mình. Còn cần khóa ngoại ghép có tenant_id không?"
       en: "The table has row-level security on, and each seller reads only its own rows. Is a composite foreign key with tenant_id still needed?"
     options:
-      - { vi: "Không, chính sách đã lo hết", en: "No, the policy covers everything" }
-      - { vi: "Có: chính sách lọc dòng khi đọc và kiểm dòng của chính khách khi ghi, còn khóa ngoại ghép chặn dòng trỏ sang dữ liệu của khách khác; kiểm khóa ngoại không đi qua chính sách", en: "Yes: the policy filters rows on read and checks the tenant's own row on write, while the composite foreign key stops a row from pointing at another tenant's data; foreign key checks do not go through the policy" }
-      - { vi: "Chỉ cần khi không có index", en: "Only when there is no index" }
+      - { vi: "Không: chính sách đã lọc mọi lần đọc và ghi", en: "No: the policy already filters every read and write" }
+      - { vi: "Có: kiểm khóa ngoại không đi qua chính sách", en: "Yes: foreign key checks do not go through the policy" }
+      - { vi: "Chỉ cần khi bảng chưa có index trên tenant_id", en: "Only when the table has no index on tenant_id" }
     answer: 1
     trap: 0
     why:
@@ -75,9 +75,9 @@ quiz:
       vi: "Một báo cáo nối `invoices` với `payments` chỉ bằng `p.invoice_id = i.id`, rồi lọc `i.tenant_id = 2`. Kết quả sai thế nào?"
       en: "A report joins `invoices` to `payments` only on `p.invoice_id = i.id`, then filters `i.tenant_id = 2`. How is the result wrong?"
     options:
-      - { vi: "Không sai, vì đã lọc tenant ở WHERE", en: "It is not wrong, the tenant is filtered in WHERE" }
-      - { vi: "Mỗi hóa đơn của người bán 2 khớp với khoản trả cùng số của mọi người bán, nên dòng bị nhân và tiền của khách khác lọt vào", en: "Each invoice of seller 2 matches the payments with the same number at every seller, so rows multiply and other tenants' money leaks in" }
-      - { vi: "Câu báo lỗi vì khóa ngoại là ghép", en: "The query fails because the foreign key is composite" }
+      - { vi: "Không sai: điều kiện tenant ở WHERE áp cho cả câu", en: "It is not wrong: the tenant filter in WHERE covers the whole query" }
+      - { vi: "Dòng bị nhân: khoản trả cùng số của mọi khách khớp vào", en: "Rows multiply: payments with the same number at every tenant match" }
+      - { vi: "Câu báo lỗi, vì khóa ngoại ghép mà phép nối chỉ một cột", en: "The query fails, as the key is composite but the join uses one column" }
     answer: 1
     trap: 0
     why:
@@ -91,6 +91,14 @@ Một sáng, người bán Minh Tea gọi lên: báo cáo thu tiền của họ 
 ## Ý chính
 
 Trong pool, ba lớp giữ dữ liệu các khách tách nhau, và mỗi lớp chặn một loại lỗi. **Câu lọc**: mọi câu nhắc tới `tenant_id`, kể cả trong điều kiện nối, nếu không thì đọc nhầm. **Khóa**: `tenant_id` đầu khóa chính, khóa ngoại ghép và luật duy nhất theo tenant, để database từ chối ghi sai. **Chính sách**: bảo mật theo dòng thêm điều kiện tenant vào mọi câu, làm lưới khi một câu quên lọc.
+
+Bản đồ chủ đề, mỗi dòng một lớp và các bài đào sâu lớp đó:
+
+- **Mô hình** (dữ liệu nằm ở đâu): `e-ds-l4-08` · `e-ds-l4-10` · `e-pg-l1-19`
+- **Câu lọc** (chặn đọc nhầm, giữ câu nhanh): `e-pg-l2-26` · `e-pg-l4-20`
+- **Khóa** (chặn ghi sai): `e-ds-l2-06` · `e-ds-l2-07`
+- **Chính sách** (lưới khi câu quên lọc): `e-pg-l5-10` · `e-pg-l5-19` · `e-pg-l5-20` · `e-bp-s10` · `e-bp-x08`
+- **Vận hành** (khách rời đi, khách quá tải) và bài tổng hợp: `e-pg-l5-21` · `e-pg-l5-22` · `e-ds-l4-11`
 
 Nhiều người nghĩ có một lớp là đủ. Thật ra chúng không thay nhau được: chính sách không kiểm khóa ngoại trỏ đi đâu, kiểm duy nhất và khóa ngoại cũng không đi qua chính sách, còn khóa thì không ngăn một câu đọc thiếu điều kiện. Silo và bridge đẩy phần lớn việc cô lập xuống hạ tầng; pool đặt nó vào dữ liệu, nên cần đủ cả ba.
 
@@ -152,10 +160,9 @@ VALUES (1, 5, 9, 10);
 ## Tóm tắt
 
 - Pool có ba lớp: câu lọc (kể cả điều kiện nối), khóa có `tenant_id`, chính sách theo dòng; mỗi lớp chặn một loại lỗi.
-- Mô hình và cách chọn: `e-ds-l4-08`, `e-ds-l4-10`; tổng hợp cổng người bán: `e-ds-l4-11`.
-- Lớp khóa: `e-ds-l2-06` (khóa ghép), `e-ds-l2-07` (duy nhất theo tenant).
-- Lớp chính sách: `e-pg-l5-10` (bảo mật theo dòng) và thẻ `e-bp-s10` (`FORCE ROW LEVEL SECURITY`).
-- Trong PostgreSQL: `e-pg-l1-19`, `e-pg-l2-26`, `e-pg-l4-20`, `e-pg-l5-19`, `e-pg-l5-20`, `e-pg-l5-21`, `e-pg-l5-22` và thẻ `e-bp-x08`.
+- Nối hai bảng của khách bằng cả hai cột; thiếu vế `tenant_id` thì dòng bị nhân giữa các khách.
+- Kiểm khóa ngoại và kiểm duy nhất không đi qua chính sách, nên lớp khóa vẫn cần khi đã bật bảo mật theo dòng.
+- Bản đồ chủ đề ở phần Ý chính; nên đi tiếp `e-ds-l4-10`, rồi tổng hợp ở `e-ds-l4-11`.
 
 # EN
 
@@ -166,6 +173,14 @@ One morning seller Minh Tea calls: their payments report holds amounts that are 
 ## Key idea
 
 In a pool, three layers keep tenants apart, and each layer stops one kind of mistake. **Query filters**: every query names `tenant_id`, join conditions included, otherwise it reads the wrong rows. **Keys**: `tenant_id` first in primary keys, composite foreign keys and per-tenant uniqueness rules, so the database refuses wrong writes. **Policies**: row-level security adds the tenant condition to every query, a net for the query that forgets its filter.
+
+The topic map, one row per layer with the lessons that go deep on it:
+
+- **Models** (where the data lives): `e-ds-l4-08` · `e-ds-l4-10` · `e-pg-l1-19`
+- **Query filters** (stop wrong reads, keep queries fast): `e-pg-l2-26` · `e-pg-l4-20`
+- **Keys** (stop wrong writes): `e-ds-l2-06` · `e-ds-l2-07`
+- **Policies** (the net for a query that forgets its filter): `e-pg-l5-10` · `e-pg-l5-19` · `e-pg-l5-20` · `e-bp-s10` · `e-bp-x08`
+- **Operations** (a tenant leaves, a tenant overloads) and the capstone: `e-pg-l5-21` · `e-pg-l5-22` · `e-ds-l4-11`
 
 Many people think one layer is enough. In fact they cannot replace each other: a policy does not check where a foreign key points, unique and foreign key checks do not go through the policy, and keys do not stop a query that reads without its condition. Silo and bridge push most isolation down into the infrastructure; a pool puts it into the data, so it needs all three.
 
@@ -227,7 +242,6 @@ VALUES (1, 5, 9, 10);
 ## Recap
 
 - A pool has three layers: query filters (join conditions included), keys with `tenant_id`, row policies; each layer stops one kind of mistake.
-- The models and how to choose: `e-ds-l4-08`, `e-ds-l4-10`; the seller portal capstone: `e-ds-l4-11`.
-- The key layer: `e-ds-l2-06` (composite keys), `e-ds-l2-07` (unique per tenant).
-- The policy layer: `e-pg-l5-10` (row-level security) and card `e-bp-s10` (`FORCE ROW LEVEL SECURITY`).
-- In PostgreSQL: `e-pg-l1-19`, `e-pg-l2-26`, `e-pg-l4-20`, `e-pg-l5-19`, `e-pg-l5-20`, `e-pg-l5-21`, `e-pg-l5-22` and card `e-bp-x08`.
+- Join two tenant tables on both columns; without the `tenant_id` term rows multiply across tenants.
+- Foreign key and unique checks do not go through the policy, so the key layer is still needed with row-level security on.
+- The topic map is in the Key idea; go on with `e-ds-l4-10`, then the capstone `e-ds-l4-11`.

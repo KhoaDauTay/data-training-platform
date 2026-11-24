@@ -86,4 +86,4 @@ When tenants (business customers sharing one database) share tables, every table
 
 ## Example
 
-The session sets `app.tenant_id = '1'` and then `SET ROLE app_owner`. The table with only `ENABLE` shows the owner 4 invoices from 2 tenants. The table with `FORCE` shows the 2 invoices of tenant 1. Read more: `e-pg-l5-19` (RLS in depth), the theme map `e-ds-l4-09`.
+The session sets `app.tenant_id = '1'` and then `SET ROLE app_owner`. The table with only `ENABLE` shows the owner 4 invoices from 2 tenants. The table with `FORCE` shows the 2 invoices of tenant 1. Read more: `e-pg-l5-19` (RLS in depth), the topic map `e-ds-l4-09`.

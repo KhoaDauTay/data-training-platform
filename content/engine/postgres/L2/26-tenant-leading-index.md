@@ -54,16 +54,16 @@ quiz:
   - q: { vi: "Mọi câu của cổng khách hàng đều có `tenant_id = $1` và sắp theo `created_at`. Bạn có index `(created_at, tenant_id)`. Nó tốt như `(tenant_id, created_at)` không?", en: "Every query of the customer portal has `tenant_id = $1` and sorts by `created_at`. You have an index `(created_at, tenant_id)`. Is it as good as `(tenant_id, created_at)`?" }
     options:
       - { vi: "Như nhau: index có đủ hai cột là được", en: "The same: the index has both columns, that is enough" }
-      - { vi: "Không: với `created_at` đứng đầu, dòng của một khách rải khắp index, nên câu phải đi qua dòng của mọi khách", en: "No: with `created_at` first, one tenant's rows are spread over the whole index, so the query walks through every tenant's rows" }
-      - { vi: "Tốt hơn, vì thời gian chọn lọc hơn", en: "Better, because time is more selective" }
+      - { vi: "Không: dòng của một khách rải khắp index", en: "No: one tenant's rows are spread over the whole index" }
+      - { vi: "Tốt hơn, vì cột thời gian chọn lọc hơn cột khách", en: "Better, because the time column is more selective" }
     answer: 1
     trap: 0
     why: { vi: "Nghe hợp lý vì cả hai cột đều có mặt, nhưng B-tree sắp theo cột đầu trước. `tenant_id` đứng đầu thì dòng của một khách nằm liền nhau, đã xếp theo thời gian: đọc một đoạn ngắn là xong. `created_at` đứng đầu thì phải lướt qua mọi khách rồi lọc bỏ: một khách lớn làm chậm câu của mọi khách khác.", en: "It sounds right because both columns are there, but a B-tree sorts by its first column first. With `tenant_id` first, one tenant's rows sit together, already in time order: reading one short stretch is enough. With `created_at` first, the query skims every tenant and filters them out: one big tenant slows every other tenant's query." }
   - q: { vi: "Bảng có `PRIMARY KEY (id)` và index `(tenant_id)`. Câu \"đơn mới nhất của khách 7\" vẫn có Sort. Vì sao?", en: "A table has `PRIMARY KEY (id)` and an index `(tenant_id)`. The query \"tenant 7's newest orders\" still has a Sort. Why?" }
     options:
-      - { vi: "Index `(tenant_id)` tìm đúng khách, nhưng trong một khách các dòng không xếp theo thời gian", en: "The `(tenant_id)` index finds the tenant, but within one tenant the rows are not in time order" }
-      - { vi: "Vì khóa chính không có `tenant_id`", en: "Because the primary key has no `tenant_id`" }
-      - { vi: "Index hỏng", en: "The index is broken" }
+      - { vi: "Trong một khách, các dòng không xếp theo thời gian", en: "Within one tenant the rows are not in time order" }
+      - { vi: "Vì khóa chính `(id)` không có `tenant_id`", en: "Because the primary key `(id)` has no `tenant_id`" }
+      - { vi: "Index đã hỏng và cần dựng lại", en: "The index is broken and needs a rebuild" }
     answer: 0
     trap: 1
     why: { vi: "Khóa chính thiếu `tenant_id` nghe như thủ phạm vì đó là lời khuyên đúng cho bảng nhiều khách, nhưng nó không quyết định Sort ở đây. Sort còn vì index chỉ có `tenant_id`: thêm `created_at` làm cột thứ hai thì thứ tự có sẵn trong index.", en: "A primary key without `tenant_id` sounds like the culprit because that is good advice for multi-tenant tables, but it does not decide the Sort here. The Sort stays because the index holds only `tenant_id`: add `created_at` as the second column and the order comes ready from the index." }

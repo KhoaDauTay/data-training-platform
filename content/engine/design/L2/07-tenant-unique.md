@@ -66,8 +66,8 @@ quiz:
       vi: "Chợ có 300 người bán. Một bạn đề xuất `UNIQUE (email)` trên bảng người mua cho chắc. Chuyện gì xảy ra khi người mua `an@mail.vn` của Lan Silk đăng ký ở Minh Tea?"
       en: "The market has 300 sellers. Someone proposes `UNIQUE (email)` on the shopper table to be safe. What happens when Lan Silk's shopper `an@mail.vn` signs up at Minh Tea?"
     options:
-      - { vi: "Không sao: luật càng chặt càng an toàn", en: "Nothing bad: the stricter the rule, the safer" }
-      - { vi: "Bị từ chối với lỗi 23505, và thông báo lỗi cho Minh Tea biết email đó đã có ở một người bán khác", en: "It is refused with error 23505, and the error tells Minh Tea that the email already exists at another seller" }
+      - { vi: "Không sao: luật càng chặt thì dữ liệu càng an toàn", en: "Nothing bad: the stricter the rule, the safer the data" }
+      - { vi: "Bị từ chối (23505), và lỗi lộ rằng email đã có ở người bán khác", en: "Refused (23505), and the error reveals the email exists at another seller" }
       - { vi: "Được nhận, vì mỗi người bán có tenant_id khác nhau", en: "It is accepted, because each seller has a different tenant_id" }
     answer: 1
     trap: 0
@@ -78,8 +78,8 @@ quiz:
       vi: "Vì sao luật mã số thuế cần `WHERE tax_code <> ''`?"
       en: "Why does the tax code rule need `WHERE tax_code <> ''`?"
     options:
-      - { vi: "Để index nhỏ hơn, ngoài ra không đổi gì", en: "To make the index smaller, nothing else changes" }
-      - { vi: "Vì `''` nghĩa là chưa có mã và lặp lại hợp lệ; luật chỉ áp lên mã thật", en: "Because `''` means no code yet and may repeat; the rule applies only to real codes" }
+      - { vi: "Để index nhỏ hơn, ngoài ra luật không đổi gì", en: "To make the index smaller, the rule itself is unchanged" }
+      - { vi: "Vì `''` nghĩa là chưa có mã và được lặp lại", en: "Because `''` means no code yet and may repeat" }
       - { vi: "Vì index duy nhất không nhận chuỗi rỗng", en: "Because a unique index does not accept empty strings" }
     answer: 1
     trap: 0
@@ -339,4 +339,4 @@ Three steps, all graded on the catalog: the per-seller email rule, the case-inse
 - "Unique" in a pool means unique within one tenant: `UNIQUE (tenant_id, email)`.
 - A global rule blocks valid customers and lets error 23505 reveal another tenant's data.
 - Case-insensitive: an index on `(tenant_id, lower(email))`; optional values: a partial index.
-- Read next: card `e-bp-s07` (`NULLS NOT DISTINCT`), lessons `e-ds-l2-06` (composite keys) and `e-ds-l4-09` (the theme map).
+- Read next: card `e-bp-s07` (`NULLS NOT DISTINCT`), lessons `e-ds-l2-06` (composite keys) and `e-ds-l4-09` (the topic map).

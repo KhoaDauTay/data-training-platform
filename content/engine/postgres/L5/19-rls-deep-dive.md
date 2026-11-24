@@ -14,7 +14,6 @@ objectives:
   - { vi: "Viết luật bắt buộc bằng `AS RESTRICTIVE` và biết vì sao một policy permissive thêm vào lại mở rộng quyền", en: "Write must-hold rules with `AS RESTRICTIVE` and know why one more permissive policy widens access" }
   - { vi: "Cho view đọc bảng theo quyền người gọi bằng `security_invoker`", en: "Make a view read its table with the caller's rights using `security_invoker`" }
 requires: [e-pg-l5-10]
-viz: pg-rls-path
 sources:
   - https://www.postgresql.org/docs/18/ddl-rowsecurity.html
   - https://www.postgresql.org/docs/18/sql-createpolicy.html
@@ -73,15 +72,15 @@ quiz:
     options:
       - { vi: "Vẫn chỉ vé của khách 2: policy cũ vẫn lọc", en: "Still only tenant 2's tickets: the old policy still filters" }
       - { vi: "Vé của mọi khách: hai policy permissive gộp bằng OR", en: "Every tenant's tickets: the two permissive policies are combined with OR" }
-      - { vi: "Lỗi: hai policy mâu thuẫn", en: "An error: the two policies conflict" }
+      - { vi: "Lỗi: hai policy cho cùng vai trò mâu thuẫn", en: "An error: two policies for one role conflict" }
     answer: 1
     trap: 0
     why: { vi: "Nghe hợp lý vì thêm luật thường là thêm giới hạn, nhưng policy permissive mở thêm đường: một dòng chỉ cần qua một policy. `USING (true)` cho mọi dòng qua. Luật phải luôn đúng thì viết `AS RESTRICTIVE` (gộp AND); quyền riêng của đội hỗ trợ thì cho vai trò `support`, không cho `app`.", en: "It sounds right because adding a rule usually adds a limit, but a permissive policy opens one more way in: a row only needs to pass one policy. `USING (true)` lets every row through. A rule that must always hold is written `AS RESTRICTIVE` (combined with AND); the support team's own access goes to role `support`, not `app`." }
   - q: { vi: "Bảng đã `FORCE ROW LEVEL SECURITY`; mọi policy chỉ viết `TO app`. Chủ bảng chạy `SELECT count(*) FROM tickets`. Kết quả?", en: "The table has `FORCE ROW LEVEL SECURITY`; every policy says `TO app`. The owner runs `SELECT count(*) FROM tickets`. The result?" }
     options:
       - { vi: "Mọi dòng: chủ bảng luôn thấy hết", en: "Every row: the owner always sees everything" }
-      - { vi: "0: chủ bảng bị áp RLS và không có policy nào cho nó", en: "0: the owner is subject to RLS and no policy applies to it" }
-      - { vi: "Lỗi 42501", en: "Error 42501" }
+      - { vi: "0: chủ bảng bị áp RLS, không policy nào cho nó", en: "0: the owner is subject to RLS, no policy applies" }
+      - { vi: "Lỗi 42501: chủ bảng bị cấm đọc", en: "Error 42501: the owner may not read" }
     answer: 1
     trap: 0
     why: { vi: "Nghe hợp lý vì không có `FORCE` thì chủ bảng thấy hết, nhưng `FORCE` bỏ đúng ngoại lệ đó. Khi đó chủ bảng như mọi vai trò khác: không có policy áp dụng là từ chối mặc định, 0 dòng. Superuser và vai trò `BYPASSRLS` thì vẫn bỏ qua.", en: "It sounds right because without `FORCE` the owner sees everything, but `FORCE` removes exactly that exemption. The owner is then like any other role: no applicable policy is default deny, 0 rows. Superusers and `BYPASSRLS` roles still skip it." }
@@ -89,7 +88,7 @@ quiz:
     options:
       - { vi: "Dữ liệu của mọi khách mà chủ view thấy", en: "Every tenant's data the view owner can see" }
       - { vi: "Chỉ dữ liệu khách 2: policy theo người đọc", en: "Only tenant 2's data: policies follow the reader" }
-      - { vi: "Không gì cả", en: "Nothing" }
+      - { vi: "Không gì cả: view bị chặn hoàn toàn", en: "Nothing: the view is blocked entirely" }
     answer: 0
     trap: 1
     why: { vi: "Nghe hợp lý vì policy viết cho `app`, nhưng view mặc định đọc bảng bằng quyền của chủ view. Chủ là vai trò quản trị nên bỏ qua RLS. Thêm `WITH (security_invoker = true)` để quyền và policy được kiểm theo người gọi.", en: "It sounds right because the policies are written for `app`, but a default view reads its table with the view owner's rights. The owner is an admin role, so it skips RLS. Add `WITH (security_invoker = true)` so rights and policies are checked for the caller." }

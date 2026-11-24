@@ -74,9 +74,9 @@ quiz:
       vi: "Bảng `orders` có `customer_id int REFERENCES customers (id)`, với `customers.id` là khóa chính chung cho mọi người bán. Cả hai bảng đều có cột `tenant_id`. Database có chặn đơn của người bán 1 trỏ tới khách của người bán 2 không?"
       en: "Table `orders` has `customer_id int REFERENCES customers (id)`, where `customers.id` is one primary key across all sellers. Both tables have a `tenant_id` column. Does the database stop an order of seller 1 from pointing at a customer of seller 2?"
     options:
-      - { vi: "Có, vì cả hai bảng đều có tenant_id", en: "Yes, because both tables have tenant_id" }
-      - { vi: "Không: khóa ngoại một cột chỉ kiểm mã khách có tồn tại; phải là khóa ngoại ghép trên cả hai cột", en: "No: a single-column foreign key only checks that the customer id exists; it takes a composite foreign key on both columns" }
-      - { vi: "Có, nếu bảng bật bảo mật theo dòng", en: "Yes, if the table has row-level security on" }
+      - { vi: "Có, vì cả hai bảng đều có cột tenant_id riêng", en: "Yes, because both tables have their own tenant_id column" }
+      - { vi: "Không: phải là khóa ngoại ghép trên cả hai cột", en: "No: it takes a composite foreign key on both columns" }
+      - { vi: "Có, miễn là bảng đã bật bảo mật theo dòng", en: "Yes, as long as the table has row-level security on" }
     answer: 1
     trap: 0
     why:
@@ -86,9 +86,9 @@ quiz:
       vi: "Vì sao khóa chính là `(tenant_id, id)` mà không phải `(id, tenant_id)`?"
       en: "Why is the primary key `(tenant_id, id)` and not `(id, tenant_id)`?"
     options:
-      - { vi: "Thứ tự cột trong khóa không quan trọng", en: "The column order in a key does not matter" }
-      - { vi: "Mọi câu đều lọc theo khách hàng; cột đầu của index B-tree giữ dữ liệu một khách nằm liền nhau và phục vụ được điều kiện chỉ có tenant_id", en: "Every query filters by tenant; the first column of the B-tree index keeps one tenant's rows together and serves a condition on tenant_id alone" }
-      - { vi: "Postgres bắt cột NOT NULL đứng đầu khóa", en: "Postgres requires NOT NULL columns first in a key" }
+      - { vi: "Thứ tự cột trong khóa không quan trọng, chỉ cần đủ cột", en: "The column order in a key does not matter, only the set of columns" }
+      - { vi: "Mọi câu lọc theo khách, nên cột đầu index giữ dòng một khách liền nhau", en: "Every query filters by tenant, so the first index column keeps a tenant's rows together" }
+      - { vi: "Postgres bắt cột NOT NULL phải đứng đầu khóa chính ghép", en: "Postgres requires NOT NULL columns first in a composite primary key" }
     answer: 1
     trap: 0
     why:
@@ -367,4 +367,4 @@ Four steps: create `orders` with composite keys at both ends, index the foreign 
 - Every tenant table: `tenant_id` first in the primary key, `PRIMARY KEY (tenant_id, id)`.
 - A composite foreign key `(tenant_id, x)` → `(tenant_id, id)`: the database blocks cross-tenant references itself (error 23503).
 - Index the composite foreign key on the child side, and join tables on both columns.
-- Read next: `e-ds-l2-07` (unique per tenant) and `e-ds-l4-09` (the multi-tenant theme map).
+- Read next: `e-ds-l2-07` (unique per tenant) and `e-ds-l4-09` (the multi-tenant topic map).

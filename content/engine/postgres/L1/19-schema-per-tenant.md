@@ -54,23 +54,23 @@ quiz:
   - q: { vi: "Mỗi khách một schema, mỗi schema 40 bảng. Ở 500 khách, điều gì thường hỏng trước?", en: "One schema per tenant, 40 tables each. At 500 tenants, what usually breaks first?" }
     options:
       - { vi: "Không gì: schema rẻ, thêm bao nhiêu cũng được", en: "Nothing: schemas are cheap, add as many as you like" }
-      - { vi: "Catalog có 20.000 bảng (chưa kể index), sao lưu và đổi cấu trúc chậm dần, và mỗi đợt đổi cấu trúc phải chạy 500 lần", en: "The catalog holds 20,000 tables (indexes aside), backups and migrations slow down, and every migration must run 500 times" }
-      - { vi: "Postgres từ chối quá 100 schema", en: "Postgres refuses more than 100 schemas" }
+      - { vi: "Catalog phình ra: 20.000 bảng, mỗi đợt đổi cấu trúc chạy 500 lần", en: "The catalog swells: 20,000 tables, every migration run 500 times" }
+      - { vi: "Postgres từ chối tạo quá 100 schema trong một database", en: "Postgres refuses more than 100 schemas in one database" }
     answer: 1
     trap: 0
     why: { vi: "Nghe hợp lý vì một schema chỉ là một tên, nhưng mỗi bảng, index và sequence trong đó là một đối tượng thật trong catalog. 500 × 40 bảng làm catalog, bộ nhớ đệm của planner và `pg_dump` nặng dần, và một khách bị sót trong đợt đổi cấu trúc là chuyện thường. Mô hình này hợp với vài chục khách cần tùy biến riêng.", en: "It sounds right because a schema is only a name, but every table, index and sequence in it is a real catalog object. 500 × 40 tables make the catalog, the planner's caches and `pg_dump` heavier, and a tenant missed by a migration is common. This model suits a few dozen tenants that need their own customisation." }
   - q: { vi: "Ứng dụng đặt `SET search_path = seller_1` khi phục vụ người bán 1, rồi trả kết nối về pool. Yêu cầu sau của người bán 2 chạy `SELECT * FROM products` mà quên đặt lại. Nó đọc gì?", en: "The application sets `SET search_path = seller_1` while serving seller 1, then returns the connection to the pool. Seller 2's next request runs `SELECT * FROM products` and forgets to set it again. What does it read?" }
     options:
       - { vi: "Sản phẩm của người bán 2: Postgres biết ai đang hỏi", en: "Seller 2's products: Postgres knows who is asking" }
-      - { vi: "Sản phẩm của người bán 1: `search_path` là trạng thái của phiên và ở lại trên kết nối", en: "Seller 1's products: `search_path` is session state and stays on the connection" }
-      - { vi: "Lỗi 42P01", en: "Error 42P01" }
+      - { vi: "Sản phẩm của người bán 1: `search_path` ở lại trên kết nối", en: "Seller 1's products: `search_path` stays on the connection" }
+      - { vi: "Lỗi 42P01: không tìm thấy bảng products", en: "Error 42P01: table products not found" }
     answer: 1
     trap: 0
     why: { vi: "Nghe hợp lý vì mỗi khách có schema riêng, nhưng database không biết khách nào đang hỏi: nó chỉ đọc `search_path` của phiên. Đặt nó theo transaction (`SET LOCAL`) hoặc ghi tên đầy đủ `seller_2.products`. Cùng bẫy này với thiết lập khách ở `e-pg-l5-20`.", en: "It sounds right because each tenant has its own schema, but the database does not know which tenant is asking: it only reads the session's `search_path`. Set it per transaction (`SET LOCAL`) or write the full name `seller_2.products`. It is the same trap as the tenant setting in `e-pg-l5-20`." }
 ---
 ## Mở bài
 
-Lantern Market cho mỗi người bán một schema riêng với cùng bộ bảng: tách bạch, dễ hiểu, dễ xóa. Đến lần đổi cấu trúc thứ ba, một nửa số cửa hàng có cột mới và nửa kia thì không. Bài này dựng mô hình đó và tìm chỗ bị sót.
+Chợ Lồng Đèn cho mỗi người bán một schema riêng với cùng bộ bảng: tách bạch, dễ hiểu, dễ xóa. Đến lần đổi cấu trúc thứ ba, một nửa số cửa hàng có cột mới và nửa kia thì không. Bài này dựng mô hình đó và tìm chỗ bị sót.
 
 ## Ý chính
 

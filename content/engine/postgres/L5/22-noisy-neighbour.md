@@ -79,15 +79,15 @@ quiz:
   - q: { vi: "Người bán 2 (gói basic) đọc 92 % số dòng của cả hệ thống và làm chậm mọi người bán khác. Hướng nào đúng?", en: "Seller 2 (basic tier) reads 92% of the whole system's rows and slows every other seller down. Which way is right?" }
     options:
       - { vi: "Đổi `tenant_id` của họ để dữ liệu nằm chỗ khác", en: "Change their `tenant_id` so their data lives elsewhere" }
-      - { vi: "Xem index có dẫn đầu bằng `tenant_id` không, đặt hạn mức và giới hạn theo hạng; nếu vẫn lớn thì chuyển họ sang hạng riêng, giữ nguyên định danh", en: "Check the indexes lead with `tenant_id`, set quotas and per-tier limits; if they are still big, move them to a dedicated tier and keep their identity" }
-      - { vi: "Giảm `work_mem` của cả server", en: "Lower the whole server's `work_mem`" }
+      - { vi: "Index dẫn đầu bằng `tenant_id`, hạn mức theo hạng, rồi hạng riêng", en: "Indexes led by `tenant_id`, per-tier quotas, then a dedicated tier" }
+      - { vi: "Giảm `work_mem` của cả server cho mọi người bán", en: "Lower the whole server's `work_mem` for every seller" }
     answer: 1
     trap: 0
     why: { vi: "Nghe hợp lý vì tách dữ liệu ra là hết ồn, nhưng đổi định danh của khách làm vỡ mọi tham chiếu và nhật ký. Trước hết sửa nguyên nhân (thường là index không dẫn đầu bằng `tenant_id`, xem `e-pg-l2-26`), rồi hạn mức; khách vẫn quá lớn thì đổi hạng: cùng định danh, chỗ đặt khác.", en: "It sounds right because moving the data away ends the noise, but changing a tenant's identity breaks every reference and log. Fix the cause first (often an index that does not lead with `tenant_id`, see `e-pg-l2-26`), then quotas; a tenant still too big changes tier: same identity, another placement." }
 ---
 ## Mở bài
 
-Cả chợ Lantern Market chậm mỗi chiều, và chỉ một người bán gói basic gây ra. Họ không gửi nhiều câu hơn ai, nhưng mỗi câu đọc gần triệu dòng. Bài này tìm họ bằng số liệu, rồi đặt rào trong database và nói rõ rào nào phải đặt ở tầng khác.
+Cả Chợ Lồng Đèn chậm mỗi chiều, và chỉ một người bán gói basic gây ra. Họ không gửi nhiều câu hơn ai, nhưng mỗi câu đọc gần triệu dòng. Bài này tìm họ bằng số liệu, rồi đặt rào trong database và nói rõ rào nào phải đặt ở tầng khác.
 
 ## Ý chính
 

@@ -2,7 +2,7 @@
 id: e-bp-x08
 engine: best
 track: postgres
-level: L4
+level: L5
 module: x
 title: "View trên bảng có RLS: dùng security_invoker"
 title_en: "Views over RLS tables: use security_invoker"
@@ -36,9 +36,16 @@ pair:
     SET app.tenant_id = '1';
     SET ROLE app;
   bad: |
-    SELECT count(*) AS visible FROM inv_report
+    -- CREATE VIEW inv_report AS
+    --   SELECT * FROM inv;
+    SELECT count(*) AS visible
+    FROM inv_report
   good: |
-    SELECT count(*) AS visible FROM inv_report_safe
+    -- CREATE VIEW inv_report_safe
+    --   WITH (security_invoker = true)
+    --   AS SELECT * FROM inv;
+    SELECT count(*) AS visible
+    FROM inv_report_safe
   expect: null
 quiz:
   - q:

@@ -73,23 +73,23 @@ quiz:
   - q: { vi: "Mọi khóa ngoại tới `sellers` đều `ON DELETE CASCADE`. Bạn xóa một người bán. Dữ liệu của họ đã sạch ở mọi nơi chưa?", en: "Every foreign key to `sellers` is `ON DELETE CASCADE`. You delete one seller. Is their data gone everywhere?" }
     options:
       - { vi: "Rồi: CASCADE xóa mọi dòng có `tenant_id` đó", en: "Yes: CASCADE removes every row with that `tenant_id`" }
-      - { vi: "Chưa chắc: CASCADE chỉ đi theo khóa ngoại; bảng không có khóa ngoại, bộ nhớ đệm, chỉ mục tìm kiếm, kho file và bản sao phân tích phải dọn riêng", en: "Not necessarily: CASCADE only follows foreign keys; tables without one, caches, search indexes, file stores and analytics copies need their own clean-up" }
-      - { vi: "Rồi, nếu bảng có RLS", en: "Yes, if the table has RLS" }
+      - { vi: "Chưa chắc: CASCADE chỉ đi theo khóa ngoại", en: "Not necessarily: CASCADE only follows foreign keys" }
+      - { vi: "Rồi, miễn là các bảng đều đã bật RLS", en: "Yes, as long as every table has RLS on" }
     answer: 1
     trap: 0
     why: { vi: "Nghe hợp lý vì CASCADE trông như \"xóa tất cả của khách này\", nhưng nó chỉ đi theo đúng các khóa ngoại đã khai báo. Lab có bảng `payouts` thêm sau, không có khóa ngoại, nên còn nguyên 3 dòng. Chứng minh bằng câu quét mọi bảng có `tenant_id`, và kiểm từng kho khác ngoài database.", en: "It sounds right because CASCADE looks like \"delete everything of this tenant\", but it only follows the foreign keys that were declared. The lab's `payouts` table was added later without one, so its 3 rows stay. Prove it with a query over every table with `tenant_id`, and check every store outside the database too." }
   - q: { vi: "Thứ tự nào đúng khi một khách rời đi?", en: "Which order is right when a tenant leaves?" }
     options:
       - { vi: "Xóa ngay, khi cần thì lấy lại từ bản sao lưu", en: "Delete at once, restore from backup if needed" }
-      - { vi: "Tạm khóa truy cập, xuất kèm bảng đếm, đối chiếu, rồi mới xóa và chứng minh không còn gì", en: "Suspend access, export with a manifest, verify, then delete and prove nothing is left" }
-      - { vi: "Xuất sau khi xóa, từ log", en: "Export after the delete, from the logs" }
+      - { vi: "Khóa truy cập, xuất kèm bảng đếm, đối chiếu, rồi xóa", en: "Suspend, export with a manifest, verify, then delete" }
+      - { vi: "Xóa trước, rồi xuất lại dữ liệu từ log", en: "Delete first, then rebuild the export from the logs" }
     answer: 1
     trap: 0
     why: { vi: "Nghe hợp lý vì bản sao lưu có đủ dữ liệu, nhưng khôi phục bản sao lưu vật lý là khôi phục mọi khách, không phải một khách. Xuất trước, đối chiếu số đếm với file, rồi mới xóa; nhật ký kiểm toán thì giữ lại sau khi khách đi.", en: "It sounds right because the backup holds all the data, but restoring a physical backup restores every tenant, not one. Export first, check the counts against the file, and only then delete; the audit trail is kept after the tenant has gone." }
 ---
 ## Mở bài
 
-Người bán số 7 ở Lantern Market đóng cửa hàng và yêu cầu dữ liệu của mình rồi xóa sạch. Một câu `DELETE` trên `sellers` trông như đủ, nhưng ai dám ký rằng không còn dòng nào? Bài này xuất, xóa và chứng minh bằng chính database.
+Người bán số 7 ở Chợ Lồng Đèn đóng cửa hàng và yêu cầu dữ liệu của mình rồi xóa sạch. Một câu `DELETE` trên `sellers` trông như đủ, nhưng ai dám ký rằng không còn dòng nào? Bài này xuất, xóa và chứng minh bằng chính database.
 
 ## Ý chính
 
@@ -337,4 +337,4 @@ Five steps on the sellers' data: export the orders to CSV, the manifest, delete 
 - `COPY (SELECT … WHERE tenant_id = …) TO` exports one tenant; the file is on the server.
 - CASCADE only follows foreign keys; a table nobody linked keeps its data.
 - Prove it with a query over every table with `tenant_id`; a partition of its own takes `DETACH` then `DROP`.
-- Read next: `e-pg-l5-22`, the theme map `e-ds-l4-09`.
+- Read next: `e-pg-l5-22`, the topic map `e-ds-l4-09`.

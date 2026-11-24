@@ -58,7 +58,7 @@ lab:
       hint:
         vi: "`ALTER TABLE orders ADD FOREIGN KEY (tenant_id, product_id) REFERENCES products (tenant_id, id)`."
         en: "`ALTER TABLE orders ADD FOREIGN KEY (tenant_id, product_id) REFERENCES products (tenant_id, id)`."
-    - name: { vi: Mã hàng theo người bán, en: SKU per seller }
+    - name: { vi: Mã hàng / người bán, en: SKU per seller }
       task:
         vi: "Mã hàng duy nhất trong một người bán, không phân biệt hoa thường: tạo index duy nhất tên `products_sku_ci` trên `products (tenant_id, lower(sku))`."
         en: "A SKU is unique within one seller, ignoring case: create a unique index named `products_sku_ci` on `products (tenant_id, lower(sku))`."
@@ -86,7 +86,7 @@ lab:
       hint:
         vi: "Cột so bằng (`tenant_id`) đứng trước, cột khoảng (`placed_on`) đứng sau."
         en: "The equality column (`tenant_id`) first, the range column (`placed_on`) second."
-    - name: { vi: Tuần của người bán 1, en: Seller 1's week }
+    - name: { vi: Tuần người bán 1, en: Seller 1's week }
       task:
         vi: "Tuần cuối tháng của người bán 1: số đơn `orders` và tổng số lượng `items` từ ngày `2026-10-25`. Thanh tốc độ chấm cả cách lọc: để nguyên hai cột trong điều kiện."
         en: "Seller 1's last week of the month: the order count `orders` and the total quantity `items` from `2026-10-25`. The speed bar grades the filter too: leave both columns bare in the condition."
@@ -102,21 +102,21 @@ quiz:
       vi: "Người bán 1 có 20% đơn của cả chợ và đang làm chậm hàng xóm. Bước tiếp theo hợp lý nhất?"
       en: "Seller 1 holds 20% of the market's orders and is slowing its neighbours. What is the most sensible next step?"
     options:
-      - { vi: "Đổi cả chợ sang schema mỗi người bán", en: "Move the whole market to one schema per seller" }
-      - { vi: "Giữ cùng cấu trúc bảng, chuyển riêng người bán 1 sang máy của họ: chọn dữ liệu theo tenant_id, chép cha trước con sau, rồi đổi một dòng định tuyến", en: "Keep the same table design and move seller 1 alone to its own server: select its data by tenant_id, copy parents first, then change one routing row" }
-      - { vi: "Xóa bớt đơn cũ của mọi người bán", en: "Delete old orders of every seller" }
+      - { vi: "Đổi cả chợ sang mô hình mỗi người bán một schema", en: "Move the whole market to a schema-per-seller model" }
+      - { vi: "Giữ cấu trúc, chuyển riêng người bán 1 sang máy của họ", en: "Keep the design, move seller 1 alone to its own server" }
+      - { vi: "Xóa bớt đơn cũ của mọi người bán cho bảng nhẹ hơn", en: "Delete every seller's old orders to make the table lighter" }
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì schema riêng tách mọi người khỏi nhau, nhưng 49 người bán nhỏ không có vấn đề gì và sẽ phải gánh việc đổi cấu trúc gấp 50. Vì mọi khóa bắt đầu bằng tenant_id, dữ liệu của người bán 1 tách ra được trọn vẹn."
-      en: "It sounds right because own schemas separate everyone, but the 49 small sellers have no problem and would carry 50 times the schema changes. Because every key starts with tenant_id, seller 1's data comes out whole."
+      vi: "Nghe hợp lý vì schema riêng tách mọi người khỏi nhau, nhưng 49 người bán nhỏ không có vấn đề gì và sẽ phải gánh việc đổi cấu trúc gấp 50. Vì mọi khóa bắt đầu bằng tenant_id, dữ liệu của người bán 1 tách ra được trọn vẹn: chọn theo tenant_id, chép cha trước con sau, rồi đổi một dòng định tuyến."
+      en: "It sounds right because own schemas separate everyone, but the 49 small sellers have no problem and would carry 50 times the schema changes. Because every key starts with tenant_id, seller 1's data comes out whole: select it by tenant_id, copy parents first, then change one routing row."
   - q:
       vi: "Bảng `orders` đã có khóa chính `(tenant_id, id)`. Vì sao trang của người bán 1 vẫn cần index `(tenant_id, placed_on)`?"
       en: "Table `orders` already has the primary key `(tenant_id, id)`. Why does seller 1's page still need the index `(tenant_id, placed_on)`?"
     options:
       - { vi: "Không cần: khóa chính đã bắt đầu bằng tenant_id nên đủ nhanh", en: "It does not: the primary key already starts with tenant_id, so it is fast enough" }
-      - { vi: "Khóa chính chỉ thu hẹp tới mọi đơn của người bán 1; index thêm `placed_on` ngay sau `tenant_id` thì đọc thẳng đoạn một tuần", en: "The primary key only narrows to all of seller 1's orders; an index with `placed_on` right after `tenant_id` reads the one-week range directly" }
-      - { vi: "Vì khóa chính không dùng được cho điều kiện bằng", en: "Because a primary key cannot serve an equality condition" }
+      - { vi: "Khóa chính chỉ thu hẹp tới mọi đơn của người bán 1, không tới một tuần", en: "The primary key narrows to all of seller 1's orders, not to one week" }
+      - { vi: "Vì khóa chính không dùng được cho điều kiện bằng trên tenant_id", en: "Because a primary key cannot serve an equality condition on tenant_id" }
     answer: 1
     trap: 0
     why:
@@ -157,4 +157,4 @@ Five steps. The first two tighten the data (graded on the catalog, do not name t
 - A pool is tight when every foreign key and uniqueness rule has `tenant_id` first.
 - Measure before moving: one `GROUP BY tenant_id` query shows who carries most of the load.
 - An index for the seller page: the equality column `tenant_id` first, the date range column second.
-- Read next: `e-ds-l4-09` (the theme map) and `e-pg-l5-10` (the policy layer).
+- Read next: `e-ds-l4-09` (the topic map) and `e-pg-l5-10` (the policy layer).

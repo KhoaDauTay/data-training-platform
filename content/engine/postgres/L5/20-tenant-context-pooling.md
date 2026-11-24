@@ -14,6 +14,7 @@ objectives:
   - { vi: "Gắn khách cho từng transaction bằng `SET LOCAL` hoặc `set_config(…, true)`", en: "Bind the tenant per transaction with `SET LOCAL` or `set_config(…, true)`" }
   - { vi: "Viết policy đóng an toàn khi thiếu khách: `NULLIF(current_setting(…, true), '')`", en: "Write a policy that fails closed when no tenant is set: `NULLIF(current_setting(…, true), '')`" }
 requires: [e-pg-l5-19]
+viz: pg-rls-path
 sources:
   - https://www.postgresql.org/docs/18/sql-set.html
   - https://www.postgresql.org/docs/18/functions-admin.html
@@ -51,7 +52,7 @@ lab:
       after: "SELECT count(*) AS rows_seen FROM invoices_as_app"
       check: rows
       hint: { vi: "`SELECT set_config('app.tenant_id', '3', false)`.", en: "`SELECT set_config('app.tenant_id', '3', false)`." }
-    - task: { vi: "Giờ làm đúng: đặt khách 3 chỉ trong transaction của câu (`is_local = true`). Mỗi câu ở đây tự là một transaction. Bài chấm bằng giá trị yêu cầu sau đọc được: `current_setting('app.tenant_id', true)`.", en: "Now do it right: set tenant 3 for the statement's own transaction only (`is_local = true`). Each statement here is its own transaction. It is graded on what the next request reads: `current_setting('app.tenant_id', true)`." }
+    - task: { vi: "Giờ làm đúng: đặt khách 3 chỉ trong transaction của câu (`is_local = true`). Mỗi câu ở đây tự là một transaction. Bài chấm bằng giá trị yêu cầu sau đọc được bằng `current_setting(…, true)`.", en: "Now do it right: set tenant 3 for the statement's own transaction only (`is_local = true`). Each statement here is its own transaction. It is graded on what the next request reads with `current_setting(…, true)`." }
       solution: "SELECT set_config('app.tenant_id', '3', true)"
       after: "SELECT current_setting('app.tenant_id', true) AS left_over"
       check: rows
@@ -65,31 +66,31 @@ quiz:
   - q: { vi: "Ứng dụng chạy `BEGIN; SET LOCAL app.tenant_id = '5'; …; COMMIT;` rồi trả kết nối về pool. Yêu cầu sau gọi `current_setting('app.tenant_id', true)`. Kết quả?", en: "The application runs `BEGIN; SET LOCAL app.tenant_id = '5'; …; COMMIT;` and returns the connection to the pool. The next request calls `current_setting('app.tenant_id', true)`. The result?" }
     options:
       - { vi: "`'5'`: thiết lập vẫn còn tới khi kết nối đóng", en: "`'5'`: the setting stays until the connection closes" }
-      - { vi: "Chuỗi rỗng `''`", en: "An empty string `''`" }
-      - { vi: "Lỗi 42704", en: "Error 42704" }
+      - { vi: "Chuỗi rỗng `''`: tên còn, giá trị hết", en: "An empty string `''`: the name stays, the value is gone" }
+      - { vi: "Lỗi 42704: thiết lập không tồn tại", en: "Error 42704: the setting does not exist" }
     answer: 1
     trap: 0
     why: { vi: "Nghe hợp lý vì `SET` thường sống hết phiên, nhưng `SET LOCAL` hết hiệu lực ở `COMMIT` hoặc `ROLLBACK`. Thiết lập đã từng được đặt nên tên vẫn còn trong phiên, với giá trị rỗng: `''`, không phải NULL và không lỗi. Lab đo đúng điều này.", en: "It sounds right because a plain `SET` lives for the session, but `SET LOCAL` ends at `COMMIT` or `ROLLBACK`. The setting was defined once, so its name stays in the session with an empty value: `''`, not NULL and no error. The lab measures exactly this." }
-  - q: { vi: "Policy dùng `tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::int`. Một yêu cầu quên đặt khách. Nó thấy gì?", en: "A policy uses `tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::int`. A request forgets to set the tenant. What does it see?" }
+  - q: { vi: "Policy `seller_rows` của lab so `tenant_id` với `NULLIF(…, '')::int`, thiết lập đọc bằng `current_setting(…, true)`. Một yêu cầu quên đặt khách. Nó thấy gì?", en: "The lab's policy `seller_rows` compares `tenant_id` with `NULLIF(…, '')::int`, the setting read with `current_setting(…, true)`. A request forgets to set the tenant. What does it see?" }
     options:
       - { vi: "Mọi dòng, vì không có điều kiện khách", en: "Every row, because there is no tenant condition" }
-      - { vi: "Không dòng nào, không lỗi", en: "No rows, no error" }
-      - { vi: "Lỗi 22P02", en: "Error 22P02" }
+      - { vi: "Không dòng nào, và không báo lỗi", en: "No rows, and no error raised" }
+      - { vi: "Lỗi 22P02: `''` không ép được sang số", en: "Error 22P02: `''` cannot be cast to a number" }
     answer: 1
     trap: 0
     why: { vi: "Nghe hợp lý vì thiếu khách thì tưởng không lọc, nhưng điều kiện so với NULL không bao giờ đúng: policy không giữ dòng nào. Đó là đóng an toàn nhưng im lặng. Muốn ồn ào thì bỏ `true`: `current_setting('app.tenant_id')` báo lỗi 42704 khi tên chưa từng được đặt.", en: "It sounds right because no tenant looks like no filter, but a comparison with NULL is never true: the policy keeps no row. That fails closed, but silently. For a loud failure drop the `true`: `current_setting('app.tenant_id')` raises error 42704 when the name was never set." }
   - q: { vi: "Pool chạy ở chế độ transaction (mỗi transaction có thể nhận một kết nối khác). Ứng dụng đặt khách bằng `SET app.tenant_id` thường. Rủi ro?", en: "The pool runs in transaction mode (each transaction may get a different connection). The application sets the tenant with a plain `SET app.tenant_id`. The risk?" }
     options:
       - { vi: "Không có: pool tự xóa thiết lập sau mỗi yêu cầu", en: "None: the pool clears settings after each request" }
-      - { vi: "Thiết lập ở lại trên kết nối, nên yêu cầu khác mượn kết nối đó có thể chạy với khách cũ", en: "The setting stays on the connection, so another request borrowing it may run as the old tenant" }
-      - { vi: "Lệnh `SET` bị từ chối", en: "The `SET` is refused" }
+      - { vi: "Thiết lập ở lại trên kết nối cho người mượn sau", en: "The setting stays on the connection for the next borrower" }
+      - { vi: "Lệnh `SET` bị từ chối trong chế độ transaction", en: "The `SET` is refused in transaction mode" }
     answer: 1
     trap: 0
     why: { vi: "Nghe hợp lý vì pool trông như quản lý kết nối giúp ta, nhưng thiết lập phiên thuộc về kết nối, không thuộc về yêu cầu. Gắn khách theo transaction bằng `SET LOCAL` hoặc `set_config(…, true)`. Một số pooler còn ghim kết nối khi thấy câu đổi thiết lập phiên: đọc tài liệu của pooler bạn dùng.", en: "It sounds right because the pool seems to manage connections for us, but a session setting belongs to the connection, not to the request. Bind the tenant per transaction with `SET LOCAL` or `set_config(…, true)`. Some poolers also pin a connection when they see a statement that changes session state: read your pooler's documentation." }
 ---
 ## Mở bài
 
-Hóa đơn của người bán số 3 ở Lantern Market hiện ra trên trang của người bán số 1. Không câu SQL nào sai: yêu cầu trước đặt khách 3 bằng `SET`, rồi trả kết nối về pool, và yêu cầu sau mượn đúng kết nối đó. Làm sao để khách hiện tại không bao giờ sống lâu hơn một transaction?
+Hóa đơn của người bán số 3 ở Chợ Lồng Đèn hiện ra trên trang của người bán số 1. Không câu SQL nào sai: yêu cầu trước đặt khách 3 bằng `SET`, rồi trả kết nối về pool, và yêu cầu sau mượn đúng kết nối đó. Làm sao để khách hiện tại không bao giờ sống lâu hơn một transaction?
 
 ## Ý chính
 
@@ -215,6 +216,8 @@ Câu sai thấy 0, câu đúng thấy 10. Giữ tên thiết lập ở một ch�
 ## Thực hành
 
 Bốn bước trên hóa đơn của người bán: policy đóng an toàn, đếm khi chưa có khách, rồi hai cách đặt khách. Mỗi câu của lab tự là một transaction, nên bước 3 và 4 được chấm bằng một câu đọc chạy ngay sau câu của bạn, đúng như yêu cầu kế tiếp trên cùng kết nối.
+
+Sơ đồ ngay dưới đây đi lại cả đường đó trên một mẫu riêng (30 vé trong bảng `tickets`, vai trò `app` đọc khách 2): mượn kết nối, `SET LOCAL`, policy lọc dòng, rồi `COMMIT` trả kết nối sạch.
 
 ## Tóm tắt
 
@@ -354,9 +357,11 @@ The wrong one sees 0, the fixed one 10. Keep the setting name in one single plac
 
 Four steps on the sellers' invoices: a policy that fails closed, a count with no tenant, then the two ways to set the tenant. Each lab statement is its own transaction, so steps 3 and 4 are graded on a read that runs right after your statement, exactly like the next request on the same connection.
 
+The diagram right below walks the whole path on a sample of its own (30 tickets in table `tickets`, role `app` reading tenant 2): borrow a connection, `SET LOCAL`, the policy filters rows, then `COMMIT` returns the connection clean.
+
 ## Recap
 
 - A session setting belongs to the connection; through a pool, a plain `SET` leaks into the next request.
 - Bind the tenant per transaction: `SET LOCAL` or `set_config(…, true)` inside `BEGIN … COMMIT`.
 - `current_setting(…, true)` returns NULL or `''`; `NULLIF(…, '')::int` makes the policy fail closed.
-- Read next: `e-pg-l5-19`, `e-pg-l5-21`, the theme map `e-ds-l4-09`.
+- Read next: `e-pg-l5-19`, `e-pg-l5-21`, the topic map `e-ds-l4-09`.

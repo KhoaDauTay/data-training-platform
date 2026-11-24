@@ -59,7 +59,7 @@ quiz:
     options:
       - { vi: "Silo cho tất cả: cô lập mạnh nhất nên an toàn nhất", en: "Silo for all of them: the strongest isolation, so the safest" }
       - { vi: "Pool, với tenant_id trong khóa và chính sách theo dòng", en: "Pool, with tenant_id in the keys and row policies" }
-      - { vi: "Bridge: 5.000 schema", en: "Bridge: 5,000 schemas" }
+      - { vi: "Bridge: mỗi người bán một schema, 5.000 schema", en: "Bridge: one schema per seller, 5,000 schemas" }
     answer: 1
     trap: 0
     why:
@@ -69,9 +69,9 @@ quiz:
       vi: "Trong lab, hai người bán lớn nhất chiếm hơn 95% đơn, một người có hợp đồng database riêng. Thiết kế nào hợp?"
       en: "In the lab, the two largest sellers hold over 95% of the orders, and one has a contract for its own database. Which design fits?"
     options:
-      - { vi: "Trộn: người bán có hợp đồng ra silo, người lớn kia ra máy riêng, còn lại ở pool, cùng một cấu trúc bảng có tenant_id", en: "A mix: the seller with the contract goes to a silo, the other large one to its own server, the rest stay in the pool, all with one table design carrying tenant_id" }
-      - { vi: "Đưa cả bảy người bán sang silo cho công bằng", en: "Move all seven sellers to silos to be fair" }
-      - { vi: "Giữ tất cả trong pool; hợp đồng chỉ là giấy tờ", en: "Keep everyone in the pool; the contract is only paperwork" }
+      - { vi: "Trộn: hợp đồng ra silo, người lớn kia ra máy riêng, còn lại ở pool", en: "A mix: the contract to a silo, the other big one to its own server, the rest in the pool" }
+      - { vi: "Đưa cả bảy người bán sang silo để mọi người được như nhau", en: "Move all seven sellers to silos so everyone is treated the same" }
+      - { vi: "Giữ tất cả trong pool; hợp đồng chỉ là giấy tờ, không đổi thiết kế", en: "Keep everyone in the pool; the contract is only paperwork, not design" }
     answer: 0
     trap: 1
     why:
@@ -93,9 +93,9 @@ quiz:
       vi: "Luật nào không có chỗ tự nhiên khi dữ liệu chia theo khách hàng?"
       en: "Which rule has no natural home once data is split by tenant?"
     options:
-      - { vi: "Email duy nhất trong một người bán", en: "A unique email within one seller" }
-      - { vi: "Một số sê-ri sản phẩm chỉ được một người bán đăng ký trên toàn chợ", en: "A product serial number that only one seller in the whole market may register" }
-      - { vi: "Mã hóa đơn duy nhất trong một người bán", en: "A unique invoice number within one seller" }
+      - { vi: "Email của khách là duy nhất trong một người bán", en: "A shopper's email unique within one seller" }
+      - { vi: "Số sê-ri chỉ một người bán được đăng ký trên toàn chợ", en: "A serial number only one seller may register market-wide" }
+      - { vi: "Mã hóa đơn là duy nhất trong phạm vi một người bán", en: "An invoice number unique within the scope of one seller" }
     answer: 1
     trap: 0
     why:
@@ -162,4 +162,4 @@ rule across all tenants     lookup table
 - Tenant count, size spread, contracts and service tier decide the model.
 - Small, similar tenants: a pool; a contract for an own database: a silo for that tenant; usually a mix.
 - One table design with `tenant_id` everywhere turns moving a tenant into a data copy.
-- Read next: `e-ds-l4-08` (the three models), `e-ds-l4-09` (the theme map), `e-ds-l4-11` (the capstone).
+- Read next: `e-ds-l4-08` (the three models), `e-ds-l4-09` (the topic map), `e-ds-l4-11` (the capstone).
