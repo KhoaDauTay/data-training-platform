@@ -10,6 +10,7 @@ A developer's reference for SQL, PostgreSQL, MySQL/SQLite differences, design, p
 | [postgresql.md](postgresql.md) | PostgreSQL 18 specifics in the order of the PostgreSQL tutorial, then EXPLAIN, MVCC/VACUUM, JSONB, full-text, extensions, partitioning, PL/pgSQL | 57 blocks on PGlite (prose link-checked) |
 | [performance.md](performance.md) | method, sargable predicates, index shape, fan-out, pagination, statistics, maintenance | 11 blocks on PGlite (prose link-checked) |
 | [security.md](security.md) | injection, roles and privileges, row-level security | 9 blocks on PGlite (prose link-checked) |
+| [multi-tenant.md](multi-tenant.md) | tenancy models (silo / bridge / pool), `tenant_id` in keys, uniqueness per tenant (v34 first draft) | 8 blocks on PGlite (prose from primary sources) |
 | [design-normalization.md](design-normalization.md) | ER modelling, keys, functional dependencies, normal forms | 3 blocks on PGlite; theory link-checked |
 | [dbms-theory.md](dbms-theory.md) | architecture, relational model, algebra/calculus, transactions and concurrency control, storage and indexes, query processing, recovery | 3 blocks on PGlite; theory link-checked |
 | [mysql-sqlite-differences.md](mysql-sqlite-differences.md) | dialect table PostgreSQL / MySQL 8.4 / SQLite / T-SQL, types, grouping, DDL, isolation, a portable-SQL checklist | not run (no runtime); 11 MySQL, 5 SQLite and 1 SQL Server pages read, rest link-checked |
