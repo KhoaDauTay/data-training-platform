@@ -313,7 +313,7 @@ function badgesCard(x: Measured, list: Scope[]): HTMLElement {
       class: d.cls.cx('flex h-full w-full flex-col items-center gap-1 rounded-(--r-inset) p-2 text-center text-caption', b.have ? 'bg-accent-soft font-semibold text-ink' : 'border border-dashed border-line-strong text-muted'), // F23: not held = dashed, faded icon
       onclick: () => { badgeSay = `${t.name}: ${t.cond} (${state})`; d.rerender(); },
     }, d.icon(t.icon, d.cls.cx('size-6', b.have ? 'text-accent' : 'text-muted opacity-40')), d.h('span', {}, t.name),
-    d.h('span', { id: `badge-${pre}${b.id}`, class: b.have ? 'sr-only' : 'leading-tight font-normal max-sm:sr-only' }, `${t.cond} (${state})`)));
+    d.h('span', { id: `badge-${pre}${b.id}`, class: b.have ? 'sr-only' : 'font-normal max-sm:sr-only' }, `${t.cond} (${state})`)));
   };
   const grid = (bs: Badge[], pre = ''): HTMLElement => d.h('ul', { class: 'm-0 grid list-none grid-cols-3 gap-2 p-0 sm:grid-cols-6' }, ...bs.map((b) => tile(b, pre)));
   const group = (key: MeKey, kinds: Badge['kind'][]): HTMLElement => d.h('div', { class: 'space-y-2' },

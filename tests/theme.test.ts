@@ -138,7 +138,7 @@ describe('theme', () => {
     expect(bad).toEqual([]);
   });
 
-  it('v30.2 (L500): theme sáng tách vùng rõ và chữ phụ ≥ 7:1', () => {
+  it('v30.2 (L500): theme sáng tách vùng rõ và chữ phụ ≥ 7:1; chữ nhỏ nhất 13 px', () => {
     const light = tokens(':root');
     const need: [string, string, number][] = [
       ['muted', 'bg', 7], ['muted', 'panel', 7], ['muted', 'surface-2', 6], ['muted', 'code', 6],
@@ -150,6 +150,8 @@ describe('theme', () => {
     expect(bad).toEqual([]);
     const dark = { ...light, ...tokens(':root[data-theme=dark]') };
     expect(ratio(dark['surface-2'], dark.panel)).toBeGreaterThanOrEqual(1.18); // dark inset inside a card
+    expect(css).toMatch(/--text-caption:\s*0\.8125rem;/);
+    expect(css).toMatch(/pre\.sql \{[^}]*font-size: 14px/);
   });
 
   it('token ấm của v6 (L57) và bo góc 20/14', () => {

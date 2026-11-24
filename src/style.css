@@ -145,7 +145,7 @@
 }
 @theme {
   /* ui-ux-v7 T1 (D-U1): six named type steps; use these, not text-xs…3xl. A step's weight is a default (font-bold etc. still wins). */
-  --text-caption: 0.75rem; --text-caption--line-height: 1rem;
+  --text-caption: 0.8125rem; --text-caption--line-height: 1.125rem;
   --text-body-sm: 0.875rem; --text-body-sm--line-height: 1.25rem;
   --text-body: 1rem; --text-body--line-height: 1.5rem;
   --text-title: 1.125rem; --text-title--line-height: 1.625rem; --text-title--font-weight: 600;
@@ -192,12 +192,12 @@
 
 /* Shared vocabulary used as plain class names by Plan 1 code and by Plans 1b/1c/Import. Keep these names. */
 @layer components {
-  .muted { color: var(--muted); font-size: 13px; }
+  .muted { color: var(--muted); font-size: 14px; }
   .good { color: var(--good); }
   .bad { color: var(--bad); }
   .warn { color: var(--warn); }
   .error { color: var(--bad); white-space: pre-wrap; }
-  pre.sql { margin: 0; padding: 8px; border-radius: 8px; background: var(--code); white-space: pre-wrap; font-size: 13px; }
+  pre.sql { margin: 0; padding: 8px; border-radius: 8px; background: var(--code); white-space: pre-wrap; font-size: 14px; }
   .stale { margin: 0 0 8px; padding: 4px 8px; border-left: 3px solid var(--warn); background: var(--code); font-size: 13px; }
   .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 8px 0; }
   /* v6 §2.1: the main action is a pill with a 3 px step that presses down. */
