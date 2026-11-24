@@ -78,7 +78,7 @@ function summary(): HTMLElement {
       h('tbody', { class: 'max-sm:block' }, ...AXES.map((a) => h('tr', { class: 'max-sm:flex max-sm:flex-col max-sm:gap-1 max-sm:border-t max-sm:border-line max-sm:py-2' },
         h('th', { scope: 'row', class: 'text-left font-normal' }, h('button', { type: 'button', class: 'border-0 bg-transparent p-0 text-left text-accent underline', onclick: () => { const t = document.getElementById(`cmp-${a.id.toLowerCase()}`); t?.scrollIntoView(); t?.focus(); } }, `${a.id} · ${a.title[lang()]}`)),
         ...CMP_ENGINES.map((e) => h('td', { class: 'max-sm:flex max-sm:items-center max-sm:gap-2' },
-          h('span', { class: 'w-24 shrink-0 text-muted sm:hidden', 'aria-hidden': 'true' }, NAME[e]), tierChip(a.cells[e].tier))))))));
+          h('span', { class: 'w-24 shrink-0 text-muted sm:hidden' }, NAME[e]), tierChip(a.cells[e].tier))))))));
 }
 
 function scenarioCard(s: Scenario, n: number): HTMLElement {

@@ -73,6 +73,26 @@ describe('axe-core (v15 Q10)', () => {
     expect(v).toEqual([]);
   });
 
+  it('dialog: the search palette (F12, L490): ⋯ menu button, search, axe, a result navigates and closes', async () => {
+    await visit('#/learn');
+    byId('search-btn').click();
+    await vi.waitFor(() => expect(document.querySelector('dialog#palette[open]')).not.toBeNull());
+    const box = document.querySelector<HTMLInputElement>('#palette-q')!;
+    expect(document.activeElement).toBe(box);
+    box.value = 'mvcc';
+    box.dispatchEvent(new Event('input'));
+    await vi.waitFor(() => expect(document.querySelector('#palette-list a[data-palette=term]')).not.toBeNull(), { timeout: 20_000 });
+    expect(await problems()).toEqual([]);
+    const link = document.querySelector<HTMLAnchorElement>('#palette-list a[href="#/engine/terms/mvcc"]')!;
+    link.click();
+    expect(document.querySelector('dialog#palette[open]')).toBeNull();
+    await vi.waitFor(() => expect(location.hash).toBe('#/engine/terms/mvcc'));
+    // {mod}+K opens it again (Ctrl here: jsdom is no Mac)
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, bubbles: true, cancelable: true }));
+    await vi.waitFor(() => expect(document.querySelector('dialog#palette[open]')).not.toBeNull());
+    byId('palette').closest('dialog')!.close();
+  });
+
   it.each(DIALOGS)('dialog: %s', async (name, open) => {
     if (location.hash !== '#/d/logistics/play') await visit('#/d/logistics/play');
     await open();
