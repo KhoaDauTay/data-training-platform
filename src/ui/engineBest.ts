@@ -79,7 +79,7 @@ const setTips = (f: (p: BpPref) => Partial<BpPref>): void => {
 
 // ---- small text helpers (./content's blocksOf is engineView's: importing it would make a shared chunk)
 function inline(text: string): (Node | string)[] {
-  return text.split(/(`[^`\n]+`)/).filter(Boolean).flatMap((p) => (p.length > 1 && p.startsWith('`') && p.endsWith('`') ? [d.h('code', {}, p.slice(1, -1))]
+  return text.split(/(`[^`\n]+`)/).filter(Boolean).flatMap((p) => (p.length > 1 && p.startsWith('`') && p.endsWith('`') ? [d.h('code', { class: '[overflow-wrap:anywhere]' }, p.slice(1, -1))]
     : p.split(/(\*\*[^*\n]+\*\*)/).filter(Boolean).map((q) => (q.length > 4 && q.startsWith('**') && q.endsWith('**') ? d.h('strong', {}, q.slice(2, -2)) : q))));
 }
 function prose(text: string): HTMLElement {

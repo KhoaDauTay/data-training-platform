@@ -1,5 +1,5 @@
 import { ENGINES, LEVELS, type EngineId, type Level } from '../engine/content';
-import { marker, parseGlossary, searchTerms, type Term } from '../engine/glossary';
+import { docFor, marker, parseGlossary, searchTerms, type Term } from '../engine/glossary';
 import type * as I18n from '../i18n';
 import { termsText, type TermsKey } from '../i18n/engineTerms';
 import type { EngineDeps } from './engineView';
@@ -53,7 +53,7 @@ function scrollHome(el: HTMLElement): void {
 const rich = (text: string): (Node | string)[] =>
   text.split(/(`[^`\n]+`)/).filter(Boolean).map((p) => (p.length > 1 && p.startsWith('`') && p.endsWith('`') ? d.h('code', {}, p.slice(1, -1)) : p));
 const levelChip = (lv: Level): HTMLElement => d.h('span', { class: d.cls.cx(d.cls.PILL, 'bg-code text-ink') }, lv);
-const docLink = (t: Term): HTMLElement => d.h('a', { href: t.doc, target: '_blank', rel: 'noopener noreferrer', class: 'inline-flex items-center gap-1.5' },
+const docLink = (t: Term, href = t.doc): HTMLElement => d.h('a', { href, target: '_blank', rel: 'noopener noreferrer', class: 'inline-flex items-center gap-1.5' },
   d.icon('external', 'size-4 shrink-0'), tt('docs'), d.h('span', { class: 'sr-only' }, ` (${tt('newTab')})`));
 /** The VI word under the English one, when it differs (it may hold `code`). */
 const viLine = (t: Term): HTMLElement | null => (lang() === 'vi' && t.viTerm.replace(/`/g, '') !== t.term ? d.h('span', { class: 'text-muted' }, ...rich(t.viTerm)) : null);
@@ -69,7 +69,9 @@ function place(btn: HTMLElement, pop: HTMLElement): void {
   pop.style.top = `${Math.min(r.bottom + 6, Math.max(16, innerHeight - 260))}px`;
 }
 
-function termButton(t: Term, text: string): Node[] {
+/** `engine`: the lesson's; its docs page wins, another engine's page is never shown (v35 R1, E09). */
+function termButton(t: Term, text: string, engine: EngineId): Node[] {
+  const doc = docFor(t, engine);
   const { h, cls } = d;
   const pid = `tp-${t.id}`;
   const btn = h('button', {
@@ -83,7 +85,7 @@ function termButton(t: Term, text: string): Node[] {
   h('span', { class: 'flex flex-wrap items-baseline gap-x-2 gap-y-1' }, h('strong', { id: `${pid}-h`, lang: 'en', class: 'text-body' }, t.term), viLine(t), levelChip(t.level)),
   h('span', { class: 'block' }, ...rich(t[lang()])),
   h('span', { class: 'flex flex-wrap items-center gap-x-4 gap-y-1' },
-    h('a', { href: d.engineTermsHash(t.id) }, `${tt('open')} →`), docLink(t),
+    h('a', { href: d.engineTermsHash(t.id) }, `${tt('open')} →`), doc ? docLink(t, doc) : null,
     h('button', { type: 'button', popovertarget: pid, popovertargetaction: 'hide', class: cls.cx(cls.BTN_GHOST, 'ml-auto px-3 py-1') }, tt('pop.close'))));
   pop.addEventListener('beforetoggle', (e) => {
     const open = (e as Event & { newState?: string }).newState === 'open';
@@ -105,7 +107,7 @@ function termButton(t: Term, text: string): Node[] {
 export function lessonMarker(engine: EngineId, level: Level): { inline: (text: string) => (Node | string)[]; list: () => HTMLElement | null } {
   const m = marker(terms, engine, level);
   return {
-    inline: (text) => m.mark(text).flatMap((p): (Node | string)[] => (typeof p === 'string' ? [p] : termButton(p.term, p.text))),
+    inline: (text) => m.mark(text).flatMap((p): (Node | string)[] => (typeof p === 'string' ? [p] : termButton(p.term, p.text, engine))),
     list: () => (m.seen.length ? d.h('details', { class: 'rounded-(--r-card) bg-panel p-4 ring-1 ring-line', 'data-terms': '' },
       d.h('summary', { class: 'cursor-pointer font-bold' }, tt('inLesson', { n: m.seen.length })),
       d.h('ul', { class: 'mt-3 mb-0 grid list-none gap-x-6 gap-y-1 p-0 text-body-sm sm:grid-cols-2' }, ...m.seen.map((t) =>

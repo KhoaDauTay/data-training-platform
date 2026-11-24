@@ -7,6 +7,21 @@ import type { EngineId, Level } from './content';
 export interface Term {
   id: string; term: string; engines: EngineId[]; level: Level; keepEn: boolean; viTerm: string;
   match?: string[]; avoid: string; vi: string; en: string; doc: string;
+  /** v35 R1 (E09): the official page of one engine, when `doc` is another engine's (YAML `docs: { postgres: … }`). */
+  docs?: Partial<Record<EngineId, string>>;
+}
+
+/** The site of each engine's official docs (tests/engineGlossary.test.ts holds every `doc` to these). */
+const DOC_SITE: Record<string, RegExp> = {
+  postgres: /^https:\/\/www\.postgresql\.org\/docs\//, mongodb: /^https:\/\/www\.mongodb\.com\/docs\//, dynamodb: /^https:\/\/docs\.aws\.amazon\.com\/amazondynamodb\//,
+};
+/**
+ * v35 R1 (E09): the docs link a lesson of `engine` shows: that engine's own page (`docs`), else `doc` when it is on that
+ * engine's site, else none (a Postgres learner never lands on MongoDB's or DynamoDB's docs). Design lessons read Postgres.
+ */
+export function docFor(t: Term, engine: EngineId): string | undefined {
+  const e = engine === 'design' ? 'postgres' : engine;
+  return t.docs?.[e] ?? (DOC_SITE[e]?.test(t.doc) ? t.doc : undefined);
 }
 
 /** A term's id: its `term` without diacritics, lower case, runs of anything else as one `-` (every id in the YAML is this). */
@@ -27,12 +42,16 @@ export function parseGlossary(raw: unknown): Term[] {
     const engines = x.engines;
     if (!Array.isArray(engines) || !engines.length || !engines.every((e) => ENG.has(e))) throw new Error(`glossary: ${id} engines`);
     if (!/^L[1-5]$/.test(String(x.level))) throw new Error(`glossary: ${id} level`);
+    const docs = x.docs;
+    if (docs !== undefined && (typeof docs !== 'object' || docs === null || Array.isArray(docs)
+      || !Object.entries(docs).every(([e, u]) => ENG.has(e) && typeof u === 'string' && DOC_SITE[e].test(u)))) throw new Error(`glossary: ${id} docs`);
     const match = x.match === undefined ? undefined : x.match;
     if (match !== undefined && (!Array.isArray(match) || !match.every((m) => typeof m === 'string' && m))) throw new Error(`glossary: ${id} match`);
     return {
       id, term: str(x.term, `${id} term`), engines: engines as EngineId[], level: x.level as Level, keepEn: x.keep_en === true,
       viTerm: str(x.vi_term, `${id} vi_term`), ...(match ? { match: match as string[] } : {}), avoid: typeof x.avoid === 'string' ? x.avoid : '',
       vi: str(x.vi, `${id} vi`), en: str(x.en, `${id} en`), doc: str(x.doc, `${id} doc`),
+      ...(docs ? { docs: docs as Partial<Record<EngineId, string>> } : {}),
     };
   });
 }

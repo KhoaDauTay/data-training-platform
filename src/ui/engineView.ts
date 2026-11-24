@@ -119,10 +119,18 @@ function inline(text: string, marked = false): (Node | string)[] {
 /** v28 R4 (L421): a code span holding a lesson id (`e-pg-l4-12`) is a link to that lesson, named by its title (the design track's "go deeper" links). */
 function codeOrLink(c: string): Node {
   const to = /^e-(pg|mg|dy|ds)-l[1-5]-\d\d$/.test(c) ? lessons.find((x) => x.id === c) : undefined;
-  if (to) return d.h('a', { href: lessonHash(to) }, `${nameOf(to.engine)} ${to.level} · ${to.title[lang()]}`);
+  if (to) return xref(lessonHash(to), `${nameOf(to.engine)} ${to.level} · ${to.title[lang()]}`);
   const bp = bpHashOf(c);
-  return bp ? d.h('a', { href: bp }, `Best Practice · ${c.slice(5).toUpperCase()}`) : d.h('code', {}, c);
+  // v35 R1 (T1-C8-01, L559): inline code may break anywhere, so one long span never widens a 320 px page
+  return bp ? xref(bp, `Best Practice · ${c.slice(5).toUpperCase()}`) : d.h('code', { class: '[overflow-wrap:anywhere]' }, c);
 }
+/**
+ * v35 R1 (E01, L558): a lesson or card link reads as a link: accent ink (≥ 4.5:1 on every surface, both themes), a solid
+ * underline and an arrow, never the glossary's dotted teal underline (a term button), never body text.
+ */
+const xref = (href: string, text: string): HTMLElement => d.h('a', {
+  href, 'data-xref': '', class: 'font-semibold text-accent-ink underline decoration-1 underline-offset-[3px] hover:decoration-2',
+}, text, d.icon('arrowRight', 'ml-0.5 inline size-3.5 align-[-2px]'));
 /**
  * v34 (L545, handoff item 4): a Best Practice card id (`e-bp-s10`) → its card's route. The track follows the code's letter
  * (content/engine/best/<track>/<code>-…), so no card index has to load here; tests/engineBpLink.test.ts checks every card.
@@ -451,7 +459,7 @@ function question(l: EngineLesson, v: Visit, q: Question, part: string, label: s
   const say = v.says[part];
   const status = h('p', { role: 'status', class: cls.cx('m-0 text-body-sm', say === 'right' ? 'good' : say ? 'bad' : '') },
     say === 'right' ? et('right') : say === 'wrong' ? et(whyShown(say, v.wrongs[part]) ? 'wrongWhy' : 'wrong') : say === 'pick' ? et('pick') : '');
-  return h('fieldset', { class: 'm-0 space-y-2 border-0 p-0' },
+  return h('fieldset', { class: 'm-0 min-w-0 space-y-2 border-0 p-0' }, // min-w-0: a fieldset is min-content wide by default (T1-C8-01)
     h('legend', { class: 'mb-2 p-0 font-bold' }, label ? h('span', { class: 'block text-caption font-bold tracking-wider text-muted uppercase' }, label) : null, ...inline(q.q[lang()])),
     ...d.optionOrder(`${l.id}#${part}`, q.options.length).map((i) => h('label', {
       class: cls.cx('flex min-h-11 cursor-pointer items-center gap-2 rounded-(--r-ctl) px-3 py-1 hover:bg-accent-soft has-[:checked]:bg-accent-soft has-[:checked]:ring-2 has-[:checked]:ring-accent',
@@ -840,7 +848,10 @@ export function sourceTitle(u: string): string {
   const seg = url.pathname.split('/').filter(Boolean).at(-1);
   const anchor = url.hash.length > 1 && words(url.hash.slice(1).replace(/\.([0-9A-F]{2})/g, '%$1')); // MediaWiki writes ' as .27
   const page = [seg && words(seg.replace(/^bp-/, 'best-practices: ')), anchor && (/[a-z]/.test(anchor) ? anchor : anchor.toLowerCase())].filter(Boolean).join(' › ');
-  const site = SITE[url.hostname] ?? url.hostname.replace(/^www\./, '');
+  // v35 R1 (E09): docs.aws.amazon.com is DynamoDB only under /amazondynamodb/ (the SaaS Lens is AWS Well-Architected)
+  const aws = url.hostname === 'docs.aws.amazon.com' && !url.pathname.startsWith('/amazondynamodb/')
+    ? (url.pathname.includes('/saas-lens/') ? 'AWS SaaS Lens' : 'AWS') : undefined;
+  const site = aws ?? SITE[url.hostname] ?? url.hostname.replace(/^www\./, '');
   return page ? `${site} · ${page[0].toUpperCase()}${page.slice(1)}` : site;
 }
 

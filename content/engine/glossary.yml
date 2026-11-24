@@ -59,6 +59,7 @@
   vi: "Thao tác hoặc xảy ra trọn vẹn hoặc không xảy ra. Trong MongoDB, thao tác trên một tài liệu luôn nguyên tử."
   en: "An operation either happens completely or not at all. In MongoDB a write to a single document is always atomic."
   doc: "https://www.mongodb.com/docs/manual/core/write-operations-atomicity/"
+  docs: { postgres: "https://www.postgresql.org/docs/18/tutorial-transactions.html" }
 - id: durability
   term: durability
   engines: [postgres, mongodb, dynamodb]
@@ -130,6 +131,7 @@
   vi: "Giá trị xác định duy nhất một dòng/tài liệu/item. MongoDB là `_id`; DynamoDB là partition key, hoặc partition key + sort key."
   en: "The value that identifies exactly one row/document/item. In MongoDB it is `_id`; in DynamoDB it is the partition key, or partition key + sort key."
   doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.CoreComponents.html"
+  docs: { postgres: "https://www.postgresql.org/docs/18/ddl-constraints.html" }
 - id: foreign-key
   term: foreign key
   engines: [postgres]
@@ -708,6 +710,7 @@
   vi: "Thao tác cần nhiều bộ nhớ hơn giới hạn thì ghi tạm ra đĩa. Postgres theo `work_mem`; MongoDB aggregation 100 MB mỗi stage, cần `allowDiskUse`."
   en: "An operation needing more memory than allowed writes temporary data to disk. Postgres follows `work_mem`; MongoDB aggregation allows 100 MB per stage and needs `allowDiskUse`."
   doc: "https://www.mongodb.com/docs/manual/core/aggregation-pipeline-limits/"
+  docs: { postgres: "https://www.postgresql.org/docs/18/runtime-config-resource.html" }
 - id: pageinspect
   term: pageinspect
   engines: [postgres]
@@ -936,6 +939,7 @@
   vi: "Hai bên đọc cùng giá trị rồi cùng ghi, bản ghi sau đè mất bản trước. Chặn bằng row lock, mức cô lập cao hơn, hoặc conditional write (DynamoDB)."
   en: "Two clients read the same value and both write; the later write silently overwrites the earlier. Prevent it with a row lock, a stricter isolation level or a conditional write (DynamoDB)."
   doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithItems.html"
+  docs: { postgres: "https://www.postgresql.org/docs/18/transaction-iso.html" }
 
 # ───────────────────────── PostgreSQL L5: nội tạng, nhân bản, bảo mật ─────────────────────────
 - id: page-split
@@ -1009,6 +1013,7 @@
   vi: "Giữ bản sao dữ liệu trên nhiều máy để chịu lỗi và đọc rải. Postgres: streaming/logical replication; MongoDB: replica set; DynamoDB: tự động trong Region, global tables giữa Region."
   en: "Keeping copies of the data on several machines for fault tolerance and read scaling. Postgres: streaming/logical replication; MongoDB: replica set; DynamoDB: automatic within a Region, global tables across Regions."
   doc: "https://www.mongodb.com/docs/manual/replication/"
+  docs: { postgres: "https://www.postgresql.org/docs/18/warm-standby.html" }
 - id: primary-standby-hot-standby
   term: primary / standby (hot standby)
   engines: [postgres]
@@ -1071,6 +1076,7 @@
   vi: "Chuyển vai primary sang máy khác khi primary chết. MongoDB làm tự động bằng election; Postgres cần công cụ ngoài."
   en: "Moving the primary role to another machine when the primary dies. MongoDB does it automatically by election; Postgres needs external tooling."
   doc: "https://www.mongodb.com/docs/manual/core/replica-set-elections/"
+  docs: { postgres: "https://www.postgresql.org/docs/18/warm-standby-failover.html" }
 - id: rls-row-level-security
   term: RLS (row-level security)
   engines: [postgres]
@@ -1428,6 +1434,7 @@
   vi: "MongoDB nhớ kế hoạch thắng cho mỗi hình dạng truy vấn (Missing → Inactive → Active); DDL xóa cache. Postgres có cache cho câu `PREPARE` (generic plan)."
   en: "MongoDB remembers the winning plan per query shape (Missing → Inactive → Active); DDL clears it. Postgres caches plans for `PREPARE`d statements (generic plan)."
   doc: "https://www.mongodb.com/docs/manual/core/query-plans/"
+  docs: { postgres: "https://www.postgresql.org/docs/18/sql-prepare.html" }
 
 # ───────────────────────── MongoDB L4: concern, transaction, pattern ─────────────────────────
 - id: write-concern
@@ -1863,6 +1870,7 @@
   vi: "Chạy một lần hay nhiều lần cho cùng kết quả, nên gửi lại khi lỗi mạng là an toàn."
   en: "Running it once or many times gives the same result, so retrying after a network error is safe."
   doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithItems.html"
+  docs: { postgres: "https://www.postgresql.org/docs/18/sql-insert.html" }
 - id: batchgetitem-batchwriteitem
   term: BatchGetItem / BatchWriteItem
   engines: [dynamodb]
@@ -2131,6 +2139,7 @@
   vi: "Hash rải đều nhưng mất thứ tự; khoảng giữ thứ tự nhưng dễ dồn ghi vào đầu mới nhất. DynamoDB băm partition key; MongoDB có ranged và hashed shard key; Postgres có `PARTITION BY RANGE/LIST/HASH`."
   en: "Hash spreads evenly but loses order; range keeps order but piles new writes at the newest end. DynamoDB hashes the partition key; MongoDB has ranged and hashed shard keys; Postgres has `PARTITION BY RANGE/LIST/HASH`."
   doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.Partitions.html"
+  docs: { postgres: "https://www.postgresql.org/docs/18/ddl-partitioning.html" }
 - id: quorum-majority
   term: quorum / majority
   engines: [mongodb, dynamodb]
@@ -2606,6 +2615,7 @@
   vi: "Mỗi người dùng hay ứng dụng chỉ có đúng các quyền việc của họ cần, không hơn, để một lỗi hay một credential bị lộ gây hại ít nhất."
   en: "Each user or application gets exactly the permissions its job needs and no more, so a mistake or a leaked credential does the least harm."
   doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/best-practices-security-preventative.html"
+  docs: { postgres: "https://www.postgresql.org/docs/18/ddl-priv.html" }
 - id: dynamic-sql
   term: dynamic SQL
   engines: [postgres]
@@ -2636,6 +2646,7 @@
   vi: "Một kết nối đang làm việc với database. Trong MongoDB, phiên phía client (client session) gom các thao tác của một ứng dụng để có causal consistency và retryable write."
   en: "A connection working with the database. In MongoDB, a client session groups an application's operations to give causal consistency and retryable writes."
   doc: "https://www.mongodb.com/docs/manual/reference/server-sessions/"
+  docs: { postgres: "https://www.postgresql.org/docs/18/sql-set.html" }
 - id: driver
   term: driver
   engines: [postgres, mongodb]
@@ -2748,6 +2759,7 @@
   vi: "Khoảng trễ giữa lúc primary ghi một thao tác và lúc secondary áp dụng thao tác đó từ oplog."
   en: "The delay between an operation on the primary and the moment a secondary applies that operation from the oplog."
   doc: "https://www.mongodb.com/docs/manual/tutorial/troubleshoot-replica-sets/"
+  docs: { postgres: "https://www.postgresql.org/docs/18/monitoring-stats.html" }
 - id: access-control
   term: access control
   engines: [mongodb]
@@ -3013,6 +3025,7 @@
   vi: "Chuẩn viết ngày giờ từ lớn tới nhỏ, như `2026-11-20T08:30:00Z`. DynamoDB lưu được dạng chuỗi này, hoặc dạng số epoch tốn ít chỗ hơn."
   en: "The standard that writes dates from largest to smallest unit, like `2026-11-20T08:30:00Z`. DynamoDB can store this string form, or an epoch number that takes less space."
   doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html"
+  docs: { postgres: "https://www.postgresql.org/docs/18/datatype-datetime.html" }
 
 # ───────────────────────── v27 (vòng 12): từ có trong phòng phỏng vấn mà chưa có mục ─────────────────────────
 # PgBouncer không có trang trên postgresql.org: `doc` trỏ `max_connections` (lý do cần pooler); ba chế độ pooling
@@ -3089,6 +3102,7 @@
   vi: "Đọc các thay đổi đã commit của database thành một luồng để đẩy sang hệ thống khác. Postgres: logical decoding đọc WAL qua replication slot; MongoDB: change stream; DynamoDB: DynamoDB Streams."
   en: "Reading a database's committed changes as a stream to feed another system. Postgres: logical decoding of the WAL through a replication slot; MongoDB: change streams; DynamoDB: DynamoDB Streams."
   doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Streams.html"
+  docs: { postgres: "https://www.postgresql.org/docs/18/logical-replication.html" }
 - id: parallel-scan
   term: parallel scan
   engines: [dynamodb]
@@ -3121,3 +3135,4 @@
   vi: "Hai mục tiêu khi có sự cố: RPO là lượng dữ liệu tối đa được phép mất (tính bằng thời gian), RTO là thời gian tối đa để phục vụ lại. Chúng quyết định cách sao lưu, PITR, nhân bản và global tables."
   en: "Two disaster targets: RPO is the most data you may lose (measured in time), RTO is the longest time until service is back. They drive the choice of backups, PITR, replication and global tables."
   doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GlobalTables.html"
+  docs: { postgres: "https://www.postgresql.org/docs/18/continuous-archiving.html" }

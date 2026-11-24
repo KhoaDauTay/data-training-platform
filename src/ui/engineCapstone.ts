@@ -55,7 +55,7 @@ export function capBar(c: CapCtx): HTMLElement {
       const off = !c.graded(i); // L278: an ungradable step (e.g. DynamoDB `catalog`) is dashed and says so, never green
       return h('li', { class: 'min-w-0 flex-1 space-y-1', 'aria-current': i === cur ? 'step' : false, 'data-ungraded': off ? '' : false },
         h('span', { class: cls.cx('block h-1.5 rounded-full', off ? 'border border-dashed border-line-strong' : ok ? 'bg-good' : i === cur ? 'bg-accent' : 'bg-surface-2 ring-1 ring-line'), 'aria-hidden': 'true' }),
-        h('span', { class: cls.cx('block truncate text-caption max-lg:sr-only', i === cur ? 'font-bold text-ink' : 'text-muted') },
+        h('span', { class: cls.cx('block truncate text-caption max-lg:sr-only', i === cur ? 'font-bold text-ink' : 'text-muted'), title: `${i + 1}. ${name(i)}` }, // T1-C3-01: a cut name shows whole on hover
           `${i + 1}. ${name(i)}`, h('span', { class: 'sr-only' }, ` (${off ? et('cap.ungraded') : ok ? et('cap.passed') : i === cur ? et('cap.current') : et('cap.todo')})`)));
     })),
     h('p', { class: 'm-0 text-caption font-semibold lg:hidden', 'aria-hidden': 'true' },

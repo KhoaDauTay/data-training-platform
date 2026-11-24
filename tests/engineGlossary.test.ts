@@ -1,7 +1,7 @@
 // v27 (L410): the Database Engine glossary (content/engine/glossary.yml), its routes and the lesson term marker.
 import { describe, expect, it } from 'vitest';
 import glossary from '../content/engine/glossary.yml';
-import { aliasesOf, fold, marker, MAX_BUTTONS, parseGlossary, searchTerms, termSlug, type Term } from '../src/engine/glossary';
+import { aliasesOf, docFor, fold, marker, MAX_BUTTONS, parseGlossary, searchTerms, termSlug, type Term } from '../src/engine/glossary';
 import { ENGINES, LEVELS, parseEngineLesson, type LessonSource } from '../src/engine/content';
 import { engineInterviewHash, engineInterviewOf, engineRouteOf, engineTermsHash, engineTermsOf, parseRoute } from '../src/route';
 import { parseUse } from '../src/ui/engineTerms';
@@ -24,6 +24,18 @@ describe('glossary.yml', () => {
       expect([t.id, spans(t.vi)]).toEqual([t.id, spans(t.en)]);
       expect([t.id, t.doc]).toEqual([t.id, expect.stringMatching(/^https:\/\/(www\.postgresql\.org\/docs\/|www\.mongodb\.com\/docs\/|docs\.aws\.amazon\.com\/amazondynamodb\/)/)]);
     }
+  });
+  it('v35 R1 (E09): a lesson shows its own engine\'s docs, never another product\'s', () => {
+    const by = (id: string): Term => terms.find((t) => t.id === id)!;
+    expect(docFor(by('session'), 'postgres')).toMatch(/^https:\/\/www\.postgresql\.org\/docs\/18\/sql-set\.html$/);
+    expect(docFor(by('session'), 'mongodb')).toMatch(/mongodb\.com/);
+    expect(docFor(by('primary-key'), 'design')).toMatch(/postgresql\.org/);
+    expect(docFor(by('primary-key'), 'dynamodb')).toMatch(/amazondynamodb/);
+    for (const t of terms) for (const e of t.engines) {
+      const u = docFor(t, e);
+      if (u) expect([t.id, e, u]).toEqual([t.id, e, expect.stringMatching(e === 'postgres' ? /postgresql\.org/ : e === 'mongodb' ? /mongodb\.com/ : /amazondynamodb/)]);
+    }
+    expect(() => parseGlossary([{ ...(glossary as Record<string, unknown>[])[0], docs: { postgres: 'https://example.org/' } }])).toThrow(/docs/);
   });
   it('a broken entry throws (the page shows Retry, a lesson draws without buttons)', () => {
     expect(() => parseGlossary([{ id: 'x' }])).toThrow();

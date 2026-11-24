@@ -71,6 +71,8 @@ describe('Database Engine lesson pages (fixtures)', () => {
     expect(sourceTitle('https://wiki.postgresql.org/wiki/Don%27t_Do_This#Don.27t_use_money')).toBe("PostgreSQL Wiki · Don't Do This › Don't use money");
     expect(sourceTitle('https://example.org/a%E0%A4%A')).toBe('example.org · A%E0%A4%A');
     expect(sourceTitle('https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-query-scan.html')).toBe('DynamoDB · Best practices: query scan');
+    // v35 R1 (E09): the SaaS Lens is not DynamoDB
+    expect(sourceTitle('https://docs.aws.amazon.com/wellarchitected/latest/saas-lens/silo-pool-and-bridge-models.html')).toBe('AWS SaaS Lens · Silo pool and bridge models');
   });
 
   it('a concept lesson is completed by its button', async () => {
