@@ -514,3 +514,14 @@ svg[data-mascot].cq-hop { animation: cq-hop 320ms ease-out 80ms backwards; }
   [data-lesson-page] > aside { display: block; }
   [data-fl-bar], [data-fl-toc] { display: none; }
 }
+
+/* v30.2 (L501): Tailwind v4 wraps space-y-* in :where() (specificity 0), so a child's own m-0 / my-0 / mb-0 cancelled the
+   gap and stacked text touched the next block. Give the gap back to those children (each step sets --sy; a 0 step at a
+   breakpoint sets it to 0). */
+@layer utilities {
+  .space-y-0 { --sy: 0px; } .space-y-0\.5 { --sy: .125rem; } .space-y-1 { --sy: .25rem; } .space-y-1\.5 { --sy: .375rem; }
+  .space-y-2 { --sy: .5rem; } .space-y-3 { --sy: .75rem; } .space-y-4 { --sy: 1rem; } .space-y-5 { --sy: 1.25rem; } .space-y-6 { --sy: 1.5rem; } .space-y-10 { --sy: 2.5rem; }
+  @media (max-width: 639.98px) { .max-sm\:space-y-0 { --sy: 0px; } }
+  @media (min-width: 640px) { .sm\:space-y-0 { --sy: 0px; } }
+  [class*="space-y-"] > :is(.m-0, .my-0, .mb-0):not(:last-child) { margin-block-end: var(--sy, 0px); }
+}
