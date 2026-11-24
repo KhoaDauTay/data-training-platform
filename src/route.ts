@@ -136,7 +136,7 @@ export function engineInterviewOf(hash: string): { set?: string; th?: string } |
   const m = /^#\/?engine\/interview(?:\/([a-z0-9-]+))?(?=$|[/?])/.exec(hash);
   if (!m) return undefined;
   const x = m[1] ?? '';
-  return /^(pg|mg|dy)-(junior|mid|senior|staff)-[1-3]$|^again$/.test(x) ? { set: x } : /^e-iv-(pg|mg|dy)-th-[1-9]$/.test(x) ? { th: x } : {};
+  return /^(pg|mg|dy)-(junior|mid|senior|staff)-[1-3]$|^(mg|dy)-senior-4$|^again$/.test(x) ? { set: x } : /^e-iv-(pg|mg|dy)-th-[1-9]$/.test(x) ? { th: x } : {};
 }
 export const engineInterviewHash = (x?: string): string => `#/engine/interview${x ? `/${x}` : ''}`;
 /** v28 (L430): `#/engine/compare` (the "Which engine?" page) → true; checked before engineRouteOf, which drops `compare`. */

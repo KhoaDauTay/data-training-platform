@@ -35,13 +35,13 @@ const cards = Object.entries(raw).map(([path, text]) => {
 const released = cards.filter((c) => RELEASED.includes(c.track));
 const DIACRITIC = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i;
 
-describe('thẻ Best Practice: cấu trúc (131 thẻ, cả track chưa phát hành)', () => {
-  it('131 thẻ, id duy nhất; phát hành cả 131 (SQL 30 + PostgreSQL 31 + MongoDB 38 + DynamoDB 32, v26 L383; v35 + X08)', () => {
-    expect(cards).toHaveLength(131);
-    expect(new Set(cards.map((c) => c.id)).size).toBe(131);
+describe('thẻ Best Practice: cấu trúc (132 thẻ, cả track chưa phát hành)', () => {
+  it('132 thẻ, id duy nhất; phát hành cả 132 (SQL 30 + PostgreSQL 31 + MongoDB 39 + DynamoDB 32, v26 L383; v35 + X08; v36 + M39)', () => {
+    expect(cards).toHaveLength(132);
+    expect(new Set(cards.map((c) => c.id)).size).toBe(132);
     expect(released.filter((c) => c.track === 'sql')).toHaveLength(30);
     expect(released.filter((c) => c.track === 'postgres')).toHaveLength(31);
-    expect(released.filter((c) => c.track === 'mongodb')).toHaveLength(38);
+    expect(released.filter((c) => c.track === 'mongodb')).toHaveLength(39);
     expect(released.filter((c) => c.track === 'dynamodb')).toHaveLength(32);
   });
 
@@ -69,7 +69,7 @@ describe('thẻ Best Practice: cấu trúc (131 thẻ, cả track chưa phát h�
     expect(paths).toHaveLength(61);
     expect(paths.every((p) => /\/best\/(sql|postgres)\//.test(p))).toBe(true);
     const mg = Object.keys(mongoIndex.meta);
-    expect(mg).toHaveLength(38);
+    expect(mg).toHaveLength(39);
     expect(mg.every((p) => /\/best\/mongodb\//.test(p))).toBe(true);
     expect(typeof sources.full.mongodb).toBe('function');
     const dy = Object.keys(dynamoIndex.meta);
@@ -120,7 +120,7 @@ async function labSide(p: Pair, sql: string): Promise<Side> {
   }
 }
 
-describe('thẻ Best Practice: cặp Không nên / Nên chạy thật (131 thẻ phát hành)', () => {
+describe('thẻ Best Practice: cặp Không nên / Nên chạy thật (132 thẻ phát hành)', () => {
   const runnable = released.filter((c) => c.pair.runtime !== 'none' && c.pair.runtime !== 'mingo' && c.pair.runtime !== 'dynoxide');
   it('mỗi thẻ "none" là check syntax; mọi thẻ chạy được là một câu mỗi bên (trang không có splitSql, nó nằm cạnh PGlite)', () => {
     for (const c of released) if (c.pair.runtime === 'none') expect([c.id, c.pair.check]).toEqual([c.id, 'syntax']);
@@ -194,8 +194,8 @@ describe('thẻ Best Practice MongoDB: cặp chạy thật trên mingo', () => {
     }
   };
   const mg = released.filter((c) => c.pair.runtime === 'mingo');
-  it('15 thẻ mingo, mọi thẻ MongoDB khác là cú pháp', () => {
-    expect(mg).toHaveLength(15);
+  it('16 thẻ mingo, mọi thẻ MongoDB khác là cú pháp', () => {
+    expect(mg).toHaveLength(16);
     for (const c of released.filter((x) => x.track === 'mongodb' && x.pair.runtime !== 'mingo')) expect([c.id, c.pair.runtime, c.pair.check]).toEqual([c.id, 'none', 'syntax']);
   });
   it.each(mg.map((c) => [c.id, c]))('%s: check của thẻ đúng trên mingo', async (_id, c) => {

@@ -19,10 +19,10 @@ const DIACRITIC = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽ�
 const spans = (s: string): string[] => [...s.matchAll(/`([^`]+)`/g)].map((m) => m[1]);
 
 describe('bank shape', () => {
-  it('180 questions, 12 take-homes, ids unique and matching engine/band; each file holds only its engine', () => {
-    expect(questions).toHaveLength(180);
+  it('190 questions, 12 take-homes, ids unique and matching engine/band; each file holds only its engine', () => {
+    expect(questions).toHaveLength(190);
     expect(takeHomes).toHaveLength(12);
-    expect(new Set([...questions, ...takeHomes].map((q) => q.id)).size).toBe(192);
+    expect(new Set([...questions, ...takeHomes].map((q) => q.id)).size).toBe(202);
     for (const [e, b] of Object.entries(banks)) for (const q of [...b.questions, ...b.takeHomes]) expect([q.id, q.engine]).toEqual([q.id, e]);
     const code = { postgres: 'pg', mongodb: 'mg', dynamodb: 'dy' } as const;
     for (const q of questions) expect(q.id.startsWith(`e-iv-${code[q.engine]}-${q.band}-`)).toBe(true);
@@ -54,7 +54,7 @@ describe('bank shape', () => {
 });
 
 describe('sets (design-v27 §2.2, bank header)', () => {
-  it('36 sets × 5 questions of one engine and band, exactly the ids the room lists', () => {
+  it('38 sets × 5 questions (v36: mg-senior-4, dy-senior-4) of one engine and band, exactly the ids the room lists', () => {
     expect([...new Set(questions.map((q) => q.set))].sort()).toEqual([...ALL_SETS].sort());
     for (const set of ALL_SETS) {
       const s = setOf(set)!;

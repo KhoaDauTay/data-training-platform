@@ -143,3 +143,12 @@
   after:
     vi: đo cardinality và tần suất của ứng viên shard key, và đoán truy vấn đi tới một shard hay mọi shard
     en: measure the cardinality and frequency of shard key candidates, and predict whether a query goes to one shard or every shard
+- id: multi-tenant
+  vi: Nhiều khách trong một cụm
+  en: Many tenants in one cluster
+  module: multi-tenant
+  level: L5
+  title: { vi: "Nhiều khách trong một cụm", en: "Many tenants in one cluster" }
+  after:
+    vi: chọn collection chung, database riêng hay cụm riêng cho từng người bán, và viết shard key cùng zone mở đầu bằng `tenantId`
+    en: choose a shared collection, an own database or an own cluster for each seller, and write a shard key and a zone that start with `tenantId`

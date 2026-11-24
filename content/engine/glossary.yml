@@ -2053,6 +2053,18 @@
   vi: "Thêm hậu tố (ngẫu nhiên hoặc tính được) vào partition key để rải ghi ra nhiều partition. Giá: đọc phải Query đủ mọi hậu tố rồi gộp."
   en: "Adding a suffix (random or calculated) to the partition key to spread writes over partitions. The price: reads must Query every suffix and merge."
   doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-partition-key-sharding.html"
+# v36 (L566): multi-tenant terms of the NoSQL lessons (e-dy-l4-16, e-mg-l5-12); docs on the engine's own site (E09)
+- id: hot-tenant
+  term: hot tenant
+  engines: [dynamodb]
+  level: L4
+  keep_en: false
+  vi_term: "khách nóng"
+  match: ["hot tenant", "khách nóng"]
+  avoid: "khách hot"
+  vi: "Một khách của bảng dùng chung có tải đủ lớn để chạm trần của một partition (1000 WCU, 3000 RCU mỗi giây). Chỉ khóa của khách đó cần hậu tố (write sharding); khách nhỏ giữ `TENANT#<id>`."
+  en: "A tenant of a shared table whose load is big enough to reach the ceiling of one partition (1000 WCU, 3000 RCU per second). Only that tenant's keys need a suffix (write sharding); small tenants keep `TENANT#<id>`."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-partition-key-sharding.html"
 - id: capacity-mode-on-demand-provisioned
   term: capacity mode (on-demand / provisioned)
   engines: [dynamodb]
@@ -2851,6 +2863,16 @@
   vi: "Đổi shard key của một collection đã shard bằng lệnh `reshardCollection`, chạy qua `mongos`."
   en: "Changing the shard key of a sharded collection with the `reshardCollection` command, run through `mongos`."
   doc: "https://www.mongodb.com/docs/manual/core/sharding-reshard-a-collection/"
+- id: zone-sharding
+  term: zone sharding
+  engines: [mongodb]
+  level: L5
+  keep_en: true
+  vi_term: "zone sharding"
+  avoid: "sharding theo vùng địa lý"
+  vi: "Gắn shard vào zone (`sh.addShardToZone`) và gán cho zone một khoảng shard key (`sh.updateZoneKeyRange`); khoảng phải chứa tiền tố shard key. Dùng để ghim một phần dữ liệu, ví dụ một người bán, lên shard chọn sẵn."
+  en: "Attaching shards to a zone (`sh.addShardToZone`) and giving the zone a range of the shard key (`sh.updateZoneKeyRange`); the range must include the shard key prefix. Used to pin part of the data, for example one seller, to chosen shards."
+  doc: "https://www.mongodb.com/docs/manual/core/zone-sharding/"
 - id: request
   term: request
   engines: [dynamodb]

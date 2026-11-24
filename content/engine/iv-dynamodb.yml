@@ -636,6 +636,78 @@ questions:
       - { vi: "Nhớ GSI/Streams và đo lại", en: "Remembers GSIs/Streams and re-measuring" }
     doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/capacity-mode.html
 
+  # ---------------- DynamoDB · senior, set 4: many tenants (v36, L565)
+  - id: e-iv-dy-senior-16
+    engine: dynamodb
+    band: senior
+    kind: diagnose
+    set: dy-senior-4
+    q: { vi: "Khách `C09` của cổng Cargo Query ghi 2.400 sự kiện mỗi giây lúc cao điểm, mỗi item 1,5 KB, tất cả vào partition key `TENANT#C09`. Tính WCU và số shard tối thiểu, rồi nói cách rải.", en: "Tenant `C09` of the Cargo Query portal writes 2,400 events per second at peak, each item 1.5 KB, all under the partition key `TENANT#C09`. Compute the WCU and the minimum shard count, then say how to spread it." }
+    exhibits:
+      - label: { vi: "Đầu vào", en: "Input" }
+        source: aws-rules
+        shown: "2400 writes/s, item = 1.5 KB; 1 WCU = one write of up to 1 KB; one partition: at most 1000 WCU/s"
+        calc:
+          - { expr: "Math.ceil(1.5) * 2400", expect: 4800 }
+          - { expr: "Math.ceil(4800 / 1000)", expect: 5 }
+    answer: { vi: "Ghi làm tròn lên bội 1 KB: 1,5 KB thành 2 WCU mỗi lần, 2.400 × 2 = 4.800 WCU mỗi giây. Một partition chịu tối đa 1000 WCU, nên cần ít nhất 5 shard, nên chọn dư (ví dụ 8) vì đổi số shard về sau phải ghi lại dữ liệu. Dùng hậu tố tính được, ví dụ `TENANT#C09#<n mod 8>` với `n` là số của mã sự kiện, để GetItem một sự kiện vẫn đi thẳng; đọc hết thì một Query mỗi shard. Chỉ khách lớn có hậu tố: một bảng hạng khách giữ số shard từng khách, khách nhỏ vẫn `TENANT#<id>`. Giảm kích thước item xuống dưới 1 KB cũng chia đôi số WCU.", en: "Writes round up to a multiple of 1 KB: 1.5 KB becomes 2 WCU per write, 2,400 × 2 = 4,800 WCU per second. One partition carries at most 1000 WCU, so at least 5 shards are needed, better with headroom (say 8) because changing the shard count later means rewriting data. Use a calculated suffix, for example `TENANT#C09#<n mod 8>` with `n` the event number, so a GetItem of one event still goes straight to it; reading everything is one Query per shard. Only the big tenant gets a suffix: a tenant tier table keeps each tenant's shard count, small tenants stay `TENANT#<id>`. Shrinking the item under 1 KB would also halve the WCU." }
+    rubric:
+      - { vi: "1,5 KB làm tròn thành 2 WCU, tổng 4.800", en: "1.5 KB rounds to 2 WCU, total 4,800" }
+      - { vi: "Ít nhất 5 shard, có chừa dư", en: "At least 5 shards, with headroom" }
+      - { vi: "Hậu tố tính được, chỉ cho khách lớn", en: "A calculated suffix, for the big tenant only" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-partition-key-sharding.html
+  - id: e-iv-dy-senior-17
+    engine: dynamodb
+    band: senior
+    kind: concept
+    set: dy-senior-4
+    q: { vi: "Chính sách IAM của khách dùng `ForAllValues:StringEquals` trên `dynamodb:LeadingKeys` bằng mã khách, nhưng một khách vẫn đọc được dữ liệu của khách khác. Hai nguyên nhân hay gặp là gì?", en: "The tenant IAM policy uses `ForAllValues:StringEquals` on `dynamodb:LeadingKeys` equal to the tenant id, yet one tenant still read another tenant's data. What are two common causes?" }
+    answer: { vi: "Một: chính sách cấp `dynamodb:Scan`. Scan không mang `dynamodb:LeadingKeys`, và `ForAllValues` đúng khi khóa điều kiện vắng mặt, nên Scan được phép và trả item của mọi khách. Sửa: thêm `\"Null\": {\"dynamodb:LeadingKeys\": \"false\"}` và bỏ Scan khỏi danh sách thao tác. Hai: một GSI có partition key không mở đầu bằng mã khách (ví dụ chỉ `status`): Query trên index đó gom item của nhiều khách. Mọi khóa, cả của GSI, phải mở đầu bằng mã khách. Thêm: khóa có hậu tố cần `StringLike` với mẫu tiền tố; lệnh theo lô và transaction được duyệt theo từng item.", en: "One: the policy grants `dynamodb:Scan`. A Scan carries no `dynamodb:LeadingKeys`, and `ForAllValues` is true when the condition key is absent, so the Scan is allowed and returns every tenant's items. Fix: add `\"Null\": {\"dynamodb:LeadingKeys\": \"false\"}` and drop Scan from the actions. Two: a GSI whose partition key does not start with the tenant id (for example `status` alone): a Query on that index gathers several tenants' items. Every key, GSI keys included, must start with the tenant id. Also: keys with a suffix need `StringLike` with a prefix pattern; batch calls and transactions are authorised item by item." }
+    rubric:
+      - { vi: "Scan và `ForAllValues` đúng khi khóa vắng", en: "Scan and `ForAllValues` true when the key is absent" }
+      - { vi: "Điều kiện `Null` và không cấp Scan", en: "The `Null` condition and no Scan grant" }
+      - { vi: "GSI không có tiền tố khách", en: "A GSI without the tenant prefix" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/specifying-conditions.html
+  - id: e-iv-dy-senior-18
+    engine: dynamodb
+    band: senior
+    kind: design
+    set: dy-senior-4
+    q: { vi: "Cổng Cargo Query có 3 khách doanh nghiệp cần backup, alarm và phạm vi sự cố riêng, cùng 4.000 khách nhỏ. Chọn bảng chung, bảng cho mỗi khách hay tài khoản riêng?", en: "The Cargo Query portal has 3 enterprise tenants that need their own backups, alarms and blast radius, plus 4,000 small tenants. Shared table, a table per tenant or separate accounts?" }
+    answer: { vi: "Khách nhỏ: một bảng chung, mọi khóa (cả GSI) mở đầu bằng `TENANT#<id>`, cách ly bằng `LeadingKeys` có `Null` và không cấp Scan, chi phí từng khách đo trong ứng dụng. Mỗi khách một bảng thì 4.000 bảng vượt quota ban đầu 2.500 bảng mỗi vùng (xin tăng được tới 10.000, quá nữa phải thêm tài khoản), và alarm, cài đặt nhân 4.000 lần. Ba khách doanh nghiệp: bảng riêng (hoặc tài khoản riêng nếu hợp đồng đòi) với cùng thiết kế khóa có tiền tố khách, để dời khách giữa hai hạng chỉ là chép item, không viết lại truy vấn. Tag mã khách lên các bảng riêng để báo cáo chi phí.", en: "Small tenants: one shared table, every key (GSIs included) starts with `TENANT#<id>`, isolation through `LeadingKeys` with `Null` and no Scan grant, each tenant's cost metered in the application. A table each would mean 4,000 tables, over the initial quota of 2,500 tables per Region (it can be raised to 10,000, beyond that you need more accounts), and alarms and settings multiplied 4,000 times. The three enterprise tenants: tables of their own (or accounts of their own if the contract demands it) with the same tenant-prefixed key design, so moving a tenant between the two tiers is an item copy, not a query rewrite. Tag the separate tables with the tenant id for cost reports." }
+    tradeoffs:
+      - { vi: "Bảng chung: rẻ và một bộ cài đặt, nhưng cách ly dựa vào khóa và IAM, và chi phí phải tự đo.", en: "Shared table: cheap and one set of settings, but isolation rests on keys and IAM, and cost must be metered by hand." }
+      - { vi: "Bảng hay tài khoản riêng: cách ly, backup và tag chi phí theo khách, nhưng chạm quota và nhân công vận hành.", en: "A table or account each: isolation, backups and cost tags per tenant, but it hits quotas and multiplies operations." }
+    rubric:
+      - { vi: "Bảng chung có tiền tố khách cho khách nhỏ", en: "A shared tenant-prefixed table for small tenants" }
+      - { vi: "Đúng quota 2.500 bảng mỗi vùng, tăng được tới 10.000", en: "The right quota: 2,500 tables per Region, up to 10,000" }
+      - { vi: "Cùng thiết kế khóa ở cả hai hạng", en: "The same key design in both tiers" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ServiceQuotas.html
+  - id: e-iv-dy-senior-19
+    engine: dynamodb
+    band: senior
+    kind: concept
+    set: dy-senior-4
+    q: { vi: "Phòng tài chính muốn biết mỗi khách của bảng chung `Portal` tốn bao nhiêu RCU/WCU mỗi tháng. Tag và CloudWatch có đủ không? Làm thế nào?", en: "Finance wants to know how many RCU/WCU each tenant of the shared `Portal` table costs per month. Are tags and CloudWatch enough? How do you do it?" }
+    answer: { vi: "Không đủ: tag chi phí gắn theo bảng (GSI theo tag của bảng), nên bảng chung là một dòng trên hóa đơn; số liệu CloudWatch như `ConsumedReadCapacityUnits` cũng theo bảng và index, không theo khách. Cách làm: mọi request gửi `ReturnConsumedCapacity`, ứng dụng ghi mã khách (lấy từ danh tính đã xác thực) cùng `ConsumedCapacity` vào nhật ký đo, rồi cộng theo khách theo tháng; phần lưu trữ ước theo kích thước item của khách. Contributor Insights giúp tìm khóa, tức khách, bị truy cập nhiều nhất, nhưng không thay cho sổ đo.", en: "Not enough: cost tags attach per table (GSIs take the table's tags), so the shared table is one bill line; CloudWatch metrics such as `ConsumedReadCapacityUnits` are also per table and index, not per tenant. The way: every request sends `ReturnConsumedCapacity`, the application logs the tenant id (from the authenticated identity) with the `ConsumedCapacity` in a metering log, then sums per tenant per month; storage is estimated from each tenant's item sizes. Contributor Insights helps find the most accessed keys, that is tenants, but does not replace the meter." }
+    rubric:
+      - { vi: "Tag và số liệu CloudWatch theo bảng, không theo khách", en: "Tags and CloudWatch metrics are per table, not per tenant" }
+      - { vi: "Đo `ConsumedCapacity` từng request kèm mã khách", en: "Meters each request's `ConsumedCapacity` with the tenant id" }
+      - { vi: "Mã khách từ danh tính đã xác thực", en: "The tenant id from the authenticated identity" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Tagging.html
+  - id: e-iv-dy-senior-20
+    engine: dynamodb
+    band: senior
+    kind: concept
+    set: dy-senior-4
+    q: { vi: "Khách `C04` rời cổng Cargo Query. Bảng chung, mọi khóa mở đầu bằng `TENANT#C04`. Xóa dữ liệu của khách đó thế nào, và vì sao không có \"DELETE WHERE PK LIKE\"?", en: "Tenant `C04` leaves the Cargo Query portal. Shared table, every key starts with `TENANT#C04`. How do you delete that tenant's data, and why is there no \"DELETE WHERE PK LIKE\"?" }
+    answer: { vi: "DynamoDB xóa theo khóa chính: không có lệnh xóa theo điều kiện hay theo tiền tố, và Query chỉ nhận phép bằng trên partition key. Cách làm: tạm dừng quyền ghi của khách, xuất dữ liệu (Query từng item collection `TENANT#C04`, cùng mọi partition key khác của khách như `TENANT#C04#<n>` nếu có hậu tố, ghi lại số item), kiểm bản xuất, rồi xóa bằng `BatchWriteItem` (tối đa 25 yêu cầu mỗi lần, gửi lại `UnprocessedItems`). Item trên GSI tự mất theo item gốc. Bảng hạng khách cho biết số shard để không sót partition nào. Nếu khách có bảng riêng thì `DeleteTable` sau khi backup. Dọn cả các kho khác (cache, phân tích) và giữ nhật ký kiểm toán.", en: "DynamoDB deletes by primary key: there is no delete by condition or by prefix, and a Query only takes equality on the partition key. The way: suspend the tenant's writes, export the data (Query each item collection `TENANT#C04`, plus every other partition key of the tenant such as `TENANT#C04#<n>` if it has a suffix, recording item counts), verify the export, then delete with `BatchWriteItem` (at most 25 requests per call, resend `UnprocessedItems`). GSI entries go away with their base items. The tenant tier table gives the shard count so no partition is missed. If the tenant has a table of its own, `DeleteTable` after a backup. Clean the other stores too (caches, analytics) and keep the audit trail." }
+    rubric:
+      - { vi: "Xóa theo khóa chính, Query chỉ phép bằng trên partition key", en: "Deletes by primary key, Query only takes equality on the partition key" }
+      - { vi: "Xuất và kiểm trước, rồi `BatchWriteItem` có gửi lại", en: "Export and verify first, then `BatchWriteItem` with resends" }
+      - { vi: "Không sót shard có hậu tố; dọn kho khác", en: "No suffixed shard missed; other stores cleaned" }
+    doc: https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_BatchWriteItem.html
+
   # ---------------- DynamoDB · staff
   - id: e-iv-dy-staff-01
     engine: dynamodb

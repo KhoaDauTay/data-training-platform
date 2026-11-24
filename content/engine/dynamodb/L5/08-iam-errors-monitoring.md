@@ -125,6 +125,7 @@ ConditionalCheckFailedException -> GetItem -> decide -> new write
 - Thử lại throttle và 5xx với backoff có ngẫu nhiên; lỗi 4xx thì sửa request.
 - Alarm trên throttle; Contributor Insights tìm khóa nóng.
 - Bật deletion protection và tạo backup trước khi xóa bảng.
+- `LeadingKeys` cho từng khách của bảng chung, và chi phí theo khách: `e-dy-l5-09`.
 
 # EN
 
@@ -207,3 +208,4 @@ ConditionalCheckFailedException -> GetItem -> decide -> new write
 - Retry throttling and 5xx with jittered backoff; fix the request on a 4xx.
 - Alarm on throttling; Contributor Insights finds hot keys.
 - Turn on deletion protection and take a backup before deleting a table.
+- `LeadingKeys` per tenant of a shared table, and cost per tenant: `e-dy-l5-09`.

@@ -99,6 +99,7 @@ Bản đồ chủ đề, mỗi dòng một lớp và các bài đào sâu lớp 
 - **Khóa** (chặn ghi sai): `e-ds-l2-06` · `e-ds-l2-07`
 - **Chính sách** (lưới khi câu quên lọc): `e-pg-l5-10` · `e-pg-l5-19` · `e-pg-l5-20` · `e-bp-s10` · `e-bp-x08`
 - **Vận hành** (khách rời đi, khách quá tải) và bài tổng hợp: `e-pg-l5-21` · `e-pg-l5-22` · `e-ds-l4-11`
+- **NoSQL** (khách nằm trong khóa): `e-mg-l3-19` · `e-mg-l5-12` · `e-bp-m39` · `e-dy-l3-14` · `e-dy-l4-16` · `e-dy-l5-09`
 
 Nhiều người nghĩ có một lớp là đủ. Thật ra chúng không thay nhau được: chính sách không kiểm khóa ngoại trỏ đi đâu, kiểm duy nhất và khóa ngoại cũng không đi qua chính sách, còn khóa thì không ngăn một câu đọc thiếu điều kiện. Silo và bridge đẩy phần lớn việc cô lập xuống hạ tầng; pool đặt nó vào dữ liệu, nên cần đủ cả ba.
 
@@ -181,6 +182,7 @@ The topic map, one row per layer with the lessons that go deep on it:
 - **Keys** (stop wrong writes): `e-ds-l2-06` · `e-ds-l2-07`
 - **Policies** (the net for a query that forgets its filter): `e-pg-l5-10` · `e-pg-l5-19` · `e-pg-l5-20` · `e-bp-s10` · `e-bp-x08`
 - **Operations** (a tenant leaves, a tenant overloads) and the capstone: `e-pg-l5-21` · `e-pg-l5-22` · `e-ds-l4-11`
+- **NoSQL** (the tenant inside the key): `e-mg-l3-19` · `e-mg-l5-12` · `e-bp-m39` · `e-dy-l3-14` · `e-dy-l4-16` · `e-dy-l5-09`
 
 Many people think one layer is enough. In fact they cannot replace each other: a policy does not check where a foreign key points, unique and foreign key checks do not go through the policy, and keys do not stop a query that reads without its condition. Silo and bridge push most isolation down into the infrastructure; a pool puts it into the data, so it needs all three.
 

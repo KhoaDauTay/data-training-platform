@@ -148,9 +148,9 @@ const nsBlocks = (l: EngineLesson, id: SectionId): DemoBlock[] => demoBlocks(l).
 const isTrap = (b: DemoBlock): boolean => b.mark === 'error' || b.mark === 'wrong';
 
 describe('Engine MongoDB/DynamoDB L1–L5: giải phẫu theo loại bài (R6, v30 thêm L1–L2)', () => {
-  it('đủ 132 bài (Mongo 71, Dynamo 61)', () => {
-    expect(nsAll.filter((x) => x.l.engine === 'mongodb').length).toBe(71);
-    expect(nsAll.filter((x) => x.l.engine === 'dynamodb').length).toBe(61);
+  it('đủ 137 bài (Mongo 73, Dynamo 64; v36 thêm mg L3-19, L5-12, dy L3-14, L4-16, L5-09)', () => {
+    expect(nsAll.filter((x) => x.l.engine === 'mongodb').length).toBe(73);
+    expect(nsAll.filter((x) => x.l.engine === 'dynamodb').length).toBe(64);
   });
 
   it.each(nsAll.map((x) => [x.l.id, x] as const))('%s: mục theo loại bài, thứ tự, độ dài, câu hỏi, nguồn', (_, { l, fm }) => {

@@ -61,6 +61,8 @@ describe('routes #/engine/terms and #/engine/interview (route.ts)', () => {
     expect(engineInterviewOf('#/engine/interview/e-iv-dy-th-4')).toEqual({ th: 'e-iv-dy-th-4' });
     expect(engineInterviewOf('#/engine/interview/xx-mid-2')).toEqual({});
     expect(engineInterviewOf('#/engine/interview/pg-mid-9')).toEqual({}); // 3 sets per band
+    expect(engineInterviewOf('#/engine/interview/mg-senior-4')).toEqual({ set: 'mg-senior-4' }); // v36: one extra senior set for MongoDB/DynamoDB
+    expect(engineInterviewOf('#/engine/interview/pg-senior-4')).toEqual({});
     expect(engineInterviewOf('#/engine/interviews')).toBeUndefined();
     expect(engineInterviewOf('#/learn/interview')).toBeUndefined();
     expect(engineInterviewHash('mg-staff-3')).toBe('#/engine/interview/mg-staff-3');

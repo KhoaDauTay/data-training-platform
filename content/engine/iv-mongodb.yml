@@ -682,6 +682,78 @@ questions:
       - { vi: "Kết thúc bằng validation và bỏ code cũ", en: "Ends with validation and removing old code" }
     doc: https://www.mongodb.com/docs/manual/data-modeling/design-patterns/
 
+  # ---------------- MongoDB · senior, set 4: many tenants (v36, L565)
+  - id: e-iv-mg-senior-16
+    engine: mongodb
+    band: senior
+    kind: design
+    set: mg-senior-4
+    q: { vi: "Chợ Lồng Đèn có 3 người bán lớn cần quyền tách chặt và 4.000 người bán nhỏ cùng dạng dữ liệu, số người bán tăng mỗi tháng. Đặt dữ liệu của họ thế nào trong MongoDB?", en: "Lantern Market has 3 big sellers that need strictly split access and 4,000 small sellers with the same data shape, with new sellers every month. How do you place their data in MongoDB?" }
+    answer: { vi: "Người bán nhỏ: một collection chung, mọi tài liệu và truy vấn có `tenantId`, mọi index kép mở đầu bằng `tenantId`; shard theo `{ tenantId: 1, createdAt: 1 }` khi cần. Database cho mỗi người bán hợp với số ít và ổn định (tới vài trăm): 4.000 database nhân số collection và index sẽ vượt xa mức Atlas khuyên (dưới 1000 tệp dữ liệu mỗi nút). Ba người bán lớn: database riêng trên cùng cụm nếu chỉ cần quyền và sao lưu riêng; cụm (replica set) riêng với thông tin đăng nhập riêng nếu cần cách ly thật, vì mọi mô hình trong một cụm chung oplog. Không làm collection cho mỗi người bán trong một database. Giữ cùng dạng tài liệu có `tenantId` ở mọi nơi để dời một người bán giữa các hạng chỉ là chép dữ liệu.", en: "Small sellers: one shared collection, every document and query has `tenantId`, every compound index starts with `tenantId`; shard on `{ tenantId: 1, createdAt: 1 }` when needed. A database per seller fits a small, stable number (up to a few hundred): 4,000 databases times their collections and indexes would go far beyond what Atlas advises (under 1000 data files per node). The three big sellers: an own database on the same cluster if they only need their own access and backups; an own cluster (replica set) with its own credentials if they need real isolation, since every model inside one cluster shares the oplog. Never a collection per seller inside one database. Keep the same document shape with `tenantId` everywhere, so moving a seller between tiers is only a data copy." }
+    tradeoffs:
+      - { vi: "Collection chung: rẻ, một lần tạo index, nhưng bảo trì chạm mọi người bán và người bán lớn làm lệch tải.", en: "Shared collection: cheap, indexes built once, but maintenance touches every seller and a big seller skews the load." }
+      - { vi: "Cụm riêng: cách ly và sao lưu theo người bán, nhưng chi phí và công vận hành nhân theo số cụm.", en: "Own cluster: isolation and backups per seller, but cost and operations multiply with the number of clusters." }
+    rubric:
+      - { vi: "Collection chung có `tenantId` cho người bán nhỏ", en: "A shared collection with `tenantId` for small sellers" }
+      - { vi: "Nêu giới hạn tệp dữ liệu của database cho mỗi tenant", en: "Names the data-file limit of a database per tenant" }
+      - { vi: "Cách ly thật cần cụm riêng; tránh collection cho mỗi tenant", en: "Real isolation needs an own cluster; avoids a collection per tenant" }
+    doc: https://www.mongodb.com/docs/atlas/build-multi-tenant-arch/
+  - id: e-iv-mg-senior-17
+    engine: mongodb
+    band: senior
+    kind: concept
+    set: mg-senior-4
+    q: { vi: "Trong collection `orders` dùng chung, vì sao `tenantId` nên đứng đầu mọi index kép, dù ESR coi nó chỉ là một phép bằng như `status`?", en: "In the shared `orders` collection, why should `tenantId` lead every compound index, even though ESR treats it as just another equality like `status`?" }
+    answer: { vi: "Mọi truy vấn của trang người bán đều có `tenantId`, nên index mở đầu bằng nó luôn dùng được, và nhờ quy tắc tiền tố, `{ tenantId: 1, status: 1, createdAt: -1 }` phục vụ cả `find({ tenantId })`, `find({ tenantId, status })` lẫn phần sắp xếp. Khóa của một người bán nằm liền nhau, nên đoạn quét không đi qua người bán khác. Cùng thứ tự ấy cho phép shard key `{ tenantId: 1, ... }` và zone theo người bán. Phần sau `tenantId` vẫn theo ESR.", en: "Every seller-page query has `tenantId`, so an index that starts with it is always usable, and by the prefix rule `{ tenantId: 1, status: 1, createdAt: -1 }` serves `find({ tenantId })`, `find({ tenantId, status })` and the sort. One seller's keys sit together, so the scanned range never crosses another seller. The same order allows a shard key `{ tenantId: 1, ... }` and zones per seller. The part after `tenantId` still follows ESR." }
+    rubric:
+      - { vi: "Quy tắc tiền tố: index phục vụ truy vấn chỉ có `tenantId`", en: "Prefix rule: the index serves queries with `tenantId` alone" }
+      - { vi: "Khóa của một tenant liền nhau, không quét tenant khác", en: "One tenant's keys together, no scan across tenants" }
+      - { vi: "Nối tới shard key và zone", en: "Links it to the shard key and zones" }
+    doc: https://www.mongodb.com/docs/manual/core/indexes/index-types/index-compound/
+  - id: e-iv-mg-senior-18
+    engine: mongodb
+    band: senior
+    kind: diagnose
+    set: mg-senior-4
+    q: { vi: "Trang \"Đơn đang mở\" nhanh với mọi người bán trừ `S07`, người bán lớn nhất. Đọc hai dòng nhật ký truy vấn chậm (minh họa). Chẩn đoán và sửa.", en: "The \"Open orders\" page is fast for every seller except `S07`, the biggest one. Read the two slow-query log lines (illustrative). Diagnose and fix." }
+    exhibits:
+      - label: { vi: "find({ tenantId: <id>, status: 'open' }).sort({ createdAt: -1 }).limit(20), index { tenantId: 1, createdAt: -1 }", en: "find({ tenantId: <id>, status: 'open' }).sort({ createdAt: -1 }).limit(20), index { tenantId: 1, createdAt: -1 }" }
+        source: illustrative
+        shown: |-
+          S12: planSummary: 'IXSCAN { tenantId: 1, createdAt: -1 }', keysExamined: 24, docsExamined: 24, nreturned: 20
+          S07: planSummary: 'IXSCAN { tenantId: 1, createdAt: -1 }', keysExamined: 310000, docsExamined: 310000, nreturned: 20
+    answer: { vi: "Cùng hình dạng truy vấn, cùng index; khác nhau ở dữ liệu. Index chỉ có `tenantId` rồi `createdAt`, nên `status` được lọc sau khi đọc tài liệu. Người bán nhỏ gần như mọi đơn mới đều đang mở, nên 24 khóa là đủ 20 đơn; `S07` có rất ít đơn mở giữa hàng trăm nghìn đơn đã xong, nên phải đi 310.000 khóa. Sửa: index theo ESR `{ tenantId: 1, status: 1, createdAt: -1 }`, để `status` thu hẹp khoảng quét. Nhìn số đo theo từng tenant, không chỉ trung bình: một tenant lớn có phân bố dữ liệu khác hẳn. Nếu `S07` còn lớn lên, cân nhắc zone để đưa nó lên shard riêng.", en: "Same query shape, same index; the difference is the data. The index has only `tenantId` then `createdAt`, so `status` is filtered after reading the documents. For a small seller almost every recent order is open, so 24 keys give the 20 orders; `S07` has very few open orders among hundreds of thousands of finished ones, so it walks 310,000 keys. Fix: an ESR index `{ tenantId: 1, status: 1, createdAt: -1 }`, so `status` narrows the scanned range. Look at metrics per tenant, not only averages: a big tenant has a very different data distribution. If `S07` keeps growing, consider a zone that moves it to its own shard." }
+    rubric:
+      - { vi: "Đọc tỉ lệ 310.000/20 so với 24/20", en: "Reads the 310,000/20 ratio against 24/20" }
+      - { vi: "Giải thích `status` bị lọc sau index", en: "Explains `status` is filtered after the index" }
+      - { vi: "Đề xuất index ESR có `status`", en: "Proposes the ESR index with `status`" }
+      - { vi: "Theo dõi số đo theo tenant / zone cho tenant lớn", en: "Per-tenant metrics / a zone for the big tenant" }
+    doc: https://www.mongodb.com/docs/manual/tutorial/equality-sort-range-guideline/
+  - id: e-iv-mg-senior-19
+    engine: mongodb
+    band: senior
+    kind: concept
+    set: mg-senior-4
+    q: { vi: "Collection `orders` shard theo `{ tenantId: 1, createdAt: 1 }`. Làm sao đặt đơn của ba người bán hạng vàng lên shard phần cứng mạnh, và có gì giới hạn?", en: "Collection `orders` is sharded on `{ tenantId: 1, createdAt: 1 }`. How do you place the orders of three gold-tier sellers on the powerful shards, and what limits apply?" }
+    answer: { vi: "Zone sharding: `sh.addShardToZone` gắn các shard mạnh vào zone `GOLD`, rồi `sh.updateZoneKeyRange` cho mỗi người bán một khoảng từ `{ tenantId: <id>, createdAt: MinKey }` tới `{ tenantId: <id>, createdAt: MaxKey }`. Balancer dời chunk trong khoảng đó về shard của zone. Giới hạn: khoảng phải chứa tiền tố shard key (không tạo được khoảng chỉ trên `createdAt`), các khoảng không chồng nhau, cận trên không tính; zone không hỗ trợ time series collection; với shard key có trường hashed, khoảng nằm trên giá trị băm nên khó đoán. Vì thế `tenantId` phải đứng đầu shard key ngay từ đầu.", en: "Zone sharding: `sh.addShardToZone` attaches the powerful shards to a `GOLD` zone, then `sh.updateZoneKeyRange` gives each seller a range from `{ tenantId: <id>, createdAt: MinKey }` to `{ tenantId: <id>, createdAt: MaxKey }`. The balancer moves the chunks in that range to the zone's shards. Limits: the range must include the shard key prefix (no range on `createdAt` alone), ranges cannot overlap, the upper bound is excluded; zones do not support time series collections; with a hashed shard key field, ranges sit on hashed values and are hard to predict. That is why `tenantId` must lead the shard key from the start." }
+    rubric:
+      - { vi: "Đúng hai lệnh: gắn shard vào zone, đặt khoảng", en: "The two commands: shard to zone, set the range" }
+      - { vi: "Khoảng phải chứa tiền tố shard key", en: "The range must include the shard key prefix" }
+      - { vi: "Nêu ít nhất một giới hạn khác (chồng khoảng, time series, hashed)", en: "Names at least one other limit (overlap, time series, hashed)" }
+    doc: https://www.mongodb.com/docs/manual/core/zone-sharding/
+  - id: e-iv-mg-senior-20
+    engine: mongodb
+    band: senior
+    kind: concept
+    set: mg-senior-4
+    q: { vi: "Người bán `S03` rời Chợ Lồng Đèn và yêu cầu xóa dữ liệu. Collection chung, có index mở đầu bằng `tenantId`. Bạn làm theo thứ tự nào?", en: "Seller `S03` leaves Lantern Market and asks for its data to be deleted. Shared collections, with indexes that start with `tenantId`. In what order do you work?" }
+    answer: { vi: "Tạm dừng quyền ghi của người bán (giữ dữ liệu), xuất mọi collection có `tenantId: \"S03\"` kèm số tài liệu để đối chiếu, kiểm bản xuất, rồi mới xóa. Xóa bằng `deleteMany({ tenantId: \"S03\" })` theo từng collection, chia lô nếu lớn để không dồn tải lên oplog và replica; index mở đầu bằng `tenantId` giúp tìm đúng tài liệu mà không quét cả collection. Mọi chỗ khác cũng phải xóa: cache, chỉ mục tìm kiếm, bản sao phân tích, tệp đính kèm. Nhật ký kiểm toán giữ lại theo chính sách. Với database cho mỗi người bán, bước xóa là `dropDatabase` sau khi đã xuất.", en: "Suspend the seller's writes (keep the data), export every collection with `tenantId: \"S03\"` with document counts to reconcile, check the export, and only then delete. Delete with `deleteMany({ tenantId: \"S03\" })` per collection, in batches if large so the oplog and replicas are not flooded; the indexes that start with `tenantId` find the right documents without scanning the collection. Every other store must be cleaned too: caches, search indexes, analytics copies, attachments. The audit trail is kept by policy. With a database per seller, the delete step is `dropDatabase` after the export." }
+    rubric:
+      - { vi: "Thứ tự: dừng, xuất, kiểm, rồi mới xóa", en: "Order: suspend, export, verify, then delete" }
+      - { vi: "`deleteMany` theo `tenantId`, chia lô", en: "`deleteMany` by `tenantId`, in batches" }
+      - { vi: "Nhớ các kho khác và nhật ký kiểm toán", en: "Remembers other stores and the audit trail" }
+    doc: https://www.mongodb.com/docs/manual/reference/method/db.collection.deleteMany/
+
   # ---------------- MongoDB · staff
   - id: e-iv-mg-staff-01
     engine: mongodb

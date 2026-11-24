@@ -192,6 +192,7 @@ Bước 1 đo `country`. Bước 2 so `country` với `customerId` bằng `$face
 - Hai `$group` nối nhau đo được cả hai số; `$facet` so nhiều ứng viên một lần.
 - Nhiều giá trị chưa đủ: khóa luôn tăng vẫn dồn ghi vào một chunk.
 - Khóa kép tăng cardinality cho trường đầu ít giá trị.
+- Shard key cho nhiều người bán mở đầu bằng `tenantId`: `e-mg-l5-12`.
 
 # EN
 
@@ -287,3 +288,4 @@ Step 1 measures `country`. Step 2 compares `country` with `customerId` using `$f
 - Two `$group` stages in a row measure both numbers; `$facet` compares several candidates at once.
 - Many values is not enough: an ever-increasing key still sends writes to one chunk.
 - A compound key raises the cardinality of a leading field with few values.
+- A shard key for many sellers starts with `tenantId`: `e-mg-l5-12`.

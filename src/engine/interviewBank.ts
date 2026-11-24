@@ -23,12 +23,15 @@ export const SET_MINUTES: Record<Band, number> = { junior: 15, mid: 20, senior: 
 /** A question scored below this share of its rubric comes back for review (design-v27 Q9). */
 export const PASS = 0.6;
 
-export const setsOf = (e: EngineId, b: Band): string[] => Array.from({ length: SETS_PER_BAND }, (_, i) => `${CODE[e]}-${b}-${i + 1}`);
+/** v36 (L565): a fourth senior set for MongoDB and DynamoDB (multi-tenant questions); every other engine/band keeps 3. */
+const EXTRA_SETS: Partial<Record<string, number>> = { 'mg-senior': 1, 'dy-senior': 1 };
+const setCount = (code: string, b: string): number => SETS_PER_BAND + (EXTRA_SETS[`${code}-${b}`] ?? 0);
+export const setsOf = (e: EngineId, b: Band): string[] => Array.from({ length: setCount(CODE[e], b) }, (_, i) => `${CODE[e]}-${b}-${i + 1}`);
 export const ALL_SETS: string[] = (['postgres', 'mongodb', 'dynamodb'] as const).flatMap((e) => BANDS.flatMap((b) => setsOf(e, b)));
 /** `pg-mid-2` → its engine and band; undefined for anything else. */
 export function setOf(id: string): { engine: EngineId; band: Band; n: number } | undefined {
   const m = /^(pg|mg|dy)-(junior|mid|senior|staff)-([1-9])$/.exec(id);
-  return m && +m[3] <= SETS_PER_BAND ? { engine: ENGINE_OF[m[1]], band: m[2] as Band, n: +m[3] } : undefined;
+  return m && +m[3] <= setCount(m[1], m[2]) ? { engine: ENGINE_OF[m[1]], band: m[2] as Band, n: +m[3] } : undefined;
 }
 /** The engine of a question or take-home id (`e-iv-pg-…`). */
 export const engineOfId = (id: string): EngineId | undefined => ENGINE_OF[/^e-iv-(pg|mg|dy)-/.exec(id)?.[1] ?? ''];
