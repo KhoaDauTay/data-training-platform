@@ -132,7 +132,7 @@ RETURNING merge_action(), s.sku;
 DELETE FROM stock WHERE sku = 'E';
 ```
 
-- `COPY t TO 'file'` / `COPY (query) TO 'file'` / `COPY t FROM 'file'` move rows in bulk; `FORMAT csv` with `HEADER`, `DELIMITER`, `NULL 'NA'`, `FORCE_QUOTE`. The file is on the **server** and needs superuser or `pg_read_server_files` / `pg_write_server_files`; a client uses `COPY … TO STDOUT` / `FROM STDIN` (psql's `\copy`). One bad line aborts the whole `COPY`; in CSV an unquoted empty field is NULL, `""` is an empty string (https://www.postgresql.org/docs/18/sql-copy.html).
+- `COPY t TO 'file'` / `COPY (query) TO 'file'` / `COPY t FROM 'file'` move rows in bulk; `FORMAT csv` with `HEADER`, `DELIMITER`, `NULL 'NA'`, `FORCE_QUOTE`. The file is on the **server** and needs superuser or `pg_read_server_files` / `pg_write_server_files`; a client uses `COPY … TO STDOUT` / `FROM STDIN` (psql's `\copy`). By default one bad line aborts the whole `COPY` (PostgreSQL 17+: `ON_ERROR ignore` skips rows whose values fail type input); in CSV an unquoted empty field is NULL, `""` is an empty string (https://www.postgresql.org/docs/18/sql-copy.html).
 
 ```sql
 -- expect: [["3","2"]]

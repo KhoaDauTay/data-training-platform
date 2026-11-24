@@ -12,7 +12,7 @@ Nhánh `v32-content` (từ `main` ae476ed). Quyết định: L520–L529 trong `
 | `e-ds-l4-07` | Thiết kế CSDL L4, mô-đun mới `split` | lab, 4 bước | tách bảng theo cột, bảng 1:1, ngưỡng TOAST ~2 KB, `DROP COLUMN` + `VACUUM FULL` | catalog, `after:`, dòng |
 | `a11` (`g-a11-1..4`) | General · Nâng cao nhóm A | nút `in`: bài học + 4 drill | `TABLESAMPLE BERNOULLI/SYSTEM … REPEATABLE`, đổi chác với `ORDER BY random() LIMIT`, ước lượng nhân 100/p | theo dòng (cùng hạt giống → cùng mẫu) |
 
-Mọi bài Engine theo giải phẫu 8 mục (Mở bài, Ý chính, Cú pháp, Ví dụ, Lỗi hay gặp, Thực hành, câu hỏi có `trap`, Tóm tắt), VI rồi `# EN`, nguồn chính là tài liệu PostgreSQL 18. Mục 6: ba bài Thiết kế ngắn nhất thêm một đoạn Ý chính (`e-ds-l4-05` 453 → 560 từ, `e-ds-l5-01` 427 → 579, `e-ds-l5-03` 413 → 522).
+Mọi bài Engine theo giải phẫu 8 mục (Mở bài, Ý chính, Cú pháp, Ví dụ, Lỗi hay gặp, Thực hành, câu hỏi có `trap`, Tóm tắt), VI rồi `# EN`, nguồn chính là tài liệu PostgreSQL 18. Mục 6: ba bài Thiết kế ngắn nhất thêm một đoạn Ý chính (`e-ds-l4-05` 453 → 560 từ, `e-ds-l5-01` 427 → 571, `e-ds-l5-03` 413 → 522).
 
 Điểm trung thực (L524, L525): `COPY` ra/vào file chạy thật trong PGlite (thư mục `/tmp` trong bộ nhớ của tab); `STDOUT`/`STDIN`/`\copy` chỉ nói bằng chữ; `COPY … PROGRAM` không có trong khối chạy được (treo PGlite). `ORDER BY random()` không chấm được nên chỉ giải thích; drill `a11` chấm theo dòng nhờ `REPEATABLE` (lệch với "chấm hình dạng" của route v24, ghi ở L525).
 
@@ -29,7 +29,7 @@ Mọi bài Engine theo giải phẫu 8 mục (Mở bài, Ý chính, Cú pháp, V
 | dbms | 87 | 0 | 0 | 4 |
 | **Tổng** | **507 → 515** | **8 → 1** | **1 → 0** | 126 |
 
-Dòng `partial` còn lại: SQL "Cursor Functions" (`@@CURSOR_*` của SQL Server; Q7 không dạy phương ngữ; cursor Postgres có ở `e-pg-l2-19`). 9 dòng đổi, đọc hết diff của `kb:gen`.
+Dòng `partial` còn lại: SQL "Cursor Functions" (`@@CURSOR_*` của SQL Server; Q7 không dạy phương ngữ; cursor Postgres có ở `e-pg-l2-19`). 8 dòng tutorial đổi (cộng ghi chú A4 ở phần đề xuất), đọc hết diff của `kb:gen`.
 
 ## 3. Kiểm (luật user: không e2e, không chạy cả bộ test)
 
@@ -42,6 +42,7 @@ Dòng `partial` còn lại: SQL "Cursor Functions" (`@@CURSOR_*` của SQL Serve
 | `tests/perfGateEngine.test.ts` | 115/115, không thêm `ALLOW` |
 | `tests/general.test.ts` | 1200/1200 (29 nút) |
 | `tests/noDeadEnds.test.ts`, `sqlWords`, `frame`, `bpLint`, `i18n`, `engineCore` | 10, 6, 15, 17, 20, 30, đều qua |
+| sau sửa cuối: `perfGate` 22, `fullLesson` 130, `lessons` 264, `sqlRoute` 12, `writeDrill` 22, `practice` 25, `placement` 31, `learn` 13, `mastery` 10, `why` 7, `blanks` 5, `contentJson` 4, `frameFill` 8, `engineCompare` 9, `engineFull` 9, `engineGlossary` 20, `engineInterview` 38, `enginePredict` 30, `engineNosql` 9, `engineDesignAxe` 9, `bestContent` 228, `mongoPath` 217, `interview` 234, `i18nTemplateKeys` 4; `node scripts/check-design.mjs L4` sạch | đều qua (`blind` tự bỏ qua); không chạy `axe`/`axeProgress` (jsdom nặng, CI chạy) |
 | thử tạm (đã xóa): mọi bước mới qua bằng Solution, trượt với `SELECT 1`; bản nối chuỗi, `customer_id + 0`, `SET LOCAL`, thiếu `NULL 'NA'` trượt; `%L`, `quote_ident`, `16MB` qua | 19/19 |
 | `npm run build` + `node scripts/check-budget.mjs` | mọi nhóm ok; `engineLesson` lớn nhất 7/8 KB (bài mới 6,0–6,7 KB gz), `generalAdv` 46/50, main 311/500 |
 | `~/.claude/skills/sql/scripts/run.mjs` trên 4 file kiến thức | 85 khối, 0 lỗi |

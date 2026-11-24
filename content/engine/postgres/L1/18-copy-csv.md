@@ -92,7 +92,7 @@ Kế toán xin danh sách đơn đã trả dưới dạng file mở được b�
 
 Nhiều người nghĩ `COPY … TO 'file'` ghi file lên máy mình. Thật ra tên file là đường dẫn trên máy chủ database, do tiến trình server đọc ghi, và chỉ superuser hoặc vai trò có `pg_read_server_files` / `pg_write_server_files` mới được dùng. Từ máy khách thì dùng `COPY … TO STDOUT` / `FROM STDIN`; lệnh `\copy` của psql làm đúng việc đó. Trong lab này server là PGlite chạy trong tab, nên `/tmp` là bộ nhớ của tab; `pg_read_file` đọc lại file để bạn thấy nội dung. Phần "Dữ liệu của tôi" ở Sandbox cũng nạp CSV bằng `COPY … FROM`.
 
-Cách nạp an toàn: chép vào bảng tạm cùng cột, kiểm, rồi `INSERT … SELECT` sang bảng chính. Một dòng hỏng làm cả lệnh `COPY` dừng, không dòng nào vào bảng.
+Cách nạp an toàn: chép vào bảng tạm cùng cột, kiểm, rồi `INSERT … SELECT` sang bảng chính. Mặc định một dòng hỏng làm cả lệnh `COPY` dừng và không dòng nào vào bảng; từ PostgreSQL 17, `ON_ERROR ignore` bỏ qua các dòng có giá trị sai kiểu, nhưng khi đó bạn phải tự đếm dòng nào bị bỏ.
 
 ## Cú pháp
 
@@ -198,7 +198,7 @@ Accounting asks for the list of paid orders as a file they can open in Excel, an
 
 Many people think `COPY … TO 'file'` writes the file onto their own machine. In fact the file name is a path on the database server, read and written by the server process, and only a superuser or a role with `pg_read_server_files` / `pg_write_server_files` may use it. From a client use `COPY … TO STDOUT` / `FROM STDIN`; psql's `\copy` does exactly that. In this lab the server is PGlite running in the tab, so `/tmp` is the tab's memory; `pg_read_file` reads the file back so you can see it. The Sandbox's "My data" section also loads CSV with `COPY … FROM`.
 
-The safe way to load: copy into a staging table with the same columns, check it, then `INSERT … SELECT` into the main table. One bad line stops the whole `COPY` command, and no row goes in.
+The safe way to load: copy into a staging table with the same columns, check it, then `INSERT … SELECT` into the main table. By default one bad line stops the whole `COPY` command and no row goes in; since PostgreSQL 17, `ON_ERROR ignore` skips rows with values of the wrong type, but then you have to count the skipped rows yourself.
 
 ## Syntax
 
