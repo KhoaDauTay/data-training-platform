@@ -78,8 +78,15 @@ const setTips = (f: (p: BpPref) => Partial<BpPref>): void => {
 };
 
 // ---- small text helpers (./content's blocksOf is engineView's: importing it would make a shared chunk)
+/** v38 R3 (R3-10, L597): a lesson id in a card's prose (`e-ds-l4-09`) links to that lesson by its title, styled like engineView's xrefs. */
+function idLink(id: string): HTMLElement | null {
+  if (!/^e-(pg|mg|dy|ds)-l[1-5]-\d\d$/.test(id)) return null;
+  const fm = Object.values(lessonsMeta).map((x) => x.fm as { id?: string; engine?: string; level?: string; title?: string; title_en?: string }).find((x) => x.id === id);
+  return fm?.engine && fm.level ? d.h('a', { href: d.engineHash(fm.engine, fm.level, id), 'data-xref': '', class: 'font-semibold text-accent-ink underline decoration-1 underline-offset-[3px] hover:decoration-2' },
+    (lang() === 'vi' ? fm.title : fm.title_en) ?? id, d.icon('arrowRight', 'ml-0.5 inline size-3.5 align-[-2px]')) : null;
+}
 function inline(text: string): (Node | string)[] {
-  return text.split(/(`[^`\n]+`)/).filter(Boolean).flatMap((p) => (p.length > 1 && p.startsWith('`') && p.endsWith('`') ? [d.h('code', { class: '[overflow-wrap:anywhere]' }, p.slice(1, -1))]
+  return text.split(/(`[^`\n]+`)/).filter(Boolean).flatMap((p) => (p.length > 1 && p.startsWith('`') && p.endsWith('`') ? [idLink(p.slice(1, -1)) ?? d.h('code', { class: '[overflow-wrap:anywhere]' }, p.slice(1, -1))]
     : p.split(/(\*\*[^*\n]+\*\*)/).filter(Boolean).map((q) => (q.length > 4 && q.startsWith('**') && q.endsWith('**') ? d.h('strong', {}, q.slice(2, -2)) : q))));
 }
 function prose(text: string): HTMLElement {
@@ -114,7 +121,8 @@ function keepFocus(): void {
 }
 
 /** v23 (L299) on Best Practice: a source reads as its title (engineView's sourceTitle, passed in), the URL stays the href. */
-const srcLink = (u: string, title?: string): HTMLElement => d.h('a', { href: u, target: '_blank', rel: 'noopener noreferrer', title: u, class: 'inline-flex items-center gap-1.5' },
+// v38 R3 (R3-06, L595): accent ink and underline like every other link
+const srcLink = (u: string, title?: string): HTMLElement => d.h('a', { href: u, target: '_blank', rel: 'noopener noreferrer', title: u, class: 'inline-flex items-center gap-1.5 font-semibold text-accent-ink underline decoration-1 underline-offset-[3px] hover:decoration-2' },
   d.icon('external', 'size-4 shrink-0'), main.sourceTitle(u, title));
 
 // ---- pages
@@ -477,7 +485,7 @@ function cardPage(c: BpCard): HTMLElement {
       ...links.map(([label, ...kids]) => h('p', { class: 'm-0 flex flex-wrap items-center gap-2 text-body-sm' }, h('span', { class: 'text-muted' }, `${label}:`), ...kids))) : null,
     h('section', { class: 'flex flex-col gap-2', 'aria-labelledby': 'bp-src' },
       h('h2', { id: 'bp-src', class: 'm-0 text-body font-bold' }, bt('sources')),
-      h('ul', { class: 'm-0 list-disc space-y-1 pl-5 text-body-sm' }, ...c.sources.map((u) => h('li', {}, srcLink(u, c.sourceTitles?.[u])))),
+      h('ul', { class: 'm-0 list-none space-y-1 p-0 text-body-sm' }, ...c.sources.map((u) => h('li', {}, srcLink(u, c.sourceTitles?.[u])))),
       h('p', { class: 'm-0 text-caption text-muted' }, bt('verified', { version: c.verified.version, date: c.verified.date }))),
     h('nav', { class: cls.cx(cls.CARD, 'flex flex-wrap items-center justify-end gap-2 p-4'), 'aria-label': t.title[lang()] },
       prev ? h('a', { href: rt.hash(c.track, prev.id), class: cls.cx(cls.BTN_GHOST, 'inline-flex items-center gap-1 px-4 py-2 no-underline'), title: prev.title[lang()] }, d.icon('chevronLeft', 'size-4'), bt('prev')) : null,

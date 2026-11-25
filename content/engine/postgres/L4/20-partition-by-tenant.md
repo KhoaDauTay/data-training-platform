@@ -52,25 +52,25 @@ lab:
 quiz:
   - q: { vi: "Tình huống của `e-pg-l4-08`: 90 % câu hỏi là \"khách X trong 30 ngày qua\" và dữ liệu quá 13 tháng phải xóa. Khóa phân vùng nào?", en: "The `e-pg-l4-08` scenario: 90% of queries are \"tenant X over the last 30 days\" and data older than 13 months must be deleted. Which partition key?" }
     options:
-      - { vi: "LIST theo khách, mỗi khách một phân vùng", en: "LIST by tenant, one partition per tenant" }
-      - { vi: "RANGE theo tháng, cộng index `(tenant_id, created_at)`", en: "RANGE by month, plus an index `(tenant_id, created_at)`" }
-      - { vi: "HASH theo khách, chia đều thành 16 phần", en: "HASH on the tenant, split evenly into 16" }
+      - { vi: "LIST theo khách, mỗi khách một phân vùng riêng", en: "LIST by tenant, one partition for each tenant" }
+      - { vi: "RANGE theo tháng + index `(tenant_id, created_at)`", en: "RANGE by month + an index `(tenant_id, created_at)`" }
+      - { vi: "HASH theo khách, chia đều thành 16 phân vùng", en: "HASH on the tenant, split evenly into 16 parts" }
     answer: 1
     trap: 0
     why: { vi: "Nghe hợp lý vì câu nào cũng lọc theo khách, nhưng ở đây việc xóa theo thời gian mới cần phân vùng: `DROP` một tháng thay vì `DELETE` hàng triệu dòng. Phần lọc khách do index lo. Bài này không trái với `e-pg-l4-08`: phân vùng theo khách chỉ đáng khi vài khách cần được tách, chuyển đi hay xóa nguyên khối.", en: "It sounds right because every query filters by tenant, but here time-based deletion is what needs partitions: `DROP` a month instead of a `DELETE` of millions of rows. The index handles the tenant filter. This lesson does not contradict `e-pg-l4-08`: partitioning by tenant only pays off when a few tenants must be isolated, moved or deleted as a whole." }
   - q: { vi: "2.000 người bán; 3 người chiếm 60 % số dòng, và một trong ba sẽ chuyển sang server riêng quý sau. Thiết kế nào?", en: "2,000 sellers; 3 of them hold 60% of the rows, and one of the three moves to its own server next quarter. Which design?" }
     options:
-      - { vi: "HASH theo `tenant_id` với 16 phân vùng", en: "HASH on `tenant_id` with 16 partitions" }
+      - { vi: "HASH theo `tenant_id` với 16 phân vùng đều nhau", en: "HASH on `tenant_id` with 16 even partitions" }
       - { vi: "LIST: mỗi khách lớn một phần, còn lại `DEFAULT`", en: "LIST: one per big tenant, the rest in `DEFAULT`" }
-      - { vi: "Một phân vùng riêng cho mỗi người bán", en: "One partition of its own for each seller" }
+      - { vi: "Một phân vùng riêng cho mỗi người bán, kể cả nhỏ", en: "A partition of its own for every seller, even small ones" }
     answer: 1
     trap: 0
     why: { vi: "Nghe hợp lý vì HASH chia đều, nhưng nó chia theo giá trị băm: không chọn được khách nào nằm riêng, và khách lớn vẫn chung phân vùng với khách khác. LIST cho mỗi khách lớn một phân vùng có tên, `DETACH` được khi họ chuyển đi; 1.997 khách nhỏ nằm chung `DEFAULT` nên số phân vùng không tăng theo số khách.", en: "It sounds right because HASH spreads evenly, but it spreads by hash value: you cannot choose which tenant sits alone, and a big tenant still shares a partition with others. LIST gives each big tenant a named partition you can `DETACH` when they move; the 1,997 small ones share `DEFAULT`, so the partition count does not grow with the tenants." }
   - q: { vi: "Bảng `PARTITION BY HASH (tenant_id)` với `MODULUS 2`, nạp 10 khách có `tenant_id` 1 tới 10. Mỗi phân vùng có mấy khách?", en: "A table `PARTITION BY HASH (tenant_id)` with `MODULUS 2` gets 10 tenants with `tenant_id` 1 to 10. How many tenants in each partition?" }
     options:
-      - { vi: "Luôn 5 và 5, vì băm chia đều", en: "Always 5 and 5, a hash splits evenly" }
-      - { vi: "Tùy giá trị băm; trong PGlite là 2 và 8", en: "It depends on the hash values; in PGlite it is 2 and 8" }
-      - { vi: "10 và 0, vì các mã liền nhau", en: "10 and 0, because the ids are consecutive" }
+      - { vi: "Luôn 5 và 5, vì phép băm chia đều", en: "Always 5 and 5, because a hash splits evenly" }
+      - { vi: "Tùy giá trị băm; PGlite cho 2 và 8", en: "Depends on the hash values; PGlite gives 2 and 8" }
+      - { vi: "10 và 0, vì các mã khách liền nhau", en: "10 and 0, because the ids are consecutive" }
     answer: 1
     trap: 0
     why: { vi: "Nghe hợp lý vì băm \"chia đều\", nhưng chỉ đều khi có rất nhiều giá trị. Với 10 khách, phần ví dụ đo được 2 và 8. Ít khách thì HASH lệch, và một khách lớn vẫn làm lệch phân vùng của nó.", en: "It sounds right because hashing \"spreads evenly\", but only with very many values. With 10 tenants the example measures 2 and 8. With few tenants HASH skews, and one big tenant still skews its partition." }

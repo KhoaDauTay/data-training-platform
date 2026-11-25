@@ -74,7 +74,7 @@ lab:
 quiz:
   - q: { vi: "Policy `tenant_rows` cho `app` lọc theo khách. Một bạn thêm `CREATE POLICY support_read ON tickets FOR SELECT TO app USING (true)` \"cho đội hỗ trợ\". `app` của khách 2 giờ thấy gì?", en: "Policy `tenant_rows` for `app` filters by tenant. Someone adds `CREATE POLICY support_read ON tickets FOR SELECT TO app USING (true)` \"for the support team\". What does tenant 2's `app` see now?" }
     options:
-      - { vi: "Vẫn chỉ vé của khách 2: policy cũ vẫn lọc", en: "Still only tenant 2's tickets: the old policy still filters" }
+      - { vi: "Vẫn chỉ vé của khách 2: policy cũ vẫn lọc như trước", en: "Still only tenant 2's tickets: the old policy keeps filtering as before" }
       - { vi: "Vé của mọi khách: hai policy permissive gộp bằng OR", en: "Every tenant's tickets: the two permissive policies are combined with OR" }
       - { vi: "Lỗi: hai policy cho cùng vai trò mâu thuẫn", en: "An error: two policies for one role conflict" }
     answer: 1
@@ -82,9 +82,9 @@ quiz:
     why: { vi: "Nghe hợp lý vì thêm luật thường là thêm giới hạn, nhưng policy permissive mở thêm đường: một dòng chỉ cần qua một policy. `USING (true)` cho mọi dòng qua. Luật phải luôn đúng thì viết `AS RESTRICTIVE` (gộp AND); quyền riêng của đội hỗ trợ thì cho vai trò `support`, không cho `app`.", en: "It sounds right because adding a rule usually adds a limit, but a permissive policy opens one more way in: a row only needs to pass one policy. `USING (true)` lets every row through. A rule that must always hold is written `AS RESTRICTIVE` (combined with AND); the support team's own access goes to role `support`, not `app`." }
   - q: { vi: "Bảng đã `FORCE ROW LEVEL SECURITY`; mọi policy chỉ viết `TO app`. Chủ bảng chạy `SELECT count(*) FROM tickets`. Kết quả?", en: "The table has `FORCE ROW LEVEL SECURITY`; every policy says `TO app`. The owner runs `SELECT count(*) FROM tickets`. The result?" }
     options:
-      - { vi: "Mọi dòng: chủ bảng luôn thấy hết", en: "Every row: the owner always sees everything" }
+      - { vi: "Mọi dòng: chủ bảng luôn thấy hết dữ liệu", en: "Every row: the owner always sees everything" }
       - { vi: "0: chủ bảng bị áp RLS, không policy nào cho nó", en: "0: the owner is subject to RLS, no policy applies" }
-      - { vi: "Lỗi 42501: chủ bảng bị cấm đọc", en: "Error 42501: the owner may not read" }
+      - { vi: "Lỗi 42501: chủ bảng bị cấm đọc bảng của mình", en: "Error 42501: the owner may not read" }
     answer: 1
     trap: 0
     why: { vi: "Nghe hợp lý vì không có `FORCE` thì chủ bảng thấy hết, nhưng `FORCE` bỏ đúng ngoại lệ đó. Khi đó chủ bảng như mọi vai trò khác: không có policy áp dụng là từ chối mặc định, 0 dòng. Superuser và vai trò `BYPASSRLS` thì vẫn bỏ qua.", en: "It sounds right because without `FORCE` the owner sees everything, but `FORCE` removes exactly that exemption. The owner is then like any other role: no applicable policy is default deny, 0 rows. Superusers and `BYPASSRLS` roles still skip it." }

@@ -114,7 +114,7 @@ Bản đồ chủ đề: mỗi lớp một nhóm, mỗi dòng một bài đào s
 - `e-pg-l2-26`
 - `e-pg-l4-20`
 - `e-mg-l3-19`
-- `e-bp-m39`
+- `e-bp-m39`: tenantId đứng đầu bộ lọc, index và shard key
 
 **Khóa**: chặn ghi sai.
 
@@ -127,8 +127,8 @@ Bản đồ chủ đề: mỗi lớp một nhóm, mỗi dòng một bài đào s
 - `e-pg-l5-10`
 - `e-pg-l5-19`
 - `e-pg-l5-20`
-- `e-bp-x08`
-- `e-bp-s10`
+- `e-bp-x08`: view trên bảng có RLS dùng security_invoker
+- `e-bp-s10`: tenant_id mọi nơi và RLS có FORCE
 - `e-dy-l5-09`
 
 **Vận hành** (khách rời đi, khách quá tải, đổi cấu trúc từng shard, định tuyến) và bài tổng hợp.
@@ -204,8 +204,9 @@ WHERE i.tenant_id = 2;
 Câu sai thấy 12 dòng, câu đúng 4. Lớp khóa thì chặn khoản trả cho hóa đơn không có ở người bán đó:
 
 ```sql
--- ERROR 23503: seller 1 has no invoice 9
+-- ERROR 23503: no invoice 9 (seller 1)
 INSERT INTO payments
+  (tenant_id, id, invoice_id, paid)
 VALUES (1, 5, 9, 10);
 ```
 
@@ -247,7 +248,7 @@ The topic map: one group per layer, one line per lesson that goes deep on it.
 - `e-pg-l2-26`
 - `e-pg-l4-20`
 - `e-mg-l3-19`
-- `e-bp-m39`
+- `e-bp-m39`: tenantId leads filters, indexes and shard keys
 
 **Keys**: stop wrong writes.
 
@@ -260,8 +261,8 @@ The topic map: one group per layer, one line per lesson that goes deep on it.
 - `e-pg-l5-10`
 - `e-pg-l5-19`
 - `e-pg-l5-20`
-- `e-bp-x08`
-- `e-bp-s10`
+- `e-bp-x08`: views over RLS tables use security_invoker
+- `e-bp-s10`: tenant_id everywhere, RLS forced
 - `e-dy-l5-09`
 
 **Operations** (a tenant leaves, a tenant overloads, per-shard migrations, routing) and the capstones.
@@ -337,8 +338,9 @@ WHERE i.tenant_id = 2;
 The wrong version sees 12 rows, the right one 4. The key layer stops a payment for an invoice that seller does not have:
 
 ```sql
--- ERROR 23503: seller 1 has no invoice 9
+-- ERROR 23503: no invoice 9 (seller 1)
 INSERT INTO payments
+  (tenant_id, id, invoice_id, paid)
 VALUES (1, 5, 9, 10);
 ```
 

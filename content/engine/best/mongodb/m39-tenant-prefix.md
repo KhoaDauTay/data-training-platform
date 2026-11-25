@@ -64,6 +64,7 @@ Collection dùng chung cho nhiều người bán: mọi tài liệu có `tenantI
 - Index kép phục vụ truy vấn trên tiền tố của nó, nên `tenantId` đứng đầu giữ khóa của một người bán liền nhau.
 - Zone sharding cần khoảng chứa tiền tố shard key: `tenantId` đứng đầu mới ghim được một người bán lên shard chọn sẵn.
 - Cặp chạy trên mingo chỉ cho thấy phần bộ lọc (câu thiếu `tenantId` trả đơn của ba người bán); thứ tự index không đo được ở đây.
+- Cả chủ đề nhiều khách hàng, với mọi bài liên quan: `e-ds-l4-09`.
 
 # EN
 
@@ -77,3 +78,4 @@ A collection shared by many sellers: every document has `tenantId`, every read a
 - A compound index serves queries on its prefix, so `tenantId` first keeps one seller's keys together.
 - Zone sharding needs a range that holds the shard key prefix: only with `tenantId` first can one seller be pinned to chosen shards.
 - The pair on mingo only shows the filter part (the query without `tenantId` returns three sellers' orders); index order cannot be measured here.
+- The whole multi-tenant topic, with every related lesson: `e-ds-l4-09`.

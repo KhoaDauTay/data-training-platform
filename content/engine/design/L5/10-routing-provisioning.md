@@ -152,16 +152,22 @@ GROUP BY shard_id
 ORDER BY shard_id;
 ```
 
-Chuyển `t-05` bằng một lần đổi dòng có kiểm phiên bản. Chạy lại lần nữa sẽ không đổi gì, vì phiên bản đã là 2:
+Hai tiến trình cùng muốn chuyển `t-05`, mỗi bên một lần đổi dòng có kiểm phiên bản. Mỗi lần Chạy bắt đầu từ dữ liệu mới, nên khối dưới chạy cả hai lần đổi trong một lần Chạy: lần đầu đưa khách sang `s1` và nâng phiên bản lên 2, lần thứ hai (muốn đưa sang `s3`) không khớp dòng nào vì phiên bản không còn là 1. Kết quả còn `s1` và 2:
 
 ```sql
 UPDATE directory
 SET shard_id = 's1',
     version = version + 1
 WHERE tenant_id = 't-05'
-  AND version = 1
-RETURNING tenant_id, shard_id,
-  version;
+  AND version = 1;
+UPDATE directory
+SET shard_id = 's3',
+    version = version + 1
+WHERE tenant_id = 't-05'
+  AND version = 1;
+SELECT tenant_id, shard_id, version
+FROM directory
+WHERE tenant_id = 't-05';
 ```
 
 ## Lỗi hay gặp
@@ -259,16 +265,22 @@ GROUP BY shard_id
 ORDER BY shard_id;
 ```
 
-Move `t-05` with one version-checked row change. Running it a second time changes nothing, because the version is already 2:
+Two processes both want to move `t-05`, each with one version-checked row change. Every Run starts from fresh data, so the block below runs both changes in one Run: the first moves the tenant to `s1` and raises the version to 2, the second (aiming at `s3`) matches no row because the version is no longer 1. The result still says `s1` and 2:
 
 ```sql
 UPDATE directory
 SET shard_id = 's1',
     version = version + 1
 WHERE tenant_id = 't-05'
-  AND version = 1
-RETURNING tenant_id, shard_id,
-  version;
+  AND version = 1;
+UPDATE directory
+SET shard_id = 's3',
+    version = version + 1
+WHERE tenant_id = 't-05'
+  AND version = 1;
+SELECT tenant_id, shard_id, version
+FROM directory
+WHERE tenant_id = 't-05';
 ```
 
 ## Common mistakes

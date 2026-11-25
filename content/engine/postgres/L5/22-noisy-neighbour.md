@@ -74,16 +74,16 @@ lab:
 quiz:
   - q: { vi: "Bạn chạy `ALTER ROLE app_basic SET statement_timeout = '2s'` lúc ứng dụng đang có 20 kết nối mở bằng vai trò đó. Kết nối nào nhận giới hạn?", en: "You run `ALTER ROLE app_basic SET statement_timeout = '2s'` while the application holds 20 open connections as that role. Which connections get the limit?" }
     options:
-      - { vi: "Cả 20 kết nối đang mở, ngay lập tức", en: "All 20 open connections, at once" }
+      - { vi: "Cả 20 kết nối đang mở, ngay lập tức", en: "All 20 connections that are open, immediately" }
       - { vi: "Chỉ các phiên mới đăng nhập bằng vai trò đó từ giờ", en: "Only sessions that log in as that role from now on" }
-      - { vi: "Không phiên nào cho tới khi khởi động lại server", en: "None until the server restarts" }
+      - { vi: "Không phiên nào cho tới khi khởi động lại server", en: "None of them until the server is restarted" }
     answer: 1
     trap: 0
     why: { vi: "Nghe hợp lý vì lệnh đổi ngay trong catalog, nhưng thiết lập theo vai trò chỉ được nạp khi một phiên bắt đầu. Kết nối cũ trong pool giữ giá trị cũ cho tới khi bị thay. Vì thế pool cần làm mới kết nối sau khi đổi.", en: "It sounds right because the command changes the catalog at once, but per-role settings are only loaded when a session starts. Old pooled connections keep the old value until they are replaced. That is why the pool must recycle connections after the change." }
   - q: { vi: "Người bán 2 (gói basic) đọc 92 % số dòng của cả hệ thống và làm chậm mọi người bán khác. Hướng nào đúng?", en: "Seller 2 (basic tier) reads 92% of the whole system's rows and slows every other seller down. Which way is right?" }
     options:
-      - { vi: "Đổi `tenant_id` của họ để dữ liệu nằm chỗ khác", en: "Change their `tenant_id` so their data lives elsewhere" }
-      - { vi: "Index dẫn đầu bằng `tenant_id`, hạn mức theo hạng, rồi hạng riêng", en: "Indexes led by `tenant_id`, per-tier quotas, then a dedicated tier" }
+      - { vi: "Đổi `tenant_id` của họ để dữ liệu nằm ở chỗ khác trong bảng", en: "Change their `tenant_id` so their data lives elsewhere in the table" }
+      - { vi: "Index đầu `tenant_id`, hạn mức theo hạng, rồi hạng riêng", en: "Indexes led by `tenant_id`, per-tier quotas, then a dedicated tier" }
       - { vi: "Giảm `work_mem` của cả server cho mọi người bán", en: "Lower the whole server's `work_mem` for every seller" }
     answer: 1
     trap: 0

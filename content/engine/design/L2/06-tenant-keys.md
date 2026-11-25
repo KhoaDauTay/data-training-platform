@@ -89,8 +89,8 @@ quiz:
       vi: "Vì sao khóa chính là `(tenant_id, id)` mà không phải `(id, tenant_id)`?"
       en: "Why is the primary key `(tenant_id, id)` and not `(id, tenant_id)`?"
     options:
-      - { vi: "Thứ tự cột trong khóa không quan trọng, chỉ cần đủ cột", en: "The column order in a key does not matter, only the set of columns" }
-      - { vi: "Mọi câu lọc theo khách, nên cột đầu index giữ dòng một khách liền nhau", en: "Every query filters by tenant, so the first index column keeps a tenant's rows together" }
+      - { vi: "Thứ tự cột trong khóa không quan trọng, chỉ cần đủ các cột", en: "The column order in a key does not matter, only the set of columns" }
+      - { vi: "Mọi câu lọc theo khách, nên cột đầu giữ dòng một khách liền nhau", en: "Queries filter by tenant, so leading with it keeps their rows together" }
       - { vi: "Postgres bắt cột NOT NULL phải đứng đầu khóa chính ghép", en: "Postgres requires NOT NULL columns first in a composite primary key" }
     answer: 1
     trap: 0

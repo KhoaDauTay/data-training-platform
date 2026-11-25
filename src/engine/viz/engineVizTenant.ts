@@ -154,7 +154,7 @@ CREATE TABLE tickets (id int PRIMARY KEY, tenant_id int NOT NULL, archived boole
 INSERT INTO tickets SELECT g, g % 3 + 1, g % 5 = 0, 'ticket ' || g FROM generate_series(1, 30) g;
 GRANT SELECT ON tickets TO app;
 ALTER TABLE tickets ENABLE ROW LEVEL SECURITY;
-CREATE POLICY app_rows ON tickets FOR SELECT TO app USING (tenant_id = current_setting('app.tenant_id')::int);
+CREATE POLICY app_rows ON tickets FOR SELECT TO app USING (tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::int);
 CREATE POLICY app_live ON tickets AS RESTRICTIVE FOR SELECT TO app USING (NOT archived)`;
 export interface RlsPathModel { tenant: number; total: number; owned: number; seen: number }
 const ROWS = Array.from({ length: 30 }, (_, i) => ({ g: i + 1, t: ((i + 1) % 3) + 1, archived: (i + 1) % 5 === 0 }));
@@ -191,7 +191,8 @@ define<RlsPathModel>('pg-rls-path', RLS_PATH_SAMPLE, (m, tr) => {
       ['current_user = app', tr('app.tenant_id: chưa đặt', 'app.tenant_id: not set')],
       ['BEGIN;', 'SET LOCAL app.tenant_id', `  = ${t};`],
       ['SELECT count(*)', 'FROM tickets;', tr('-- không có WHERE', '-- no WHERE')],
-      ['WHERE tenant_id =', '  current_setting(', "  'app.tenant_id')::int", 'AND NOT archived'],
+      // v38 R3 (R3-02, L590): the fail-closed form the lessons teach, never `current_setting('app.tenant_id')::int`
+      ['tenant_id = NULLIF(', '  current_setting(', "  'app.tenant_id',", "  true), '')::int", 'AND NOT archived'],
       [],
       ["app.tenant_id = ''", tr(`SET thường: vẫn ${t}`, `plain SET: still ${t}`)],
       [],
@@ -222,9 +223,9 @@ define<RlsPathModel>('pg-rls-path', RLS_PATH_SAMPLE, (m, tr) => {
       { say: tr('Ứng dụng mượn một kết nối từ pool, chạy bằng vai trò app (không sở hữu bảng). Kết nối chưa biết khách nào.', 'The application borrows a pooled connection that runs as role app (not the table owner). The connection knows no tenant yet.'), nodes: draw(0) },
       { say: fill(tr('BEGIN rồi SET LOCAL app.tenant_id = \'{t}\': khách hiện tại chỉ sống trong transaction này.', 'BEGIN, then SET LOCAL app.tenant_id = \'{t}\': the current tenant lives only inside this transaction.'), v), nodes: draw(1) },
       { say: tr('Ứng dụng gửi SELECT … FROM tickets, không viết WHERE tenant_id.', 'The application sends SELECT … FROM tickets without writing WHERE tenant_id.'), nodes: draw(2) },
-      { say: tr('Rewriter thêm điều kiện của policy: permissive gộp OR, restrictive gộp AND (NOT archived).', 'The rewriter adds the policy conditions: permissive ones joined with OR, restrictive ones with AND (NOT archived).'), nodes: draw(3) },
+      { say: tr('Rewriter thêm điều kiện của policy: permissive gộp OR, restrictive gộp AND (NOT archived). Policy đọc khách bằng NULLIF(current_setting(\'app.tenant_id\', true), \'\')::int, nên thiếu khách thì ra 0 dòng, không lỗi.', 'The rewriter adds the policy conditions: permissive ones joined with OR, restrictive ones with AND (NOT archived). The policy reads the tenant with NULLIF(current_setting(\'app.tenant_id\', true), \'\')::int, so a missing tenant gives 0 rows, not an error.'), nodes: draw(3) },
       { say: fill(tr('Executor đọc {n} dòng, policy giữ {k} dòng của khách {t}, restrictive bỏ {d} dòng lưu trữ: trả {s}.', 'The executor reads {n} rows; the policy keeps tenant {t}\'s {k} and the restrictive one drops {d} archived rows: {s} come back.'), v), nodes: draw(4) },
-      { say: fill(tr('COMMIT: SET LOCAL hết hiệu lực, kết nối về pool sạch. Dùng SET thường thì người mượn kết nối sau sẽ thấy dữ liệu khách {t}.', 'COMMIT: SET LOCAL ends and the connection returns to the pool clean. With a plain SET, the next borrower would see tenant {t}\'s data.'), v), nodes: draw(5) },
+      { say: fill(tr('COMMIT: SET LOCAL hết hiệu lực, kết nối về pool sạch (giá trị còn lại là \'\', policy ra 0 dòng). Dùng SET thường thì người mượn kết nối sau sẽ thấy dữ liệu khách {t}.', 'COMMIT: SET LOCAL ends and the connection returns to the pool clean. With a plain SET, the next borrower would see tenant {t}\'s data.'), v), nodes: draw(5) },
       { say: tr('Ai bỏ qua bước Policy: superuser, vai trò BYPASSRLS, và chủ bảng khi chưa FORCE ROW LEVEL SECURITY.', 'Who skips the Policy step: superusers, BYPASSRLS roles, and the table owner unless FORCE ROW LEVEL SECURITY is on.'), nodes: draw(BYPASS) },
     ],
   };

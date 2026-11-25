@@ -119,18 +119,20 @@ function inline(text: string, marked = false): (Node | string)[] {
 /** v28 R4 (L421): a code span holding a lesson id (`e-pg-l4-12`) is a link to that lesson, named by its title (the design track's "go deeper" links). */
 function codeOrLink(c: string): Node {
   const to = /^e-(pg|mg|dy|ds)-l[1-5]-\d\d$/.test(c) ? lessons.find((x) => x.id === c) : undefined;
-  if (to) return xref(lessonHash(to), `${nameOf(to.engine)} ${to.level} · ${to.title[lang()]}`);
+  // v38 R3 (R3-05, L593): a completed lesson or card gets the done tick (with its sr-only word), so the hub's map shows progress
+  const seen = d.app.save.completed.includes(c);
+  if (to) return xref(lessonHash(to), `${nameOf(to.engine)} ${to.level} · ${to.title[lang()]}`, seen);
   const bp = bpHashOf(c);
   // v35 R1 (T1-C8-01, L559): inline code may break anywhere, so one long span never widens a 320 px page
-  return bp ? xref(bp, `Best Practice · ${c.slice(5).toUpperCase()}`) : d.h('code', { class: '[overflow-wrap:anywhere]' }, c);
+  return bp ? xref(bp, `Best Practice · ${c.slice(5).toUpperCase()}`, seen) : d.h('code', { class: '[overflow-wrap:anywhere]' }, c);
 }
 /**
  * v35 R1 (E01, L558): a lesson or card link reads as a link: accent ink (≥ 4.5:1 on every surface, both themes), a solid
  * underline and an arrow, never the glossary's dotted teal underline (a term button), never body text.
  */
-const xref = (href: string, text: string): HTMLElement => d.h('a', {
-  href, 'data-xref': '', class: 'font-semibold text-accent-ink underline decoration-1 underline-offset-[3px] hover:decoration-2',
-}, text, d.icon('arrowRight', 'ml-0.5 inline size-3.5 align-[-2px]'));
+const XREF = 'font-semibold text-accent-ink underline decoration-1 underline-offset-[3px] hover:decoration-2';
+const xref = (href: string, text: string, seen = false): HTMLElement => d.h('a', { href, 'data-xref': '', 'data-done': seen ? '' : false, class: XREF },
+  text, d.icon('arrowRight', 'ml-0.5 inline size-3.5 align-[-2px]'), tick(seen));
 /**
  * v34 (L545, handoff item 4): a Best Practice card id (`e-bp-s10`) → its card's route. The track follows the code's letter
  * (content/engine/best/<track>/<code>-…), so no card index has to load here; tests/engineBpLink.test.ts checks every card.
@@ -281,6 +283,19 @@ function pathRow(): HTMLElement {
   }));
 }
 
+/** v38 R3 (R3-01, L592): the multi-tenant hub lesson, the one topic map the overview links (its row on the level page gets a chip). */
+const TOPIC_HUB = 'e-ds-l4-09';
+const topicChip = (): HTMLElement => d.h('span', { class: d.cls.cx(d.cls.PILL, 'mr-2 bg-accent-soft text-accent-ink align-[1px]') }, et('topic.map'));
+function topicRow(): HTMLElement | null {
+  const hub = lessons.find((x) => x.id === TOPIC_HUB);
+  return hub ? d.h('section', { 'aria-labelledby': 'engine-topic' },
+    d.h('h2', { id: 'engine-topic', class: d.ui.GROUP_TITLE }, et('topic.title')),
+    d.h('ul', { class: d.ui.LIST }, d.ui.listRow({
+      lead: d.h('span', { class: 'grid size-10 place-items-center rounded-full bg-accent-soft text-accent' }, d.icon(KIND_ICON.concept, 'size-6')),
+      title: d.h('span', {}, topicChip(), et('topic.tenancy'), tick(done().has(hub.id))), sub: et('topic.tenancyShort'), action: rowLink(lessonHash(hub), et('topic.go'), true),
+    }))) : null;
+}
+
 function overview(): HTMLElement {
   const { h } = d;
   const ok = done();
@@ -293,6 +308,7 @@ function overview(): HTMLElement {
     h('section', { 'aria-labelledby': 'engine-path' },
       h('h2', { id: 'engine-path', class: d.ui.GROUP_TITLE }, et('nosql.title')),
       pathRow()),
+    topicRow(),
     d.best?.(),
     v27Rows());
 }
@@ -354,7 +370,7 @@ function lessonRow(l: EngineLesson, ok: Set<string>, isNext: boolean): HTMLEleme
   const k = honestRow(l);
   return d.ui.listRow({
     lead: leadDisc(isDone ? 'done' : isNext ? 'current' : 'todo', d.icon(KIND_ICON[l.kind], 'size-5')),
-    title: l.title[lang()],
+    title: l.id === TOPIC_HUB ? d.h('span', {}, topicChip(), l.title[lang()]) : l.title[lang()],
     sub: `${et(`kind.${l.kind}`)} · ${et('minutes', { n: l.minutes })} · ${et(k === 'diagram' ? 'short.diagram' : k === 'docs' ? 'short.docs' : 'short.run')}`,
     action: rowLink(lessonHash(l), isDone ? et('row.again') : isNext ? et('row.next') : et('row.open'), isNext),
     current: isNext,
@@ -853,8 +869,9 @@ function lessonBody(l: EngineLesson): HTMLElement {
     mark?.list() ?? null,
     l.sources.length ? h('section', { class: 'flex flex-col gap-2', 'aria-labelledby': `${l.id}-src` },
       h('h2', { id: `${l.id}-src`, class: 'm-0 text-body font-bold' }, et('sources')),
-      h('ul', { class: 'm-0 list-disc space-y-1 pl-5 text-body-sm' }, ...l.sources.map((u) =>
-        h('li', {}, h('a', { href: u, target: '_blank', rel: 'noopener noreferrer', title: u, class: 'inline-flex items-center gap-1.5' },
+      // v38 R3 (R3-06, L595): source links look like the other links (accent ink, underline); one marker, the icon, no bullet
+      h('ul', { class: 'm-0 list-none space-y-1 p-0 text-body-sm' }, ...l.sources.map((u) =>
+        h('li', {}, h('a', { href: u, target: '_blank', rel: 'noopener noreferrer', title: u, class: d.cls.cx('inline-flex items-center gap-1.5', XREF) },
           d.icon('external', 'size-4 shrink-0'), sourceTitle(u, l.sourceTitles?.[u]), h('span', { class: 'sr-only' }, ` (${et('newTab')})`)))))) : null));
 }
 

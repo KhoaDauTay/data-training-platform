@@ -71,7 +71,7 @@ quiz:
       vi: "Trong lab, hai người bán lớn nhất chiếm hơn 95% đơn, một người có hợp đồng database riêng. Thiết kế nào hợp?"
       en: "In the lab, the two largest sellers hold over 95% of the orders, and one has a contract for its own database. Which design fits?"
     options:
-      - { vi: "Trộn: hợp đồng ra silo, người lớn kia ra máy riêng, còn lại ở pool", en: "A mix: the contract to a silo, the other big one to its own server, the rest in the pool" }
+      - { vi: "Trộn: hợp đồng ra silo, người lớn kia ra máy riêng, còn lại ở pool", en: "A mix: a silo for the contract, a server for the other big one, the rest pooled" }
       - { vi: "Đưa cả bảy người bán sang silo để mọi người được như nhau", en: "Move all seven sellers to silos so everyone is treated the same" }
       - { vi: "Giữ tất cả trong pool; hợp đồng chỉ là giấy tờ, không đổi thiết kế", en: "Keep everyone in the pool; the contract is only paperwork, not design" }
     answer: 0
@@ -84,7 +84,7 @@ quiz:
       en: "Today every seller is in the pool. Next year one of them will need its own server. Which decision today makes that easiest?"
     options:
       - { vi: "Đánh số khóa chính toàn cục cho cả chợ, để dữ liệu không bao giờ trùng", en: "Number primary keys globally across the market, so data never collides" }
-      - { vi: "Đặt tenant_id đầu mọi khóa và mọi khóa ngoại, để dữ liệu một khách tự đi cùng nhau", en: "Put tenant_id first in every key and every foreign key, so one tenant's data travels together" }
+      - { vi: "Đặt tenant_id đầu mọi khóa và khóa ngoại, để dữ liệu một khách đi cùng nhau", en: "Lead every key and foreign key with tenant_id, so a tenant's data moves together" }
       - { vi: "Chuyển ngay sang bridge, để mỗi khách đã có schema riêng", en: "Switch to the bridge now, so each tenant already has its own schema" }
     answer: 1
     trap: 2

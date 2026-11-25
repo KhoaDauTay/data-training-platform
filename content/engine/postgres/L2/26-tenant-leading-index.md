@@ -66,7 +66,7 @@ quiz:
     options:
       - { vi: "Trong một khách, các dòng không xếp theo thời gian", en: "Within one tenant the rows are not in time order" }
       - { vi: "Vì khóa chính `(id)` không có `tenant_id`", en: "Because the primary key `(id)` has no `tenant_id`" }
-      - { vi: "Index đã hỏng và cần dựng lại", en: "The index is broken and needs a rebuild" }
+      - { vi: "Index đã hỏng sau nhiều lần ghi và cần dựng lại", en: "The index broke after many writes and needs a rebuild" }
     answer: 0
     trap: 1
     why: { vi: "Khóa chính thiếu `tenant_id` nghe như thủ phạm vì đó là lời khuyên đúng cho bảng nhiều khách, nhưng nó không quyết định Sort ở đây. Sort còn vì index chỉ có `tenant_id`: thêm `created_at` làm cột thứ hai thì thứ tự có sẵn trong index.", en: "A primary key without `tenant_id` sounds like the culprit because that is good advice for multi-tenant tables, but it does not decide the Sort here. The Sort stays because the index holds only `tenant_id`: add `created_at` as the second column and the order comes ready from the index." }

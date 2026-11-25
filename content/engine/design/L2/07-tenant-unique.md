@@ -70,7 +70,7 @@ quiz:
       vi: "Chợ có 300 người bán. Một bạn đề xuất `UNIQUE (email)` trên bảng người mua cho chắc. Chuyện gì xảy ra khi người mua `an@mail.vn` của Lan Silk đăng ký ở Minh Tea?"
       en: "The market has 300 sellers. Someone proposes `UNIQUE (email)` on the shopper table to be safe. What happens when Lan Silk's shopper `an@mail.vn` signs up at Minh Tea?"
     options:
-      - { vi: "Không sao: luật càng chặt thì dữ liệu càng an toàn", en: "Nothing bad: the stricter the rule, the safer the data" }
+      - { vi: "Không sao: luật càng chặt thì dữ liệu của mọi người bán càng an toàn", en: "Nothing bad: the stricter the rule, the safer every seller's data is" }
       - { vi: "Bị từ chối (23505), và lỗi lộ rằng email đã có ở người bán khác", en: "Refused (23505), and the error reveals the email exists at another seller" }
       - { vi: "Được nhận, vì mỗi người bán có tenant_id khác nhau", en: "It is accepted, because each seller has a different tenant_id" }
     answer: 1

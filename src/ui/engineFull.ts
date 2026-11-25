@@ -30,8 +30,8 @@ export interface FullCtx {
 
 let c: FullCtx;
 const ft = (key: FullKey, params?: Params): string => fullText(c.d.getLang(), c.d.locale(), key, params);
-/** v38 (R2 E17): rows, documents or items, by the open lesson's engine. */
-const unit = (): string => ft(`unit.${c.l.engine}`);
+/** v38 (R2 E17): rows, documents or items, by the open lesson's engine. R3 (T3-C13-01, L596): EN says 1 row / document / item (VI has no plural). */
+const unitOf = (e: EngineId, n: number): string => { const u = ft(`unit.${e}`); return n === 1 && c.d.getLang() === 'en' ? u.replace(/s$/, '') : u; };
 const SEC_ICON: Record<SectionId, IconName> = {
   open: 'secOpen', idea: 'kindConcept', syntax: 'secSyntax', example: 'secRun', pitfalls: 'secPitfall', practice: 'secPractice', recap: 'secRecap',
 };
@@ -87,7 +87,7 @@ async function run(x: FullCtx, bs: DemoBlock[], i: number): Promise<void> {
     for (const k of keys) outs.set(k, { error: shown });
   }
   const o = outs.get(keyOf(l, i));
-  if (o && o !== 'busy') d.announce('result' in o ? ft('run.rows', { n: o.result.rows.length, ms: Math.round(o.result.ms ?? 0), u: ft(`unit.${l.engine}`) }) : bs[i].error && errCode(o.error) === bs[i].error ? ft('run.expected', { code: bs[i].error!, rt: RT[l.engine] }) : '');
+  if (o && o !== 'busy') d.announce('result' in o ? ft('run.rows', { n: o.result.rows.length, ms: Math.round(o.result.ms ?? 0), u: unitOf(l.engine, o.result.rows.length) }) : bs[i].error && errCode(o.error) === bs[i].error ? ft('run.expected', { code: bs[i].error!, rt: RT[l.engine] }) : '');
   d.rerender();
 }
 
@@ -102,7 +102,7 @@ function outView(b: DemoBlock, o: DemoOut | 'busy' | undefined): (Node | null)[]
   if ('result' in o) {
     const r = o.result;
     // R2 E07 (L578d): a WRONG block that runs is still the wrong way: no green check, the line says so (every engine)
-    const rows = { n: r.rows.length, ms: Math.round(r.ms ?? 0), u: unit() };
+    const rows = { n: r.rows.length, ms: Math.round(r.ms ?? 0), u: unitOf(c.l.engine, r.rows.length) };
     return [b.error ? line(false, ft('run.unexpected', { code: b.error })) : b.mark === 'wrong' ? line(false, ft('run.rowsWrong', rows)) : line(true, ft('run.rows', rows)),
       h('div', { class: 'overflow-x-auto', tabindex: '0' }, d.renderResult(r, undefined, 5, ft('run.caption', rows))), c.meta(r)];
   }

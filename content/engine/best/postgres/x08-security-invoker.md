@@ -31,7 +31,7 @@ pair:
     CREATE TABLE inv (tenant_id int NOT NULL, id int NOT NULL, PRIMARY KEY (tenant_id, id));
     INSERT INTO inv VALUES (1, 1), (1, 2), (2, 3), (2, 4);
     ALTER TABLE inv ENABLE ROW LEVEL SECURITY;
-    CREATE POLICY tenant_only ON inv USING (tenant_id = current_setting('app.tenant_id')::int);
+    CREATE POLICY tenant_only ON inv USING (tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::int);
     CREATE VIEW inv_report AS SELECT * FROM inv;
     CREATE VIEW inv_report_safe WITH (security_invoker = true) AS SELECT * FROM inv;
     GRANT SELECT ON inv, inv_report, inv_report_safe TO app;
@@ -55,8 +55,8 @@ quiz:
       en: "Table `inv` has per-tenant RLS. A report view is created with no options, its owner is an admin role, and `app` is given `GRANT SELECT` on the view. What does tenant 1's `app` see through it?"
     options:
       - { vi: "Chỉ dòng của khách 1: policy áp theo người đọc", en: "Only tenant 1's rows: the policies follow the reader" }
-      - { vi: "Dòng của mọi khách: view đọc bảng bằng quyền của chủ view", en: "Every tenant's rows: the view reads the table with its owner's rights" }
-      - { vi: "Lỗi quyền", en: "A permission error" }
+      - { vi: "Dòng của mọi khách: view đọc bằng quyền chủ view", en: "Every tenant's rows: the view reads as its owner" }
+      - { vi: "Lỗi 42501: app không được đọc bảng gốc", en: "Error 42501: app may not read the base table" }
     answer: 1
     why:
       vi: "Theo docs, view mặc định truy cập bảng gốc bằng quyền của chủ view, và chủ là vai trò quản trị nên bỏ qua RLS. `WITH (security_invoker = true)` (từ PostgreSQL 15) bắt view kiểm quyền và policy theo người gọi."
@@ -72,6 +72,7 @@ View đặt trên bảng có RLS thì tạo `WITH (security_invoker = true)`. M�
 - Lớp báo cáo hay được làm bằng view, nên đây là đường lộ dữ liệu giữa các khách hay gặp.
 - Policy viết đúng trên bảng không giúp gì nếu view đọc bằng quyền của chủ view.
 - `security_invoker` có từ PostgreSQL 15; view cũ tạo trước đó cần tạo lại hoặc `ALTER VIEW … SET (security_invoker = true)`.
+- Cả chủ đề nhiều khách hàng, với mọi bài liên quan: `e-ds-l4-09`.
 
 ## Ví dụ
 
@@ -88,6 +89,7 @@ A view over an RLS table is created `WITH (security_invoker = true)`. By default
 - Reporting layers are often built from views, so this is a common way data leaks between tenants.
 - A correct policy on the table does not help if the view reads with its owner's rights.
 - `security_invoker` exists since PostgreSQL 15; older views need recreating or `ALTER VIEW … SET (security_invoker = true)`.
+- The whole multi-tenant topic, with every related lesson: `e-ds-l4-09`.
 
 ## Example
 
