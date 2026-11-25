@@ -1,16 +1,18 @@
 ---
 name: project-handoff
-description: "BoonData state: v33 live (2026-11-24); start from docs/team/handoff-2026-11-24.md"
+description: "BoonData state: v38 live (2026-11-25, multi-tenant theme v34–v38); start from docs/team/handoff-2026-11-25.md"
 metadata:
   node_type: memory
   type: project
   originSessionId: e927c5e6-22a4-40fa-bff6-3a9e8af9fcbc
-  modified: 2026-11-24T11:07:27.890Z
+  modified: 2026-11-25T01:25:58.772Z
 ---
 
-2026-11-24: v33 is live (tags up to v30.1, then v30.2 readability, v31 readability + phones + 3 hidden smoke regressions fixed, v32 gap-map content (515 covered / 1 partial / 0 missing), v33 NoSQL L1–L2 lengths + chunk splits). Start from `docs/team/handoff-2026-11-24.md` (rewritten after v33, open items §3), then review-v33/v32/v302-readability. No plan after v33.
+2026-11-25: v38 is live. v34–v38 spread a multi-tenant database theme across Design L2/L4/L5, PostgreSQL L1/L2/L4/L5, MongoDB L3/L5, DynamoDB L3–L5, BP x08/m39, hub lesson `e-ds-l4-09`, after 3 UI/UX review rounds (R1 preview, R2 preview, R3 live). Start from `docs/team/handoff-2026-11-25.md` (open items §3). Plan and private notes: `bd-wt/tools/run-v38.md`, `bd-wt/tools/v38/` (outside the repo). No plan after v38.
 
-The smoke `preview` job has continue-on-error (L150), so a green run can hide failures: always grep the log for `SMOKE OK` before tagging — this hid regressions from v30 to v30.2.
+The smoke `preview` job's continue-on-error ends 2026-11-26; always read the log for `SMOKE OK` before tagging.
+
+Subagents must write with absolute paths: three times a worktree agent wrote into the main repo through relative .NET paths; check `git status` in the main repo before merging.
 
 **Why:** the next session must not re-plan finished work or trust a green smoke run blindly.
 

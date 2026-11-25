@@ -1,5 +1,5 @@
 - [Push wip backups](feedback-push-wip-backup.md) — commit + push work branches to origin wip/*; worktrees in Documents\study\bd-wt, not Temp
-- [Release gating](project-freeze-v23.md) — v24→v33 shipped 2026-11-24 on approved plans; anything after v33 needs the user's go
-- [Handoff](project-handoff.md) — v33 live; start from docs/team/handoff-2026-11-24.md; always grep smoke log for SMOKE OK
+- [Release gating](project-freeze-v23.md) — v24→v33 shipped; 2026-11-25 go for v34→v38 (multi-tenant theme); after v38 needs a new go
+- [Handoff](project-handoff.md) — v38 live (multi-tenant theme); start from docs/team/handoff-2026-11-25.md; grep smoke log for SMOKE OK; subagents use absolute paths
 - [SQL knowledge + skill](reference-sql-knowledge.md) — docs/knowledge/database is source of truth; ~/.claude/skills/sql copies it
 - [No e2e / long tests](feedback-no-e2e-long-tests.md) — 2026-11-24: skip e2e and long local test runs; tsc + targeted tests, CI does the rest
