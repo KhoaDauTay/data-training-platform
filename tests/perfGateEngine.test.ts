@@ -14,7 +14,7 @@ import { factsOf, factsSql, readOf } from './perfFacts';
 /** Engine steps over budget on purpose (`<lesson id>.s<n>`), each with its reason. Stale entries fail. */
 const ALLOW: Record<string, string> = {};
 
-const files = import.meta.glob<LessonSource>('../content/engine/postgres/{L*,ext}/*.md', { query: '?fm', import: 'default', eager: true });
+const files = import.meta.glob<LessonSource>('../content/engine/{postgres/{L*,ext},timeseries/L*}/*.md', { query: '?fm', import: 'default', eager: true });
 const lessons: EngineLesson[] = Object.entries(files).map(([p, s]) => parseEngineLesson(s, p)).filter((l) => l.lab?.setup).sort((a, b) => a.id.localeCompare(b.id));
 const [FA, FB] = factsSql(`n.nspname NOT IN ('pg_catalog', 'information_schema') AND n.nspname NOT LIKE 'pg_toast%'`);
 
@@ -59,7 +59,7 @@ describe('perf gate: thanh perf: của bài Engine có setup', () => {
 
   it('R0: có ít nhất một bước Engine có thanh', () => expect(bars.length).toBeGreaterThan(0));
   it('R6: mọi capstone Postgres (L1–L5) có ≥ 1 bước thanh', () => {
-    const caps = lessons.filter((l) => l.kind === 'capstone');
+    const caps = lessons.filter((l) => l.kind === 'capstone' && l.engine === 'postgres'); // v47 (L976): time-series labs are gated here too
     expect(caps.length).toBe(5);
     expect(caps.filter((l) => !l.lab!.steps.some((s) => s.perf)).map((l) => l.id)).toEqual([]);
   });

@@ -1,0 +1,20 @@
+# TS-10 (v47 L972): raw readings roll up into hours, hours into days; sums and counts travel up, averages are computed at the end.
+# Lesson: e-ts-l3-01 (Ý chính). Data = the lab: 1,290 raw readings (29 Oct – 31 Oct 07:55), 112 hourly rows after step 3, 6 daily rows.
+title: { vi: "Ba tầng dữ liệu", en: "Three tiers of data" }
+caption:
+  vi: "1.290 số đo thô thành 112 dòng theo giờ rồi 6 dòng theo ngày; mỗi tầng giữ tổng và số đếm để tầng trên tính trung bình đúng."
+  en: "1,290 raw readings become 112 hourly rows, then 6 daily rows; each tier keeps sums and counts so the tier above computes the right average."
+alt:
+  vi: "Mỗi tầng tổng hợp đọc tầng dưới và giữ ít dòng hơn nhiều. Vì tầng giữa lưu tổng và số đếm chứ không lưu trung bình, tầng ngày vẫn ra đúng trung bình của số đo thô."
+  en: "Each rollup tier reads the tier below and keeps far fewer rows. Because the middle tier stores sums and counts rather than averages, the daily tier still gets the true average of the raw readings."
+nodes:
+  - { id: raw, shape: table, label: readings, sub: { vi: "1.290 dòng", en: "1,290 rows" }, tone: ghost }
+  - { id: hour, shape: table, label: temp_hourly, sub: { vi: "112 dòng", en: "112 rows" } }
+  - { id: day, shape: table, label: { vi: "theo ngày", en: "daily" }, sub: { vi: "6 dòng", en: "6 rows" }, tone: live }
+rows:
+  - [raw]
+  - [hour]
+  - [day]
+edges:
+  - { from: raw, to: hour, label: { vi: "sum, count mỗi giờ", en: "sum, count hourly" } }
+  - { from: hour, to: day, label: "sum / sum" }

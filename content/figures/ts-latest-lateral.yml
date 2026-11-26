@@ -1,0 +1,24 @@
+# TS-5 (v47 L972): LATERAL asks the index (truck_id, ts) once per truck and reads the last entry of that truck's part.
+# Lesson: e-ts-l1-05 (Ý chính). Data = the lab: 20 trucks, 29,700 positions; truck 8 stops at 19:59 UTC on 30 Oct, the rest at 00:59 on 31 Oct.
+title: { vi: "Mỗi xe một lần đọc index", en: "One index read per truck" }
+caption:
+  vi: "Với index (truck_id, ts), câu con LATERAL của mỗi xe nhảy tới cuối phần của xe đó và đọc một mục: 20 lần đọc thay vì 29.700 dòng."
+  en: "With the index (truck_id, ts), each truck's LATERAL subquery jumps to the end of that truck's part and reads one entry: 20 reads instead of 29,700 rows."
+alt:
+  vi: "Index sắp theo xe rồi theo thời gian, nên vị trí mới nhất của một xe là mục cuối trong phần của xe đó. LATERAL hỏi index một lần cho mỗi xe, nên số lần đọc theo số xe, không theo số dòng của bảng."
+  en: "The index is sorted by truck, then by time, so a truck's newest position is the last entry of its part. LATERAL asks the index once per truck, so the number of reads follows the number of trucks, not the table's row count."
+groups:
+  - { id: idx, label: { vi: "positions_pkey", en: "positions_pkey" }, nodes: [e1, e8, e20] }
+nodes:
+  - { id: t, label: { vi: "bảng trucks", en: "table trucks" }, sub: { vi: "20 xe", en: "20 trucks" } }
+  - { id: e1, mono: true, label: "1 · 00:59", sub: { vi: "mục cuối", en: "last entry" }, tone: live }
+  - { id: e8, mono: true, label: "8 · 19:59", sub: { vi: "mục cuối", en: "last entry" }, tone: warm }
+  - { id: e20, mono: true, label: "20 · 00:59", sub: { vi: "mục cuối", en: "last entry" }, tone: live }
+  - { id: out, label: { vi: "20 dòng", en: "20 rows" }, sub: { vi: "20 lần đọc", en: "20 reads" }, tone: new }
+rows:
+  - [t]
+  - [e1, e8, e20]
+  - [out]
+edges:
+  - { from: t, to: idx, label: LATERAL }
+  - { from: idx, to: out }

@@ -75,11 +75,11 @@ describe('axe-core: a returning player, dark theme, 375 px (FIX-1)', () => {
     expect(await problems()).toEqual([]);
   });
 
-  it('#/me (v24, L323): skill map with level words, 50 badges (v47: + Redis L1–L2, OLAP L1–L3, search L1–L3, Graph L1–L2), no certificate; the skill and Part pages show levels', async () => {
+  it('#/me (v24, L323): skill map with level words, 53 badges (v47: + Redis L1–L2, OLAP L1–L3, search L1–L3, time-series L1–L3, Graph L1–L2), no certificate; the skill and Part pages show levels', async () => {
     await visit('#/me');
     const home = document.getElementById('home')!;
     expect(home.querySelector('[data-me=skill-map]')).not.toBeNull();
-    expect(home.querySelectorAll('[data-me=badges] details [data-badge]')).toHaveLength(50);
+    expect(home.querySelectorAll('[data-me=badges] details [data-badge]')).toHaveLength(53);
     expect(home.textContent).not.toMatch(/Tải (PNG|SVG)/);
     expect(home.querySelector('[data-skill=select] a')?.getAttribute('aria-label')).toMatch(/^Chọn cột \(SELECT\): (Làm được, mức 2 trên 4|Đã gặp, mức 1 trên 4, cần ôn)$/); // save-v5: taught by ch1; the real clock decides overdue
     for (const hash of ['#/learn/sql/1', '#/learn/skill/select']) {

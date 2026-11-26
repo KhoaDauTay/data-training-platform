@@ -1,0 +1,20 @@
+# TS-9 (v47 L972): the reading at 15:00 is compared with the 6 readings before it (not with itself) and falls far outside the band.
+# Lesson: e-ts-l2-04 (Ý chính). Data = the lab's CQRU1001: 6 earlier readings mean -16.92, standard deviation 0.74; 15:00 reads -9.0.
+title: { vi: "So với 6 số đo trước", en: "Against the 6 readings before" }
+caption:
+  vi: "6 số đo trước 15:00 có trung bình -16,92 và độ lệch chuẩn 0,74, nên dải bình thường là -19,14 tới -14,70; số -9,0 lệch khoảng 10,7 lần độ lệch chuẩn."
+  en: "The 6 readings before 15:00 have a mean of -16.92 and a standard deviation of 0.74, so the normal band is -19.14 to -14.70; the -9.0 reading is about 10.7 standard deviations away."
+alt:
+  vi: "Một số đo được so với dải trung bình cộng trừ 3 độ lệch chuẩn của các số đo ngay trước nó. Nếu số đo đó nằm trong chính khung tính dải, nó kéo dải theo mình và không bị đánh dấu."
+  en: "A reading is compared with the band of mean plus or minus 3 standard deviations of the readings just before it. If the reading sits inside the frame that builds the band, it drags the band with it and is not flagged."
+nodes:
+  - { id: past, label: { vi: "6 số đo trước", en: "6 earlier readings" }, sub: { vi: "trung bình -16,92", en: "mean -16.92" } }
+  - { id: now, label: { vi: "15:00: -9,0", en: "15:00: -9.0" }, sub: { vi: "số đo đang xét", en: "reading checked" }, tone: warm }
+  - { id: band, label: { vi: "dải bình thường", en: "normal band" }, sub: { vi: "-19,14 tới -14,70", en: "-19.14 to -14.70" } }
+  - { id: flag, label: { vi: "ngoài dải", en: "outside the band" }, sub: { vi: "đánh dấu", en: "flagged" }, tone: live }
+rows:
+  - [past, now]
+  - [band, flag]
+edges:
+  - { from: past, to: band }
+  - { from: band, to: flag }

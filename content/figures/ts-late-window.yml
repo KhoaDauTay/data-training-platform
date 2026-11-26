@@ -1,0 +1,22 @@
+# TS-8 (v47 L972): readings measured at 07:30–07:50 arrive at 09:20, after the 09:05 summary; the 07:00 hour must be recomputed.
+# Lesson: e-ts-l2-03 (Ý chính). Data = the lab: sensor 2, three late readings; hourly 07:00 has 3 readings at 09:05, 6 after the recompute.
+title: { vi: "Giờ cũ nhận thêm số đo", en: "An old hour gets more readings" }
+caption:
+  vi: "Bảng hourly chạy lúc 09:05 chỉ thấy 3 số đo của giờ 07:00; ba số đo trễ về lúc 09:20, nên giờ đó được tính lại thành 6."
+  en: "The hourly table built at 09:05 sees only 3 readings for the 07:00 hour; three late readings arrive at 09:20, so that hour is recomputed with 6."
+alt:
+  vi: "Số đo về trễ thuộc về giờ lúc nó được đo, không phải giờ nó về. Vì vậy lần chạy sau phải chọn việc theo thời điểm nhận, rồi tính lại những giờ đo của các số đo đó."
+  en: "A late reading belongs to the hour it was measured, not the hour it arrived. So the next run must choose its work by arrival time, then recompute the measurement hours of those readings."
+nodes:
+  - { id: m, label: { vi: "đo 07:30–07:50", en: "at 07:30–07:50" }, sub: { vi: "cảm biến 2", en: "sensor 2 measures" } }
+  - { id: arr, label: { vi: "về lúc 09:20", en: "arrived 09:20" }, sub: { vi: "sau lần chạy", en: "after the run" }, tone: new }
+  - { id: run, shape: doc, label: { vi: "hourly lúc 09:05", en: "hourly at 09:05" }, sub: { vi: "07:00: 3 số đo", en: "07:00: 3 readings" }, tone: ghost }
+  - { id: fix, label: { vi: "tính lại 07:00", en: "recompute 07:00" }, sub: { vi: "6 số đo", en: "6 readings" }, tone: live }
+rows:
+  - [m]
+  - [arr, run]
+  - [fix]
+edges:
+  - { from: m, to: arr }
+  - { from: arr, to: fix }
+  - { from: run, to: fix }
