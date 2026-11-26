@@ -1,0 +1,27 @@
+# MG-1 (tools/v39/diagram-plan.md): same element or any elements. Lesson: e-mg-l1-08 (Lỗi hay gặp).
+# Data (lab.setup, run on mingo): order 1 lines {p1, qty 2}, {p4, qty 1}; order 5 lines {p6, qty 2}, {p4, qty 2}.
+# find({"lines.sku": "p4", "lines.qty": {$gte: 2}}) → 1, 5; find({lines: {$elemMatch: {sku: "p4", qty: {$gte: 2}}}}) → 5.
+# Deviation: the plan's ticks are tinted cells named in each table's sub; the filters are in the caption (too long to draw).
+# Source: https://www.mongodb.com/docs/manual/tutorial/query-array-of-documents/
+title: { vi: "Cùng một phần tử hay phần tử bất kỳ", en: "The same element or any elements" }
+caption:
+  vi: "Điều kiện: sku là p4 và qty ≥ 2. Dấu chấm ({\"lines.sku\": \"p4\", \"lines.qty\": {$gte: 2}}) cho mỗi điều kiện tìm phần tử riêng, nên đơn 1 khớp nhờ hai dòng khác nhau. $elemMatch đòi cả hai điều kiện trên cùng một phần tử. Ô tô màu là ô mà lần khớp dựa vào."
+  en: "The condition: sku is p4 and qty ≥ 2. Dot notation ({\"lines.sku\": \"p4\", \"lines.qty\": {$gte: 2}}) lets each condition find its own element, so order 1 matches through two different lines. $elemMatch needs both conditions on one element. A tinted cell is one the match relies on."
+alt:
+  vi: "Hai nhóm, cùng hai đơn. Đơn 1 có dòng p1 qty 2 và dòng p4 qty 1; đơn 5 có dòng p6 qty 2 và dòng p4 qty 2. Với dấu chấm, đơn 1 khớp vì qty 2 nằm ở dòng 1 còn p4 ở dòng 2, hai phần tử khác nhau; đơn 5 khớp nhờ dòng 2; kết quả là đơn 1 và 5. Với $elemMatch, đơn 1 không khớp vì không dòng nào đủ cả hai; đơn 5 khớp nhờ dòng 2 (p4, qty 2); kết quả chỉ có đơn 5."
+  en: "Two groups, the same two orders. Order 1 has line p1 qty 2 and line p4 qty 1; order 5 has line p6 qty 2 and line p4 qty 2. With dot notation, order 1 matches because qty 2 is on line 1 and p4 on line 2, two different elements; order 5 matches through line 2; the result is orders 1 and 5. With $elemMatch, order 1 does not match because no line has both; order 5 matches through line 2 (p4, qty 2); the result is order 5 only."
+groups:
+  - { id: dot, label: { vi: "dấu chấm", en: "dot notation" }, nodes: [a1, a5, ar] }
+  - { id: em, label: $elemMatch, nodes: [b1, b5, br] }
+nodes:
+  - { id: a1, shape: grid, label: { vi: "đơn 1", en: "order 1" }, head: [sku, qty], cells: [[p1, "2"], [p4, "1"]], cellTone: { "0:1": warm, "1:0": warm }, sub: { vi: "khớp: 2 phần tử", en: "2 elements match" } }
+  - { id: a5, shape: grid, label: { vi: "đơn 5", en: "order 5" }, head: [sku, qty], cells: [[p6, "2"], [p4, "2"]], cellTone: { "1:0": new, "1:1": new }, sub: { vi: "khớp: dòng 2", en: "line 2 matches" } }
+  - { id: ar, shape: key, label: { vi: "kết quả: 1, 5", en: "result: 1, 5" }, tone: warm }
+  - { id: b1, shape: grid, label: { vi: "đơn 1", en: "order 1" }, head: [sku, qty], cells: [[p1, "2"], [p4, "1"]], sub: { vi: "không dòng nào đủ", en: "no line has both" } }
+  - { id: b5, shape: grid, label: { vi: "đơn 5", en: "order 5" }, head: [sku, qty], cells: [[p6, "2"], [p4, "2"]], cellTone: { "1:0": new, "1:1": new }, sub: { vi: "khớp: dòng 2", en: "line 2 matches" } }
+  - { id: br, shape: key, label: { vi: "kết quả: 5", en: "result: 5" }, tone: live }
+rows:
+  - [a1, a5]
+  - [ar]
+  - [b1, b5]
+  - [br]

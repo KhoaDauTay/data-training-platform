@@ -8,6 +8,7 @@ title_en: Missing fields, null, types and regex
 kind: lab
 runtime: browser
 minutes: 12
+figures: [{ name: mg-missing-vs-null, at: idea }]
 objectives:
   - vi: Phân biệt trường thiếu và trường bằng `null` bằng `$exists` và `$type`.
     en: Tell a missing field from a `null` field with `$exists` and `$type`.
@@ -116,6 +117,8 @@ MongoDB không bắt mọi tài liệu có cùng trường, nên "không có ema
 
 Làm được: tìm đúng tài liệu thiếu dữ liệu, kiểm kiểu của một trường, và tìm theo một phần của chuỗi.
 
+Hình cuối mục này chạy ba bộ lọc trên năm khách của lab: Chi không có trường `email`, Em có `email: null`, và mỗi bộ lọc bắt đúng những ai.
+
 ## Cú pháp
 
 ```text
@@ -214,6 +217,8 @@ MongoDB does not force documents to share fields, so "no email" comes in two for
 `$regex` filters strings by regular expression. `$options: "i"` ignores case. A case-sensitive pattern starting with `^` (anchored at the start) is the form that uses an index best; an unanchored pattern must look at every value.
 
 You can now: find documents with missing data, check a field's type, and search by part of a string.
+
+The figure at the end of this section runs the three filters over the lab's five customers: Chi has no `email` field, Em has `email: null`, and it shows exactly who each filter catches.
 
 ## Syntax
 

@@ -1,0 +1,29 @@
+# MG-2 (tools/v39/diagram-plan.md): three filters, two kinds of "no email". Lesson: e-mg-l1-09 (Ý chính).
+# Data (lab.setup, run on mingo): c1 An, c2 Binh, c4 Dung have an email; c3 Chi has no email field; c5 Em has email: null.
+# {email: null} → c3, c5; {email: {$exists: false}} → c3; {email: {$type: "null"}} → c5.
+# Deviation: the plan's column headers carry the two cases; here a customers table names them and the matrix uses ids.
+# Source: https://www.mongodb.com/docs/manual/tutorial/query-for-null-fields/
+title: { vi: "Thiếu trường hay bằng null", en: "Missing field or null" }
+caption:
+  vi: "Bộ lọc { email: null } khớp cả tài liệu thiếu trường email lẫn tài liệu có email: null. $exists: false chỉ lấy trường thiếu, $type: \"null\" chỉ lấy giá trị null."
+  en: "The filter { email: null } matches both a document without an email field and one with email: null. $exists: false takes only the missing field, $type: \"null\" only the null value."
+alt:
+  vi: "Năm khách: c1 An, c2 Binh và c4 Dung có email; c3 Chi không có trường email; c5 Em có email bằng null. Bộ lọc email: null khớp c3 và c5. Bộ lọc $exists: false chỉ khớp c3. Bộ lọc $type: \"null\" chỉ khớp c5."
+  en: "Five customers: c1 An, c2 Binh and c4 Dung have an email; c3 Chi has no email field; c5 Em has email set to null. The filter email: null matches c3 and c5. The filter $exists: false matches only c3. The filter $type: \"null\" matches only c5."
+nodes:
+  - id: cust
+    shape: grid
+    label: customers
+    head: [_id, name, email]
+    cells: [[c1, An, an@…], [c2, Binh, binh@…], [c3, Chi, { vi: "(không có)", en: "(no field)" }], [c4, Dung, dung@…], [c5, Em, "null"]]
+    cellTone: { "2:2": warm, "4:2": warm }
+  - id: m
+    shape: grid
+    label: { vi: "tài liệu khớp", en: "documents matched" }
+    sub: { vi: "✓ = khớp, · = không", en: "✓ = match, · = no" }
+    head: ["email:", c1, c2, c3, c4, c5]
+    cells: [["null", "·", "·", "✓", "·", "✓"], ["$exists: false", "·", "·", "✓", "·", "·"], ['$type: "null"', "·", "·", "·", "·", "✓"]]
+    toneOf: { "✓": new }
+rows:
+  - [cust]
+  - [m]

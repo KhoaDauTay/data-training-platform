@@ -8,6 +8,7 @@ title_en: "Pagination: Limit, LastEvaluatedKey, ExclusiveStartKey"
 kind: lab
 runtime: browser
 minutes: 10
+figures: [{ name: dy-pagination, at: idea }]
 objectives:
   - vi: Đọc một item collection theo từng trang bằng `Limit`.
     en: Read an item collection page by page with `Limit`.
@@ -236,6 +237,8 @@ Nếu còn dữ liệu, phản hồi có `LastEvaluatedKey`: khóa của item cu
 
 Khi item cuối nằm đúng ở ranh giới, DynamoDB có thể vẫn trả `LastEvaluatedKey`, và lần gọi sau trả 0 item. Code phải chịu được trường hợp đó.
 
+Hình từng bước ở cuối mục này đọc 4 đơn của C-01 với `Limit` 2: lần gọi 2 vẫn trả `LastEvaluatedKey`, và chỉ lần gọi 3, trả 0 item, mới cho biết đã hết.
+
 ## Cú pháp
 
 ```text
@@ -322,6 +325,8 @@ If more data is left, the response carries `LastEvaluatedKey`: the key of the la
 `Limit` caps the items **read**, not the items **returned after the filter**. With a `FilterExpression`, a page can return fewer than `Limit` items, even 0, and still carry a `LastEvaluatedKey`.
 
 When the last item sits exactly on the boundary, DynamoDB may still return a `LastEvaluatedKey`, and the next call returns 0 items. Your code must cope with that.
+
+The step-through figure at the end of this section reads C-01's 4 orders with `Limit` 2: call 2 still returns `LastEvaluatedKey`, and only call 3, with 0 items, tells you the end has come.
 
 ## Syntax
 

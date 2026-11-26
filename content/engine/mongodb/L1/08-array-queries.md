@@ -8,6 +8,7 @@ title_en: Querying arrays and $elemMatch
 kind: lab
 runtime: browser
 minutes: 14
+figures: [{ name: mg-elemmatch, at: pitfalls }]
 objectives:
   - vi: Lọc tài liệu có mảng chứa một giá trị, chứa đủ nhiều giá trị (`$all`) hoặc có độ dài cho trước (`$size`).
     en: Filter documents whose array contains a value, contains several values (`$all`) or has a given length (`$size`).
@@ -198,6 +199,8 @@ db.products.find({ tags: { $all: ["gift", "hot"] } })
 
 Bản sai trả rỗng: so bằng cả mảng đòi đúng các phần tử theo đúng thứ tự, mà `p6` lưu `["hot", "gift"]`. Bản sửa trả `p6`. Chỉ so cả mảng khi thứ tự thật sự có nghĩa.
 
+Hình cuối mục này đặt đơn 1 và đơn 5 của lab cạnh nhau: với dấu chấm, đơn 1 khớp nhờ hai dòng khác nhau; với `$elemMatch`, chỉ đơn 5 có một dòng đủ cả hai điều kiện.
+
 ## Thực hành
 
 Trước khi làm, đoán câu hỏi dự đoán: điều kiện dot notation không có `$elemMatch` trả về đơn nào? Rồi làm năm bước. Ba bước đầu trên `products`: một nhãn, hai nhãn bất kể thứ tự, rồi mảng rỗng bằng `$size`. Hai bước sau trên `orders`: một điều kiện dot notation vào mảng tài liệu, rồi hai điều kiện phải đúng trên cùng một dòng.
@@ -298,6 +301,8 @@ db.products.find({ tags: { $all: ["gift", "hot"] } })
 ```
 
 The wrong version returns nothing: equality on a whole array needs exactly those elements in exactly that order, and `p6` stores `["hot", "gift"]`. The fix returns `p6`. Compare a whole array only when the order really matters.
+
+The figure at the end of this section puts the lab's orders 1 and 5 side by side: with dot notation, order 1 matches through two different lines; with `$elemMatch`, only order 5 has one line meeting both conditions.
 
 ## Practice
 

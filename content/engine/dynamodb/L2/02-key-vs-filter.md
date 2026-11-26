@@ -8,6 +8,7 @@ title_en: "Condition on the key or in the filter"
 kind: lab
 runtime: browser
 minutes: 12
+figures: [{ name: dy-read-pipeline, at: idea }]
 objectives:
   - vi: Viết `FilterExpression` với tên thay thế cho từ dành riêng.
     en: Write a `FilterExpression` with stand-in names for reserved words.
@@ -244,6 +245,8 @@ Chỉ bước đầu làm giảm lượng đọc, tức giảm tiền. Bộ lọ
 
 Bộ lọc của Query không được nhắc tới partition key hay sort key. DynamoDB từ chối với lỗi `ValidationException`. Muốn lọc theo sort key, viết điều kiện đó trong `KeyConditionExpression`. Khi thiết kế khóa, đưa thứ hay lọc nhất (ngày, loại, trạng thái) vào đầu sort key.
 
+Hình cuối mục này đếm item qua ba bước cho đơn của C-01: đọc 4, bộ lọc còn 3, projection chỉ giữ `total`; bạn trả tiền cho 4.
+
 ## Cú pháp
 
 ```text
@@ -326,6 +329,8 @@ A Query goes through three steps:
 Only the first step reduces what is read, which is what you pay for. The filter and the projection only make the response smaller.
 
 A Query filter cannot mention the partition key or the sort key. DynamoDB rejects it with a `ValidationException`. To filter on the sort key, write that condition in the `KeyConditionExpression`. When designing a key, put what you filter on most (date, type, status) at the front of the sort key.
+
+The figure at the end of this section counts items through the three steps for C-01's orders: 4 read, 3 left after the filter, the projection keeps only `total`; you pay for 4.
 
 ## Syntax
 

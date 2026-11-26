@@ -1,0 +1,35 @@
+# MG-3 (tools/v39/diagram-plan.md): $, $[], $[id] + arrayFilters. Lesson: e-mg-l2-01 (Ý chính).
+# Data (lab.setup, run on mingo, each from the pristine data): order 5 lines {p6, qty 2}, {p4, qty 2};
+# updateOne({_id: 5, "lines.qty": {$gte: 2}}, {$inc: {"lines.$.qty": 1}}) → 3, 2; {$inc: {"lines.$[].qty": 1}} → 3, 3;
+# {$inc: {"lines.$[l].qty": 1}}, {arrayFilters: [{"l.sku": "p4"}]} → 2, 3.
+# Sources: https://www.mongodb.com/docs/manual/reference/operator/update/positional/, …/positional-all/, …/positional-filtered/
+title: { vi: "$, $[] và $[l]: sửa phần tử nào", en: "$, $[] and $[l]: which element changes" }
+caption:
+  vi: "Cả ba lệnh tăng qty thêm 1 trong đơn 5. $ sửa phần tử đầu tiên khớp điều kiện mảng trong filter, $[] sửa mọi phần tử, $[l] sửa mọi phần tử thỏa điều kiện l trong arrayFilters. Ô tô màu là ô được sửa."
+  en: "All three commands add 1 to qty in order 5. $ changes the first element that matches the array condition in the filter, $[] changes every element, $[l] changes every element that meets condition l in arrayFilters. A tinted cell is a changed one."
+alt:
+  vi: "Đơn 5 có hai dòng: p6 qty 2 và p4 qty 2. Lệnh dùng lines.$.qty với filter qty ≥ 2: cả hai dòng thỏa, nhưng $ chỉ sửa dòng khớp đầu tiên, nên p6 thành 3, p4 giữ 2."
+  en: "Order 5 has two lines: p6 qty 2 and p4 qty 2. The command uses lines.$.qty with the filter qty ≥ 2: both lines qualify, but $ changes only the first matching line, so p6 becomes 3 and p4 stays 2."
+nodes:
+  - { id: op, mono: true, label: lines.$.qty, sub: { vi: "khớp đầu tiên", en: "first match" }, tone: new }
+  - { id: f, shape: key, label: { vi: "filter: qty ≥ 2", en: "filter: qty ≥ 2" } }
+  - { id: doc, shape: grid, label: { vi: "đơn 5", en: "order 5" }, head: [sku, qty], cells: [[p6, "2 → 3"], [p4, "2"]], cellTone: { "0:1": new } }
+rows:
+  - [op]
+  - [doc, f]
+edges:
+  - { from: op, to: doc, label: "$inc qty +1" }
+steps:
+  - say: { vi: "$: phần tử khớp đầu tiên.", en: "$: the first matching element." }
+  - say: { vi: "$[]: mọi phần tử.", en: "$[]: every element." }
+    alt: { vi: "Lệnh dùng lines.$[].qty, không cần điều kiện mảng: cả hai dòng tăng, p6 và p4 đều từ 2 thành 3.", en: "The command uses lines.$[].qty and needs no array condition: both lines grow, p6 and p4 each go from 2 to 3." }
+    set:
+      op: { label: "lines.$[].qty", sub: { vi: "mọi phần tử", en: "every element" } }
+      f: { label: { vi: "không cần điều kiện", en: "no condition needed" }, tone: ghost }
+      doc: { cells: [[p6, "2 → 3"], [p4, "2 → 3"]], cellTone: { "0:1": new, "1:1": new } }
+  - say: { vi: "$[l] với arrayFilters: mọi phần tử thỏa l.", en: "$[l] with arrayFilters: every element meeting l." }
+    alt: { vi: "Lệnh dùng lines.$[l].qty với arrayFilters l.sku = p4: chỉ dòng p4 thỏa l, nên p4 từ 2 thành 3, p6 giữ 2.", en: "The command uses lines.$[l].qty with arrayFilters l.sku = p4: only the p4 line meets l, so p4 goes from 2 to 3 and p6 stays 2." }
+    set:
+      op: { label: "lines.$[l].qty", sub: { vi: "mọi phần tử thỏa l", en: "each match of l" } }
+      f: { label: "arrayFilters: l.sku = p4" }
+      doc: { cells: [[p6, "2"], [p4, "2 → 3"]], cellTone: { "1:1": new } }

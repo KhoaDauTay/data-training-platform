@@ -1,4 +1,3 @@
-figures: [{ name: pg-toast-pointer, at: idea, variant: out }]
 ---
 id: e-ds-l4-07
 engine: design
@@ -9,6 +8,7 @@ title_en: Splitting a table by columns (vertical partitioning) - 1:1 tables and 
 kind: lab
 runtime: browser
 minutes: 18
+figures: [{ name: pg-toast-pointer, at: idea, variant: out }]
 objectives:
   - vi: Nhận ra bảng "rộng" làm câu hay chạy đọc nhiều trang hơn cần, và đo nó bằng kích thước bảng và `Buffers`.
     en: Spot a "wide" table that makes the frequent query read more pages than it needs, and measure it with table size and `Buffers`.

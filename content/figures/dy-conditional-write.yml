@@ -1,0 +1,47 @@
+# DY-5 (tools/v39/diagram-plan.md): write only if, checked atomically. Lesson: e-dy-l2-04 (Ý chính).
+# Data (lab.setup, run on dynoxide): Books 978-0-02 "Keys and Values", stock 3; UpdateItem SET stock = stock - :q with
+# ConditionExpression stock >= :q, :q = 2 → stock 1, 1 WCU. The two desks are an illustration of the lesson's "stay within a
+# limit" pattern on its own item; the second call fails its condition (1 >= 2 is false) and still uses WCU (lesson text, AWS).
+# Deviation: the exception name is broken at a space to fit 2 × 18; the caption and alt carry it whole.
+# Sources: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/read-write-operations.html, …/Expressions.ConditionExpressions.html
+title: { vi: "Ghi nếu điều kiện đúng, kiểm và ghi một bước", en: "Write only if, checked and written in one step" }
+caption:
+  vi: "Hai quầy cùng lấy 2 cuốn bằng SET stock = stock - :q với ConditionExpression stock >= :q. DynamoDB kiểm và ghi trong một bước nguyên tử, nên không bán lố; lần bị từ chối nhận ConditionalCheckFailedException và vẫn tốn WCU. PutItem không điều kiện thì ghi đè lặng lẽ."
+  en: "Two desks each take 2 copies with SET stock = stock - :q and ConditionExpression stock >= :q. DynamoDB checks and writes in one atomic step, so nothing is oversold; the refused call gets ConditionalCheckFailedException and still uses WCU. A PutItem with no condition overwrites silently."
+alt:
+  vi: "Quầy A gửi lệnh trừ 2 cuốn của sách 978-0-02 nếu stock ≥ 2. Stock đang là 3, điều kiện 3 ≥ 2 đúng, nên stock thành 1."
+  en: "Desk A sends a command to take 2 copies of book 978-0-02 if stock ≥ 2. Stock is 3, the condition 3 ≥ 2 holds, so stock becomes 1."
+nodes:
+  - { id: a, label: { vi: "Quầy A: lấy 2", en: "Desk A: takes 2" }, sub: { vi: "nếu stock ≥ 2", en: "if stock ≥ 2" }, tone: new }
+  - { id: b, label: { vi: "Quầy B: lấy 2", en: "Desk B: takes 2" }, sub: { vi: "nếu stock ≥ 2", en: "if stock ≥ 2" }, tone: ghost }
+  - { id: item, mono: true, label: 978-0-02, sub: "stock 3 → 1", tone: new }
+  - { id: ok, shape: key, label: { vi: "3 ≥ 2: ghi", en: "3 ≥ 2: written" }, tone: live }
+  - { id: no, label: ConditionalCheck Failed, tone: dead }
+  - { id: wcu, shape: key, label: { vi: "vẫn tốn WCU", en: "still uses WCU" }, tone: warm }
+  - { id: put, label: { vi: "PutItem không điều kiện", en: "PutItem, no condition" }, tone: ghost }
+  - { id: ow, shape: key, label: { vi: "ghi đè lặng lẽ", en: "silent overwrite" }, tone: ghost }
+rows:
+  - [a, b]
+  - [item]
+  - [ok, no, wcu]
+  - [put, ow]
+edges:
+  - { from: a, to: item }
+  - { from: b, to: item }
+  - { from: put, to: ow, dash: true }
+steps:
+  - say: { vi: "Kiểm tra và ghi trong cùng một bước nguyên tử.", en: "Check and write in one atomic step." }
+    show: [a, b, item, ok]
+  - say: { vi: "Điều kiện sai: lỗi, item giữ nguyên, không bán lố.", en: "Condition false: an error, item unchanged, no overselling." }
+    show: [a, b, item, no, wcu]
+    alt: { vi: "Quầy B gửi cùng lệnh. Stock giờ là 1, điều kiện 1 ≥ 2 sai: DynamoDB từ chối với ConditionalCheckFailedException, item giữ stock 1, và lần ghi bị từ chối vẫn tốn WCU.", en: "Desk B sends the same command. Stock is now 1, the condition 1 ≥ 2 is false: DynamoDB refuses with ConditionalCheckFailedException, the item keeps stock 1, and the refused write still uses WCU." }
+    set:
+      a: { tone: ghost }
+      b: { tone: new }
+      item: { sub: { vi: "stock 1, không đổi", en: "stock 1, unchanged" }, tone: plain }
+  - say: { vi: "Không có điều kiện, lần ghi sau đè lần trước.", en: "Without a condition, the later write overwrites the earlier one." }
+    alt: { vi: "Cách khác: PutItem không điều kiện ghi cả item mới đè lên item cũ, không kiểm gì và không báo gì, nên lần ghi sau xóa mất thay đổi của lần trước.", en: "The other way: a PutItem with no condition writes the new item over the old one, checks nothing and says nothing, so the later write wipes out the earlier change." }
+    show: [item, put, ow]
+    set:
+      item: { sub: { vi: "bị ghi đè", en: "overwritten" }, tone: warm }
+      ow: { tone: warm }

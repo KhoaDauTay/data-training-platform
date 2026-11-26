@@ -1,0 +1,29 @@
+# DY-2 (tools/v39/diagram-plan.md): key condition, then filter, then projection. Lessons: e-dy-l2-02 (Ý chính), e-dy-l2-13 (Ý chính).
+# Data (lab.setup of e-dy-l2-02, run on dynoxide): Query customerId = C-01, FilterExpression status = DELIVERED,
+# ProjectionExpression total → ScannedCount 4, Count 3 (O-101, O-102, O-104; totals 770000, 770000, 120000).
+# Deviation: the plan's funnel is a bar chart (bar = items at that step); the money chip is the first bar's note.
+# Sources: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.Pagination.html, …/read-write-operations.html
+title: { vi: "Ba bước của một Query", en: "The three steps of a Query" }
+caption:
+  vi: "Chỉ điều kiện khóa làm giảm số item đọc, tức giảm tiền. Bộ lọc bỏ item sau khi đã đọc, projection chỉ cắt thuộc tính trả về. Limit đếm item ở bước đọc, trước bộ lọc."
+  en: "Only the key condition lowers the items read, and so the cost. The filter drops items after they were read, the projection only trims the attributes returned. Limit counts items at the read step, before the filter."
+alt:
+  vi: "Query khách C-01 đi qua ba bước. KeyCondition đọc 4 item, và bạn trả tiền cho 4 item này. Filter status = DELIVERED bỏ 1 item đã đọc, còn 3. Projection chỉ giữ thuộc tính total của 3 item đó. Phản hồi ghi ScannedCount 4, Count 3. Limit đếm ở bước 1, bước đọc."
+  en: "A Query for customer C-01 goes through three steps. KeyCondition reads 4 items, and you pay for those 4. The filter status = DELIVERED drops 1 item it already read, leaving 3. The projection keeps only the attribute total of those 3. The response says ScannedCount 4, Count 3. Limit counts at step 1, the read step."
+nodes:
+  - { id: q, label: Query, sub: "customerId = C-01" }
+  - id: f
+    shape: bars
+    label: { vi: "item qua từng bước", en: "items at each step" }
+    items:
+      - { label: KeyCondition, value: 4, note: { vi: "đọc 4, tính tiền", en: "reads 4, billed" }, tone: warm }
+      - { label: Filter, value: 3, note: { vi: "còn 3, đã đọc 4", en: "3 left, 4 read" } }
+      - { label: Projection, value: 3, note: { vi: "chỉ còn total", en: "total only" } }
+  - { id: g, shape: key, label: "ScannedCount 4 · Count 3", tone: live }
+  - { id: lim, shape: key, label: { vi: "Limit đếm ở bước 1", en: "Limit counts at step 1" } }
+rows:
+  - [q]
+  - [f]
+  - [g, lim]
+edges:
+  - { from: q, to: f }

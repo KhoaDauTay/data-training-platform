@@ -8,6 +8,7 @@ title_en: "Query and Scan: same result, different price"
 kind: lab
 runtime: browser
 minutes: 10
+figures: [{ name: dy-query-vs-scan, at: idea }]
 objectives:
   - vi: Đọc `Count` và `ScannedCount` để biết request đã đọc bao nhiêu item.
     en: Read `Count` and `ScannedCount` to know how many items a request read.
@@ -236,6 +237,8 @@ Phản hồi cho biết hai con số:
 
 Bảng 120 item thì `Scan` đọc nhiều gấp 30 lần `Query` cho cùng 4 đơn. Bảng 10 triệu item thì `Scan` phải phân trang qua hàng nghìn lần gọi 1 MB. Scan vẫn có chỗ dùng: bảng nhỏ, việc chạy một lần, xuất dữ liệu. Với câu hỏi lặp lại, hãy thiết kế khóa (hoặc index (chỉ mục) ở L3) để thành `Query`.
 
+Hình từng bước ở cuối mục này so hai cách trên bảng `Orders` 120 item của lab: `Query` đọc 4 item của C-01, `Scan` đọc cả 120 để trả về đúng 4 item đó.
+
 ## Cú pháp
 
 ```text
@@ -331,6 +334,8 @@ The response carries two numbers:
 `Select: "COUNT"` returns only the number, but each item still has to be read, so the price is the same.
 
 With 120 items a `Scan` reads 30 times more items than a `Query` for the same 4 orders. With 10 million items a `Scan` has to page through thousands of 1 MB calls. Scan still has its uses: small tables, one-off jobs, exports. For a question you ask again and again, design the key (or an index, in L3) so that it becomes a `Query`.
+
+The step-through figure at the end of this section compares the two on the lab's 120-item table `Orders`: `Query` reads C-01's 4 items, `Scan` reads all 120 to return the same 4.
 
 ## Syntax
 

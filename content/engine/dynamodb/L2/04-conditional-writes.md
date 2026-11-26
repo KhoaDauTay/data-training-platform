@@ -8,6 +8,7 @@ title_en: "Conditional writes: no overwrites, no lost updates"
 kind: lab
 runtime: browser
 minutes: 14
+figures: [{ name: dy-conditional-write, at: idea }]
 objectives:
   - vi: Chỉ thêm item khi khóa còn mới, bằng `attribute_not_exists`.
     en: Insert an item only when its key is new, with `attribute_not_exists`.
@@ -125,6 +126,8 @@ Khi điều kiện sai:
 
 Ghi có điều kiện idempotent khi điều kiện kiểm chính thuộc tính đang sửa: gửi lại bước 3 lần nữa sẽ bị từ chối vì giá đã là `92000`, nên không có gì bị ghi hai lần.
 
+Hình từng bước ở cuối mục này cho hai quầy cùng lấy 2 cuốn của sách `978-0-02` (còn 3): lần thứ hai bị từ chối mà vẫn tốn WCU, còn `PutItem` không điều kiện thì ghi đè lặng lẽ.
+
 ## Cú pháp
 
 ```text
@@ -220,6 +223,8 @@ When the condition is false:
 - `ReturnValuesOnConditionCheckFailure: "ALL_OLD"` puts the current item into the error.
 
 A conditional write is idempotent when the condition checks the attribute being changed: sending step 3 again is rejected because the price is already `92000`, so nothing is written twice.
+
+The step-through figure at the end of this section has two desks each take 2 copies of book `978-0-02` (3 left): the second is refused yet still uses WCU, while a `PutItem` with no condition overwrites silently.
 
 ## Syntax
 

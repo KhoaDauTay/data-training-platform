@@ -8,6 +8,7 @@ title_en: "Work out RCU before you read"
 kind: predict
 runtime: docs
 minutes: 12
+figures: [{ name: dy-capacity-rounding, at: idea }]
 objectives:
   - vi: Tính RCU của GetItem, BatchGetItem, Query và Scan theo luật làm tròn 4 KB.
     en: Compute the RCU of GetItem, BatchGetItem, Query and Scan with the 4 KB rounding rule.
@@ -109,6 +110,8 @@ Cỡ luôn làm tròn lên bội số 4 KB, nhưng làm tròn **ở đâu** tùy
 
 Không làm rẻ hơn: `ProjectionExpression`, `Select: "COUNT"`, đọc item không tồn tại.
 
+Hình cuối mục này đặt ba cách đọc cạnh nhau: `Query` làm tròn một lần cho cả 1500 item, `GetItem` làm tròn từng item, `BatchGetItem` cũng làm tròn từng item rồi mới cộng.
+
 ## Ví dụ
 
 1500 item, mỗi item 64 byte, đọc bằng một Query:
@@ -153,6 +156,8 @@ Size is always rounded up to a multiple of 4 KB, but **where** it is rounded dep
 - `Scan`: like Query, over every item **read**, including items the filter drops.
 
 Never cheaper: `ProjectionExpression`, `Select: "COUNT"`, reading an item that does not exist.
+
+The figure at the end of this section puts the three reads side by side: `Query` rounds once for all 1500 items, `GetItem` rounds each item, and `BatchGetItem` also rounds each item before adding.
 
 ## Example
 

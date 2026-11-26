@@ -8,6 +8,7 @@ title_en: "Query: read an item collection"
 kind: lab
 runtime: browser
 minutes: 12
+figures: [{ name: dy-query-vs-scan, at: idea, variant: query }]
 objectives:
   - vi: Viết `KeyConditionExpression` với điều kiện bằng trên partition key.
     en: Write a `KeyConditionExpression` with an equality on the partition key.
@@ -251,6 +252,8 @@ Không đặt được điều kiện lên thuộc tính thường trong `KeyCon
 
 Sort key chuỗi được so theo byte UTF-8. Nhờ đặt ngày ở đầu `orderId`, khoảng ngày trở thành khoảng sort key. Cận trên "2026-09-30" sẽ **loại** đơn `2026-09-30#O-…`, vì chuỗi dài hơn đứng sau. Dùng một cận lớn hơn như "2026-09-31" hoặc "2026-09-30~".
 
+Hình cuối mục này cho thấy `Query` với `customerId = C-01` đi thẳng tới 4 item của C-01, theo thứ tự sort key, và không chạm 116 item còn lại.
+
 ## Cú pháp
 
 ```text
@@ -336,6 +339,8 @@ You cannot put a condition on an ordinary attribute in the `KeyConditionExpressi
 `ScanIndexForward: false` reverses the read direction (ascending by default). `Limit` caps how many items are **read**.
 
 String sort keys compare by UTF-8 bytes. Because the date sits at the front of `orderId`, a date range becomes a sort key range. An upper bound of "2026-09-30" would **exclude** order `2026-09-30#O-…`, because the longer string sorts after it. Use a larger bound such as "2026-09-31" or "2026-09-30~".
+
+The figure at the end of this section shows a `Query` with `customerId = C-01` going straight to C-01's 4 items, in sort-key order, without touching the other 116.
 
 ## Syntax
 

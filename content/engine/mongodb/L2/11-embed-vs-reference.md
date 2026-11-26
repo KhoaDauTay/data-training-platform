@@ -8,6 +8,7 @@ title_en: Embed or reference
 kind: concept
 runtime: docs
 minutes: 10
+figures: [{ name: mg-embed-vs-reference, at: idea }]
 objectives:
   - vi: Chọn nhúng hay tham chiếu cho một quan hệ dựa trên cách dữ liệu được đọc, ghi và lớn lên.
     en: Choose embedding or referencing for a relationship from how the data is read, written and grows.
@@ -90,6 +91,8 @@ Nên tham chiếu khi:
 Một cách tự hỏi nhanh: màn hình nào đọc dữ liệu này, đọc bao nhiêu lần so với ghi, và phía "nhiều" lớn tới đâu sau một năm? Đơn hàng có vài dòng hàng và luôn được đọc cùng nhau: nhúng. Sản phẩm có thể nhận hàng chục nghìn đánh giá, còn trang sản phẩm chỉ hiện vài cái mới nhất: tham chiếu, kèm một mảng nhỏ các đánh giá mới nhất trong sản phẩm.
 
 Nhiều người nghĩ MongoDB không bắt schema nên không cần thiết kế. Thật ra vẫn phải thiết kế, theo câu hỏi mà ứng dụng hỏi nhiều nhất, không theo hình bảng của SQL.
+
+Hình cuối mục này vẽ hai trường hợp đó: đơn hàng nhúng các dòng hàng, sản phẩm tham chiếu tới collection `reviews` và chỉ giữ vài đánh giá mới nhất.
 
 ## Cú pháp
 
@@ -180,6 +183,8 @@ In between is copying a few fields (extended reference), such as the customer's 
 A quick way to ask: which screen reads this data, how often is it read compared with written, and how large will the "many" side be after a year? An order has a few lines and they are always read together: embed. A product can collect tens of thousands of reviews while its page shows only the latest few: reference, plus a small array of the latest reviews inside the product.
 
 Many people think that since MongoDB enforces no schema, there is nothing to design. In fact you still design, for the questions your application asks most, not for the table shapes of SQL.
+
+The figure at the end of this section draws those two cases: an order that embeds its lines, and a product that references the collection `reviews` and keeps only a few of the newest reviews.
 
 ## Syntax
 

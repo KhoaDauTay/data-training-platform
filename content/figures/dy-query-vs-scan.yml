@@ -1,0 +1,46 @@
+# DY-1 (tools/v39/diagram-plan.md): one item collection vs the whole table. Lessons: e-dy-l1-09 (Ý chính), e-dy-l1-08 variant `query`.
+# Data (lab.setup, run on dynoxide): Orders has 120 items, 4 of them C-01 (2026-07-28#O-101, 08-28#O-102, 09-17#O-103,
+# 10-19#O-104); Query customerId = C-01 → ScannedCount 4, Count 4; Scan + Filter customerId = C-01 → ScannedCount 120, Count 4.
+# Deviation: the plan's four partition blocks are C-01's collection and one block for the other 116 items.
+# Source: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/read-write-operations.html
+title: { vi: "Query đọc một item collection, Scan đọc cả bảng", en: "Query reads one item collection, Scan reads the whole table" }
+caption:
+  vi: "Bạn trả tiền theo ScannedCount, số item đã đọc, không theo Count, số item trả về. Query đi thẳng tới item collection của C-01 theo thứ tự sort key; Scan đọc cả 120 item rồi mới lọc."
+  en: "You pay for ScannedCount, the items read, not for Count, the items returned. Query goes straight to C-01's item collection in sort-key order; Scan reads all 120 items, then filters."
+alt:
+  vi: "Bảng Orders có 120 item. Item collection của C-01 có 4 đơn theo thứ tự sort key orderId: 2026-07-28#O-101, 2026-08-28#O-102, 2026-09-17#O-103, 2026-10-19#O-104; 116 item còn lại thuộc khách khác. Query với customerId = C-01 chỉ đọc 4 item đó: ScannedCount 4, Count 4."
+  en: "Table Orders has 120 items. C-01's item collection holds 4 orders in sort-key order of orderId: 2026-07-28#O-101, 2026-08-28#O-102, 2026-09-17#O-103, 2026-10-19#O-104; the other 116 items belong to other customers. A Query with customerId = C-01 reads only those 4 items: ScannedCount 4, Count 4."
+nodes:
+  - { id: q, label: Query, sub: "customerId = C-01", tone: new }
+  - { id: s, label: Scan + Filter, sub: "customerId = C-01", tone: warm }
+  - { id: c1, shape: grid, label: { vi: "C-01 (khóa phân vùng)", en: "C-01 (partition key)" }, head: [orderId (sort key)], cells: [["2026-07-28#O-101"], ["2026-08-28#O-102"], ["2026-09-17#O-103"], ["2026-10-19#O-104"]], tone: new }
+  - { id: rest, label: C-02 … C-30, sub: { vi: "116 item khác", en: "116 other items" }, tone: ghost }
+  - { id: cnt, label: ScannedCount 4, sub: Count 4, tone: live }
+rows:
+  - [q, s]
+  - [c1, rest]
+  - [cnt]
+edges:
+  - { from: q, to: c1 }
+  - { from: s, to: c1 }
+  - { from: s, to: rest }
+steps:
+  - say: { vi: "Query đi thẳng tới một item collection, theo thứ tự sort key.", en: "Query goes straight to one item collection, in sort-key order." }
+    show: [q, c1, rest, cnt]
+  - say: { vi: "Scan đọc mọi item rồi mới lọc; bạn trả tiền cho 120.", en: "Scan reads every item, then filters; you pay for 120." }
+    show: [s, c1, rest, cnt]
+    alt: { vi: "Scan với bộ lọc customerId = C-01 đọc cả 120 item, gồm 116 item của khách khác, rồi bỏ chúng sau khi đọc. Kết quả vẫn là 4 đơn của C-01: ScannedCount 120, Count 4.", en: "A Scan with the filter customerId = C-01 reads all 120 items, including the 116 of other customers, and drops them after reading. The result is still C-01's 4 orders: ScannedCount 120, Count 4." }
+    set:
+      c1: { tone: warm }
+      rest: { sub: { vi: "116: đọc rồi bỏ", en: "116: read, dropped" }, tone: warm }
+      cnt: { label: ScannedCount 120, tone: warm }
+variants:
+  query:
+    step: 0
+    title: { vi: "Query đọc một item collection", en: "Query reads one item collection" }
+    caption:
+      vi: "Query chỉ đọc item có cùng partition key, theo thứ tự sort key; ScannedCount bằng số item của collection đó."
+      en: "Query reads only the items with one partition key, in sort-key order; ScannedCount equals the size of that collection."
+    alt:
+      vi: "Bảng Orders có 120 item. Query với customerId = C-01 đi thẳng tới item collection của C-01 và đọc 4 đơn theo thứ tự orderId: 2026-07-28#O-101, 2026-08-28#O-102, 2026-09-17#O-103, 2026-10-19#O-104. 116 item của khách khác không bị đọc: ScannedCount 4, Count 4."
+      en: "Table Orders has 120 items. A Query with customerId = C-01 goes straight to C-01's item collection and reads 4 orders in orderId order: 2026-07-28#O-101, 2026-08-28#O-102, 2026-09-17#O-103, 2026-10-19#O-104. The 116 items of other customers are not read: ScannedCount 4, Count 4."

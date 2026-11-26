@@ -8,6 +8,7 @@ title_en: $lookup then $unwind drops customers with no orders
 kind: predict
 runtime: browser
 minutes: 12
+figures: [{ name: mg-lookup-unwind, at: idea }]
 objectives:
   - vi: Đoán đúng `$unwind` làm gì với tài liệu có mảng rỗng sau `$lookup`.
     en: Predict what `$unwind` does to a document whose array is empty after `$lookup`.
@@ -105,6 +106,8 @@ Hai cách giữ đủ khách:
 
 `$lookup` còn có giá: mỗi tài liệu bên trái phải tìm trong collection kia. Trên server thật, hãy có index trên trường `foreignField`. Nếu hai thứ luôn đọc cùng nhau, cân nhắc nhúng (bài "Nhúng hay tham chiếu").
 
+Hình từng bước ở cuối mục này chạy `$lookup`, rồi `$unwind`, rồi `$unwind` với `preserveNullAndEmptyArrays` trên bốn khách của lab: Dung mất rồi quay lại.
+
 ## Ví dụ
 
 ```text
@@ -177,6 +180,8 @@ Two ways to keep every customer:
 - no `$unwind`, read the array directly (`$size`, `$sum` over the array).
 
 `$lookup` also has a cost: every document on the left searches the other collection. On a real server, have an index on the `foreignField`. If the two are always read together, consider embedding (the "Embed or reference" lesson).
+
+The step-through figure at the end of this section runs `$lookup`, then `$unwind`, then `$unwind` with `preserveNullAndEmptyArrays` on the lab's four customers: Dung disappears, then comes back.
 
 ## Example
 

@@ -8,6 +8,7 @@ title_en: Updating array elements ($, $[], arrayFilters)
 kind: lab
 runtime: browser
 minutes: 14
+figures: [{ name: mg-array-positional, at: idea }]
 objectives:
   - vi: Sửa đúng phần tử mảng đã khớp filter bằng toán tử vị trí `$`.
     en: Update the array element that matched the filter with the positional operator `$`.
@@ -108,6 +109,8 @@ Sửa tại chỗ như vậy tốt hơn đọc cả mảng về ứng dụng r�
 
 Làm được: sửa đúng dòng hàng trong đơn mà không ghi lại cả mảng.
 
+Hình từng bước ở cuối mục này chạy ba cách trên đơn 5 của lab, mỗi lần tăng `qty` thêm 1, để thấy phần tử nào được sửa.
+
 ## Cú pháp
 
 ```text
@@ -201,6 +204,8 @@ The `<id>` name starts with a lowercase letter and holds only letters and digits
 Updating in place beats reading the whole array into the application and writing it back: the command is atomic on the document and does not lose other clients' changes to other elements.
 
 You can now: change exactly the right order lines without rewriting the whole array.
+
+The step-through figure at the end of this section runs the three forms on the lab's order 5, each adding 1 to `qty`, so you can see which element changes.
 
 ## Syntax
 

@@ -1,0 +1,39 @@
+# DY-3 (tools/v39/diagram-plan.md): LastEvaluatedKey → ExclusiveStartKey. Lesson: e-dy-l1-10 (Ý chính).
+# Data (lab.setup, run on dynoxide, Query customerId = C-01, Limit 2): call 1 → O-101, O-102, LastEvaluatedKey O-102;
+# call 2 (ExclusiveStartKey O-102) → O-103, O-104, LastEvaluatedKey O-104; call 3 (ExclusiveStartKey O-104) → 0 items, no key.
+# Source: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.Pagination.html
+title: { vi: "Phân trang bằng LastEvaluatedKey", en: "Paging with LastEvaluatedKey" }
+caption:
+  vi: "Mỗi lần gọi dừng ở Limit (hoặc 1 MB) và trả khóa của item cuối đã đọc (LastEvaluatedKey, viết tắt LEK). Gửi khóa đó làm ExclusiveStartKey để đọc tiếp. Có khóa chưa chắc còn dữ liệu: chỉ hết khi phản hồi không còn LastEvaluatedKey."
+  en: "Each call stops at Limit (or 1 MB) and returns the key of the last item read (LastEvaluatedKey, LEK for short). Send that key as ExclusiveStartKey to read on. A key does not promise more data: you are done only when the response has no LastEvaluatedKey."
+alt:
+  vi: "Item collection C-01 có 4 đơn theo thứ tự orderId. Lần gọi 1, Limit 2, đọc O-101 và O-102, rồi trả LastEvaluatedKey là O-102."
+  en: "Item collection C-01 holds 4 orders in orderId order. Call 1, Limit 2, reads O-101 and O-102, then returns LastEvaluatedKey O-102."
+nodes:
+  - id: strip
+    shape: grid
+    label: "C-01, Limit 2"
+    head: [orderId, { vi: "lần gọi", en: "call" }]
+    cells: [["2026-07-28#O-101", "1"], ["2026-08-28#O-102", "1"], ["2026-09-17#O-103", ""], ["2026-10-19#O-104", ""]]
+    cellTone: { "0:1": new, "1:1": new }
+  - { id: c1, label: { vi: "Gọi 1", en: "Call 1" }, sub: "LEK = O-102", tone: new }
+  - { id: c2, label: { vi: "Gọi 2", en: "Call 2" }, sub: "LEK = O-104", tone: new }
+  - { id: c3, label: { vi: "Gọi 3", en: "Call 3" }, sub: { vi: "0 item, hết LEK", en: "0 items, no LEK" }, tone: live }
+rows:
+  - [strip]
+  - [c1, c2, c3]
+edges:
+  - { from: c1, to: c2, label: ExclusiveStartKey }
+  - { from: c2, to: c3, label: ExclusiveStartKey }
+steps:
+  - say: { vi: "Dừng khi đủ Limit hoặc 1 MB; trả về khóa cuối đã đọc.", en: "Stops at Limit or 1 MB; returns the last key read." }
+    show: [strip, c1]
+  - say: { vi: "Gửi lại khóa đó làm ExclusiveStartKey.", en: "Send that key back as ExclusiveStartKey." }
+    show: [strip, c1, c2]
+    alt: { vi: "Lần gọi 2 gửi ExclusiveStartKey O-102, đọc O-103 và O-104. Item cuối nằm đúng ranh giới trang nên phản hồi vẫn có LastEvaluatedKey O-104.", en: "Call 2 sends ExclusiveStartKey O-102 and reads O-103 and O-104. The last item sits right on the page boundary, so the response still carries LastEvaluatedKey O-104." }
+    set:
+      strip: { cells: [["2026-07-28#O-101", "1"], ["2026-08-28#O-102", "1"], ["2026-09-17#O-103", "2"], ["2026-10-19#O-104", "2"]], cellTone: { "2:1": new, "3:1": new } }
+  - say: { vi: "Có LEK chưa chắc còn dữ liệu; chỉ hết khi không còn LEK.", en: "A LEK does not promise more data; you are done only when it is absent." }
+    alt: { vi: "Lần gọi 3 gửi ExclusiveStartKey O-104 và nhận 0 item, không còn LastEvaluatedKey: đến đây mới hết.", en: "Call 3 sends ExclusiveStartKey O-104 and gets 0 items and no LastEvaluatedKey: only now is it done." }
+    set:
+      strip: { cells: [["2026-07-28#O-101", "1"], ["2026-08-28#O-102", "1"], ["2026-09-17#O-103", "2"], ["2026-10-19#O-104", "2"]], cellTone: { "2:1": new, "3:1": new } }
