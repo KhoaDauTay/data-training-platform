@@ -19,16 +19,14 @@ nodes:
     cellTone: { "0:1": warm, "0:2": warm, "4:1": warm, "4:2": warm, "1:1": warm, "1:2": warm, "3:1": warm, "3:2": warm }
     sub: "PK (student, subject)"
   - { id: ts, shape: grid, label: teacher_subject, head: [teacher, subject], cells: [[Hoa, math], [Lan, physics], [Minh, math]], colTone: [new, null], sub: "PK (teacher)" }
-  - { id: st, shape: grid, label: student_teacher, head: [student, teacher], cells: [[An, Hoa], [An, Lan], [Binh, Lan], [Binh, Minh], [Chi, Hoa]] }
-  - { id: lost, shape: note, label: { vi: "luật môn–giáo viên mất khóa", en: "rule left with no key" } }
+  - { id: st, shape: grid, label: student_teacher, head: [student, teacher], cells: [[An, Hoa], [An, Lan], [Binh, Lan], [Binh, Minh], [Chi, Hoa]], sub: { vi: "(student, subject) → teacher: mất", en: "(student, subject) → teacher: lost" } }
 rows:
   - [fd]
   - [t]
   - [ts, st]
-  - [lost]
 edges:
   - { from: t, to: ts, label: { vi: "tách", en: "split" } }
-  - { from: t, to: st }
+  - { from: t, to: st, label: { vi: "tách", en: "split" } }
 steps:
   - say: { vi: "Vế trái teacher không phải khóa.", en: "teacher is not a key." }
     alt: { vi: "teacher quyết định subject nên môn của mỗi giáo viên lặp theo số học viên.", en: "teacher determines subject, so each teacher's subject repeats once per student." }

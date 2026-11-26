@@ -8,7 +8,7 @@ title_en: Weak entities, generalisation and the EER model
 kind: concept
 runtime: browser
 minutes: 15
-figures: [{ name: ds-er-weak-isa, at: idea }, { name: ds-er-to-tables, at: example, variant: weak }, { name: ds-er-weak-isa, at: example, variant: isa }]
+figures: [{ name: ds-er-weak-isa, at: idea }, { name: ds-er-to-tables, at: example, variant: weak }]
 objectives:
   - vi: Nhận ra thực thể yếu và đưa nó lên bảng với khóa gồm khóa của chủ cộng khóa bộ phận.
     en: Spot a weak entity and map it to a table keyed by its owner's key plus a partial key.
@@ -135,7 +135,7 @@ INSERT INTO ex_vehicle VALUES (1, 'car', 5, NULL), (2, 'truck', NULL, 3000), (3,
 SELECT kind, count(*) AS vehicles FROM ex_vehicle GROUP BY kind ORDER BY kind;
 ```
 
-Hình thứ nhất cuối mục này vẽ `ex_invoice_line` thành bảng có khóa ghép `(invoice_id, line_no)`. Hình thứ hai vẽ cùng cây xe theo cách bảng cha chung cộng bảng con, nơi khóa chính của bảng con cũng là khóa ngoại tới cha, thay cho một bảng `ex_vehicle` ở trên.
+Hình cuối mục này vẽ `ex_invoice_line` thành bảng có khóa ghép `(invoice_id, line_no)`. Cây xe theo cách bảng cha chung cộng bảng con (khóa chính của bảng con cũng là khóa ngoại tới cha) có ở hình của mục Ý chính.
 
 ## Lỗi hay gặp
 
@@ -233,7 +233,7 @@ INSERT INTO ex_vehicle VALUES (1, 'car', 5, NULL), (2, 'truck', NULL, 3000), (3,
 SELECT kind, count(*) AS vehicles FROM ex_vehicle GROUP BY kind ORDER BY kind;
 ```
 
-The first figure at the end of this section draws `ex_invoice_line` as a table with the composite key `(invoice_id, line_no)`. The second draws the same vehicle tree the shared-parent way, where each subtype table's primary key is also a foreign key to the parent, instead of the one table `ex_vehicle` above.
+The figure at the end of this section draws `ex_invoice_line` as a table with the composite key `(invoice_id, line_no)`. The vehicle tree the shared-parent way (each subtype table's primary key is also a foreign key to the parent) is in the Key idea figure.
 
 ## Common mistakes
 

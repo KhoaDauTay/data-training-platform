@@ -30,7 +30,7 @@ nodes:
 rows:
   - [rule]
   - [ea, eb]
-  - [tbl, chip]
+  - [chip, tbl]
 edges:
   - { id: rel, from: ea, to: eb, link: true, ends: [one, one-many], label: { vi: "có", en: "has" } }
   - { from: er, to: tbl }
@@ -51,10 +51,10 @@ steps:
     set:
       rule: { label: { vi: "thực thể yếu → khóa ghép", en: "weak entity → composite key" } }
       ea: { label: ex_invoice, fields: [{ name: id, pk: true }, issued_on] }
-      eb: { label: ex_invoice_line, fields: [line_no, amount] }
-      rel: { ends: [one, one-many], label: { vi: "gồm", en: "has" } }
+      eb: { label: ex_invoice_line, fields: [{ name: line_no, partial: true }, amount], double: true }
+      rel: { ends: [one, one-many], label: { vi: "gồm", en: "has" }, bold: true }
       tbl: { label: ex_invoice_line, head: [invoice_id, line_no, amount], cells: [["1", "1", "100"], ["1", "2", "40"], ["2", "1", "75"]], colTone: [new, new, null], sub: "PK (invoice_id, line_no)" }
-      chip: { label: ON DELETE CASCADE }
+      chip: { label: "invoice_id: ON DELETE CASCADE" }
 variants:
   weak:
     step: 2

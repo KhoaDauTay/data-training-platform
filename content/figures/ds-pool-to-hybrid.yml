@@ -2,7 +2,7 @@
 # has no Ý chính). Data: the lab, run on PGlite (tools/v42/b2check.log): 30000 orders over 50 sellers; seller 1 has 6000 (20%);
 # the next largest are sellers 5, 6 and 10 with 491 each (the plan named only 6 and 10), the other 46 hold 489–491 each; odd
 # sellers live on s1 (25 sellers, 17755 orders), even ones on s2 (25, 12245). Bars need ≥ 8 units per value, so values are
-# orders ÷ 500 and the note carries the real count (what the data table reads); the 46 others are one bar per seller's size,
+# orders ÷ 600 and the note carries the real count (what the data table reads); the 46 others are one bar per seller's size,
 # not their sum (a 23018 bar would dwarf seller 1). Sources: https://www.postgresql.org/docs/18/ddl-rowsecurity.html,
 # https://docs.aws.amazon.com/wellarchitected/latest/saas-lens/silo-pool-and-bridge-models.html
 title: { vi: "Từ pool sang mô hình lai", en: "From a pool to a hybrid" }
@@ -17,16 +17,17 @@ nodes:
     shape: bars
     label: { vi: "đơn theo người bán", en: "orders by seller" }
     sub: { vi: "người bán: số đơn", en: "seller: orders" }
+    head: [{ vi: người bán, en: seller }, { vi: số đơn, en: orders }]
     items:
-      - { label: "1", value: 12, note: "6000", tone: warm }
-      - { label: "5", value: 0.98, note: "491" }
-      - { label: "6", value: 0.98, note: "491" }
-      - { label: "10", value: 0.98, note: "491" }
-      - { label: { vi: "46 khác", en: "46 others" }, value: 0.98, note: { vi: "489–491 mỗi", en: "489–491 each" } }
+      - { label: { vi: "1 (ở s1)", en: "1 (on s1)" }, value: 10, note: "6000", tone: warm }
+      - { label: "5", value: 0.82, note: "491" }
+      - { label: "6", value: 0.82, note: "491" }
+      - { label: "10", value: 0.82, note: "491" }
+      - { label: { vi: "46 khác", en: "46 others" }, value: 0.82, note: { vi: "489–491 / người", en: "489–491 each" } }
   - { id: s1, shape: table, label: "s1 (pool)", sub: { vi: "25 khách", en: "25 tenants" } }
   - { id: s2, shape: table, label: "s2 (pool)", sub: { vi: "25 khách", en: "25 tenants" } }
   - { id: s3, shape: table, label: { vi: "s3 (riêng)", en: "s3 (dedicated)" }, sub: { vi: "người bán 1", en: "seller 1" }, tone: live }
-  - { id: dir, shape: key, label: { vi: "danh mục: 1 → s3", en: "directory: 1 → s3" }, sub: version 2, tone: new }
+  - { id: dir, shape: key, label: { vi: "danh mục: 1 → s3", en: "directory: 1 → s3" }, sub: { vi: phiên bản 2, en: version 2 }, tone: new }
 rows:
   - [b]
   - [s1, s2]

@@ -95,7 +95,7 @@ SQL không có ∀, nhưng "với mọi x, P(x)" tương đương "không có x 
 
 Ba dạng cho cùng kết quả trên dữ liệu thường nhưng khác ở hai góc. Số chia rỗng: hai dạng đầu trả mọi người (đúng theo logic), dạng đếm trả rỗng vì không có nhóm nào được tạo. Dòng trùng: dạng đếm phải dùng `count(DISTINCT …)`.
 
-Hình từng bước cuối mục này dựng mọi cặp học viên × khóa core của lab, rồi loại những người còn thiếu cặp.
+Hình từng bước cuối mục này dựng mọi cặp học viên × môn core của lab, rồi loại những người còn thiếu cặp.
 
 ## Cú pháp
 

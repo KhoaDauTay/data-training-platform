@@ -404,7 +404,7 @@ export function layout(spec0: FigSpec, lang: Lang, W: number, variant?: string):
       if (!r || !vis(p.show, r.e.from) || !vis(p.show, r.e.to) || !edgeShown(r.e, p.show, gated)) return;
       const k = `e:${i}`, pe = p.edges[i]; // v42: this frame's ends and label; v44: and its dash
       shapes.push(r.e.link
-        ? { k, t: 'p', d: r.d, ink: pe.ends ? 'edge' : 'new', w: r.e.bold ? 3 : STROKE, dash: pe.dash } // v44 (L780): `bold` = an identifying relationship
+        ? { k, t: 'p', d: r.d, ink: pe.ends ? 'edge' : 'new', w: pe.bold ? 3 : STROKE, dash: pe.dash } // v44 (L780): `bold` = an identifying relationship or total participation (a step may set it)
         : { k, t: 'p', d: r.d, ink: 'edge', w: STROKE, arrow: true, dash: pe.dash, attrs: ends(r.e) });
       if (pe.ends) shapes.push(...crowEnds(k, r.d, pe.ends, !!r.rev));
       if (r.lab && pe.label) shapes.push({ k: `${k}.l`, t: 't', x: r.lab.x, y: r.lab.y, s: tr(pe.label, lang), size: SS, a: r.lab.a, ink: 'muted' });
@@ -752,8 +752,8 @@ function draw(n: FigNode, r: Rect, lang: Lang, wide = false, parent?: string): S
         out.push({ k: `${k}.p${i}`, t: 'p', d: `M${bx + 5} ${y0} L${bx} ${y0} L${bx} ${y1} L${bx + 5} ${y1}`, ink: 'edge', w: 1.2 });
       }
       if (f.o.multi || f.o.derived) {
-        const c = { x: tx - CHIP, y: cy - 10, w: tw + 2 * CHIP, h: 20 };
-        out.push({ k: `${k}.c${i}`, t: 'r', ...c, tone: f.o.derived ? 'ghost' : 'plain', rx: 10 });
+        const c = { x: tx - CHIP, y: cy - 11, w: tw + 2 * CHIP, h: 22 };
+        out.push({ k: `${k}.c${i}`, t: 'r', ...c, tone: f.o.derived ? 'ghost' : 'plain', rx: 11 });
         if (f.o.multi) out.push(inset(`${k}.c${i}.d`, c, 7));
       }
       if (f.o.partial) out.push({ k: `${k}.u${i}`, t: 'l', x1: tx, y1: cy + 8.5, x2: tx + tw, y2: cy + 8.5, ink: 'edge', w: 1.2, dash: true });

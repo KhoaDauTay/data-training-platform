@@ -5,17 +5,17 @@
 # Source: https://www.postgresql.org/docs/18/ddl-rowsecurity.html
 title: { vi: "Ba lớp giữ các khách tách nhau", en: "Three layers keep tenants apart" }
 caption:
-  vi: "Theo thứ tự dựng: khóa chặn ghi chéo, câu lọc chặn đọc nhầm, chính sách theo dòng làm lưới cho câu quên lọc."
-  en: "In build order: keys refuse cross writes, filters stop wrong reads, and the row policy is the net for a query that forgets its filter."
+  vi: "Mỗi hàng một lỗi và lớp chặn nó, theo thứ tự dựng: khóa chặn ghi chéo, câu lọc chặn đọc nhầm, chính sách theo dòng làm lưới cho câu quên lọc ($1 là khách của yêu cầu)."
+  en: "One row per mistake and the layer that stops it, in build order: keys refuse cross writes, filters stop wrong reads, and the row policy is the net for a query that forgets its filter ($1 is the request's tenant)."
 alt:
-  vi: "Trong pool, ba lớp giữ khách tách nhau: khóa chặn ghi sai, câu lọc chặn đọc nhầm, chính sách theo dòng làm lưới khi một câu quên lọc. Mỗi lớp có một phép kiểm tự động trong CI."
+  vi: "Khi nhiều khách chung bảng (pool), ba lớp giữ khách tách nhau: khóa chặn ghi sai, câu lọc chặn đọc nhầm, chính sách theo dòng làm lưới khi một câu quên lọc. Mỗi lớp có một phép kiểm tự động trong CI."
   en: "In a pool, three layers keep tenants apart: keys refuse wrong writes, filters prevent wrong reads, and row-level policies catch a query that forgot to filter. Each layer has an automatic CI check."
 nodes:
-  - { id: m2, shape: key, label: { vi: "ghi chéo: bị chặn", en: "cross write: refused" }, tone: dead }
+  - { id: m2, shape: key, label: { vi: "ghi chéo khách", en: "cross-tenant write" }, tone: dead }
   - { id: k, label: { vi: "1. khóa", en: "1. keys" }, sub: "FK (tenant_id, …)", tone: new }
-  - { id: m1, shape: key, label: { vi: "quên lọc: đọc nhầm", en: "no filter: wrong read" }, tone: dead }
-  - { id: q, label: { vi: "2. câu lọc", en: "2. query filter" }, sub: "tenant_id = 2", tone: new }
-  - { id: m3, shape: key, label: { vi: "câu quên: lưới RLS", en: "forgot: RLS net" }, tone: dead }
+  - { id: m1, shape: key, label: { vi: "đọc nhầm khách", en: "wrong-tenant read" }, tone: dead }
+  - { id: q, label: { vi: "2. câu lọc", en: "2. query filter" }, sub: "tenant_id = $1", tone: new }
+  - { id: m3, shape: key, label: { vi: "câu quên lọc", en: "forgotten filter" }, tone: dead }
   - { id: rls, label: { vi: "3. chính sách", en: "3. policy" }, sub: RLS, tone: new }
 rows:
   - [m2, k]
@@ -23,12 +23,12 @@ rows:
   - [m3, rls]
 align: true
 edges:
-  - { from: m2, to: k }
-  - { from: m1, to: q }
-  - { from: m3, to: rls }
+  - { from: m2, to: k, label: { vi: "chặn bởi", en: "stopped by" } }
+  - { from: m1, to: q, label: { vi: "chặn bởi", en: "stopped by" } }
+  - { from: m3, to: rls, label: { vi: "chặn bởi", en: "stopped by" } }
 steps:
   - say: { vi: "Khóa trước.", en: "Keys first." }
-    alt: { vi: "Sửa khóa khi bảng đã đầy là việc lớn nhất, nên tenant_id vào khóa ngay từ đầu.", en: "Changing keys on a full table is the biggest job, so tenant_id goes into the keys from the start." }
+    alt: { vi: "Sửa khóa khi bảng đã đầy là việc lớn nhất, nên đưa tenant_id vào khóa ngay từ đầu.", en: "Changing keys on a full table is the biggest job, so tenant_id goes into the keys from the start." }
     show: [m2, k]
   - say: { vi: "Câu lọc đi cùng từng câu SQL.", en: "Filters ride with every query." }
     alt: { vi: "Mỗi câu nhắc tenant_id, kể cả trong điều kiện nối, nên dòng của người khác không lọt vào.", en: "Every query names tenant_id, even in join conditions, so other tenants' rows cannot slip in." }

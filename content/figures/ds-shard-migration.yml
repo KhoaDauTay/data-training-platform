@@ -39,4 +39,4 @@ steps:
     set:
       v: { cells: [[s1, "3", { vi: xong, en: done }], [s2, "3", { vi: xong, en: done }], [s3, "2", { vi: chờ, en: waiting }]], cellTone: { "0:1": live, "1:1": live } }
   - say: { vi: "s3 hỏng: dừng và báo rõ.", en: "s3 fails: stop and say so." }
-    alt: { vi: "Dừng ở lỗi đầu tiên với dòng 'đã áp dụng 2/3' để danh mục không bao giờ nói một shard đã lên khi nó chưa lên.", en: "Stopping at the first error with 'applied 2/3' keeps the catalog from claiming a shard is upgraded when it is not." }
+    alt: { vi: "Dừng ở lỗi đầu tiên với dòng “đã áp dụng 2/3” để danh mục không bao giờ nói một shard đã lên khi nó chưa lên.", en: "Stopping at the first error with “applied 2/3” keeps the catalog from claiming a shard is upgraded when it is not." }

@@ -90,7 +90,7 @@ Một biểu thức có thể trả vô hạn bộ, ví dụ "mọi bộ không 
 
 Hai bẫy khi dịch ∀ sang SQL. Thứ nhất, ∀ trên tập rỗng luôn đúng: sinh viên chưa có điểm nào vẫn thỏa "mọi điểm đều ≥ 5", nên câu `NOT EXISTS` trả cả họ. Nếu yêu cầu ngầm hiểu "có điểm và mọi điểm đều ≥ 5" thì phải thêm một `EXISTS` nữa. Thứ hai, `NOT IN` không phải ¬∃: khi danh sách con có một NULL, `x NOT IN (…)` không bao giờ đúng, còn `NOT EXISTS` vẫn đúng như logic hai trị của phép tính. Vì vậy dịch phủ định theo phép tính thì dùng `NOT EXISTS`. Bài `e-pg-l4-18` cho thấy ba cách viết "không có" còn khác nhau cả ở kế hoạch.
 
-Hình cuối mục này dùng lại dữ liệu bài phép chia `e-ds-l5-02`: "học mọi khóa core" được đọc là "không có khóa core nào chưa học".
+Hình cuối mục này dùng lại dữ liệu bài phép chia `e-ds-l5-02`: "học đủ mọi môn core" được đọc là "không có môn core nào chưa học".
 
 ## Ví dụ
 

@@ -16,14 +16,15 @@ nodes:
   - { id: ex, shape: key, label: { vi: "EXCLUDE: không chồng thời gian", en: "EXCLUDE: no overlap" }, tone: warm }
   - id: load
     shape: bars
-    label: { vi: "khách hôm nay", en: "tenants today" }
-    sub: "2026-10-31"
+    label: { vi: "khách / sức chứa, gói", en: "tenants / capacity, tier" }
+    sub: { vi: "hôm nay 2026-10-31", en: "today, 2026-10-31" }
+    head: [shard, { vi: "khách / sức chứa, gói", en: "tenants / capacity, tier" }]
     items:
-      - { label: s1, value: 3 }
-      - { label: s2, value: 2 }
-      - { label: s3, value: 1 }
-      - { label: s4, value: 1, note: { vi: "1 (rút tải)", en: "1 (draining)" }, tone: warm }
-      - { label: s5, value: 0, note: { vi: "0 (đang tạo)", en: "0 (creating)" } }
+      - { label: s1, value: 3, note: "3/4 pool" }
+      - { label: s2, value: 2, note: "2/4 pool" }
+      - { label: s3, value: 1, note: { vi: "1/1 riêng", en: "1/1 dedicated" } }
+      - { label: s4, value: 1, note: { vi: "1/4 rút tải", en: "1/4 draining" }, tone: warm }
+      - { label: s5, value: 0, note: { vi: "0/4 đang tạo", en: "0/4 creating" } }
 rows:
   - [t, p, s]
   - [ex]

@@ -3,17 +3,17 @@
 # (tools/v42/b2check.log): core = SQL, NOSQL, DESIGN; missing pairs Chi–DESIGN, Dung–DESIGN, Dung–NOSQL, Dung–SQL; division =
 # An, Binh. ÷ and ∀ are not in the glyph table (Batch 1's D2): drawn text says "chia" / "division" and "mọi" / "every".
 # Source: https://www.postgresql.org/docs/18/functions-subquery.html
-title: { vi: "Phép chia: ai đi cùng mọi khóa", en: "Division: who goes with every course" }
+title: { vi: "Phép chia: ai học đủ mọi môn core", en: "Division: who took every core course" }
 caption:
-  vi: "took ÷ core: dựng mọi cặp học viên × khóa core lẽ ra phải có; ai thiếu dù một cặp thì bị loại."
+  vi: "took ÷ core: dựng mọi cặp học viên × môn core lẽ ra phải có; ai thiếu dù một cặp thì bị loại."
   en: "took ÷ core: build every student × core-course pair that should exist; anyone missing even one pair is out."
 alt:
-  vi: "R ÷ S giữ những học viên đi cùng mọi khóa trong S. SQL viết nó là hai lớp NOT EXISTS: không có khóa nào mà học viên chưa học. Kết quả: An, Binh."
+  vi: "R ÷ S giữ những học viên đã học mọi môn trong S. SQL viết nó là hai lớp NOT EXISTS: không có môn nào mà học viên chưa học. Kết quả: An, Binh."
   en: "R ÷ S keeps the students paired with every course in S. SQL writes it as two layers of NOT EXISTS: no course the student has not taken. Result: An, Binh."
 nodes:
   - id: need
     shape: grid
-    label: { vi: "cần có (học viên × core)", en: "needed (student × core)" }
+    label: { vi: "học viên × môn core: đã học?", en: "student × core course: taken?" }
     head: [{ vi: học viên, en: student }, SQL, NOSQL, DESIGN]
     cells:
       - [An, ✓, ✓, ✓]
@@ -21,31 +21,30 @@ nodes:
       - [Chi, ✓, ✓, { vi: thiếu, en: missing }]
       - [Dung, { vi: thiếu, en: missing }, { vi: thiếu, en: missing }, { vi: thiếu, en: missing }]
     cellTone: { "2:3": dead, "3:1": dead, "3:2": dead, "3:3": dead }
-  - { id: res, shape: key, label: { vi: "chia: An, Binh", en: "division: An, Binh" }, tone: live }
-  - { id: neg, shape: note, label: { vi: "không có khóa nào chưa học", en: "no course not taken" } }
+  - { id: core, shape: grid, label: { vi: "core (số chia)", en: "core (divisor)" }, head: [code], cells: [[SQL], [NOSQL], [DESIGN]], tone: new }
+  - { id: res, shape: key, label: "÷ core: An, Binh", sub: { vi: "đủ mọi môn core", en: "no course missing" }, tone: live }
 rows:
-  - [need]
+  - [core, need]
   - [res]
-  - [neg]
 edges:
   - { from: need, to: res }
 steps:
   - say: { vi: "Mọi cặp lẽ ra phải có.", en: "Every pair that should exist." }
-    alt: { vi: "Phép chia lấy học viên × khóa cần học, rồi so với lượt học có thật.", en: "Division takes students × required courses, then compares with the enrolments that exist." }
-    show: [need]
+    alt: { vi: "Phép chia lấy học viên × môn cần học, rồi so với lượt học có thật.", en: "Division takes students × required courses, then compares with the enrolments that exist." }
+    show: [core, need]
   - say: { vi: "Ai thiếu một cặp bị loại.", en: "Anyone missing a pair is out." }
     alt: { vi: "Chi thiếu DESIGN và Dung thiếu cả ba, nên chỉ An và Binh không còn cặp nào thiếu.", en: "Chi lacks DESIGN and Dung lacks all three, so only An and Binh have no missing pair." }
     set:
-      need: { strike: [2, 3] }
+      need: { rowTone: [null, null, ghost, ghost] }
 variants:
   forall:
     set:
-      need: { strike: [2, 3] }
-      neg: { label: { vi: "mọi = không có khóa thiếu", en: "every = no missing course" } }
-    title: { vi: "Với mọi khóa = không có khóa nào thiếu", en: "For every course = no course missing" }
+      need: { rowTone: [null, null, ghost, ghost] }
+      res: { sub: { vi: "∀ môn: đã học", en: "∀ course: taken" } }
+    title: { vi: "Với mọi môn = không có môn nào thiếu", en: "For every course = no course missing" }
     caption:
-      vi: "SQL không có ∀: ∀ khóa (đã học) viết thành ¬∃ khóa (chưa học), tức hai lớp NOT EXISTS. Dữ liệu là bài phép chia e-ds-l5-02."
+      vi: "SQL không có ∀: ∀ môn (đã học) viết thành ¬∃ môn (chưa học), tức hai lớp NOT EXISTS. Dữ liệu là bài phép chia e-ds-l5-02."
       en: "SQL has no ∀: ∀ course (taken) becomes ¬∃ course (not taken), two layers of NOT EXISTS. The data is the division lesson e-ds-l5-02."
     alt:
-      vi: "SQL không có ∀, nên 'với mọi khóa' được viết là 'không có khóa nào chưa học', tức hai lớp NOT EXISTS. Kết quả: An, Binh."
-      en: "SQL has no ∀, so 'for every course' is written as 'no course not taken', two layers of NOT EXISTS. Result: An, Binh."
+      vi: "SQL không có ∀, nên “với mọi môn” được viết là “không có môn nào chưa học”, tức hai lớp NOT EXISTS. Kết quả: An, Binh."
+      en: "SQL has no ∀, so “for every course” is written as “no course not taken”, two layers of NOT EXISTS. Result: An, Binh."

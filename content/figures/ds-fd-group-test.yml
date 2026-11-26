@@ -10,7 +10,7 @@ alt:
   vi: "Phép thử X → Y luôn là gom theo X, đếm số Y khác nhau, giữ nhóm nào hơn 1. Dữ liệu chỉ bác bỏ được phụ thuộc, và NULL có thể giấu một lần vi phạm."
   en: "Testing X → Y always means grouping by X, counting distinct Y and keeping groups over 1. Data can only refute a dependency, and NULL can hide a violation."
 nodes:
-  - { id: q, shape: key, mono: true, label: "count(DISTINCT y)", sub: "HAVING > 1" }
+  - { id: q, shape: key, mono: true, label: "count(DISTINCT Y)", sub: "HAVING > 1" }
   - id: g
     shape: grid
     label: { vi: "giá, gom theo product_code", en: "prices by product_code" }
@@ -19,16 +19,15 @@ nodes:
     rowTone: [null, dead, null]
   - id: n
     shape: grid
-    label: { vi: "tên của P3", en: "P3's names" }
+    label: { vi: "thử product_code → tên: P3", en: "test product_code → name: P3" }
+    sub: { vi: "+1 khi nhóm có NULL", en: "+1 when a group has NULL" }
     head: [product_code, { vi: tên, en: names }, count]
     cells: [[P3, "ruler, ruler, NULL", "1"]]
     cellTone: { "0:2": warm }
-  - { id: fix, shape: note, label: { vi: "+1 khi nhóm có NULL", en: "+1 when a group has NULL" } }
 rows:
   - [q]
   - [g]
   - [n]
-  - [fix]
 edges:
   - { from: q, to: g }
 steps:

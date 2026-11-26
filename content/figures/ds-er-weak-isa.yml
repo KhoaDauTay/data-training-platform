@@ -1,50 +1,39 @@
-# B2-2 (tools/v42/diagram-plan-v42.md): a weak entity borrows its owner's key; a subtype shares its parent's. Lessons: e-ds-l2-02
-# (Ý chính; variant `isa` = step 2's parent–child tree alone, in Ví dụ). Data: the Example ex_invoice (id, issued_on) and
-# ex_invoice_line (invoice_id REFERENCES ex_invoice ON DELETE CASCADE, line_no, amount, PRIMARY KEY (invoice_id, line_no)),
-# checked on PGlite (tools/v42/b2check.log); the vehicle tree car (seats) / truck (payload_kg) of the same lesson, drawn as
-# the "shared parent + subtype tables" mapping its Ý chính calls the cleanest. Entities have no `sub`: "weak entity" is the key
-# beside the line (with ON DELETE CASCADE), and "total" is the link label (no double line, D3 not built). Step 2 keeps step 1
-# (cumulative), so the full figure has no empty band. Sources: https://www.postgresql.org/docs/18/ddl-constraints.html,
+# B2-2 (tools/v42/diagram-plan-v42.md): a weak entity borrows its owner's key; a subtype shares its parent's. Lesson: e-ds-l2-02
+# (Ý chính). Data: the Example ex_invoice (id, issued_on) and ex_invoice_line (invoice_id REFERENCES ex_invoice ON DELETE CASCADE,
+# line_no, amount, PRIMARY KEY (invoice_id, line_no)), checked on PGlite (tools/v42/b2check.log); the vehicle tree car (seats) /
+# truck (payload_kg) of the same lesson, drawn as the "shared parent + subtype tables" mapping its Ý chính calls the cleanest.
+# v44 eye fixes (L783): ER notation instead of a loose pill: the weak entity has a double border, its partial key line_no a dashed
+# underline, the identifying relationship and the total participation are heavy lines. The `isa` variant in Ví dụ is gone (the
+# tree was drawn twice on one page, E17). Without `near`, a phone that stacks CAR and TRUCK runs TRUCK's line down the side lane
+# from d (E1). Step 2 keeps step 1 (cumulative). Sources: https://www.postgresql.org/docs/18/ddl-constraints.html,
 # https://www.postgresql.org/docs/18/ddl-inherit.html (INHERITS does not carry keys, so it is not used).
 title: { vi: "Thực thể yếu và cây cha–con", en: "Weak entities and parent–child trees" }
 caption:
-  vi: "Dòng hóa đơn mượn khóa của hóa đơn; xe con mượn khóa của xe cha. Cặp nhãn PK + FK trên cùng một dòng là dấu của cả hai."
-  en: "An invoice line borrows its invoice's key; a subtype borrows its parent's. A PK + FK pair on one row is the mark of both."
+  vi: "Viền đôi: thực thể yếu; gạch đứt dưới line_no: khóa bộ phận; đường đậm: quan hệ định danh và tham gia toàn phần. Cặp PK + FK trên một dòng là khóa mượn từ cha."
+  en: "Double border: a weak entity; dashed underline under line_no: its partial key; heavy line: the identifying relationship and total participation. A PK + FK pair on one row is a key borrowed from the parent."
 alt:
   vi: "Thực thể yếu không tự có khóa đủ: khóa của nó ghép khóa chủ với khóa bộ phận và nó bị xóa theo chủ. Cây cha–con đưa lên bảng bằng bảng cha chung cộng bảng con có khóa chính đồng thời là khóa ngoại."
   en: "A weak entity has no full key of its own: its key joins the owner's key and a partial key, and it is deleted with its owner. A parent–child tree maps to a shared parent table plus subtype tables whose primary key is also a foreign key."
 nodes:
   - { id: inv, shape: entity, label: INVOICE, fields: [{ name: id, pk: true }, issued_on] }
-  - { id: line, shape: entity, label: INVOICE_LINE, fields: [{ name: invoice_id, pk: true, fk: true }, { name: line_no, pk: true }, amount] }
-  - { id: cas, shape: key, label: { vi: "thực thể yếu", en: "weak entity" }, sub: ON DELETE CASCADE, tone: warm }
+  - { id: line, shape: entity, label: INVOICE_LINE, double: true, fields: [{ name: invoice_id, pk: true, fk: true }, { name: line_no, pk: true, partial: true }, amount] }
   - { id: veh, shape: entity, label: VEHICLE, fields: [{ name: id, pk: true }, kind] }
   - { id: d, shape: key, label: d, sub: { vi: "rời nhau", en: "disjoint" } }
   - { id: car, shape: entity, label: CAR, fields: [{ name: id, pk: true, fk: true }, seats] }
   - { id: trk, shape: entity, label: TRUCK, fields: [{ name: id, pk: true, fk: true }, payload_kg] }
 rows:
   - [inv, line]
-  - [cas]
   - [veh]
   - [d]
   - [car, trk]
 edges:
-  - { from: "inv#0", to: "line#0", link: true, ends: [one, one-many], label: { vi: "định danh", en: "identifies" } }
-  - { from: veh, to: d, link: true, label: { vi: "toàn phần", en: "total" } }
+  - { from: "inv#0", to: "line#0", link: true, bold: true, ends: [one, one-many], label: { vi: "định danh", en: "identifies" } }
+  - { from: veh, to: d, link: true, bold: true, label: { vi: "toàn phần", en: "total" } }
   - { from: d, to: car, link: true }
-  - { from: d, to: trk, link: true, near: true }
+  - { from: d, to: trk, link: true }
 steps:
   - say: { vi: "Dòng hóa đơn mượn khóa của hóa đơn.", en: "An invoice line borrows the invoice's key." }
-    alt: { vi: "Số dòng chỉ là duy nhất trong một hóa đơn, nên khóa đủ là khóa của chủ cộng số dòng, và dòng mất theo chủ.", en: "A line number is unique only within one invoice, so the full key is the owner's key plus the line number, and lines go with their owner." }
-    show: [inv, line, cas]
+    alt: { vi: "Số dòng chỉ là duy nhất trong một hóa đơn, nên khóa đủ là khóa của chủ cộng số dòng, và dòng mất theo chủ (ON DELETE CASCADE).", en: "A line number is unique only within one invoice, so the full key is the owner's key plus the line number, and lines go with their owner (ON DELETE CASCADE)." }
+    show: [inv, line]
   - say: { vi: "Cha và con: khóa của con cũng là khóa ngoại tới cha.", en: "Parent and child: the subtype's key is also a foreign key to the parent." }
-    alt: { vi: "Mỗi xe là đúng một loại, nên cây rời nhau, và bảng con chỉ giữ cột của riêng loại đó.", en: "Each vehicle is exactly one kind, so the tree is disjoint and each subtype table keeps only its own columns." }
-variants:
-  isa:
-    show: [veh, d, car, trk]
-    title: { vi: "Cây cha–con lên bảng", en: "A parent–child tree on tables" }
-    caption:
-      vi: "Cách bảng cha chung: VEHICLE giữ cột chung, CAR và TRUCK giữ cột riêng, và khóa chính của bảng con cũng là khóa ngoại tới cha."
-      en: "The shared-parent way: VEHICLE keeps the common columns, CAR and TRUCK their own, and each subtype's primary key is also a foreign key to the parent."
-    alt:
-      vi: "Mỗi xe là đúng một loại và loại nào cũng phải có, nên cây rời nhau và toàn phần. Lên bảng, bảng cha chung giữ cột chung, còn mỗi bảng con có khóa chính đồng thời là khóa ngoại tới cha và chỉ giữ cột của riêng loại đó."
-      en: "Each vehicle is exactly one kind and every vehicle has one, so the tree is disjoint and total. On tables, a shared parent keeps the common columns, and each subtype table has a primary key that is also a foreign key to the parent and keeps only its own columns."
+    alt: { vi: "Mỗi xe thuộc đúng một loại và xe nào cũng phải thuộc một loại, nên cây rời nhau và toàn phần, và bảng con chỉ giữ cột của riêng loại đó.", en: "Each vehicle belongs to exactly one kind and every vehicle must belong to one, so the tree is disjoint and total, and each subtype table keeps only its own columns." }
