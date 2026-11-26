@@ -75,8 +75,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì một dạng cho mọi tài liệu có vẻ gọn, nhưng thế là bắt 999 sản phẩm trả giá cho một trường hợp hiếm: mỗi trang sản phẩm phải đọc thêm một collection. Outlier thiết kế cho số đông và xử lý riêng phần bất thường."
-      en: "It sounds right because one shape for every document looks tidy, but then 999 products pay for one rare case: every product page has to read a second collection. Outlier designs for the typical case and handles the unusual part separately."
+      vi: "Một dạng cho mọi tài liệu có vẻ gọn, nhưng thế là bắt 999 sản phẩm trả giá cho một trường hợp hiếm: trang của mỗi sản phẩm phải đọc thêm một collection, trong khi vài đánh giá của chúng vừa vặn nằm nhúng trong tài liệu. Outlier không xóa gì: đánh giá nào cũng được giữ, chỉ phần dư của sản phẩm bất thường chuyển sang tài liệu tràn. 999 sản phẩm thường giữ nguyên dạng nhúng và vẫn chỉ một lần đọc; riêng sản phẩm bất thường có cờ báo cần đọc thêm."
+      en: "One shape for every document looks tidy, but then 999 products pay for one rare case: every product page has to read a second collection, while their few reviews fit fine embedded in the document. Outlier deletes nothing: every review is kept, only the unusual product's extra reviews move to overflow documents. The 999 normal products keep the embedded shape and stay a single read; only the unusual product gets a flag saying more must be read."
   - q:
       vi: "`find({ reviews: { $size: 3 } })` trả gì trong lab này?"
       en: "What does `find({ reviews: { $size: 3 } })` return in this lab?"
@@ -86,8 +86,8 @@ quiz:
       - { vi: "Báo lỗi vì thiếu `$gt`", en: "An error, because `$gt` is missing" }
     answer: 1
     why:
-      vi: "`$size` trong truy vấn chỉ so bằng một số cụ thể và không nhận khoảng. Muốn \"hơn 3\" thì hỏi phần tử vị trí 3 có tồn tại không, hoặc dùng `$expr` với `$size` của aggregation."
-      en: "`$size` in a query only matches one exact number and takes no range. For \"more than 3\", ask whether the element at position 3 exists, or use `$expr` with the aggregation `$size`."
+      vi: "`$size` trong truy vấn chỉ so bằng một số cụ thể, không hiểu là \"từ 3 trở lên\": `p2` có 5 đánh giá nên không khớp, chỉ `p4` có đúng 3 là khớp. Câu này cũng không lỗi: `$size` một mình là bộ lọc hợp lệ, không cần `$gt` đi kèm. Muốn \"hơn 3\" thì hỏi phần tử vị trí 3 có tồn tại không, hoặc dùng `$expr` với `$size` của aggregation."
+      en: "`$size` in a query only matches one exact number, it does not mean \"3 or more\": `p2` has 5 reviews so it does not match, only `p4` with exactly 3 does. The query raises no error either: `$size` alone is a valid filter, it needs no `$gt` beside it. For \"more than 3\", ask whether the element at position 3 exists, or use `$expr` with the aggregation `$size`."
 ---
 ## Mở bài
 
@@ -171,7 +171,7 @@ db.products.updateOne({ _id: "p2" }, [{ $set: { reviews: { $slice: ["$reviews", 
 db.products.updateOne({ _id: "p2" }, [{ $set: { reviewCount: { $size: "$reviews" }, reviews: { $slice: ["$reviews", 3] }, hasOverflow: true } }])
 ```
 
-Sau câu sai, trang sản phẩm chỉ đếm được 3 đánh giá.
+Sau câu sai, `p2` chỉ còn mảng 3 mục và không trường nào nhớ con số 5, nên trang sản phẩm đếm được 3 đánh giá. Trong một stage `$set`, `$size` đọc mảng trước khi cắt, nên câu đúng lưu được 5.
 
 ## Thực hành
 
@@ -268,7 +268,7 @@ db.products.updateOne({ _id: "p2" }, [{ $set: { reviews: { $slice: ["$reviews", 
 db.products.updateOne({ _id: "p2" }, [{ $set: { reviewCount: { $size: "$reviews" }, reviews: { $slice: ["$reviews", 3] }, hasOverflow: true } }])
 ```
 
-After the wrong command, the product page can count only 3 reviews.
+After the wrong command `p2` keeps a 3-entry array and no field remembers the number 5, so the product page counts 3 reviews. Inside one `$set` stage, `$size` reads the array before the trim, so the fix stores 5.
 
 ## Practice
 

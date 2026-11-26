@@ -35,8 +35,8 @@ predict:
   answer: 1
   trap: 0
   why:
-    vi: "Hai trên ba trường nghe như đủ, nhưng `mongos` chỉ định tuyến targeted khi truy vấn có shard key đầy đủ hoặc một tiền tố: `{ a }` hoặc `{ a, b }`. `{ b, c }` không phải tiền tố, nên truy vấn đi tới mọi shard rồi gộp lại."
-    en: "Two of three fields sounds like enough, but `mongos` targets a query only when it holds the full shard key or a prefix: `{ a }` or `{ a, b }`. `{ b, c }` is not a prefix, so the query goes to every shard and the results are merged."
+    vi: "Hai trên ba trường nghe như đủ, nhưng chunk được xếp theo `a` trước, rồi mới tới `b`: tài liệu có `b: 5` có thể nằm trong khoảng `a` nào cũng được, tức ở chunk nào, shard nào cũng được. Vì vậy `mongos` chỉ định tuyến targeted khi truy vấn có shard key đầy đủ hoặc một tiền tố: `{ a }` hoặc `{ a, b }`, còn `{ b, c }` thì không. Shard chính của database là nơi giữ các collection chưa shard, còn `orders` đã shard nên chunk của nó rải trên nhiều shard; hỏi riêng shard chính sẽ thiếu kết quả; truy vấn đi tới mọi shard rồi `mongos` gộp lại."
+    en: "Two of three fields sounds like enough, but chunks are ordered by `a` first, and only then by `b`: a document with `b: 5` can sit in any `a` range, so in any chunk on any shard. That is why `mongos` targets a query only when it holds the full shard key or a prefix: `{ a }` or `{ a, b }`, and `{ b, c }` is not one. The database's primary shard is where unsharded collections live, but `orders` is sharded, so its chunks are spread over many shards; asking the primary shard alone would miss results; the query goes to every shard and `mongos` merges the answers."
   recorded:
     tier: docs
     server: MongoDB
@@ -53,8 +53,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý rằng ghi thì phải biết chỗ ghi, nhưng `updateMany()` và `deleteMany()` được broadcast khi bộ lọc không xác định được shard. `{ b: 5 }` không phải tiền tố, nên mọi shard đều nhận lệnh."
-      en: "It sounds right that a write must know where to go, but `updateMany()` and `deleteMany()` are broadcast when the filter cannot pick a shard. `{ b: 5 }` is not a prefix, so every shard gets the command."
+      vi: "Nghe hợp lý rằng ghi thì phải biết chỗ ghi, nhưng lệnh ghi cũng chỉ được định tuyến nhờ shard key trong bộ lọc, như truy vấn đọc. `{ b: 5 }` không có `a` nên không phải tiền tố: tài liệu khớp có thể nằm ở mọi shard. `updateMany()` và `deleteMany()` khi đó được broadcast, mọi shard đều nhận lệnh và tự sửa phần của mình."
+      en: "It sounds right that a write must know where to go, but a write is routed only by the shard key in its filter, just like a read. `{ b: 5 }` has no `a`, so it is not a prefix: matching documents can live on any shard. `updateMany()` and `deleteMany()` are then broadcast, and every shard gets the command and updates its own part."
 ---
 ## Mở bài
 

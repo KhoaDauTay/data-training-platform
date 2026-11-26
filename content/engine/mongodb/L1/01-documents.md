@@ -38,8 +38,8 @@ quiz:
         en: A foreign key into another collection
     answer: 0
     why:
-      vi: "`address` nằm trong dấu ngoặc nhọn `{ }` nên là một tài liệu nhúng. Mảng dùng ngoặc vuông `[ ]`, như `tags`."
-      en: "`address` is wrapped in curly braces `{ }`, so it is an embedded document. Arrays use square brackets `[ ]`, like `tags`."
+      vi: "`address` nằm trong dấu ngoặc nhọn `{ }` nên là một tài liệu nhúng. Mảng dùng ngoặc vuông `[ ]`, như `tags`. Nó cũng không phải khóa ngoại: `city` và `district` nằm ngay trong tài liệu khách hàng, không có id nào trỏ sang collection khác."
+      en: "`address` is wrapped in curly braces `{ }`, so it is an embedded document. Arrays use square brackets `[ ]`, like `tags`. It is not a foreign key either: `city` and `district` sit inside the customer document itself, with no id pointing to another collection."
   - q:
       vi: Một tài liệu BSON được lớn tối đa bao nhiêu?
       en: How large can a single BSON document be?
@@ -52,8 +52,8 @@ quiz:
         en: No limit
     answer: 0
     why:
-      vi: Giới hạn là 16 MiB mỗi tài liệu. Tệp lớn hơn thì dùng GridFS; dữ liệu lớn dần không giới hạn thì nên tách ra tài liệu khác.
-      en: The limit is 16 MiB per document. Larger files go to GridFS; data that grows without bound belongs in separate documents.
+      vi: "MongoDB có giới hạn cứng 16 MiB mỗi tài liệu, nên \"không giới hạn\" sai: ghi một tài liệu lớn hơn sẽ bị từ chối. 1 MiB không phải giới hạn nào của MongoDB. Tệp lớn hơn 16 MiB thì dùng GridFS (chia tệp thành nhiều tài liệu nhỏ); một mảng cứ lớn dần mãi thì nên tách ra thành tài liệu riêng."
+      en: "MongoDB has a hard limit of 16 MiB per document, so \"no limit\" is wrong: writing a larger document is refused. 1 MiB is not a MongoDB limit at all. Files over 16 MiB go to GridFS (which splits a file into many small documents); an array that keeps growing belongs in separate documents."
   - q:
       vi: Bạn cần lưu số tiền chính xác tới từng đồng lẻ (ví dụ 19,99) mà không sai số làm tròn. Kiểu BSON nào hợp nhất?
       en: You must store money exactly (for example 19.99) with no rounding error. Which BSON type fits best?
@@ -93,8 +93,8 @@ quiz:
         en: The collection grows by itself
     answer: 1
     why:
-      vi: "Collection capped có cỡ cố định và giữ thứ tự ghi vào. Khi đầy, nó ghi đè tài liệu cũ nhất, như một bộ đệm vòng. Docs chính thức nói thường nên dùng TTL index hoặc collection time series thay cho capped, vì chúng linh hoạt hơn."
-      en: "A capped collection has a fixed size and keeps insertion order. When it is full it overwrites the oldest documents, like a ring buffer. The docs say a TTL index or a time series collection is usually a better choice than capped, since they are more flexible."
+      vi: "Collection capped có cỡ cố định (`size`, `max` đặt lúc `createCollection`) nên không tự lớn thêm, và cũng không từ chối lệnh ghi. Khi đầy, nó ghi đè tài liệu cũ nhất theo thứ tự ghi vào, như một bộ đệm vòng. Docs chính thức nói thường nên dùng TTL index hoặc collection time series thay cho capped, vì chúng linh hoạt hơn."
+      en: "A capped collection has a fixed size (`size`, `max` set at `createCollection`), so it does not grow by itself, and it does not refuse the insert either. When it is full it overwrites, in insertion order, the oldest documents, like a ring buffer. The docs say a TTL index or a time series collection is usually a better choice than capped, since they are more flexible."
 ---
 ## Mở bài
 

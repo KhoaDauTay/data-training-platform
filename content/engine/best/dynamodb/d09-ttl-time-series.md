@@ -40,8 +40,8 @@ quiz:
       - { vi: "Chỉ khi đọc strongly consistent", en: "Only with a strongly consistent read" }
     answer: 1
     why:
-      vi: "Docs chính thức nói item hết hạn thường bị xóa trong vài ngày, và việc xóa không tốn throughput ghi. Trong lúc chờ, item vẫn đọc được, nên câu đọc cần `FilterExpression` trên `expiresAt`."
-      en: "The official docs say expired items are usually deleted within a few days, without consuming write throughput. Until then the item can still be read, so reads need a `FilterExpression` on `expiresAt`."
+      vi: "TTL (time to live, hạn sống của item) không xóa ngay: docs nói item hết hạn thường bị xóa trong vài ngày. Trong lúc chờ, item vẫn đọc được bằng mọi kiểu đọc, nhất quán mạnh hay nhất quán cuối, nên câu đọc cần `FilterExpression` trên `expiresAt`."
+      en: "TTL (time to live) does not delete at once: the docs say expired items are usually deleted within a few days. Until then the item can be read by any kind of read, strongly or eventually consistent, so reads need a `FilterExpression` on `expiresAt`."
 ---
 
 ## Ý chính

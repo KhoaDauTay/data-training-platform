@@ -87,8 +87,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý nếu nghĩ chunk chỉ chia theo trường đầu, nhưng chunk là khoảng trên cả khóa kép. Các đơn `VN` có nhiều `customerId` khác nhau, nên khoảng `VN` chia nhỏ được."
-      en: "It sounds right if chunks split only on the first field, but a chunk is a range over the whole compound key. The `VN` orders have many different `customerId` values, so the `VN` range can be split."
+      vi: "Nghe hợp lý nếu nghĩ chunk chỉ chia theo trường đầu, nhưng chunk là khoảng trên cả khóa kép, nên ranh giới chunk có thể nằm giữa hai `customerId` của cùng `VN`. 21 đơn `VN` trong lab thuộc nhiều `customerId` khác nhau, nên khoảng `VN` chia nhỏ được. `customerId` lặp lại giữa các đơn cũng không sao: điều cần là số cặp `country` + `customerId` khác nhau, và số đó lớn hơn hẳn 4."
+      en: "It sounds right if chunks split only on the first field, but a chunk is a range over the whole compound key, so a chunk boundary can fall between two `customerId` values of the same `VN`. The lab's 21 `VN` orders belong to many different `customerId` values, so the `VN` range can be split. A `customerId` repeating across orders does no harm: what counts is the number of distinct `country` + `customerId` pairs, and that is far above 4."
   - q:
       vi: "Trường `day` tăng theo `_id`. Nó là ứng viên thế nào cho sharding theo khoảng?"
       en: "Field `day` grows with `_id`. What kind of candidate is it for ranged sharding?"
@@ -97,8 +97,8 @@ quiz:
       - { vi: "Xấu, vì đơn điệu: mọi lượt chèn mới dồn vào chunk có `MaxKey`", en: "Poor, because it is monotonic: every new insert goes to the chunk with `MaxKey`" }
     answer: 1
     why:
-      vi: "Cardinality cao chưa đủ. Khóa luôn tăng làm mọi lượt ghi mới rơi vào một chunk cuối, một shard làm hết việc ghi."
-      en: "High cardinality is not enough. An ever-increasing key sends every new write to the last chunk, so one shard does all the writing."
+      vi: "`day` có nhiều giá trị (300 tới 310 trong lab, và tăng mãi) nên cardinality ổn, nhưng cardinality cao chưa đủ. Mỗi đơn mới có `day` bằng hoặc lớn hơn mọi giá trị đã có, nên với sharding theo khoảng nó luôn rơi vào chunk cuối, chunk có `MaxKey`, và một shard làm hết việc ghi. Khóa như vậy cần hashed sharding, hoặc đứng sau một trường dẫn có nhiều giá trị."
+      en: "`day` has many values (300 to 310 in the lab, and growing forever), so cardinality is fine, but high cardinality is not enough. Each new order has a `day` equal to or above every existing value, so under ranged sharding it always lands in the last chunk, the one with `MaxKey`, and one shard does all the writing. Such a key needs hashed sharding, or must follow a high-cardinality leading field."
 ---
 ## Mở bài
 

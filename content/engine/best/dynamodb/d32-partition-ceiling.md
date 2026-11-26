@@ -40,8 +40,8 @@ quiz:
       - { vi: "Có, nếu chuyển sang on-demand", en: "Yes, after switching to on-demand" }
     answer: 1
     why:
-      vi: "Adaptive capacity dồn throughput cho partition nóng và có thể tách item hay truy cập ra partition riêng, nhưng mỗi partition vẫn tối đa 3.000 đơn vị đọc và 1.000 đơn vị ghi mỗi giây. Một khóa cần hơn thế phải được rải ra nhiều khóa."
-      en: "Adaptive capacity shifts throughput to a hot partition and can isolate frequently accessed items, but each partition still tops out at 3,000 read units and 1,000 write units per second. A key that needs more must be spread over several keys."
+      vi: "Không đủ: adaptive capacity dồn throughput cho partition nóng, on-demand bỏ giới hạn của cả bảng, nhưng cả hai không nâng trần của một partition: 1.000 đơn vị ghi mỗi giây (mỗi đơn vị ghi một item tới 1 KB). 5.000 / 1.000 = 5, nên khóa này phải rải ra ít nhất 5 khóa, thêm vài khóa để còn dư."
+      en: "No: adaptive capacity shifts throughput to the hot partition and on-demand lifts the table-wide limit, but neither raises the ceiling of one partition: 1,000 write units per second (one unit writes one item up to 1 KB). 5,000 / 1,000 = 5, so this key must be spread over at least 5 keys, a few more for headroom."
 ---
 
 ## Ý chính

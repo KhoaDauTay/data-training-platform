@@ -77,8 +77,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: 'Nghe hợp lý vì cả hai dòng đều khớp filter, nhưng `$` chỉ trỏ tới phần tử đầu tiên khớp điều kiện trên mảng. Muốn sửa mọi dòng khớp thì dùng `$[<id>]` với `arrayFilters`.'
-      en: 'It sounds right because both lines match the filter, but `$` points only at the first element that matched the array condition. To change every matching line, use `$[<id>]` with `arrayFilters`.'
+      vi: 'Cả hai dòng của đơn 5 đều có `qty` bằng 2, nhưng `$` chỉ giữ vị trí của phần tử đầu tiên khớp điều kiện trên mảng, nên chỉ dòng `"p6"` lên 3; dòng `"p4"` vẫn là 2. Lệnh cũng không bị từ chối khi nhiều phần tử khớp: nó lặng lẽ sửa một dòng. Muốn sửa mọi dòng khớp thì dùng `$[<id>]` với `arrayFilters`.'
+      en: 'Both lines of order 5 have `qty` equal to 2, but `$` keeps only the position of the first element that matched the array condition, so only the `"p6"` line goes to 3; the `"p4"` line stays at 2. The command is not refused when several elements match either: it silently changes one line. To change every matching line, use `$[<id>]` with `arrayFilters`.'
   - q:
       vi: 'Bạn muốn giảm giá mọi dòng của đơn 1, không cần điều kiện trên dòng. Đường dẫn nào đúng?'
       en: 'You want a discount on every line of order 1, with no condition on the lines. Which path is right?'
@@ -88,8 +88,8 @@ quiz:
       - { vi: '`"lines.price"`', en: '`"lines.price"`' }
     answer: 1
     why:
-      vi: '`$[]` là mọi phần tử của mảng. `$` cần một điều kiện trên mảng trong filter và chỉ sửa một phần tử; `"lines.price"` không trỏ vào từng phần tử của mảng.'
-      en: '`$[]` is every element of the array. `$` needs an array condition in the filter and changes one element; `"lines.price"` does not point into each element of the array.'
+      vi: '`$[]` là mọi phần tử của mảng, nên cả dòng `"p1"` lẫn `"p4"` của đơn 1 đều được giảm. `$` cần một điều kiện trên `lines` trong filter, mà ở đây không có điều kiện nào trên dòng, nên MongoDB từ chối lệnh; dù có điều kiện, `$` cũng chỉ sửa một phần tử. `"lines.price"` coi `lines` như một tài liệu nhúng có trường `price`, trong khi `lines` là mảng, nên MongoDB báo lỗi không tạo được trường trong mảng.'
+      en: '`$[]` is every element of the array, so both the `"p1"` and the `"p4"` lines of order 1 get the discount. `$` needs a condition on `lines` in the filter, and here there is no condition on the lines, so MongoDB refuses the command; even with one, `$` changes only one element. `"lines.price"` treats `lines` as an embedded document with a `price` field, but `lines` is an array, so MongoDB reports that it cannot create the field in the array.'
 ---
 ## Mở bài
 

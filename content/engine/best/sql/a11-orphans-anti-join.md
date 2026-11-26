@@ -45,8 +45,8 @@ quiz:
       - { vi: "Giữ chúng với các cột của đơn là NULL", en: "Keeps them with NULL order columns" }
     answer: 1
     why:
-      vi: "`INNER JOIN` chỉ giữ dòng khớp ở cả hai bên. Không có ràng buộc nên cũng không có lỗi. `LEFT JOIN` + `o.id IS NULL` cho bạn thấy và đếm được chúng."
-      en: "An `INNER JOIN` keeps only rows that match on both sides. With no constraint, there is no error either. `LEFT JOIN` + `o.id IS NULL` lets you see and count them."
+      vi: "`INNER JOIN` chỉ giữ dòng khớp ở cả hai bên, nên 8 khoản trả không có đơn bị bỏ mà không báo gì. Không có lỗi vì cột không có foreign key, nên chẳng có ràng buộc nào để vi phạm. Giữ dòng với cột của đơn là NULL là việc của `LEFT JOIN`: `LEFT JOIN` + `o.id IS NULL` cho bạn thấy và đếm được chúng."
+      en: "An `INNER JOIN` keeps only rows that match on both sides, so the 8 payments with no order are dropped without a word. There is no error because the column has no foreign key, so there is no constraint to violate. Keeping rows with NULL order columns is what a `LEFT JOIN` does: `LEFT JOIN` + `o.id IS NULL` lets you see and count them."
 ---
 
 ## Ý chính

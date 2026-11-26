@@ -11,8 +11,8 @@ questions:
     q: { vi: "Một tài liệu MongoDB khác một dòng SQL ở điểm nào? `_id` có gì đặc biệt?", en: "How does a MongoDB document differ from an SQL row? What is special about `_id`?" }
     answer: { vi: "Tài liệu là BSON (JSON nhị phân có thêm kiểu như Date, ObjectId, Decimal128), có thể lồng object và mảng, và hai tài liệu trong một collection không bắt buộc cùng trường. Mọi tài liệu có `_id` duy nhất trong collection, có index (chỉ mục) duy nhất tự động không xóa được; không đưa thì driver tạo một ObjectId. `_id` không đổi được sau khi chèn.", en: "A document is BSON (binary JSON with extra types such as Date, ObjectId, Decimal128), can nest objects and arrays, and two documents in one collection need not share fields. Every document has an `_id` unique within the collection, backed by an automatic unique index that cannot be dropped; if omitted, the driver generates an ObjectId. `_id` cannot be changed after insert." }
     rubric:
-      - { vi: "BSON, lồng nhau, schema linh hoạt", en: "BSON, nesting, flexible schema" }
-      - { vi: "_id duy nhất, có index, tự sinh ObjectId", en: "_id unique, indexed, ObjectId generated" }
+      - { vi: "Nói tài liệu là BSON, lồng được object/mảng, các tài liệu không bắt buộc cùng trường", en: "Says a document is BSON, nests objects/arrays, and documents need not share fields" }
+      - { vi: "_id duy nhất, có index tự động, driver tự sinh ObjectId khi thiếu", en: "_id is unique, auto-indexed, and the driver generates an ObjectId when missing" }
       - { vi: "Biết _id bất biến", en: "Knows _id is immutable" }
     doc: https://www.mongodb.com/docs/manual/core/document/
   - id: e-iv-mg-junior-02
@@ -23,8 +23,8 @@ questions:
     q: { vi: "Giới hạn kích thước một tài liệu là bao nhiêu và nó ảnh hưởng thiết kế thế nào?", en: "What is the size limit of one document and how does it affect design?" }
     answer: { vi: "16 MiB mỗi tài liệu BSON, tối đa 100 tầng lồng. Hệ quả: không nhúng mảng tăng không giới hạn (bình luận, log) vào một tài liệu; dữ liệu lớn như tệp thì dùng GridFS hoặc kho đối tượng. Nhưng thường vấn đề hiệu năng đến trước giới hạn: tài liệu lớn tốn băng thông và bộ nhớ mỗi lần đọc/ghi.", en: "16 MiB per BSON document, at most 100 levels of nesting. Consequence: never embed arrays that grow without bound (comments, logs) in one document; large blobs such as files go to GridFS or object storage. Performance problems usually come before the limit: big documents cost bandwidth and memory on every read/write." }
     rubric:
-      - { vi: "Đúng 16 MiB", en: "Correct 16 MiB" }
-      - { vi: "Cảnh báo mảng không giới hạn", en: "Warns about unbounded arrays" }
+      - { vi: "Nói đúng 16 MiB mỗi tài liệu BSON", en: "States 16 MiB per BSON document" }
+      - { vi: "Cảnh báo mảng tăng không giới hạn (bình luận, log) trong một tài liệu", en: "Warns against arrays that grow without bound (comments, logs) in one document" }
       - { vi: "Nêu GridFS / kho ngoài và chi phí tài liệu lớn", en: "Mentions GridFS / external storage and the cost of big documents" }
     doc: https://www.mongodb.com/docs/manual/reference/limits/
   - id: e-iv-mg-junior-03
@@ -35,9 +35,9 @@ questions:
     q: { vi: "`{ phone: null }`, `{ phone: { $exists: false } }` và `{ phone: { $type: 'null' } }` khớp những tài liệu nào?", en: "Which documents do `{ phone: null }`, `{ phone: { $exists: false } }` and `{ phone: { $type: 'null' } }` match?" }
     answer: { vi: "`{ phone: null }` khớp cả tài liệu có `phone` bằng null **và** tài liệu không có trường `phone`. `$exists: false` chỉ khớp tài liệu thiếu trường. `$type: 'null'` chỉ khớp tài liệu có trường mang giá trị null. Bẫy hay gặp: đếm \"chưa có số điện thoại\" bằng `null` gộp hai trường hợp mà người hỏi có thể muốn tách.", en: "`{ phone: null }` matches documents where `phone` is null **and** documents without a `phone` field. `$exists: false` matches only missing fields. `$type: 'null'` matches only fields holding null. Common trap: counting \"no phone yet\" with `null` merges two cases the asker may want separately." }
     rubric:
-      - { vi: "Đúng cả ba", en: "All three right" }
-      - { vi: "Nêu bẫy gộp hai trường hợp", en: "States the merged-cases trap" }
-      - { vi: "Ví dụ cụ thể", en: "Gives a concrete example" }
+      - { vi: "Đúng cả ba: `null` khớp null lẫn thiếu trường, `$exists: false` chỉ thiếu trường, `$type: 'null'` chỉ null", en: "All three: `null` matches null and missing, `$exists: false` only missing, `$type: 'null'` only null" }
+      - { vi: "Nêu bẫy: lọc bằng `null` gộp \"thiếu trường\" với \"có trường mang null\"", en: "States the trap: filtering on `null` merges \"field missing\" with \"field holds null\"" }
+      - { vi: "Ví dụ cụ thể với hai tài liệu, một thiếu `phone`, một có `phone: null`", en: "A concrete example with two documents, one without `phone`, one with `phone: null`" }
     doc: https://www.mongodb.com/docs/manual/tutorial/query-for-null-fields/
   - id: e-iv-mg-junior-04
     engine: mongodb
@@ -47,9 +47,9 @@ questions:
     q: { vi: "Đồng nghiệp viết `db.users.replaceOne({ _id: id }, { email: 'a@b.vn' })` để đổi email, và mọi trường khác biến mất. Vì sao, và nên viết gì?", en: "A colleague wrote `db.users.replaceOne({ _id: id }, { email: 'a@b.vn' })` to change an email and every other field vanished. Why, and what should it be?" }
     answer: { vi: "`replaceOne` thay **cả** tài liệu bằng tài liệu mới (chỉ giữ `_id`). Muốn sửa một trường thì dùng toán tử cập nhật: `db.users.updateOne({ _id: id }, { $set: { email: 'a@b.vn' } })`. `updateOne` với tài liệu không có toán tử sẽ báo lỗi, nên an toàn hơn. Các toán tử khác: `$inc`, `$unset`, `$push`, `$addToSet`, `$pull`.", en: "`replaceOne` replaces the **whole** document with the new one (keeping only `_id`). To change one field use an update operator: `db.users.updateOne({ _id: id }, { $set: { email: 'a@b.vn' } })`. `updateOne` with an operator-free document raises an error, so it is safer. Other operators: `$inc`, `$unset`, `$push`, `$addToSet`, `$pull`." }
     rubric:
-      - { vi: "Giải thích replace thay cả tài liệu", en: "Explains replace swaps the whole document" }
-      - { vi: "Đưa câu $set đúng", en: "Gives the correct $set" }
-      - { vi: "Kể thêm toán tử cập nhật", en: "Names more update operators" }
+      - { vi: "Nói `replaceOne` thay cả tài liệu, chỉ giữ `_id`", en: "Says `replaceOne` swaps the whole document, keeping only `_id`" }
+      - { vi: "Viết đúng `updateOne` với `$set` chỉ đổi email", en: "Writes the correct `updateOne` with `$set` changing only the email" }
+      - { vi: "Kể thêm ít nhất hai toán tử cập nhật (`$inc`, `$unset`, `$push`…)", en: "Names at least two more update operators (`$inc`, `$unset`, `$push`…)" }
     doc: https://www.mongodb.com/docs/manual/reference/method/db.collection.updateone/
   - id: e-iv-mg-junior-05
     engine: mongodb
@@ -59,9 +59,9 @@ questions:
     q: { vi: "Tài liệu có `items: [{ sku: 'A', qty: 1 }, { sku: 'B', qty: 5 }]`. Vì sao `{ 'items.sku': 'A', 'items.qty': { $gte: 5 } }` khớp nó, và viết sao cho đúng ý \"có món A với số lượng ≥ 5\"?", en: "A document has `items: [{ sku: 'A', qty: 1 }, { sku: 'B', qty: 5 }]`. Why does `{ 'items.sku': 'A', 'items.qty': { $gte: 5 } }` match it, and how do you express \"has item A with quantity ≥ 5\"?" }
     answer: { vi: "Mỗi điều kiện trên đường dẫn mảng được thỏa bởi **bất kỳ** phần tử nào, không nhất thiết cùng một phần tử: `sku: 'A'` ở phần tử đầu, `qty ≥ 5` ở phần tử thứ hai. Muốn mọi điều kiện trên cùng một phần tử thì dùng `$elemMatch`: `{ items: { $elemMatch: { sku: 'A', qty: { $gte: 5 } } } }`.", en: "Each condition on an array path is satisfied by **any** element, not necessarily the same one: `sku: 'A'` by the first, `qty ≥ 5` by the second. To require every condition on one element use `$elemMatch`: `{ items: { $elemMatch: { sku: 'A', qty: { $gte: 5 } } } }`." }
     rubric:
-      - { vi: "Giải thích \"bất kỳ phần tử\"", en: "Explains \"any element\"" }
-      - { vi: "Viết đúng $elemMatch", en: "Writes $elemMatch correctly" }
-      - { vi: "Biết đây là bẫy dữ liệu sai lặng lẽ", en: "Knows this is a silent wrong-data trap" }
+      - { vi: "Giải thích mỗi điều kiện được thỏa bởi một phần tử bất kỳ, không cần cùng phần tử", en: "Explains each condition can be met by a different element" }
+      - { vi: "Viết đúng `$elemMatch` gói cả `sku` và `qty`", en: "Writes `$elemMatch` wrapping both `sku` and `qty`" }
+      - { vi: "Biết truy vấn không báo lỗi mà trả sai tài liệu", en: "Knows the query raises no error but returns wrong documents" }
     doc: https://www.mongodb.com/docs/manual/reference/operator/query/elemmatch/
   - id: e-iv-mg-junior-06
     engine: mongodb
@@ -71,9 +71,9 @@ questions:
     q: { vi: "Upsert là gì? Khi upsert theo email từ hai request song song, làm sao không tạo hai tài liệu?", en: "What is an upsert? When upserting by email from two parallel requests, how do you avoid two documents?" }
     answer: { vi: "`updateOne(filter, update, { upsert: true })` cập nhật tài liệu khớp, hoặc chèn mới nếu không có (tài liệu mới lấy các trường bằng từ filter cộng `$set`/`$setOnInsert`). Hai upsert song song có thể cùng không thấy gì và cùng chèn; chỉ một index (chỉ mục) duy nhất trên `email` chặn được: một bên lỗi trùng khóa và có thể thử lại thành cập nhật.", en: "`updateOne(filter, update, { upsert: true })` updates the matching document, or inserts one if none exists (the new document takes equality fields from the filter plus `$set`/`$setOnInsert`). Two parallel upserts can both find nothing and both insert; only a unique index on `email` prevents it: one side gets a duplicate key error and can retry as an update." }
     rubric:
-      - { vi: "Định nghĩa upsert và $setOnInsert", en: "Defines upsert and $setOnInsert" }
-      - { vi: "Thấy được tranh chấp", en: "Sees the race" }
-      - { vi: "Index duy nhất + retry", en: "Unique index + retry" }
+      - { vi: "Định nghĩa upsert (sửa nếu có, chèn nếu không) và vai trò `$setOnInsert`", en: "Defines upsert (update if found, else insert) and the role of `$setOnInsert`" }
+      - { vi: "Thấy hai upsert cùng không tìm thấy rồi cùng chèn", en: "Sees two upserts both finding nothing and both inserting" }
+      - { vi: "Index duy nhất trên `email`, bên lỗi trùng khóa thử lại thành cập nhật", en: "A unique index on `email`; the side with the duplicate key error retries as an update" }
     doc: https://www.mongodb.com/docs/manual/reference/method/db.collection.updateone/
   - id: e-iv-mg-junior-07
     engine: mongodb
@@ -83,9 +83,9 @@ questions:
     q: { vi: "Thao tác nào trong MongoDB là nguyên tử mà không cần transaction?", en: "Which MongoDB operations are atomic without a transaction?" }
     answer: { vi: "Mọi thao tác ghi trên **một** tài liệu là nguyên tử, kể cả khi sửa nhiều trường và mảng lồng bên trong. Một `updateMany` thì nguyên tử theo từng tài liệu, không nguyên tử cho cả tập. Vì vậy dữ liệu cần đổi cùng nhau nên nằm trong một tài liệu khi hợp lý; còn lại mới cần transaction nhiều tài liệu.", en: "Every write to a **single** document is atomic, even when it changes several fields and nested arrays. An `updateMany` is atomic per document, not for the whole set. So data that must change together should live in one document when sensible; only the rest needs a multi-document transaction." }
     rubric:
-      - { vi: "Nguyên tử ở mức một tài liệu", en: "Atomic at the single-document level" }
-      - { vi: "updateMany không nguyên tử cho cả tập", en: "updateMany is not atomic as a whole" }
-      - { vi: "Hệ quả cho thiết kế", en: "The design consequence" }
+      - { vi: "Mọi lệnh ghi trên một tài liệu là nguyên tử, kể cả mảng lồng", en: "Any write to one document is atomic, nested arrays included" }
+      - { vi: "`updateMany` nguyên tử từng tài liệu, không cho cả tập", en: "`updateMany` is atomic per document, not for the whole set" }
+      - { vi: "Hệ quả: đặt dữ liệu đổi cùng nhau vào một tài liệu để khỏi cần transaction", en: "Consequence: keep data that changes together in one document to avoid a transaction" }
     doc: https://www.mongodb.com/docs/manual/core/write-operations-atomicity/
   - id: e-iv-mg-junior-08
     engine: mongodb
@@ -95,9 +95,9 @@ questions:
     q: { vi: "`countDocuments()` và `estimatedDocumentCount()` khác nhau thế nào?", en: "How do `countDocuments()` and `estimatedDocumentCount()` differ?" }
     answer: { vi: "`countDocuments(filter)` đếm thật theo bộ lọc (chạy như một aggregation), đúng nhưng tốn công với tập lớn; nên có index (chỉ mục) hỗ trợ bộ lọc. `estimatedDocumentCount()` đọc số đếm trong metadata của collection: rất nhanh, không nhận bộ lọc, và có thể lệch sau tắt máy không sạch hoặc với tài liệu mồ côi trong cụm shard.", en: "`countDocuments(filter)` really counts with a filter (runs as an aggregation): correct but costly on large sets; give the filter an index. `estimatedDocumentCount()` reads the collection metadata count: very fast, takes no filter, and can be off after an unclean shutdown or with orphaned documents in a sharded cluster." }
     rubric:
-      - { vi: "Đếm thật vs metadata", en: "Real count vs metadata" }
-      - { vi: "Biết estimated không nhận filter", en: "Knows estimated takes no filter" }
-      - { vi: "Nêu khi nào có thể lệch", en: "States when it can be wrong" }
+      - { vi: "`countDocuments` đếm thật theo bộ lọc, `estimatedDocumentCount` đọc số trong metadata", en: "`countDocuments` really counts with a filter, `estimatedDocumentCount` reads the metadata count" }
+      - { vi: "Biết `estimatedDocumentCount` không nhận bộ lọc", en: "Knows `estimatedDocumentCount` takes no filter" }
+      - { vi: "Nêu lúc số ước lệch: sau tắt máy không sạch, tài liệu mồ côi khi shard", en: "States when the estimate drifts: unclean shutdown, orphaned documents in a sharded cluster" }
     doc: https://www.mongodb.com/docs/manual/reference/method/db.collection.countdocuments/
   - id: e-iv-mg-junior-09
     engine: mongodb
@@ -108,7 +108,7 @@ questions:
     answer: { vi: "Nhúng khi dữ liệu được đọc cùng nhau, thuộc về cha, và số lượng có giới hạn: địa chỉ giao hàng trong đơn, các dòng hàng trong một đơn. Tham chiếu khi dữ liệu dùng chung bởi nhiều cha, đổi độc lập, hoặc tăng không giới hạn: sản phẩm (đơn chỉ giữ `product_id` và bản chụp giá/tên), bình luận của một bài viết nổi tiếng. Thiết kế theo cách ứng dụng đọc, không theo bảng chuẩn hóa.", en: "Embed when data is read together, belongs to the parent, and is bounded: the shipping address in an order, the lines of an order. Reference when data is shared by many parents, changes independently, or grows without bound: products (the order keeps `product_id` plus a snapshot of price/name), comments on a popular post. Design for how the app reads, not for normalised tables." }
     rubric:
       - { vi: "Luật: đọc cùng + có giới hạn → nhúng", en: "Rule: read together + bounded → embed" }
-      - { vi: "Ví dụ đúng mỗi bên", en: "A correct example each way" }
+      - { vi: "Ví dụ đúng mỗi bên (địa chỉ giao hàng nhúng, sản phẩm tham chiếu)", en: "A correct example each way (embedded shipping address, referenced product)" }
       - { vi: "Nhắc bản chụp dữ liệu hoặc thiết kế theo truy cập", en: "Mentions snapshots or access-driven design" }
     doc: https://www.mongodb.com/docs/manual/data-modeling/
   - id: e-iv-mg-junior-10
@@ -119,7 +119,7 @@ questions:
     q: { vi: "Phân trang bằng `.skip(n).limit(20)` có vấn đề gì khi `n` lớn? Cách khác?", en: "What goes wrong with `.skip(n).limit(20)` pagination when `n` is large? Alternative?" }
     answer: { vi: "Server vẫn phải đi qua `n` tài liệu (hoặc khóa của index) rồi bỏ đi, nên trang càng sâu càng chậm; và khi có chèn/xóa giữa hai lần gọi, trang có thể lặp hoặc sót. Cách khác: phân trang theo khóa, nhớ giá trị cuối của trang trước và lọc `{ created: { $lt: last } }` với sort trên trường có index (chỉ mục) (thêm `_id` để phá hòa).", en: "The server still walks `n` documents (or index keys) and discards them, so deeper pages get slower; and inserts/deletes between calls can repeat or skip items. Alternative: range-based paging, remember the last value of the previous page and filter `{ created: { $lt: last } }` with a sort on an indexed field (add `_id` as a tiebreaker)." }
     rubric:
-      - { vi: "Skip vẫn duyệt n mục", en: "Skip still walks n items" }
+      - { vi: "Server vẫn duyệt rồi bỏ `n` tài liệu, trang càng sâu càng chậm", en: "The server still walks and discards `n` documents, deeper pages get slower" }
       - { vi: "Nêu lặp/sót khi dữ liệu đổi", en: "Mentions repeats/gaps when data changes" }
       - { vi: "Phân trang theo khóa có phá hòa", en: "Range paging with a tiebreaker" }
     doc: https://www.mongodb.com/docs/manual/reference/method/cursor.skip/
@@ -152,9 +152,9 @@ questions:
           }
     answer: { vi: "`COLLSCAN` và `totalKeysExamined: 0`: không dùng index (chỉ mục) nào, đọc cả 21.349 tài liệu để trả 3.809 (khoảng 5,6 tài liệu đọc cho mỗi tài liệu trả về). Tạo `db.movies.createIndex({ year: 1 })` rồi chạy lại explain: kỳ vọng `IXSCAN` dưới `FETCH` và cả ba số `nReturned`, `totalKeysExamined`, `totalDocsExamined` gần bằng nhau (3.809).", en: "`COLLSCAN` and `totalKeysExamined: 0`: no index used, all 21,349 documents read to return 3,809 (about 5.6 documents read per document returned). Create `db.movies.createIndex({ year: 1 })` and rerun explain: expect `IXSCAN` under `FETCH` with `nReturned`, `totalKeysExamined` and `totalDocsExamined` all close (3,809)." }
     rubric:
-      - { vi: "Đọc COLLSCAN và tỉ lệ docs đọc/trả", en: "Reads COLLSCAN and the examined/returned ratio" }
-      - { vi: "Đề xuất index year", en: "Proposes an index on year" }
-      - { vi: "Nói kết quả mong đợi sau khi sửa", en: "States the expected result after the fix" }
+      - { vi: "Đọc COLLSCAN và tỉ lệ 21.349 tài liệu đọc / 3.809 trả ≈ 5,6", en: "Reads COLLSCAN and the ratio 21,349 examined / 3,809 returned ≈ 5.6" }
+      - { vi: "Đề xuất `createIndex({ year: 1 })`", en: "Proposes `createIndex({ year: 1 })`" }
+      - { vi: "Sau khi sửa: IXSCAN dưới FETCH, ba số đếm gần 3.809", en: "After the fix: IXSCAN under FETCH, all three counts near 3,809" }
     doc: https://www.mongodb.com/docs/manual/reference/explain-results/
   - id: e-iv-mg-junior-12
     engine: mongodb
@@ -186,10 +186,10 @@ questions:
             },
             '...': '...'
           }
-    answer: { vi: "Không phủ: `IXSCAN` nằm dưới `FETCH`, và `totalDocsExamined: 3809` nghĩa là mỗi khóa tìm được dẫn tới một lần đọc tài liệu. Có `FETCH` vì truy vấn trả cả tài liệu (không projection). Truy vấn này vẫn hiệu quả: khóa đọc = tài liệu đọc = tài liệu trả. Muốn phủ thì projection chỉ lấy trường trong index và bỏ `_id`: `find({ year: … }, { _id: 0, year: 1 })`.", en: "Not covered: `IXSCAN` sits under `FETCH`, and `totalDocsExamined: 3809` means every key found leads to a document read. The `FETCH` is there because the query returns whole documents (no projection). The query is still efficient: keys examined = documents examined = documents returned. To cover it, project only indexed fields and drop `_id`: `find({ year: … }, { _id: 0, year: 1 })`." }
+    answer: { vi: "Không phủ: `IXSCAN` nằm dưới `FETCH`, và `totalDocsExamined: 3809` nghĩa là mỗi khóa tìm được dẫn tới một lần đọc tài liệu. Có `FETCH` vì truy vấn trả cả tài liệu (không projection). Truy vấn này vẫn hiệu quả: khóa đọc = tài liệu đọc = tài liệu trả. Truy vấn phủ (covered query) là truy vấn lấy mọi trường cần từ index, không đọc tài liệu nào. Muốn phủ thì projection chỉ lấy trường trong index và bỏ `_id`: `find({ year: … }, { _id: 0, year: 1 })`.", en: "Not covered: `IXSCAN` sits under `FETCH`, and `totalDocsExamined: 3809` means every key found leads to a document read. The `FETCH` is there because the query returns whole documents (no projection). The query is still efficient: keys examined = documents examined = documents returned. A covered query takes every field it needs from the index and reads no document. To cover it, project only indexed fields and drop `_id`: `find({ year: … }, { _id: 0, year: 1 })`." }
     rubric:
       - { vi: "Biết covered = IXSCAN không dưới FETCH", en: "Knows covered = IXSCAN not under FETCH" }
-      - { vi: "Đọc ba số bằng nhau là hiệu quả", en: "Reads the three equal counts as efficient" }
+      - { vi: "Đọc ba số 3.809 bằng nhau là không đọc thừa", en: "Reads the three equal 3,809 counts as no wasted reads" }
       - { vi: "Biết bỏ _id trong projection để phủ", en: "Knows to exclude _id in the projection to cover" }
     doc: https://www.mongodb.com/docs/manual/reference/explain-results/
   - id: e-iv-mg-junior-13
@@ -211,8 +211,8 @@ questions:
           }
     answer: { vi: "Index nằm trên trường `city` ở gốc, còn dữ liệu (và truy vấn) dùng trường lồng `address.city`: hai đường dẫn khác nhau, nên không có kế hoạch nào dùng index (`rejectedPlans: []`). Sửa: `createIndex({ 'address.city': 1 })` và xóa index vô dụng (nó vẫn tốn công khi ghi). Kiểm bằng `getIndexes()` trước khi đoán.", en: "The index is on a top-level `city` field, while the data (and the query) use the nested `address.city`: different paths, so no plan can use the index (`rejectedPlans: []`). Fix: `createIndex({ 'address.city': 1 })` and drop the useless index (it still costs on writes). Check `getIndexes()` before guessing." }
     rubric:
-      - { vi: "Nhận ra sai đường dẫn trường", en: "Spots the field-path mismatch" }
-      - { vi: "Đọc rejectedPlans rỗng", en: "Reads the empty rejectedPlans" }
+      - { vi: "Nhận ra index trên `city` còn truy vấn dùng `address.city`", en: "Spots the index on `city` while the query uses `address.city`" }
+      - { vi: "Đọc `rejectedPlans: []`: không có kế hoạch nào dùng được index", en: "Reads `rejectedPlans: []`: no plan could use an index" }
       - { vi: "Tạo đúng index, bỏ index thừa", en: "Creates the right index, drops the useless one" }
     doc: https://www.mongodb.com/docs/manual/reference/explain-results/
   - id: e-iv-mg-junior-14
@@ -223,8 +223,8 @@ questions:
     q: { vi: "ObjectId chứa gì? Có thể sắp xếp theo `_id` để có thứ tự tạo chính xác không?", en: "What does an ObjectId contain? Can sorting by `_id` give the exact creation order?" }
     answer: { vi: "12 byte: 4 byte thời gian (giây, Unix), 5 byte ngẫu nhiên theo tiến trình, 3 byte bộ đếm. Sắp theo `_id` cho thứ tự gần đúng theo giây, nhưng trong cùng một giây giữa nhiều máy/tiến trình thì không bảo đảm, và đồng hồ máy khách có thể lệch. Cần thứ tự chính xác thì lưu trường thời gian riêng (và một tiebreaker).", en: "12 bytes: a 4-byte timestamp (Unix seconds), 5 random bytes per process, a 3-byte counter. Sorting by `_id` gives roughly second-level order, but within the same second across machines/processes it is not guaranteed, and client clocks can drift. For exact ordering store a separate time field (and a tiebreaker)." }
     rubric:
-      - { vi: "Cấu trúc 4 + 5 + 3 byte", en: "The 4 + 5 + 3 byte layout" }
-      - { vi: "Chỉ đơn điệu gần đúng", en: "Only roughly monotonic" }
+      - { vi: "Cấu trúc 4 byte thời gian + 5 byte ngẫu nhiên + 3 byte bộ đếm", en: "4-byte timestamp + 5 random bytes + 3-byte counter" }
+      - { vi: "Chỉ tăng dần theo giây; trong cùng giây giữa các máy thì không", en: "Increases only per second; not within one second across machines" }
       - { vi: "Đề xuất trường thời gian riêng", en: "Suggests a separate time field" }
     doc: https://www.mongodb.com/docs/manual/reference/bson-types/
   - id: e-iv-mg-junior-15
@@ -239,8 +239,8 @@ questions:
       - { vi: "Bình luận gần nhất nhúng là dữ liệu trùng: mỗi bình luận mới ghi hai chỗ.", en: "Embedded recent comments duplicate data: every new comment writes two places." }
     rubric:
       - { vi: "Bình luận tách collection có index phân trang", en: "Comments in their own collection with a paging index" }
-      - { vi: "Dùng mẫu subset (vài bình luận mới nhúng)", en: "Uses the subset pattern (a few recent comments embedded)" }
-      - { vi: "Nêu chi phí của dữ liệu trùng", en: "States the cost of duplication" }
+      - { vi: "Dùng mẫu subset: 3–5 bình luận mới nhúng bằng `$push` + `$slice`", en: "Uses the subset pattern: 3–5 recent comments embedded via `$push` + `$slice`" }
+      - { vi: "Nêu chi phí dữ liệu trùng: mỗi bình luận ghi hai chỗ, tên tác giả cần cập nhật lan", en: "States the duplication cost: each comment written twice, author names need propagating" }
     doc: https://www.mongodb.com/docs/manual/data-modeling/design-patterns/
 
   # ---------------- MongoDB · mid
@@ -252,7 +252,7 @@ questions:
     q: { vi: "Trong aggregation pipeline, vì sao đặt `$match` sớm quan trọng? Những stage đầu nào dùng được index (chỉ mục)?", en: "In an aggregation pipeline, why does putting `$match` early matter? Which leading stages can use an index?" }
     answer: { vi: "`$match` (và `$sort`) ở **đầu** pipeline được đẩy xuống tầng truy vấn nên dùng được index, và giảm số tài liệu mọi stage sau phải xử lý. Sau `$group`, `$unwind` hay `$project` tạo trường mới thì không còn index. Bộ tối ưu tự dời một số `$match` lên trước khi an toàn (ví dụ qua `$sort`, hoặc phần lọc không dựa vào trường vừa tạo), nhưng đừng trông vào đó: viết `$match` ngay đầu và kiểm bằng `explain`.", en: "A `$match` (and `$sort`) at the **start** of the pipeline is pushed into the query layer so it can use an index, and it shrinks the documents every later stage handles. After `$group`, `$unwind` or a `$project` creating new fields, indexes are no longer usable. The optimizer moves some `$match` stages earlier when safe (for example past a `$sort`, or the parts not depending on computed fields), but do not rely on it: put `$match` first and check with `explain`." }
     rubric:
-      - { vi: "Chỉ stage đầu dùng được index", en: "Only leading stages can use indexes" }
+      - { vi: "Chỉ `$match`/`$sort` ở đầu dùng được index; sau `$group`, `$unwind` thì không", en: "Only a leading `$match`/`$sort` can use an index; not after `$group`, `$unwind`" }
       - { vi: "Giảm khối lượng cho stage sau", en: "Reduces work for later stages" }
       - { vi: "Biết bộ tối ưu tự dời nhưng vẫn kiểm explain", en: "Knows the optimizer reorders but still checks explain" }
     doc: https://www.mongodb.com/docs/manual/core/aggregation-pipeline-optimization/
@@ -264,8 +264,8 @@ questions:
     q: { vi: "`$lookup` từ `orders` sang `customers` chậm khi `orders` lớn. Kiểm tra gì trước?", en: "A `$lookup` from `orders` to `customers` is slow when `orders` is large. What do you check first?" }
     answer: { vi: "(1) Trường `foreignField` ở collection đích có index (chỉ mục) chưa (với `customers` là `_id` thì có sẵn; nếu là trường khác thì phải tạo). (2) `$match` lọc `orders` trước `$lookup` để ít lần tra hơn. (3) Chỉ lấy trường cần thiết ở bên đích (pipeline con với `$project`). (4) Nếu luôn cần tên khách khi đọc đơn, cân nhắc nhúng bản chụp tên vào đơn để bỏ `$lookup`.", en: "(1) Whether the target's `foreignField` is indexed (for `customers` on `_id` it is; any other field needs an index). (2) A `$match` filtering `orders` before the `$lookup` so there are fewer lookups. (3) Fetch only needed fields from the target (a sub-pipeline with `$project`). (4) If orders always need the customer name, consider embedding a name snapshot in the order and dropping the `$lookup`." }
     rubric:
-      - { vi: "Index trên foreignField", en: "Index on foreignField" }
-      - { vi: "Lọc trước lookup", en: "Filter before the lookup" }
+      - { vi: "Kiểm index trên `foreignField` của collection đích", en: "Checks the index on the target's `foreignField`" }
+      - { vi: "`$match` lọc `orders` trước `$lookup` để ít lần tra", en: "A `$match` on `orders` before `$lookup` for fewer lookups" }
       - { vi: "Giảm trường hoặc cân nhắc nhúng", en: "Trim fields or consider embedding" }
     doc: https://www.mongodb.com/docs/manual/reference/operator/aggregation/lookup/
   - id: e-iv-mg-mid-03
@@ -276,8 +276,8 @@ questions:
     q: { vi: "Phát biểu luật ESR và áp dụng cho `find({ status: 'A', qty: { $gt: 10 } }).sort({ created: -1 })`.", en: "State the ESR rule and apply it to `find({ status: 'A', qty: { $gt: 10 } }).sort({ created: -1 })`." }
     answer: { vi: "Equality → Sort → Range: trường so bằng trước, rồi trường sắp xếp, cuối cùng trường khoảng. Index (chỉ mục): `{ status: 1, created: -1, qty: 1 }`. Với `status` cố định, khóa đã theo thứ tự `created`, nên không cần `SORT` trong bộ nhớ; `qty` được lọc trong lúc quét khóa. Nếu đặt `qty` trước `created`, khoảng trên `qty` làm mất thứ tự sắp xếp và phải sort trong bộ nhớ. Lưu ý `$ne`, `$nin`, `$regex` cũng tính là khoảng.", en: "Equality → Sort → Range: equality fields first, then sort fields, then range fields. Index: `{ status: 1, created: -1, qty: 1 }`. With `status` fixed the keys are already in `created` order, so no in-memory `SORT`; `qty` is filtered while scanning keys. Putting `qty` before `created` means the range on `qty` breaks the sort order and forces an in-memory sort. Note `$ne`, `$nin`, `$regex` count as ranges too." }
     rubric:
-      - { vi: "Phát biểu đúng ESR", en: "States ESR correctly" }
-      - { vi: "Đưa đúng index", en: "Gives the right index" }
+      - { vi: "Phát biểu ESR: trường so bằng, rồi trường sắp xếp, rồi trường so khoảng", en: "States ESR: equality fields, then sort fields, then range fields" }
+      - { vi: "Đưa đúng `{ status: 1, created: -1, qty: 1 }`", en: "Gives `{ status: 1, created: -1, qty: 1 }`" }
       - { vi: "Giải thích vì sao khoảng trước sort gây SORT", en: "Explains why range-before-sort causes SORT" }
     doc: https://www.mongodb.com/docs/manual/tutorial/equality-sort-range-guideline/
   - id: e-iv-mg-mid-04
@@ -288,7 +288,7 @@ questions:
     q: { vi: "Index (chỉ mục) multikey là gì? Vì sao không tạo được index ghép `{ tags: 1, sizes: 1 }` khi cả hai là mảng?", en: "What is a multikey index? Why can you not build a compound `{ tags: 1, sizes: 1 }` index when both are arrays?" }
     answer: { vi: "Khi trường được đánh index là mảng, MongoDB tạo một khóa cho mỗi phần tử: đó là multikey, tự động. Một index ghép chỉ cho phép tối đa **một** trường mảng trong mỗi tài liệu, vì hai mảng sẽ cho tích Descartes số khóa (m × n mỗi tài liệu). Chèn tài liệu có cả hai trường là mảng vào collection có index đó sẽ bị từ chối. Multikey cũng hạn chế truy vấn phủ.", en: "When an indexed field is an array, MongoDB creates one key per element: that is a multikey index, automatically. A compound index allows at most **one** array field per document, because two arrays would produce a Cartesian product of keys (m × n per document). Inserting a document where both fields are arrays into a collection with that index is rejected. Multikey also limits covered queries." }
     rubric:
-      - { vi: "Một khóa mỗi phần tử", en: "One key per element" }
+      - { vi: "Multikey: mỗi phần tử mảng thành một khóa index", en: "Multikey: each array element becomes one index key" }
       - { vi: "Luật một mảng mỗi tài liệu và lý do tích Descartes", en: "One-array-per-document rule and the Cartesian reason" }
       - { vi: "Biết ảnh hưởng tới truy vấn phủ", en: "Knows the effect on covered queries" }
     doc: https://www.mongodb.com/docs/manual/core/indexes/index-types/index-multikey/
@@ -298,10 +298,10 @@ questions:
     kind: concept
     set: mg-mid-3
     q: { vi: "Index (chỉ mục) một phần (partial) và index thưa (sparse) khác nhau thế nào? Làm sao để email duy nhất nhưng cho phép nhiều tài liệu không có email?", en: "How do partial and sparse indexes differ? How do you make email unique while allowing many documents without one?" }
-    answer: { vi: "Sparse bỏ qua tài liệu thiếu trường được đánh index. Partial dùng `partialFilterExpression` bất kỳ (tập con toán tử như `$exists`, `$gt`, `$eq`, `$type`), linh hoạt hơn và được khuyên dùng thay sparse. Truy vấn phải chứa điều kiện bao hàm bộ lọc thì planner mới dùng. Email duy nhất có thể vắng: `createIndex({ email: 1 }, { unique: true, partialFilterExpression: { email: { $exists: true } } })`; ràng buộc duy nhất chỉ áp lên tài liệu nằm trong index.", en: "Sparse skips documents missing the indexed field. Partial uses any `partialFilterExpression` (a subset of operators such as `$exists`, `$gt`, `$eq`, `$type`), is more flexible and recommended over sparse. The query's condition must imply the filter (be a subset of it) for the planner to use the index. Unique optional email: `createIndex({ email: 1 }, { unique: true, partialFilterExpression: { email: { $exists: true } } })`; uniqueness applies only to documents in the index." }
+    answer: { vi: "Sparse bỏ qua tài liệu thiếu trường được đánh index. Partial dùng `partialFilterExpression` bất kỳ (tập con toán tử như `$exists`, `$gt`, `$eq`, `$type`), linh hoạt hơn và được khuyên dùng thay sparse. Planner chỉ dùng index partial khi điều kiện truy vấn nằm gọn trong bộ lọc (lọc `email` bằng một giá trị thì đã ngụ ý `$exists: true`). Email duy nhất có thể vắng: `createIndex({ email: 1 }, { unique: true, partialFilterExpression: { email: { $exists: true } } })`; ràng buộc duy nhất chỉ áp lên tài liệu nằm trong index.", en: "Sparse skips documents missing the indexed field. Partial uses any `partialFilterExpression` (a subset of operators such as `$exists`, `$gt`, `$eq`, `$type`), is more flexible and recommended over sparse. The planner uses a partial index only when the query's condition falls inside the filter (an `email` equality already implies `$exists: true`). Unique optional email: `createIndex({ email: 1 }, { unique: true, partialFilterExpression: { email: { $exists: true } } })`; uniqueness applies only to documents in the index." }
     rubric:
-      - { vi: "Phân biệt sparse/partial", en: "Distinguishes sparse/partial" }
-      - { vi: "Truy vấn phải khớp bộ lọc", en: "Query must match the filter" }
+      - { vi: "Sparse chỉ bỏ tài liệu thiếu trường; partial lọc theo `partialFilterExpression`", en: "Sparse only skips documents missing the field; partial filters by `partialFilterExpression`" }
+      - { vi: "Điều kiện truy vấn phải nằm gọn trong bộ lọc thì index mới được dùng", en: "The query's condition must fall inside the filter for the index to be used" }
       - { vi: "Câu unique + partial đúng", en: "Correct unique + partial index" }
     doc: https://www.mongodb.com/docs/manual/core/index-partial/
   - id: e-iv-mg-mid-06
@@ -310,10 +310,10 @@ questions:
     kind: concept
     set: mg-mid-1
     q: { vi: "Dùng TTL index để xóa phiên đăng nhập sau 30 phút. Viết lệnh và nêu các giới hạn.", en: "Use a TTL index to delete login sessions after 30 minutes. Write the command and state the limits." }
-    answer: { vi: "`db.sessions.createIndex({ lastSeen: 1 }, { expireAfterSeconds: 1800 })`. Trường phải là Date (hoặc mảng Date: dùng giá trị sớm nhất); tài liệu không có trường đó không bao giờ bị xóa. Luồng nền chạy khoảng 60 giây một lần, nên tài liệu có thể sống quá hạn một lúc: ứng dụng vẫn phải kiểm hạn khi đọc. TTL chỉ cho index (chỉ mục) một trường, không dùng trên `_id`.", en: "`db.sessions.createIndex({ lastSeen: 1 }, { expireAfterSeconds: 1800 })`. The field must be a Date (or an array of Dates: the earliest counts); documents without it never expire. The background task runs about every 60 seconds, so documents can outlive their expiry a while: the app must still check expiry on read. TTL works only on single-field indexes, not on `_id`." }
+    answer: { vi: "`db.sessions.createIndex({ lastSeen: 1 }, { expireAfterSeconds: 1800 })`: TTL index (index tự xóa tài liệu hết hạn), 30 phút × 60 = 1800 giây sau `lastSeen`. Trường phải là Date (hoặc mảng Date: dùng giá trị sớm nhất); tài liệu không có trường đó không bao giờ bị xóa. Luồng nền chạy khoảng 60 giây một lần, nên tài liệu có thể sống quá hạn một lúc: ứng dụng vẫn phải kiểm hạn khi đọc. TTL index chỉ tạo trên index một trường, không dùng trên `_id`.", en: "`db.sessions.createIndex({ lastSeen: 1 }, { expireAfterSeconds: 1800 })`: a TTL (time to live) index deletes documents 30 minutes × 60 = 1800 seconds after `lastSeen`. The field must be a Date (or an array of Dates: the earliest counts); documents without it never expire. The background task runs about every 60 seconds, so documents can outlive their expiry a while: the app must still check expiry on read. TTL works only on single-field indexes, not on `_id`." }
     rubric:
-      - { vi: "Lệnh đúng với expireAfterSeconds", en: "Correct command with expireAfterSeconds" }
-      - { vi: "Biết luồng 60 s và xóa trễ", en: "Knows the 60 s task and late deletion" }
+      - { vi: "Lệnh đúng với `expireAfterSeconds: 1800` (30 × 60)", en: "Correct command with `expireAfterSeconds: 1800` (30 × 60)" }
+      - { vi: "Biết luồng nền chạy khoảng 60 giây một lần nên xóa trễ, ứng dụng vẫn kiểm hạn", en: "Knows the background task runs about every 60 s, so deletion lags and the app still checks expiry" }
       - { vi: "Kể giới hạn kiểu Date / một trường", en: "Names the Date / single-field limits" }
     doc: https://www.mongodb.com/docs/manual/core/index-ttl/
   - id: e-iv-mg-mid-07
@@ -324,9 +324,9 @@ questions:
     q: { vi: "Collection đã có dữ liệu bẩn. Bạn thêm `$jsonSchema` validation thế nào mà không làm hỏng ghi hiện có?", en: "A collection already holds dirty data. How do you add `$jsonSchema` validation without breaking existing writes?" }
     answer: { vi: "Dùng `collMod` với `validator: { $jsonSchema: … }`. Bắt đầu bằng `validationAction: 'warn'` (ghi log, không chặn) và `validationLevel: 'moderate'` (chỉ kiểm khi chèn mới và khi sửa tài liệu vốn đã hợp lệ). Tìm tài liệu sai bằng `find({ $nor: [ { $jsonSchema: … } ] })`, sửa dần, rồi chuyển sang `error` và `strict`. Mặc định là `error` + `strict`.", en: "Use `collMod` with `validator: { $jsonSchema: … }`. Start with `validationAction: 'warn'` (log, do not block) and `validationLevel: 'moderate'` (check inserts and updates to documents that were already valid). Find bad documents with `find({ $nor: [ { $jsonSchema: … } ] })`, fix them gradually, then switch to `error` and `strict`. The defaults are `error` + `strict`." }
     rubric:
-      - { vi: "Dùng collMod + $jsonSchema", en: "collMod + $jsonSchema" }
-      - { vi: "warn/moderate trước, rồi error/strict", en: "warn/moderate first, then error/strict" }
-      - { vi: "Cách tìm tài liệu không hợp lệ", en: "How to find invalid documents" }
+      - { vi: "Dùng `collMod` với `validator: { $jsonSchema: … }`", en: "Uses `collMod` with `validator: { $jsonSchema: … }`" }
+      - { vi: "Bắt đầu `warn` (chỉ ghi log) + `moderate` (bỏ qua tài liệu vốn sai), rồi `error` + `strict`", en: "Starts with `warn` (log only) + `moderate` (skips already-invalid documents), then `error` + `strict`" }
+      - { vi: "Tìm tài liệu sai bằng `$nor` quanh `$jsonSchema`", en: "Finds invalid documents with `$nor` around `$jsonSchema`" }
     doc: https://www.mongodb.com/docs/manual/core/schema-validation/
   - id: e-iv-mg-mid-08
     engine: mongodb
@@ -336,8 +336,8 @@ questions:
     q: { vi: "Ứng dụng ghi với `w: 1` và đọc từ secondary. Người dùng lưu hồ sơ rồi tải lại trang và thấy dữ liệu cũ. Giải thích và sửa.", en: "The app writes with `w: 1` and reads from secondaries. A user saves a profile, reloads, and sees old data. Explain and fix." }
     answer: { vi: "Đọc từ secondary có độ trễ nhân bản: lần đọc tới trước khi thay đổi đến nơi. Thêm nữa, `w: 1` chỉ chờ primary, nên nếu primary sập trước khi nhân bản, thay đổi có thể bị rollback. Sửa: đọc ngay sau khi ghi từ primary (read preference `primary` cho luồng đó), hoặc dùng causal consistency session với `readConcern: 'majority'` + `writeConcern: { w: 'majority' }`; mặc định ngầm từ 5.0 là `w: 'majority'` trong đa số cấu hình.", en: "Secondary reads lag replication: the read arrived before the change did. Also `w: 1` only waits for the primary, so if it crashes before replicating, the change can be rolled back. Fix: read-your-writes from the primary (read preference `primary` for that flow), or a causally consistent session with `readConcern: 'majority'` + `writeConcern: { w: 'majority' }`; since 5.0 the implicit default is `w: 'majority'` in most deployments." }
     rubric:
-      - { vi: "Độ trễ nhân bản của secondary", en: "Secondary replication lag" }
-      - { vi: "Rủi ro rollback với w:1", en: "Rollback risk with w:1" }
+      - { vi: "Lần đọc tới secondary trước khi thay đổi được nhân bản tới", en: "The read reaches a secondary before the change is replicated there" }
+      - { vi: "`w: 1` chỉ chờ primary, primary sập trước khi nhân bản thì ghi bị rollback", en: "`w: 1` waits only for the primary; if it crashes before replicating, the write is rolled back" }
       - { vi: "Sửa bằng primary hoặc causal session + majority", en: "Fix via primary or causal session + majority" }
     doc: https://www.mongodb.com/docs/manual/core/causal-consistency-read-write-concerns/
   - id: e-iv-mg-mid-09
@@ -359,10 +359,10 @@ questions:
         shown: |-
           winningPlan: { stage: 'FETCH', inputStage: { stage: 'IXSCAN', keyPattern: { rated: 1, year: 1 }, '...': '...' } }
           executionStats: { executionSuccess: true, nReturned: 235, totalKeysExamined: 235, totalDocsExamined: 235, '...': '...' }
-    answer: { vi: "`{ rated: 1, year: 1 }` tốt hơn: 235 khóa cho 235 kết quả, không khóa thừa. Với `{ year: 1, rated: 1 }`, khoảng trên `year` đứng trước nên trong mỗi năm phải bước qua cả các xếp hạng khác: 246 khóa (11 thừa). Đó là ESR: trường so bằng (`rated`) trước trường khoảng (`year`). Ở đây chênh nhỏ, nhưng với dữ liệu lệch có thể là gấp hàng trăm lần.", en: "`{ rated: 1, year: 1 }` is better: 235 keys for 235 results, none wasted. With `{ year: 1, rated: 1 }`, the range on `year` comes first, so within each year the scan steps over other ratings: 246 keys (11 wasted). That is ESR: the equality field (`rated`) before the range field (`year`). The gap is small here, but with skewed data it can be hundreds of times." }
+    answer: { vi: "`{ rated: 1, year: 1 }` tốt hơn: 235 khóa cho 235 kết quả, không khóa thừa. Với `{ year: 1, rated: 1 }`, khoảng trên `year` đứng trước nên trong mỗi năm phải bước qua cả các xếp hạng khác: 246 khóa, tức 246 − 235 = 11 khóa thừa. Đó là luật ESR (Equality, Sort, Range: trường so bằng, rồi trường sắp xếp, rồi trường so khoảng): `rated` so bằng nên đứng trước `year` so khoảng. Ở đây chênh nhỏ, nhưng với dữ liệu lệch có thể là gấp hàng trăm lần.", en: "`{ rated: 1, year: 1 }` is better: 235 keys for 235 results, none wasted. With `{ year: 1, rated: 1 }`, the range on `year` comes first, so within each year the scan steps over other ratings: 246 keys, so 246 − 235 = 11 wasted. That is the ESR rule (Equality, Sort, Range: equality fields, then sort fields, then range fields): `rated` is an equality, so it goes before the range on `year`. The gap is small here, but with skewed data it can be hundreds of times." }
     rubric:
-      - { vi: "So totalKeysExamined với nReturned", en: "Compares totalKeysExamined with nReturned" }
-      - { vi: "Chọn đúng index", en: "Picks the right index" }
+      - { vi: "So totalKeysExamined với nReturned: 246/235 so với 235/235", en: "Compares totalKeysExamined with nReturned: 246/235 versus 235/235" }
+      - { vi: "Chọn `{ rated: 1, year: 1 }`", en: "Picks `{ rated: 1, year: 1 }`" }
       - { vi: "Gọi tên luật bằng trước khoảng", en: "Names the equality-before-range rule" }
     doc: https://www.mongodb.com/docs/manual/tutorial/equality-sort-range-guideline/
   - id: e-iv-mg-mid-10
@@ -380,7 +380,7 @@ questions:
             inputStage: { stage: 'FETCH', inputStage: { stage: 'IXSCAN', keyPattern: { status: 1 } } }
           }
           executionStats: { nReturned: 50, totalKeysExamined: 180000, totalDocsExamined: 180000 }
-    answer: { vi: "Có stage `SORT` nghĩa là sắp xếp trong bộ nhớ: index `{ status: 1 }` tìm được 180.000 đơn đang xử lý nhưng không cho thứ tự `created`, nên phải đọc hết rồi sắp, để lấy 50. Khi tập lớn, sort có thể vượt giới hạn bộ nhớ (cần tràn đĩa hoặc lỗi). Index `{ status: 1, created: -1 }` (E rồi S) cho thứ tự sẵn: không `SORT`, đọc khoảng 50 khóa.", en: "A `SORT` stage means an in-memory sort: the `{ status: 1 }` index finds 180,000 processing orders but not in `created` order, so all are read and sorted to get 50. On large sets the sort can exceed the memory limit (spill to disk or fail). An index on `{ status: 1, created: -1 }` (E then S) gives the order: no `SORT`, about 50 keys read." }
+    answer: { vi: "Có stage `SORT` nghĩa là sắp xếp trong bộ nhớ: index `{ status: 1 }` tìm được 180.000 đơn đang xử lý nhưng không cho thứ tự `created`, nên phải đọc hết rồi sắp, để lấy 50. Khi tập lớn, sort có thể vượt giới hạn bộ nhớ (cần tràn đĩa hoặc lỗi). Index `{ status: 1, created: -1 }` (theo luật ESR: trường so bằng `status`, rồi trường sắp xếp `created`) cho thứ tự sẵn: không `SORT`, đọc khoảng 50 khóa.", en: "A `SORT` stage means an in-memory sort: the `{ status: 1 }` index finds 180,000 processing orders but not in `created` order, so all are read and sorted to get 50. On large sets the sort can exceed the memory limit (spill to disk or fail). An index on `{ status: 1, created: -1 }` (ESR rule: the equality field `status`, then the sort field `created`) gives the order: no `SORT`, about 50 keys read." }
     rubric:
       - { vi: "Đọc SORT = sắp trong bộ nhớ", en: "Reads SORT = in-memory sort" }
       - { vi: "So 180.000 khóa với 50 kết quả", en: "Compares 180,000 keys with 50 results" }
@@ -415,7 +415,7 @@ questions:
     q: { vi: "Write concern `{ w: 'majority', j: true }` hứa gì? Đổi lại tốn gì?", en: "What does write concern `{ w: 'majority', j: true }` promise? What does it cost?" }
     answer: { vi: "Lệnh ghi chỉ được xác nhận khi đa số thành viên có phiếu đã ghi nó (và vào journal trên đĩa). Khi primary sập, thay đổi đó không bị rollback vì primary mới chắc chắn có nó. Cái giá là độ trễ thêm ít nhất một vòng mạng tới secondary, và nếu mất đa số thì ghi treo tới `wtimeout`. `w: 1` nhanh hơn nhưng có thể mất dữ liệu đã xác nhận khi failover.", en: "The write is acknowledged only once a majority of voting members have it (and in the on-disk journal). If the primary fails, the change is not rolled back because the new primary surely has it. The price is at least one extra network round trip to secondaries, and if a majority is unavailable the write waits until `wtimeout`. `w: 1` is faster but can lose acknowledged writes on failover." }
     rubric:
-      - { vi: "Đa số + journal", en: "Majority + journal" }
+      - { vi: "Xác nhận khi đa số nút có phiếu đã ghi và vào journal", en: "Acknowledged once a majority of voting members have it, in the journal" }
       - { vi: "Không rollback khi failover", en: "No rollback on failover" }
       - { vi: "Độ trễ và wtimeout", en: "Latency and wtimeout" }
     doc: https://www.mongodb.com/docs/manual/reference/write-concern/
@@ -428,7 +428,7 @@ questions:
     answer: { vi: "`local` (mặc định): dữ liệu mới nhất của nút được đọc, có thể bị rollback sau đó. `majority`: chỉ dữ liệu đã được đa số ghi nhận, nên không bao giờ bị rollback, có thể hơi cũ hơn. `snapshot`: dùng trong transaction đa tài liệu (và một số lệnh đọc), mọi lần đọc thấy cùng một thời điểm đã majority-commit. `linearizable` mạnh nhất, chỉ trên primary, chậm.", en: "`local` (default): the node's newest data, which may later be rolled back. `majority`: only data acknowledged by a majority, so never rolled back, possibly slightly older. `snapshot`: used in multi-document transactions (and some reads), every read sees one majority-committed point in time. `linearizable` is the strongest, primary only, slow." }
     rubric:
       - { vi: "Đúng local và rủi ro rollback", en: "Right about local and rollback risk" }
-      - { vi: "Đúng majority", en: "Right about majority" }
+      - { vi: "`majority`: chỉ dữ liệu đa số đã ghi, không bị rollback, có thể cũ hơn", en: "`majority`: only majority-acknowledged data, never rolled back, maybe older" }
       - { vi: "Đúng snapshot trong transaction", en: "Right about snapshot in transactions" }
     doc: https://www.mongodb.com/docs/manual/reference/read-concern/
   - id: e-iv-mg-mid-14
@@ -481,7 +481,7 @@ questions:
     answer: { vi: "Mỗi sự kiện có `_id` là resume token. Lưu token sau khi xử lý xong (bền, cùng nơi với trạng thái đích nếu được), khi khởi động lại mở stream với `resumeAfter` (hoặc `startAfter` nếu stream trước bị invalidate). Điều kiện: token vẫn còn trong oplog; dịch vụ dừng lâu hơn cửa sổ oplog thì phải đồng bộ lại toàn bộ. Change stream chỉ phát thay đổi đã majority-commit và cần replica set. Xử lý phải idempotent vì có thể nhận lại sự kiện sau token cuối đã lưu.", en: "Every event's `_id` is a resume token. Store the token after processing (durably, alongside the target state if possible), and on restart open the stream with `resumeAfter` (or `startAfter` if the previous stream was invalidated). Condition: the token must still be in the oplog; downtime longer than the oplog window forces a full resync. Change streams only emit majority-committed changes and need a replica set. Processing must be idempotent since events after the last stored token may be redelivered." }
     rubric:
       - { vi: "Lưu resume token + resumeAfter/startAfter", en: "Resume token + resumeAfter/startAfter" }
-      - { vi: "Giới hạn cửa sổ oplog", en: "The oplog window limit" }
+      - { vi: "Token phải còn trong oplog; dừng lâu hơn cửa sổ thì đồng bộ lại", en: "The token must still be in the oplog; longer downtime forces a resync" }
       - { vi: "Xử lý idempotent", en: "Idempotent processing" }
     doc: https://www.mongodb.com/docs/manual/changestreams/
   - id: e-iv-mg-senior-03
@@ -606,11 +606,11 @@ questions:
             rejectedPlans: [ { stage: 'FETCH', inputStage: { stage: 'IXSCAN', keyPattern: { store: 1 } } } ]
           }
           executionStats: { nReturned: 300, totalKeysExamined: 240000, totalDocsExamined: 240000 }
-    answer: { vi: "Kế hoạch trong cache chọn index `created` (có lẽ được chọn khi khoảng ngày rất hẹp), giờ khoảng dài nên đọc 240.000 tài liệu rồi lọc `store` để giữ 300. Hai index một trường đều không khớp hình dạng truy vấn. Sửa gốc: index ghép `{ store: 1, created: 1 }` (E rồi R) cho khoảng chính xác ~300 khóa và loại bỏ sự lưỡng lự của planner. Tạm thời: `PlanCache.clear()` hoặc `hint`.", en: "The cached plan uses the `created` index (probably chosen when the date range was narrow); now the range is wide, so 240,000 documents are read and filtered on `store` to keep 300. Neither single-field index fits the query shape. Root fix: a compound `{ store: 1, created: 1 }` index (E then R) gives an exact ~300-key range and removes the planner's indecision. Short term: `PlanCache.clear()` or `hint`." }
+    answer: { vi: "Kế hoạch trong cache chọn index `created` (có lẽ được chọn khi khoảng ngày rất hẹp), giờ khoảng dài nên đọc 240.000 tài liệu rồi lọc `store` để giữ 300. Hai index một trường đều không khớp hình dạng truy vấn. Sửa gốc: index ghép `{ store: 1, created: 1 }` (luật ESR: trường so bằng trước trường so khoảng) cho khoảng chính xác ~300 khóa và loại bỏ sự lưỡng lự của planner. Tạm thời: `PlanCache.clear()` hoặc `hint`.", en: "The cached plan uses the `created` index (probably chosen when the date range was narrow); now the range is wide, so 240,000 documents are read and filtered on `store` to keep 300. Neither single-field index fits the query shape. Root fix: a compound `{ store: 1, created: 1 }` index (ESR rule: equality before range) gives an exact ~300-key range and removes the planner's indecision. Short term: `PlanCache.clear()` or `hint`." }
     rubric:
       - { vi: "Đọc isCached và tỉ lệ 240.000/300", en: "Reads isCached and the 240,000/300 ratio" }
       - { vi: "Giải thích kế hoạch cache theo tham số cũ", en: "Explains a plan cached for old parameters" }
-      - { vi: "Đề xuất index ghép theo ESR", en: "Proposes an ESR compound index" }
+      - { vi: "Đề xuất `{ store: 1, created: 1 }`: so bằng trước so khoảng", en: "Proposes `{ store: 1, created: 1 }`: equality before range" }
     doc: https://www.mongodb.com/docs/manual/core/query-plans/
   - id: e-iv-mg-senior-11
     engine: mongodb
@@ -621,7 +621,7 @@ questions:
     answer: { vi: "Time series collection: `createCollection('readings', { timeseries: { timeField: 'ts', metaField: 'sensor', granularity: 'seconds' }, expireAfterSeconds: 31536000 })`. MongoDB tự gom các điểm cùng `sensor` thành bucket dạng cột nén, giảm mạnh dung lượng và index (chỉ mục); `expireAfterSeconds` xóa dữ liệu cũ. Thêm index `{ sensor: 1, ts: 1 }` nếu chưa có (bản mới tự tạo trên meta + time). `metaField` chỉ chứa thứ ít đổi (id, vị trí), không chứa số đo. Truy vấn thô dài hạn nên đi qua collection tổng hợp theo giờ.", en: "A time series collection: `createCollection('readings', { timeseries: { timeField: 'ts', metaField: 'sensor', granularity: 'seconds' }, expireAfterSeconds: 31536000 })`. MongoDB groups points with the same `sensor` into compressed columnar buckets, sharply cutting storage and index size; `expireAfterSeconds` drops old data. Add a `{ sensor: 1, ts: 1 }` index if missing (newer versions create one on meta + time). `metaField` holds only slow-changing data (id, location), never measurements. Long-range raw queries should go through an hourly rollup collection." }
     tradeoffs:
       - { vi: "Time series: nén và đọc theo khoảng rất tốt, nhưng cập nhật/xóa từng điểm bị giới hạn.", en: "Time series: great compression and range reads, but per-point updates/deletes are limited." }
-      - { vi: "Bucket pattern tự làm cho toàn quyền kiểm soát nhưng phải tự viết logic gom và TTL.", en: "A hand-made bucket pattern gives full control but you write the grouping and TTL logic yourself." }
+      - { vi: "Bucket pattern tự làm cho toàn quyền kiểm soát nhưng phải tự viết logic gom và xóa dữ liệu quá 1 năm.", en: "A hand-made bucket pattern gives full control but you write the grouping and the 1-year deletion yourself." }
     rubric:
       - { vi: "Chọn time series với timeField/metaField đúng", en: "Chooses time series with the right timeField/metaField" }
       - { vi: "Giữ dữ liệu 1 năm bằng expireAfterSeconds", en: "1-year retention via expireAfterSeconds" }
@@ -663,8 +663,8 @@ questions:
     answer: { vi: "Working set = dữ liệu và index (chỉ mục) được truy cập thường xuyên. WiredTiger cache mặc định là phần lớn hơn giữa 50% (RAM − 1 GB) và 256 MB; phần còn lại cho cache hệ điều hành (dữ liệu nén). Nếu working set (nhất là index) vượt cache, các page bị đẩy ra rồi đọc lại liên tục: độ trễ tăng vọt. Đo: `db.serverStatus().wiredTiger.cache` (bytes in cache, pages read into cache, tỉ lệ dirty), kích thước index `totalIndexSize()`, và độ trễ đọc đĩa.", en: "Working set = data and indexes accessed frequently. The WiredTiger cache defaults to the larger of 50% of (RAM − 1 GB) and 256 MB; the rest serves the OS file cache (compressed data). If the working set (indexes above all) exceeds the cache, pages get evicted and re-read constantly: latency jumps. Measure: `db.serverStatus().wiredTiger.cache` (bytes in cache, pages read into cache, dirty ratio), index sizes via `totalIndexSize()`, and disk read latency." }
     rubric:
       - { vi: "Định nghĩa working set", en: "Defines the working set" }
-      - { vi: "Đúng công thức cache mặc định", en: "Correct default cache formula" }
-      - { vi: "Chỉ số đo cụ thể", en: "Concrete metrics" }
+      - { vi: "Cache mặc định = lớn hơn giữa 50% (RAM − 1 GB) và 256 MB", en: "Default cache = the larger of 50% of (RAM − 1 GB) and 256 MB" }
+      - { vi: "Đo bằng `serverStatus().wiredTiger.cache`, `totalIndexSize()`, độ trễ đọc đĩa", en: "Measures with `serverStatus().wiredTiger.cache`, `totalIndexSize()`, disk read latency" }
     doc: https://www.mongodb.com/docs/manual/core/wiredtiger/
   - id: e-iv-mg-senior-15
     engine: mongodb
@@ -689,7 +689,7 @@ questions:
     kind: design
     set: mg-senior-4
     q: { vi: "Chợ Lồng Đèn có 3 người bán lớn cần quyền tách chặt và 4.000 người bán nhỏ cùng dạng dữ liệu, số người bán tăng mỗi tháng. Đặt dữ liệu của họ thế nào trong MongoDB?", en: "Lantern Market has 3 big sellers that need strictly split access and 4,000 small sellers with the same data shape, with new sellers every month. How do you place their data in MongoDB?" }
-    answer: { vi: "Người bán nhỏ: một collection chung, mọi tài liệu và truy vấn có `tenantId`, mọi index kép mở đầu bằng `tenantId`; shard theo `{ tenantId: 1, createdAt: 1 }` khi cần. Database cho mỗi người bán hợp với số ít và ổn định (tới vài trăm): 4.000 database nhân số collection và index sẽ vượt xa mức Atlas khuyên (dưới 1000 tệp dữ liệu mỗi nút). Ba người bán lớn: database riêng trên cùng cụm nếu chỉ cần quyền và sao lưu riêng; cụm (replica set) riêng với thông tin đăng nhập riêng nếu cần cách ly thật, vì mọi mô hình trong một cụm chung oplog. Không làm collection cho mỗi người bán trong một database. Giữ cùng dạng tài liệu có `tenantId` ở mọi nơi để dời một người bán giữa các hạng chỉ là chép dữ liệu.", en: "Small sellers: one shared collection, every document and query has `tenantId`, every compound index starts with `tenantId`; shard on `{ tenantId: 1, createdAt: 1 }` when needed. A database per seller fits a small, stable number (up to a few hundred): 4,000 databases times their collections and indexes would go far beyond what Atlas advises (under 1000 data files per node). The three big sellers: an own database on the same cluster if they only need their own access and backups; an own cluster (replica set) with its own credentials if they need real isolation, since every model inside one cluster shares the oplog. Never a collection per seller inside one database. Keep the same document shape with `tenantId` everywhere, so moving a seller between tiers is only a data copy." }
+    answer: { vi: "Người bán nhỏ: một collection chung, mọi tài liệu và truy vấn có `tenantId`, mọi index kép mở đầu bằng `tenantId`; shard theo `{ tenantId: 1, createdAt: 1 }` khi cần. Database cho mỗi người bán hợp với số ít và ổn định (tới vài trăm): 4.000 database nhân số collection và index sẽ vượt xa mức Atlas khuyên (dưới 1000 tệp dữ liệu mỗi nút, mỗi collection và mỗi index là một tệp). Ba người bán lớn: database riêng trên cùng cụm nếu chỉ cần quyền và sao lưu riêng; cụm (replica set) riêng với thông tin đăng nhập riêng nếu cần cách ly thật, vì mọi mô hình trong một cụm chung oplog. Không làm collection cho mỗi người bán trong một database. Giữ cùng dạng tài liệu có `tenantId` ở mọi nơi để dời một người bán giữa các hạng chỉ là chép dữ liệu.", en: "Small sellers: one shared collection, every document and query has `tenantId`, every compound index starts with `tenantId`; shard on `{ tenantId: 1, createdAt: 1 }` when needed. A database per seller fits a small, stable number (up to a few hundred): 4,000 databases times their collections and indexes would go far beyond what Atlas advises (under 1000 data files per node, each collection and each index being one file). The three big sellers: an own database on the same cluster if they only need their own access and backups; an own cluster (replica set) with its own credentials if they need real isolation, since every model inside one cluster shares the oplog. Never a collection per seller inside one database. Keep the same document shape with `tenantId` everywhere, so moving a seller between tiers is only a data copy." }
     tradeoffs:
       - { vi: "Collection chung: rẻ, một lần tạo index, nhưng bảo trì chạm mọi người bán và người bán lớn làm lệch tải.", en: "Shared collection: cheap, indexes built once, but maintenance touches every seller and a big seller skews the load." }
       - { vi: "Cụm riêng: cách ly và sao lưu theo người bán, nhưng chi phí và công vận hành nhân theo số cụm.", en: "Own cluster: isolation and backups per seller, but cost and operations multiply with the number of clusters." }
@@ -704,7 +704,7 @@ questions:
     kind: concept
     set: mg-senior-4
     q: { vi: "Trong collection `orders` dùng chung, vì sao `tenantId` nên đứng đầu mọi index kép, dù ESR coi nó chỉ là một phép bằng như `status`?", en: "In the shared `orders` collection, why should `tenantId` lead every compound index, even though ESR treats it as just another equality like `status`?" }
-    answer: { vi: "Mọi truy vấn của trang người bán đều có `tenantId`, nên index mở đầu bằng nó luôn dùng được, và nhờ quy tắc tiền tố, `{ tenantId: 1, status: 1, createdAt: -1 }` phục vụ cả `find({ tenantId })`, `find({ tenantId, status })` lẫn phần sắp xếp. Khóa của một người bán nằm liền nhau, nên đoạn quét không đi qua người bán khác. Cùng thứ tự ấy cho phép shard key `{ tenantId: 1, ... }` và zone theo người bán. Phần sau `tenantId` vẫn theo ESR.", en: "Every seller-page query has `tenantId`, so an index that starts with it is always usable, and by the prefix rule `{ tenantId: 1, status: 1, createdAt: -1 }` serves `find({ tenantId })`, `find({ tenantId, status })` and the sort. One seller's keys sit together, so the scanned range never crosses another seller. The same order allows a shard key `{ tenantId: 1, ... }` and zones per seller. The part after `tenantId` still follows ESR." }
+    answer: { vi: "Mọi truy vấn của trang người bán đều có `tenantId`, nên index mở đầu bằng nó luôn dùng được, và nhờ quy tắc tiền tố, `{ tenantId: 1, status: 1, createdAt: -1 }` phục vụ cả `find({ tenantId })`, `find({ tenantId, status })` lẫn phần sắp xếp. Khóa của một người bán nằm liền nhau, nên đoạn quét không đi qua người bán khác. Cùng thứ tự ấy cho phép shard key `{ tenantId: 1, ... }` và zone theo người bán. Phần sau `tenantId` vẫn theo luật ESR: so bằng, rồi sắp xếp, rồi so khoảng.", en: "Every seller-page query has `tenantId`, so an index that starts with it is always usable, and by the prefix rule `{ tenantId: 1, status: 1, createdAt: -1 }` serves `find({ tenantId })`, `find({ tenantId, status })` and the sort. One seller's keys sit together, so the scanned range never crosses another seller. The same order allows a shard key `{ tenantId: 1, ... }` and zones per seller. The part after `tenantId` still follows ESR: equality, then sort, then range." }
     rubric:
       - { vi: "Quy tắc tiền tố: index phục vụ truy vấn chỉ có `tenantId`", en: "Prefix rule: the index serves queries with `tenantId` alone" }
       - { vi: "Khóa của một tenant liền nhau, không quét tenant khác", en: "One tenant's keys together, no scan across tenants" }
@@ -730,11 +730,11 @@ questions:
             keysExamined: 310000
             docsExamined: 310000
             nreturned: 20
-    answer: { vi: "Cùng hình dạng truy vấn, cùng index; khác nhau ở dữ liệu. Index chỉ có `tenantId` rồi `createdAt`, nên `status` được lọc sau khi đọc tài liệu. Người bán nhỏ gần như mọi đơn mới đều đang mở, nên 24 khóa là đủ 20 đơn; `S07` có rất ít đơn mở giữa hàng trăm nghìn đơn đã xong, nên phải đi 310.000 khóa. Sửa: index theo ESR `{ tenantId: 1, status: 1, createdAt: -1 }`, để `status` thu hẹp khoảng quét. Nhìn số đo theo từng tenant, không chỉ trung bình: một tenant lớn có phân bố dữ liệu khác hẳn. Nếu `S07` còn lớn lên, cân nhắc zone để đưa nó lên shard riêng.", en: "Same query shape, same index; the difference is the data. The index has only `tenantId` then `createdAt`, so `status` is filtered after reading the documents. For a small seller almost every recent order is open, so 24 keys give the 20 orders; `S07` has very few open orders among hundreds of thousands of finished ones, so it walks 310,000 keys. Fix: an ESR index `{ tenantId: 1, status: 1, createdAt: -1 }`, so `status` narrows the scanned range. Look at metrics per tenant, not only averages: a big tenant has a very different data distribution. If `S07` keeps growing, consider a zone that moves it to its own shard." }
+    answer: { vi: "Cùng hình dạng truy vấn, cùng index; khác nhau ở dữ liệu. Index chỉ có `tenantId` rồi `createdAt`, nên `status` được lọc sau khi đọc tài liệu. Người bán nhỏ gần như mọi đơn mới đều đang mở, nên 24 khóa là đủ 20 đơn; `S07` có rất ít đơn mở giữa hàng trăm nghìn đơn đã xong, nên phải đi 310.000 khóa. Sửa: index theo luật ESR (hai trường so bằng, rồi trường sắp xếp) `{ tenantId: 1, status: 1, createdAt: -1 }`, để `status` thu hẹp khoảng quét. Nhìn số đo theo từng tenant, không chỉ trung bình: một tenant lớn có phân bố dữ liệu khác hẳn. Nếu `S07` còn lớn lên, cân nhắc zone để đưa nó lên shard riêng.", en: "Same query shape, same index; the difference is the data. The index has only `tenantId` then `createdAt`, so `status` is filtered after reading the documents. For a small seller almost every recent order is open, so 24 keys give the 20 orders; `S07` has very few open orders among hundreds of thousands of finished ones, so it walks 310,000 keys. Fix: an ESR index (two equality fields, then the sort field) `{ tenantId: 1, status: 1, createdAt: -1 }`, so `status` narrows the scanned range. Look at metrics per tenant, not only averages: a big tenant has a very different data distribution. If `S07` keeps growing, consider a zone that moves it to its own shard." }
     rubric:
       - { vi: "Đọc tỉ lệ 310.000/20 so với 24/20", en: "Reads the 310,000/20 ratio against 24/20" }
       - { vi: "Giải thích `status` bị lọc sau index", en: "Explains `status` is filtered after the index" }
-      - { vi: "Đề xuất index ESR có `status`", en: "Proposes the ESR index with `status`" }
+      - { vi: "Đề xuất `{ tenantId: 1, status: 1, createdAt: -1 }`, thêm `status` vào index", en: "Proposes `{ tenantId: 1, status: 1, createdAt: -1 }`, adding `status` to the index" }
       - { vi: "Theo dõi số đo theo tenant / zone cho tenant lớn", en: "Per-tenant metrics / a zone for the big tenant" }
     doc: https://www.mongodb.com/docs/manual/tutorial/equality-sort-range-guideline/
   - id: e-iv-mg-senior-19
@@ -769,10 +769,10 @@ questions:
     kind: concept
     set: mg-staff-2
     q: { vi: "Tiêu chí chọn shard key là gì? Đánh giá ba ứng viên cho collection `orders`: `_id` (ObjectId), `customer_id`, `{ customer_id, created }`.", en: "What are the criteria for a shard key? Evaluate three candidates for `orders`: `_id` (ObjectId), `customer_id`, `{ customer_id, created }`." }
-    answer: { vi: "Tiêu chí: cardinality cao, tần suất đều (không có giá trị chiếm phần lớn), không tăng đơn điệu (nếu dùng range), và khớp truy vấn chính để truy vấn đi đúng một shard. `_id` ObjectId tăng theo thời gian: mọi lần chèn dồn vào chunk cuối (một shard nóng); hashed `_id` chia đều ghi nhưng mọi truy vấn theo khách thành scatter-gather. `customer_id`: truy vấn theo khách đi một shard, nhưng khách lớn tạo chunk không chia được (jumbo). `{ customer_id, created }`: giữ tính định tuyến theo khách mà vẫn chia được dữ liệu của khách lớn theo thời gian: thường là lựa chọn tốt nhất ở đây.", en: "Criteria: high cardinality, even frequency (no value dominating), not monotonically increasing (for ranged keys), and matching the main queries so they target one shard. ObjectId `_id` grows with time: all inserts hit the last chunk (one hot shard); hashed `_id` spreads writes but every per-customer query becomes scatter-gather. `customer_id`: per-customer queries hit one shard, but a huge customer creates an unsplittable (jumbo) chunk. `{ customer_id, created }`: keeps per-customer targeting while still splitting a big customer's data by time: usually the best choice here." }
+    answer: { vi: "Tiêu chí: cardinality cao (nhiều giá trị khác nhau), tần suất đều (không có giá trị chiếm phần lớn), không tăng đơn điệu (nếu dùng range), và khớp truy vấn chính để truy vấn đi đúng một shard. `_id` ObjectId tăng theo thời gian: mọi lần chèn dồn vào chunk cuối (một shard nóng); hashed `_id` chia đều ghi nhưng mọi truy vấn theo khách thành scatter-gather (gửi tới mọi shard rồi gộp). `customer_id`: truy vấn theo khách đi một shard, nhưng khách lớn tạo chunk không chia được (jumbo). `{ customer_id, created }`: giữ tính định tuyến theo khách mà vẫn chia được dữ liệu của khách lớn theo thời gian: thường là lựa chọn tốt nhất ở đây.", en: "Criteria: high cardinality (many distinct values), even frequency (no value dominating), not monotonically increasing (for ranged keys), and matching the main queries so they target one shard. ObjectId `_id` grows with time: all inserts hit the last chunk (one hot shard); hashed `_id` spreads writes but every per-customer query becomes scatter-gather (sent to every shard, then merged). `customer_id`: per-customer queries hit one shard, but a huge customer creates an unsplittable (jumbo) chunk. `{ customer_id, created }`: keeps per-customer targeting while still splitting a big customer's data by time: usually the best choice here." }
     rubric:
-      - { vi: "Kể đủ bốn tiêu chí", en: "Names all four criteria" }
-      - { vi: "Đánh giá đúng từng ứng viên", en: "Evaluates each candidate correctly" }
+      - { vi: "Bốn tiêu chí: cardinality, tần suất đều, không đơn điệu, khớp truy vấn chính", en: "Four criteria: cardinality, even frequency, not monotonic, matches main queries" }
+      - { vi: "`_id` dồn ghi vào chunk cuối; `customer_id` tạo chunk jumbo với khách lớn", en: "`_id` piles writes on the last chunk; `customer_id` makes jumbo chunks for big customers" }
       - { vi: "Chọn khóa ghép có lý do", en: "Picks the compound key with a reason" }
     doc: https://www.mongodb.com/docs/manual/core/sharding-choose-a-shard-key/
   - id: e-iv-mg-staff-02
@@ -783,7 +783,7 @@ questions:
     q: { vi: "Hashed sharding và ranged sharding: mỗi loại tốt cho gì và hại gì?", en: "Hashed vs ranged sharding: what is each good and bad for?" }
     answer: { vi: "Hashed: băm giá trị khóa nên ghi phân bố đều kể cả khi khóa tăng đơn điệu; nhưng truy vấn theo khoảng trên khóa không định tuyến được (đi mọi shard), và index (chỉ mục) hashed không hỗ trợ mảng, không unique. Ranged: các giá trị gần nhau nằm cùng chunk nên truy vấn khoảng đi ít shard, cho phép zone theo khoảng (ví dụ theo vùng địa lý); nhưng khóa đơn điệu tạo điểm nóng ghi ở chunk cuối.", en: "Hashed: hashes the key so writes spread evenly even for monotonic keys; but range queries on the key cannot be targeted (go to every shard), and hashed indexes do not support arrays or uniqueness. Ranged: nearby values share chunks so range queries hit few shards, and zones by range are possible (for example by region); but a monotonic key creates a write hot spot on the last chunk." }
     rubric:
-      - { vi: "Ưu/nhược hashed", en: "Hashed pros/cons" }
+      - { vi: "Hashed: ghi chia đều, nhưng truy vấn khoảng đi mọi shard", en: "Hashed: writes spread evenly, but range queries hit every shard" }
       - { vi: "Ưu/nhược ranged, nhắc khóa đơn điệu", en: "Ranged pros/cons, mentions monotonic keys" }
       - { vi: "Ví dụ khi nào chọn mỗi loại", en: "An example of when to pick each" }
     doc: https://www.mongodb.com/docs/manual/core/indexes/index-types/index-hashed/
@@ -847,7 +847,7 @@ questions:
     answer: { vi: "WiredTiger dùng kiểm soát đồng thời mức tài liệu với cơ chế lạc quan: khi hai thao tác cùng sửa một tài liệu, một bên gặp write conflict và MongoDB tự thử lại nó trong nội bộ. Ghi trên nhiều tài liệu khác nhau chạy song song tốt. Một bộ đếm dùng chung (ví dụ lượt xem toàn trang) bị mọi request sửa cùng tài liệu, nên conflict và retry tăng, thông lượng bị giới hạn. Thiết kế: chia thành N tài liệu con (`counter_shard: rand(0..N-1)`) và cộng khi đọc, hoặc gom ở ứng dụng rồi `$inc` theo lô.", en: "WiredTiger uses document-level concurrency with an optimistic approach: when two operations modify one document, one hits a write conflict and MongoDB retries it internally. Writes to different documents run in parallel well. A shared counter (say site-wide page views) has every request modifying the same document, so conflicts and retries grow and throughput is capped. Design: split into N sub-documents (`counter_shard: rand(0..N-1)`) and sum on read, or aggregate in the app and `$inc` in batches." }
     rubric:
       - { vi: "Mức tài liệu, write conflict + retry nội bộ", en: "Document level, write conflict + internal retry" }
-      - { vi: "Hệ quả với tài liệu nóng", en: "The hot-document consequence" }
+      - { vi: "Bộ đếm chung: mọi request sửa một tài liệu, conflict tăng, thông lượng bị chặn", en: "A shared counter: every request edits one document, conflicts grow, throughput caps" }
       - { vi: "Bộ đếm chia nhỏ hoặc gom lô", en: "Sharded counter or batching" }
     doc: https://www.mongodb.com/docs/manual/core/wiredtiger/
   - id: e-iv-mg-staff-08
@@ -923,7 +923,7 @@ questions:
     kind: design
     set: mg-staff-2
     q: { vi: "Chuyển một hệ đặt phòng từ Postgres (15 bảng, nhiều JOIN) sang MongoDB. Bạn bắt đầu thế nào và quyết định nhúng/tham chiếu theo gì?", en: "Migrate a booking system from Postgres (15 tables, many JOINs) to MongoDB. How do you start and decide embed vs reference?" }
-    answer: { vi: "Không dịch bảng thành collection. (1) Lập danh sách truy cập: mỗi màn/API đọc gì, tần suất, độ trễ yêu cầu, ghi gì cùng nhau. (2) Gom theo \"aggregate\": đặt phòng nhúng khách lưu trú, các đêm, giá đã chốt (đọc cùng nhau, có giới hạn, đổi cùng nhau); khách sạn và phòng tham chiếu vì dùng chung và đổi độc lập, kèm bản chụp tên/giá trong đặt phòng. (3) Mỗi truy vấn chính cần một index (chỉ mục) ESR. (4) Phần cần ràng buộc chéo (không đặt trùng phòng) dùng tài liệu tồn phòng theo ngày + cập nhật có điều kiện. (5) Di chuyển bằng dual-read hoặc CDC, đối soát số liệu, rồi cắt.", en: "Do not translate tables into collections. (1) List access patterns: what each screen/API reads, how often, latency needs, what is written together. (2) Group by aggregate: a booking embeds guests, nights and locked prices (read together, bounded, change together); hotels and rooms are referenced since they are shared and change independently, with name/price snapshots in the booking. (3) Each main query gets an ESR index. (4) Cross-document rules (no double-booking) use per-day room inventory documents + conditional updates. (5) Migrate via dual-read or CDC, reconcile numbers, then cut over." }
+    answer: { vi: "Không dịch bảng thành collection. (1) Lập danh sách truy cập: mỗi màn/API đọc gì, tần suất, độ trễ yêu cầu, ghi gì cùng nhau. (2) Gom thành từng cụm dữ liệu luôn đổi cùng nhau: đặt phòng nhúng khách lưu trú, các đêm, giá đã chốt (đọc cùng nhau, có giới hạn, đổi cùng nhau); khách sạn và phòng tham chiếu vì dùng chung và đổi độc lập, kèm bản chụp tên/giá trong đặt phòng. (3) Mỗi truy vấn chính cần một index (chỉ mục) xếp trường theo luật ESR (so bằng, sắp xếp, so khoảng). (4) Phần cần ràng buộc chéo (không đặt trùng phòng) dùng tài liệu tồn phòng theo ngày + cập nhật có điều kiện. (5) Di chuyển bằng dual-read hoặc CDC (change data capture: chép liên tục thay đổi từ Postgres), đối soát số liệu, rồi cắt.", en: "Do not translate tables into collections. (1) List access patterns: what each screen/API reads, how often, latency needs, what is written together. (2) Group data that always changes together: a booking embeds guests, nights and locked prices (read together, bounded, change together); hotels and rooms are referenced since they are shared and change independently, with name/price snapshots in the booking. (3) Each main query gets an index ordered by the ESR rule (equality, sort, range). (4) Cross-document rules (no double-booking) use per-day room inventory documents + conditional updates. (5) Migrate via dual-read or CDC (change data capture: streaming changes out of Postgres), reconcile numbers, then cut over." }
     tradeoffs:
       - { vi: "Mô hình theo truy cập: đọc nhanh, nhưng truy vấn mới không lường trước có thể khó/đắt.", en: "Access-driven model: fast reads, but unforeseen new queries can be hard or costly." }
       - { vi: "Bản chụp dữ liệu tránh JOIN nhưng cần chính sách khi nguồn đổi.", en: "Snapshots avoid joins but need a policy when the source changes." }
@@ -998,7 +998,7 @@ takeHomes:
       - { vi: "Danh sách access pattern và collection phục vụ mỗi cái.", en: "The access pattern list and which collection serves each." }
       - { vi: "Tài liệu mẫu JSON và index (kèm lý do ESR).", en: "Sample JSON documents and indexes (with ESR reasoning)." }
       - { vi: "Lệnh đặt lịch không thể đặt trùng, và cách cập nhật điểm trung bình.", en: "A booking command that cannot double-book, and how the average rating is kept." }
-    model: { vi: "`slots { _id, doctor_id, start, status: 'FREE'|'BOOKED', patient_id? }`, index `{ doctor_id: 1, status: 1, start: 1 }` (E, E, R). Đặt: `updateOne({ _id: slot, status: 'FREE' }, { $set: { status: 'BOOKED', patient_id: p } })`: `modifiedCount = 0` là đã có người đặt; một tài liệu nên nguyên tử, không cần transaction. `appointments` có thể chính là slot đã đặt, thêm index `{ patient_id: 1, start: 1 }` (partial theo `status: 'BOOKED'`). `doctors` dùng mẫu Computed: `rating_sum`, `rating_count` cập nhật bằng `$inc` khi có đánh giá; `reviews` là collection riêng (không giới hạn).", en: "`slots { _id, doctor_id, start, status: 'FREE'|'BOOKED', patient_id? }`, index `{ doctor_id: 1, status: 1, start: 1 }` (E, E, R). Booking: `updateOne({ _id: slot, status: 'FREE' }, { $set: { status: 'BOOKED', patient_id: p } })`: `modifiedCount = 0` means someone already booked; one document, so atomic, no transaction needed. `appointments` can simply be booked slots, plus an index `{ patient_id: 1, start: 1 }` (partial on `status: 'BOOKED'`). `doctors` use the Computed pattern: `rating_sum`, `rating_count` updated with `$inc` per review; `reviews` is its own (unbounded) collection." }
+    model: { vi: "`slots { _id, doctor_id, start, status: 'FREE'|'BOOKED', patient_id? }`, index `{ doctor_id: 1, status: 1, start: 1 }` (luật ESR: hai trường so bằng, rồi `start` so khoảng). Đặt: `updateOne({ _id: slot, status: 'FREE' }, { $set: { status: 'BOOKED', patient_id: p } })`: `modifiedCount = 0` là đã có người đặt; một tài liệu nên nguyên tử, không cần transaction. `appointments` có thể chính là slot đã đặt, thêm index `{ patient_id: 1, start: 1 }` (partial theo `status: 'BOOKED'`). `doctors` dùng mẫu Computed: `rating_sum`, `rating_count` cập nhật bằng `$inc` khi có đánh giá; `reviews` là collection riêng (không giới hạn).", en: "`slots { _id, doctor_id, start, status: 'FREE'|'BOOKED', patient_id? }`, index `{ doctor_id: 1, status: 1, start: 1 }` (ESR rule: two equality fields, then the range on `start`). Booking: `updateOne({ _id: slot, status: 'FREE' }, { $set: { status: 'BOOKED', patient_id: p } })`: `modifiedCount = 0` means someone already booked; one document, so atomic, no transaction needed. `appointments` can simply be booked slots, plus an index `{ patient_id: 1, start: 1 }` (partial on `status: 'BOOKED'`). `doctors` use the Computed pattern: `rating_sum`, `rating_count` updated with `$inc` per review; `reviews` is its own (unbounded) collection." }
     rubric:
       - { vi: "Bắt đầu từ access pattern", en: "Starts from access patterns" }
       - { vi: "Chống đặt trùng bằng cập nhật có điều kiện một tài liệu", en: "Prevents double booking with a single-document conditional update" }
@@ -1014,7 +1014,7 @@ takeHomes:
       - { vi: "Bảng: hình dạng truy vấn, tần suất, keysExamined/nReturned, index đang dùng.", en: "A table: query shape, frequency, keysExamined/nReturned, index used." }
       - { vi: "Danh sách xóa/thêm index với bằng chứng (`$indexStats`, explain).", en: "Index drops/additions with evidence (`$indexStats`, explain)." }
       - { vi: "Kế hoạch triển khai: ẩn trước khi xóa, tạo index giờ thấp điểm, theo dõi.", en: "A rollout plan: hide before drop, build off-peak, monitor." }
-    model: { vi: "Gom nhật ký theo `queryHash`/hình dạng, xếp theo tổng thời gian. Dấu hiệu thiếu index: `keysExamined` hoặc `docsExamined` ≫ `nreturned`, `SORT` trong bộ nhớ, `COLLSCAN`. Dấu hiệu thừa: index là tiền tố của index khác (`{ a: 1 }` khi đã có `{ a: 1, b: 1 }`), `$indexStats.accesses.ops` gần 0 trên mọi nút qua cả chu kỳ. Ưu tiên thay đổi có lợi lớn nhất trên mỗi đơn vị rủi ro: thêm index ESR cho hình dạng nặng nhất trước, rồi ẩn các index thừa, xóa sau 1–2 tuần không có hồi quy.", en: "Group the log by `queryHash`/shape, rank by total time. Missing-index signs: `keysExamined` or `docsExamined` ≫ `nreturned`, in-memory `SORT`, `COLLSCAN`. Redundancy signs: an index that is a prefix of another (`{ a: 1 }` beside `{ a: 1, b: 1 }`), `$indexStats.accesses.ops` near 0 on every node over a full cycle. Prioritise by benefit per unit of risk: add an ESR index for the heaviest shape first, then hide redundant indexes, drop them after 1–2 weeks without regressions." }
+    model: { vi: "Gom nhật ký theo `queryHash`/hình dạng, xếp theo tổng thời gian. Dấu hiệu thiếu index: `keysExamined` hoặc `docsExamined` ≫ `nreturned`, `SORT` trong bộ nhớ, `COLLSCAN`. Dấu hiệu thừa: index là tiền tố của index khác (`{ a: 1 }` khi đã có `{ a: 1, b: 1 }`), `$indexStats.accesses.ops` gần 0 trên mọi nút qua cả chu kỳ. Ưu tiên thay đổi có lợi lớn nhất trên mỗi đơn vị rủi ro: thêm index theo luật ESR (so bằng, sắp xếp, so khoảng) cho hình dạng nặng nhất trước, rồi ẩn các index thừa, xóa sau 1–2 tuần không có hồi quy.", en: "Group the log by `queryHash`/shape, rank by total time. Missing-index signs: `keysExamined` or `docsExamined` ≫ `nreturned`, in-memory `SORT`, `COLLSCAN`. Redundancy signs: an index that is a prefix of another (`{ a: 1 }` beside `{ a: 1, b: 1 }`), `$indexStats.accesses.ops` near 0 on every node over a full cycle. Prioritise by benefit per unit of risk: add an ESR-ordered index (equality, sort, range) for the heaviest shape first, then hide redundant indexes, drop them after 1–2 weeks without regressions." }
     rubric:
       - { vi: "Phân tích theo hình dạng truy vấn có số liệu", en: "Shape-based analysis with numbers" }
       - { vi: "Nhận diện đúng index tiền tố thừa", en: "Correctly spots redundant prefix indexes" }

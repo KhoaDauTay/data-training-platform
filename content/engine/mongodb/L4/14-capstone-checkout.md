@@ -82,8 +82,8 @@ lab:
         vi: "`$match` trên `store` đứng đầu, rồi `$unwind` mảng `lines`, rồi `$group` theo `$lines.sku`."
         en: "`$match` on `store` comes first, then `$unwind` the `lines` array, then `$group` by `$lines.sku`."
       fact:
-        vi: "Bước này chấm theo quy tắc trong docs chính thức (lọc sớm để các stage sau đọc ít tài liệu hơn), không đo trên `mongod`: mingo không có kế hoạch thực thi để đo."
-        en: "This step is graded by the rule in the official docs (filter early so later stages read fewer documents), not measured on `mongod`: mingo has no execution plan to measure."
+        vi: "Bước này chấm theo quy tắc trong docs chính thức (lọc sớm để các stage sau đọc ít tài liệu hơn), không đo trên `mongod`: mingo không có kế hoạch thực thi để đo. Trong lab, `$unwind` trước tách 4 đơn thành 4 tài liệu dòng hàng rồi mới bỏ dòng hàng của `S2`; lọc trước thì `$unwind` chỉ nhận 3 đơn của `S1`. Trên `mongod`, `$match` đứng đầu còn dùng được index trên `store`."
+        en: "This step is graded by the rule in the official docs (filter early so later stages read fewer documents), not measured on `mongod`: mingo has no execution plan to measure. In the lab, `$unwind` first splits the 4 orders into 4 order-line documents and only then drops the `S2` order line; filtering first gives `$unwind` only the 3 `S1` orders. On `mongod`, a leading `$match` can also use an index on `store`."
 quiz:
   - q:
       vi: "Kết luận: thanh toán phải trừ tồn kho trong collection `stock` và đánh dấu đơn `paid` trong `orders`, cả hai hoặc không gì cả. Cần gì?"
@@ -113,8 +113,8 @@ quiz:
       - { vi: "Session nhất quán nhân quả, ghi và đọc với `majority`", en: "A causally consistent session, writing and reading with `majority`" }
     answer: 1
     why:
-      vi: "Nghe hợp lý vì đọc `local` nhanh và thường thấy dữ liệu mới. Nhưng secondary có thể chậm hơn primary. Docs chính thức nói session nhất quán nhân quả với read concern và write concern `majority` bảo đảm đọc được chính lần ghi của mình."
-      en: "It sounds right because a `local` read is fast and often sees new data. But a secondary can lag behind the primary. The docs say a causally consistent session with `majority` read and write concerns guarantees you read your own write."
+      vi: "Đọc `local` nhanh và thường thấy dữ liệu mới, nhưng \"thường\" không phải \"chắc chắn\": `local` trả ngay những gì secondary đang có, và nếu secondary chưa chép kịp lần ghi thì trang biên nhận hiện đơn chưa `paid`. Session nhất quán nhân quả gắn thời điểm của lần ghi vào lần đọc, nên secondary chờ tới thời điểm đó rồi mới trả. Docs chính thức nói bảo đảm này chỉ có khi cả ghi và đọc dùng `majority`."
+      en: "A `local` read is fast and often sees new data, but \"often\" is not \"always\": `local` returns whatever the secondary has right now, and if the secondary has not copied the write yet the receipt page shows the order as not `paid`. A causally consistent session attaches the write's time to the read, so the secondary waits until that time before answering. The docs say this guarantee holds only when both the write and the read use `majority`."
 ---
 ## Mở bài
 

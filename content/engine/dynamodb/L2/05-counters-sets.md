@@ -88,8 +88,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: Nghe hợp lý vì SDK tự gửi lại nên có vẻ DynamoDB phải biết, nhưng AWS ghi rõ atomic counter không idempotent, mỗi lần gửi là một lần cộng. Dùng nó khi sai số nhỏ chấp nhận được (lượt xem). Với tiền hay tồn kho, dùng ghi có điều kiện để lần gửi lại bị từ chối.
-      en: It sounds right because the SDK sends the retry on its own, so DynamoDB seems to know, but AWS states that atomic counters are not idempotent, so every send is one more addition. Use them where a small error is fine (view counts). For money or stock, use a conditional write so the retry is rejected.
+      vi: Nghe hợp lý vì SDK tự gửi lại nên có vẻ DynamoDB phải biết, nhưng AWS ghi rõ atomic counter không idempotent (gửi lại thì kết quả đổi tiếp), mỗi lần gửi là một lần cộng. Nếu lần đầu đã ghi xong mà phản hồi bị mất, lần gửi lại cộng thêm 1. Lần gửi lại cũng không lỗi, vì `ADD views :one` không kèm điều kiện nào để bị từ chối. Dùng nó khi sai số nhỏ chấp nhận được (lượt xem). Với tiền hay tồn kho, dùng ghi có điều kiện để lần gửi lại bị từ chối.
+      en: It sounds right because the SDK sends the retry on its own, so DynamoDB seems to know, but AWS states that atomic counters are not idempotent (sending again changes the result again), so every send is one more addition. If the first write succeeded and only its response was lost, the retry adds 1 more. The retry does not fail either, because `ADD views :one` carries no condition that could reject it. Use them where a small error is fine (view counts). For money or stock, use a conditional write so the retry is rejected.
   - q:
       vi: 'Thuộc tính `tags` là một danh sách `L`. `ADD tags :t` với `:t` là `{"SS": ["new"]}` làm gì?'
       en: 'The attribute `tags` is an `L` list. What does `ADD tags :t` with `:t` set to `{"SS": ["new"]}` do?'
@@ -103,8 +103,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: 'Nghe hợp lý vì `ADD` thêm được phần tử vào tập hợp, nhưng danh sách và tập hợp là hai kiểu khác nhau, và kiểu của toán hạng phải khớp kiểu thuộc tính. Danh sách dùng `SET tags = list_append(tags, :t)`.'
-      en: 'It sounds right because `ADD` can add elements to a set, but a list and a set are different types, and the operand type must match the attribute type. Lists use `SET tags = list_append(tags, :t)`.'
+      vi: 'Nghe hợp lý vì `ADD` thêm được phần tử vào tập hợp, nhưng danh sách và tập hợp là hai kiểu khác nhau, và kiểu của toán hạng (`SS`) phải khớp kiểu thuộc tính (`L`). Không khớp thì DynamoDB từ chối cả request chứ không tự đổi `tags` thành tập hợp, nên danh sách cũ giữ nguyên. Danh sách dùng `SET tags = list_append(tags, :t)`.'
+      en: 'It sounds right because `ADD` can add elements to a set, but a list and a set are different types, and the operand type (`SS`) must match the attribute type (`L`). On a mismatch DynamoDB rejects the whole request rather than turning `tags` into a set, so the old list stays as it was. Lists use `SET tags = list_append(tags, :t)`.'
 ---
 
 ## Mở bài

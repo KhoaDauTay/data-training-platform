@@ -56,14 +56,14 @@ quiz:
       - { vi: "Chỉ khi bảng có GSI", en: "Only when the table has a GSI" }
     answer: 1
     trap: 0
-    why: { vi: "Nghe hợp lý vì mỗi lần đọc mạnh đều đúng tại thời điểm của nó, nhưng hai thời điểm khác nhau. `TransactGetItems` đọc cả hai trong một ảnh chụp, serializable với transaction ghi.", en: "It sounds right because each strong read is correct at its own moment, but the two moments differ. `TransactGetItems` reads both in one snapshot, serializable with write transactions." }
+    why: { vi: "Mỗi lần đọc nhất quán mạnh đúng tại thời điểm của nó, nhưng hai `GetItem` chạy ở hai thời điểm khác nhau. Nếu một transaction chuyển tiền commit xen giữa, lần đọc `w1` (trước) chưa thấy gì, còn lần đọc `w2` (sau) đã thấy tiền được cộng, hoặc ngược lại, nên tổng sai. GSI không liên quan, vì cả hai lần đọc đều vào bảng. `TransactGetItems` đọc cả hai ví trong một ảnh chụp: thấy trọn một transaction ghi, hoặc không thấy gì của nó.", en: "Each strongly consistent read is right at its own moment, but the two `GetItem` calls run at two different moments. If a transfer transaction commits in between, the read of `w1` (first) sees nothing yet while the read of `w2` (second) already sees the money added, or the other way round, so the total is wrong. A GSI has nothing to do with it, since both reads hit the table. `TransactGetItems` reads both wallets in one snapshot: it sees a whole write transaction, or nothing of it." }
   - q: { vi: "`TransactGetItems` đọc 3 item, mỗi item 1 KB. Tốn bao nhiêu RCU?", en: "`TransactGetItems` reads 3 items of 1 KB each. How many RCU?" }
     options:
       - { vi: "1,5", en: "1.5" }
       - { vi: "3", en: "3" }
       - { vi: "6", en: "6" }
     answer: 2
-    why: { vi: "Mỗi item tới 4 KB tốn 2 RCU khi đọc trong transaction: 3 × 2 = 6.", en: "Each item up to 4 KB costs 2 RCU in a transactional read: 3 × 2 = 6." }
+    why: { vi: "Mỗi item 1 KB làm tròn lên 4 KB = 1 khối. Đọc trong transaction tốn 2 RCU (read capacity unit) mỗi khối, gấp đôi đọc nhất quán mạnh, vì DynamoDB phải bảo đảm không transaction ghi nào chen vào: 3 × 2 = 6. 3 là giá đọc nhất quán mạnh từng item; 1,5 là giá nhất quán cuối, mà transaction không có mức đó.", en: "Each 1 KB item rounds up to 4 KB = 1 block. A transactional read costs 2 RCU (read capacity unit) per block, twice a strongly consistent read, because DynamoDB must guarantee no write transaction slips in: 3 × 2 = 6. 3 is the strongly consistent price per item; 1.5 is the eventually consistent price, which transactions do not offer." }
 ---
 ## Mở bài
 

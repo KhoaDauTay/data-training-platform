@@ -1,0 +1,37 @@
+# ST-13 (tools/v43/de-tools-plan.md §4): one order fans into three rows after joining its items, 2 steps. Lesson: e-st-l2-08
+# (Ý chính). Data = the lab: order 801, 300000 VND, lines lamp / silk / tea. Wording from the plan's example (§4).
+# Source: https://www.kimballgroup.com/data-warehouse-business-intelligence-resources/kimball-techniques/dimensional-modeling-techniques/grain/
+title: { vi: "Một đơn tỏa thành ba dòng", en: "One order fans into three rows" }
+caption:
+  vi: "fct_orders có một dòng cho đơn 801; nối với ba dòng hàng của nó thì tổng 300.000 lặp ba lần."
+  en: "fct_orders has one row for order 801; joined to its three item lines, the 300,000 total repeats three times."
+alt:
+  vi: "Nối đơn với dòng hàng làm mỗi đơn lặp lại một lần cho mỗi dòng hàng, nên cộng tổng đơn sau phép nối là cộng nó nhiều lần. Kết quả: cộng ở grain đơn trước, rồi mới nối."
+  en: "Joining orders to their items repeats each order once per item, so summing the order total after the join counts it several times. Result: sum at the order grain first, then join."
+nodes:
+  - id: ord
+    shape: grid
+    mono: true
+    label: fct_orders
+    head: [order_id, amount_vnd]
+    cells: [["801", "300000"]]
+  - id: joined
+    shape: grid
+    mono: true
+    label: { vi: "sau phép nối", en: "after the join" }
+    head: [order_id, product, amount_vnd]
+    cells: [["801", "lamp", "300000"], ["801", "silk", "300000"], ["801", "tea", "300000"]]
+    rowTone: [warm, warm, warm]
+  - { id: sum, shape: note, label: { vi: "sum = 900.000, không phải 300.000", en: "sum = 900,000, not 300,000" } }
+rows:
+  - [ord]
+  - [joined]
+  - [sum]
+edges:
+  - { from: ord, to: joined, label: { vi: "nối 3 dòng hàng", en: "join 3 lines" } }
+steps:
+  - say: { vi: "Mỗi đơn là một dòng trong fact đơn hàng.", en: "Each order is one row in the order fact." }
+    alt: { vi: "Ở grain đơn, đơn 801 là đúng một dòng với tổng 300.000.", en: "At the order grain, order 801 is exactly one row with its 300,000 total." }
+    show: [ord]
+  - say: { vi: "Sau phép nối, đơn có ba dòng hàng xuất hiện ba lần.", en: "After the join, an order with three items appears three times." }
+    alt: { vi: "Phép nối với ba dòng hàng lặp đơn 801 ba lần, mỗi lần mang nguyên tổng 300.000, nên tổng cộng thành 900.000.", en: "The join with three item lines repeats order 801 three times, each carrying the whole 300,000, so the sum becomes 900,000." }

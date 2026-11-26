@@ -73,8 +73,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: 'Nghe hợp lý vì `stock` vốn không có trong kiểu chọn, nhưng MongoDB không đoán ý: một projection chỉ được là kiểu chọn hoặc kiểu bỏ. Ngoại lệ duy nhất là `_id: 0`. Viết `{ name: 1 }` là đủ.'
-      en: 'It sounds right because `stock` is left out of an include projection anyway, but MongoDB does not guess: a projection is either include or exclude. The only exception is `_id: 0`. Writing `{ name: 1 }` is enough.'
+      vi: 'Nghe hợp lý vì `stock` vốn không có trong kiểu chọn, nhưng MongoDB không đoán ý: một projection chỉ được là kiểu chọn hoặc kiểu bỏ, và gặp cả `1` lẫn `0` thì từ chối cả lệnh, không trả về gì. Vì vậy nó cũng không tự coi đây là kiểu bỏ để trả mọi trường trừ `stock`. Ngoại lệ duy nhất là `_id: 0`. Viết `{ name: 1 }` là đủ: trường không ghi trong kiểu chọn đã bị bỏ.'
+      en: 'It sounds right because `stock` is left out of an include projection anyway, but MongoDB does not guess: a projection is either include or exclude, and when it sees both `1` and `0` it refuses the whole command and returns nothing. So it does not treat it as exclude and return every field except `stock` either. The only exception is `_id: 0`. Writing `{ name: 1 }` is enough: a field not listed in an include projection is already dropped.'
   - q:
       vi: '`db.customers.find({}, { "address.city": 1 })` trả về những trường nào cho khách `c1`?'
       en: 'Which fields does `db.customers.find({}, { "address.city": 1 })` return for customer `c1`?'
@@ -88,8 +88,8 @@ quiz:
     answer: 0
     trap: 1
     why:
-      vi: 'Nghe hợp lý nếu nghĩ projection kéo trường ra ngoài như bí danh cột trong SQL, nhưng projection giữ nguyên hình dạng tài liệu: `address` vẫn là tài liệu nhúng, chỉ còn `city`. `_id` có mặt vì không ghi `_id: 0`. Đổi tên hay kéo phẳng trường là việc của `$project` trong aggregation (L2).'
-      en: 'It sounds right if a projection lifts the field out like a column alias in SQL, but a projection keeps the document shape: `address` stays an embedded document with only `city`. `_id` is there because `_id: 0` is not written. Renaming or flattening a field is the job of `$project` in an aggregation (L2).'
+      vi: 'Nghe hợp lý nếu nghĩ projection kéo trường ra ngoài như bí danh cột trong SQL, nhưng projection giữ nguyên hình dạng tài liệu: `address` vẫn là tài liệu nhúng, chỉ còn `city`; `district` bị cắt vì projection chọn đúng đường dẫn `"address.city"`, không phải cả `address`. `_id` có mặt vì không ghi `_id: 0`. Đổi tên hay kéo phẳng trường là việc của `$project` trong aggregation (L2).'
+      en: 'It sounds right if a projection lifts the field out like a column alias in SQL, but a projection keeps the document shape: `address` stays an embedded document with only `city`; `district` is cut because the projection selects the exact path `"address.city"`, not the whole `address`. `_id` is there because `_id: 0` is not written. Renaming or flattening a field is the job of `$project` in an aggregation (L2).'
 ---
 ## Mở bài
 

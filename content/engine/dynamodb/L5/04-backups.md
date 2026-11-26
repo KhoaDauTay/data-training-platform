@@ -23,14 +23,14 @@ quiz:
       - { vi: "Đọc lại DynamoDB Streams của tuần trước", en: "Replay last week's DynamoDB Streams" }
     answer: 0
     trap: 1
-    why: { vi: "PITR cho điểm khôi phục theo giây trong tối đa 35 ngày. Backup lúc nửa đêm mất mọi thay đổi sau đó; Streams chỉ giữ 24 giờ.", en: "PITR gives per-second recovery points over up to 35 days. The midnight backup loses every change after it; Streams keeps only 24 hours." }
+    why: { vi: "Backup lúc nửa đêm đưa bảng về 00:00, nên mất mọi thay đổi đúng từ 00:00 tới 14:03:19. Streams chỉ giữ bản ghi 24 giờ, nên bản ghi của tuần trước đã bị cắt từ lâu. PITR (point-in-time recovery, khôi phục về một thời điểm) sao lưu liên tục và cho chọn bất kỳ giây nào trong tối đa 35 ngày, nên khôi phục đúng 14:03:19 vào một bảng mới.", en: "The midnight backup takes the table back to 00:00, so every valid change from 00:00 to 14:03:19 is lost. Streams keeps records for only 24 hours, so last week's records were trimmed long ago. PITR (point-in-time recovery) backs up continuously and lets you pick any second within up to 35 days, so it restores exactly 14:03:19 into a new table." }
   - q: { vi: "Sau khi khôi phục, cái gì phải cài lại bằng tay?", en: "After a restore, what must be set up again by hand?" }
     options:
       - { vi: "Không gì cả, bảng mới giống hệt bảng cũ", en: "Nothing, the new table is identical to the old one" }
       - { vi: "Auto scaling, IAM, alarm, tag, Streams, TTL, deletion protection và PITR", en: "Auto scaling, IAM, alarms, tags, Streams, TTL, deletion protection and PITR" }
       - { vi: "Chỉ GSI", en: "Only the GSIs" }
     answer: 1
-    why: { vi: "Khôi phục mang theo dữ liệu, LSI/GSI và capacity, nhưng các cài đặt vận hành kể trên phải làm lại trên bảng mới. Khôi phục không bao giờ ghi đè bảng đang có.", en: "A restore brings back data, LSIs/GSIs and capacity, but the operational settings above must be redone on the new table. A restore never overwrites an existing table." }
+    why: { vi: "Bảng mới không giống hệt bảng cũ: khôi phục chỉ mang theo dữ liệu, index (LSI, local secondary index, và GSI, global secondary index) cùng capacity. Vì GSI được mang theo nên \"chỉ GSI\" sai. Các cài đặt vận hành gắn với bảng cũ thì không đi theo: auto scaling, quyền IAM (Identity and Access Management), alarm, tag, Streams, TTL (time to live, hạn sống của item), deletion protection và PITR (point-in-time recovery) phải làm lại trên bảng mới. Khôi phục không bao giờ ghi đè bảng đang có.", en: "The new table is not identical: a restore brings back only the data, the indexes (LSIs, local secondary indexes, and GSIs, global secondary indexes) and capacity. Since GSIs do come back, \"only the GSIs\" is wrong. Operational settings tied to the old table do not follow: auto scaling, IAM (Identity and Access Management) permissions, alarms, tags, Streams, TTL (time to live), deletion protection and PITR (point-in-time recovery) must be redone on the new table. A restore never overwrites an existing table." }
 ---
 
 ## Mở bài

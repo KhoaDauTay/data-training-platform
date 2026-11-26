@@ -24,7 +24,7 @@ quiz:
       - { vi: "6 WCU: mỗi item một lần chuẩn bị và một lần xác nhận", en: "6 WCU: one prepare and one commit per item" }
       - { vi: "1,5 WCU", en: "1.5 WCU" }
     answer: 1
-    why: { vi: "DynamoDB ghi mỗi item hai lần (prepare + commit). 500 byte làm tròn lên 1 KB = 1 WCU, nhân 2, nhân 3 item = 6 WCU. Đây chính là ví dụ trong docs AWS.", en: "DynamoDB writes each item twice (prepare + commit). 500 bytes round up to 1 KB = 1 WCU, times 2, times 3 items = 6 WCU. This is the example in the AWS docs." }
+    why: { vi: "3 WCU (write capacity unit, đơn vị ghi) là giá của ba lần ghi thường; trong transaction, DynamoDB ghi mỗi item hai lần (prepare rồi commit). 500 byte làm tròn lên 1 KB = 1 WCU, × 2 lần = 2 WCU mỗi item, × 3 item = 6 WCU. 1,5 sai vì WCU không chia theo byte: 500 byte vẫn tính trọn 1 KB. Đây chính là ví dụ trong docs AWS.", en: "3 WCU (write capacity unit) is the price of three plain writes; in a transaction DynamoDB writes each item twice (prepare, then commit). 500 bytes round up to 1 KB = 1 WCU, × 2 = 2 WCU per item, × 3 items = 6 WCU. 1.5 is wrong because WCU are not split by byte: 500 bytes still count as a whole 1 KB. This is the example in the AWS docs." }
   - q: { vi: "Transaction bị hủy vì một `ConditionCheck` sai. Capacity thì sao?", en: "A transaction is cancelled because one `ConditionCheck` is false. What about capacity?" }
     options:
       - { vi: "Không tốn gì, vì không có gì được ghi", en: "Nothing is consumed, since nothing was written" }
@@ -32,14 +32,14 @@ quiz:
       - { vi: "Chỉ tốn cho item có điều kiện sai", en: "Only the item with the false condition is charged" }
     answer: 1
     trap: 0
-    why: { vi: "Nghe hợp lý vì không có gì được ghi. Nhưng docs AWS ghi: capacity của transaction bị hủy vẫn bị tiêu như transaction thành công. Gom quá nhiều hành động vào một transaction làm tăng cả xác suất hủy lẫn tiền mất khi hủy.", en: "It sounds right since nothing was written. But the AWS docs say a cancelled transaction still consumes capacity like a successful one. Packing too many actions into one transaction raises both the chance of cancellation and the cost of it." }
+    why: { vi: "\"Không tốn gì\" nghe hợp lý vì không item nào được ghi, nhưng DynamoDB đã làm bước prepare trên mọi item để kiểm điều kiện, và docs AWS ghi: transaction bị hủy vẫn tiêu capacity như transaction thành công. Vì vậy cũng không chỉ item có điều kiện sai bị tính: mọi item trong transaction đều đã được thử. Gom quá nhiều hành động vào một transaction làm tăng cả xác suất hủy lẫn tiền mất mỗi lần hủy.", en: "\"Nothing\" sounds right because no item was written, but DynamoDB already ran the prepare step on every item to check the conditions, and the AWS docs say a cancelled transaction still consumes capacity like a successful one. So it is not only the item with the false condition that is charged: every item in the transaction was attempted. Packing too many actions into one transaction raises both the chance of cancellation and what each cancellation costs." }
   - q: { vi: "Mạng bị timeout, bạn gửi lại cùng `TransactWriteItems` với cùng client token sau 3 phút. Chuyện gì xảy ra nếu lần đầu đã thành công?", en: "The network timed out and you resend the same `TransactWriteItems` with the same client token after 3 minutes. What happens if the first call succeeded?" }
     options:
       - { vi: "Ghi lần nữa, số dư bị trừ hai lần", en: "It writes again and the balance is charged twice" }
       - { vi: "Trả về thành công mà không đổi gì", en: "It returns success without changing anything" }
       - { vi: "Luôn báo `IdempotentParameterMismatch`", en: "It always returns `IdempotentParameterMismatch`" }
     answer: 1
-    why: { vi: "Token có hiệu lực 10 phút sau khi request dùng nó kết thúc. Trong 10 phút, gửi lại đúng request thì thành công mà không ghi thêm; đổi tham số khác thì mới báo `IdempotentParameterMismatch`.", en: "A token is valid for 10 minutes after the request that used it finishes. Within those 10 minutes the same request succeeds without writing again; changing another parameter is what returns `IdempotentParameterMismatch`." }
+    why: { vi: "Trừ tiền hai lần là chuyện xảy ra khi gửi lại mà không có token. Client token có hiệu lực 10 phút sau khi request dùng nó kết thúc; 3 phút còn trong hạn, nên DynamoDB nhận ra đây là request cũ, trả thành công mà không ghi thêm. `IdempotentParameterMismatch` chỉ xuất hiện khi gửi cùng token nhưng đổi một tham số khác, không phải \"luôn luôn\".", en: "Charging twice is what happens when you resend without a token. A client token stays valid for 10 minutes after the request that used it finishes; 3 minutes is inside that window, so DynamoDB recognizes the old request and returns success without writing again. `IdempotentParameterMismatch` appears only when the same token is sent with another parameter changed, not \"always\"." }
 ---
 ## Mở bài
 
@@ -117,7 +117,7 @@ Hai hành động trên cùng một item:
 // ERROR ValidationException: ConditionCheck and Update on WALLET#w1 in one transaction
 ```
 
-Gộp điều kiện vào `ConditionExpression` của chính hành động `Update`.
+Một transaction không được có hai hành động trên cùng một item, nên `ConditionCheck` và `Update` cùng nhắm ví `w1` bị từ chối trước khi chạy. Gộp điều kiện vào `ConditionExpression` của chính hành động `Update`: một hành động vừa kiểm vừa ghi.
 
 ## Tóm tắt
 
@@ -204,7 +204,7 @@ Two actions on the same item:
 // ERROR ValidationException: ConditionCheck and Update on WALLET#w1 in one transaction
 ```
 
-Put the condition in the `Update` action's own `ConditionExpression`.
+A transaction may not hold two actions on the same item, so a `ConditionCheck` and an `Update` both aimed at wallet `w1` are refused before anything runs. Put the condition in the `Update` action's own `ConditionExpression`: one action both checks and writes.
 
 ## Recap
 

@@ -38,8 +38,8 @@ predict:
   answer: 1
   trap: 0
   why:
-    vi: "Nghe hợp lý vì projection chỉ ghi `title`, nhưng `_id` luôn được trả về trừ khi bạn ghi `_id: 0`, và `_id` không có trong index này. Phải viết `{ title: 1, _id: 0 }` như ví dụ trong docs chính thức; khi đó explain có `IXSCAN` không nằm dưới `FETCH`."
-    en: "It sounds right because the projection only names `title`, but `_id` is always returned unless you write `_id: 0`, and `_id` is not in this index. You must write `{ title: 1, _id: 0 }` as in the docs example; then explain shows an `IXSCAN` that is not under a `FETCH`."
+    vi: "`rated` và `title` đều trong index, nhưng kết quả còn một trường nữa: `_id` luôn được trả về trừ khi bạn ghi `_id: 0`, và `_id` không có trong index này, nên MongoDB phải mở tài liệu để lấy nó. `$regex` cũng không phải lý do: `/^T/` neo ở đầu chuỗi nên đọc được một khoảng `title` trong index. Viết `{ title: 1, _id: 0 }` như ví dụ trong docs chính thức; khi đó explain có `IXSCAN` không nằm dưới `FETCH`."
+    en: "`rated` and `title` are both in the index, but the result holds one more field: `_id` is always returned unless you write `_id: 0`, and `_id` is not in this index, so MongoDB must open the documents to get it. `$regex` is not the reason either: `/^T/` is anchored at the start of the string, so it reads one `title` range of the index. Write `{ title: 1, _id: 0 }` as in the docs example; then explain shows an `IXSCAN` that is not under a `FETCH`."
   recorded:
     tier: docs
     server: MongoDB
@@ -56,8 +56,8 @@ quiz:
       - { vi: "`nReturned` bằng `totalKeysExamined`", en: "`nReturned` equals `totalKeysExamined`" }
     answer: 1
     why:
-      vi: "`FETCH` là stage mở tài liệu. Truy vấn được phủ trả lời chỉ từ khóa index, nên không có `FETCH` phía trên `IXSCAN` và không tài liệu nào được đọc."
-      en: "`FETCH` is the stage that opens documents. A covered query answers from index keys alone, so there is no `FETCH` above the `IXSCAN` and no document is read."
+      vi: "`FETCH` là stage mở tài liệu. Truy vấn được phủ trả lời chỉ từ khóa index, nên không có `FETCH` phía trên `IXSCAN` và không tài liệu nào được đọc. Có `IXSCAN` thôi chưa đủ: `FETCH` trên `IXSCAN` vẫn mở tài liệu. `nReturned` bằng `totalKeysExamined` chỉ nói index không đọc thừa khóa; mỗi khóa vẫn có thể dẫn tới một tài liệu được mở."
+      en: "`FETCH` is the stage that opens documents. A covered query answers from index keys alone, so there is no `FETCH` above the `IXSCAN` and no document is read. An `IXSCAN` alone is not enough: `FETCH` over `IXSCAN` still opens documents. `nReturned` equal to `totalKeysExamined` only says the index read no extra keys; each key can still lead to an opened document."
 ---
 ## Mở bài
 

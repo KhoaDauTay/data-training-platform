@@ -203,8 +203,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: Nghe hợp lý vì có `WHERE` nên trông như SQL dùng index, nhưng PartiQL chỉ đổi cú pháp. Không có điều kiện bằng (hoặc `IN`) trên partition key thì DynamoDB phải đọc cả bảng, với đúng giá và độ chậm của Scan.
-      en: It sounds right because a `WHERE` looks like SQL using an index, but PartiQL only changes the syntax. Without an equality (or `IN`) on the partition key, DynamoDB has to read the whole table, at the price and speed of a Scan.
+      vi: Nghe hợp lý vì có `WHERE` nên trông như SQL dùng index, nhưng PartiQL chỉ đổi cú pháp. Không có điều kiện bằng (hoặc `IN`) trên partition key thì DynamoDB phải đọc cả bảng, với đúng giá và độ chậm của Scan; `status` không phải khóa của `Orders`. Câu lệnh cũng không bị từ chối, vì PartiQL cho phép `SELECT` thành Scan mà không cảnh báo; chính sự im lặng đó làm nó nguy hiểm.
+      en: It sounds right because a `WHERE` looks like SQL using an index, but PartiQL only changes the syntax. Without an equality (or `IN`) on the partition key, DynamoDB has to read the whole table, at the price and speed of a Scan; `status` is not a key of `Orders`. The statement is not rejected either, because PartiQL lets a `SELECT` become a Scan without a warning; that silence is what makes it dangerous.
   - q:
       vi: "`INSERT INTO Orders VALUE {...}` với khóa chính đã có trong bảng. Chuyện gì xảy ra?"
       en: "`INSERT INTO Orders VALUE {...}` with a primary key that is already in the table. What happens?"
@@ -218,8 +218,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: 'Nghe hợp lý vì PartiQL chạy trên cùng bộ máy với `PutItem`, nhưng `INSERT` của PartiQL chỉ thêm khi khóa chưa có, giống `PutItem` kèm `attribute_not_exists`. Hai item không bao giờ chung một khóa chính.'
-      en: 'It sounds right because PartiQL runs on the same engine as `PutItem`, but a PartiQL `INSERT` adds only when the key is new, like `PutItem` with `attribute_not_exists`. Two items never share a primary key.'
+      vi: 'Nghe hợp lý vì PartiQL chạy trên cùng bộ máy với `PutItem`, nhưng `INSERT` của PartiQL chỉ thêm khi khóa chưa có, giống `PutItem` kèm `attribute_not_exists`, nên khóa đã có thì câu bị từ chối với `DuplicateItemException` và item cũ giữ nguyên. Cũng không có item thứ hai, vì hai item không bao giờ chung một khóa chính.'
+      en: 'It sounds right because PartiQL runs on the same engine as `PutItem`, but a PartiQL `INSERT` adds only when the key is new, like `PutItem` with `attribute_not_exists`, so an existing key gets a `DuplicateItemException` and the old item stays. There is no second item either, because two items never share a primary key.'
 ---
 
 ## Mở bài
@@ -288,7 +288,7 @@ SELECT * FROM Orders WHERE begins_with(customerId, 'C-04')
 SELECT * FROM Orders WHERE customerId = 'C-04'
 ```
 
-Hai câu trả cùng 4 đơn. `ExecuteStatement` không trả `ScannedCount`, nhưng capacity cho thấy khác biệt: bản sai tốn 1 RCU vì đọc cả 120 đơn, bản sửa 0.5 RCU. Bảng càng lớn, khoảng cách càng lớn.
+Hai câu trả cùng 4 đơn. `ExecuteStatement` không trả `ScannedCount`, nhưng capacity cho thấy khác biệt: bản sai tốn 1 RCU (read capacity unit, đơn vị đọc) vì đọc cả 120 đơn, tổng dữ liệu vượt một khối 4 KB nên thành 2 khối × 0.5 (đọc nhất quán cuối) = 1; bản sửa chỉ đọc 4 đơn trong 1 khối × 0.5 = 0.5 RCU. Bảng càng lớn, khoảng cách càng lớn.
 
 `INSERT` một đơn đã có:
 
@@ -378,7 +378,7 @@ SELECT * FROM Orders WHERE begins_with(customerId, 'C-04')
 SELECT * FROM Orders WHERE customerId = 'C-04'
 ```
 
-Both return the same 4 orders. `ExecuteStatement` does not return a `ScannedCount`, but the capacity shows the gap: the wrong version costs 1 RCU because it reads all 120 orders, the fix 0.5 RCU. The larger the table, the wider the gap.
+Both return the same 4 orders. `ExecuteStatement` does not return a `ScannedCount`, but the capacity shows the gap: the wrong version costs 1 RCU (read capacity unit) because it reads all 120 orders, whose data adds up to more than one 4 KB block, so 2 blocks × 0.5 (eventually consistent) = 1; the fix reads only 4 orders, 1 block × 0.5 = 0.5 RCU. The larger the table, the wider the gap.
 
 An `INSERT` of an order that already exists:
 

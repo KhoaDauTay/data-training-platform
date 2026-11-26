@@ -1,0 +1,33 @@
+# ST-17 (tools/v43/de-tools-plan.md §4): the cells a query reads in a column store, partitioned by day, 2 steps.
+# Lesson: e-st-l3-04 (Ý chính). Data = three days of the lesson's app_events (one sample row per day). Bytes are a rule from
+# the docs (bytes read, by column; pruning by partition), never a price. Sources:
+# https://docs.cloud.google.com/bigquery/docs/best-practices-costs, https://docs.cloud.google.com/bigquery/docs/partitioned-tables
+title: { vi: "Ô nào bị đọc, ô nào bị tính", en: "Which cells are read and billed" }
+caption:
+  vi: "Mỗi dòng là một partition ngày, mỗi cột lưu riêng; câu lệnh chỉ đọc các cột nó nhắc tới, trong các partition bộ lọc giữ lại."
+  en: "Each row is a day partition and each column is stored apart; a query reads only the columns it names, in the partitions its filter keeps."
+alt:
+  vi: "Kho lưu theo cột chỉ đọc cột được nhắc tới, và bộ lọc trên cột partition bỏ qua các ngày không khớp, nên số byte bị tính co lại theo cả hai chiều. Kết quả: chọn đúng cột và lọc theo ngày thay vì SELECT *."
+  en: "A column store reads only the columns named, and a filter on the partition column skips days that do not match, so the bytes billed shrink in both directions. Result: pick the columns and filter by day instead of SELECT *."
+nodes:
+  - id: t
+    shape: grid
+    mono: true
+    label: app_events
+    head: [day, user_id, kind, payload]
+    cells: [["29/10", "1003", "view", "xxx…"], ["30/10", "1004", "cart", "xxx…"], ["31/10", "1005", "buy", "xxx…"]]
+    rowTone: [warm, warm, warm]
+  - { id: q, mono: true, label: "SELECT *", sub: { vi: "mọi cột, mọi ngày", en: "all columns, days" }, tone: dead }
+rows:
+  - [q]
+  - [t]
+edges:
+  - { from: q, to: t }
+steps:
+  - say: { vi: "SELECT * không lọc: mọi ô bị đọc.", en: "SELECT * with no filter: every cell is read." }
+    alt: { vi: "Không chọn cột và không lọc ngày, câu đọc cả bốn cột của cả ba partition, kể cả cột payload nặng nhất.", en: "With no column choice and no day filter, the query reads all four columns of all three partitions, the heavy payload column included." }
+  - say: { vi: "Một cột, một ngày: chỉ một ô bị đọc.", en: "One column, one day: only one cell is read." }
+    alt: { vi: "Câu chọn user_id và lọc ngày 31/10, nên chỉ cột đó trong partition đó bị đọc và bị tính.", en: "The query selects user_id and filters 31 Oct, so only that column in that partition is read and billed." }
+    set:
+      q: { label: "SELECT user_id", sub: "day = 31/10", tone: new }
+      t: { rowTone: [null, null, null], cellTone: { "2:1": warm } }

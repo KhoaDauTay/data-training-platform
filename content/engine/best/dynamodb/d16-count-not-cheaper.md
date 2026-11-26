@@ -88,8 +88,8 @@ quiz:
       - { vi: "Gấp đôi", en: "Twice as much" }
     answer: 1
     why:
-      vi: "RCU tính theo cỡ item đã đọc, không theo dữ liệu trả về. Projection chỉ bớt dữ liệu qua mạng. Docs của `Query` nói `COUNT` cũng tốn RCU như lấy cả item."
-      en: "RCU is charged on the size of the items read, not on what comes back. A projection only trims what crosses the network. The `Query` docs say `COUNT` uses the same read capacity as getting the items."
+      vi: "Bằng nhau. RCU (read capacity unit, đơn vị đọc) tính theo cỡ item DynamoDB phải đọc: mỗi item 300 KB là 300 / 4 = 75 khối 4 KB, tức 75 RCU khi đọc nhất quán mạnh, dù chỉ trả `sk`. Projection chỉ bớt dữ liệu gửi qua mạng, nên không gần 0; cũng không gấp đôi, vì không có lượt đọc thứ hai. Docs của `Query` nói `COUNT` cũng tốn như vậy."
+      en: "The same. RCU (read capacity unit) is charged on the size of the items DynamoDB must read: each 300 KB item is 300 / 4 = 75 blocks of 4 KB, so 75 RCU with a strongly consistent read, even if only `sk` comes back. A projection only trims what crosses the network, so not close to 0; and not twice, since there is no second read. The `Query` docs say `COUNT` costs the same."
 ---
 
 ## Ý chính

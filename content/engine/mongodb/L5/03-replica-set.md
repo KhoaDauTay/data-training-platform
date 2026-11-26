@@ -32,8 +32,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "2 giây nghe hợp lý vì đó là nhịp heartbeat, nhưng một heartbeat lỡ chưa đủ. Không trả lời trong 10 giây (`electionTimeoutMillis` mặc định) thì mới bị coi là không tới được và có bầu cử. Thời gian trung vị tới khi có primary mới thường không quá 12 giây."
-      en: "2 seconds sounds right because that is the heartbeat interval, but one missed heartbeat is not enough. Only no reply within 10 seconds (the default `electionTimeoutMillis`) marks it unreachable and starts an election. The median time to a new primary should not typically exceed 12 seconds."
+      vi: "2 giây nghe hợp lý vì đó là nhịp heartbeat, nhưng một heartbeat lỡ chưa đủ. Không trả lời trong 10 giây (`electionTimeoutMillis` mặc định) thì mới bị coi là không tới được và có bầu cử. Thời gian trung vị tới khi có primary mới thường không quá 12 giây. 60 giây là nhịp checkpoint của WiredTiger, không liên quan tới bầu cử; chờ lâu vậy thì cả phút không ghi được."
+      en: "2 seconds sounds right because that is the heartbeat interval, but one missed heartbeat is not enough. Only no reply within 10 seconds (the default `electionTimeoutMillis`) marks it unreachable and starts an election. The median time to a new primary should not typically exceed 12 seconds. 60 seconds is WiredTiger's checkpoint interval, unrelated to elections; waiting that long would block writes for a whole minute."
   - q:
       vi: "Một replica set cần 9 thành viên. Có bao nhiêu thành viên được bỏ phiếu tối đa?"
       en: "A replica set needs 9 members. How many of them can vote at most?"
@@ -44,8 +44,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý rằng ai cũng được bầu, nhưng replica set có tối đa 50 thành viên và chỉ 7 thành viên bỏ phiếu. Hai thành viên còn lại phải có `votes: 0` và `priority: 0`."
-      en: "It sounds right that everyone votes, but a replica set can have up to 50 members and only 7 voting members. The other two must have `votes: 0` and `priority: 0`."
+      vi: "Ai cũng bỏ phiếu nghe công bằng, nhưng replica set có tối đa 50 thành viên và chỉ tối đa 7 thành viên bỏ phiếu, nên cấu hình 9 phiếu bị từ chối. 5 thì chạy được nhưng không phải tối đa: 7 vẫn là số lẻ, và đa số 4 trên 7 chịu được 3 máy hỏng thay vì 2. Với 9 thành viên: 7 bỏ phiếu, 2 thành viên còn lại phải có `votes: 0` và `priority: 0`."
+      en: "Everyone voting sounds fair, but a replica set can have up to 50 members and at most 7 voting members, so a 9-voter config is refused. 5 works but is not the maximum: 7 is still odd, and a majority of 4 out of 7 survives 3 failed machines instead of 2. With 9 members: 7 vote, and the other 2 must have `votes: 0` and `priority: 0`."
 ---
 ## Mở bài
 

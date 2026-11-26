@@ -172,8 +172,8 @@ quiz:
         en: A Scan cannot read edge items, because they live only in the GSI.
     answer: 1
     why:
-      vi: 'Nghe hợp lý vì kết quả trả về ít. Nhưng `FilterExpression` chạy sau khi đọc: `ScannedCount` là cả bảng, RCU tính theo phần đã đọc. Item cạnh vẫn nằm trong bảng; GSI chỉ là bản sao có khóa đảo.'
-      en: 'It sounds right because few items come back. But the `FilterExpression` runs after the read: `ScannedCount` is the whole table, and RCU is charged on what was read. The edge items still live in the table; the GSI is only a copy with swapped keys.'
+      vi: 'Kết quả trả về ít, nhưng `FilterExpression` chạy sau khi đọc: Scan đọc cả 38 item của `Shop` (`ScannedCount` 38), và RCU (read capacity unit, đơn vị đọc) tính theo tổng cỡ 38 item đó, không theo 4 item cạnh giữ lại. Query trên `GSI1` với `GSI1PK = PRODUCT#P-01` chỉ đọc 4 item cạnh. Scan vẫn đọc được item cạnh, vì chúng nằm trong bảng; GSI (global secondary index) chỉ là bản sao có khóa đảo.'
+      en: 'Few items come back, but the `FilterExpression` runs after the read: the Scan reads all 38 items of `Shop` (`ScannedCount` 38), and RCU (read capacity units) are charged on the total size of those 38 items, not on the 4 edge items it keeps. The Query on `GSI1` with `GSI1PK = PRODUCT#P-01` reads only the 4 edge items. A Scan can still read edge items, because they live in the table; the GSI (global secondary index) is only a copy with swapped keys.'
   - q:
       vi: Có nên thêm GSI thứ hai cho mẫu 5 (cửa hàng theo tỉnh) không?
       en: Should you add a second GSI for pattern 5 (stores by city)?
@@ -186,8 +186,8 @@ quiz:
         en: Yes, because `begins_with` on the base table costs more than a Query on a GSI.
     answer: 1
     why:
-      vi: Nghe hợp lý nếu nghĩ GSI là cách duy nhất để có mẫu truy cập mới. Mẫu nào khóa của bảng đã phục vụ được (ở đây sort key phân cấp) thì không cần index; mỗi GSI có projection riêng và tốn thêm WCU mỗi khi item của nó đổi.
-      en: It sounds right if a GSI seems to be the only way to add an access pattern. A pattern the table's own keys already serve (here the hierarchical sort key) needs no index; every GSI has its own projection and costs extra WCU whenever its items change.
+      vi: 'GSI (global secondary index) chỉ cần khi khóa của bảng không trả lời được câu hỏi. Mẫu 5 đã là một Query trên bảng: `PK = STORE` cộng tiền tố sort key `VN#HUE#` chỉ đọc đúng cửa hàng ở Huế. `begins_with` trên bảng cũng không đắt hơn: cả hai đều là Query, tính RCU (read capacity unit, đơn vị đọc) theo đúng các item đọc được. Thêm GSI chỉ thêm lưu trữ và WCU (write capacity unit, đơn vị ghi) mỗi khi một cửa hàng đổi.'
+      en: 'A GSI (global secondary index) is needed only when the table''s keys cannot answer the question. Pattern 5 is already one Query on the table: `PK = STORE` plus the sort key prefix `VN#HUE#` reads only the stores in Hue. `begins_with` on the table is not dearer either: both are Queries, charged RCU (read capacity units) on exactly the items they read. A GSI would only add storage and WCU (write capacity units) whenever a store changes.'
 ---
 
 ## Mở bài

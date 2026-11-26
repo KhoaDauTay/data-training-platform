@@ -207,8 +207,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: Nghe như GSI chỉ là một bảng khác nên đọc strong được như bảng gốc. Thật ra GSI cập nhật bất đồng bộ, nên DynamoDB từ chối `ConsistentRead`; bộ mô phỏng trả đúng lỗi này - "Consistent reads are not supported on global secondary indexes".
-      en: It sounds as if a GSI is just another table, so it should allow strong reads like the base table. In fact a GSI is updated asynchronously, so DynamoDB refuses `ConsistentRead`; the emulator returns exactly this error - "Consistent reads are not supported on global secondary indexes".
+      vi: 'Nghe như GSI (global secondary index) chỉ là một bảng khác nên đọc nhất quán mạnh được như bảng gốc, với giá gấp đôi. Thật ra DynamoDB chép thay đổi sang GSI bất đồng bộ, sau lần ghi vào bảng, nên GSI không có bản chắc chắn mới nhất để đọc nhất quán mạnh. DynamoDB không lặng lẽ bỏ qua `ConsistentRead` mà từ chối cả request; bộ mô phỏng trả đúng lỗi này - "Consistent reads are not supported on global secondary indexes".'
+      en: 'It sounds as if a GSI (global secondary index) is just another table, so it should allow strongly consistent reads like the base table, at twice the price. In fact DynamoDB copies changes to a GSI asynchronously, after the table write, so a GSI has no surely-latest version to read strongly consistent. DynamoDB does not quietly ignore `ConsistentRead`; it refuses the whole request, and the emulator returns exactly this error - "Consistent reads are not supported on global secondary indexes".'
   - q:
       vi: 'Query trên `byStatus` (project `INCLUDE` `total`) trả các đơn `NEW`. Trang cần thêm `city` của mỗi đơn. Làm sao?'
       en: 'A Query on `byStatus` (projecting `INCLUDE` `total`) returns the `NEW` orders. The page also needs each order''s `city`. How?'
@@ -218,8 +218,8 @@ quiz:
       - { vi: "Đổi Query sang `ConsistentRead`", en: "Switch the Query to `ConsistentRead`" }
     answer: 1
     why:
-      vi: GSI chỉ giữ thuộc tính đã project và không đọc ngược về bảng, nên `ProjectionExpression` không tạo ra `city`. Project thêm (tốn lưu trữ và WCU cho index) hoặc đọc bảng gốc bằng khóa `customerId` + `orderId` có trong kết quả.
-      en: A GSI holds only projected attributes and never reads back from the table, so `ProjectionExpression` cannot produce `city`. Project it (costing index storage and WCU) or read the base table with the `customerId` + `orderId` keys found in the result.
+      vi: 'GSI (global secondary index) `byStatus` chỉ giữ khóa và `total`, và không đọc ngược về bảng. `ProjectionExpression` chỉ chọn trong những gì index đang có, nên thêm `city` vào đó không làm `city` xuất hiện. `ConsistentRead` cũng không giúp: nó chỉ đổi mức nhất quán, không thêm thuộc tính, và trên GSI còn bị từ chối. Cách đúng: project thêm `city` vào index (tốn lưu trữ và WCU, write capacity unit, cho mỗi lần ghi), hoặc đọc bảng gốc bằng khóa `customerId` + `orderId` có trong kết quả.'
+      en: 'GSI (global secondary index) `byStatus` holds only the keys and `total`, and never reads back from the table. `ProjectionExpression` only picks among what the index already has, so adding `city` there does not make `city` appear. `ConsistentRead` does not help either: it changes the consistency level, not the attributes, and a GSI refuses it anyway. The fix: project `city` into the index (costing storage and WCU, write capacity units, on every write), or read the base table with the `customerId` + `orderId` keys found in the result.'
 ---
 
 ## Mở bài
@@ -285,16 +285,16 @@ Scan cả bảng rồi lọc theo trạng thái:
 {"op": "Query", "input": {"TableName": "Orders", "IndexName": "byStatus", "KeyConditionExpression": "#s = :s", "ExpressionAttributeNames": {"#s": "status"}, "ExpressionAttributeValues": {":s": {"S": "NEW"}}}}
 ```
 
-Câu sai có `ScannedCount` 120, câu sửa 18. Câu sai còn trả cả `city`, nên dễ tưởng nó "tốt hơn".
+Câu sai có `ScannedCount` 120, câu sửa 18: Scan đọc mọi item rồi mới lọc, và bạn trả tiền cho cả 120. Câu sai còn trả cả `city` vì nó đọc bảng gốc chứ không đọc index, nên dễ tưởng nó "tốt hơn".
 
-Xin đọc strong trên GSI:
+Xin đọc nhất quán mạnh (strongly consistent) trên GSI:
 
 ```json
 // ERROR ValidationException
 {"op": "Query", "input": {"TableName": "Orders", "IndexName": "byStatus", "KeyConditionExpression": "#s = :s", "ExpressionAttributeNames": {"#s": "status"}, "ExpressionAttributeValues": {":s": {"S": "NEW"}}, "ConsistentRead": true}}
 ```
 
-GSI chỉ có đọc eventually consistent. Một đơn vừa đổi trạng thái có thể chưa hiện trong index ngay.
+GSI nhận thay đổi của bảng bất đồng bộ, nên chỉ cho đọc nhất quán cuối (eventually consistent) và DynamoDB từ chối cả request. Hệ quả: một đơn vừa đổi trạng thái có thể chưa hiện trong index ngay.
 
 ## Thực hành
 
@@ -372,16 +372,16 @@ Scanning the whole table and filtering on status:
 {"op": "Query", "input": {"TableName": "Orders", "IndexName": "byStatus", "KeyConditionExpression": "#s = :s", "ExpressionAttributeNames": {"#s": "status"}, "ExpressionAttributeValues": {":s": {"S": "NEW"}}}}
 ```
 
-The wrong one has a `ScannedCount` of 120, the fix 18. The wrong one also returns `city`, so it is easy to think it is "better".
+The wrong one has a `ScannedCount` of 120, the fix 18: a Scan reads every item before filtering, and you pay for all 120. The wrong one also returns `city` because it reads the base table, not the index, so it is easy to think it is "better".
 
-Asking for a strong read on a GSI:
+Asking for a strongly consistent read on a GSI:
 
 ```json
 // ERROR ValidationException
 {"op": "Query", "input": {"TableName": "Orders", "IndexName": "byStatus", "KeyConditionExpression": "#s = :s", "ExpressionAttributeNames": {"#s": "status"}, "ExpressionAttributeValues": {":s": {"S": "NEW"}}, "ConsistentRead": true}}
 ```
 
-A GSI has only eventually consistent reads. An order whose status just changed may not show in the index right away.
+A GSI receives the table's changes asynchronously, so it allows only eventually consistent reads and DynamoDB refuses the whole request. As a result, an order whose status just changed may not show in the index right away.
 
 ## Practice
 

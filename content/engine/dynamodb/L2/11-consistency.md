@@ -38,8 +38,8 @@ quiz:
         en: An error, because the item is being written.
     answer: 1
     why:
-      vi: Lần ghi đã báo thành công nên dễ nghĩ đọc ngay là thấy. Nhưng mặc định là đọc nhất quán cuối, có thể chưa phản ánh lần ghi vừa xong. Đặt `ConsistentRead` là `true` để đọc bản mới nhất, giá gấp đôi.
-      en: The write already reported success, so it is easy to expect to see it at once. But the default is eventually consistent and may not reflect a write that just finished. Set `ConsistentRead` to `true` to read the latest version, at twice the price.
+      vi: Lần ghi đã báo thành công nên dễ nghĩ đọc ngay là thấy. Nhưng mặc định là đọc nhất quán cuối (eventually consistent), có thể đọc từ một bản sao ở Availability Zone khác chưa nhận lần ghi vừa xong, nên địa chỉ cũ có thể hiện trong chốc lát. Cũng không có lỗi nào, vì lần ghi đã xong và đọc không phải chờ lock. Đặt `ConsistentRead` là `true` để đọc nhất quán mạnh (strongly consistent), luôn thấy bản mới nhất, giá gấp đôi.
+      en: The write already reported success, so it is easy to expect to see it at once. But the default is eventually consistent, which may read from a replica in another Availability Zone that has not received the write yet, so the old address may show for a moment. There is no error either, because the write has finished and a read never waits on a lock. Set `ConsistentRead` to `true` for a strongly consistent read that always sees the latest version, at twice the price.
   - q:
       vi: Query trên một GSI với `ConsistentRead` là `true`. Kết quả?
       en: A Query on a GSI with `ConsistentRead` set to `true`. What happens?
@@ -53,8 +53,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: GSI cũng là index trên cùng bảng nên dễ nghĩ nó đọc như bảng. Nhưng GSI được cập nhật bất đồng bộ, nên chỉ có đọc nhất quán cuối. LSI thì đọc nhất quán mạnh được.
-      en: A GSI is an index on the same table, so it is easy to think it reads like the table. But a GSI is updated asynchronously, so it offers only eventually consistent reads. An LSI does support strong reads.
+      vi: 'GSI (global secondary index) là index trên cùng bảng nên dễ nghĩ nó đọc được như bảng. Nhưng DynamoDB chép thay đổi sang GSI bất đồng bộ, sau khi lần ghi vào bảng đã xong, nên GSI không có bản "chắc chắn mới nhất" để đọc nhất quán mạnh, và request bị từ chối bằng `ValidationException`. DynamoDB cũng không tự chuyển sang bảng gốc: muốn đọc nhất quán mạnh thì tự `GetItem` hoặc Query bảng, hoặc dùng LSI (local secondary index).'
+      en: 'A GSI (global secondary index) is an index on the same table, so it is easy to think it reads like the table. But DynamoDB copies changes to a GSI asynchronously, after the table write has finished, so a GSI has no "surely latest" version for a strongly consistent read, and the request is refused with `ValidationException`. DynamoDB does not switch to the base table either: for a strongly consistent read, `GetItem` or Query the table yourself, or use an LSI (local secondary index).'
 ---
 ## Mở bài
 
@@ -123,7 +123,7 @@ Trong trình duyệt, hai lần đọc lúc t1 luôn cho cùng kết quả: engi
 {"op": "Query", "input": {"TableName": "Users", "IndexName": "byEmail", "KeyConditionExpression": "email = :e", "ExpressionAttributeValues": {":e": {"S": "binh@example.com"}}, "ConsistentRead": true}}
 ```
 
-Thông báo nói thẳng: GSI không hỗ trợ đọc nhất quán mạnh. GSI được cập nhật bất đồng bộ từ bảng, nên không có "bản mới nhất" nào để đọc mạnh.
+Thông báo nói thẳng: GSI (global secondary index) không hỗ trợ đọc nhất quán mạnh. GSI được cập nhật bất đồng bộ từ bảng, sau khi lần ghi vào bảng đã xong, nên không có "bản mới nhất" nào để đọc nhất quán mạnh.
 
 Đọc lại hồ sơ vừa sửa qua GSI:
 
@@ -137,7 +137,7 @@ Thông báo nói thẳng: GSI không hỗ trợ đọc nhất quán mạnh. GSI 
 {"op": "GetItem", "input": {"TableName": "Users", "Key": {"userId": {"S": "U-01"}}, "ConsistentRead": true}}
 ```
 
-Bản sai chỉ trả `userId` và `email` (GSI chiếu `KEYS_ONLY`), và trên AWS có thể còn cũ. Bản sửa đọc bảng theo khóa với `ConsistentRead`: tốn 1 RCU, có đủ thuộc tính và luôn là bản mới nhất.
+Bản sai chỉ trả `userId` và `email` (GSI chiếu `KEYS_ONLY`), và trên AWS có thể còn cũ. Bản sửa đọc bảng theo khóa với `ConsistentRead`: item nhỏ hơn 4 KB là 1 khối, đọc nhất quán mạnh nên tốn 1 RCU (read capacity unit, đơn vị đọc), có đủ thuộc tính và luôn là bản mới nhất.
 
 ## Tóm tắt
 
@@ -215,7 +215,7 @@ Asking for a strong read on a GSI:
 {"op": "Query", "input": {"TableName": "Users", "IndexName": "byEmail", "KeyConditionExpression": "email = :e", "ExpressionAttributeValues": {":e": {"S": "binh@example.com"}}, "ConsistentRead": true}}
 ```
 
-The message says it plainly: a GSI does not support strongly consistent reads. A GSI is updated asynchronously from the table, so there is no "latest copy" to read strongly.
+The message says it plainly: a GSI (global secondary index) does not support strongly consistent reads. A GSI is updated asynchronously from the table, after the table write has finished, so there is no "latest copy" for a strongly consistent read.
 
 Reading a profile you just edited through the GSI:
 
@@ -229,7 +229,7 @@ Reading a profile you just edited through the GSI:
 {"op": "GetItem", "input": {"TableName": "Users", "Key": {"userId": {"S": "U-01"}}, "ConsistentRead": true}}
 ```
 
-The wrong version returns only `userId` and `email` (the GSI projects `KEYS_ONLY`), and on AWS it may still be stale. The fix reads the table by key with `ConsistentRead`: 1 RCU, every attribute, and always the latest copy.
+The wrong version returns only `userId` and `email` (the GSI projects `KEYS_ONLY`), and on AWS it may still be stale. The fix reads the table by key with `ConsistentRead`: an item under 4 KB is 1 block, read strongly consistent, so 1 RCU (read capacity unit), every attribute, and always the latest copy.
 
 ## Recap
 

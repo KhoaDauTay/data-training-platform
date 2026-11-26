@@ -43,8 +43,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: Nghe hợp lý vì LSI dùng chung throughput với bảng, nhưng điều đó không cứu được ở đây. GSI thêm hoặc xóa lúc nào cũng được và có partition key tùy ý (ở đây `status`). LSI chỉ tạo khi tạo bảng và dùng cùng partition key.
-      en: It sounds right because an LSI shares the table's throughput, but that does not help here. A GSI can be added or removed at any time and can use any partition key (here `status`). An LSI is created only with the table and keeps the same partition key.
+      vi: 'LSI (local secondary index, index phụ cục bộ) có vẻ rẻ hơn vì dùng chung throughput với bảng, nhưng bảng này đã chạy một năm: LSI chỉ khai báo được lúc tạo bảng, và phải giữ partition key `customerId` của bảng, nên không đọc theo `status` được. GSI (global secondary index, index phụ toàn bảng) thêm được bất cứ lúc nào và nhận partition key tùy ý, ở đây là `status`. Câu "không thêm được index nào" sai vì thêm GSI chính là cách làm.'
+      en: 'An LSI (local secondary index) looks cheaper because it shares the table''s throughput, but this table has been live for a year: an LSI can only be declared when the table is created, and it must keep the table''s partition key `customerId`, so it cannot read by `status`. A GSI (global secondary index) can be added at any time and takes any partition key, here `status`. "No index can be added" is wrong because adding a GSI is exactly how you do it.'
   - q:
       vi: Một GSI có projection `KEYS_ONLY`. Query trên GSI đó xin thêm thuộc tính `city`. Được gì?
       en: A GSI has a `KEYS_ONLY` projection. A Query on it asks for the attribute `city`. What comes back?
@@ -57,8 +57,8 @@ quiz:
         en: The request fails because the base table is locked.
     answer: 1
     why:
-      vi: GSI không tự đọc ngược về bảng gốc. LSI thì có thể lấy thuộc tính chưa project từ bảng (tốn thêm lượt đọc).
-      en: A GSI never reads back from the base table. An LSI can fetch unprojected attributes from the table (at an extra read cost).
+      vi: 'GSI (global secondary index) là một bản sao riêng, chỉ chứa thuộc tính đã khai báo trong projection của index. Với `KEYS_ONLY` đó chỉ là khóa bảng và khóa index, nên item trả về không có `city`, và DynamoDB không tự đọc ngược về bảng gốc. Phương án lock không liên quan: đọc DynamoDB không chờ lock nào. Muốn có `city` thì `GetItem` bảng gốc theo khóa vừa nhận, hoặc đổi projection sang `INCLUDE` có `city`. Chỉ LSI (local secondary index) mới tự lấy thuộc tính chưa project từ bảng, và tốn thêm một lượt đọc cho việc đó.'
+      en: 'A GSI (global secondary index) is a separate copy that holds only the attributes declared in the index projection. With `KEYS_ONLY` that is just the table key and the index key, so the items come back without `city`, and DynamoDB does not read back from the base table on its own. The lock option is unrelated: a DynamoDB read waits on no lock. To get `city`, `GetItem` the base table with the key you received, or change the projection to `INCLUDE` with `city`. Only an LSI (local secondary index) fetches unprojected attributes from the table itself, at the cost of an extra read.'
 ---
 ## Mở bài
 
@@ -107,14 +107,14 @@ LSI cho phép `ConsistentRead`; item trả về có đủ thuộc tính vì `byT
 
 ## Lỗi hay gặp
 
-Xin đọc strong trên GSI:
+Xin đọc nhất quán mạnh (strongly consistent) trên GSI:
 
 ```json
 // ERROR ValidationException
 {"op": "Query", "input": {"TableName": "Orders", "IndexName": "byStatus", "KeyConditionExpression": "#s = :s", "ExpressionAttributeNames": {"#s": "status"}, "ExpressionAttributeValues": {":s": {"S": "NEW"}}, "ConsistentRead": true}}
 ```
 
-GSI cập nhật bất đồng bộ nên DynamoDB từ chối. Cần đọc strong thì đọc bảng (hoặc LSI).
+GSI nhận thay đổi của bảng bất đồng bộ, trễ một chút sau lượt ghi, nên nó không bảo đảm được đọc nhất quán mạnh và DynamoDB từ chối cả request. Cần đọc nhất quán mạnh thì đọc bảng (hoặc một LSI); trên GSI chỉ đọc nhất quán cuối (eventually consistent).
 
 Chọn `ALL` cho mọi index "cho chắc":
 
@@ -125,7 +125,7 @@ Chọn `ALL` cho mọi index "cho chắc":
 "Projection": {"ProjectionType": "INCLUDE", "NonKeyAttributes": ["total"]}
 ```
 
-Với `ALL`, mỗi lần ghi đổi item phải ghi lại cả item vào index: lưu trữ và WCU của index tăng theo cỡ item, không theo câu hỏi.
+Với `ALL`, mỗi lần ghi đổi item phải ghi lại cả item vào index: lưu trữ và WCU (write capacity unit, đơn vị ghi, 1 WCU cho mỗi 1 KB) của index tăng theo cỡ item, không theo câu hỏi. Trang danh sách chỉ đọc `total`, nên `INCLUDE` chỉ chép thuộc tính đó.
 
 ## Tóm tắt
 
@@ -183,14 +183,14 @@ The LSI allows `ConsistentRead`; the item comes back whole because `byTotal` pro
 
 ## Common mistakes
 
-Asking for a strong read on a GSI:
+Asking for a strongly consistent read on a GSI:
 
 ```json
 // ERROR ValidationException
 {"op": "Query", "input": {"TableName": "Orders", "IndexName": "byStatus", "KeyConditionExpression": "#s = :s", "ExpressionAttributeNames": {"#s": "status"}, "ExpressionAttributeValues": {":s": {"S": "NEW"}}, "ConsistentRead": true}}
 ```
 
-A GSI is updated asynchronously, so DynamoDB refuses. If you need a strong read, read the table (or an LSI).
+A GSI receives the table's changes asynchronously, a moment after the write, so it cannot promise a strongly consistent read and DynamoDB refuses the whole request. If you need a strongly consistent read, read the table (or an LSI); a GSI only serves eventually consistent reads.
 
 Choosing `ALL` for every index "to be safe":
 
@@ -201,7 +201,7 @@ Choosing `ALL` for every index "to be safe":
 "Projection": {"ProjectionType": "INCLUDE", "NonKeyAttributes": ["total"]}
 ```
 
-With `ALL`, every write that changes the item writes the whole item into the index again: index storage and WCU grow with the item's size, not with the question.
+With `ALL`, every write that changes the item writes the whole item into the index again: index storage and WCU (write capacity units, 1 WCU per 1 KB) grow with the item's size, not with the question. The list page reads only `total`, so `INCLUDE` copies just that attribute.
 
 ## Recap
 

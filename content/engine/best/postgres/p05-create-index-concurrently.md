@@ -42,8 +42,8 @@ quiz:
       - { vi: "Postgres âm thầm bỏ chữ `CONCURRENTLY`", en: "Postgres silently drops the word `CONCURRENTLY`" }
     answer: 1
     why:
-      vi: "Dựng index song song với các lệnh ghi cần nhiều transaction riêng, nên lệnh phải chạy một mình, ngoài transaction. Phải tắt transaction của migration cho đúng bước đó."
-      en: "Building alongside writes needs several transactions of its own, so the command must run alone, outside a transaction. Turn off the migration's transaction for that one step."
+      vi: "Để dựng index mà không chặn lệnh ghi, `CONCURRENTLY` tự mở và commit nhiều transaction riêng, nên nó không thể nằm trong `BEGIN … COMMIT` của công cụ. Postgres không âm thầm bỏ chữ đó mà báo lỗi `25001`, và không index nào được dựng. Tắt transaction của migration cho riêng bước này."
+      en: "To build without blocking writes, `CONCURRENTLY` opens and commits several transactions of its own, so it cannot sit inside the tool's `BEGIN … COMMIT`. Postgres does not silently drop the word; it raises `25001` and builds no index. Turn off the migration's transaction for this one step."
 ---
 
 ## Ý chính

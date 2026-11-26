@@ -41,8 +41,8 @@ predict:
   answer: 1
   trap: 0
   why:
-    vi: 'Nhiều người nghĩ GSI chỉ là một bảng khác nên đọc mạnh được như bảng chính. Thật ra DynamoDB cập nhật GSI bất đồng bộ ("asynchronously, using an eventually consistent model", docs GSI), nên không có bản "chắc chắn mới nhất" để đọc mạnh. Request bị từ chối bằng một `ValidationException`, thông báo `Consistent reads are not supported on global secondary indexes`. Bước 1 cho bạn thấy thông báo này thật (trang chỉ hiện thông báo, không hiện tên loại lỗi).'
-    en: 'Many people think a GSI is just another table, so it allows strong reads like the base table. In fact DynamoDB updates a GSI asynchronously ("asynchronously, using an eventually consistent model", GSI docs), so there is no "surely latest" copy to read strongly. The request is refused with a `ValidationException`, message `Consistent reads are not supported on global secondary indexes`. Step 1 shows you this message for real (the page shows the message, not the error type name).'
+    vi: 'Nhiều người nghĩ GSI (global secondary index) chỉ là một bảng khác nên đọc nhất quán mạnh được như bảng chính. Thật ra DynamoDB cập nhật GSI bất đồng bộ ("asynchronously, using an eventually consistent model", docs GSI), nên không có bản "chắc chắn mới nhất" để đọc nhất quán mạnh, và DynamoDB cũng không lặng lẽ đổi sang đọc nhất quán cuối. Request bị từ chối bằng một `ValidationException`, thông báo `Consistent reads are not supported on global secondary indexes`. Bước 1 cho bạn thấy thông báo này thật (trang chỉ hiện thông báo, không hiện tên loại lỗi).'
+    en: 'Many people think a GSI (global secondary index) is just another table, so it allows strongly consistent reads like the base table. In fact DynamoDB updates a GSI asynchronously ("asynchronously, using an eventually consistent model", GSI docs), so there is no "surely latest" copy for a strongly consistent read, and DynamoDB does not quietly switch to an eventually consistent one either. The request is refused with a `ValidationException`, message `Consistent reads are not supported on global secondary indexes`. Step 1 shows you this message for real (the page shows the message, not the error type name).'
 quiz:
   - q:
       vi: 'Ứng dụng vừa `PutItem` một đơn `NEW` thành công. Ngay sau đó nó Query `byStatus = NEW`. Đơn mới có chắc nằm trong kết quả không?'
@@ -56,8 +56,8 @@ quiz:
         en: Never, a GSI is only updated once a minute
     answer: 1
     why:
-      vi: 'Lần ghi thành công ở bảng chính, rồi DynamoDB mới chép sang GSI, thường dưới một giây nhưng không có gì bảo đảm. Ứng dụng phải chịu được việc GSI trả dữ liệu cũ ("your applications need to anticipate and handle situations", docs GSI). Lưu ý: dynoxide trong trình duyệt cập nhật GSI ngay trong lần ghi, nên ở đây bạn luôn thấy đơn mới. Đó là khác biệt của bộ mô phỏng, không phải bằng chứng cho lựa chọn đầu.'
-      en: 'The write succeeds on the base table, and only then does DynamoDB copy it to the GSI, usually in under a second but with no guarantee. The app must cope with the GSI returning stale data ("your applications need to anticipate and handle situations", GSI docs). Note: dynoxide in the browser updates the GSI inside the write, so here you always see the new order. That is a difference of the emulator, not evidence for the first option.'
+      vi: 'Lần ghi thành công ở bảng chính, rồi DynamoDB mới chép sang GSI, thường dưới một giây nhưng không có gì bảo đảm. Ứng dụng phải chịu được việc GSI trả dữ liệu cũ ("your applications need to anticipate and handle situations", docs GSI). "Mỗi phút một lần" cũng sai: GSI không cập nhật theo lịch, mỗi lần ghi được chép sang ngay khi có thể, nên thường đơn mới đã có. Lưu ý: dynoxide trong trình duyệt cập nhật GSI ngay trong lần ghi, nên ở đây bạn luôn thấy đơn mới. Đó là khác biệt của bộ mô phỏng, không phải bằng chứng cho lựa chọn đầu.'
+      en: 'The write succeeds on the base table, and only then does DynamoDB copy it to the GSI, usually in under a second but with no guarantee. The app must cope with the GSI returning stale data ("your applications need to anticipate and handle situations", GSI docs). "Once a minute" is wrong too: a GSI is not updated on a schedule, each write is copied over as soon as possible, so usually the new order is already there. Note: dynoxide in the browser updates the GSI inside the write, so here you always see the new order. That is a difference of the emulator, not evidence for the first option.'
   - q:
       vi: 'GSI `byStatus` là `KEYS_ONLY`. Một `UpdateItem` chỉ đổi `total` (không phải khóa, không được project) của item nặng dưới 1 KB. Tổng WCU là bao nhiêu?'
       en: 'GSI `byStatus` is `KEYS_ONLY`. An `UpdateItem` changes only `total` (not a key, not projected) of an item under 1 KB. How many WCU in total?'
@@ -70,8 +70,8 @@ quiz:
         en: "3"
     answer: 0
     why:
-      vi: 'Chỉ bảng chính tốn 1 WCU. Thuộc tính không có trong GSI thì "no write capacity is consumed for that index" (docs GSI). Đổi `status` thì khác: GSI phải xóa mục cũ và ghi mục mới, nên tốn 2 WCU ở index, như bước 3. dynoxide trả đúng các số này.'
-      en: 'Only the base table pays 1 WCU. When the attribute is not in the GSI, "no write capacity is consumed for that index" (GSI docs). Changing `status` is different: the GSI must delete the old entry and write a new one, so the index pays 2 WCU, as in step 3. dynoxide reports these same numbers.'
+      vi: 'Item dưới 1 KB nên bảng chính tốn 1 WCU (write capacity unit, đơn vị ghi 1 KB), và chỉ có thế. `total` không phải khóa và không được project vào GSI, nên GSI không có gì để sửa: "no write capacity is consumed for that index" (docs GSI). Đổi `status` thì khác: GSI phải xóa mục cũ và ghi mục mới, nên tốn 2 WCU ở index, như bước 3. dynoxide trả đúng các số này.'
+      en: 'The item is under 1 KB, so the base table pays 1 WCU (write capacity unit, 1 KB), and that is all. `total` is not a key and is not projected into the GSI, so the GSI has nothing to change: "no write capacity is consumed for that index" (GSI docs). Changing `status` is different: the GSI must delete the old entry and write a new one, so the index pays 2 WCU, as in step 3. dynoxide reports these same numbers.'
 lab:
   setup: |
     {"tables": [{"TableName":"Orders","BillingMode":"PAY_PER_REQUEST","KeySchema":[{"AttributeName":"customerId","KeyType":"HASH"},{"AttributeName":"orderId","KeyType":"RANGE"}],"AttributeDefinitions":[{"AttributeName":"customerId","AttributeType":"S"},{"AttributeName":"orderId","AttributeType":"S"},{"AttributeName":"status","AttributeType":"S"}],"GlobalSecondaryIndexes":[{"IndexName":"byStatus","KeySchema":[{"AttributeName":"status","KeyType":"HASH"},{"AttributeName":"orderId","KeyType":"RANGE"}],"Projection":{"ProjectionType":"KEYS_ONLY"}}]}],
@@ -113,8 +113,8 @@ lab:
       slow: |
         {"op":"Scan","input":{"TableName":"Orders","FilterExpression":"#k0 = :k0 AND #k1 = :k1","ExpressionAttributeNames":{"#k0":"customerId","#k1":"orderId"},"ExpressionAttributeValues":{":k0":{"S":"C-02"},":k1":{"S":"2026-10-09#O-403"}}}}
       hint:
-        vi: '`GetItem` theo khóa bảng chính (`customerId`, `orderId`) lấy từ bước 1, thêm `"ConsistentRead": true`. Item dưới 4 KB nên tốn 1 RCU thay vì 0,5.'
-        en: '`GetItem` by the base table key (`customerId`, `orderId`) taken from step 1, plus `"ConsistentRead": true`. The item is under 4 KB, so it costs 1 RCU instead of 0.5.'
+        vi: '`GetItem` theo khóa bảng chính (`customerId`, `orderId`) lấy từ bước 1, thêm `"ConsistentRead": true`. Item dưới 4 KB nên tốn 1 RCU (read capacity unit, đơn vị đọc) khi đọc nhất quán mạnh, thay vì 0,5 khi đọc nhất quán cuối.'
+        en: '`GetItem` by the base table key (`customerId`, `orderId`) taken from step 1, plus `"ConsistentRead": true`. The item is under 4 KB, so it costs 1 RCU (read capacity unit) for a strongly consistent read, instead of 0.5 for an eventually consistent one.'
     - task:
         vi: 'Khách đã trả tiền: đổi `status` của đơn `2026-10-09#O-403` từ `NEW` sang `PAID`. Thêm `"ReturnConsumedCapacity": "INDEXES"` và đọc tổng WCU ở dòng `ConsumedCapacity`.'
         en: 'The customer has paid: change the `status` of order `2026-10-09#O-403` from `NEW` to `PAID`. Add `"ReturnConsumedCapacity": "INDEXES"` and read the total WCU on the `ConsumedCapacity` line.'
@@ -127,8 +127,8 @@ lab:
           "ReturnConsumedCapacity": "INDEXES"}}
       check: doc
       hint:
-        vi: '`SET #s = :p`, với `#s` là `status` (từ dành riêng). Tổng là 3 WCU: 1 cho bảng, 2 cho GSI (xóa mục `NEW`, ghi mục `PAID`). Trang chỉ hiện tổng; phản hồi của DynamoDB tách `Table` và `GlobalSecondaryIndexes`.'
-        en: '`SET #s = :p`, with `#s` for `status` (a reserved word). The total is 3 WCU: 1 for the table, 2 for the GSI (delete the `NEW` entry, write the `PAID` one). The page shows only the total; the DynamoDB response splits it into `Table` and `GlobalSecondaryIndexes`.'
+        vi: '`SET #s = :p`, với `#s` là `status` (từ dành riêng). Tổng là 3 WCU (write capacity unit, đơn vị ghi): 1 cho bảng, 2 cho GSI (xóa mục `NEW`, ghi mục `PAID`). Trang chỉ hiện tổng; phản hồi của DynamoDB tách `Table` và `GlobalSecondaryIndexes`.'
+        en: '`SET #s = :p`, with `#s` for `status` (a reserved word). The total is 3 WCU (write capacity units): 1 for the table, 2 for the GSI (delete the `NEW` entry, write the `PAID` one). The page shows only the total; the DynamoDB response splits it into `Table` and `GlobalSecondaryIndexes`.'
 ---
 
 ## Mở bài

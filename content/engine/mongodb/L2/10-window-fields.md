@@ -69,8 +69,8 @@ quiz:
     answer: 0
     trap: 1
     why:
-      vi: 'Nghe hợp lý vì `partitionBy` giống `_id` của `$group`, nhưng `$setWindowFields` không gộp tài liệu. Nó giữ cả 8 đơn và chỉ thêm trường mới vào từng đơn.'
-      en: 'It sounds right because `partitionBy` looks like the `_id` of `$group`, but `$setWindowFields` merges nothing. It keeps all 8 orders and only adds new fields to each one.'
+      vi: '`partitionBy` trông giống `_id` của `$group`, nhưng nó chỉ chia các đơn thành hai cửa sổ `S1` và `S2` để tính, không gộp đơn nào: `$setWindowFields` giữ cả 8 đơn và chỉ thêm trường mới vào từng đơn. Vì vậy không ra 2, càng không ra 1 (con số của `$group` với `_id: null`).'
+      en: '`partitionBy` looks like the `_id` of `$group`, but it only splits the orders into two windows, `S1` and `S2`, for the computation and merges nothing: `$setWindowFields` keeps all 8 orders and only adds new fields to each one. So the answer is not 2, let alone 1 (what `$group` with `_id: null` gives).'
   - q:
       vi: 'Ba đơn trong một cửa hàng có `total` 300, 300 và 200, sắp giảm dần. `$rank` cho hạng nào?'
       en: 'Three orders in one store have `total` 300, 300 and 200, sorted descending. Which ranks does `$rank` give?'
@@ -81,8 +81,8 @@ quiz:
     answer: 0
     trap: 1
     why:
-      vi: 'Nghe hợp lý vì hạng kế tiếp sau hai đơn đồng hạng có vẻ là 2, nhưng đó là `$denseRank`. `$rank` cho giá trị bằng nhau cùng hạng rồi bỏ qua số hạng đã dùng, nên đơn 200 hạng 3.'
-      en: 'It sounds right because the next rank after a tie seems to be 2, but that is `$denseRank`. `$rank` gives equal values the same rank and then skips the ranks they used, so the 200 order is rank 3.'
+      vi: 'Hạng sau hai đơn đồng hạng có vẻ là 2, nhưng đó là cách của `$denseRank`. `$rank` cho hai đơn 300 cùng hạng 1, rồi tính hạng tiếp theo bằng số đơn đứng trước cộng 1: có 2 đơn đứng trước, nên đơn 200 hạng 3. "1, 2, 3" là `$documentNumber`, vốn đánh số liên tục và không cho đồng hạng.'
+      en: 'The rank after a tie seems to be 2, but that is how `$denseRank` works. `$rank` gives both 300 orders rank 1, then sets the next rank to the number of orders before it plus 1: 2 orders come before, so the 200 order is rank 3. "1, 2, 3" is `$documentNumber`, which numbers in sequence and never ties.'
 ---
 ## Mở bài
 

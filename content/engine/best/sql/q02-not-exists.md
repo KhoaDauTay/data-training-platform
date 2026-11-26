@@ -54,8 +54,8 @@ quiz:
       - { vi: "Cả hai cho cùng một số", en: "Both give the same number" }
     answer: 1
     why:
-      vi: "Chỉ cần truy vấn con (subquery) có một NULL, `x NOT IN (…)` cho NULL chứ không phải true, nên `WHERE` bỏ mọi dòng. `NOT EXISTS` chỉ hỏi \"có dòng khớp không\", nên NULL không ảnh hưởng."
-      en: "One NULL in the subquery makes `x NOT IN (…)` NULL rather than true, so `WHERE` drops every row. `NOT EXISTS` only asks \"is there a matching row\", so a NULL changes nothing."
+      vi: "Chỉ cần truy vấn con (subquery) có một NULL, `x NOT IN (…)` cho NULL chứ không phải true, nên `WHERE` bỏ mọi dòng và bản `NOT IN` đếm ra 0; hai bản vì thế không cho cùng một số. `NOT EXISTS` chỉ hỏi \"có dòng khớp không\", nên NULL không ảnh hưởng."
+      en: "One NULL in the subquery makes `x NOT IN (…)` NULL rather than true, so `WHERE` drops every row and the `NOT IN` version counts 0; the two versions do not agree. `NOT EXISTS` only asks \"is there a matching row\", so a NULL changes nothing."
 ---
 
 ## Ý chính

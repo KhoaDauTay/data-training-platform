@@ -33,8 +33,8 @@ quiz:
         en: 119 bytes
     answer: 1
     why:
-      vi: 'isbn = 4 (tên) + 8 (giá trị) = 12. price = 5 (tên) + 1 byte cho 2 chữ số có nghĩa "88" (số 0 ở cuối bị bỏ) + 1 = 7. Tổng 19 byte.'
-      en: 'isbn = 4 (name) + 8 (value) = 12. price = 5 (name) + 1 byte for the 2 significant digits "88" (trailing zeros are trimmed) + 1 = 7. Total 19 bytes.'
+      vi: 'Cỡ item = tổng (độ dài tên + cỡ giá trị) của mỗi thuộc tính. isbn: tên 4 byte + chuỗi 8 byte = 12. price: tên 5 byte; số tính 1 byte cho mỗi 2 chữ số có nghĩa cộng 1 byte, và 88000 chỉ có 2 chữ số có nghĩa "88" (số 0 ở cuối bị bỏ), nên 1 + 1 = 2; cộng tên là 7. Tổng 12 + 7 = 19 byte. 119 là cộng thêm 100 byte phụ phí, phần chỉ dùng khi tính tiền lưu trữ.'
+      en: 'Item size = the sum of (name length + value size) over the attributes. isbn: a 4-byte name + an 8-byte string = 12. price: a 5-byte name; a number takes 1 byte per 2 significant digits plus 1 byte, and 88000 has only the 2 significant digits "88" (trailing zeros are trimmed), so 1 + 1 = 2; with the name, 7. Total 12 + 7 = 19 bytes. 119 adds the 100 bytes of overhead, which only count for storage billing.'
   - q:
       vi: 'Thuộc tính danh sách `"tags": ["nosql", "perf"]` nặng bao nhiêu byte?'
       en: 'How many bytes is the list attribute `"tags": ["nosql", "perf"]`?'
@@ -47,8 +47,8 @@ quiz:
         en: 18 bytes
     answer: 2
     why:
-      vi: 'Tên 4 + 3 byte phụ phí của List + mỗi phần tử 1 byte phụ phí cộng cỡ của nó - (1 + 5) + (1 + 4) = 11. Tổng 4 + 3 + 11 = 18.'
-      en: 'Name 4 + 3 bytes of List overhead + each element 1 byte of overhead plus its size - (1 + 5) + (1 + 4) = 11. Total 4 + 3 + 11 = 18.'
+      vi: 'Tên 4 + 3 byte phụ phí của List + mỗi phần tử 1 byte phụ phí cộng cỡ của nó - (1 + 5) + (1 + 4) = 11. Tổng 4 + 3 + 11 = 18. Chọn 15 là quên 3 byte của List (4 + 11); chọn 13 là quên cả 3 byte đó lẫn 1 byte của mỗi phần tử (4 + 5 + 4), tức tính như hai chuỗi rời.'
+      en: 'Name 4 + 3 bytes of List overhead + each element 1 byte of overhead plus its size - (1 + 5) + (1 + 4) = 11. Total 4 + 3 + 11 = 18. Picking 15 forgets the 3 List bytes (4 + 11); picking 13 forgets both those and the 1 byte per element (4 + 5 + 4), as if the values were two loose strings.'
   - q:
       vi: Thuộc tính chuỗi `city` có giá trị `"Đà Nẵng"`. Cỡ là bao nhiêu?
       en: The string attribute `city` holds `"Đà Nẵng"`. What is its size?
@@ -61,8 +61,8 @@ quiz:
         en: 18 bytes
     answer: 1
     why:
-      vi: 'Chuỗi tính theo byte UTF-8, không theo số ký tự. "Đ" và "à" mỗi chữ 2 byte, "ẵ" 3 byte, bốn ký tự còn lại 1 byte - tổng 11. Cộng tên 4 byte là 15.'
-      en: 'Strings count UTF-8 bytes, not characters. The two accented capitals and small letters take 2 bytes each, the letter with two marks takes 3, the other four take 1 - 11 in all. Plus the 4-byte name gives 15.'
+      vi: 'Chuỗi tính theo byte UTF-8, không theo số ký tự. "Đ" và "à" mỗi chữ 2 byte, "ẵ" 3 byte, bốn ký tự còn lại (kể cả dấu cách) 1 byte - tổng 2 + 2 + 3 + 4 = 11. Cộng tên 4 byte là 15. Chọn 11 là đếm 7 ký tự như 7 byte, chỉ đúng với chữ không dấu; chọn 18 là coi mọi ký tự đều 2 byte (4 + 7 × 2).'
+      en: 'Strings count UTF-8 bytes, not characters. The two accented capitals and small letters take 2 bytes each, the letter with two marks takes 3, the other four (the space included) take 1 - 2 + 2 + 3 + 4 = 11 in all. Plus the 4-byte name gives 15. Picking 11 counts 7 characters as 7 bytes, which holds only for unaccented letters; picking 18 treats every character as 2 bytes (4 + 7 × 2).'
   - q:
       vi: 'Thuộc tính `"inStock": true` nặng bao nhiêu?'
       en: 'How many bytes is the attribute `"inStock": true`?'
@@ -75,8 +75,8 @@ quiz:
         en: 4 bytes
     answer: 0
     why:
-      vi: Boolean và null là tên + 1 byte - 7 + 1 = 8.
-      en: A Boolean or null is the name + 1 byte - 7 + 1 = 8.
+      vi: 'Giá trị boolean (và null) luôn chiếm 1 byte, không phụ thuộc chữ "true" dài 4 ký tự. Tên `inStock` dài 7 byte, nên 7 + 1 = 8. Chọn 11 là đếm chữ "true" như chuỗi (7 + 4); chọn 4 là quên tên thuộc tính, mà mỗi item lưu tên kèm giá trị.'
+      en: 'A Boolean (or null) value always takes 1 byte, whatever the 4 letters of "true". The name `inStock` is 7 bytes, so 7 + 1 = 8. Picking 11 counts "true" as a string (7 + 4); picking 4 forgets the attribute name, which every item stores beside the value.'
   - q:
       vi: Một item 23 byte được tính bao nhiêu khi so với giới hạn 400 KB, và bao nhiêu khi tính tiền lưu trữ?
       en: A 23-byte item counts as how much against the 400 KB limit, and how much for storage billing?
@@ -90,8 +90,8 @@ quiz:
     answer: 2
     trap: 1
     why:
-      vi: Nghe hợp lý vì mỗi item có thêm 100 byte phụ phí, nhưng phụ phí đó chỉ dùng để tính tiền lưu trữ. Giới hạn 400 KB và capacity đọc ghi dùng cỡ item.
-      en: It sounds right because every item carries 100 extra bytes, but that overhead is only for storage billing. The 400 KB limit and read/write capacity use the item size.
+      vi: Nghe hợp lý vì mỗi item có thêm 100 byte phụ phí, nhưng phụ phí đó chỉ dùng để tính tiền lưu trữ. Giới hạn 400 KB và capacity đọc ghi dùng cỡ item thật, 23 byte. Còn "23 và 23" thì quên phụ phí, vì hóa đơn lưu trữ tính 23 + 100 = 123 byte cho item này.
+      en: It sounds right because every item carries 100 extra bytes, but that overhead is only for storage billing. The 400 KB limit and read/write capacity use the real item size, 23 bytes. "23 and 23" forgets the overhead instead, since the storage bill counts 23 + 100 = 123 bytes for this item.
 ---
 
 ## Mở bài

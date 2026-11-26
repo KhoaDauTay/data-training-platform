@@ -43,8 +43,8 @@ quiz:
     answer: 0
     trap: 1
     why:
-      vi: "Nghe hợp lý vì điều kiện nhắc mã khách. Nhưng Scan không mang `dynamodb:LeadingKeys`, và `ForAllValues` đúng khi khóa điều kiện vắng mặt. Docs của AWS bảo thêm `Null` trên cùng khóa với giá trị `false`, và không cấp Scan."
-      en: "It sounds right because the condition names the tenant id. But a Scan carries no `dynamodb:LeadingKeys`, and `ForAllValues` is true when the condition key is absent. The AWS docs say to add `Null` on the same key with the value `false`, and not to grant Scan."
+      vi: "Nghe hợp lý vì điều kiện nhắc mã khách. Nhưng Scan không mang `dynamodb:LeadingKeys`, và `ForAllValues` đúng khi khóa điều kiện vắng mặt. Vì vậy chính sách IAM (Identity and Access Management, quản lý quyền của AWS) cho Scan chạy, và Scan đọc cả bảng `Portal`, không tự lọc theo `TENANT#C02`. `LeadingKeys` cũng không \"luôn chặn\" Scan: chính sự vắng mặt của khóa làm điều kiện đúng. Docs của AWS bảo thêm `Null` trên cùng khóa với giá trị `false`, và không cấp Scan."
+      en: "It sounds right because the condition names the tenant id. But a Scan carries no `dynamodb:LeadingKeys`, and `ForAllValues` is true when the condition key is absent. So the IAM (Identity and Access Management, AWS permissions) policy lets the Scan run, and the Scan reads the whole `Portal` table, with no filtering by `TENANT#C02`. Nor does `LeadingKeys` \"always block\" a Scan: the very absence of the key makes the condition true. The AWS docs say to add `Null` on the same key with the value `false`, and not to grant Scan."
   - q:
       vi: "Cổng Cargo Query có 6.000 khách nhỏ. Một kỹ sư đề xuất mỗi khách một bảng để báo cáo chi phí theo tag. Điều gì chặn đề xuất này đầu tiên?"
       en: "The Cargo Query portal has 6,000 small tenants. An engineer proposes one table per tenant so cost can be reported by tag. What stops this proposal first?"
@@ -55,8 +55,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Bảng gắn tag được, và tag chi phí đúng là theo bảng. Nhưng quota ban đầu là 2.500 bảng mỗi vùng; tài khoản xin tăng được tới 10.000, quá nữa thì phải thêm tài khoản. Khách nhỏ và giống nhau hợp với bảng chung có tiền tố khách, cộng đo chi phí trong ứng dụng."
-      en: "Tables can carry tags, and cost tags are indeed per table. But the initial quota is 2,500 tables per Region; an account can ask for up to 10,000, and beyond that you need more accounts. Small, similar tenants fit a shared table with a tenant prefix, plus cost metering in the application."
+      vi: "Bảng gắn tag được, và tag chi phí đúng là theo bảng. Bảng riêng cũng chạy on-demand bình thường, không bắt buộc provisioned. Nhưng quota ban đầu là 2.500 bảng mỗi vùng: 6.000 khách cần 6.000 bảng, vượt 6.000 − 2.500 = 3.500 bảng; tài khoản xin tăng được tới 10.000, quá nữa thì phải thêm tài khoản. Khách nhỏ và giống nhau hợp với bảng chung có tiền tố khách, cộng đo chi phí trong ứng dụng."
+      en: "Tables can carry tags, and cost tags are indeed per table. Separate tables also run on-demand as usual; provisioned mode is not required. But the initial quota is 2,500 tables per Region: 6,000 tenants need 6,000 tables, 6,000 − 2,500 = 3,500 over; an account can ask for up to 10,000, and beyond that you need more accounts. Small, similar tenants fit a shared table with a tenant prefix, plus cost metering in the application."
 ---
 ## Mở bài
 
@@ -121,7 +121,7 @@ Request của khách `C01`, đọc nhất quán mạnh:
   "ConsistentRead": true}}
 ```
 
-2 lô. Đọc mạnh tốn gấp đôi đọc thường, và sổ chi phí của `C01` ghi đúng phần đó.
+2 lô. Đọc nhất quán mạnh tốn gấp đôi đọc nhất quán cuối, và sổ chi phí của `C01` ghi đúng phần đó.
 
 Sổ chi phí của ứng dụng (minh họa, không đo):
 
@@ -158,6 +158,8 @@ Scan as C02 -> every tenant's items
     "dynamodb:LeadingKeys": "false"}}
 Scan as C02 -> AccessDeniedException
 ```
+
+Scan không mang partition key, nên `ForAllValues` đúng và câu sai cho Scan chạy qua cả bảng. `Null` = `false` bắt mọi request phải mang partition key, và bỏ `dynamodb:Scan` khỏi `Action` thì Scan bị từ chối.
 
 Đo chi phí khách bằng tag trên bảng chung. Tag chỉ chia theo bảng, nên mọi khách cùng một dòng:
 
@@ -284,6 +286,8 @@ Scan as C02 -> every tenant's items
     "dynamodb:LeadingKeys": "false"}}
 Scan as C02 -> AccessDeniedException
 ```
+
+A Scan carries no partition key, so `ForAllValues` is true and the wrong policy lets the Scan run over the whole table. `Null` = `false` makes every request carry a partition key, and dropping `dynamodb:Scan` from `Action` gets the Scan refused.
 
 Measuring tenant cost with tags on a shared table. Tags only split by table, so every tenant shares one line:
 

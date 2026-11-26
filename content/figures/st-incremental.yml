@@ -1,38 +1,47 @@
 # ST-8 (tools/v43/de-tools-plan.md §4): an incremental model's first run and a later run, 2 steps. Lesson: e-st-l2-03 (Ý chính).
-# Data = the lab: 4 rows on the first run; the 06:00 sync updates order 2 and adds order 5; unique_key order_id → 5 rows.
+# Data = the lab: 4 rows on the first run (newest _fivetran_synced 31/10 01:00); the 06:00 sync updates order 2 and adds the
+# late order 5 (ordered 29/10); the filter on the sync time takes both; unique_key order_id replaces order 2 → 5 rows.
+# v46 (S-09, L834): rows of the raw table with their sync time, the mark read from {{ this }}, order 2 struck and replaced.
 # Source: https://docs.getdbt.com/docs/build/incremental-models
 title: { vi: "Chạy incremental hai lần", en: "An incremental model, run twice" }
 caption:
-  vi: "Lần đầu is_incremental() sai nên cả bảng được dựng; lần sau chỉ dòng mới hơn mức trong {{ this }} được xử lý, và unique_key thay dòng trùng khóa."
-  en: "On the first run is_incremental() is false, so the whole table is built; later only rows newer than the mark in {{ this }} are processed, and unique_key replaces rows with the same key."
+  vi: "Lần sau chỉ dòng có _fivetran_synced mới hơn mức trong {{ this }} được xử lý; unique_key thay bản cũ của đơn 2, và đơn 5 về trễ vẫn được lấy."
+  en: "On a later run only rows synced after the mark in {{ this }} are processed; unique_key replaces order 2's old row, and the late order 5 is still taken."
 alt:
-  vi: "Model incremental dựng cả bảng ở lần đầu, rồi các lần sau chỉ xử lý dòng về sau mức thời gian đã nạp, nên rẻ hơn nhiều khi bảng lớn. Nhờ unique_key, một đơn đổi trạng thái được thay chứ không bị nhân đôi."
-  en: "An incremental model builds the whole table on its first run, then later runs process only rows that arrived after the loaded time mark, which is far cheaper on a big table. Thanks to unique_key, an order that changes status is replaced rather than doubled."
+  vi: "Model incremental dựng cả bảng lần đầu, rồi các lần sau chỉ xử lý dòng đồng bộ sau mức đã nạp, nên rẻ hơn nhiều khi bảng lớn. Lọc theo giờ đồng bộ chứ không theo ngày đặt, nên đơn về trễ vẫn vào, và unique_key thay chứ không nhân đôi đơn đổi trạng thái."
+  en: "An incremental model builds the whole table on its first run, then later runs process only rows synced after the loaded mark, which is far cheaper on a big table. The filter uses the sync time, not the order date, so a late order still gets in, and unique_key replaces rather than doubles an order that changed status."
 nodes:
-  - { id: raw, shape: table, mono: true, label: raw_shop.orders, sub: { vi: "nguồn", en: "source" } }
-  - { id: first, label: { vi: "lần chạy đầu", en: "first run" }, sub: { vi: "cả bảng", en: "whole table" } }
-  - { id: later, label: { vi: "lần chạy sau", en: "later run" }, sub: { vi: "chỉ dòng mới", en: "new rows only" }, tone: ghost }
-  - { id: tbl, shape: table, mono: true, label: marts.fct_orders, sub: { vi: "4 dòng", en: "4 rows" } }
-  - { id: key, shape: note, label: { vi: "unique_key = order_id", en: "unique_key = order_id" } }
+  - id: raw
+    shape: grid
+    mono: true
+    label: raw_shop.orders
+    head: [order_id, status, _fivetran_synced]
+    cells: [["1", "paid", "30/10 23:00"], ["2", "paid", "30/10 23:00"], ["3", "paid", "30/10 23:00"], ["4", "pending", "31/10 01:00"]]
+  - { id: mark, mono: true, label: "is_incremental()", sub: { vi: "sai: lấy cả bảng", en: "false: whole table" }, tone: warm }
+  - id: mart
+    shape: grid
+    mono: true
+    label: marts.fct_orders
+    head: [order_id, status]
+    cells: [["1", "paid"], ["2", "paid"], ["3", "paid"], ["4", "pending"]]
 rows:
   - [raw]
-  - [first, later]
-  - [tbl]
-  - [key]
+  - [mark]
+  - [mart]
 edges:
-  - { from: raw, to: first }
-  - { from: raw, to: later }
-  - { from: first, to: tbl }
-  - { from: later, to: tbl }
+  - { from: raw, to: mark }
+  - { from: mark, to: mart }
 steps:
-  - say: { vi: "Lần đầu: model chưa có, cả câu được dựng thành bảng.", en: "First run: the model does not exist, so the whole query becomes a table." }
+  - say: { vi: "Lần đầu: model chưa có, cả bốn đơn được dựng.", en: "First run: no model yet, all four orders are built." }
     alt: { vi: "Vì model chưa tồn tại nên is_incremental() sai, khối lọc bị bỏ qua và cả bốn đơn được dựng thành bảng.", en: "Because the model does not exist yet, is_incremental() is false, the filter block is skipped and all four orders are built into the table." }
+  - say: { vi: "Lần sau: chỉ hai dòng sau mức 01:00, đơn 2 được thay.", en: "Later run: only the two rows after the 01:00 mark, order 2 replaced." }
+    alt: { vi: "Mức đọc từ {{ this }} là 31/10 01:00, nên chỉ đơn 2 (đổi sang refunded) và đơn 5 (đặt ngày 29/10, đồng bộ 06:00) qua bộ lọc; unique_key xóa bản cũ của đơn 2 trước khi thêm bản mới, nên bảng có năm dòng.", en: "The mark from {{ this }} is 31/10 01:00, so only order 2 (now refunded) and order 5 (ordered 29/10, synced 06:00) pass; unique_key deletes order 2's old row before inserting the new one, leaving five rows." }
     set:
-      first: { tone: live }
-  - say: { vi: "Lần sau: chỉ hai dòng mới, đơn 2 được thay.", en: "Later run: only two new rows, order 2 replaced." }
-    alt: { vi: "Lần sau, bộ lọc chỉ giữ hai dòng về sau mức đã nạp, và unique_key xóa bản cũ của đơn 2 trước khi thêm bản mới, nên bảng có năm dòng chứ không phải sáu.", en: "On the later run the filter keeps only the two rows that arrived after the loaded mark, and unique_key deletes order 2's old version before inserting the new one, so the table has five rows, not six." }
-    set:
-      first: { tone: ghost }
-      later: { tone: new }
-      tbl: { sub: { vi: "5 dòng", en: "5 rows" }, tone: new }
-      key: { tone: new }
+      raw:
+        cells: [["1", "paid", "30/10 23:00"], ["2", "refunded", "31/10 06:00"], ["3", "paid", "30/10 23:00"], ["4", "pending", "31/10 01:00"], ["5", "paid", "31/10 06:00"]]
+        rowTone: [null, new, null, null, new]
+      mark: { label: { vi: "mức: 31/10 01:00", en: "mark: 31/10 01:00" }, sub: { vi: "đọc từ {{ this }}", en: "from {{ this }}" }, tone: live }
+      mart:
+        cells: [["1", "paid"], ["2", "paid"], ["2", "refunded"], ["3", "paid"], ["4", "pending"], ["5", "paid"]]
+        rowTone: [null, dead, new, null, null, new]
+        strike: [1]

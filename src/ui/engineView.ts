@@ -68,6 +68,8 @@ const trees = {} as Record<EngineId, Tree>;
 const modNames = {} as Record<EngineId, ModuleName[]>;
 const NAME: Record<Exclude<EngineId, 'design' | 'stack'>, string> = { postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB' };
 /** v28 R4 (L420): product names stay as they are; the design track's name is translated. */
+/** v46 (L839a): a lab whose learner types Jinja (a model step, or a ref()/source() Solution: dbt.ts isDbtLab, inlined) shows the dbt notice. */
+const dbtLab = (l: EngineLesson): boolean => !!l.lab?.steps.some((s) => s.model || /\{\{\s*(ref|source)\s*\(/.test(s.solution));
 const nameOf = (e: EngineId): string => (e === 'design' || e === 'stack' ? et(`name.${e}`) : NAME[e]);
 /** L280: one generic picture per engine (no logos): a table grid, a JSON document, a key and its values. */
 const ENGINE_ICON = { postgres: 'engRelational', mongodb: 'engDocument', dynamodb: 'engKeyValue', design: 'engDesign', stack: 'engStack' } as const satisfies Record<EngineId, Icons.IconName>;
@@ -763,6 +765,8 @@ function labView(l: EngineLesson, v: Visit): HTMLElement {
       h('p', { class: 'm-0' }, !live ? et('lab.noRunner') : l.engine === 'mongodb' ? et('lab.dataMongo') : l.engine === 'dynamodb' ? et('lab.dataDynamo') : l.lab!.setup ? et('lab.dataPg') : et('lab.data')),
       // v43 (L726): the PostGIS tarball (~20 MB) is not precached; say so before the first Run
       live && onPg(l.engine) && /\bpostgis\b/i.test(l.lab!.setup ?? '') ? h('p', { class: 'm-0 text-muted', 'data-postgis-note': '' }, et('lab.postgisOnce')) : null,
+      // v46 S-13 (L835): the dbt notice again where the Jinja is typed
+      dbtLab(l) ? h('p', { class: 'm-0 text-muted', 'data-stack-sim-lab': '' }, et('stack.sim')) : null,
       live && l.runtime !== 'docs' ? tablesPanel(l, v) : null),
     cap && cc ? cap.capChecks(cc) : null,
     h('ol', { class: 'm-0 list-none space-y-4 p-0' }, ...steps.map((s, i) => {
@@ -777,7 +781,8 @@ function labView(l: EngineLesson, v: Visit): HTMLElement {
       const ed = live && v.opened.has(i);
       // v23 CAP (L257): a capstone's current step (the first not passed) gets the accent ring and says so in words.
       return h('li', { class: cls.cx(cls.CARD, 'flex flex-col gap-3 p-4 max-sm:p-3', i === cur && 'ring-2 ring-accent'), 'data-step': key, 'aria-current': i === cur ? 'step' : false },
-        h('div', { class: 'flex items-start gap-3' },
+        // v46 S-18 (L835): at 320 the task text goes under the disc at full width
+        h('div', { class: 'flex items-start gap-3 max-[400px]:flex-col max-[400px]:gap-2' },
           leadDisc(passed ? 'done' : i === cur ? 'current' : 'todo', String(i + 1)),
           h('div', { class: 'min-w-0 flex-1 flex flex-col gap-1' },
             h('h3', { class: 'm-0 text-caption font-bold tracking-wider text-muted uppercase' }, et('lab.step', { i: i + 1, n: steps.length }),
@@ -898,7 +903,7 @@ function lessonBody(l: EngineLesson): HTMLElement {
         h('a', { href: d.engineHash(l.engine, l.level), class: 'text-muted' }, module.name[lang()]),
         isDone ? h('span', { class: cls.cx(cls.PILL, cls.DONE_PILL) }, d.icon('check', 'size-4'), et('done')) : null),
       l.runtime === 'docs' ? h('p', { class: 'm-0 text-body-sm text-muted', 'data-runtime': 'docs' }, et(docsNoteKey(l) as EngineKey)) : null,
-      l.lab?.steps.some((s) => s.model) ? h('p', { class: 'm-0 text-body-sm text-muted', 'data-stack-sim': '' }, et('stack.sim')) : null, // v45 (L743)
+      dbtLab(l) ? h('p', { class: 'm-0 text-body-sm text-muted', 'data-stack-sim': '' }, et('stack.sim')) : null, // v45 (L743)
       req.length ? h('p', { class: 'm-0 flex flex-wrap items-center gap-2 text-body-sm' }, h('span', { class: 'text-muted' }, `${et('requires')}:`),
         ...req.map((x) => h('a', { href: lessonHash(x), class: cls.cx(cls.PILL, 'min-h-6 bg-code text-ink no-underline hover:bg-accent-soft') }, x.title[lang()], tick(ok.has(x.id))))) : null),
     ...secs((id) => id === 'open'),

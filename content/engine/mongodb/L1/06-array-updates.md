@@ -75,8 +75,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: 'Nghe hợp lý vì bạn đưa vào hai nhãn, nhưng `$push` thêm đúng một phần tử, và ở đây phần tử đó là cả mảng. Muốn thêm từng phần tử thì viết `{ $push: { tags: { $each: ["early", "reviewer"] } } }`.'
-      en: 'It sounds right because you passed two tags, but `$push` appends exactly one element, and here that element is the whole array. To add each element, write `{ $push: { tags: { $each: ["early", "reviewer"] } } }`.'
+      vi: 'Nghe hợp lý vì bạn đưa vào hai nhãn, nhưng `$push` thêm đúng một phần tử, và ở đây phần tử đó là cả mảng, nên nó thành một mảng con nằm sau `"vip"`. `$push` cũng không thay mảng cũ, nên `"vip"` vẫn còn. Muốn thêm từng phần tử thì viết `{ $push: { tags: { $each: ["early", "reviewer"] } } }`.'
+      en: 'It sounds right because you passed two tags, but `$push` appends exactly one element, and here that element is the whole array, so it becomes a nested array after `"vip"`. `$push` does not replace the old array either, so `"vip"` stays. To add each element, write `{ $push: { tags: { $each: ["early", "reviewer"] } } }`.'
   - q:
       vi: 'Hai nhân viên cùng lúc chạy `$push` một nhãn khác nhau vào `tags` của cùng một khách. Kết quả là gì?'
       en: 'Two staff members run `$push` with different tags into the `tags` of the same customer at the same time. What is the result?'
@@ -90,8 +90,8 @@ quiz:
     answer: 0
     trap: 1
     why:
-      vi: 'Nghe hợp lý vì ghi đồng thời hay làm mất dữ liệu, nhưng điều đó xảy ra khi ứng dụng đọc mảng ra, sửa rồi ghi đè cả mảng. `$push` sửa mảng ngay trong máy chủ, mỗi lệnh nguyên tử, nên không lệnh nào xóa phần tử của lệnh kia.'
-      en: 'It sounds right because concurrent writes often lose data, but that happens when the application reads the array, changes it and writes the whole array back. `$push` changes the array inside the server, each command is atomic, so neither removes the other''s element.'
+      vi: 'Nghe hợp lý vì ghi đồng thời hay làm mất dữ liệu, nhưng mất nhãn chỉ xảy ra khi ứng dụng đọc mảng ra, sửa rồi ghi đè cả mảng: người ghi sau đè lên mảng cũ chưa có nhãn của người kia. `$push` sửa mảng ngay trong máy chủ và mỗi lệnh là nguyên tử (atomic: chạy trọn vẹn, không xen giữa), nên hai lệnh chạy lần lượt, lệnh sau thêm vào mảng đã có nhãn của lệnh trước. Lệnh thứ hai cũng không bị từ chối: hai lệnh không xung đột, chỉ phải chờ nhau.'
+      en: 'It sounds right because concurrent writes often lose data, but a tag is lost only when the application reads the array, changes it and writes the whole array back: the later writer overwrites with an old array that lacks the other tag. `$push` changes the array inside the server and each command is atomic (it runs whole, nothing slips in between), so the two run one after the other and the later one adds to an array that already holds the earlier tag. The second command is not refused either: the two do not conflict, they only wait for each other.'
 ---
 ## Mở bài
 
@@ -168,7 +168,7 @@ db.customers.updateOne({ _id: "c4" }, { $push: { tags: { $each: ["early", "revie
 db.customers.updateOne({ _id: "c1" }, { $push: { tags: "early" }, $pull: { tags: "vip" } })
 ```
 
-Tách thành hai lệnh. Dùng `$push` cho mảng kiểu tập hợp cũng dễ sinh nhãn trùng; khi đó chọn `$addToSet`.
+Cả hai toán tử cùng sửa trường `tags`, nên MongoDB không biết áp cái nào trước và từ chối cả lệnh. Tách thành hai lệnh. Dùng `$push` cho mảng kiểu tập hợp cũng dễ sinh nhãn trùng; khi đó chọn `$addToSet`.
 
 ## Thực hành
 
@@ -259,7 +259,7 @@ db.customers.updateOne({ _id: "c4" }, { $push: { tags: { $each: ["early", "revie
 db.customers.updateOne({ _id: "c1" }, { $push: { tags: "early" }, $pull: { tags: "vip" } })
 ```
 
-Split it into two commands. Using `$push` on a set-like array also breeds duplicate tags; pick `$addToSet` there.
+Both operators change the `tags` field, so MongoDB cannot tell which to apply first and refuses the whole command. Split it into two commands. Using `$push` on a set-like array also breeds duplicate tags; pick `$addToSet` there.
 
 ## Practice
 

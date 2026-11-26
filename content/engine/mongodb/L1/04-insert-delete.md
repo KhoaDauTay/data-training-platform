@@ -74,8 +74,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: 'Nghe hợp lý vì không có điều kiện nào được ghi, nhưng filter rỗng `{}` nghĩa là "mọi tài liệu", như `find({})` trả cả collection. Trước khi xóa, chạy `find` với cùng filter để xem trước.'
-      en: 'It sounds right because no condition is written, but the empty filter `{}` means "every document", just as `find({})` returns the whole collection. Before deleting, run `find` with the same filter to preview.'
+      vi: 'Nghe hợp lý vì không có điều kiện nào được ghi, nhưng filter rỗng `{}` nghĩa là "mọi tài liệu", như `find({})` trả cả collection, nên cả sáu sản phẩm bị xóa. MongoDB cũng không từ chối lệnh thiếu điều kiện: `deleteMany({})` là cách hợp lệ để làm rỗng collection. Trước khi xóa, chạy `find` với cùng filter để xem trước.'
+      en: 'It sounds right because no condition is written, but the empty filter `{}` means "every document", just as `find({})` returns the whole collection, so all six products are deleted. MongoDB does not refuse a delete with no condition either: `deleteMany({})` is a valid way to empty a collection. Before deleting, run `find` with the same filter to preview.'
   - q:
       vi: '`insertMany` ba tài liệu theo mặc định, tài liệu thứ hai trùng `_id`. Kết quả là gì?'
       en: 'A default `insertMany` of three documents, where the second one has a duplicate `_id`. What is the result?'
@@ -89,8 +89,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: 'Nghe hợp lý vì một lệnh hay được coi là một khối, nhưng `insertMany` không phải transaction: mỗi tài liệu là một lần ghi riêng. Mặc định `ordered: true` dừng ở lỗi đầu tiên; với `ordered: false`, MongoDB thêm tiếp các tài liệu còn lại.'
-      en: 'It sounds right because one command is often seen as one unit, but `insertMany` is not a transaction: each document is its own write. The default `ordered: true` stops at the first error; with `ordered: false`, MongoDB goes on with the remaining documents.'
+      vi: 'Nghe hợp lý vì một lệnh hay được coi là một khối, nhưng `insertMany` không phải transaction: mỗi tài liệu là một lần ghi riêng, nên tài liệu thứ nhất đã được ghi thì vẫn ở lại. Mặc định `ordered: true` dừng ở lỗi đầu tiên, nên tài liệu thứ ba không được thử. Chỉ khi ghi rõ `ordered: false`, MongoDB mới bỏ qua tài liệu trùng và thêm tiếp tài liệu thứ ba.'
+      en: 'It sounds right because one command is often seen as one unit, but `insertMany` is not a transaction: each document is its own write, so the first document, already written, stays. The default `ordered: true` stops at the first error, so the third document is never tried. Only when you write `ordered: false` does MongoDB skip the duplicate and go on to insert the third.'
 ---
 ## Mở bài
 

@@ -165,12 +165,16 @@ db.products.updateOne({ _id: "p10" }, { $set: { name: "Sesame candy", price: 200
 db.products.updateOne({ _id: "p10" }, { $set: { name: "Sesame candy", price: 20000 } }, { upsert: true })
 ```
 
+Bản sai không báo lỗi, chỉ trả `matchedCount` bằng 0, nên dễ tưởng đã ghi xong. Bản sửa tạo `p10` với `_id` lấy từ filter, rồi áp `$set` lên tài liệu mới.
+
 Hai toán tử trên cùng một trường:
 
 ```js
 // ERROR mingo
 db.products.updateOne({ _id: "p2" }, { $set: { price: 115000 }, $inc: { price: 1000 } })
 ```
+
+`$set` và `$inc` cùng muốn đổi `price`, và thứ tự quyết định kết quả: đặt rồi cộng ra 116000, cộng rồi đặt ra 115000. MongoDB không chọn hộ nên từ chối cả lệnh (MongoDB thật báo xung đột đường dẫn trường). Gộp thành một toán tử: đặt thẳng `price` bằng giá cuối cùng.
 
 ## Thực hành
 
@@ -257,12 +261,16 @@ db.products.updateOne({ _id: "p10" }, { $set: { name: "Sesame candy", price: 200
 db.products.updateOne({ _id: "p10" }, { $set: { name: "Sesame candy", price: 20000 } }, { upsert: true })
 ```
 
+The wrong version raises no error and only returns `matchedCount` 0, so it is easy to think the write happened. The fix creates `p10` with the `_id` taken from the filter, then applies `$set` to the new document.
+
 Two operators on the same field:
 
 ```js
 // ERROR mingo
 db.products.updateOne({ _id: "p2" }, { $set: { price: 115000 }, $inc: { price: 1000 } })
 ```
+
+`$set` and `$inc` both want to change `price`, and the order decides the result: set then add gives 116000, add then set gives 115000. MongoDB does not pick one, so it refuses the whole command (a real MongoDB reports a field path conflict). Use one operator: set `price` straight to the final value.
 
 ## Practice
 

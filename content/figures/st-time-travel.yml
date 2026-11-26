@@ -1,0 +1,29 @@
+# ST-16 (tools/v43/de-tools-plan.md §4): a mistaken DELETE and a time-travel read, 2 steps. Lesson: e-st-l3-03 (Ý chính).
+# Data = the lesson's story: the pending orders 1003 and 1004 deleted at 10:05; AT(OFFSET => -300) reads 10:00.
+# Retention 1 day default (90 days Enterprise), Fail-safe 7 days (Snowflake only). Source:
+# https://docs.snowflake.com/en/user-guide/data-time-travel, https://docs.snowflake.com/en/user-guide/data-failsafe
+title: { vi: "Đọc lại bảng năm phút trước", en: "Reading the table five minutes ago" }
+caption:
+  vi: "Câu DELETE lúc 10:05 xóa hai đơn đang chờ; AT(OFFSET => -300) đọc bảng như lúc 10:00, khi còn trong thời gian lưu."
+  en: "The DELETE at 10:05 removes two pending orders; AT(OFFSET => -300) reads the table as it was at 10:00, while still inside retention."
+alt:
+  vi: "Time travel giữ các phiên bản cũ của bảng trong thời gian lưu, nên một câu xóa nhầm vẫn đọc lại được trạng thái trước nó. Kết quả: đọc bảng lúc 10:00 thấy lại hai đơn 1003 và 1004."
+  en: "Time travel keeps old versions of a table for the retention period, so a mistaken delete can still be read back to the state before it. Result: reading the table at 10:00 shows orders 1003 and 1004 again."
+nodes:
+  - { id: before, shape: table, mono: true, label: "10:00", sub: { vi: "4 đơn", en: "4 orders" }, tone: new }
+  - { id: after, shape: table, mono: true, label: "10:05", sub: { vi: "2 đơn", en: "2 orders" }, tone: dead }
+  - { id: read, mono: true, label: "AT(OFFSET => -300)", sub: { vi: "đọc bản 10:00", en: "reads 10:00" }, tone: live }
+  - { id: keep, shape: note, label: { vi: "lưu 1 ngày, tới 90 (Enterprise)", en: "kept 1 day, up to 90 (Enterprise)" } }
+rows:
+  - [before, after]
+  - [read]
+  - [keep]
+edges:
+  - { id: del, from: before, to: after, label: DELETE }
+  - { id: back, from: before, to: read }
+steps:
+  - say: { vi: "Câu DELETE nhầm xóa hai đơn đang chờ.", en: "The mistaken DELETE removes two pending orders." }
+    alt: { vi: "Lúc 10:05 bảng chỉ còn hai đơn đã trả, vì câu DELETE thiếu điều kiện đã xóa cả hai đơn đang chờ.", en: "At 10:05 the table holds only the two paid orders, because the DELETE with a missing condition removed both pending ones." }
+    show: [before, after, keep]
+  - say: { vi: "Đọc bảng tại 10:00: hai đơn trở lại.", en: "Read the table at 10:00: the two orders are back." }
+    alt: { vi: "AT(OFFSET => -300) đọc phiên bản năm phút trước, vẫn trong thời gian lưu một ngày, nên thấy lại cả bốn đơn.", en: "AT(OFFSET => -300) reads the version from five minutes earlier, still inside the one-day retention, so all four orders are back." }

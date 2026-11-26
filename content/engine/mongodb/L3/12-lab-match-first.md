@@ -82,8 +82,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì trình tối ưu có dời `$match`, nhưng trang tối ưu pipeline chỉ mô tả việc dời qua `$sort`, `$project`, `$addFields`; không có gì hứa dời qua `$unwind`. Tự đặt `$match` đầu tiên rồi kiểm bằng `explain`."
-      en: "It sounds right because the optimizer does move `$match`, but the pipeline optimization page only describes moves across `$sort`, `$project`, `$addFields`; nothing promises a move across `$unwind`. Put `$match` first yourself and check with `explain`."
+      vi: "Trình tối ưu có dời `$match`, nhưng trang tối ưu pipeline chỉ mô tả việc dời qua `$sort`, `$project`, `$addFields`; không có gì hứa dời qua `$unwind`. Khi đó `$unwind` tách mọi đơn, kể cả đơn hủy, và `$match` đứng thứ hai nên không gộp vào `$cursor` để dùng index. Kết quả thì không thiếu đơn nào: `$unwind` giữ mọi dòng hàng, câu hỏi cũng nói kết quả đúng. Tự đặt `$match` đầu tiên rồi kiểm bằng `explain`."
+      en: "The optimizer does move `$match`, but the pipeline optimization page only describes moves across `$sort`, `$project`, `$addFields`; nothing promises a move across `$unwind`. Then `$unwind` splits every order, cancelled ones included, and `$match`, now second, is not absorbed into `$cursor` to use an index. No order is missing from the result: `$unwind` keeps every line, and the question says the result is right. Put `$match` first yourself and check with `explain`."
   - q:
       vi: "Bạn muốn tổng số lượng của mã `A`. Pipeline `$match: { \"lines.sku\": \"A\" }`, `$unwind`, `$group` cộng `lines.qty` ra 10 thay vì 8. Vì sao?"
       en: "You want the total quantity of item `A`. The pipeline `$match: { \"lines.sku\": \"A\" }`, `$unwind`, `$group` summing `lines.qty` gives 10 instead of 8. Why?"
@@ -93,8 +93,8 @@ quiz:
       - { vi: "`$group` cộng cả đơn bị hủy", en: "`$group` also adds cancelled orders" }
     answer: 0
     why:
-      vi: "`$match` trên mảng chọn tài liệu, không cắt mảng. Cần thêm một `$match` sau `$unwind` để chỉ giữ dòng `A`; `$match` đầu vẫn có ích vì nó bỏ sớm các đơn không có `A`."
-      en: "A `$match` on an array selects documents, it does not trim the array. Add another `$match` after `$unwind` to keep only the `A` lines; the first `$match` still helps because it drops orders without `A` early."
+      vi: "`$match` trên mảng chọn tài liệu, không cắt mảng: đơn 1 và đơn 4 có `A` nên được giữ cả, kèm dòng `B` (1) và dòng `C` (1), thành 8 + 2 = 10. `$unwind` không nhân đôi gì, mỗi phần tử mảng ra đúng một tài liệu. Đơn hủy số 2 (5 cái `A`) có mặt trong cả 10 lẫn 8, nên nó không tạo ra chênh lệch. Cần thêm một `$match` sau `$unwind` để chỉ giữ dòng `A`; `$match` đầu vẫn có ích vì bỏ sớm các đơn không có `A`."
+      en: "A `$match` on an array selects documents, it does not trim the array: orders 1 and 4 contain `A`, so they are kept whole, with their `B` line (1) and `C` line (1), making 8 + 2 = 10. `$unwind` duplicates nothing, each array element yields exactly one document. Cancelled order 2 (5 of `A`) is in both the 10 and the 8, so it does not cause the gap. Add another `$match` after `$unwind` to keep only the `A` lines; the first `$match` still helps because it drops orders without `A` early."
 ---
 ## Mở bài
 

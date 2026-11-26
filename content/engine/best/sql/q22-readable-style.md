@@ -50,8 +50,8 @@ quiz:
       - { vi: "Postgres tự đánh số lại", en: "Postgres renumbers it for you" }
     answer: 1
     why:
-      vi: "`GROUP BY 1` nghĩa là \"cột đầu tiên của `SELECT`\". Cột đầu đổi thì nhóm đổi theo. Viết `GROUP BY s.city` thì nghĩa không phụ thuộc vị trí."
-      en: "`GROUP BY 1` means \"the first column of the `SELECT`\". When the first column changes, so do the groups. `GROUP BY s.city` does not depend on position."
+      vi: "`GROUP BY 1` nghĩa là \"cột đầu tiên của `SELECT`\". Postgres không tự đánh số lại: cột đầu giờ là `s.name`, nên nhóm đổi theo, hoặc câu báo lỗi vì `s.city` không còn trong `GROUP BY`. Viết `GROUP BY s.city` thì nghĩa không phụ thuộc vị trí."
+      en: "`GROUP BY 1` means \"the first column of the `SELECT`\". Postgres does not renumber it: the first column is now `s.name`, so the groups change, or the query fails because `s.city` is no longer in `GROUP BY`. `GROUP BY s.city` does not depend on position."
 ---
 
 ## Ý chính

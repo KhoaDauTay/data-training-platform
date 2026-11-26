@@ -39,8 +39,8 @@ quiz:
       - { vi: "Truy vấn lỗi giữa chừng", en: "The query failed half-way" }
     answer: 1
     why:
-      vi: "`totalKeysExamined: 0` là không đọc khóa index nào; số tài liệu đã xét gấp gần 6 lần số trả về, đúng dấu hiệu của `COLLSCAN`. Ví dụ này lấy từ docs; sau khi có index, ba con số bằng nhau."
-      en: "`totalKeysExamined: 0` means no index key was read; documents examined are almost 6 times those returned, the mark of a `COLLSCAN`. The example comes from the docs; with an index, the three numbers become equal."
+      vi: "`totalKeysExamined: 0` là không đọc khóa index nào; 21349 / 3809 ≈ 5,6: số tài liệu đã xét gấp gần 6 lần số trả về, đúng dấu hiệu của `COLLSCAN`. Ví dụ này lấy từ docs; sau khi có index, ba con số bằng nhau."
+      en: "`totalKeysExamined: 0` means no index key was read; 21349 / 3809 ≈ 5.6, so documents examined are almost 6 times those returned, the mark of a `COLLSCAN`. The example comes from the docs; with an index, the three numbers become equal."
 ---
 
 ## Ý chính

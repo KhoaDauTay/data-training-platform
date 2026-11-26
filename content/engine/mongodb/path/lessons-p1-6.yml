@@ -250,8 +250,8 @@
     en: "① the group key is the first day of each order's month. ② `n` counts orders. ③ sorted by month. Result: 6 months, 2026-05 to 2026-10."
   mistake:
     query: 'db.orders.aggregate([{ $group: { _id: "$order_date", n: { $sum: 1 } } }, { $sort: { _id: 1 } }])'
-    vi: "Gộp theo chính `order_date`: mỗi ngày là một nhóm, bạn có gần 180 dòng thay vì 6 tháng."
-    en: "Grouping on `order_date` itself: each day is a group, so you get close to 180 rows instead of 6 months."
+    vi: "Gộp theo chính `order_date`: mỗi ngày là một nhóm, nên bạn có gần 180 tài liệu (một cho mỗi ngày) thay vì 6 tháng. Cắt ngày về đầu tháng rồi mới gộp."
+    en: "Grouping on `order_date` itself: each day is a group, so you get close to 180 documents (one per day) instead of 6 months. Cut each date to its month start, then group."
   try:
     task:
       vi: "Số đánh giá (`n`) mỗi tháng trong `reviews` theo `created_at`; `_id` là ngày đầu tháng, sắp từ tháng sớm nhất."
@@ -337,12 +337,12 @@
     en: "`$lookup` can join a collection to itself: `from` is the same collection. In `staff`, `manager_id` points to another staff member's `_id`. Going `manager_id → _id` gives the manager; going `_id → manager_id` gives the reports."
   example: 'db.staff.aggregate([{ $lookup: { from: "staff", localField: "manager_id", foreignField: "_id", as: "manager" } }, { $unwind: "$manager" }, { $project: { _id: 0, name: 1, manager: "$manager.name" } }])'
   explain:
-    vi: "① mỗi nhân viên tìm người có `_id` bằng `manager_id` của mình. ② `$unwind`: mảng một phần tử thành object (CEO không có quản lý nên rơi ra). ③ tên nhân viên và tên quản lý. Kết quả: 19 dòng."
-    en: "① each staff member finds the person whose `_id` equals their `manager_id`. ② `$unwind`: the one-item array becomes an object (the CEO has no manager and drops out). ③ the staff name and the manager name. Result: 19 rows."
+    vi: "① mỗi nhân viên tìm người có `_id` bằng `manager_id` của mình. ② `$unwind`: mảng một phần tử thành object (CEO không có quản lý nên rơi ra). ③ tên nhân viên và tên quản lý. Kết quả: 19 tài liệu."
+    en: "① each staff member finds the person whose `_id` equals their `manager_id`. ② `$unwind`: the one-item array becomes an object (the CEO has no manager and drops out). ③ the staff name and the manager name. Result: 19 documents."
   mistake:
     query: 'db.staff.aggregate([{ $lookup: { from: "staff", localField: "_id", foreignField: "manager_id", as: "manager" } }, { $unwind: "$manager" }, { $project: { _id: 0, name: 1, manager: "$manager.name" } }])'
-    vi: "Đi ngược chiều: bạn nhận người dưới quyền của mỗi người, đặt nhầm vào trường `manager`."
-    en: "The wrong direction: you get each person's reports, mislabelled as `manager`."
+    vi: "Đi ngược chiều (`_id → manager_id`): mỗi nhân viên nhận những người dưới quyền mình, đặt nhầm vào trường `manager`, và người không có ai dưới quyền bị `$unwind` bỏ. Đi `manager_id → _id` để ra quản lý."
+    en: "The wrong direction (`_id → manager_id`): each staff member gets their own reports, mislabelled as `manager`, and anyone with no reports is dropped by `$unwind`. Go `manager_id → _id` to get the manager."
   try:
     task:
       vi: "Nhân viên của cửa hàng 3 trong `staff`: `name` và vai trò của quản lý trực tiếp (`manager_role`, từ `role` của người có `_id` bằng `manager_id`), không `_id`."
@@ -359,8 +359,8 @@
     en: "① the stationery products. ② `label`: the name, an opening bracket, the category, a closing bracket, for example `Gel pen (Stationery)`."
   mistake:
     query: 'db.products.aggregate([{ $match: { category: "Stationery" } }, { $project: { _id: 0, label: { $concat: ["name", " (", "category", ")"] } } }])'
-    vi: "Thiếu `$`: `\"name\"` là chữ cố định, nên mọi dòng đều là `name (category)`."
-    en: "Missing `$`: `\"name\"` is fixed text, so every row reads `name (category)`."
+    vi: "Thiếu `$`: `\"name\"` là chữ cố định chứ không phải giá trị của trường, nên `label` của mọi tài liệu đều là `name (category)`."
+    en: "Missing `$`: `\"name\"` is fixed text, not the field's value, so every document's `label` reads `name (category)`."
   try:
     task:
       vi: "Mỗi cửa hàng trong `stores`: `code` là 3 ký tự đầu của `name` viết hoa (ví dụ `HAI`), không `_id`."

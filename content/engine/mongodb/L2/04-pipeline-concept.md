@@ -33,8 +33,8 @@ quiz:
         en: The number of orders per store, all statuses
     answer: 0
     why:
-      vi: 'Sau `$group`, mỗi tài liệu chỉ còn `_id` và `n`. Không còn trường `status` nên `$match` loại hết. Muốn đếm đơn đã thanh toán thì `$match` phải đứng trước `$group`.'
-      en: 'After `$group`, each document only has `_id` and `n`. There is no `status` field left, so `$match` drops everything. To count paid orders, `$match` must come before `$group`.'
+      vi: 'Sau `$group`, mỗi tài liệu chỉ còn `_id` (mã cửa hàng) và `n`. Không còn trường `status`, nên `$match` không giữ tài liệu nào, và không có lỗi nào báo. Không ra "số đơn đã thanh toán", vì lúc đếm chưa có bộ lọc nào; cũng không ra "số đơn mọi trạng thái", vì `$match` phía sau vẫn chạy và loại hết các tài liệu đếm đó. Muốn đếm đơn đã thanh toán thì `$match` phải đứng trước `$group`.'
+      en: 'After `$group`, each document only has `_id` (the store code) and `n`. There is no `status` field left, so `$match` keeps no document, and no error is raised. It is not "paid orders per store", because nothing was filtered while counting; nor "orders of every status", because the `$match` after it still runs and drops those counted documents. To count paid orders, `$match` must come before `$group`.'
   - q:
       vi: Vì sao nên đặt `$match` ở đầu pipeline khi được?
       en: Why put `$match` at the start of a pipeline when you can?
@@ -48,8 +48,8 @@ quiz:
     answer: 0
     trap: 2
     why:
-      vi: "Nghe hợp lý vì bộ tối ưu của MongoDB có dời `$match` lên trước, nhưng chỉ khi an toàn: một `$match` trên trường do `$group` tạo ra thì không dời được. `$match` dùng được ở bất kỳ vị trí nào, nhưng đứng đầu thì nó lọc bớt dữ liệu sớm và có thể đọc qua index."
-      en: "It sounds right because MongoDB's optimizer does move `$match` earlier, but only when that is safe: a `$match` on a field created by `$group` cannot move. `$match` may appear anywhere, but at the start it trims data early and can read through an index."
+      vi: "Bộ tối ưu của MongoDB có dời `$match` lên trước, nhưng chỉ khi kết quả không đổi: một `$match` trên trường do `$group` tạo ra (như `n`) thì không dời được, nên không thể trông vào nó. `$match` cũng không bị giới hạn ở stage đầu: lọc theo `n` sau `$group` là hợp lệ. Đặt đầu là tốt vì các stage sau nhận ít tài liệu hơn, và chỉ `$match` đứng đầu mới đọc được qua index của collection."
+      en: "MongoDB's optimizer does move `$match` earlier, but only when the result stays the same: a `$match` on a field created by `$group` (such as `n`) cannot move, so you cannot rely on it. Nor is `$match` limited to the first stage: filtering on `n` after `$group` is valid. Putting it first helps because later stages receive fewer documents, and only a leading `$match` can read through the collection's index."
 ---
 ## Mở bài
 

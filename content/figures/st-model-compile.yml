@@ -1,23 +1,28 @@
 # ST-6 (tools/v43/de-tools-plan.md §4): a model file, the names it compiles to, the view it creates. Lesson: e-st-l2-01 (Ý chính).
 # The mapping is src/engine/stack/dbt.ts (source('s','t') → raw_s.t, ref('m') → <layer>.m); the lab's stg_orders.
-# Sources: https://docs.getdbt.com/reference/dbt-jinja-functions/source ; https://docs.getdbt.com/docs/build/materializations
+# v46 (S-10, L834): the two substitutions as Jinja → SQL pairs, so source() and ref() both show their compiled names.
+# Sources: https://docs.getdbt.com/reference/dbt-jinja-functions/source ; https://docs.getdbt.com/reference/dbt-jinja-functions/ref
 title: { vi: "Từ file model tới view", en: "From model file to view" }
 caption:
-  vi: "Bạn viết một câu SELECT có source(); công cụ thay source() bằng tên bảng raw và bọc câu thành CREATE VIEW."
-  en: "You write a SELECT with source(); the tool replaces source() with the raw table's name and wraps the query in CREATE VIEW."
+  vi: "Bạn viết một câu SELECT có source('shop', 'orders') hay ref('stg_orders'); công cụ thay mỗi lệnh gọi bằng tên bảng thật và bọc câu thành CREATE VIEW."
+  en: "You write a SELECT with source('shop', 'orders') or ref('stg_orders'); the tool replaces each call with the real table's name and wraps the query in CREATE VIEW."
 alt:
-  vi: "Một model chỉ là một câu SELECT, nên người viết không bao giờ gõ CREATE. Công cụ dịch source() thành tên bảng raw thật, rồi bọc câu đó thành view trong tầng staging. Kết quả: view staging.stg_orders đọc raw_shop.orders."
-  en: "A model is only a SELECT, so its author never types CREATE. The tool compiles source() into the real raw table's name, then wraps the query into a view in the staging layer. Result: the view staging.stg_orders reads raw_shop.orders."
+  vi: "Một model chỉ là một câu SELECT, nên người viết không bao giờ gõ CREATE. source() được dịch thành bảng raw, ref() thành model ở đúng tầng, rồi câu được bọc thành view. Kết quả: view staging.stg_orders đọc raw_shop.orders."
+  en: "A model is only a SELECT, so its author never types CREATE. source() compiles to the raw table and ref() to the model in its layer, then the query is wrapped into a view. Result: the view staging.stg_orders reads raw_shop.orders."
 nodes:
-  - { id: file, shape: doc, mono: true, label: stg_orders.sql, sub: "{{ source() }}" }
-  - { id: comp, label: { vi: "dịch Jinja", en: "compile Jinja" }, sub: "BoonData", tone: warm }
-  - { id: raw, shape: table, mono: true, label: raw_shop.orders, sub: { vi: "nguồn", en: "source" } }
+  - { id: file, shape: doc, mono: true, label: stg_orders.sql, sub: "SELECT … {{ }}" }
+  - id: map
+    shape: grid
+    mono: true
+    label: { vi: "dịch Jinja (BoonData)", en: "compile Jinja (BoonData)" }
+    head: [Jinja, SQL]
+    cells: [["source()", "raw_shop.orders"], ["ref()", "staging.stg_orders"]]
+    colTone: [null, live]
   - { id: view, mono: true, label: staging.stg_orders, sub: CREATE VIEW, tone: new }
 rows:
   - [file]
-  - [comp, raw]
+  - [map]
   - [view]
 edges:
-  - { from: file, to: comp }
-  - { from: raw, to: comp, link: true, dash: true }
-  - { from: comp, to: view }
+  - { from: file, to: map }
+  - { from: map, to: view }

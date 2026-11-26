@@ -210,8 +210,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: Nghe hợp lý vì trả về ít item hơn, nhưng FilterExpression chạy sau khi Query đã đọc. Capacity tính trên dữ liệu đã đọc (`ScannedCount`), không phải `Count`.
-      en: It sounds right because fewer items come back, but a FilterExpression runs after the Query has read the items. Capacity is charged on what was read (`ScannedCount`), not on `Count`.
+      vi: Nghe hợp lý vì trả về ít item hơn, nhưng FilterExpression chạy sau khi Query đã đọc cả 4 đơn của `C-02`. Capacity tính trên dữ liệu đã đọc (`ScannedCount` 4), không phải `Count` 3; bốn item nhỏ nằm trong một khối 4 KB, nên có lọc hay không vẫn là 1 khối × 0.5 = 0.5 RCU (read capacity unit, đơn vị đọc, đọc nhất quán cuối). Đơn `O-107` bị bỏ cũng không miễn phí, vì nó đã được đọc trước khi bị bỏ.
+      en: It sounds right because fewer items come back, but a FilterExpression runs after the Query has read all 4 orders of `C-02`. Capacity is charged on what was read (`ScannedCount` 4), not on `Count` 3; four small items fit in one 4 KB block, so with or without the filter it is 1 block × 0.5 = 0.5 RCU (read capacity unit, eventually consistent read). The dropped order `O-107` is not free either, because it was read before it was dropped.
   - q:
       vi: 'Bạn chuyển điều kiện `begins_with(orderId, :m)` từ `KeyConditionExpression` sang `FilterExpression` của cùng Query. Chuyện gì xảy ra?'
       en: 'You move the condition `begins_with(orderId, :m)` from the `KeyConditionExpression` to the `FilterExpression` of the same Query. What happens?'
@@ -225,8 +225,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: 'Nghe hợp lý vì trên `Scan` đó đúng là chuyện xảy ra, nhưng Query từ chối bộ lọc nhắc tới partition key hay sort key. Điều kiện trên sort key chỉ có một chỗ: `KeyConditionExpression`.'
-      en: 'It sounds right because that is what happens on a `Scan`, but a Query rejects a filter that mentions the partition key or the sort key. A sort key condition has one place only: the `KeyConditionExpression`.'
+      vi: 'Nghe hợp lý vì trên `Scan` đó đúng là chuyện xảy ra, nhưng Query từ chối bộ lọc nhắc tới partition key hay sort key. Request bị từ chối trước khi đọc, nên không có kết quả nào, kể cả kết quả rỗng. Điều kiện trên sort key chỉ có một chỗ: `KeyConditionExpression`.'
+      en: 'It sounds right because that is what happens on a `Scan`, but a Query rejects a filter that mentions the partition key or the sort key. The request is refused before any read, so there is no result at all, not even an empty one. A sort key condition has one place only: the `KeyConditionExpression`.'
 ---
 
 ## Mở bài
@@ -299,7 +299,7 @@ Lọc theo khách bằng `Scan`:
 {"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-02"}}}}
 ```
 
-`ScannedCount` của `Scan` là 120, của Query là 4. Engine tính `Scan` 1 RCU, Query 0.5 RCU: bảng chỉ có 120 item nhỏ nên chênh lệch còn nhỏ, nhưng `Scan` lớn dần theo cỡ bảng, còn Query chỉ theo cỡ item collection.
+`ScannedCount` của `Scan` là 120, của Query là 4. Engine đo `Scan` 1 RCU (read capacity unit, đơn vị đọc), Query 0.5 RCU. Luật của AWS: cộng cỡ các item đã đọc, làm tròn lên bội 4 KB, mỗi 4 KB là 1 RCU nhất quán mạnh, rồi chia đôi khi đọc nhất quán cuối. 120 item tổng chừng 7.8 KB, làm tròn lên 8 KB = 2, chia đôi = 1; 4 item của Query dưới 4 KB nên 1 ÷ 2 = 0.5. Bảng chỉ có 120 item nhỏ nên chênh lệch còn nhỏ, nhưng `Scan` lớn dần theo cỡ bảng, còn Query chỉ theo cỡ item collection.
 
 ## Thực hành
 
@@ -384,7 +384,7 @@ Filtering on the customer with a `Scan`:
 {"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-02"}}}}
 ```
 
-The `Scan` has a `ScannedCount` of 120, the Query 4. The engine charges the `Scan` 1 RCU and the Query 0.5 RCU: with only 120 small items the gap is still small, but a `Scan` grows with the table while a Query grows only with its item collection.
+The `Scan` has a `ScannedCount` of 120, the Query 4. The engine measures the `Scan` at 1 RCU (read capacity unit) and the Query at 0.5 RCU. The AWS rule: add up the size of the items read, round up to a multiple of 4 KB, count 1 strongly consistent RCU per 4 KB, then halve it for an eventually consistent read. The 120 items total roughly 7.8 KB, rounded up to 8 KB = 2, halved = 1; the Query's 4 items are under 4 KB, so 1 ÷ 2 = 0.5. With only 120 small items the gap is still small, but a `Scan` grows with the table while a Query grows only with its item collection.
 
 ## Practice
 

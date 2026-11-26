@@ -1,0 +1,27 @@
+# ST-12 (tools/v43/de-tools-plan.md §4): column lineage of amount_vnd from raw to the dashboard. Lesson: e-st-l2-07 (Ý chính).
+# Data = the lesson's demo_setup views. Node ids avoid the model names: tests/engineStack.test.ts finds st-dag by its ids.
+# Sources: https://docs.getdbt.com/docs/build/documentation, https://docs.getdbt.com/docs/build/exposures
+title: { vi: "Cột amount_vnd từ đâu ra", en: "Where amount_vnd came from" }
+caption:
+  vi: "Đọc ngược từ dashboard: revenue_by_tier cộng cột, fct_orders chép qua, staging bỏ dấu phẩy, ép số và bỏ đơn đã xóa, raw giữ chữ như nguồn gửi."
+  en: "Read upward from the dashboard: revenue_by_tier sums the column, fct_orders passes it through, staging strips commas, casts to a number and drops deleted orders, raw keeps the text as the source sent it."
+alt:
+  vi: "Lineage nối dashboard với bảng raw qua từng model, và câu SQL ở mỗi bước cho biết cột đã bị đổi thế nào. Kết quả: amount_vnd không tính đơn đã xóa, vì staging lọc _fivetran_deleted."
+  en: "Lineage links the dashboard to the raw table through each model, and the SQL at each step tells how the column was changed. Result: amount_vnd leaves deleted orders out, because staging filters _fivetran_deleted."
+nodes:
+  - { id: raw, shape: table, mono: true, label: raw_shop.orders, sub: { vi: "amount: chữ", en: "amount: text" } }
+  - { id: stg, mono: true, label: stg_orders, sub: { vi: "ép số, bỏ đơn xóa", en: "cast, drop deleted" }, tone: warm }
+  - { id: fct, mono: true, label: fct_orders, sub: { vi: "chép qua", en: "passed through" } }
+  - { id: rev, mono: true, label: revenue_by_tier, sub: { vi: "cộng: revenue_vnd", en: "sum: revenue_vnd" } }
+  - { id: dash, shape: doc, label: { vi: "Dashboard hạng", en: "Tier dashboard" }, sub: exposure, tone: live }
+rows:
+  - [raw]
+  - [stg]
+  - [fct]
+  - [rev]
+  - [dash]
+edges:
+  - { from: raw, to: stg }
+  - { from: stg, to: fct }
+  - { from: fct, to: rev }
+  - { from: rev, to: dash }

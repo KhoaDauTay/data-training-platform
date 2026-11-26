@@ -47,8 +47,8 @@ quiz:
       - { vi: "Không, vì `LIMIT` luôn chọn ngẫu nhiên", en: "No, because `LIMIT` always picks at random" }
     answer: 1
     why:
-      vi: "Postgres chỉ bảo đảm thứ tự theo đúng các cột trong `ORDER BY`. Dòng hòa nhau theo `order_date` có thể ra theo thứ tự khác khi kế hoạch đổi. Cột cuối là khóa thì thứ tự hoàn toàn xác định."
-      en: "Postgres only guarantees the order of the columns in `ORDER BY`. Rows tied on `order_date` can come out in another order when the plan changes. Ending with the key makes the order fully determined."
+      vi: "Có `ORDER BY` chưa đủ: Postgres chỉ bảo đảm thứ tự theo đúng các cột trong `ORDER BY`, và cả 5 đơn hòa nhau ở `order_date` 2026-10-31, nên khi kế hoạch thực thi đổi chúng có thể ra thứ tự khác (và đơn thứ 6 cùng ngày có thể chen vào). `LIMIT` không ngẫu nhiên, nó lấy N dòng đầu của thứ tự đã có. Thêm `id DESC` (mỗi đơn một `id`) thì thứ tự hoàn toàn xác định."
+      en: "An `ORDER BY` is not enough: Postgres only guarantees the order of the columns in `ORDER BY`, and all 5 orders tie on `order_date` 2026-10-31, so when the plan changes they can come out in another order (and a sixth order of that day can slip in). `LIMIT` is not random; it takes the first N rows of the order it is given. Adding `id DESC` (one `id` per order) makes the order fully determined."
 ---
 
 ## Ý chính

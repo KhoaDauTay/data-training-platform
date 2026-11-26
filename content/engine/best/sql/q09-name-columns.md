@@ -45,8 +45,8 @@ quiz:
       - { vi: "Truy vấn báo lỗi", en: "The query fails" }
     answer: 1
     why:
-      vi: "`*` được mở ra lúc chạy thành mọi cột hiện có. Bảng đổi thì kết quả đổi theo, và cột lớn không ai cần vẫn được đọc và gửi đi."
-      en: "`*` is expanded at run time into every column that exists. When the table changes the result changes with it, and a big column nobody needs is still read and sent."
+      vi: "`*` được mở ra lúc chạy thành mọi cột hiện có, nên câu không lỗi nhưng cũng không giữ nguyên: kết quả có thêm cột `jsonb` mới, và mỗi lần chạy đều đọc và gửi cột lớn không ai cần đó. Ghi tên cột thì bảng thêm cột không đổi gì."
+      en: "`*` is expanded at run time into every column that exists, so the query does not fail, but it does not stay the same either: the result gains the new `jsonb` column, and every run reads and sends that big column nobody needs. Naming the columns means a new column changes nothing."
 ---
 
 ## Ý chính

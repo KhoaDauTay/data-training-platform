@@ -66,8 +66,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: 'Nghe hợp lý vì các tài liệu được ghi lần lượt, nhưng `$$NOW` được lấy một lần cho cả lệnh và giống nhau với mọi tài liệu. Trong pipeline, `"$$NOW"` là biến, không phải chuỗi.'
-      en: 'It sounds right because the documents are written one after another, but `$$NOW` is taken once for the whole command and is the same for every document. In a pipeline, `"$$NOW"` is a variable, not a string.'
+      vi: 'Sáu đơn đúng là được ghi lần lượt, nhưng `$$NOW` được MongoDB lấy một lần khi lệnh bắt đầu và giữ nguyên cho mọi tài liệu, nên cả 6 đơn có cùng `checkedAt`. Không ra chuỗi `"$$NOW"`, vì update có dấu `[ ]` là dạng pipeline: giá trị là biểu thức, và `$$` mở đầu một biến. Chỉ update kiểu toán tử (không có `[ ]`) mới ghi nguyên chuỗi.'
+      en: 'The six orders are indeed written one after another, but MongoDB takes `$$NOW` once when the command starts and keeps it for every document, so all 6 orders get the same `checkedAt`. It is not the string `"$$NOW"`, because an update in `[ ]` is the pipeline form: values are expressions, and `$$` starts a variable. Only an operator-style update (no `[ ]`) stores the string as is.'
   - q:
       vi: Stage nào không dùng được trong update dạng pipeline?
       en: Which stage cannot be used in a pipeline-style update?
@@ -77,8 +77,8 @@ quiz:
       - { vi: '`$replaceWith`', en: '`$replaceWith`' }
     answer: 1
     why:
-      vi: 'Update dạng pipeline sửa từng tài liệu tại chỗ, nên chỉ nhận các stage đổi hình một tài liệu: `$set`/`$addFields`, `$unset`, `$project`, `$replaceRoot`/`$replaceWith`. `$group` gộp nhiều tài liệu thành một, không có chỗ trong một lần update.'
-      en: 'A pipeline update changes each document in place, so it only takes stages that reshape one document: `$set`/`$addFields`, `$unset`, `$project`, `$replaceRoot`/`$replaceWith`. `$group` merges many documents into one and has no place in an update.'
+      vi: 'Update dạng pipeline sửa từng tài liệu tại chỗ, nên chỉ nhận các stage đổi hình một tài liệu: `$set`/`$addFields`, `$unset`, `$project`, `$replaceRoot`/`$replaceWith`. `$unset` (bỏ trường) và `$replaceWith` (thay cả tài liệu) đều chỉ đụng một tài liệu nên được phép. `$group` gộp nhiều tài liệu thành một tài liệu mới, nên MongoDB không biết ghi kết quả vào tài liệu nào và từ chối lệnh.'
+      en: 'A pipeline update changes each document in place, so it only takes stages that reshape one document: `$set`/`$addFields`, `$unset`, `$project`, `$replaceRoot`/`$replaceWith`. `$unset` (drop fields) and `$replaceWith` (replace the whole document) each touch one document, so they are allowed. `$group` merges many documents into a new one, so MongoDB has no document to write the result to and refuses the command.'
 ---
 ## Mở bài
 

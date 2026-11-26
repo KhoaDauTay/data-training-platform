@@ -58,8 +58,8 @@ lab:
       expect: { WriteCapacityUnits: 6 }
       name: { vi: "Kèm sổ cái", en: "With a ledger line" }
       hint:
-        vi: 'Thêm câu thứ ba `INSERT INTO "Wallets" VALUE {…}`. Ba item, mỗi item dưới 1 KB, mỗi item 2 WCU.'
-        en: 'Add a third statement `INSERT INTO "Wallets" VALUE {…}`. Three items, each under 1 KB, 2 WCU each.'
+        vi: 'Thêm câu thứ ba `INSERT INTO "Wallets" VALUE {…}`. Ba item, mỗi item dưới 1 KB nên 2 WCU (write capacity unit, đơn vị ghi) mỗi item trong transaction.'
+        en: 'Add a third statement `INSERT INTO "Wallets" VALUE {…}`. Three items, each under 1 KB, so 2 WCU (write capacity unit) each inside a transaction.'
     - task:
         vi: 'Giờ chuyển 100000 từ ví `w2` (chỉ có 50000) sang ví `w3`, với cùng điều kiện trên câu trừ tiền. Bước này đạt khi DynamoDB hủy cả transaction.'
         en: 'Now move 100000 from wallet `w2` (it holds only 50000) to wallet `w3`, with the same condition on the debit. This step passes when DynamoDB cancels the whole transaction.'
@@ -84,8 +84,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: 'Nghe hợp lý là không ghi thì không tốn. Nhưng trang transaction của AWS ghi capacity vẫn bị tiêu khi transaction không thành công. Bộ máy trong trình duyệt không trả số cho lần hủy, nên trang này chỉ ghi một ước tính theo luật, có nhãn rõ.'
-      en: 'Nothing written sounds like nothing charged. But the AWS transaction page says capacity is still consumed when a transaction does not succeed. The in-browser engine reports no number for a cancellation, so this page shows only a rule-based estimate, clearly labelled.'
+      vi: 'Không ghi thì không tốn nghe hợp lý, nhưng trước khi hủy DynamoDB đã làm bước prepare trên cả hai ví `w2` và `w3` để kiểm điều kiện, và trang transaction của AWS ghi capacity vẫn bị tiêu khi transaction không thành công. Vì vậy cũng không chỉ câu có điều kiện sai bị tính: 2 item × 1 WCU (write capacity unit, đơn vị ghi, mỗi item dưới 1 KB) × 2 = 4 WCU, như lần thành công. Bộ máy trong trình duyệt không trả số cho lần hủy, nên trang này chỉ ghi một ước tính theo luật, có nhãn rõ.'
+      en: 'Nothing written sounds like nothing charged, but before cancelling DynamoDB already ran the prepare step on both wallets `w2` and `w3` to check the condition, and the AWS transaction page says capacity is still consumed when a transaction does not succeed. So it is not only the statement with the false condition that is charged: 2 items × 1 WCU (write capacity unit, each item under 1 KB) × 2 = 4 WCU, as for a success. The in-browser engine reports no number for a cancellation, so this page shows only a rule-based estimate, clearly labelled.'
   - q:
       vi: 'Vì sao điều kiện `AND amount >= 100000` nằm ở câu trừ tiền chứ không ở câu cộng tiền?'
       en: 'Why does the condition `AND amount >= 100000` sit on the debit statement and not on the credit?'
@@ -95,8 +95,8 @@ quiz:
       - { vi: "Vì câu cộng tiền chạy trước", en: "Because the credit statement runs first" }
     answer: 0
     why:
-      vi: 'Mỗi câu được có điều kiện riêng. Quy tắc nghiệp vụ "không âm tiền" chỉ liên quan ví bị trừ; khi nó sai, câu cộng tiền cũng không được ghi.'
-      en: 'Each statement may have its own condition. The business rule "no negative balance" only concerns the debited wallet; when it is false, the credit is not written either.'
+      vi: 'DynamoDB không giới hạn một điều kiện mỗi transaction: mỗi câu được có điều kiện riêng. Thứ tự câu cũng không quyết định gì, vì cả khối được kiểm rồi mới ghi cùng lúc. Lý do thật: cộng tiền không bao giờ làm số dư âm, chỉ ví bị trừ mới có thể xuống dưới 0, nên quy tắc "không âm tiền" đặt ở câu trừ; khi nó sai, câu cộng tiền cũng không được ghi.'
+      en: 'DynamoDB does not limit a transaction to one condition: each statement may have its own. Statement order decides nothing either, since the whole block is checked and then written together. The real reason: a credit never makes a balance negative, only the debited wallet can drop below 0, so the "no negative balance" rule goes on the debit; when it is false, the credit is not written either.'
 ---
 ## Mở bài
 
@@ -177,7 +177,7 @@ Hai câu trên cùng một item:
 {"op": "ExecuteTransaction", "input": {"TransactStatements": [{"Statement": "UPDATE \"Wallets\" SET amount = amount - 100 WHERE pk = 'WALLET#w1' AND sk = 'BALANCE'"}, {"Statement": "UPDATE \"Wallets\" SET owner = 'An B' WHERE pk = 'WALLET#w1' AND sk = 'BALANCE'"}]}}
 ```
 
-Gộp hai thay đổi vào một câu `SET amount = …, owner = …`.
+Cả hai câu chỉ cùng item `WALLET#w1`, mà một transaction không được có hai câu trên cùng một item, nên DynamoDB từ chối trước khi ghi. Gộp hai thay đổi vào một câu `SET amount = …, owner = …`.
 
 ## Thực hành
 
@@ -271,7 +271,7 @@ Two statements on the same item:
 {"op": "ExecuteTransaction", "input": {"TransactStatements": [{"Statement": "UPDATE \"Wallets\" SET amount = amount - 100 WHERE pk = 'WALLET#w1' AND sk = 'BALANCE'"}, {"Statement": "UPDATE \"Wallets\" SET owner = 'An B' WHERE pk = 'WALLET#w1' AND sk = 'BALANCE'"}]}}
 ```
 
-Merge both changes into one statement `SET amount = …, owner = …`.
+Both statements point at the same item `WALLET#w1`, and a transaction may not hold two statements on one item, so DynamoDB refuses it before writing. Merge both changes into one statement `SET amount = …, owner = …`.
 
 ## Practice
 

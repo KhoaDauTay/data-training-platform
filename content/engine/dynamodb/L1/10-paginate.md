@@ -202,8 +202,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: 'Nghe hợp lý vì `LIMIT` của SQL đếm dòng trả về, nhưng `Limit` của DynamoDB dừng sau khi **đọc** đủ số item, rồi bộ lọc mới chạy. Hai đơn đầu của `C-03` không phải `NEW`, nên trang đầu trả 0 item và vẫn có `LastEvaluatedKey`.'
-      en: 'It sounds right because SQL `LIMIT` counts returned rows, but DynamoDB `Limit` stops after **reading** that many items, and only then the filter runs. The first two orders of `C-03` are not `NEW`, so the first page returns 0 items and still carries a `LastEvaluatedKey`.'
+      vi: 'Nghe hợp lý vì `LIMIT` của SQL đếm dòng trả về, nhưng `Limit` của DynamoDB dừng sau khi **đọc** đủ số item, rồi bộ lọc mới chạy. Hai đơn đầu của `C-03` không phải `NEW`, nên trang đầu trả 0 item và vẫn có `LastEvaluatedKey`. `Limit` cũng không bị bỏ qua: chính nó làm lần gọi dừng sau 2 item, nên đơn `NEW` thứ tư chưa được đọc tới.'
+      en: 'It sounds right because SQL `LIMIT` counts returned rows, but DynamoDB `Limit` stops after **reading** that many items, and only then the filter runs. The first two orders of `C-03` are not `NEW`, so the first page returns 0 items and still carries a `LastEvaluatedKey`. `Limit` is not ignored either: it is what stops the call after 2 items, so the fourth order, the `NEW` one, is never reached.'
   - q:
       vi: Khi nào vòng lặp phân trang nên dừng?
       en: When should a pagination loop stop?
@@ -217,8 +217,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: 'Nghe hợp lý vì trang ngắn trông như trang cuối, nhưng một trang có thể ngắn vì bộ lọc hoặc vì chạm 1 MB. Chỉ việc thiếu `LastEvaluatedKey` mới nói là đã hết.'
-      en: 'It sounds right because a short page looks like the last one, but a page can be short because of a filter or the 1 MB cap. Only a missing `LastEvaluatedKey` says you are done.'
+      vi: 'Nghe hợp lý vì trang ngắn trông như trang cuối, nhưng một trang có thể ngắn vì bộ lọc bỏ bớt item hoặc vì lần gọi chạm 1 MB. Trang 0 item cũng chưa chắc là hết: như ví dụ đơn `NEW`, bộ lọc có thể bỏ cả hai item đã đọc trong khi phía sau còn đơn. Chỉ khi phản hồi thiếu `LastEvaluatedKey` (khóa để đọc trang tiếp) thì DynamoDB mới nói là đã đọc hết.'
+      en: 'It sounds right because a short page looks like the last one, but a page can be short because the filter dropped items or the call hit the 1 MB cap. A page with 0 items is not proof either: as in the `NEW` orders example, the filter can drop both items read while more orders lie ahead. Only when the response lacks a `LastEvaluatedKey` (the key for reading the next page) has DynamoDB read everything.'
 ---
 ## Mở bài
 

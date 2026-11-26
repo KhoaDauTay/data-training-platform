@@ -53,8 +53,8 @@ quiz:
       - { vi: "Báo lỗi vì thiếu múi giờ", en: "An error, because the time zone is missing" }
     answer: 1
     why:
-      vi: "`::date` cắt theo múi giờ của phiên. 03:00 giờ Việt Nam là 20:00 UTC ngày hôm trước, nên khoản này rơi vào `2026-10-31`, tức tháng 10."
-      en: "`::date` cuts in the session's time zone. 03:00 in Vietnam is 20:00 UTC the day before, so this payment lands on `2026-10-31`, in October."
+      vi: "`::date` cắt theo múi giờ của phiên, không theo `+07` ghi trong giá trị. 03:00 giờ Việt Nam trừ 7 giờ là 20:00 UTC ngày hôm trước, nên khoản này rơi vào `2026-10-31`, tức tháng 10. Không có lỗi: thời điểm vẫn đúng, chỉ ngày bị đọc theo UTC."
+      en: "`::date` cuts in the session's time zone, not the `+07` written in the value. 03:00 in Vietnam minus 7 hours is 20:00 UTC the day before, so this payment lands on `2026-10-31`, in October. There is no error: the instant is right, only the day is read in UTC."
 ---
 
 ## Ý chính

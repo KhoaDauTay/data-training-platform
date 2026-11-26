@@ -79,8 +79,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: 'Nghe hợp lý vì nhiều API "lưu" chỉ sửa trường được gửi, nhưng `PutItem` ghi cả item: thuộc tính nào không có trong item mới thì mất. Muốn sửa một phần, dùng `UpdateItem`.'
-      en: 'It sounds right because many "save" APIs change only the fields you send, but `PutItem` writes the whole item: any attribute missing from the new item is gone. To change part of an item, use `UpdateItem`.'
+      vi: 'Nghe hợp lý vì nhiều API "lưu" chỉ sửa trường được gửi, nhưng `PutItem` ghi cả item: thuộc tính nào không có trong item mới thì mất, nên `author` và `stock` của `978-0-02` biến mất. Lệnh cũng không bị từ chối: khác `INSERT` của SQL, `PutItem` ghi đè khóa đã có một cách im lặng, trừ khi bạn thêm điều kiện `attribute_not_exists`. Muốn sửa một phần, dùng `UpdateItem`.'
+      en: 'It sounds right because many "save" APIs change only the fields you send, but `PutItem` writes the whole item: any attribute missing from the new item is gone, so `author` and `stock` of `978-0-02` disappear. The command is not refused either: unlike an SQL `INSERT`, `PutItem` silently overwrites an existing key unless you add an `attribute_not_exists` condition. To change part of an item, use `UpdateItem`.'
   - q:
       vi: '`PutItem` một khóa **mới** với `"ReturnValues": "ALL_OLD"`. Phản hồi có gì?'
       en: '`PutItem` on a **new** key with `"ReturnValues": "ALL_OLD"`. What does the response hold?'
@@ -94,8 +94,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: 'Nghe hợp lý vì bạn xin một bản cũ không tồn tại, nhưng đó không phải lỗi: phản hồi chỉ thiếu `Attributes`, và item mới vẫn được ghi.'
-      en: 'It sounds right because you asked for an old image that does not exist, but that is not an error: the response simply has no `Attributes`, and the new item is still written.'
+      vi: 'Nghe hợp lý vì bạn xin một bản cũ không tồn tại, nhưng xin bản cũ khi không có gì để trả không phải lỗi: phản hồi chỉ thiếu `Attributes`, và item mới vẫn được ghi. Phản hồi cũng không chứa item mới, vì `ALL_OLD` nghĩa là "trả item trước khi ghi"; bản mới chính là `Item` bạn vừa gửi.'
+      en: 'It sounds right because you asked for an old image that does not exist, but asking for an old image when there is none is not an error: the response simply has no `Attributes`, and the new item is still written. The response does not hold the new item either, because `ALL_OLD` means "return the item as it was before the write"; the new image is the `Item` you just sent.'
 ---
 ## Mở bài
 

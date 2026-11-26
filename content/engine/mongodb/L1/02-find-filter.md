@@ -65,8 +65,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: 'Nghe hợp lý vì hai tài liệu nhúng có cùng nội dung, nhưng so bằng trên cả tài liệu nhúng là so khớp chính xác: cùng trường, cùng giá trị và cùng thứ tự. Đổi thứ tự là không khớp. Viết `{ "address.city": "Hue", "address.district": "Phu Hoi" }` thì thứ tự không còn quan trọng.'
-      en: 'It sounds right because both embedded documents hold the same content, but equality on a whole embedded document is an exact match: same fields, same values and the same order. A different order does not match. Write `{ "address.city": "Hue", "address.district": "Phu Hoi" }` and the order no longer matters.'
+      vi: 'Nghe hợp lý vì hai tài liệu nhúng có cùng nội dung, nhưng so bằng trên cả tài liệu nhúng là so khớp chính xác: cùng trường, cùng giá trị và cùng thứ tự. Filter ghi `district` trước, `c2` lưu `city` trước, nên không khớp. Lệnh không báo lỗi: filter được phép chứa tài liệu nhúng, chỉ là cách so này quá chặt. Viết `{ "address.city": "Hue", "address.district": "Phu Hoi" }` thì mỗi trường được so riêng và thứ tự không còn quan trọng.'
+      en: 'It sounds right because both embedded documents hold the same content, but equality on a whole embedded document is an exact match: same fields, same values and the same order. The filter puts `district` first while `c2` stores `city` first, so it does not match. The command does not fail: a filter may hold an embedded document, this way of comparing is just too strict. Write `{ "address.city": "Hue", "address.district": "Phu Hoi" }` and each field is compared on its own, so the order no longer matters.'
   - q:
       vi: '`db.customers.find({ tier: "gold", "address.city": "Hue" })` trả về mấy khách?'
       en: 'How many customers does `db.customers.find({ tier: "gold", "address.city": "Hue" })` return?'
@@ -78,8 +78,8 @@ quiz:
     answer: 0
     trap: 1
     why:
-      vi: 'Nghe hợp lý nếu mỗi điều kiện thêm kết quả, nhưng các điều kiện trong một filter được nối bằng AND. Hai khách gold ở Da Nang và Hoi An, không ai ở Hue, nên kết quả rỗng.'
-      en: 'It sounds right if each condition adds results, but the conditions in one filter are joined with AND. The two gold customers live in Da Nang and Hoi An, none in Hue, so the result is empty.'
+      vi: 'Nghe hợp lý nếu mỗi điều kiện thêm kết quả, nhưng các điều kiện trong một filter được nối bằng AND. Hai khách gold ở Da Nang và Hoi An, không ai ở Hue, nên kết quả rỗng. "2" là số khách gold, hoặc số khách ở Hue, khi chỉ xét một điều kiện; một tài liệu phải thỏa cả hai mới được trả về.'
+      en: 'It sounds right if each condition adds results, but the conditions in one filter are joined with AND. The two gold customers live in Da Nang and Hoi An, none in Hue, so the result is empty. "2" is the number of gold customers, or of customers in Hue, when you look at one condition alone; a document must meet both to be returned.'
 ---
 ## Mở bài
 
@@ -141,7 +141,7 @@ db.customers.find({ address: { city: "Hue" } })
 db.customers.find({ "address.city": "Hue" })
 ```
 
-Bản sai trả về rỗng vì địa chỉ nào cũng có thêm `district`.
+Bản sai trả về rỗng: địa chỉ nào cũng có thêm trường `district`, nên không địa chỉ nào giống hệt tài liệu nhúng chỉ có `city`. Dot notation so riêng `city` và trả `c2`, `c5`.
 
 Gõ sai chữ hoa chữ thường:
 
@@ -230,7 +230,7 @@ db.customers.find({ address: { city: "Hue" } })
 db.customers.find({ "address.city": "Hue" })
 ```
 
-The wrong version returns nothing because every address also has a `district`.
+The wrong version returns nothing: every address also has a `district` field, so none is an exact copy of an embedded document holding only `city`. Dot notation compares `city` alone and returns `c2`, `c5`.
 
 Getting the case wrong:
 

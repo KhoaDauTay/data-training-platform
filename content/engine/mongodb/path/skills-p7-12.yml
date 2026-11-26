@@ -110,7 +110,7 @@
   label: { vi: "Đọc explain()", en: "Read explain()" }
   syntax: "db.orders.find({ status: 'PAID' }).explain('executionStats')"
   when: { vi: "Truy vấn chậm: xem `winningPlan` (COLLSCAN hay IXSCAN) và so `totalDocsExamined` với `nReturned`.", en: "A slow query: check `winningPlan` (COLLSCAN or IXSCAN) and compare `totalDocsExamined` with `nReturned`." }
-  trap: { vi: "Có IXSCAN chưa chắc tốt: đọc 50.000 tài liệu để trả 20 vẫn là index chọn sai.", en: "IXSCAN is not automatically good: examining 50,000 documents to return 20 still means a poor index." }
+  trap: { vi: "Có IXSCAN chưa chắc tốt: index trên trường ít giá trị giữ lại gần hết tài liệu, nên có thể đọc 50.000 tài liệu để trả 20. Cần index chọn lọc hơn, tỉ lệ đọc/trả càng gần 1 càng tốt.", en: "IXSCAN is not automatically good: an index on a field with few values keeps almost every document, so it can examine 50,000 documents to return 20. A more selective index is needed; the closer examined/returned is to 1, the better." }
 
 - id: mg.esr
   part: 11

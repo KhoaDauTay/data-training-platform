@@ -57,8 +57,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: 'Nghe hợp lý vì trang không trả item nào, nhưng `Count` chỉ đếm các item vừa đọc ở trang này. `LastEvaluatedKey` nghĩa là còn item chưa đọc, và trang sau vẫn có thể có đơn khớp.'
-      en: 'It sounds right because the page returned no item, but `Count` only counts the items read on this page. A `LastEvaluatedKey` means items are left unread, and the next page can still hold matching orders.'
+      vi: 'Nghe hợp lý vì trang không trả item nào, nhưng `Count` chỉ đếm các item vừa đọc ở trang này. `LastEvaluatedKey` (khóa để đọc trang tiếp) nghĩa là còn item chưa đọc, và trang sau vẫn có thể có đơn khớp: trang 1 của `C-01` chỉ có 1 đơn khớp, trang 2 có thêm 2. Trang rỗng cũng không phải lỗi, vì bộ lọc bỏ hết item đã đọc là chuyện bình thường; DynamoDB vẫn trả phản hồi thành công.'
+      en: 'It sounds right because the page returned no item, but `Count` only counts the items read on this page. A `LastEvaluatedKey` (the key for reading the next page) means items are left unread, and the next page can still hold matching orders: page 1 of `C-01` has only 1 match, page 2 adds 2 more. An empty page is not an error either, because a filter dropping every item read is normal; DynamoDB still returns a successful response.'
 lab:
   setup: |
     {"tables": [{"TableName":"Orders","KeySchema":[{"AttributeName":"customerId","KeyType":"HASH"},{"AttributeName":"orderId","KeyType":"RANGE"}],"AttributeDefinitions":[{"AttributeName":"customerId","AttributeType":"S"},{"AttributeName":"orderId","AttributeType":"S"}],"BillingMode":"PAY_PER_REQUEST"}],

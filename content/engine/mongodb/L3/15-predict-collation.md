@@ -63,8 +63,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì cờ `i` cũng bỏ qua hoa thường, nhưng `$regex` không theo collation nên không dùng được index này. Chỉ truy vấn ghi đúng collation của index mới vừa khớp mọi cách viết vừa đọc qua index."
-      en: "It sounds right because the `i` flag also ignores case, but `$regex` is not collation-aware, so it cannot use this index. Only a query stating the index's exact collation both matches every spelling and reads through the index."
+      vi: "Cờ `i` cũng bỏ qua hoa thường nên kết quả đúng, nhưng `$regex` không theo collation nên không dùng được index này. Câu không ghi collation thì so phân biệt hoa thường: chỉ khớp an viết thường, bỏ An, AN, và cũng không dùng index. Chỉ truy vấn ghi đúng collation của index (`vi`, `strength: 2`) mới vừa khớp mọi cách viết vừa đọc qua index."
+      en: "The `i` flag also ignores case, so the result is right, but `$regex` is not collation-aware, so it cannot use this index. The query with no collation compares case-sensitively: it matches only lowercase an, missing An and AN, and does not use the index either. Only a query stating the index's exact collation (`vi`, `strength: 2`) both matches every spelling and reads through the index."
 ---
 ## Mở bài
 

@@ -37,8 +37,8 @@ predict:
   answer: 2
   trap: 0
   why:
-    vi: "Nghe hợp lý vì index và truy vấn cùng trường `year`, nhưng index chỉ giữ phim có `year` lớn hơn 2000. Truy vấn cần cả phim 1991 đến 2000, nên dùng index sẽ làm thiếu kết quả, và MongoDB không chọn nó. `{ year: 2005 }` hay `{ year: { $gt: 2010 } }` thì dùng được."
-    en: "It sounds right because the index and the query share the field `year`, but the index holds only movies with `year` greater than 2000. The query also needs movies from 1991 to 2000, so the index would give an incomplete result and MongoDB does not pick it. `{ year: 2005 }` or `{ year: { $gt: 2010 } }` can use it."
+    vi: "Cùng trường `year` chưa đủ: index chỉ giữ phim có `year` lớn hơn 2000, còn truy vấn cần cả phim từ 1991 đến 2000. Đọc qua index sẽ thiếu các phim đó, nên MongoDB bỏ index và quét cả collection (COLLSCAN). Nó cũng không dùng index rồi quét bù phần thiếu: index partial chỉ được chọn khi bộ lọc của nó chứa trọn điều kiện truy vấn. `{ year: 2005 }` hay `{ year: { $gt: 2010 } }` thì dùng được."
+    en: "Sharing the field `year` is not enough: the index holds only movies with `year` greater than 2000, while the query also needs movies from 1991 to 2000. Reading through the index would miss them, so MongoDB skips it and scans the whole collection (COLLSCAN). It does not use the index and scan the missing part on top either: a partial index is picked only when its filter fully contains the query condition. `{ year: 2005 }` or `{ year: { $gt: 2010 } }` can use it."
   recorded:
     tier: docs
     server: MongoDB
@@ -55,8 +55,8 @@ quiz:
       - { vi: "`find({ year: { $ne: 1999 } })`", en: "`find({ year: { $ne: 1999 } })`" }
     answer: 1
     why:
-      vi: "`year > 2010` nằm trọn trong `year > 2000`. `$gte: 2000` cần cả năm 2000, mà index không giữ năm 2000; `$ne` gồm gần như mọi năm."
-      en: "`year > 2010` lies fully inside `year > 2000`. `$gte: 2000` also needs the year 2000, which the index does not hold; `$ne` covers almost every year."
+      vi: "`year > 2010` nằm trọn trong `year > 2000`, nên mọi phim truy vấn cần đều có trong index. `$gte: 2000` cần thêm phim năm 2000, mà index chỉ giữ năm lớn hơn 2000. `$ne` cần mọi năm trừ 1999, kể cả các năm từ 2000 trở về trước mà index không có."
+      en: "`year > 2010` lies fully inside `year > 2000`, so every movie the query needs is in the index. `$gte: 2000` also needs movies from 2000, while the index holds only years greater than 2000. `$ne` needs every year except 1999, including the years up to 2000 that the index lacks."
 ---
 ## Mở bài
 
@@ -70,7 +70,7 @@ Bạn đã tạo một index partial cho phim sau năm 2000, rồi một màn h�
 - `{ year: { $gt: 2010 } }`: hẹp hơn bộ lọc, dùng được.
 - `{ year: { $gt: 1990 } }`: rộng hơn bộ lọc, không dùng được.
 
-Nhiều người nghĩ cứ cùng trường là index dùng được. Thật ra index partial thiếu hẳn một phần tài liệu, nên MongoDB chỉ dùng khi chứng minh được không thiếu dòng nào. Docs chính thức cũng nhắc: việc so tập con không giống nhau với mọi toán tử, nên trước khi dựa vào một index partial, hãy kiểm bằng `explain()`.
+Nhiều người nghĩ cứ cùng trường là index dùng được. Thật ra index partial thiếu hẳn một phần tài liệu, nên MongoDB chỉ dùng khi chứng minh được không thiếu tài liệu nào. Docs chính thức cũng nhắc: việc so tập con không giống nhau với mọi toán tử, nên trước khi dựa vào một index partial, hãy kiểm bằng `explain()`.
 
 Hình dưới vẽ khoảng 1991–2000 mà index partial thiếu, nên truy vấn rộng hơn phải đọc cả collection.
 
@@ -95,7 +95,7 @@ This is a prediction based on the MongoDB docs (page "Partial Indexes"); the bro
 - `{ year: { $gt: 2010 } }`: narrower than the filter, can use it.
 - `{ year: { $gt: 1990 } }`: wider than the filter, cannot use it.
 
-Many people think the same field is enough for the index to be used. In fact a partial index lacks part of the documents, so MongoDB uses it only when it can prove no row is missed. The docs also warn that subset matching does not behave the same for every operator, so check with `explain()` before relying on a partial index.
+Many people think the same field is enough for the index to be used. In fact a partial index lacks part of the documents, so MongoDB uses it only when it can prove no document is missed. The docs also warn that subset matching does not behave the same for every operator, so check with `explain()` before relying on a partial index.
 
 The figure below draws the 1991–2000 range the partial index lacks, so the wider query must read the whole collection.
 

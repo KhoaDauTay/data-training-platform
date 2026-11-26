@@ -48,8 +48,8 @@ quiz:
       - { vi: "Báo lỗi kiểu dữ liệu", en: "A type error" }
     answer: 1
     why:
-      vi: "Với timestamp, chuỗi ngày trơn là nửa đêm đầu ngày. `BETWEEN` đóng hai đầu nên dừng ở 00:00 ngày 31. Viết `< TIMESTAMP '2026-11-01'` thì giữ trọn ngày 31 và không đếm lặp ngày đầu kỳ sau."
-      en: "For a timestamp, a bare date string is midnight at the start of that day. `BETWEEN` is closed on both ends, so it stops at 00:00 on the 31st. Writing `< TIMESTAMP '2026-11-01'` keeps the whole 31st and never counts the next period's first day twice."
+      vi: "Với timestamp, chuỗi ngày trơn là nửa đêm đầu ngày. `BETWEEN` đóng hai đầu nên dừng ở 00:00 ngày 31, và 15:20 nằm sau mốc đó. Không có lỗi kiểu: Postgres tự đổi chuỗi thành timestamp, nên câu chạy và lặng lẽ bỏ khoản này. Viết `< TIMESTAMP '2026-11-01'` thì giữ trọn ngày 31 và không đếm lặp ngày đầu kỳ sau."
+      en: "For a timestamp, a bare date string is midnight at the start of that day. `BETWEEN` is closed on both ends, so it stops at 00:00 on the 31st, and 15:20 comes after that. There is no type error: Postgres turns the string into a timestamp, so the query runs and quietly drops this payment. Writing `< TIMESTAMP '2026-11-01'` keeps the whole 31st and never counts the next period's first day twice."
 ---
 
 ## Ý chính

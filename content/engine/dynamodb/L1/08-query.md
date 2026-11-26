@@ -217,8 +217,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: 'Nghe hợp lý vì `WHERE` của SQL nhận mọi cột, nhưng `KeyConditionExpression` chỉ chọn vùng đọc theo khóa. Điều kiện trên `status` ở đó là `ValidationException`; nó thuộc `FilterExpression`, áp sau khi đọc.'
-      en: 'It sounds right because an SQL `WHERE` takes any column, but a `KeyConditionExpression` only picks the key range to read. A condition on `status` there is a `ValidationException`; it belongs in a `FilterExpression`, applied after the read.'
+      vi: 'Nghe hợp lý vì `WHERE` của SQL nhận mọi cột, nhưng `KeyConditionExpression` chỉ chọn vùng đọc theo khóa. `status` không phải partition key hay sort key của `Orders`, nên đặt nó ở đó là `ValidationException`; nó thuộc `FilterExpression`, áp sau khi đọc item collection của `C-07`. Thêm `Limit` không đổi gì: `Limit` chỉ giới hạn số item đọc, không làm `status` thành khóa.'
+      en: 'It sounds right because an SQL `WHERE` takes any column, but a `KeyConditionExpression` only picks the key range to read. `status` is neither the partition key nor the sort key of `Orders`, so putting it there is a `ValidationException`; it belongs in a `FilterExpression`, applied after the item collection of `C-07` is read. Adding `Limit` changes nothing: `Limit` only caps how many items are read, it does not turn `status` into a key.'
   - q:
       vi: '`Query` mọi đơn của `C-02` mà không có `ScanIndexForward`. Đơn về theo thứ tự nào?'
       en: '`Query` every order of `C-02` without `ScanIndexForward`. In what order do the orders come back?'
@@ -232,8 +232,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: 'Nghe hợp lý nếu nghĩ bảng như một file ghi nối đuôi, nhưng trong một item collection DynamoDB lưu item theo sort key. `Query` đọc tăng dần theo sort key, trừ khi `ScanIndexForward` là `false`.'
-      en: 'It sounds right if a table were an append-only file, but inside an item collection DynamoDB stores items by sort key. `Query` reads in ascending sort key order unless `ScanIndexForward` is `false`.'
+      vi: 'Nghe hợp lý nếu nghĩ bảng như một file ghi nối đuôi, nhưng trong một item collection DynamoDB lưu item theo sort key. `Query` đọc tăng dần theo sort key, trừ khi `ScanIndexForward` là `false`. Thứ tự này được bảo đảm, không ngẫu nhiên: chỉ cả bảng (và `Scan`) mới không có thứ tự chung, còn trong một item collection thì luôn có.'
+      en: 'It sounds right if a table were an append-only file, but inside an item collection DynamoDB stores items by sort key. `Query` reads in ascending sort key order unless `ScanIndexForward` is `false`. This order is guaranteed, not random: only the table as a whole (and a `Scan`) has no overall order, while one item collection always has one.'
 ---
 ## Mở bài
 

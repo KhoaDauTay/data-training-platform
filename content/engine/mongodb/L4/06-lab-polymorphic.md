@@ -80,8 +80,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý nếu quen bảng SQL, nhưng collection MongoDB không bắt tài liệu cùng trường (trừ khi bạn thêm validator). Lý do của mẫu là truy vấn chung: tổng tiền bảo hiểm hay danh sách hợp đồng của một khách chỉ đọc một collection."
-      en: "It sounds right if you are used to SQL tables, but a MongoDB collection does not force documents to share fields (unless you add a validator). The pattern's reason is the common queries: the insured total or a customer's policy list reads one collection."
+      vi: "Nghe hợp lý nếu quen bảng SQL, nhưng collection MongoDB không bắt tài liệu cùng trường (trừ khi bạn thêm validator): trong lab, hợp đồng xe có `plate`, hợp đồng nhà có `address`, cùng một collection. Index riêng cho từng loại cũng không phải lý do, vì index đặt trên trường chứ không theo loại, và tách collection mới cho mỗi loại một index riêng. Lý do của mẫu là truy vấn chung: tổng `insured` của mọi loại chỉ đọc một collection, còn `kind` cho biết đọc phần riêng nào."
+      en: "It sounds right if you are used to SQL tables, but a MongoDB collection does not force documents to share fields (unless you add a validator): in the lab, car policies have `plate` and home policies `address`, in the same collection. A per-kind index is not the reason either: an index is set on fields, not per kind, and it is separate collections that would give each kind its own index. The pattern's reason is the common query: the `insured` total of every kind reads one collection, and `kind` says which specific part to read."
   - q:
       vi: "Trên `mongod`, `$switch` không có `default` gặp một `kind` mới (`pet`) chưa có nhánh. Chuyện gì xảy ra?"
       en: "On `mongod`, a `$switch` with no `default` meets a new `kind` (`pet`) that has no branch. What happens?"
@@ -91,8 +91,8 @@ quiz:
       - { vi: "Hợp đồng đó bị bỏ qua", en: "That policy is skipped" }
     answer: 1
     why:
-      vi: "Docs của `$switch` nói rõ: không nhánh nào khớp mà thiếu `default` thì báo lỗi. Khi thêm loại mới, hoặc thêm nhánh, hoặc đặt `default`. Mingo trong trình duyệt bỏ qua trường hợp này, nên đây là chỗ hai bên khác nhau."
-      en: "The `$switch` docs are clear: if no branch matches and there is no `default`, it raises an error. When you add a kind, add a branch or set a `default`. Mingo in the browser lets this case through, so this is where the two differ."
+      vi: "Docs của `$switch` nói rõ: không nhánh nào khớp mà thiếu `default` thì báo lỗi, và cả aggregation dừng, không trả tài liệu nào. `$switch` chỉ tính một giá trị, không bỏ được tài liệu nào, nên hợp đồng `pet` không bị bỏ qua; nhãn `null` chỉ có khi đặt `default: null`. Mingo trong trình duyệt để nhãn trống thay vì báo lỗi, nên đây là chỗ hai bên khác nhau. Khi thêm loại mới, hoặc thêm nhánh cho nó, hoặc đặt `default`."
+      en: "The `$switch` docs are clear: if no branch matches and there is no `default`, it raises an error and the whole aggregation stops, returning no document. `$switch` only computes a value and cannot drop a document, so the `pet` policy is never skipped; a `null` label only comes from setting `default: null`. Mingo in the browser leaves the label empty instead of failing, so this is where the two differ. When you add a kind, add a branch for it or set a `default`."
 ---
 ## Mở bài
 

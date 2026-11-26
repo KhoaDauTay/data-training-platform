@@ -96,8 +96,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: 'Nghe hợp lý vì trong code ứng dụng "đọc rồi ghi" hay mất một lần cập nhật, nhưng `stock - :one` được tính ở phía server, trên item, một cách nguyên tử. Lần ghi sau thấy kết quả của lần trước, nên còn 3.'
-      en: 'It sounds right because "read then write" in application code often loses an update, but `stock - :one` is computed on the server, on the item, atomically. The second write sees the first one, so 3 are left.'
+      vi: 'Nghe hợp lý vì trong code ứng dụng "đọc rồi ghi" hay mất một lần cập nhật, nhưng `stock - :one` được tính ở phía server, trên item, một cách nguyên tử (atomic: đọc, tính và ghi là một bước không bị chen ngang). DynamoDB xếp hai lần ghi nối nhau, lần sau thấy kết quả của lần trước, nên 5 − 1 − 1 = 3. Lần ghi thứ hai cũng không lỗi, vì không có điều kiện nào bị vi phạm; nó chỉ chờ lượt.'
+      en: 'It sounds right because "read then write" in application code often loses an update, but `stock - :one` is computed on the server, on the item, atomically (read, compute and write are one step nothing can cut into). DynamoDB applies the two writes one after the other, the second sees the result of the first, so 5 − 1 − 1 = 3. The second write does not fail either, because no condition is broken; it simply waits its turn.'
   - q:
       vi: '`SET tags = list_append(:new, tags)` thêm `:new` vào đâu?'
       en: 'Where does `SET tags = list_append(:new, tags)` add `:new`?'
@@ -111,8 +111,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: 'Nghe hợp lý vì tên hàm là "append", nhưng `list_append` nối danh sách thứ nhất với danh sách thứ hai theo đúng thứ tự viết. `:new` đứng trước nên nằm ở đầu; muốn thêm vào cuối, viết `list_append(tags, :new)`.'
-      en: 'It sounds right because the function is called "append", but `list_append` joins the first list and the second list in the order you write them. `:new` comes first, so it lands at the front; to add at the end, write `list_append(tags, :new)`.'
+      vi: 'Nghe hợp lý vì tên hàm là "append", nhưng `list_append` nối danh sách thứ nhất với danh sách thứ hai theo đúng thứ tự viết. `:new` đứng trước nên nằm ở đầu; muốn thêm vào cuối, viết `list_append(tags, :new)`. Danh sách cũ không bị thay, vì `tags` vẫn là một trong hai danh sách được nối; chỉ `SET tags = :new` mới thay cả danh sách.'
+      en: 'It sounds right because the function is called "append", but `list_append` joins the first list and the second list in the order you write them. `:new` comes first, so it lands at the front; to add at the end, write `list_append(tags, :new)`. The old list is not replaced, because `tags` is still one of the two lists being joined; only `SET tags = :new` replaces the whole list.'
 ---
 
 ## Mở bài

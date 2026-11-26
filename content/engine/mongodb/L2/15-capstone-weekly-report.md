@@ -93,8 +93,8 @@ quiz:
         en: The week starting 2026-10-12
     answer: 0
     why:
-      vi: 'Tuần 2026-10-19 có 310.000, giảm 350.000 so với 660.000 của tuần 2026-10-12. Tuần 2026-10-26 giảm 250.000 (từ 310.000 xuống 60.000). Tuần 2026-10-12 tăng.'
-      en: 'The week of 2026-10-19 has 310,000, down 350,000 from 660,000 in the week of 2026-10-12. The week of 2026-10-26 drops 250,000 (310,000 to 60,000). The week of 2026-10-12 went up.'
+      vi: 'Đọc cột `change` của bước 2, số âm lớn nhất là tuần giảm nhiều nhất. Tuần 2026-10-19 có 310.000 (đơn 6 và 7), so với 660.000 của tuần 2026-10-12: 310.000 − 660.000 = −350.000, mức giảm lớn nhất. Tuần 2026-10-26 chỉ giảm 60.000 − 310.000 = −250.000: số tiền thấp nhất tháng, nhưng mức giảm nhỏ hơn. Tuần 2026-10-12 tăng: 660.000 − 215.000 = +445.000 (đơn 4 đã hủy không được tính).'
+      en: 'Read the `change` column of step 2: the most negative value is the largest drop. The week of 2026-10-19 has 310,000 (orders 6 and 7) against 660,000 in the week of 2026-10-12: 310,000 − 660,000 = −350,000, the largest drop. The week of 2026-10-26 drops only 60,000 − 310,000 = −250,000: the lowest amount of the month, but a smaller drop. The week of 2026-10-12 went up: 660,000 − 215,000 = +445,000 (cancelled order 4 is not counted).'
 ---
 ## Mở bài
 

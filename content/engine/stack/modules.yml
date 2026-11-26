@@ -4,3 +4,6 @@
 - id: dbt
   vi: Model và test kiểu dbt
   en: dbt-style models and tests
+- id: warehouse
+  vi: Kho dữ liệu và lịch chạy
+  en: The warehouse and the schedule

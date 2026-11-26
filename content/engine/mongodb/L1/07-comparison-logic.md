@@ -74,8 +74,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: 'Nghe hợp lý vì hai điều kiện trong một filter được nối bằng AND, nhưng đây là hai khóa `price` trong cùng một đối tượng: khóa sau đè khóa trước, chỉ còn `$lt`. Đặt hai toán tử chung một tài liệu con: `{ price: { $gt: 20000, $lt: 100000 } }`.'
-      en: 'It sounds right because two conditions in one filter are joined with AND, but these are two `price` keys in the same object: the later key overwrites the earlier one, leaving only `$lt`. Put both operators in one sub-document: `{ price: { $gt: 20000, $lt: 100000 } }`.'
+      vi: 'Nghe hợp lý vì hai điều kiện trong một filter được nối bằng AND, nhưng đây là hai khóa `price` trong cùng một đối tượng: khóa sau đè khóa trước ngay khi đối tượng được đọc, chỉ còn `$lt`, và không có lỗi nào. Vì vậy kết quả là bốn sản phẩm, kể cả `p3` giá 15000. Đặt hai toán tử chung một tài liệu con: `{ price: { $gt: 20000, $lt: 100000 } }`.'
+      en: 'It sounds right because two conditions in one filter are joined with AND, but these are two `price` keys in the same object: the later key overwrites the earlier one as soon as the object is read, leaving only `$lt`, with no error. So the result is four products, `p3` at 15000 included. Put both operators in one sub-document: `{ price: { $gt: 20000, $lt: 100000 } }`.'
   - q:
       vi: 'Không sản phẩm nào có trường `color`. `db.products.find({ color: { $ne: "red" } })` trả về mấy sản phẩm?'
       en: 'No product has a `color` field. How many products does `db.products.find({ color: { $ne: "red" } })` return?'
@@ -87,8 +87,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: 'Nghe hợp lý vì trường không có thì không có gì để so, nhưng `$ne` và `$nin` khớp cả tài liệu thiếu trường. Muốn chỉ xét sản phẩm có màu thì thêm `$exists: true`.'
-      en: 'It sounds right because a missing field has nothing to compare, but `$ne` and `$nin` also match documents that lack the field. To consider only products with a colour, add `$exists: true`.'
+      vi: 'Nghe hợp lý vì trường không có thì không có gì để so, nhưng `$ne` hỏi giá trị có khác `"red"` không, và một trường không tồn tại thì đúng là không bằng `"red"`. Vì vậy `$ne` và `$nin` khớp cả tài liệu thiếu trường, và cả 6 sản phẩm được trả về. Muốn chỉ xét sản phẩm có màu thì thêm `$exists: true`.'
+      en: 'It sounds right because a missing field has nothing to compare, but `$ne` asks whether the value differs from `"red"`, and a field that does not exist is indeed not equal to `"red"`. So `$ne` and `$nin` also match documents that lack the field, and all 6 products come back. To consider only products with a colour, add `$exists: true`.'
 ---
 ## Mở bài
 

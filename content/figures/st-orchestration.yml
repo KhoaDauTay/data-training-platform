@@ -1,0 +1,26 @@
+# ST-18 (tools/v43/de-tools-plan.md §4): last night's Airflow DAG of tasks with the failing test blocking the dashboard.
+# Lesson: e-st-l3-05 (Ý chính). Data = the lesson's task_runs (extract_pay passed on try 2; dbt_test failed twice).
+# Source: https://airflow.apache.org/docs/apache-airflow/stable/core-concepts/tasks.html
+title: { vi: "DAG các task đêm qua", en: "Last night's DAG of tasks" }
+caption:
+  vi: "Hai task chép chạy trước, rồi dbt dựng model và chạy test; test trượt hai lần nên dashboard không được làm mới."
+  en: "The two copy tasks run first, then dbt builds the models and runs the tests; the test failed twice, so the dashboard was not refreshed."
+alt:
+  vi: "Airflow chạy một task chỉ khi các task trước nó đã qua, và lần thử lại chỉ cứu lỗi thoáng qua. Kết quả: extract_pay qua ở lần thử 2, còn dbt_test trượt cả hai lần nên publish_dash nhận upstream_failed."
+  en: "Airflow runs a task only once the tasks before it have passed, and a retry only saves a transient fault. Result: extract_pay passed on try 2, while dbt_test failed both times, so publish_dash got upstream_failed."
+nodes:
+  - { id: shop, mono: true, label: extract_shop, sub: { vi: "qua", en: "success" }, tone: new }
+  - { id: pay, mono: true, label: extract_pay, sub: { vi: "qua ở lần 2", en: "success, try 2" }, tone: warm }
+  - { id: run, mono: true, label: dbt_run, sub: { vi: "qua", en: "success" }, tone: new }
+  - { id: test, mono: true, label: dbt_test, sub: { vi: "trượt 2 lần", en: "failed twice" }, tone: dead }
+  - { id: pub, mono: true, label: publish_dash, sub: upstream_failed, tone: ghost }
+rows:
+  - [shop, pay]
+  - [run]
+  - [test]
+  - [pub]
+edges:
+  - { from: shop, to: run }
+  - { from: pay, to: run }
+  - { from: run, to: test }
+  - { from: test, to: pub }

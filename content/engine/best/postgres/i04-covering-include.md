@@ -46,8 +46,8 @@ quiz:
       - { vi: "`Bitmap Heap Scan`, vì `INCLUDE` không dùng để tìm", en: "`Bitmap Heap Scan`, because `INCLUDE` is not searchable" }
     answer: 1
     why:
-      vi: "Mọi cột truy vấn cần đều có trong index, và visibility map báo các trang đều thấy được, nên Postgres trả kết quả từ index mà không đọc heap. `INCLUDE` không cần để tìm, chỉ cần để trả."
-      en: "Every column the query needs is in the index, and the visibility map says the pages are all-visible, so Postgres answers from the index without reading the heap. `INCLUDE` columns need not be searchable, only returnable."
+      vi: "Cả `store_id` lẫn `order_date` đều nằm trong index, và sau `VACUUM` visibility map (bản ghi trang nào mọi dòng đều thấy được) đánh dấu các trang, nên Postgres trả kết quả từ index mà không đọc bảng (heap). Tìm theo `store_id`, cột khóa của index; `order_date` trong `INCLUDE` chỉ cần để trả, không cần để tìm."
+      en: "Both `store_id` and `order_date` are in the index, and after `VACUUM` the visibility map (which records pages whose rows are all visible) marks the pages, so Postgres answers from the index without reading the table (heap). The search uses `store_id`, the index key; `order_date` in `INCLUDE` only has to be returned, not searched."
 ---
 
 ## Ý chính

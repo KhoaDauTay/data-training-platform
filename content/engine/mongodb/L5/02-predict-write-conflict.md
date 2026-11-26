@@ -36,8 +36,8 @@ predict:
   answer: 1
   trap: 0
   why:
-    vi: "Một lỗi nghe hợp lý vì transaction nhiều tài liệu đúng là trả write conflict về ứng dụng. Nhưng theo docs chính thức về WiredTiger: kiểm soát lạc quan, chỉ intent lock ở mức collection; khi hai thao tác xung đột, một bên gặp write conflict và MongoDB chạy lại nó một cách trong suốt. Mỗi lệnh trên một tài liệu là atomic, nên `qty` giảm đủ 3."
-    en: "An error sounds right because a multi-document transaction does return a write conflict to the application. But per the WiredTiger docs: optimistic control with only intent locks at the collection level; when two operations conflict, one hits a write conflict and MongoDB retries it transparently. Each single-document command is atomic, so `qty` drops by the full 3."
+    vi: "Một lỗi nghe hợp lý vì transaction nhiều tài liệu đúng là trả write conflict về ứng dụng, nhưng ở đây hai lệnh nằm ngoài transaction. Theo docs chính thức về WiredTiger, khi hai thao tác xung đột trên cùng tài liệu, một bên gặp write conflict và MongoDB tự chạy lại nó, ứng dụng không thấy lỗi; mỗi lệnh atomic nên `qty` = 10 − 1 − 2 = 7. Collection cũng không bị lock độc quyền: ở mức collection chỉ có intent lock (lock báo ý định, cho nhiều lệnh ghi cùng chạy), nên lệnh thứ hai không phải chờ cả collection."
+    en: "An error sounds right because a multi-document transaction does return a write conflict to the application, but here both commands run outside a transaction. Per the WiredTiger docs, when two operations conflict on the same document, one hits a write conflict and MongoDB retries it itself, so the application sees no error; each command is atomic, so `qty` = 10 − 1 − 2 = 7. Nor does the collection get an exclusive lock: at the collection level there are only intent locks (locks that announce an intent and let many writes run at once), so the second command does not wait on the whole collection."
   recorded:
     tier: docs
     server: MongoDB
@@ -55,8 +55,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý khi suy từ trường hợp một tài liệu, nhưng trong transaction, write conflict làm transaction bị hủy và lỗi mang nhãn `TransientTransactionError`. Ứng dụng (hoặc callback API của driver) phải chạy lại cả transaction. Write concern không liên quan tới xung đột."
-      en: "It sounds right by analogy with the single-document case, but inside a transaction a write conflict aborts the transaction, and the error carries the `TransientTransactionError` label. The application (or the driver's callback API) must retry the whole transaction. Write concern has nothing to do with conflicts."
+      vi: "Nghe hợp lý khi suy từ trường hợp một tài liệu, nhưng trong transaction, write conflict làm transaction bị hủy và lỗi mang nhãn `TransientTransactionError`. Ứng dụng (hoặc callback API của driver, như `withTransaction`) phải chạy lại cả transaction, vì các lệnh trước trong transaction cũng đã bị bỏ. `w: 0` chỉ đổi việc server có gửi xác nhận hay không, không đổi việc hai transaction cùng sửa một tài liệu, nên xung đột vẫn xảy ra."
+      en: "It sounds right by analogy with the single-document case, but inside a transaction a write conflict aborts the transaction, and the error carries the `TransientTransactionError` label. The application (or the driver's callback API, such as `withTransaction`) must retry the whole transaction, because the earlier commands in it were dropped too. `w: 0` only changes whether the server sends an acknowledgement, not the fact that two transactions modify one document, so the conflict still happens."
 ---
 ## Mở bài
 

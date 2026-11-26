@@ -119,8 +119,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì trong SQL bộ lọc thu hẹp việc đọc, nhưng `FilterExpression` chạy sau khi DynamoDB đã đọc item: `Count` là 3, còn `ScannedCount` là cả bảng. Chỉ `KeyConditionExpression` của Query mới thu hẹp phần đọc."
-      en: "It sounds right because a SQL filter narrows the read, but `FilterExpression` runs after DynamoDB has read the items: `Count` is 3 while `ScannedCount` is the whole table. Only a Query's `KeyConditionExpression` narrows the read."
+      vi: "Trong SQL, điều kiện lọc có thể dùng index để đọc ít đi, nhưng `FilterExpression` của DynamoDB chạy sau khi item đã được đọc: `Count` là 3, còn `ScannedCount` là cả 38 item của bảng `Shop`, và capacity tính trên 38 item đó. Scan vẫn trả item có sort key bình thường; vấn đề chỉ là chi phí. Query với `KeyConditionExpression` `PK = :pk` đi thẳng tới item collection của `C-02`, nên chỉ đọc 3 item."
+      en: "In SQL a filter can use an index to read less, but a DynamoDB `FilterExpression` runs after the items have been read: `Count` is 3 while `ScannedCount` is all 38 items of table `Shop`, and capacity is charged on those 38. A Scan returns items with a sort key just fine; the problem is only the cost. A Query with `KeyConditionExpression` `PK = :pk` goes straight to the item collection of `C-02`, so it reads only 3 items."
   - q:
       vi: "Sort key của đơn là `ORDER#2026-09-08#O-502`. Vì sao Query với `ScanIndexForward: false` ra đơn mới nhất trước?"
       en: "An order's sort key is `ORDER#2026-09-08#O-502`. Why does a Query with `ScanIndexForward: false` return the newest order first?"
@@ -130,8 +130,8 @@ quiz:
       - { vi: "Item ghi sau luôn đứng sau", en: "Items written later always come later" }
     answer: 1
     why:
-      vi: "DynamoDB không hiểu ngày; nó so chuỗi theo byte UTF-8. Viết ngày theo YYYY-MM-DD (cùng độ dài, năm trước) thì thứ tự byte trùng thứ tự thời gian."
-      en: "DynamoDB does not understand dates; it compares strings by UTF-8 bytes. Writing dates as YYYY-MM-DD (same length, year first) makes byte order match time order."
+      vi: "DynamoDB không hiểu ngày: với sort key kiểu chuỗi, nó chỉ so từng byte UTF-8 từ trái sang. Thứ tự ghi cũng không quyết định gì; item được xếp theo giá trị sort key, ghi lúc nào cũng vậy. Ngày viết YYYY-MM-DD có cùng độ dài và năm đứng trước, nên so byte `2026-09-08` với `2026-08-26` cũng chính là so thời gian, và đọc ngược cho đơn mới nhất trước."
+      en: "DynamoDB does not understand dates: for a string sort key it only compares UTF-8 bytes from left to right. Write order decides nothing either; items are placed by their sort key value, whenever they were written. A YYYY-MM-DD date has a fixed length with the year first, so comparing `2026-09-08` with `2026-08-26` byte by byte is the same as comparing time, and reading backwards gives the newest order first."
 ---
 ## Mở bài
 
@@ -202,7 +202,7 @@ Dùng Scan có lọc thay cho Query:
 {"op": "Query", "input": {"TableName": "Shop", "KeyConditionExpression": "PK = :pk", "ExpressionAttributeValues": {":pk": {"S": "CUST#C-02"}}}}
 ```
 
-Hai câu trả cùng 3 item, nhưng câu sai có `ScannedCount` bằng cả bảng, câu sửa chỉ 3. Bảng càng lớn, câu sai càng đắt, mà kết quả không cho thấy điều đó.
+Hai câu trả cùng 3 item, nhưng câu sai có `ScannedCount` bằng cả bảng (38), câu sửa chỉ 3. Bảng càng lớn, câu sai càng đắt, mà kết quả không cho thấy điều đó.
 
 Đặt điều kiện lên thuộc tính không phải khóa trong `KeyConditionExpression`:
 
@@ -295,7 +295,7 @@ Using a filtered Scan instead of a Query:
 {"op": "Query", "input": {"TableName": "Shop", "KeyConditionExpression": "PK = :pk", "ExpressionAttributeValues": {":pk": {"S": "CUST#C-02"}}}}
 ```
 
-Both return the same 3 items, but the wrong one has a `ScannedCount` of the whole table, the fix only 3. The bigger the table, the dearer the wrong one, and the result never shows it.
+Both return the same 3 items, but the wrong one has a `ScannedCount` of the whole table (38), the fix only 3. The bigger the table, the dearer the wrong one, and the result never shows it.
 
 Putting a non-key attribute in the `KeyConditionExpression`:
 

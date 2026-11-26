@@ -26,14 +26,14 @@ quiz:
       - { vi: "Có, nếu bảng ở chế độ on-demand", en: "Yes, if the table is in on-demand mode" }
     answer: 1
     trap: 0
-    why: { vi: "Nghe hợp lý vì adaptive capacity đúng là chia lại partition, nhưng đơn vị nhỏ nhất nó di chuyển được là một item. Item nóng có thể nằm một mình một partition, và trần vẫn là 3000 RCU và 1000 WCU cho khóa chính ấy: phải đổi thiết kế (shard khóa).", en: "It sounds right because adaptive capacity does rebalance partitions, but the smallest unit it can move is one item. The hot item can sit alone in a partition, and the ceiling is still 3000 RCU and 1000 WCU for that primary key: the design has to change (shard the key)." }
+    why: { vi: "Adaptive capacity đúng là sắp lại partition, nhưng đơn vị nhỏ nhất nó di chuyển được là một item, không thể cắt một item ra nhiều partition. Item nóng nằm một mình một partition thì vẫn chỉ nhận tối đa 1000 WCU (write capacity unit, đơn vị ghi 1 KB): 1500 lần ghi × 1 WCU = 1500, nên khoảng 500 lần mỗi giây bị throttle. On-demand cũng không nâng trần một khóa. Phải đổi thiết kế: shard khóa thành nhiều khóa con.", en: "Adaptive capacity does rebalance partitions, but the smallest unit it can move is one item; it cannot cut one item over several partitions. Alone in its own partition, the hot item still gets at most 1000 WCU (write capacity unit, 1 KB): 1500 writes × 1 WCU = 1500, so about 500 writes per second are throttled. On-demand does not raise the one-key ceiling either. The design has to change: shard the key into several sub-keys." }
   - q: { vi: "Bảng có LSI. Một item collection rất nóng. Điều gì đúng?", en: "The table has an LSI. One item collection is very hot. What is true?" }
     options:
       - { vi: "Adaptive capacity không tách item collection qua nhiều partition khi bảng có LSI", en: "Adaptive capacity does not split an item collection over several partitions when the table has an LSI" }
       - { vi: "LSI làm collection được tách nhanh hơn", en: "The LSI makes the collection split faster" }
       - { vi: "LSI không ảnh hưởng gì tới việc tách", en: "The LSI has no effect on splitting" }
     answer: 0
-    why: { vi: "Docs AWS nói adaptive capacity không tách item collection khi bảng có local secondary index. Đó là một lý do chọn GSI thay cho LSI khi tải dồn vào ít partition key.", en: "The AWS docs say adaptive capacity does not split item collections when the table has a local secondary index. That is one reason to prefer a GSI over an LSI when load piles onto few partition keys." }
+    why: { vi: "Docs AWS ghi rõ: khi bảng có LSI (local secondary index, index phụ cục bộ), adaptive capacity không tách item collection qua nhiều partition, vì LSI phải giữ cả collection và các mục index của nó trên cùng một partition. Vậy LSI không làm việc tách nhanh hơn, và cũng không phải \"không ảnh hưởng\": nó chặn hẳn việc tách. Khi tải dồn vào ít partition key, đó là một lý do chọn GSI (global secondary index, index phụ toàn bảng), vốn được lưu riêng.", en: "The AWS docs are explicit: when the table has an LSI (local secondary index), adaptive capacity does not split an item collection over several partitions, because an LSI must keep the whole collection and its index entries on the same partition. So the LSI does not make splitting faster, and it is not \"no effect\" either: it blocks the split. When load piles onto few partition keys, that is one reason to prefer a GSI (global secondary index), which is stored separately." }
 ---
 ## Mở bài
 
@@ -103,7 +103,7 @@ PK = "LIKES#post-1"
 PK = "LIKES#post-1#" + random(0..9)
 ```
 
-Mười khóa con, mỗi khóa khoảng 150 ghi mỗi giây: không khóa nào gần trần 1000 WCU.
+1500 ghi mỗi giây chia cho mười khóa con là khoảng 150 ghi mỗi khóa: không khóa nào gần trần 1000 WCU (write capacity unit, đơn vị ghi). Muốn có tổng thì đọc đủ mười khóa con rồi cộng lại.
 
 ## Tóm tắt
 
@@ -182,7 +182,7 @@ PK = "LIKES#post-1"
 PK = "LIKES#post-1#" + random(0..9)
 ```
 
-Ten sub-keys, about 150 writes per second each: no key comes near the 1000 WCU ceiling.
+1500 writes per second over ten sub-keys is about 150 writes per key: no key comes near the 1000 WCU (write capacity unit) ceiling. To get the total, read all ten sub-keys and add them up.
 
 ## Recap
 

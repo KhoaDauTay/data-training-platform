@@ -39,8 +39,8 @@ quiz:
       - { vi: "Báo lỗi vì index sparse không hint được", en: "An error, because a sparse index cannot be hinted" }
     answer: 1
     why:
-      vi: "Index sparse chỉ chứa tài liệu có trường được index. Docs: với `count()` rỗng có `hint`, index sparse vẫn được dùng dù cho kết quả sai. Không có `hint`, MongoDB tự tránh index sparse khi nó làm thiếu kết quả."
-      en: "A sparse index holds only documents that have the indexed field. The docs: for an empty `count()` with a `hint`, the sparse index is used even if the count comes out wrong. Without a `hint`, MongoDB avoids a sparse index when it would give incomplete results."
+      vi: "Index sparse chỉ chứa tài liệu có trường được index. Docs: với `count()` không có điều kiện lọc mà có `hint`, MongoDB vẫn dùng index sparse, nên chỉ đếm phim có `rated` và bỏ sót phim thiếu trường; không có lỗi nào. Không có `hint`, MongoDB tự tránh index sparse khi nó làm thiếu kết quả."
+      en: "A sparse index holds only documents that have the indexed field. The docs: for a `count()` with no filter but a `hint`, MongoDB still uses the sparse index, so it counts only movies with `rated` and misses the others; no error is raised. Without a `hint`, MongoDB avoids a sparse index when it would give incomplete results."
 ---
 
 ## Ý chính
