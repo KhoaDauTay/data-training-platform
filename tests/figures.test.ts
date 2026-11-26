@@ -11,7 +11,7 @@ import { analyze, samplePath, type OverlapFrame } from '../scripts/overlap-check
 import { parseEngineLesson, type EngineLesson } from '../src/engine/content';
 import type { Shape } from '../src/engine/viz/engineVizCore';
 import { resolveViz } from '../src/engine/viz/engineViz';
-import { altText, type FigRef, type FigSpec, layout, textWidth, tr } from '../src/engine/viz/figure';
+import { altText, type FigRef, type FigSpec, layout, linkGap, MARGIN, NOTE_CH, textWidth, tr, WIDE } from '../src/engine/viz/figure';
 import { GLYPHS } from '../src/engine/viz/glyphs';
 import { parseFullLesson } from '../src/fullLesson';
 import { fullLessons, lessonIdOf } from '../src/generalLessonSources';
@@ -43,7 +43,7 @@ function model(f: { nodes: Shape[] }, W: number, H: number): OverlapFrame {
       const w = textWidth(n.s, size, !!n.b, !!n.mono);
       const x = n.a === 'm' ? n.x - w / 2 : n.a === 'e' ? n.x - w : n.x;
       texts.push({ k: n.k, s: n.s, x, y: n.y - (size * 1.364) / 2, w, h: size * 1.364, size, px: size, owner: n.attrs?.['data-owner'] });
-    } else if (n.t === 'r') boxes.push({ k: n.k, kind: 'rect', x: n.x, y: n.y, w: n.w, h: n.h });
+    } else if (n.t === 'r') boxes.push({ k: n.k, kind: 'rect', x: n.x, y: n.y, w: n.w, h: n.h, sw: n.bold ? 2.2 : 1.2 }); // look()'s strokes
     else if (n.t === 'p' && n.arrow) {
       const pts = samplePath(n.d);
       const [p, q] = [pts[pts.length - 2], pts[pts.length - 1]];
@@ -108,7 +108,10 @@ describe.each(Object.keys(specs))('v39 figure %s', (name) => {
   });
   it('mọi ký tự vẽ ra có trong bảng độ rộng Nunito (ký tự lạ ước 0,62 em: đo lại bảng trước)', () => {
     const fold = (s: string): string => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D');
-    const odd = [...new Set(strings({ ...spec, steps: (spec.steps ?? []).map((s) => ({ ...s, say: '' })), caption: '', title: '' }).flatMap((s) => [...fold(s)]))].filter((c) => !GLYPHS.includes(c));
+    // drawn text only: title, caption, sentences and alt texts are HTML (any character)
+    const drawn = { ...spec, steps: (spec.steps ?? []).map((s) => ({ ...s, say: '', alt: '' })), caption: '', title: '', alt: '',
+      variants: Object.fromEntries(Object.entries(spec.variants ?? {}).map(([k, v]) => [k, { ...v, title: '', caption: '', alt: '' }])) };
+    const odd = [...new Set(strings(drawn).flatMap((s) => [...fold(s)]))].filter((c) => !GLYPHS.includes(c));
     expect(odd).toEqual([]);
   });
 
@@ -121,9 +124,12 @@ describe.each(Object.keys(specs))('v39 figure %s', (name) => {
           const at = `${name} ${variant ?? ''} ${lang} W${W} bước ${i + 1}`;
           expect(analyze(model(f, d.w, d.h), W), at).toEqual([]);
           // builder promises beyond the checker's thresholds
+          const notes = new Set(spec.nodes.filter((n) => n.shape === 'note').map((n) => n.id));
           for (const n of f.nodes) if (n.t === 't') {
             expect(n.size ?? 0, `${at}: "${n.s}"`).toBeGreaterThanOrEqual(13);
-            expect([...n.s].length, `${at}: "${n.s}"`).toBeLessThanOrEqual(18);
+            // R1 E14: a note keeps one line up to NOTE_CH characters on a wide figure
+            const note = W >= WIDE && notes.has(/^n:(.+)\.t\d+$/.exec(n.k)?.[1] ?? '');
+            expect([...n.s].length, `${at}: "${n.s}"`).toBeLessThanOrEqual(note ? NOTE_CH : 18);
           }
           const ex = [...extents(f).entries()];
           for (let a = 0; a < ex.length; a++) for (let b = a + 1; b < ex.length; b++) {
@@ -131,7 +137,7 @@ describe.each(Object.keys(specs))('v39 figure %s', (name) => {
             const dx = Math.max(p.x0 - q.x1, q.x0 - p.x1), dy = Math.max(p.y0 - q.y1, q.y0 - p.y1);
             if (dx < 0 && dy < 0) throw new Error(`${at}: ${ex[a][0]} / ${ex[b][0]} chồng nhau`);
             if (dy < 0) expect(dx, `${at}: ${ex[a][0]} ↔ ${ex[b][0]}`).toBeGreaterThanOrEqual(15.5);
-            else if (dx < 0) expect(dy, `${at}: ${ex[a][0]} ↕ ${ex[b][0]}`).toBeGreaterThanOrEqual(GAP_MIN_Y);
+            else if (dx < 0) expect(dy, `${at}: ${ex[a][0]} ↕ ${ex[b][0]}`).toBeGreaterThanOrEqual(notes.has(ex[a][0]) || notes.has(ex[b][0]) ? 15.5 : GAP_MIN_Y);
           }
           const m = model(f, d.w, d.h);
           // (g) twin: every box and arrow point inside the viewBox (the svg is exactly W wide, so nothing scrolls)
@@ -148,6 +154,23 @@ describe.each(Object.keys(specs))('v39 figure %s', (name) => {
           }
           // tokens only: every tone and ink the builder writes maps to an --eng-* alias in the core
           for (const n of f.nodes) expect(JSON.stringify(n)).not.toMatch(/#[0-9a-f]{3,6}\b|rgb\(|var\(--(?!eng-)/i);
+          // R1 E10: two arrows into one box land ≥ 16 apart (never a double arrowhead)
+          for (let p = 0; p < m.arrows.length; p++) for (let q = p + 1; q < m.arrows.length; q++) {
+            const [A, B] = [m.arrows[p], m.arrows[q]];
+            if (A.to && A.to === B.to) expect(Math.hypot(A.tip[0] - B.tip[0], A.tip[1] - B.tip[1]), `${at}: ${A.k} / ${B.k} tips`).toBeGreaterThanOrEqual(16);
+          }
+          // R1 E4/E5 (L626): linked tables side by side are linkGap(lines) apart, or the row already fills the room
+          const xs = extents(f);
+          const pairs = new Map<string, number>();
+          for (const e of spec.edges ?? []) if (e.link) { const k = [e.from, e.to].map((x) => x.split('#')[0]).sort().join('|'); pairs.set(k, (pairs.get(k) ?? 0) + 1); }
+          for (const [k, lines] of pairs) {
+            const [p, q] = k.split('|').map((id) => xs.get(id));
+            if (!p || !q || Math.min(p.y1, q.y1) <= Math.max(p.y0, q.y0)) continue; // stacked: no lines drawn
+            const gap = Math.max(p.x0 - q.x1, q.x0 - p.x1);
+            const row = [...xs.values()].filter((o) => Math.min(o.y1, p.y1) > Math.max(o.y0, p.y0));
+            const span = Math.max(...row.map((o) => o.x1)) - Math.min(...row.map((o) => o.x0));
+            if (gap < linkGap(lines) - 1) expect(span, `${at}: ${k} gap ${gap} < ${linkGap(lines)} with room left`).toBeGreaterThanOrEqual(W - 2 * MARGIN - 2);
+          }
           for (const a of m.arrows) {
             const t = m.boxes.find((b) => b.k === a.to);
             if (!t) continue; // a grid end: analyze() finds its nearest cell (rule e, tip < 2)
@@ -157,17 +180,52 @@ describe.each(Object.keys(specs))('v39 figure %s', (name) => {
         });
       });
     }
-    it(`${variant ?? 'gốc'}: lời thay hình nêu mọi node và mọi mũi tên (VI, EN)`, () => {
+    it(`${variant ?? 'gốc'}: lời thay hình (R1 E11): bản sinh ra nêu mọi node, mọi mũi tên, mọi bước, bảng đọc theo dòng; bản viết tay (nếu có) đủ VI/EN`, () => {
       for (const lang of LANGS) {
-        const alt = altText(spec, lang, variant).join(' ');
-        for (const n of spec.nodes) {
+        const gen = altText(spec, lang, variant, true).join(' ');
+        const v = variant === undefined ? undefined : spec.variants?.[variant];
+        const shown = v?.step !== undefined ? new Set(spec.steps?.[v.step].show ?? spec.nodes.map((n) => n.id)) : undefined;
+        const patch = v?.step !== undefined ? spec.steps?.[v.step].set : v?.set;
+        for (const n of spec.nodes.filter((x) => !shown || shown.has(x.id)).map((x) => ({ ...x, ...patch?.[x.id] }))) {
           const words = n.shape === 'grid' ? (n.cells ?? []).flat().map((c) => tr(c, lang)) : n.shape === 'bars' ? (n.items ?? []).map((i) => tr(i.label, lang)) : [tr(n.label, lang)];
-          for (const w of words.filter(Boolean)) expect(alt, `${lang} ${n.id}: ${w}`).toContain(w);
+          for (const w of words.filter(Boolean)) expect(gen, `${lang} ${n.id}: ${w}`).toContain(w);
         }
-        expect(alt.split('→').length - 1 + alt.split('–').length - 1).toBeGreaterThanOrEqual((spec.edges ?? []).length);
+        // natural sentences: no kind tags, a table with a header reads "header: value" (R1 E11)
+        expect(gen).not.toMatch(/\((hộp|bảng|box|table|nhãn|label|ghi chú|note)\)/);
+        for (const n of spec.nodes) if (n.shape === 'grid' && n.head && n.head.length > 1 && n.cells?.length && tr(n.head[1], lang) && tr(n.cells[0][1], lang) && (!shown || shown.has(n.id)))
+          expect(gen, `${lang} ${n.id}`).toContain(`${tr(n.head[1], lang)}: ${tr(n.cells[0][1], lang)}`);
+        const verbs = (gen.match(/trỏ tới|points to|nối với|is linked to/g) ?? []).length;
+        if (!shown) expect(verbs).toBeGreaterThanOrEqual((spec.edges ?? []).length);
+        if (!variant && (spec.steps?.length ?? 0) > 1) spec.steps!.forEach((st) => expect(gen).toContain(tr(st.say, lang)));
+        const hand = altText(spec, lang, variant).join(' ');
+        expect(hand.trim(), lang).not.toBe('');
+        expect(hand).not.toMatch(/\((hộp|bảng|box|table)\)/);
       }
     });
   }
+});
+
+describe('v39 R1: checker and builder regressions', () => {
+  it('E9: analyze() sees strokes that merge and text sitting on its strip (the old pool strips: 15 high on a 16 pitch)', () => {
+    const strip = (i: number) => ({ k: `ps${i}`, kind: 'rect', x: 10, y: 10 + i * 16, w: 92, h: 15, sw: 1.2 });
+    // Nunito's box is 1.364 em; dominant-baseline middle puts it ~1.25 lower than the strip's middle (what Edge's getBBox gave)
+    const label = (i: number) => ({ k: `pt${i}`, s: 'tenant_id A', x: 14, y: 17.5 + i * 16 - 8.53 + 1.25, w: 70, h: 17.05, size: 12.5, px: 12.5 });
+    const got = analyze({ vb: [0, 0, 120, 60], texts: [label(0), label(1)], boxes: [strip(0), strip(1)], arrows: [] }, 375);
+    expect(got.some((x) => x.t === 'c' && /nearly touch/.test(x.what))).toBe(true);
+    expect(got.some((x) => x.t === 'b' && /hugs/.test(x.what))).toBe(true);
+    // flush cells (a grid) and cells 4 apart stay clean
+    const cells = [0, 1].map((i) => ({ k: `c${i}`, kind: 'rect', x: 10 + i * 40, y: 10, w: 40, h: 24, sw: 1.2 }));
+    const apart = [0, 1].map((i) => ({ k: `d${i}`, kind: 'rect', x: 10, y: 50 + i * 24, w: 40, h: 20, sw: 1.2 }));
+    expect(analyze({ vb: [0, 0, 120, 120], texts: [], boxes: [...cells, ...apart], arrows: [] }, 375)).toEqual([]);
+  });
+  it('E4/E5: the linked tables keep their lines side by side at 335 (the wider gap never wraps them)', () => {
+    // (EN clause-order is wider than 335 even at the 32 floor: it stacks there, as it did before)
+    for (const [name, lang] of [['sql-clause-order', 'vi'], ['sql-inner-join-pairs', 'vi'], ['sql-inner-join-pairs', 'en']] as const) {
+      const d = layout(specs[name], lang, 335);
+      const lines = d.frames[0].nodes.filter((n) => n.t === 'p' && !n.arrow).length;
+      expect(lines, `${name} ${lang}`).toBe((specs[name].edges ?? []).filter((e) => e.link).length);
+    }
+  });
 });
 
 /** Rows are ≥ 36 apart; a node shorter than its row sits in the middle, so its own gap is never smaller. */

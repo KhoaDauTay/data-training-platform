@@ -25,11 +25,18 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, '..');
 const BROWSER = process.env.BROWSER || 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
-const PORT = 5255;
+// --port / --prefix: a run beside another agent's keeps its own preview port and Edge profile names
+const argv = (k, d) => { const i = process.argv.indexOf(`--${k}`); return i > 0 ? process.argv[i + 1] : d; };
+const PORT = Number(argv('port', 5255));
+const PREFIX = argv('prefix', 'bd-v39a-');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // ── pure rules ──────────────────────────────────────────────────────────────────────────────────────────────────
-export const RULES = { textGap: 1, boxGap: 1, tipMin: 2, minPx: { 375: 12, 320: 11 }, figPx: 13, inkShrink: 0.15 };
+// seeGap / clear (v39 R1 E9, L627): boxes are judged with their strokes. Two boxes that are neither flush (≤ 0.5 apart, a grid's
+// cells) nor clearly apart must show ≥ seeGap units of background between their strokes (else the strokes merge); a text's ink
+// stays inside its own box's stroke (clearance ≥ clear). getBBox() ignores strokes, so a 1-unit gap between 1.2-wide strokes and
+// ink sitting on the stroke used to pass (pg-tenancy-models, the E9 false negative).
+export const RULES = { textGap: 1, boxGap: 1, tipMin: 2, minPx: { 375: 12, 320: 11 }, figPx: 13, inkShrink: 0.15, seeGap: 0.5, clear: 0 };
 /** Points along an absolute SVG path (M L H V Q C Z), one per `step` units: the Node twin of getPointAtLength sampling. */
 export function samplePath(d, step = 1) {
   const tok = d.match(/[MLHVQCZ]|-?\d*\.?\d+(?:e-?\d+)?/gi) ?? [];
@@ -105,13 +112,18 @@ export function analyze(f, width) {
     if (!o) continue;
     const cross = Math.max(o.b.x - e.x, e.x + e.w - (o.b.x + o.b.w), o.b.y - e.y, e.y + e.h - (o.b.y + o.b.h));
     if (cross > 0.5) add('b', o.how === 'key' && cross >= 1.5 ? 'P2' : 'P3', `"${t.s}" crosses ${o.b.k ?? o.b.kind} by ${r1(cross)} (${o.how})`, { depth: r1(cross) });
+    else if (-cross - (o.b.sw ?? 0) / 2 < RULES.clear) add('b', o.how === 'key' ? 'P2' : 'P3', `"${t.s}" hugs the edge of ${o.b.k ?? o.b.kind}: ${r1(-cross - (o.b.sw ?? 0) / 2)} inside its stroke (${o.how})`, { depth: r1(-cross) });
   }
   // c: boxes overlapping without one containing the other
   for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) {
     const p = boxes[i], q = boxes[j];
     if (p.ok || q.ok || p.parent === q.k || q.parent === p.k || contains(p, q) || contains(q, p)) continue; // data-overlap="ok": overlap by design
     const [x, y] = ov(p, q);
-    if (x > RULES.boxGap && y > RULES.boxGap) add('c', Math.min(x, y) >= 3 ? 'P2' : 'P3', `${p.k ?? p.kind} / ${q.k ?? q.kind}`, { depth: r1(Math.min(x, y)) });
+    if (x > RULES.boxGap && y > RULES.boxGap) { add('c', Math.min(x, y) >= 3 ? 'P2' : 'P3', `${p.k ?? p.kind} / ${q.k ?? q.kind}`, { depth: r1(Math.min(x, y)) }); continue; }
+    // side by side (sharing > boxGap of one axis) with a sliver between them: strokes merge or nearly do
+    const g = x > RULES.boxGap ? -y : y > RULES.boxGap ? -x : undefined;
+    const see = g === undefined ? undefined : g - ((p.sw ?? 0) + (q.sw ?? 0)) / 2;
+    if (g !== undefined && g > 0.5 && see < RULES.seeGap) add('c', see <= 0 ? 'P2' : 'P3', `${p.k ?? p.kind} / ${q.k ?? q.kind} nearly touch: ${r1(see)} between strokes`, { depth: r1(see) });
   }
   // d + e: arrows
   for (const a of arrows) {
@@ -171,7 +183,7 @@ function readFigure(fig) {
     if (filled) {
       const b = bb(el);
       if (tag === 'circle' && b.w < 8) continue; // dots, not boxes
-      if (b.w > 0.5 && b.h > 0.5) boxes.push({ k: k(el), kind: tag, ...b, parent: el.getAttribute('data-parent') ?? undefined, ok: el.getAttribute('data-overlap') === 'ok' || undefined });
+      if (b.w > 0.5 && b.h > 0.5) boxes.push({ k: k(el), kind: tag, ...b, sw: cs.stroke === 'none' ? 0 : parseFloat(cs.strokeWidth) || 0, parent: el.getAttribute('data-parent') ?? undefined, ok: el.getAttribute('data-overlap') === 'ok' || undefined });
       continue;
     }
     const mEnd = el.getAttribute('marker-end'), mStart = el.getAttribute('marker-start');
@@ -217,7 +229,7 @@ const STEP_ALL = (i) => `(async () => {
 
 // ── browser plumbing ────────────────────────────────────────────────────────────────────────────────────────────
 export async function openBrowser(tag) {
-  const profile = mkdtempSync(join(tmpdir(), `bd-v39a-${tag}-`));
+  const profile = mkdtempSync(join(tmpdir(), `${PREFIX}${tag}-`));
   const child = spawn(BROWSER, ['--headless=new', '--remote-debugging-port=0', `--user-data-dir=${profile}`, '--no-first-run', '--no-default-browser-check', '--disable-extensions', '--mute-audio', 'about:blank'], { stdio: 'ignore' });
   let port; for (let i = 0; i < 150 && !port; i++) { try { port = Number(readFileSync(join(profile, 'DevToolsActivePort'), 'utf8').split('\n')[0]); } catch { await sleep(200); } }
   let page; for (let i = 0; i < 50 && !page; i++) { try { page = (await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()).find((t) => t.type === 'page'); } catch {} if (!page) await sleep(200); }
@@ -332,7 +344,10 @@ const SELF = `<!doctype html><meta name=viewport content="width=device-width"><s
 <rect data-k="box" x="150" y="10" width="40" height="30" fill="#eee"/><text data-k="box.t" x="152" y="25" dominant-baseline="middle" style="font-size:12px">far too wide label</text>
 <rect data-k="p" x="20" y="60" width="60" height="40" fill="#ddd"/><rect data-k="q" x="60" y="80" width="60" height="30" fill="#ccc"/>
 <rect data-k="s" x="200" y="60" width="30" height="20" fill="#eee"/><rect data-k="t" x="270" y="60" width="25" height="20" fill="#eee"/><rect data-k="mid" x="240" y="55" width="20" height="30" fill="#bbb"/>
-<path d="M231 70 H270" fill="none" stroke="#000" stroke-width="1.4" marker-end="url(#m2)"/><text x="296" y="110" style="font-size:9px">outside</text></svg></figure></main>`;
+<path d="M231 70 H270" fill="none" stroke="#000" stroke-width="1.4" marker-end="url(#m2)"/><text x="296" y="110" style="font-size:9px">outside</text></svg></figure>
+<figure data-fig="tight" style="margin:0"><svg viewBox="0 0 300 60" width="300"><!-- E9: the old pool strips (15 high on a 16 pitch, 1.2 strokes, 12.5-unit Nunito labels), rescaled for the fallback sans-serif: 12 on 13 -->
+<rect data-k="ps0" x="10" y="10" width="92" height="12" rx="2" style="fill:#def;stroke:#048;stroke-width:1.2"/><text data-k="pt0" x="14" y="16" dominant-baseline="middle" style="font-size:12.5px">tenant_id A</text>
+<rect data-k="ps1" x="10" y="23" width="92" height="12" rx="2" style="fill:#fed;stroke:#840;stroke-width:1.2"/><text data-k="pt1" x="14" y="29" dominant-baseline="middle" style="font-size:12.5px">tenant_id B</text></svg></figure></main>`;
 async function selftest() {
   const b = await openBrowser('self');
   try {
@@ -340,12 +355,15 @@ async function selftest() {
     await b.send('Page.navigate', { url: `data:text/html,${encodeURIComponent(SELF)}` }); await b.waitFor(`document.readyState === 'complete'`, 10000);
     const clean = analyze((await b.ev(STEP_ALL(0))).steps[0], 320);
     const bad = analyze((await b.ev(STEP_ALL(1))).steps[0], 320);
+    const tight = analyze((await b.ev(STEP_ALL(2))).steps[0], 320); // E9 false negative: both rules must see it
+    const tightMiss = ['b', 'c'].filter((t) => !tight.some((x) => x.t === t && /hugs|nearly/.test(x.what)));
     const want = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
     const miss = want.filter((t) => !bad.some((x) => x.t === t));
     console.log('clean:', clean.length ? clean : 'no findings'); console.log('bad:', bad.map((x) => `${x.t} ${x.sev} ${x.what}`).join('\n     '));
+    console.log('tight:', tight.map((x) => `${x.t} ${x.sev} ${x.what}`).join('\n       '));
     // Node twin: samplePath agrees with a straight line
     const p = samplePath('M0 0 H10 V10'); if (p.length !== 21 || p.at(-1)[1] !== 10) throw new Error('samplePath');
-    if (clean.length || miss.length) { console.error('SELFTEST FAIL', { clean: clean.length, miss }); process.exitCode = 1; } else console.log('SELFTEST OK');
+    if (clean.length || miss.length || tightMiss.length) { console.error('SELFTEST FAIL', { clean: clean.length, miss, tightMiss }); process.exitCode = 1; } else console.log('SELFTEST OK');
   } finally { b.close(); }
 }
 
