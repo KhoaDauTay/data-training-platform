@@ -1,6 +1,7 @@
 import { bilingualOf, DRILL_ID, drillTicket, parseDrill, type Drill } from './general';
 import type { Bilingual } from './progress';
 import type { Ticket } from './tickets';
+import type { Clarify } from './cases';
 
 /**
  * v17 I5 interview room (docs/team/interview-room.md, L138): timed question sets and take-home assignments on `lab`.
@@ -36,6 +37,10 @@ export interface TakeHome {
   /** What the learner writes at the end (self-graded, never machine-graded). */
   conclusion: Bilingual;
   rubric: Bilingual[];
+  /** v47 (L930): a domain case study or ask (src/cases.ts): runs on that domain's schema, never listed in the room. */
+  domain?: string;
+  /** v47 D2 (L931): an ask's clarifying choice, picked before its step's task shows. */
+  clarify?: Clarify;
 }
 export interface Interview { sets: InterviewSet[]; takeHomes: TakeHome[] }
 
@@ -124,8 +129,9 @@ export interface InterviewContent extends Interview {
   placeOf(item: string): ItemPlace | undefined;
 }
 
-export function buildInterview(data: unknown): InterviewContent {
-  const iv = parseInterview(data);
+export function buildInterview(data: unknown, cases: readonly TakeHome[] = []): InterviewContent {
+  const parsed = parseInterview(data);
+  const iv = { ...parsed, takeHomes: [...parsed.takeHomes, ...cases] }; // v47 (L930): case studies walk the take-home flow
   const places = new Map<string, ItemPlace>();
   for (const s of iv.sets) s.questions.forEach((q, index) => places.set(q.id, { run: s.id, kind: 'set', index, step: 0 }));
   for (const th of iv.takeHomes) th.steps.forEach((x, step) => places.set(x.id, { run: th.id, kind: 'th', index: 0, step }));

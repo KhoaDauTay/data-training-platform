@@ -57,7 +57,7 @@ export interface InterviewPrefs { sets: Record<string, SetResult>; takeHomes: Re
 export const SQL_MAX = 20_000;
 export const TEXT_MAX = 4_000;
 const RUN_ID = /^(g-iv-th-\d+|[a-z][a-z0-9-]*)$/;
-const ITEM_ID = /^g-iv-[a-z0-9-]+$/;
+const ITEM_ID = /^(g-iv|cs)-[a-z0-9-]+$/; // v47 (L930): case-study steps `cs-…` walk the same run
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 const PHASES = ['work', 'write', 'done'] as const;
 
@@ -114,6 +114,6 @@ export function parseInterviewPrefs(v: unknown): InterviewPrefs {
  */
 export const passedTakeHomes = (p: InterviewPrefs): (TakeHomeResult & { id: string })[] =>
   Object.entries(p.takeHomes)
-    .filter(([, r]) => r.steps === r.total && r.text.trim() !== '')
+    .filter(([id, r]) => r.steps === r.total && r.text.trim() !== '' && !id.startsWith('cs-')) // v47: domain cases are no take-home (no portfolio export yet)
     .map(([id, r]) => ({ id, ...r }))
     .sort((a, b) => b.at.localeCompare(a.at) || a.id.localeCompare(b.id));

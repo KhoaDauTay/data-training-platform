@@ -1,6 +1,7 @@
 /**
  * v28 LINK (L432): the "Đào sâu" chips: a General skill (or advanced node) → the Database Engine lessons that show what it does
- * inside the engine. General → Engine only (never the other way, L82). Lazy (chunk engineDeep), loaded by src/ui/engine.ts
+ * inside the engine. These chips go General → Engine only; v47 S2 (L944) inverts the table for "Luyện thêm" on Engine lessons
+ * (src/engine/tracks.ts): L82 only keeps domains off General pages. Lazy (chunk engineDeep), loaded by src/ui/engine.ts
  * when a skill page or a drill brief asks. Titles equal the lessons' own (tests/engineCompare.test.ts); research-engine-compare-v28 §3.2.
  */
 export const DEEP: Record<string, string[]> = {select: ['e-pg-l1-01','e-dy-l1-05'], where: ['e-pg-l1-09','e-pg-l1-10','e-dy-l2-02'], order_by: ['e-pg-l1-11','e-pg-l3-14'], limit: ['e-pg-l1-11','e-dy-l1-10'], aggregate: ['e-pg-l1-08','e-dy-l2-14'], group_by: ['e-pg-l4-03','e-pg-l4-04'], join: ['e-pg-l4-04','e-dy-l3-08'], multi_join: ['e-pg-l4-05','e-dy-l3-07'], left_join: ['e-pg-l4-04','e-pg-l4-18'], anti_join: ['e-pg-l4-18'], exists: ['e-pg-l4-18'], in_subquery: ['e-pg-l4-18'], date_math: ['e-pg-l2-10'], date_bucket: ['e-pg-l2-08','e-pg-l4-07'], null_logic: ['e-pg-l1-05','e-dy-l3-06'], self_join: ['e-dy-l3-10'], string_fn: ['e-pg-l2-04'], pattern_match: ['e-pg-l2-13','e-pg-l2-12'], cast: ['e-pg-l1-01'], cte: ['e-pg-l4-19'], multi_cte: ['e-pg-l4-19'], window_rank: ['e-pg-l4-17'], window_lag: ['e-pg-l4-17'], window_agg: ['e-pg-l4-17'], explain_read: ['e-pg-l1-10','e-pg-l2-14','e-pg-l4-01'], sargable: ['e-pg-l2-04','e-pg-l1-10','e-dy-l2-02'], index_design: ['e-pg-l2-01','e-pg-l2-02','e-dy-l3-01'], a7: ['e-pg-l2-11','e-mg-l1-01'], a10: ['e-pg-l2-14','e-pg-l4-01','e-pg-l5-11'], c2: ['e-mg-l2-11','e-dy-l3-01']};

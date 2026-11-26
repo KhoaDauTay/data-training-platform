@@ -1,6 +1,7 @@
 import { activeDomain, type DomainId } from './domains';
 import type { General } from './general';
 import type { InterviewContent } from './interview';
+import type { CaseStudy } from './cases';
 import { parseKpis, setDomainKpis } from './home';
 import { parseLaneBriefs, type LaneBrief } from './lanes';
 import { parseLessonBody, parseLessons, type Lesson } from './lessons';
@@ -106,8 +107,10 @@ let generalLoading: Promise<General> | undefined;
 export function loadGeneral(): Promise<General> {
   // ponytail: both chunks are fetched together (in parallel), so a review or the practice hub also downloads adv.yml.
   // Fetching it only on adv pages needs callers that ask for drills alone (ui/modes.ts, ui/drillBrief.ts): add then (L167).
-  return (generalLoading ??= Promise.all([import('./generalSources'), import('./generalAdvSources')])
-    .then(([{ sqlDrills, buildGeneral }, { advNodes }]) => (general = buildGeneral(sqlDrills, advNodes, parseLessonBody)))
+  // v47 (L926): + the Practise sets (fix.yml, explain.yml), a third small chunk fetched alongside
+  return (generalLoading ??= Promise.all([import('./generalSources'), import('./generalAdvSources'), import('./practiceSources')])
+    .then(([{ sqlDrills, buildGeneral }, { advNodes }, { fixItems, explainItems }]) =>
+      (general = buildGeneral(sqlDrills, advNodes, parseLessonBody, { fix: fixItems, explain: explainItems })))
     .catch((e: unknown) => {
       generalLoading = undefined;
       throw e;
@@ -120,13 +123,27 @@ let interviewLoading: Promise<InterviewContent> | undefined;
  * Never part of loadContent(); a failed load is dropped so the next call retries.
  */
 export function loadInterview(): Promise<InterviewContent> {
-  return (interviewLoading ??= import('./interviewSources')
-    .then(({ interviewYml, buildInterview }) => buildInterview(interviewYml))
+  return (interviewLoading ??= Promise.all([import('./interviewSources'), loadCases()])
+    .then(([{ interviewYml, buildInterview }, cases]) => buildInterview(interviewYml, cases)) // v47: case runs use the take-home flow
     .catch((e: unknown) => {
       interviewLoading = undefined;
       throw e;
     }));
 }
+
+let casesLoading: Promise<CaseStudy[]> | undefined;
+let cases: CaseStudy[] | undefined;
+/** v47 D1/D2 (L930): domain case studies and asks, their own lazy chunk (src/caseSources.ts, budget `cases`); a failure retries. */
+export function loadCases(): Promise<CaseStudy[]> {
+  return (casesLoading ??= import('./caseSources')
+    .then(({ casesYml, parseCases }) => (cases = parseCases(casesYml)))
+    .catch((e: unknown) => {
+      casesLoading = undefined;
+      throw e;
+    }));
+}
+/** The cases once loadCases() resolved, else undefined (the Overview section shows its loading line meanwhile). */
+export const casesNow = (): CaseStudy[] | undefined => cases;
 
 /** The General content once loadGeneral() resolved, else undefined (callers that cannot wait show a placeholder). */
 export const generalNow = (): General | undefined => general;

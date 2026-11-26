@@ -59,6 +59,9 @@ export interface EngineDeps {
   cheer: { mascot: typeof Mascots.mascot; react: typeof Celebrate.react; badge: () => Element };
   /** v24 BP-UI (L346): the Best Practice entry (src/ui/engineBest.ts): a row on #/engine, a link on an engine page with a track. */
   best?: (engine?: EngineId) => HTMLElement | null;
+  /** v47 S2 (L940): the lazy engineTrack chunk (track facts, level chooser, "next" buttons, cross-links) and route skill labels. */
+  track?: typeof import('./engineTrack');
+  skill?: (id: string) => { vi: string; en: string } | undefined;
 }
 /** src/engineSources.ts: the lesson index (list fields only), one lazy chunk per lesson, and every engine's modules.yml. */
 export interface EngineSources { meta: Record<string, LessonSource>; full: Record<string, () => Promise<LessonSource>>; modules: Record<string, unknown> }
@@ -90,6 +93,7 @@ export function initEngine(deps: EngineDeps, src: EngineSources, bp: Record<stri
     trees[e] = treeOf(e, lessons, names);
     modNames[e] = names;
   }
+  d.track?.initTrack(lessons);
 }
 
 /** Full lessons (sections, lab, quiz), parsed from their own chunk on first open; a failed load is retried by Retry. */
@@ -296,7 +300,8 @@ function enginePg(e: EngineId): HTMLElement {
       next ? h('div', { class: 'flex flex-wrap items-center gap-3' },
         h('a', { href: lessonHash(next), class: cls.cx(cls.BTN_GO, 'inline-flex items-center gap-2 px-4 py-2 no-underline') }, et(p.done ? 'cont.btnResume' : 'cont.btnStart'), d.icon('arrowRight', 'size-4')),
         h('span', { class: 'min-w-0 text-body-sm text-muted' }, `${next.level} · ${next.title[lang()]}`))
-        : h('p', { class: 'm-0 font-bold good' }, et('cont.allDone', { name: nameOf(e) })), d.best?.(e)),
+        : h('p', { class: 'm-0 font-bold good' }, et('cont.allDone', { name: nameOf(e) })), d.track?.facts(hubCtx(), e) ?? null, d.best?.(e)),
+    d.track?.chooser(hubCtx(), e) ?? null,
     e === 'mongodb' ? h('section', { 'aria-labelledby': 'engine-path' }, h('h2', { id: 'engine-path', class: d.ui.GROUP_TITLE }, et('nosql.title')), pathRow()) : null,
     e === 'postgres' && extLessons().length ? extRow(ok) : null,
     h('section', { 'aria-labelledby': 'engine-levels' },
@@ -323,7 +328,8 @@ function levelPage(e: EngineId, lv: Rung): HTMLElement {
     h('div', { class: 'flex flex-col gap-3' },
       h('p', { class: 'm-0 text-muted' }, et(`ladder.${e}.${lv}`)),
       h('div', { class: 'flex flex-wrap items-center gap-x-3 gap-y-1' }, h('div', { class: 'flex min-w-40 flex-1' }, bar(p.done, p.total)),
-        h('span', { class: 'text-body-sm tabular-nums text-muted' }, `${et('progress', { k: p.done, n: p.total })} · ${et('level.meta', { n: ls.length, m: ls.reduce((a, x) => a + x.minutes, 0) })}`))),
+        h('span', { class: 'text-body-sm tabular-nums text-muted' }, `${et('progress', { k: p.done, n: p.total })} · ${et('level.meta', { n: ls.length, m: ls.reduce((a, x) => a + x.minutes, 0) })}`)),
+      d.track?.levelHead(hubCtx(), e, lv) ?? null),
     ...levelOf(e, lv)!.modules.map((m) => {
       const q = progressOf(m.lessons, ok);
       return h('section', { class: 'flex flex-col gap-3', 'aria-labelledby': `mod-${m.id}` },
@@ -869,13 +875,15 @@ function lessonBody(l: EngineLesson): HTMLElement {
         ...l.quiz.map((q, i) => h('div', {}, question(l, v, q, `q${i}`, et('quiz.n', { i: i + 1, n: l.quiz!.length })))))) : null,
     capDoneView(l, v), // review v23 P3: the finish card after the closing questions, the capstone's last part
     ...secs((id) => id === 'recap'),
+    d.track?.links(hubCtx(), l) ?? null,
     h('section', { class: cls.cx(cls.CARD, 'flex flex-wrap items-center gap-3 p-5 max-sm:p-4'), 'aria-label': et('done') },
       isDone ? h('p', { class: 'm-0 flex items-center gap-2 font-bold good' }, d.icon('check', 'size-5'), et('complete.done'))
         : parts.length ? h('p', { class: 'm-0 text-body-sm' }, et('complete.parts', { k: parts.filter((p) => v.passed.has(p)).length, n: parts.length }))
           : h('button', { type: 'button', class: cls.cx(cls.BTN_GO, 'px-5 py-2'), 'data-ek': `${l.id}-done`, onclick: () => complete(l) }, et('complete.btn')),
       h('div', { class: 'ml-auto flex flex-wrap gap-2' },
         prev ? h('a', { href: lessonHash(prev), class: cls.cx(cls.BTN_GHOST, 'inline-flex items-center gap-1 px-4 py-2 no-underline'), title: prev.title[lang()] }, d.icon('chevronLeft', 'size-4'), et('lesson.prev')) : null,
-        next ? h('a', { href: lessonHash(next), class: cls.cx(isDone ? cls.BTN_GO : cls.BTN_SECONDARY, 'inline-flex items-center gap-1 px-4 py-2 no-underline'), title: et('next', { title: next.title[lang()] }) },
+        isDone && d.track ? d.track.doneNext(hubCtx(), l, all) // v47 S2 (I7): the next unfinished lesson, capstone or level
+        : next ? h('a', { href: lessonHash(next), class: cls.cx(isDone ? cls.BTN_GO : cls.BTN_SECONDARY, 'inline-flex items-center gap-1 px-4 py-2 no-underline'), title: et('next', { title: next.title[lang()] }) },
           et('lesson.next'), d.icon('chevronRight', 'size-4'))
           // R2 E13 (L578f): the track's last lesson is no dead end: back to the engine's page
           : h('a', { href: ext ? d.engineHash(l.engine, 'EXT') : d.engineHash(l.engine), class: cls.cx(isDone ? cls.BTN_GO : cls.BTN_SECONDARY, 'inline-flex items-center gap-1 px-4 py-2 no-underline'), 'data-ek': `${l.id}-to-engine` },

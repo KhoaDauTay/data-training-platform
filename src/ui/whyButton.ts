@@ -23,7 +23,7 @@ const EXPLAINS = /\b(group\s+by|join|count|sum|avg|min|max)\b/i;
  */
 export function whyOpen(key: string, tickets: Ticket[], save: Pick<Save, 'completed' | 'bossStep'>): boolean {
   const id = ticketOfKey(key);
-  if (INTERVIEW_ID.test(id)) return false;
+  if (INTERVIEW_ID.test(id) || id.startsWith('cs-')) return false; // v47: a domain case is graded like a take-home
   const tk = tickets.find((x) => x.id === id);
   const step = Number(key.split('#')[1] ?? 0);
   if (!tk) return true;
