@@ -4,13 +4,14 @@ import { parseLine } from './parse';
  * v47 spike: a Redis teaching subset in pure TS (no Node built-ins, no Date.now()). One in-memory keyspace, a virtual clock
  * (`now`, `advance(ms)`; expiry is lazy on access, like Redis' lazy path), several clients (`exec(line, client)`) so WATCH and
  * pub/sub can be shown. Replies are RESP2-shaped and `format()` prints them like redis-cli in a terminal.
- * Error texts follow Redis/Valkey 7.x (server.c, t_string.c, t_zset.c, t_stream.c, multi.c).
+ * Error texts are Redis/Valkey 7.x wording written from memory; LPOP's arity was checked against valkey t_list.c, the rest still needs a diff against a real server.
  * ponytail: no Lua, no blocking (XREAD BLOCK returns at once), no keyspace events, SCAN returns everything with cursor 0,
  * KEYS/SMEMBERS/HGETALL come back in insertion order (Redis leaves it unspecified: grade those unordered).
  */
 export type Reply =
   | { t: 'status'; v: string }
-  | { t: 'err'; v: string }
+  /** `cli`: printed by redis-cli itself, without `(error)` (an input line it cannot split). */
+  | { t: 'err'; v: string; cli?: true }
   | { t: 'int'; v: number }
   | { t: 'bulk'; v: string }
   | { t: 'nil' }
@@ -128,7 +129,7 @@ export class RedisSim {
   /** One redis-cli line as client `client`. */
   exec(line: string, client = 0): Reply {
     const args = parseLine(line);
-    if (!args) return { t: 'err', v: 'Invalid argument(s)' };
+    if (!args) return { t: 'err', v: 'Invalid argument(s)', cli: true };
     return args.length ? this.call(args, client) : { t: 'seq', v: [] };
   }
 
@@ -241,8 +242,8 @@ export class RedisSim {
     return int(l.length);
   }
   private pop(a: string[], left: boolean): Reply {
-    if (a.length > 2) fail(SYNTAX);
-    const n = a[1] === undefined ? undefined : toInt(a[1], 'ERR value is out of range, must be positive');
+    if (a.length > 2) fail(arity(left ? 'lpop' : 'rpop'));
+    const n = a[1] === undefined ? undefined : toInt(a[1]);
     if (n !== undefined && n < 0) fail('ERR value is out of range, must be positive');
     const l = this.get(a[0], 'list');
     if (!l) return NIL;
@@ -604,7 +605,7 @@ function repr(s: string): string {
 export function format(r: Reply): string {
   switch (r.t) {
     case 'status': return r.v;
-    case 'err': return `(error) ${r.v}`;
+    case 'err': return r.cli ? r.v : `(error) ${r.v}`;
     case 'int': return `(integer) ${r.v}`;
     case 'bulk': return repr(r.v);
     case 'nil': return '(nil)';

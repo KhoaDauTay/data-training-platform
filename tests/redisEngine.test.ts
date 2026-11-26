@@ -18,7 +18,7 @@ describe('parseLine (redis-cli quoting)', () => {
   it('refuses unbalanced quotes and a quote glued to text', () => {
     expect(parseLine('SET k "abc')).toBeNull();
     expect(parseLine('SET k "a"b')).toBeNull();
-    expect(format(new RedisSim().exec('GET "x'))).toBe('(error) Invalid argument(s)');
+    expect(format(new RedisSim().exec('GET "x'))).toBe('Invalid argument(s)');
   });
 });
 
@@ -121,6 +121,10 @@ describe('hashes', () => {
     expect(r('HGETALL user:1')).toBe('1) "name"\n2) "Boon"\n3) "city"\n4) "Da Nang"');
     expect(r('HINCRBY user:1 visits 5')).toBe('(integer) 5');
     expect(r('HINCRBY user:1 name 1')).toBe('(error) ERR hash value is not an integer');
+    expect(r('HKEYS user:1')).toBe('1) "name"\n2) "city"\n3) "visits"');
+    expect(r('HVALS user:1')).toBe('1) "Boon"\n2) "Da Nang"\n3) "5"');
+    expect(r('HLEN user:1')).toBe('(integer) 3');
+    expect(r('HEXISTS user:1 city')).toBe('(integer) 1');
     expect(r('HDEL user:1 name city visits nope')).toBe('(integer) 3');
     expect(r('EXISTS user:1')).toBe('(integer) 0');
     expect(r('HGETALL user:1')).toBe('(empty array)');
@@ -140,6 +144,8 @@ describe('lists', () => {
     expect(r('RPOP queue 2')).toBe('1) "c"\n2) "b"');
     expect(r('LLEN queue')).toBe('(integer) 2');
     expect(r('LPOP nope')).toBe('(nil)');
+    expect(r('LPOP queue 1 2')).toBe("(error) ERR wrong number of arguments for 'lpop' command");
+    expect(r('LPOP queue x')).toBe('(error) ERR value is not an integer or out of range');
     r('SET s x');
     expect(r('LPUSH s y')).toBe('(error) WRONGTYPE Operation against a key holding the wrong kind of value');
   });
@@ -177,6 +183,8 @@ describe('sorted sets', () => {
     expect(r('ZADD board NX 99 lily 1 new')).toBe('(integer) 1');
     expect(r('ZADD board XX CH 30 boon')).toBe('(integer) 1');
     expect(r('ZADD board abc m')).toBe('(error) ERR value is not a valid float');
+    expect(r('ZREM board new nope')).toBe('(integer) 1');
+    expect(r('ZCARD board')).toBe('(integer) 3');
     expect(r('ZADD board NX XX 1 m')).toBe('(error) ERR XX and NX options at the same time are not compatible');
   });
 });
@@ -218,6 +226,14 @@ describe('transactions', () => {
     r('MULTI');
     r('DECR stock');
     expect(r('EXEC')).toBe('1) (integer) -1');
+    r('WATCH stock');
+    expect(r('UNWATCH')).toBe('OK');
+    r('SET stock 9', 1);
+    r('MULTI');
+    r('GET stock');
+    expect(r('EXEC')).toBe('1) "9"');
+    expect(r('FLUSHALL')).toBe('OK');
+    expect(r('DBSIZE')).toBe('(integer) 0');
   });
   it('WATCH also aborts when the watched key expires', () => {
     const { db, r } = fresh();
