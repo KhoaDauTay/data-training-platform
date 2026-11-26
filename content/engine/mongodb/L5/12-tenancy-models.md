@@ -5,6 +5,7 @@ level: L5
 module: multi-tenant
 title: "Mô hình tenant trong MongoDB: collection chung, database riêng, zone"
 title_en: "Tenancy models in MongoDB: shared collection, own database, zones"
+figures: [{ name: mg-tenancy-zones, at: idea }]
 kind: concept
 minutes: 14
 runtime: docs
@@ -68,6 +69,8 @@ Chợ Lồng Đèn mở cửa với ba người bán, giờ có hàng nghìn, v�
 **Zone**: khi shard collection chung, đặt `tenantId` đầu shard key, thêm một trường thứ hai (ví dụ `createdAt`) để đơn của một người bán lớn vẫn chia được ra nhiều chunk. Zone phủ một khoảng shard key; với khóa kép, khoảng phải chứa tiền tố. Nhờ đó zone sharding ghim khoảng của một người bán lên shard phần cứng mạnh. Zone không hỗ trợ time series collection.
 
 Phần sharding cần cụm thật nên bài này chưa chạy trong trình duyệt; các ví dụ đếm đơn chạy bằng mingo.
+
+Hình dưới vẽ đơn của S07 dồn một chỗ, rồi chia thành nhiều chunk trong một zone.
 
 ## Cú pháp
 
@@ -181,6 +184,8 @@ Lantern Market opened with three sellers, now it has thousands, and one big sell
 **Zones**: when you shard the shared collection, put `tenantId` first in the shard key and add a second field (for example `createdAt`) so a big seller's orders can still split over several chunks. A zone covers a range of the shard key; with a compound key, the range must include the prefix. That way zone sharding pins one seller's range to the powerful shard. Zones do not support time series collections.
 
 The sharding part needs a real cluster, so this lesson does not run in the browser yet; the order-count examples run on mingo.
+
+The figure below draws S07's orders stuck in one place, then split into chunks inside one zone.
 
 ## Syntax
 

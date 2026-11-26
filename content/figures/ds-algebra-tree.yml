@@ -1,0 +1,50 @@
+# B1-13 (tools/v42/diagram-plan-v42.md): a query is a tree of operators, and σ moves down. Lesson: e-ds-l5-01 (Ý chính, both
+# trees); variant `pushed` (step 2 alone) at Ví dụ. Data (the lab's setup, PGlite): π name, title (σ city = 'Hue' (emp ⋈ dept))
+# gives 3 rows (An–sales, Binh–ops, An–it); emp has 5 tuples, 3 of them in Hue; dept has 4. No text block is replaced (the
+# lesson's notation table is 2C). Glyphs σ π ⋈ were measured into glyphs.ts (L764). The two trees share one grid of slots:
+# row 1 holds σ (written) or ⋈ (pushed), row 2 holds ⋈ (written) or σ beside dept (pushed), so π and emp never move; the
+# result count is π's sub (the plan's `res` note) and the pushed σ's sub carries its 3 tuples (the plan's edge label: an elbow too short at 280).
+# Sources: https://doi.org/10.1145/362384.362685, https://www.postgresql.org/docs/18/queries-table-expressions.html
+title: { vi: "Câu truy vấn là một cây phép toán", en: "A query is a tree of operators" }
+caption:
+  vi: "Dữ liệu đi từ lá lên gốc: mỗi phép nhận quan hệ và trả quan hệ. Phép chọn σ chỉ dùng cột của emp, nên đặt nó trước hay sau phép nối đều cho cùng kết quả."
+  en: "Data flows from the leaves up to the root: each operator takes relations and returns a relation. The selection σ uses only emp's columns, so placing it before or after the join gives the same result."
+alt:
+  vi: "Đại số quan hệ biến câu SQL thành cây phép toán, và hai cây tương đương cho cùng kết quả. Optimizer dùng điều đó để đẩy phép chọn xuống sát bảng. Kết quả: 3 bộ."
+  en: "Relational algebra turns a SQL query into a tree of operators, and equivalent trees give the same result. The optimizer uses this to push selections down to the tables. Result: 3 tuples."
+nodes:
+  - { id: pi, shape: key, label: "π name, title", sub: { vi: "3 bộ", en: "3 tuples" }, tone: live }
+  - { id: x, shape: key, label: "σ city = 'Hue'" }
+  - { id: y, shape: key, label: "⋈ dept_id = id" }
+  - { id: d2, shape: table, label: dept, sub: { vi: "4 bộ", en: "4 tuples" } }
+  - { id: emp, shape: table, label: emp, sub: { vi: "5 bộ", en: "5 tuples" } }
+  - { id: dept, shape: table, label: dept, sub: { vi: "4 bộ", en: "4 tuples" } }
+rows:
+  - [pi]
+  - [x]
+  - [y, d2]
+  - [emp, dept]
+edges:
+  - { from: x, to: pi }
+  - { from: y, to: x }
+  - { from: emp, to: y }
+  - { from: dept, to: y }
+  - { from: d2, to: x }
+steps:
+  - say: { vi: "Viết ra: nối trước, chọn sau.", en: "As written: join first, select later." }
+    alt: { vi: "Mỗi phép nhận quan hệ và trả quan hệ, nên câu SQL là một cây lồng các phép, ở đây phép nối ghép cả 5 bộ của emp với dept.", en: "Each operator takes and returns relations, so a SQL query is a nested tree of them, here a join that pairs all 5 tuples of emp with dept." }
+    show: [pi, x, y, emp, dept]
+  - say: { vi: "Đẩy σ xuống sát emp.", en: "Push σ down to emp." }
+    alt: { vi: "Phép chọn chỉ dùng cột của emp, nên làm trước phép nối cho kết quả như nhau mà phép nối chỉ nhận 3 bộ.", en: "The selection uses only emp's columns, so doing it before the join gives the same result while the join takes only 3 tuples." }
+    show: [pi, x, y, d2, emp]
+    set:
+      x: { label: "⋈ dept_id = id" }
+      y: { label: "σ city = 'Hue'", sub: { vi: "còn 3 bộ", en: "3 tuples left" }, tone: new }
+variants:
+  pushed:
+    step: 1
+    title: { vi: "Sau khi đẩy σ xuống", en: "After pushing σ down" }
+    caption: { vi: "Phép chọn chạy ngay trên emp, phép nối chỉ nhận 3 bộ; kết quả vẫn là 3 bộ như cây viết ra.", en: "The selection runs right on emp and the join takes only 3 tuples; the result is still the written tree's 3 tuples." }
+    alt:
+      vi: "Phép chọn σ city = 'Hue' chạy ngay trên emp, nên phép nối chỉ ghép 3 bộ thay vì 5. Cây mới tương đương cây viết ra: cùng 3 bộ kết quả."
+      en: "The selection σ city = 'Hue' runs right on emp, so the join pairs 3 tuples instead of 5. The new tree is equivalent to the written one: the same 3 result tuples."

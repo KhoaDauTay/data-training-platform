@@ -18,7 +18,7 @@ import { extensionsOf, replayOf } from '../src/engine/pglab/runner';
 import { enginePathOf } from '../src/route';
 import sourcesTs from '../src/engineSources.ts?raw';
 
-const files = import.meta.glob<LessonSource>('../content/engine/*/L*/*.md', { query: '?fm', import: 'default', eager: true });
+const files = import.meta.glob<LessonSource>('../content/engine/*/{L*,ext}/*.md', { query: '?fm', import: 'default', eager: true });
 const lessons: EngineLesson[] = Object.entries(files).map(([p, s]) => parseEngineLesson(s, p));
 const lang = () => 'en' as const;
 const node = (globalThis as unknown as { process: { getBuiltinModule(id: string): unknown } }).process;
@@ -38,7 +38,7 @@ describe('engine index and routes', () => {
 });
 
 describe('viz names in content → ENG-VIZ diagrams', () => {
-  const short = { postgres: 'pg', mongodb: 'mg', dynamodb: 'dy', design: 'pg' } as const;
+  const short = { postgres: 'pg', mongodb: 'mg', dynamodb: 'dy', design: 'pg', stack: 'pg' } as const;
   it.each(lessons.filter((l) => l.viz).map((l) => [l.id, l.viz!, l.engine] as const))('%s: %s', (_id, name, engine) => {
     const real = resolveViz(name, short[engine]);
     expect(real, name).toMatch(new RegExp(`^${short[engine]}-`));

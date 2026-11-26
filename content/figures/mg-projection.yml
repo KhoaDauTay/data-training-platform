@@ -1,0 +1,47 @@
+# MG-B6-1 (v46 Batch 6, L850–L859): a projection cuts fields, never documents. Lesson: e-mg-l1-03 (Ý chính).
+# Data (lab.setup, run on mingo): p1 = _id p1, name Green tea, category drink, price 25000, stock 40, tags [hot, cold];
+# find({ category: "drink" }, { name: 1, price: 1 }) → name, price, _id; with _id: 0 → name, price; { tags: 0 } → every field but tags.
+# The figure follows p1 only; the three drinks come back each time (the filter decides that).
+# Source: https://www.mongodb.com/docs/manual/tutorial/project-fields-from-query-results/
+title: { vi: "Projection chọn trường, không chọn tài liệu", en: "A projection picks fields, not documents" }
+caption:
+  vi: "Tài liệu p1 qua ba projection của find. Kiểu chọn (1) giữ trường đã ghi và vẫn kèm _id, trừ khi ghi _id: 0; kiểu bỏ (0) giữ mọi trường trừ trường đã ghi. Không trộn 1 và 0, trừ _id: 0. Dòng gạch là trường bị cắt."
+  en: "Document p1 through three projections of find. The include style (1) keeps the fields named and still brings _id unless you write _id: 0; the exclude style (0) keeps every field but those named. Do not mix 1 and 0, except _id: 0. A struck row is a field cut away."
+alt:
+  vi: "Projection là đối số thứ hai của find: nó chỉ cắt bớt trường của từng tài liệu, còn số tài liệu trả về do bộ lọc quyết định. _id luôn đi kèm trong kiểu chọn cho tới khi bạn ghi _id: 0."
+  en: "The projection is the second argument of find: it only trims the fields of each document, while the filter decides how many documents come back. _id always comes along in the include style until you write _id: 0."
+nodes:
+  - id: doc
+    shape: grid
+    label: { vi: "p1 trong collection", en: "p1 in the collection" }
+    head: [{ vi: "trường", en: field }, { vi: "giá trị", en: value }]
+    cells: [[_id, p1], [name, Green tea], [category, drink], [price, "25000"], [stock, "40"], [tags, "hot, cold"]]
+    strike: [2, 4, 5]
+  - { id: proj, shape: key, mono: true, label: "name: 1, price: 1", sub: { vi: "kiểu chọn", en: "include style" }, tone: new }
+  - id: res
+    shape: grid
+    label: { vi: "p1 trả về", en: "p1 returned" }
+    head: [{ vi: "trường", en: field }, { vi: "giá trị", en: value }]
+    cells: [[_id, p1], [name, Green tea], [price, "25000"]]
+    rowTone: [warm, null, null]
+    sub: { vi: "_id vẫn đi kèm", en: "_id still comes along" }
+rows:
+  - [doc, proj, res]
+edges:
+  - { from: doc, to: proj }
+  - { from: proj, to: res }
+steps:
+  - say: { vi: "Kiểu chọn giữ trường đã ghi, và _id vẫn đi kèm.", en: "The include style keeps the fields named, and _id still comes along." }
+    alt: { vi: "Với name: 1, price: 1, p1 trở về với name và price, cộng _id dù bạn không chọn nó.", en: "With name: 1, price: 1, p1 comes back with name and price, plus _id even though you did not pick it." }
+  - say: { vi: "Thêm _id: 0, ngoại lệ duy nhất được đi cùng kiểu chọn.", en: "Add _id: 0, the one exception allowed with the include style." }
+    alt: { vi: "Thêm _id: 0 thì chỉ còn name và price, đúng danh sách trường màn hình cần.", en: "With _id: 0 added, only name and price are left, exactly the fields the screen needs." }
+    set:
+      doc: { strike: [0, 2, 4, 5] }
+      proj: { sub: "+ _id: 0" }
+      res: { cells: [[name, Green tea], [price, "25000"]], rowTone: [null, null], sub: { vi: "đúng hai trường", en: "exactly two fields" } }
+  - say: { vi: "Kiểu bỏ giữ mọi trường trừ trường đã ghi.", en: "The exclude style keeps every field but those named." }
+    alt: { vi: "Với tags: 0, p1 giữ năm trường và chỉ mất tags, hợp khi tài liệu nhiều trường mà chỉ cần giấu vài trường.", en: "With tags: 0, p1 keeps five fields and loses only tags, handy when a document has many fields and only a few should be hidden." }
+    set:
+      doc: { strike: [5] }
+      proj: { label: "tags: 0", sub: { vi: "kiểu bỏ", en: "exclude style" }, tone: warm }
+      res: { cells: [[_id, p1], [name, Green tea], [category, drink], [price, "25000"], [stock, "40"]], rowTone: [null, null, null, null, null], sub: { vi: "chỉ mất tags", en: "only tags is gone" } }

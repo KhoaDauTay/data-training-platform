@@ -1,0 +1,42 @@
+# B2-1 (tools/v42/diagram-plan-v42.md): the kinds of attribute, and where each one goes on tables. Lesson: e-ds-l2-01 (Ý chính;
+# ds-cardinality stays in Ví dụ). Data: the lesson's lab, run on PGlite (tools/v42/b2check.log): customers (id, first_name,
+# last_name), order_lines (id, customer_id, qty, unit_price); the lab's steps add the generated line_total and the child table
+# customer_phones (customer_id, phone, PRIMARY KEY (customer_id, phone)).
+# v44 eye fixes (L804, E4/E5/E15): each kind is drawn on its own attribute row, never in a loose pill: the composite full_name with
+# its parts indented under a bracket, phones in a double-edged chip (multivalued), line_total in a dashed chip (derived); the
+# legend pills below carry the same marks. Step 2 keeps CUSTOMER's phones row as "phones → bảng con" (no empty row), and the
+# legend says where each kind went. Phones stack ORDER_LINE, CUSTOMER, CUSTOMER_PHONES so both lines join neighbouring rows.
+# Source: https://www.postgresql.org/docs/18/ddl-generated-columns.html
+title: { vi: "Loại thuộc tính và chỗ của chúng trên bảng", en: "Kinds of attribute and where they go on tables" }
+caption:
+  vi: "PK: thuộc tính khóa. Dòng thụt dưới full_name: các phần của thuộc tính phức hợp. Viền đôi: đa trị. Viền đứt: dẫn xuất."
+  en: "PK: a key attribute. Rows inset under full_name: the parts of a composite attribute. Double edge: multivalued. Dashed edge: derived."
+alt:
+  vi: "Loại thuộc tính quyết định chỗ của nó trên bảng: phức hợp thành nhiều cột, đa trị thành bảng con có khóa ghép, dẫn xuất thành cột sinh."
+  en: "An attribute's kind decides where it goes on tables: a composite becomes several columns, a multivalued one a child table with a composite key, a derived one a generated column."
+nodes:
+  - { id: l, shape: entity, label: ORDER_LINE, fields: [{ name: id, pk: true }, { name: customer_id, fk: true }, qty, unit_price, { name: line_total, derived: true }] }
+  - { id: c, shape: entity, label: CUSTOMER, fields: [{ name: id, pk: true }, full_name, { name: first_name, part: true }, { name: last_name, part: true }, { name: phones, multi: true }] }
+  - { id: ph, shape: entity, label: CUSTOMER_PHONES, fields: [{ name: customer_id, pk: true, fk: true }, { name: phone, pk: true }] }
+  - { id: k2, shape: key, label: { vi: "phức hợp: thụt vào", en: "composite: inset" } }
+  - { id: k3, shape: key, double: true, label: { vi: "đa trị", en: multivalued } }
+  - { id: k4, shape: key, tone: ghost, label: { vi: "dẫn xuất", en: derived } }
+rows:
+  - [l, c]
+  - [ph]
+  - [k2, k3, k4]
+phone: { rows: [[l], [c], [ph], [k2], [k3, k4]] }
+edges:
+  - { from: "c#0", to: "l#1", link: true, ends: [one, zero-many], label: { vi: "có", en: "has" } }
+  - { from: "c#0", to: "ph#0", link: true, ends: [one, zero-many], label: { vi: "có", en: "has" } }
+steps:
+  - say: { vi: "Các loại thuộc tính trên sơ đồ.", en: "The kinds of attribute on the diagram." }
+    alt: { vi: "Khóa phân biệt thực thể, phức hợp có nhiều phần, đa trị có nhiều giá trị, dẫn xuất tính được từ cột khác.", en: "A key tells entities apart, a composite has parts, a multivalued attribute has several values, a derived one is computed from others." }
+    show: [l, c, k2, k3, k4]
+  - say: { vi: "Lên bảng: đa trị thành bảng con, dẫn xuất thành cột sinh.", en: "On tables: multivalued becomes a child table, derived becomes a generated column." }
+    alt: { vi: "Số điện thoại không có trần nên mỗi số là một dòng của bảng con, còn thành tiền do database tính để không bao giờ lệch.", en: "Phone numbers have no ceiling so each is a child-table row, while the line total is computed by the database so it never drifts." }
+    set:
+      c: { fields: [{ name: id, pk: true }, full_name, { name: first_name, part: true }, { name: last_name, part: true }, { name: { vi: "phones → bảng con", en: "phones → child" } }] }
+      k2: { label: { vi: "phức hợp: 2 cột", en: "composite: 2 cols" } }
+      k3: { label: { vi: "đa trị: bảng con", en: "multivalued: table" } }
+      k4: { label: { vi: "dẫn xuất: cột sinh", en: "derived: generated" } }

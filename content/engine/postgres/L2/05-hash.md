@@ -15,6 +15,7 @@ objectives:
   - vi: Nhận ra các câu Hash không phục vụ được (khoảng, sắp xếp, tiền tố, unique, nhiều cột) trước khi chọn nó.
     en: Spot the queries Hash cannot serve (ranges, sorting, prefixes, uniqueness, several columns) before choosing it.
 requires: [e-pg-l2-04]
+figures: [{ name: pg-hash-equal-only, at: idea }]
 sources:
   - https://www.postgresql.org/docs/18/indexes-types.html
   - https://www.postgresql.org/docs/18/hash-index.html
@@ -58,8 +59,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì kiểm trùng chỉ cần so bằng, nhưng trong Postgres chỉ B-tree hỗ trợ unique index. `CREATE UNIQUE INDEX ... USING hash` báo lỗi `0A000`. Ràng buộc `UNIQUE` luôn dựng một B-tree."
-      en: "It sounds right because checking duplicates only needs equality, but in Postgres only B-tree supports unique indexes. `CREATE UNIQUE INDEX ... USING hash` fails with `0A000`. A `UNIQUE` constraint always builds a B-tree."
+      vi: "Kiểm trùng chỉ cần so bằng nên Hash nghe hợp, nhưng trong Postgres chỉ B-tree hỗ trợ unique index: `CREATE UNIQUE INDEX ... USING hash` báo lỗi `0A000` (tính năng không được hỗ trợ). `INCLUDE` không đổi được điều đó, vì nó chỉ thêm cột để trả về. Ràng buộc (constraint) `UNIQUE` luôn tự dựng một B-tree, nên đó là cách chặn trùng."
+      en: "Checking duplicates only needs equality, so Hash sounds fine, but in Postgres only B-tree supports unique indexes: `CREATE UNIQUE INDEX ... USING hash` fails with `0A000` (feature not supported). `INCLUDE` cannot change that, since it only adds columns to return. A `UNIQUE` constraint always builds its own B-tree, so that is how you block duplicates."
 predict:
   sql: SELECT user_id FROM sessions WHERE token BETWEEN 'a00' AND 'a01'
   expect: { node: Seq Scan, table: sessions }
@@ -73,8 +74,8 @@ predict:
   answer: 2
   trap: 0
   why:
-    vi: "Đi qua index nghe hợp lý vì câu chỉ khớp 6 dòng, mà câu chọn lọc thì thường dùng index; nhưng index Hash lưu mã băm 32 bit của giá trị, không lưu thứ tự. Nó trả lời được \"bằng đúng giá trị này\" nhưng không trả lời được \"nằm giữa a00 và a01\". Dù câu rất chọn lọc, planner vẫn phải Seq Scan. Một B-tree thì dùng được cho cả hai."
-    en: "Using the index is tempting because the query matches only 6 rows, and selective queries usually go through an index, but a Hash index stores a 32-bit hash of each value, not its order. It can answer \"equal to this value\" but not \"between a00 and a01\". However selective the query is, the planner must Seq Scan. A B-tree would serve both."
+    vi: "Đi qua index nghe hợp lý vì câu chỉ khớp vài dòng, mà câu khớp ít dòng thường dùng index. Nhưng index Hash chỉ lưu mã băm 32 bit của mỗi giá trị: hai token gần nhau như `a00…` và `a01…` có mã băm nằm ở hai chỗ bất kỳ, nên index không biết thứ tự. Nó trả lời được \"bằng đúng giá trị này\", không trả lời được \"nằm giữa a00 và a01\", nên cả Index Scan lẫn Bitmap Heap Scan qua nó đều không có. Planner phải Seq Scan; một B-tree thì phục vụ được cả bằng lẫn khoảng."
+    en: "Using the index sounds right because the query matches only a few rows, and such queries usually go through an index. But a Hash index stores only a 32-bit hash of each value: two close tokens like `a00…` and `a01…` hash to unrelated places, so the index knows no order. It can answer \"equal to this value\", not \"between a00 and a01\", so neither an Index Scan nor a Bitmap Heap Scan through it exists. The planner must Seq Scan; a B-tree would serve both equality and ranges."
 ---
 ## Mở bài
 
@@ -87,6 +88,8 @@ Index Hash băm mỗi giá trị thành một mã 32 bit và xếp các mục th
 Hash không phục vụ được: khoảng (`<`, `BETWEEN`), `ORDER BY`, tìm theo tiền tố `LIKE 'abc%'`, index nhiều cột, unique. B-tree làm được tất cả những việc đó, và cũng phục vụ `=` rất tốt. Vì vậy B-tree vẫn là mặc định hợp lý; chỉ chọn Hash khi đo thấy nó nhỏ hơn hoặc nhanh hơn cho đúng một kiểu câu bằng.
 
 Nhiều người nghĩ cứ câu nào chọn lọc (khớp ít dòng) thì có index là dùng được. Thật ra index chỉ dùng được khi toán tử của câu nằm trong những gì index hiểu. Câu khoảng khớp 6 dòng vẫn Seq Scan nếu cột chỉ có index Hash; ngay cả `BETWEEN x AND x`, khoảng chỉ chứa một giá trị, cũng vậy.
+
+Hình từng bước ở cuối mục này xếp sáu mục mẫu của index theo mã băm, để thấy vì sao dấu bằng tìm được còn một khoảng thì không.
 
 ## Ví dụ
 
@@ -148,6 +151,8 @@ A Hash index hashes each value into a 32-bit code and files entries by that code
 Hash cannot serve: ranges (`<`, `BETWEEN`), `ORDER BY`, prefix search `LIKE 'abc%'`, multicolumn indexes, uniqueness. A B-tree does all of these, and serves `=` very well too. So B-tree remains the sensible default; pick Hash only when you measure it as smaller or faster for one kind of equality query.
 
 Many people think any selective query (matching few rows) can use an index if one exists. In fact an index is usable only when the query's operator is one the index understands. A range matching 6 rows still does a Seq Scan if the column only has a Hash index; so does `BETWEEN x AND x`, a range holding a single value.
+
+The step-through figure at the end of this section lays six sample index entries out in hash-code order, to show why an equality can be found and a range cannot.
 
 ## Example
 

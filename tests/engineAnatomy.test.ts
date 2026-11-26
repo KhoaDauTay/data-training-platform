@@ -19,7 +19,7 @@ import { runLabScript, splitSql } from '../src/engine/pglab/session';
 import { wordCount } from '../src/fullLesson';
 import { compareResults, grade } from '../src/grader';
 
-const files = import.meta.glob<string>('../content/engine/postgres/L*/*.md', { query: '?raw', import: 'default', eager: true });
+const files = import.meta.glob<string>('../content/engine/postgres/{L*,ext}/*.md', { query: '?raw', import: 'default', eager: true });
 const all = Object.entries(files).map(([p, raw]) => {
   const fm = parse(/^---\n([\s\S]*?)\n---\n/.exec(raw.replace(/\r\n/g, '\n'))![1]) as Record<string, unknown>;
   return { l: parseEngineLesson(raw, p, parse), fm };
@@ -39,7 +39,7 @@ const isErr = (b: string): boolean => /^--\s*ERROR\b/m.test(b);
 const words = (l: EngineLesson): number => l.sections.reduce((n, s) => n + wordCount(s.text.vi.replace(/```[\s\S]*?```/g, '')), 0);
 
 describe('Engine PostgreSQL L1–L5: giải phẫu 8 mục (R3, R6)', () => {
-  it('đủ 105 bài L1–L5 (v28 thêm L4-17..19; v32 thêm L1-18, L2-25, L5-18; v35 thêm L1-19, L2-26, L4-20, L5-19..22)', () => expect(all.length).toBe(105));
+  it('đủ 105 bài L1–L5 (v28 thêm L4-17..19; v32 thêm L1-18, L2-25, L5-18; v35 thêm L1-19, L2-26, L4-20, L5-19..22)', () => expect(all.filter((x) => x.l.level !== 'EXT').length).toBe(105)); // v43: the Extensions shelf (postgres/ext) is counted apart
 
   it.each(all.map((x) => [x.l.id, x] as const))('%s: mục theo loại bài, thứ tự, độ dài, câu hỏi, nguồn', (_, { l, fm }) => {
     const ids = l.sections.map((s) => s.id);
@@ -175,7 +175,9 @@ describe('Engine MongoDB/DynamoDB L1–L5: giải phẫu theo loại bài (R6, v
     expect(l.sources.some((u) => u.startsWith(home)), `nguồn chính thức ${home}`).toBe(true);
     if (l.kind === 'concept' || l.kind === 'lab') {
       const ex = nsBlocks(l, 'example').filter((b) => !isTrap(b));
-      expect(ex.length >= 2 && ex.length <= 6, `Ví dụ 2–6 khối (${ex.length})`).toBe(true);
+      // v44 (L766): a figure placed in Ví dụ replaced a text-drawn block, so it counts as one of the examples
+      const shown = ex.length + (l.figures ?? []).filter((f) => f.at === 'example').length;
+      expect(shown >= 2 && shown <= 6, `Ví dụ 2–6 khối hay hình (${shown})`).toBe(true);
       if (l.runtime !== 'docs') expect(ex.filter((b) => b.runs).length, 'bài chạy trong trình duyệt: ≥ 2 ví dụ chạy được').toBeGreaterThanOrEqual(2);
       const pit = nsBlocks(l, 'pitfalls').filter(isTrap);
       expect(pit.length >= 2 && pit.length <= 4, `Lỗi hay gặp 2–4 bẫy (${pit.length})`).toBe(true);

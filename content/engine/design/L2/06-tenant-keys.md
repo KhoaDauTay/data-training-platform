@@ -8,7 +8,7 @@ title_en: Keys for many tenants - tenant_id in the primary and foreign keys
 kind: lab
 runtime: browser
 minutes: 18
-figures: [{ name: pg-tenancy-models, at: idea, step: 3 }]
+figures: [{ name: pg-tenancy-models, at: idea, step: 3 }, { name: ds-tenant-composite-fk, at: idea }]
 objectives:
   - vi: Đặt `tenant_id` đầu khóa chính của mọi bảng thuộc về một khách hàng.
     en: Put `tenant_id` first in the primary key of every table a tenant owns.
@@ -84,20 +84,20 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì cột chủ có mặt ở cả hai bảng, nhưng database chỉ kiểm những cột nằm trong ràng buộc. Khóa ngoại trên `id` không nhìn `tenant_id`; theo tài liệu Postgres, kiểm khóa ngoại cũng không đi qua bảo mật theo dòng."
-      en: "It sounds right because the owner column is in both tables, but the database only checks the columns inside the constraint. A foreign key on `id` never looks at `tenant_id`; per the Postgres docs, foreign key checks also do not go through row-level security."
+      vi: "\"Có\" nghe hợp lý vì cột `tenant_id` có mặt ở cả hai bảng, nhưng database chỉ kiểm những cột nằm trong ràng buộc. Khóa ngoại trên `id` chỉ hỏi \"có khách mang mã này không\", không nhìn `tenant_id`, nên đơn của người bán 1 trỏ tới khách của người bán 2 vẫn qua. Bảo mật theo dòng (row-level security, RLS) cũng không cứu: theo docs chính thức của Postgres, phép kiểm khóa ngoại bỏ qua RLS. Chỉ khóa ngoại ghép `(tenant_id, customer_id)` bắt hai cột khớp cùng lúc."
+      en: "\"Yes\" sounds right because `tenant_id` is in both tables, but the database only checks the columns inside the constraint. A foreign key on `id` only asks \"does a customer with this id exist\", never looking at `tenant_id`, so seller 1's order pointing at seller 2's customer passes. Row-level security (RLS) does not help either: per the official Postgres docs, foreign key checks bypass RLS. Only a composite foreign key `(tenant_id, customer_id)` forces both columns to match at once."
   - q:
       vi: "Vì sao khóa chính là `(tenant_id, id)` mà không phải `(id, tenant_id)`?"
       en: "Why is the primary key `(tenant_id, id)` and not `(id, tenant_id)`?"
     options:
       - { vi: "Thứ tự cột trong khóa không quan trọng, chỉ cần đủ các cột", en: "The column order in a key does not matter, only the set of columns" }
-      - { vi: "Mọi câu lọc theo khách, nên cột đầu giữ dòng một khách liền nhau", en: "Queries filter by tenant, so leading with it keeps their rows together" }
+      - { vi: "Mọi câu lọc theo tenant, nên cột đầu giữ dòng tenant liền nhau", en: "Queries filter by tenant, so leading with it keeps their rows together" }
       - { vi: "Postgres bắt cột NOT NULL phải đứng đầu khóa chính ghép", en: "Postgres requires NOT NULL columns first in a composite primary key" }
     answer: 1
     trap: 0
     why:
-      vi: "Nhiều người nghĩ khóa chỉ là luật duy nhất, nên thứ tự không đổi gì. Thật ra khóa chính tạo một index B-tree theo đúng thứ tự cột: đặt `tenant_id` đầu thì mọi câu `WHERE tenant_id = …` đọc một đoạn liền của index."
-      en: "Many people think a key is only a uniqueness rule, so the order changes nothing. In fact the primary key builds a B-tree index in exactly that column order: with `tenant_id` first, every `WHERE tenant_id = …` query reads one contiguous range of the index."
+      vi: "Nhiều người nghĩ khóa chỉ là luật duy nhất, nên thứ tự cột không đổi gì. Thật ra khóa chính tạo một index B-tree sắp theo đúng thứ tự cột: cột đầu trước, cột sau chỉ sắp trong cùng một giá trị cột đầu. Đặt `tenant_id` đầu thì mọi dòng của người bán 2 nằm liền nhau, và câu `WHERE tenant_id = …` đọc một đoạn liền của index; với `(id, tenant_id)`, dòng của người bán 2 rải khắp index. Postgres không có luật nào về cột NOT NULL đứng đầu: mọi cột khóa chính đều tự thành NOT NULL."
+      en: "Many people think a key is only a uniqueness rule, so the column order changes nothing. In fact the primary key builds a B-tree index sorted in exactly that column order: first column first, the next one only within each first-column value. With `tenant_id` first, all of seller 2's rows sit together and `WHERE tenant_id = …` reads one contiguous range of the index; with `(id, tenant_id)`, seller 2's rows are spread across the whole index. Postgres has no rule about NOT NULL columns going first: every primary key column becomes NOT NULL anyway."
 ---
 ## Mở bài
 
@@ -105,7 +105,7 @@ quiz:
 
 ## Ý chính
 
-Một **tenant** (khách hàng thuê hệ thống) là một tổ chức mà dữ liệu phải tách khỏi các tổ chức khác; ở đây mỗi người bán là một tenant. Khi mọi tenant dùng chung bảng (mô hình pool, bài `e-ds-l4-08`), mỗi dòng mang `tenant_id`. Nhiều người nghĩ thêm cột là đủ. Thật ra cột chỉ ghi chủ của dòng; khóa mới là thứ database kiểm.
+Một **tenant** (khách hàng thuê hệ thống) là một tổ chức mà dữ liệu phải tách khỏi các tổ chức khác; ở đây mỗi người bán là một tenant. Khi mọi tenant dùng chung bảng (mô hình pool, `e-ds-l4-08`), mỗi dòng mang `tenant_id`. Nhiều người nghĩ thêm cột là đủ. Thật ra cột chỉ ghi chủ của dòng; khóa mới là thứ database kiểm.
 
 Khóa chính `(tenant_id, id)` cho mỗi tenant đánh số riêng, giữ dữ liệu một tenant nằm liền nhau trong index, và khi chuyển một tenant sang máy khác thì số của họ không đụng số của ai. Khóa ngoại ghép `(tenant_id, customer_id)` trỏ tới `(tenant_id, id)` của bảng cha: hai cột phải khớp cùng lúc, nên một đơn chỉ trỏ được tới khách của chính người bán đó. Khóa ngoại một cột trên `id` không biết chủ là ai, nên nó nhận cả tham chiếu chéo.
 
@@ -115,9 +115,9 @@ Ba thói quen đi kèm: đánh index cho khóa ngoại ghép ở bảng con (xó
 
 **Đổi một bảng đang chạy**: thêm khóa ngoại ghép vào bảng lớn thì Postgres phải kiểm mọi dòng cũ. Cách êm có hai bước: `ADD FOREIGN KEY … NOT VALID` chỉ kiểm dòng ghi từ lúc đó, rồi `VALIDATE CONSTRAINT` quét dòng cũ mà không chặn ghi. Nếu bước kiểm báo lỗi 23503, đó chính là những tham chiếu chéo đã lọt vào từ trước: sửa dữ liệu, rồi kiểm lại.
 
-**Số riêng cho từng tenant**: một sequence chung vẫn đủ cho `(tenant_id, id)`, số chỉ có khoảng trống. Khi người bán muốn hóa đơn của mình bắt đầu từ 1 và liền nhau, dùng một bảng đếm theo tenant: `UPDATE counters SET n = n + 1 WHERE tenant_id = 2 RETURNING n` trong cùng giao dịch ghi hóa đơn. Lệnh này giữ lock trên dòng đếm của đúng một tenant, nên hai người bán không phải chờ nhau.
+**Số riêng cho từng tenant**: một sequence chung vẫn đủ cho `(tenant_id, id)`, số chỉ có khoảng trống. Khi người bán muốn hóa đơn của mình bắt đầu từ 1 và liền nhau, dùng một bảng đếm theo tenant: `UPDATE counters SET n = n + 1 WHERE tenant_id = 2 RETURNING n` trong cùng transaction ghi hóa đơn. Lệnh này giữ lock trên dòng đếm của đúng một tenant, nên hai người bán không phải chờ nhau.
 
-Hình từng bước ở cuối mục này so ba cách chia khách; nó mở ở bước Pool (mọi khách chung bảng), cho thấy vì sao `tenant_id` phải đứng đầu khóa.
+Hình từng bước thứ nhất ở cuối mục này so ba cách chia khách; nó mở ở bước Pool (mọi khách chung bảng), cho thấy vì sao `tenant_id` phải đứng đầu khóa. Hình thứ hai vẽ khóa ngoại ghép của lab: ba người bán cùng có khách số 7, và đơn của người bán 1 ghi khách 7 chỉ trỏ tới (1, 7), không bao giờ tới (2, 7).
 
 ## Cú pháp
 
@@ -251,7 +251,7 @@ At Lantern Market, customer 7 of Lan Silk is not customer 7 of Minh Tea. If the 
 
 ## Key idea
 
-A **tenant** is an organisation whose data must stay apart from every other organisation's; here each seller is a tenant. When all tenants share tables (the pool model, lesson `e-ds-l4-08`), every row carries `tenant_id`. Many people think adding the column is enough. In fact the column only records the row's owner; the keys are what the database checks.
+A **tenant** is an organisation whose data must stay apart from every other organisation's; here each seller is a tenant. When all tenants share tables (the pool model, `e-ds-l4-08`), every row carries `tenant_id`. Many people think adding the column is enough. In fact the column only records the row's owner; the keys are what the database checks.
 
 A primary key `(tenant_id, id)` lets each tenant number its own rows, keeps one tenant's rows together in the index, and when a tenant moves to another server its numbers collide with no one's. A composite foreign key `(tenant_id, customer_id)` points to the parent's `(tenant_id, id)`: both columns must match at once, so an order can only point at its own seller's customer. A single-column foreign key on `id` does not know the owner, so it accepts a cross-tenant reference too.
 
@@ -263,7 +263,7 @@ Three habits come with it: index the composite foreign key on the child side (de
 
 **Per-tenant numbers**: one shared sequence is still enough for `(tenant_id, id)`; the numbers just have gaps. When a seller wants its invoices to start at 1 with no gaps, use a counter table per tenant: `UPDATE counters SET n = n + 1 WHERE tenant_id = 2 RETURNING n` in the same transaction that writes the invoice. It holds a lock on one tenant's counter row only, so two sellers never wait for each other.
 
-The step-through figure at the end of this section compares the three ways to split tenants; it opens on the Pool step (every tenant in one table), which shows why `tenant_id` leads the key.
+The first step-through figure at the end of this section compares the three ways to split tenants; it opens on the Pool step (every tenant in one table), which shows why `tenant_id` leads the key. The second draws the lab's composite foreign key: three sellers all have customer 7, and seller 1's order naming customer 7 points at (1, 7), never at (2, 7).
 
 ## Syntax
 

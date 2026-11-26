@@ -1,0 +1,35 @@
+# v46 (L868): INSERT … SELECT turns each row of a query's result into a new row. Lessons: insert_select (Ý chính) + its quick lesson.
+# Data (lab, checked in PGlite 2026-11-26): store_targets for 2026-12-01: 1 10000000, 2 5000000, 3 15000000, 4 6000000, 5 9000000;
+# stores 1 and 2 are in Da Nang. INSERT INTO store_targets (store_id, month, target_vnd) SELECT t.store_id, DATE '2027-01-01', t.target_vnd
+# FROM store_targets t JOIN stores s ON s.id = t.store_id WHERE s.city = 'Da Nang' AND t.month = '2026-12-01' → 2 new rows (the lesson's third example).
+# The fixed value's arrow is dashed: it adds a value to each row, while the solid arrow carries the rows themselves.
+# Source: https://www.postgresql.org/docs/current/sql-insert.html
+title: { vi: "INSERT … SELECT chép dòng từ một câu đọc", en: "INSERT … SELECT copies rows from a query" }
+caption:
+  vi: "Câu SELECT chọn chỉ tiêu tháng 12 của hai cửa hàng Đà Nẵng; mỗi dòng nó trả thành một dòng mới cho tháng 1/2027."
+  en: "The SELECT picks the December targets of the two Da Nang stores; each row it returns becomes a new row for January 2027."
+alt:
+  vi: "INSERT kèm SELECT không có VALUES: mỗi dòng kết quả của câu đọc thành một dòng mới, cột ghép theo đúng thứ tự trong danh sách cột. Câu đọc có thể nối, lọc và thay một cột bằng giá trị cố định, như tháng mới ở đây. Kết quả: 2 dòng mới."
+  en: "INSERT with SELECT has no VALUES: each row of the query's result becomes a new row, columns matched in the order of the column list. The query can join, filter and swap a column for a fixed value, like the new month here. Result: 2 new rows."
+nodes:
+  - id: src
+    shape: grid
+    label: { vi: "store_targets, tháng 12", en: "store_targets, Dec" }
+    sub: { vi: "SELECT: chỉ Đà Nẵng", en: "SELECT: Da Nang only" }
+    head: [store_id, target_vnd]
+    cells: [["1", "10000000"], ["2", "5000000"], ["3", "15000000"], ["4", "6000000"], ["5", "9000000"]]
+    rowTone: [new, new, ghost, ghost, ghost]
+    strike: [2, 3, 4]
+  - { id: m, shape: key, mono: true, label: "month =", sub: "DATE '2027-01-01'" }
+  - id: res
+    shape: grid
+    label: { vi: "Dòng mới", en: "New rows" }
+    head: [store_id, month, target_vnd]
+    cells: [["1", "2027-01-01", "10000000"], ["2", "2027-01-01", "5000000"]]
+    colTone: [null, new, null]
+rows:
+  - [src, m]
+  - [res]
+edges:
+  - { from: src, to: res }
+  - { from: m, to: res, dash: true }

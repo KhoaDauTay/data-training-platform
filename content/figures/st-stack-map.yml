@@ -1,0 +1,50 @@
+# ST-1 (tools/v43/de-tools-plan.md §4): the data stack, stage by stage. Lesson: e-st-l1-01 (Ý chính).
+# Lantern Market's three sources, the EL tool, the warehouse layers (raw_, staging, marts) and the dashboard; one step per stage group.
+# Sources: https://docs.getdbt.com/docs/build/models ; https://fivetran.com/docs/core-concepts/system-columns-and-tables
+title: { vi: "Đường dữ liệu tới dashboard", en: "The road from source to dashboard" }
+caption:
+  vi: "Công cụ nạp chép nguyên các nguồn vào schema raw_ của kho; model SQL làm sạch rồi dựng mart; người phân tích đọc mart."
+  en: "The ingestion tool copies the sources as they are into the warehouse's raw_ schemas; SQL models clean them and build marts; the analyst reads the marts."
+alt:
+  vi: "Dữ liệu đi từ ba nguồn qua công cụ nạp vào kho, rồi các model SQL biến nó thành mart cho người phân tích đọc. Chữ T của ELT nằm trong kho, nên dữ liệu thô vẫn còn đó để lần ngược khi số sai."
+  en: "Data travels from three sources through the ingestion tool into the warehouse, then SQL models turn it into marts for the analyst to read. The T of ELT happens inside the warehouse, so the raw data is still there to trace back when a number is wrong."
+groups:
+  - { id: src, label: { vi: "Nguồn", en: "Sources" }, nodes: [app, pay, sheet] }
+nodes:
+  - { id: app, shape: table, label: { vi: "app bán hàng", en: "shop app" }, sub: Postgres }
+  - { id: pay, shape: doc, label: { vi: "cổng thanh toán", en: "payment gateway" }, sub: "API JSON" }
+  - { id: sheet, shape: doc, label: { vi: "chi phí quảng cáo", en: "marketing spend" }, sub: { vi: "bảng tính", en: "spreadsheet" } }
+  - { id: el, label: { vi: "công cụ nạp", en: "ingestion tool" }, sub: "Fivetran, Airbyte" }
+  - { id: raw, mono: true, label: raw_shop, sub: { vi: "bản chép nguyên", en: "plain copy" } }
+  - { id: stg, mono: true, label: staging, sub: { vi: "làm sạch nguồn", en: "cleans a source" } }
+  - { id: mart, mono: true, label: marts, sub: { vi: "sự kiện và chiều", en: "facts, dimensions" } }
+  - { id: bi, label: dashboard, sub: { vi: "người phân tích", en: "the analyst" } }
+rows:
+  - [app, pay, sheet]
+  - [el]
+  - [raw]
+  - [stg]
+  - [mart]
+  - [bi]
+edges:
+  - { from: src, to: el }
+  - { from: el, to: raw, label: "E, L" }
+  - { from: raw, to: stg, label: T }
+  - { from: stg, to: mart, label: T }
+  - { from: mart, to: bi }
+steps:
+  - say: { vi: "Công cụ nạp chép nguyên từng nguồn vào kho.", en: "The ingestion tool copies each source into the warehouse as it is." }
+    alt: { vi: "Công cụ nạp chép từng nguồn vào một schema raw_ của kho mà không sửa gì, chỉ thêm cột hệ thống của nó.", en: "The ingestion tool copies each source into a raw_ schema of the warehouse without changing anything, only adding its own system columns." }
+    set:
+      el: { tone: live }
+      raw: { tone: new }
+  - say: { vi: "Model SQL biến đổi ngay trong kho: staging rồi marts.", en: "SQL models transform inside the warehouse: staging, then marts." }
+    alt: { vi: "Model staging làm sạch một nguồn, rồi model mart dựng bảng sự kiện và chiều từ staging, tất cả bằng SQL trong kho.", en: "A staging model cleans one source, then mart models build fact and dimension tables from staging, all in SQL inside the warehouse." }
+    set:
+      stg: { tone: live }
+      mart: { tone: new }
+  - say: { vi: "Người phân tích đọc mart, không đọc raw.", en: "The analyst reads marts, not raw tables." }
+    alt: { vi: "Dashboard đọc mart vì mart đã bỏ dòng xóa và bản trùng; khi số sai, người phân tích lần ngược mart, staging rồi raw.", en: "The dashboard reads marts because deleted rows and duplicates are already gone there; when a number is wrong, the analyst walks back through mart, staging and raw." }
+    set:
+      bi: { tone: live }
+      mart: { tone: live }

@@ -34,8 +34,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "\"Sửa tại chỗ\" nghe tự nhiên vì câu lệnh tên là UPDATE và dòng vẫn ở cùng trang. Postgres không sửa tại chỗ. Lab kế tiếp đo đúng điều này: dòng 2 chuyển sang (0,4), còn (0,2) vẫn nằm trên trang với `t_ctid` trỏ sang (0,4). Trang còn chỗ nên bản mới ở cùng trang."
-      en: "\"In place\" sounds natural because the command is called UPDATE and the row stays on the same page. Postgres never updates in place. The next lab measures exactly this: row 2 moves to (0,4), while (0,2) stays on the page with a `t_ctid` pointing to (0,4). The page has room, so the new version stays on the same page."
+      vi: "\"Sửa tại chỗ\" nghe tự nhiên vì câu lệnh tên là UPDATE, nhưng với MVCC (multiversion concurrency control, giữ nhiều phiên bản của một dòng) Postgres không bao giờ sửa tại chỗ. Nó ghi một tuple mới vào line pointer trống kế tiếp, tức (0,4), và ghi `xmax` lên bản cũ ở (0,2), có `t_ctid` trỏ sang (0,4). Bản mới chỉ sang trang khác khi trang hiện tại hết chỗ; trang này mới có 3 dòng ngắn nên còn chỗ."
+      en: "\"In place\" sounds natural because the command is called UPDATE, but with MVCC (multiversion concurrency control, keeping several versions of a row) Postgres never updates in place. It writes a new tuple at the next free line pointer, (0,4), and stamps `xmax` on the old one at (0,2), whose `t_ctid` points to (0,4). The new version only goes to another page when the current page is full; this page holds 3 short rows, so it has room."
   - q:
       vi: "Một bảng 1.000 dòng, mỗi dòng bị UPDATE đúng một lần, chưa VACUUM. Trên đĩa có khoảng bao nhiêu tuple?"
       en: "A 1,000-row table, every row updated exactly once, no VACUUM yet. About how many tuples are on disk?"
@@ -46,8 +46,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Con số 1.000 nghe đúng vì bảng vẫn chỉ có 1.000 dòng khi bạn `SELECT`, nhưng đó là số phiên bản thấy được, không phải số tuple trên đĩa. Mỗi UPDATE để lại bản cũ (có `xmax`) và thêm bản mới. Bản cũ chỉ biến mất khi VACUUM dọn, và chỉ khi không còn transaction nào cần nó."
-      en: "The 1,000 figure sounds right because a `SELECT` still returns 1,000 rows, but that is the number of visible versions, not the tuples on disk. Each UPDATE leaves the old version (with `xmax`) and adds a new one. The old version disappears only when VACUUM removes it, and only once no transaction still needs it."
+      vi: "1.000 nghe đúng vì `SELECT` vẫn trả 1.000 dòng, nhưng đó là số phiên bản thấy được, không phải số tuple trên đĩa. Mỗi UPDATE để lại bản cũ (có `xmax`) và thêm một bản mới, nên 1.000 bản cũ + 1.000 bản mới = 2.000. 1.001 sẽ là con số nếu chỉ một dòng bị sửa. Bản cũ chỉ biến mất khi VACUUM dọn, và chỉ khi không còn transaction nào cần nó."
+      en: "1,000 sounds right because a `SELECT` still returns 1,000 rows, but that is the number of visible versions, not the tuples on disk. Each UPDATE leaves the old version (with `xmax`) and adds a new one, so 1,000 old + 1,000 new = 2,000. 1,001 would be the count if only one row had been updated. Old versions disappear only when VACUUM removes them, and only once no transaction still needs them."
   - q:
       vi: "Transaction A đang đọc bảng ở mức Repeatable Read. Transaction B sửa một dòng rồi COMMIT. A đọc lại dòng đó thấy gì?"
       en: "Transaction A is reading a table at Repeatable Read. Transaction B updates a row and commits. What does A see when it reads that row again?"
@@ -58,8 +58,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Thấy bản mới của B nghe hợp lý vì B đã commit, và ở Read Committed đúng là vậy. Ở Repeatable Read, A dùng một snapshot cho cả transaction. Bản cũ vẫn còn trên trang nên A đọc nó mà không phải chờ ai. Ở Read Committed, mỗi câu lấy snapshot mới nên câu sau của A sẽ thấy bản của B."
-      en: "Seeing B's new version sounds right because B has committed, and at Read Committed that would be true. At Repeatable Read, A uses one snapshot for the whole transaction. The old version is still on the page, so A reads it without waiting for anyone. At Read Committed each statement takes a new snapshot, so A's next statement would see B's version."
+      vi: "Thấy bản mới của B nghe hợp lý vì B đã commit, và ở Read Committed đúng là vậy. Ở Repeatable Read, A dùng một snapshot (danh sách transaction đã commit lúc chụp) cho cả transaction; B commit sau lúc chụp, nên bản của B vô hình với A. Bản cũ vẫn còn trên trang nên A đọc nó, không bị chặn và không cần lock. Ở Read Committed, mỗi câu lấy snapshot mới nên câu sau của A sẽ thấy bản của B."
+      en: "Seeing B's new version sounds right because B has committed, and at Read Committed that would be true. At Repeatable Read, A uses one snapshot (the list of transactions committed when it was taken) for the whole transaction; B committed after that, so B's version is invisible to A. The old version is still on the page, so A reads it without being blocked and without a lock. At Read Committed each statement takes a new snapshot, so A's next statement would see B's version."
 ---
 ## Mở bài
 

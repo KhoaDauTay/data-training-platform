@@ -4,6 +4,7 @@ title: "DISTINCT: mỗi giá trị một lần"
 title_en: "DISTINCT: each value once"
 minutes: 20
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
+figures: [{ name: sql-distinct-rows, at: idea }]
 objectives:
   - vi: Liệt kê các giá trị khác nhau của một cột hay một tổ hợp cột.
     en: List the different values of one column or of a combination of columns.
@@ -127,7 +128,7 @@ Nhóm marketing hỏi: "Tháng 10 có bao nhiêu khách đã mua hàng?" Bảng 
 
 ## Ý chính
 
-`SELECT DISTINCT` giữ mỗi dòng kết quả một lần: các dòng giống nhau ở mọi cột đã chọn gộp thành một. `count(DISTINCT customer_id)` làm điều tương tự bên trong hàm đếm: nó đếm số giá trị khác nhau thay vì số dòng.
+`SELECT DISTINCT` giữ mỗi dòng kết quả một lần: các dòng giống nhau ở mọi cột đã chọn chỉ còn một. `count(DISTINCT customer_id)` làm điều tương tự bên trong hàm đếm: nó đếm số giá trị khác nhau thay vì số dòng.
 
 Nhiều người nghĩ **`DISTINCT` gắn với cột đứng ngay sau nó**. Thật ra nó áp lên cả dòng: chọn thêm một cột là phép bỏ trùng xét thêm cột đó, và dòng chỉ trùng khi giống nhau ở mọi cột. Nếu bạn muốn "mỗi khách một dòng" thì chỉ chọn cột định danh khách.
 

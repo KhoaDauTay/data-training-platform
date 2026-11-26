@@ -5,6 +5,7 @@ level: L4
 module: scale
 title: "Write sharding: rải một khóa nóng bằng hậu tố ngẫu nhiên"
 title_en: "Write sharding: spread a hot key with a random suffix"
+figures: [{ name: dy-write-sharding, at: idea }]
 kind: lab
 runtime: browser
 minutes: 12
@@ -161,6 +162,8 @@ Nhiều người nghĩ một Scan có `FilterExpression` là cách gọn để �
 
 Lab chạy bằng dynoxide trong trình duyệt: không có partition thật, nhưng `Count` và `ScannedCount` là số đo thật.
 
+Hình dưới vẽ một khóa nóng vượt trần, rồi tám khóa có hậu tố cùng chia tải.
+
 ## Cú pháp
 
 ```text
@@ -250,6 +253,8 @@ The price is paid on reads: to read the whole day, the application must read eve
 Many people think a Scan with a `FilterExpression` is a neat way to read the whole day. In fact a Scan reads every item in the table, other days included, and filters afterwards: `Count` is right but `ScannedCount` and capacity count the whole table.
 
 The lab runs on dynoxide in the browser: there are no real partitions, but `Count` and `ScannedCount` are real figures.
+
+The figure below draws one hot key over the ceiling, then eight suffixed keys sharing the load.
 
 ## Syntax
 

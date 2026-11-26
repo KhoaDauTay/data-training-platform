@@ -15,6 +15,7 @@ objectives:
   - vi: Viết câu "trong ô vuông" và "N điểm gần nhất" bằng toán tử mà index hiểu (`<@`, `<->`).
     en: Write "inside a box" and "N nearest points" queries with operators the index understands (`<@`, `<->`).
 requires: [e-pg-l2-06]
+figures: [{ name: pg-spgist-quadtree, at: idea }]
 sources:
   - https://www.postgresql.org/docs/18/indexes-types.html
   - https://www.postgresql.org/docs/18/spgist.html
@@ -62,8 +63,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì tên SP-GiST chứa chữ GiST, nhưng hai cách chia khác nhau: GiST gom dữ liệu vào các hộp bao có thể chồng nhau, còn SP-GiST cắt không gian thành phần rời nhau (quadtree, k-d tree, radix tree). SP-GiST dùng cho điểm, chuỗi, range và địa chỉ mạng."
-      en: "It sounds right because the name SP-GiST contains GiST, but they split data differently: GiST groups data into bounding boxes that may overlap, while SP-GiST cuts space into disjoint parts (quadtree, k-d tree, radix tree). SP-GiST serves points, strings, ranges and network addresses."
+      vi: "Tên SP-GiST chứa chữ GiST nên dễ nghĩ hai loại chia giống nhau, nhưng không: GiST gom dữ liệu vào các hộp bao có thể chồng lên nhau, còn SP-GiST (space-partitioned GiST) cắt không gian thành các phần rời nhau, ví dụ quadtree chia mặt phẳng thành 4 góc, nên mỗi điểm thuộc đúng một nhánh. SP-GiST cũng không chỉ cho chuỗi: bài này dùng nó cho `point`, và nó còn phục vụ range và địa chỉ mạng."
+      en: "The name SP-GiST contains GiST, so the two seem to split data the same way, but they do not: GiST groups data into bounding boxes that may overlap, while SP-GiST (space-partitioned GiST) cuts space into disjoint parts, for example a quadtree splits the plane into 4 quadrants, so each point belongs to exactly one branch. SP-GiST is not only for strings either: this lesson uses it for `point`, and it also serves ranges and network addresses."
 predict:
   sql: SELECT id FROM shops WHERE loc <@ box '(100,100),(120,120)'
   expect: { node: Bitmap Index Scan, index: shops_loc_spgist }
@@ -77,8 +78,8 @@ predict:
   answer: 1
   trap: 0
   why:
-    vi: "Seq Scan nghe hợp lý nếu bạn quen nghĩ index chỉ phục vụ dấu bằng; nhưng SP-GiST cho `point` là một quadtree: mỗi nút chia mặt phẳng thành 4 góc. Câu `<@ box` chỉ đi vào các góc giao với ô cần tìm, nên chỉ chạm một phần rất nhỏ của 30.000 dòng (14 dòng khớp). Planner ước khoảng 30 dòng và chọn Bitmap Index Scan trên `shops_loc_spgist`."
-    en: "A Seq Scan sounds right if you think of indexes as serving only equality, but SP-GiST for `point` is a quadtree: each node splits the plane into 4 quadrants. A `<@ box` query only descends into quadrants that overlap the box, so it touches a tiny part of the 30,000 rows (14 match). The planner estimates about 30 rows and picks a Bitmap Index Scan on `shops_loc_spgist`."
+    vi: "Seq Scan nghe hợp lý nếu bạn quen nghĩ index chỉ phục vụ dấu bằng; nhưng SP-GiST cho `point` là một quadtree: mỗi nút chia mặt phẳng thành 4 góc. Câu `<@ box` chỉ đi vào các góc giao với ô cần tìm, nên chỉ chạm một phần rất nhỏ của bảng: ô 20 x 20 chiếm 400 / 1.000.000 mặt phẳng, tức khoảng 30.000 × 0,0004 = 12 dòng (thật có 14). Planner chọn Bitmap Index Scan trên `shops_loc_spgist`, rồi Bitmap Heap Scan đọc các dòng đó. `shops_pkey` là B-tree trên `id`, không biết gì về vị trí, nên không giúp được câu này."
+    en: "A Seq Scan sounds right if you think of indexes as serving only equality, but SP-GiST for `point` is a quadtree: each node splits the plane into 4 quadrants. A `<@ box` query only descends into quadrants that overlap the box, so it touches a tiny part of the table: a 20 x 20 box is 400 / 1,000,000 of the plane, about 30,000 × 0.0004 = 12 rows (14 in fact). The planner picks a Bitmap Index Scan on `shops_loc_spgist`, then a Bitmap Heap Scan reads those rows. `shops_pkey` is a B-tree on `id` that knows nothing about location, so it cannot help here."
 ---
 ## Mở bài
 
@@ -91,6 +92,8 @@ SP-GiST ("space-partitioned GiST") dựng các cây không cân bằng chia khô
 Nhiều người nghĩ SP-GiST chỉ là một biến thể của GiST nên cũng giống nó. Thật ra GiST gom dữ liệu vào các hộp bao có thể chồng nhau, còn trong SP-GiST mỗi điểm chỉ thuộc đúng một nhánh. Với dữ liệu phân bố đều như điểm trên bản đồ, cây nông và tìm nhanh.
 
 Index chỉ giúp khi câu dùng toán tử nó hiểu. Với `point`, đó là `<@ box` (nằm trong hộp), `~=` (trùng điểm) và các toán tử trái, phải, trên, dưới. Opclass này còn có toán tử thứ tự `<->` (khoảng cách), nên `ORDER BY loc <-> point LIMIT n` đọc các điểm gần nhất thẳng từ index, không cần Sort. Một công thức khoảng cách tự viết cho cùng kết quả nhưng index không nhận ra, nên phải tính cho cả 30.000 dòng rồi sắp xếp.
+
+Hình từng bước ở cuối mục này chia ô 1000 x 1000 của lab thành bốn phần, rồi lại bốn, và đếm số cửa hàng trong mỗi phần.
 
 ## Ví dụ
 
@@ -152,6 +155,8 @@ SP-GiST ("space-partitioned GiST") builds unbalanced trees that split space into
 Many people think SP-GiST is just a variant of GiST and so works like it. In fact GiST groups data into bounding boxes that may overlap, while in SP-GiST each point belongs to exactly one branch. For evenly spread data such as points on a map, the tree stays shallow and searches are fast.
 
 An index only helps when the query uses an operator it understands. For `point` that is `<@ box` (inside a box), `~=` (same point) and the left, right, above and below operators. This opclass also has the ordering operator `<->` (distance), so `ORDER BY loc <-> point LIMIT n` reads the nearest points straight from the index, with no Sort. A hand-written distance formula gives the same result, but the index does not recognise it, so all 30,000 rows must be computed and sorted.
+
+The step-through figure at the end of this section splits the lab's 1000 x 1000 square into four parts, then four again, counting the shops in each.
 
 ## Example
 

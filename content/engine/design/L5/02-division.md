@@ -8,6 +8,7 @@ title_en: Division - the "for all" question
 kind: lab
 runtime: browser
 minutes: 20
+figures: [{ name: ds-division, at: idea }]
 objectives:
   - vi: Nhận ra câu hỏi cần phép chia ÷ (ai làm đủ mọi thứ trong một danh sách).
     en: Spot a question that needs division ÷ (who did every item on a list).
@@ -67,8 +68,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì chưa ai học gì, nhưng mệnh đề \"với mọi\" trên tập rỗng là đúng hiển nhiên. Dạng `NOT EXISTS` trả mọi người; dạng đếm thì trả rỗng, nên phải quyết trước bạn muốn nghĩa nào."
-      en: "It sounds right because nobody took anything, but a \"for all\" claim over the empty set is vacuously true. The `NOT EXISTS` form returns everyone; the counting form returns nobody, so decide which meaning you want first."
+      vi: "\"Không ai\" nghe hợp lý vì chưa ai học khóa nào trong nhóm, nhưng \"học mọi khóa\" nghĩa là \"không có khóa nào trong nhóm mà chưa học\"; nhóm rỗng thì không có khóa nào để thiếu, nên mọi học viên đều thỏa. Phép chia ÷ không phải phép chia số, nên không có lỗi chia cho 0. Dạng `NOT EXISTS` trả mọi người; dạng đếm trả rỗng vì phép nối với số chia không ra dòng nào để gom nhóm, nên hãy quyết trước bạn muốn nghĩa nào."
+      en: "\"Nobody\" sounds right because no one took a course in the group, but \"took every course\" means \"there is no course in the group they have not taken\"; an empty group has no course to miss, so every student qualifies. Division ÷ is not numeric division, so there is no division by zero. The `NOT EXISTS` form returns everyone; the counting form returns nobody because the join with the divisor gives no rows to group, so decide which meaning you want first."
   - q:
       vi: "Dạng đếm `HAVING count(*) = (SELECT count(*) FROM courses)` sai khi nào?"
       en: "When does the counting form `HAVING count(*) = (SELECT count(*) FROM courses)` go wrong?"
@@ -79,8 +80,8 @@ quiz:
     answer: 0
     trap: 1
     why:
-      vi: "Nhiều người nghĩ đếm là cách an toàn nhất. Thật ra hai lượt học cùng một khóa được đếm hai lần, và khóa ngoài số chia cũng bị đếm nếu không lọc trước; cần `count(DISTINCT …)` và lọc theo số chia."
-      en: "Many people think counting is the safest form. In fact two takes of one course count twice, and courses outside the divisor count too unless filtered first; you need `count(DISTINCT …)` and a filter on the divisor."
+      vi: "Đếm nghe chính xác, nhưng `count(*)` đếm lượt học, không đếm khóa. Chi học `SQL` hai lần và `NOSQL` một lần: 3 lượt, bằng 3 khóa `core`, nên Chi trông như đủ dù chưa học `DESIGN`. Tương tự, khóa ngoài số chia (như `SPARK`) cũng được đếm nếu không nối với số chia trước. Số dòng của `students` không liên quan. Cần `count(DISTINCT …)` sau khi đã lọc theo số chia."
+      en: "Counting sounds exact, but `count(*)` counts takes, not courses. Chi took `SQL` twice and `NOSQL` once: 3 takes, equal to the 3 `core` courses, so Chi looks complete without `DESIGN`. Likewise a course outside the divisor (such as `SPARK`) counts unless you join with the divisor first. The row count of `students` has nothing to do with it. You need `count(DISTINCT …)` after filtering on the divisor."
 ---
 ## Mở bài
 
@@ -93,6 +94,8 @@ Cho số bị chia R(học viên, khóa) và số chia S(khóa). R ÷ S là nh�
 SQL không có ∀, nhưng "với mọi x, P(x)" tương đương "không có x nào mà không P(x)". Vì vậy dạng chuẩn là hai lớp `NOT EXISTS`: không có khóa nào trong số chia mà không có lượt học tương ứng. Dạng thứ hai dùng `EXCEPT`: tập khóa cần học trừ tập khóa đã học phải rỗng. Dạng thứ ba đếm: số khóa khác nhau đã học trong số chia bằng số khóa của số chia.
 
 Ba dạng cho cùng kết quả trên dữ liệu thường nhưng khác ở hai góc. Số chia rỗng: hai dạng đầu trả mọi người (đúng theo logic), dạng đếm trả rỗng vì không có nhóm nào được tạo. Dòng trùng: dạng đếm phải dùng `count(DISTINCT …)`.
+
+Hình từng bước cuối mục này dựng mọi cặp học viên × môn core của lab, rồi loại những người còn thiếu cặp.
 
 ## Cú pháp
 
@@ -219,6 +222,8 @@ Take a dividend R(student, course) and a divisor S(course). R ÷ S is the studen
 SQL has no ∀, but "for every x, P(x)" is the same as "there is no x for which P(x) fails". So the standard form is two levels of `NOT EXISTS`: there is no course in the divisor without a matching take. The second form uses `EXCEPT`: the set of courses required minus the set taken must be empty. The third form counts: the number of distinct divisor courses taken equals the number of courses in the divisor.
 
 The three forms agree on ordinary data but differ in two corners. Empty divisor: the first two return everyone (logically right), the counting form returns nobody because no group is formed. Duplicate rows: the counting form needs `count(DISTINCT …)`.
+
+The step-through figure at the end of this section builds every student × core-course pair of the lab, then drops anyone still missing a pair.
 
 ## Syntax
 

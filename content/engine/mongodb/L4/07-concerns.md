@@ -9,6 +9,7 @@ kind: concept
 minutes: 14
 runtime: docs
 viz: mg-replica-election
+figures: [{ name: mg-majority-psa, at: idea, variant: pss }]
 objectives:
   - vi: "Đọc `w`, `j`, `wtimeout` và biết mỗi mức xác nhận điều gì"
     en: "Read `w`, `j`, `wtimeout` and know what each level acknowledges"

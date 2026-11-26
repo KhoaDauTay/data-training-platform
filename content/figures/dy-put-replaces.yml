@@ -1,0 +1,40 @@
+# DY-B6-2 (v46 Batch 6, L850–L859): PutItem replaces the whole item, UpdateItem changes only what SET names. Lesson: e-dy-l1-06 (Ý chính).
+# Data (lab.setup, run on dynoxide): 978-0-02 = title Keys and Values, author Tran Binh, price 95000, stock 3, tags [nosql];
+# PutItem {isbn, title, price 90000} with ReturnValues ALL_OLD → the item keeps only isbn, title, price 90000 (1 WCU), the
+# response carries the old item; UpdateItem SET price = :p (90000) on the same key → price 90000, author/stock/tags kept (1 WCU).
+# Sources: https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_PutItem.html, …/API_UpdateItem.html
+title: { vi: "PutItem thay cả item, UpdateItem chỉ sửa phần nêu", en: "PutItem replaces the item, UpdateItem changes what it names" }
+caption:
+  vi: "Cùng khóa 978-0-02, cùng giá mới 90000. PutItem gửi một item chỉ có isbn, title, price nên item cũ bị thay toàn bộ, không lỗi, không cảnh báo; ReturnValues ALL_OLD là nơi duy nhất còn thấy bản cũ. UpdateItem với SET price = :p chỉ đổi price."
+  en: "The same key 978-0-02, the same new price 90000. PutItem sends an item with only isbn, title, price, so the old item is replaced whole, with no error and no warning; ReturnValues ALL_OLD is the only place the old image still shows. UpdateItem with SET price = :p changes only price."
+alt:
+  vi: "PutItem ghi cả một item, nên thuộc tính nào không có trong item mới thì mất. Muốn đổi vài thuộc tính mà giữ phần còn lại, dùng UpdateItem."
+  en: "PutItem writes a whole item, so any attribute missing from the new item is gone. To change a few attributes and keep the rest, use UpdateItem."
+nodes:
+  - id: old
+    shape: grid
+    label: { vi: "978-0-02 trước", en: "978-0-02 before" }
+    head: [{ vi: "thuộc tính", en: attribute }, { vi: "giá trị", en: value }]
+    cells: [[isbn, 978-0-02], [title, Keys and Values], [author, Tran Binh], [price, "95000"], [stock, "3"], [tags, nosql]]
+    sub: { vi: "ALL_OLD trả lại bản này", en: "ALL_OLD returns this" }
+  - { id: req, label: PutItem, sub: "isbn, title, price", tone: new }
+  - id: new
+    shape: grid
+    label: { vi: "sau PutItem", en: "after PutItem" }
+    head: [{ vi: "thuộc tính", en: attribute }, { vi: "giá trị", en: value }]
+    cells: [[isbn, 978-0-02], [title, Keys and Values], [author, { vi: "(mất)", en: "(gone)" }], [price, "90000"], [stock, { vi: "(mất)", en: "(gone)" }], [tags, { vi: "(mất)", en: "(gone)" }]]
+    rowTone: [null, null, dead, new, dead, dead]
+    sub: { vi: "thay toàn bộ", en: "replaced whole" }
+rows:
+  - [old, req, new]
+edges:
+  - { from: old, to: req }
+  - { from: req, to: new }
+steps:
+  - say: { vi: "PutItem lên khóa đã có: item cũ bị thay toàn bộ.", en: "PutItem on an existing key: the old item is replaced whole." }
+    alt: { vi: "Item mới chỉ có isbn, title và price, nên sau lệnh cuốn sách mất author, stock và tags mà DynamoDB không báo gì; chỉ ALL_OLD còn trả bản cũ.", en: "The new item has only isbn, title and price, so after the call the book has lost author, stock and tags without a word from DynamoDB; only ALL_OLD still returns the old image." }
+  - say: { vi: "UpdateItem chỉ sửa thuộc tính có trong SET.", en: "UpdateItem changes only the attributes in SET." }
+    alt: { vi: "Với UpdateItem và SET price = :p, chỉ price đổi thành 90000, còn author, stock và tags giữ nguyên.", en: "With UpdateItem and SET price = :p only price becomes 90000, while author, stock and tags stay as they were." }
+    set:
+      req: { label: UpdateItem, sub: "SET price = :p" }
+      new: { label: { vi: "sau UpdateItem", en: "after UpdateItem" }, cells: [[isbn, 978-0-02], [title, Keys and Values], [author, Tran Binh], [price, "90000"], [stock, "3"], [tags, nosql]], rowTone: [null, null, null, new, null, null], sub: { vi: "chỉ price đổi", en: "only price changed" } }

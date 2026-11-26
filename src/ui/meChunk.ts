@@ -18,7 +18,7 @@ import { textOf } from '../tickets';
 import { announce, h } from './dom';
 import { cardBody } from './dashboard';
 import { icon, skillIcon } from './icons';
-import { engineTrees } from './engine';
+import { engineExt, engineTrees } from './engine';
 import { importedNames } from './myDataView';
 import { startToday } from './modes';
 import { thisWeek } from './homeView';
@@ -41,7 +41,7 @@ export function meChunk(): Promise<MeView> {
       run: (sql, dom) => app.run(sql, { schema: domainSchemaId(dom) }), cardBody, ranHere: (c) => ranHere(c),
       loadInterview, interviewPrefs: () => parseInterviewPrefs(readJson<unknown>(INTERVIEW_KEY)), passedTakeHomes,
       // v24 (L323): skill map and badges
-      mastery: { masteryOf, badges, engineLevels, perfDrills, FAST_PART, DRILL_KINDS }, ROUTE_PARTS: PARTS, ALL_PARTS, ROUTE_SKILLS, generalNow, loadGeneral, today, moduleTitle, startToday: () => void startToday(), engineTrees,
+      mastery: { masteryOf, badges, engineLevels, perfDrills, FAST_PART, DRILL_KINDS }, ROUTE_PARTS: PARTS, ALL_PARTS, ROUTE_SKILLS, generalNow, loadGeneral, today, moduleTitle, startToday: () => void startToday(), engineTrees, engineExt,
     });
     return (meView = m);
   }, (e: unknown) => {

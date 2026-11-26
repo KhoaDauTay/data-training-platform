@@ -122,8 +122,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì lần đầu thường là lần chậm, nhưng WAL chỉ ghi thay đổi, không ghi việc đọc. Cái làm bản ghi to là full-page image: lần sửa đầu của một trang sau mỗi checkpoint ghi cả trang, để phát lại được cả khi trang trên đĩa bị ghi dở. Lần sửa thứ hai của cùng trang chỉ ghi phần thay đổi."
-      en: "It sounds right because the first run is usually the slow one, but the WAL logs changes, not reads. What makes the record big is the full-page image: the first change of a page after each checkpoint logs the whole page, so replay works even if the on-disk page was torn. The second change of the same page logs only the change."
+      vi: "\"Việc đọc trang được ghi vào WAL\" nghe hợp lý vì lần đầu thường là lần chậm, nhưng WAL chỉ ghi thay đổi, không ghi việc đọc. Cái làm bản ghi to là full-page image: lần sửa đầu của một trang sau mỗi checkpoint ghi cả trang 8 KB, để phát lại được cả khi trang trên đĩa bị ghi dở. Lần sửa thứ hai của cùng trang chỉ ghi phần thay đổi; nó nhỏ vì không kèm trang, không phải vì được nén. Bước 3 của lab thấy đúng vậy: `HOT_UPDATE true` rồi `HOT_UPDATE false`."
+      en: "\"The read is logged in the WAL\" sounds right because the first run is usually the slow one, but the WAL logs changes, not reads. What makes the record big is the full-page image: the first change of a page after each checkpoint logs the whole 8 KB page, so replay works even if the on-disk page was torn. The second change of the same page logs only the change; it is small because it carries no page, not because it was compressed. Step 3 of the lab shows exactly that: `HOT_UPDATE true`, then `HOT_UPDATE false`."
   - q:
       vi: "Bạn chụp LSN trước và sau một INSERT rồi gọi `pg_get_wal_records_info` cho khoảng đó. Mọi dòng trả về là của INSERT đó?"
       en: "You capture the LSN before and after an INSERT, then call `pg_get_wal_records_info` on that range. Does every row belong to that INSERT?"
@@ -134,8 +134,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì bạn chỉ gõ một lệnh, nhưng WAL là một luồng chung: COMMIT có bản ghi riêng, lệnh lưu mốc cũng ghi WAL, và đọc một trang có thể sinh bản ghi dọn trang. Trong lab, khoảng `a` → `b` có 9 bản ghi, chỉ 3 thuộc `w` và `w_pkey`."
-      en: "It sounds right because you typed one command, but the WAL is one shared stream: COMMIT has its own record, the statement saving the mark writes WAL too, and reading a page can produce a page-pruning record. In the lab the range `a` -> `b` holds 9 records, only 3 of them belong to `w` and `w_pkey`."
+      vi: "\"Khoảng LSN chỉ chứa lệnh bạn chạy\" nghe hợp lý vì bạn chỉ gõ một lệnh, nhưng WAL là một luồng chung cho cả cơ sở dữ liệu: COMMIT có bản ghi riêng, lệnh lưu mốc vào `mark` cũng ghi WAL, và đọc một trang có thể sinh bản ghi dọn trang (prune). Trong lab, khoảng `a` → `b` có 9 bản ghi, chỉ 3 thuộc `w` và `w_pkey`. WAL cũng ghi từng dòng chứ không chỉ COMMIT: chính các bản ghi `Heap INSERT` ở bước 1 là dòng mới."
+      en: "\"The LSN range only holds your command\" sounds right because you typed one command, but the WAL is one stream for the whole database: COMMIT has its own record, the statement saving the mark into `mark` writes WAL too, and reading a page can produce a page-pruning record. In the lab the range `a` -> `b` holds 9 records, only 3 of them belong to `w` and `w_pkey`. The WAL logs rows too, not just COMMITs: the `Heap INSERT` records of step 1 are the new rows."
 ---
 ## Mở bài
 

@@ -1,0 +1,28 @@
+# v43 R2 (extensions-plan §b, lesson e-pg-ext-14): postgres_fdw sends a WHERE it can ship to the remote server, so only the
+# matching rows cross the network; a condition it cannot ship (a function that is not built in or not IMMUTABLE) is checked
+# locally after every row arrived. Counts from the lesson's demo data (5,000 orders, 1,667 in Hoi An; checked in PGlite as
+# one local table, the network part is an illustration). Source: https://www.postgresql.org/docs/18/postgres-fdw.html
+title: { vi: "Lọc ở đâu thì ít dòng qua mạng", en: "Where the filter runs decides the traffic" }
+caption:
+  vi: "Điều kiện gửi được sang máy kia thì chỉ dòng khớp đi qua mạng; điều kiện không gửi được thì mọi dòng đi qua rồi mới lọc."
+  en: "A condition that can be sent to the other server lets only matching rows cross the network; one that cannot makes every row cross before the filter."
+alt:
+  vi: "postgres_fdw gửi điều kiện WHERE sang máy giữ bảng khi điều kiện chỉ dùng hàm và toán tử có sẵn, bất biến; khi đó chỉ dòng khớp đi qua mạng. Nếu điều kiện có hàm không gửi được, mọi dòng phải đi qua rồi máy của bạn mới lọc."
+  en: "postgres_fdw sends the WHERE condition to the server holding the table when it uses only built-in, immutable functions and operators; then only matching rows cross the network. If the condition has a function that cannot be sent, every row must cross before your server filters."
+nodes:
+  - { id: remote, shape: table, label: market.orders, sub: { vi: "lọc tại máy B", en: "filters on B" }, tone: live }
+  - { id: local, label: { vi: "máy A", en: "server A" }, sub: postgres_fdw }
+rows:
+  - [remote]
+  - [local]
+edges:
+  - { id: wire, from: remote, to: local, label: { vi: "1 667 dòng", en: "1,667 rows" } }
+steps:
+  - say: { vi: "Điều kiện gửi được: máy B lọc trước.", en: "A shippable condition: server B filters first." }
+    alt: { vi: "city = 'Hoi An' được gửi sang máy B, nên chỉ 1 667 trong 5 000 dòng đi qua mạng.", en: "city = 'Hoi An' is sent to server B, so only 1,667 of the 5,000 rows cross the network." }
+  - say: { vi: "Điều kiện không gửi được: máy A lọc sau.", en: "A condition that cannot be shipped: server A filters afterwards." }
+    alt: { vi: "Khi điều kiện gọi một hàm tự viết, cả 5 000 dòng đi qua mạng rồi máy A mới bỏ những dòng không khớp.", en: "When the condition calls a home-made function, all 5,000 rows cross the network and only then does server A drop the ones that do not match." }
+    set:
+      remote: { sub: { vi: "gửi mọi dòng", en: "sends every row" }, tone: ghost }
+      local: { sub: { vi: "lọc tại máy A", en: "filters on A" }, tone: warm }
+      wire: { label: { vi: "5 000 dòng", en: "5,000 rows" } }

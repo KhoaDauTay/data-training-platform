@@ -1,0 +1,40 @@
+# B2-6 (tools/v42/diagram-plan-v42.md): two independent lists stored as their product. Lesson: e-ds-l4-04 (Ý chính). Data: the
+# lab's emp_skill_lang, run on PGlite (tools/v42/b2check.log): An 2 skills × 2 languages = 4 rows, Binh 1 × 3 = 3; the split
+# gives emp_skills 3 + emp_languages 5 rows and joins back to 7. Drawn for An only (the sample's counts in the subs, R1); every
+# grid holds An's rows. v44 eye fix (L806, E11): the keys draw ↠ (Batch 1's glyph table), as label "employee ↠" + sub, same size. The arrow to emp_languages is
+# near: stacked on a phone it would take a side lane. The lesson's 5NF agent/company example is not drawn (plan §B2).
+# Source: https://www.bkent.net/Doc/simple5.htm (fourth normal form)
+title: { vi: "Hai tập độc lập trong một bảng: 4NF", en: "Two independent sets in one table: 4NF" }
+caption:
+  vi: "employee ↠ skill và employee ↠ language: mỗi nhân viên có một tập kỹ năng và một tập ngôn ngữ không liên quan nhau."
+  en: "employee ↠ skill and employee ↠ language: each employee has a set of skills and a set of languages that do not depend on each other."
+alt:
+  vi: "Khi một nhân viên có tập kỹ năng và tập ngôn ngữ độc lập, bảng ba cột phải giữ tích của chúng. 4NF tách mỗi tập ra một bảng; chỉ tách khi hai tập thật sự độc lập."
+  en: "When an employee has independent skill and language sets, a three-column table must hold their product. 4NF splits each set into its own table; split only when the sets are truly independent."
+nodes:
+  - { id: m1, shape: key, label: "employee ↠", sub: skill }
+  - { id: m2, shape: key, label: "employee ↠", sub: language }
+  - id: big
+    shape: grid
+    label: emp_skill_lang
+    head: [employee, skill, language]
+    cells: [[An, sql, vi], [An, sql, en], [An, python, vi], [An, python, en]]
+    rowTone: [warm, warm, warm, warm]
+    sub: { vi: "An: 2 × 2 = 4 dòng", en: "An: 2 × 2 = 4 rows" }
+  - { id: sk, shape: grid, label: emp_skills, head: [employee, skill], cells: [[An, sql], [An, python]] }
+  - { id: lg, shape: grid, label: emp_languages, head: [employee, language], cells: [[An, vi], [An, en]] }
+  - { id: add, shape: note, label: { vi: "thêm ngôn ngữ: +1 dòng, không +2", en: "new language: +1 row, not +2" } }
+rows:
+  - [m1, m2]
+  - [big]
+  - [sk, lg]
+  - [add]
+edges:
+  - { from: big, to: sk }
+  - { from: big, to: lg, near: true }
+steps:
+  - say: { vi: "Số dòng = số kỹ năng × số ngôn ngữ.", en: "Rows = skills × languages." }
+    alt: { vi: "Hai tập độc lập trong một bảng buộc bảng giữ mọi tổ hợp, nên một thay đổi phải nhân lên.", en: "Two independent sets in one table force it to hold every combination, so each change multiplies." }
+    show: [m1, m2, big]
+  - say: { vi: "Tách thành hai bảng, nối lại ra đúng tích.", en: "Split into two tables; joining gives the product back." }
+    alt: { vi: "Mỗi tập giờ là một bảng riêng, nên thêm một ngôn ngữ chỉ tốn một dòng.", en: "Each set is now its own table, so adding a language costs one row." }

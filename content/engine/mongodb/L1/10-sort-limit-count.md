@@ -8,6 +8,7 @@ title_en: Sorting, paging and counting
 kind: lab
 runtime: browser
 minutes: 10
+figures: [{ name: mg-sort-skip-limit, at: idea }]
 objectives:
   - vi: Sắp xếp kết quả theo một hoặc nhiều trường, rồi lấy trang thứ n bằng `skip` và `limit`.
     en: Sort results by one or more fields, then take page n with `skip` and `limit`.
@@ -112,6 +113,8 @@ Không có `sort`, thứ tự trả về không được hứa trước. Phân t
 
 Làm được: lấy top N, lấy một trang bất kỳ của danh sách đã xếp, và đếm kết quả.
 
+Hình từng bước ở cuối mục này đặt sáu sản phẩm theo thứ tự lưu cạnh danh sách sau `sort({ name: 1 })`, rồi lấy trang 2 bằng `skip(2).limit(2)` trên cả hai.
+
 ## Cú pháp
 
 ```text
@@ -200,6 +203,8 @@ Without `sort`, the order of results is not guaranteed. Paging always needs a `s
 `countDocuments(filter)` counts the matching documents exactly.
 
 You can now: take a top N, fetch any page of a sorted list, and count results.
+
+The step-through figure at the end of this section puts the six products in stored order beside the list after `sort({ name: 1 })`, then takes page 2 with `skip(2).limit(2)` on both.
 
 ## Syntax
 

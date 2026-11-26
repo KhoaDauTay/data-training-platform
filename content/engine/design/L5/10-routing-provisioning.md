@@ -9,6 +9,7 @@ kind: concept
 runtime: browser
 minutes: 15
 viz: pg-tenant-placement
+figures: [{ name: ds-tenant-routing, at: idea }]
 objectives:
   - vi: Tra danh mục để định tuyến một yêu cầu tới proxy của shard đúng, và chuyển một khách bằng một lần đổi dòng có kiểm phiên bản.
     en: Look up the catalog to route a request to the right shard's proxy, and move a tenant with one version-checked row change.
@@ -88,8 +89,8 @@ quiz:
     answer: 0
     trap: 1
     why:
-      vi: "Nghe hợp lý vì bỏ được một lần tra. Nhưng nơi ở của khách đổi khi chuyển shard, còn token đã cấp vẫn sống thêm nhiều giờ: token mang shard sẽ gửi yêu cầu tới shard cũ. Token mang danh tính (tenant_id, từ một claim đã ký); nơi ở luôn tra danh mục."
-      en: "It sounds right because it saves a lookup. But a tenant's home changes during a move while issued tokens live on for hours: a token that carries the shard sends requests to the old one. The token carries identity (tenant_id, from a signed claim); the home always comes from the catalog."
+      vi: "Mang thêm shard nghe nhanh hơn vì bỏ được một lần tra, nhưng nơi ở của khách đổi khi chuyển shard (như `t-04` từ `s2` sang `s4` trong lab), còn token đã cấp vẫn sống thêm nhiều giờ, nên nó gửi yêu cầu tới shard cũ. Chỉ mang shard thì còn tệ hơn: mất luôn danh tính khách. Token mang `tenant_id` (từ một claim đã ký); nơi ở luôn tra danh mục."
+      en: "Carrying the shard too sounds faster because it saves a lookup, but a tenant's home changes during a move (like `t-04` from `s2` to `s4` in the lab), while issued tokens live on for hours, so it sends requests to the old shard. Carrying only the shard is worse: the tenant's identity is gone. The token carries `tenant_id` (from a signed claim); the home always comes from the catalog."
   - q:
       vi: "Kịch bản dựng shard chạy xanh trên môi trường thử, rồi báo lỗi 42704 trên một môi trường mới tinh. Nguyên nhân dễ gặp nhất?"
       en: "The shard bootstrap script passes on the test environment, then fails with error 42704 on a brand-new one. What is the most likely cause?"
@@ -100,8 +101,8 @@ quiz:
     answer: 2
     trap: 0
     why:
-      vi: "Nhiều người nghĩ lỗi chỉ ở máy mới thì do máy. Thật ra 42704 là 'vai trò không tồn tại': trên môi trường cũ vai trò đã có từ lần chạy trước, nên thứ tự sai bị che. Chỉ môi trường mới tinh lộ lỗi, nên hãy thử kịch bản dựng trên môi trường mới."
-      en: "Many people think a failure only on the new machine is the machine's fault. In fact 42704 means 'role does not exist': on the old environment the role was left from an earlier run, which hid the wrong order. Only a brand-new environment shows it, so test bootstrap scripts on a fresh one."
+      vi: "Lỗi chỉ ở máy mới nghe như lỗi của máy, nhưng mã lỗi nói khác: hết giờ hay thiếu bản sao lưu không ra 42704. Mã 42704 nghĩa là đối tượng được nhắc tới không tồn tại, ở đây là vai trò (role) trong câu `GRANT`. Trên môi trường thử, vai trò còn sót từ lần chạy trước nên thứ tự sai bị che; môi trường mới tinh chưa có nó. Sửa thứ tự (tạo vai trò trước, cấp quyền sau) và luôn thử kịch bản dựng trên môi trường mới."
+      en: "A failure only on the new machine sounds like the machine's fault, but the error code says otherwise: a timeout or a missing backup does not give 42704. Code 42704 means the object named does not exist, here the role in the `GRANT`. On the test environment the role was left over from an earlier run, which hid the wrong order; a brand-new environment does not have it. Fix the order (create the role, then grant) and always test bootstrap scripts on a fresh environment."
 ---
 ## Mở bài
 
@@ -119,14 +120,7 @@ Chuyển một khách: tạm chặn ghi của khách, chép dữ liệu theo lô
 
 Cấp phát: mỗi shard là một khối cố định (cụm máy, proxy, cấu hình có phiên bản, khóa mã hóa, bí mật cho từng vai trò, cảnh báo), dựng bằng cùng một mô-đun hạ tầng cho cả gói chung lẫn gói riêng, chỉ khác tham số. Kịch bản dựng chỉ tạo vai trò, chưa tạo bảng. Nhiều người nghĩ kịch bản chạy xanh một lần là xong. Thật ra nó phải được thử trên môi trường mới tinh, và phải kiểm theo đúng đường ứng dụng đi: qua proxy.
 
-Minh họa đường đi của một yêu cầu (không chạy trong trình duyệt):
-
-```text
-tenant_id = t-04
-  → router → directory
-  → proxy-s2.lab
-  → s2 writer
-```
+Hình dưới minh họa đường đi của một yêu cầu, khi khách vừa chuyển shard và khi danh mục không trả lời (không chạy trong trình duyệt).
 
 ## Ví dụ
 
@@ -232,14 +226,7 @@ Moving a tenant: block the tenant's writes, copy its data in batches, compare ro
 
 Provisioning: each shard is a fixed unit (cluster, proxy, versioned settings, encryption key, a secret per role, alarms), built from the same infrastructure module for shared and dedicated tiers, with different inputs only. The bootstrap script creates roles but no tables yet. Many people think a script that passed once is done. In fact it must be tested on a brand-new environment, and checked along the path applications really take: through the proxy.
 
-An illustration of one request's path (not run in the browser):
-
-```text
-tenant_id = t-04
-  → router → directory
-  → proxy-s2.lab
-  → s2 writer
-```
+The figure below illustrates one request's path, right after the tenant moved and when the directory does not answer (not run in the browser).
 
 ## Example
 

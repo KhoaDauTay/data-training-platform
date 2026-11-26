@@ -5,6 +5,7 @@ level: L3
 module: indexes
 title: "Đoán kế hoạch: index multikey có phủ được truy vấn?"
 title_en: "Predict the plan: can a multikey index cover the query?"
+figures: [{ name: mg-multikey-partial, at: idea, variant: multikey }]
 kind: predict
 minutes: 6
 runtime: docs
@@ -72,6 +73,8 @@ Màn hình danh sách phim chỉ cần thể loại của năm phim chính kịc
 
 Nhiều người nghĩ "trường nằm trong index" là đủ để phủ. Thật ra khóa multikey là từng phần tử riêng lẻ: từ index, MongoDB không dựng lại được cả mảng `genres`, nên phải mở tài liệu.
 
+Hình dưới vẽ một tài liệu có mảng hai phần tử thành hai khóa trong index.
+
 ## Tóm tắt
 
 - Index multikey giữ từng phần tử của mảng, không giữ cả mảng.
@@ -94,6 +97,8 @@ This is a prediction based on the MongoDB docs (page "Multikey Indexes", section
 - the general covering rules hold: every field of the query and of the result is in the same index, and `_id` is dropped unless it is in the index.
 
 Many people think "the field is in the index" is enough to cover. In fact multikey keys are single elements: from the index, MongoDB cannot rebuild the whole `genres` array, so it must open the documents.
+
+The figure below draws a document whose two-element array becomes two keys in the index.
 
 ## Recap
 

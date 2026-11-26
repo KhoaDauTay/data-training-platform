@@ -4,6 +4,7 @@ title: "Sửa và xóa dòng: UPDATE, DELETE và điều kiện từ bảng khá
 title_en: "Changing and removing rows: UPDATE, DELETE and conditions from another table"
 minutes: 25
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
+figures: [{ name: sql-update-join, at: idea }]
 objectives:
   - vi: Đổi giá trị bằng `UPDATE … SET … WHERE` và xóa dòng bằng `DELETE … WHERE`.
     en: Change values with `UPDATE … SET … WHERE` and remove rows with `DELETE … WHERE`.
@@ -77,7 +78,7 @@ examples:
         AND p.id > q.id
       RETURNING p.id, p.order_id, p.amount_vnd
     read:
-      vi: "13 lần thu bị ghi hai lần. Bảng được ghép với chính nó: mỗi dòng `p` thấy bản sao `q` cùng đơn, cùng số tiền, và chỉ dòng có `id` lớn hơn bị xóa, nên bản đầu ở lại."
+      vi: "13 lần thu bị ghi hai lần. Bảng được nối với chính nó: mỗi dòng `p` thấy bản sao `q` cùng đơn, cùng số tiền, và chỉ dòng có `id` lớn hơn bị xóa, nên bản đầu ở lại."
       en: "13 payments were recorded twice. The table is paired with itself: each row `p` sees its copy `q` with the same order and amount, and only the row with the larger `id` is deleted, so the first copy stays."
 pitfalls:
   - title: { vi: "Quên WHERE", en: "Forgetting WHERE" }
@@ -115,26 +116,26 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Kết quả cuối giống nhau nên dễ tưởng là một. Nhưng `DELETE` đi qua từng dòng và để lại dòng chết cho VACUUM dọn, còn `TRUNCATE` thay cả tệp dữ liệu. Ở Postgres cả hai đều hoàn tác được trong một giao dịch."
+      vi: "Kết quả cuối giống nhau nên dễ tưởng là một. Nhưng `DELETE` đi qua từng dòng và để lại dòng chết cho VACUUM (tiến trình dọn dẹp của Postgres) dọn, còn `TRUNCATE` thay cả tệp dữ liệu. Ở Postgres cả hai đều hoàn tác được trong một transaction."
       en: "The end result looks the same, so it is easy to think they are one. But `DELETE` visits every row and leaves dead rows for VACUUM to clean, while `TRUNCATE` replaces the whole data file. In Postgres both can be rolled back inside a transaction."
   - q:
       vi: "`UPDATE store_targets t SET … FROM stores s WHERE s.city = 'Hanoi'` (không có `s.id = t.store_id`) sửa những dòng nào?"
       en: "Which rows does `UPDATE store_targets t SET … FROM stores s WHERE s.city = 'Hanoi'` (no `s.id = t.store_id`) change?"
     options:
       - { vi: "Chỉ chỉ tiêu của cửa hàng Hà Nội, vì Postgres tự nối theo khóa ngoại", en: "Only the Hanoi store's targets, because Postgres joins on the foreign key by itself" }
-      - { vi: "Mọi dòng của `store_targets`: không có điều kiện nối, mỗi dòng đều ghép được với cửa hàng Hà Nội", en: "Every row of `store_targets`: with no join condition, every row pairs with the Hanoi store" }
+      - { vi: "Mọi dòng của `store_targets`: không có điều kiện nối, mỗi dòng đều nối được với cửa hàng Hà Nội", en: "Every row of `store_targets`: with no join condition, every row pairs with the Hanoi store" }
       - { vi: "Không dòng nào, câu báo lỗi", en: "No rows; the statement fails" }
     answer: 1
     trap: 0
     why:
-      vi: "Postgres không bao giờ tự đoán điều kiện nối, kể cả khi có khóa ngoại. `FROM` không có điều kiện là ghép mọi cặp, nên dòng nào cũng thỏa `WHERE`."
+      vi: "Postgres không bao giờ tự đoán điều kiện nối, kể cả khi có khóa ngoại. `FROM` không có điều kiện là nối mọi cặp, nên dòng nào cũng thỏa `WHERE`."
       en: "Postgres never guesses a join condition, not even when a foreign key exists. `FROM` without a condition pairs everything, so every row satisfies the `WHERE`."
 recap:
   - vi: "`UPDATE … SET … WHERE` đổi dòng, `DELETE … WHERE` xóa dòng; thiếu `WHERE` là đụng cả bảng."
     en: "`UPDATE … SET … WHERE` changes rows, `DELETE … WHERE` removes them; without `WHERE` the whole table is hit."
   - vi: "Điều kiện ở bảng khác: `UPDATE … FROM`, `DELETE … USING`, và nhớ điều kiện nối."
     en: "A condition in another table: `UPDATE … FROM`, `DELETE … USING`, and remember the join condition."
-  - vi: "Xóa trùng: ghép bảng với chính nó và chỉ xóa một phía, `p.id > q.id`."
+  - vi: "Xóa trùng: nối bảng với chính nó và chỉ xóa một phía, `p.id > q.id`."
     en: "Deduplicating: pair the table with itself and delete one side only, `p.id > q.id`."
   - vi: "Chạy `SELECT` với cùng `WHERE` trước khi sửa hay xóa thật."
     en: "Run a `SELECT` with the same `WHERE` before changing or deleting for real."
@@ -152,7 +153,7 @@ Giá đồ gia dụng tăng 5%, chỉ tiêu tháng 12 của Hà Nội cần cộ
 
 `UPDATE` đổi giá trị của các dòng thỏa `WHERE`; `DELETE` xóa chúng. Khi điều kiện nằm ở bảng khác, Postgres cho thêm một danh sách bảng: `UPDATE … FROM` và `DELETE … USING`, rồi bạn nối các bảng trong `WHERE` như một phép JOIN. `RETURNING` trả lại đúng các dòng đã đổi hay đã mất.
 
-Nhiều người nghĩ **có khóa ngoại thì Postgres tự biết nối hai bảng**. Thật ra không: thiếu điều kiện nối là mọi dòng đều ghép được, và câu sửa đụng cả bảng. Thói quen an toàn: viết câu `SELECT` với cùng `FROM` và `WHERE`, đếm dòng, rồi mới đổi nó thành câu sửa hay xóa.
+Nhiều người nghĩ **có khóa ngoại thì Postgres tự biết nối hai bảng**. Thật ra không: thiếu điều kiện nối là mọi dòng đều nối được, và câu sửa đụng cả bảng. Thói quen an toàn: viết câu `SELECT` với cùng `FROM` và `WHERE`, đếm dòng, rồi mới đổi nó thành câu sửa hay xóa.
 
 ## Cú pháp
 

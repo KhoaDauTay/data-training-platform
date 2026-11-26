@@ -29,7 +29,7 @@ quiz:
       - { vi: "Chuyển sang mức cô lập Serializable", en: "Switch to Serializable isolation" }
     answer: 1
     trap: 0
-    why: { vi: "Nghe hợp lý vì lỗi xuất hiện trong lúc chờ lock, nên cho chờ lâu hơn có vẻ sẽ qua, nhưng thời gian chờ không gỡ được chu trình. Deadlock cần một chu trình. Khi mọi transaction lấy lock theo cùng một thứ tự, chu trình không thể hình thành. Tăng thời gian chờ chỉ làm phát hiện chậm hơn.", en: "It sounds right because the error shows up while waiting for a lock, so waiting longer seems to help, but no wait can break the cycle. A deadlock needs a cycle. When every transaction takes its locks in the same order, no cycle can form. A longer timeout only makes detection slower." }
+    why: { vi: "Tăng `deadlock_timeout` nghe hợp lý vì lỗi xuất hiện trong lúc chờ lock, nhưng đó chỉ là thời gian chờ trước khi Postgres đi dò. Job 1 giữ tài khoản 1 và chờ tài khoản 2, job 2 giữ tài khoản 2 và chờ tài khoản 1: hai bên chờ nhau thành vòng (chu trình), chờ bao lâu cũng không tự gỡ, nên tăng thời gian chờ chỉ làm phát hiện chậm hơn. Serializable không bỏ được row lock của `UPDATE`, nên vòng chờ vẫn có thể xảy ra. Khi cả hai job luôn lock tài khoản có mã nhỏ hơn trước, job đến sau chờ ngay ở dòng đầu tiên khi chưa giữ gì, nên vòng không thể hình thành.", en: "Raising `deadlock_timeout` sounds right because the error shows up while waiting for a lock, but that setting is only how long to wait before Postgres looks. Job 1 holds account 1 and waits for account 2, job 2 holds account 2 and waits for account 1: the two wait on each other in a cycle that no amount of waiting undoes, so a longer timeout only makes detection slower. Serializable does not remove the row locks an `UPDATE` takes, so the cycle can still happen. When both jobs always lock the smaller account id first, the later job waits at the first row while holding nothing, so no cycle can form." }
   - q: { vi: "Postgres giải quyết deadlock thế nào?", en: "How does Postgres resolve a deadlock?" }
     options:
       - { vi: "Cả hai transaction chờ mãi", en: "Both transactions wait forever" }
@@ -37,7 +37,7 @@ quiz:
       - { vi: "Postgres hủy transaction bắt đầu sau", en: "Postgres always aborts the transaction that started later" }
     answer: 1
     trap: 2
-    why: { vi: "Nghe hợp lý vì nó giống quy tắc ai đến trước được phục vụ trước, nhưng Postgres không chọn theo thứ tự bắt đầu. Kiểm tra deadlock tốn kém nên chỉ chạy khi đã chờ đủ `deadlock_timeout`. Docs chính thức nói khó đoán trước transaction nào bị hủy, nên ứng dụng phải sẵn sàng thử lại.", en: "It sounds right because it looks like first come, first served, but Postgres does not choose by start order. Deadlock checking is expensive, so it only runs after waiting `deadlock_timeout`. The docs say which transaction is aborted is hard to predict, so the application must be ready to retry." }
+    why: { vi: "\"Hủy bên bắt đầu sau\" nghe hợp lý vì giống quy tắc ai đến trước được phục vụ trước, nhưng Postgres không chọn theo thứ tự bắt đầu. Dò vòng chờ tốn công, nên một phiên chỉ dò khi đã chờ một lock quá `deadlock_timeout` (1 giây); thấy vòng thì hủy một transaction với mã 40P01, bên kia đi tiếp, nên không ai chờ mãi. Docs chính thức nói khó biết trước bên nào bị hủy, nên ứng dụng phải bắt 40P01 và chạy lại cả transaction.", en: "\"Abort the later one\" sounds right because it looks like first come, first served, but Postgres does not choose by start order. Searching for a wait cycle is expensive, so a session only searches after waiting on a lock longer than `deadlock_timeout` (1 second); if it finds a cycle it aborts one transaction with code 40P01 and the other proceeds, so nobody waits forever. The docs say which side is aborted is hard to predict, so the application must catch 40P01 and rerun the whole transaction." }
 ---
 
 ## Mở bài
@@ -64,7 +64,7 @@ SELECT columns FROM table_name WHERE condition ORDER BY key FOR UPDATE;
 
 - `deadlock_timeout`: chờ bao lâu thì bắt đầu dò chu trình; mặc định `1s`, chỉ superuser hoặc vai trò được cấp quyền mới đổi được.
 - `lock_timeout`: chờ một lock tối đa bao lâu rồi bỏ cuộc (55P03); `0` là không giới hạn.
-- `ORDER BY key FOR UPDATE`: khóa trước mọi dòng sẽ sửa, theo một thứ tự cố định.
+- `ORDER BY key FOR UPDATE`: lock trước mọi dòng sẽ sửa, theo một thứ tự cố định.
 
 ## Ví dụ
 
@@ -102,7 +102,7 @@ t4 + deadlock_timeout:
     ERROR:  deadlock detected   (SQLSTATE 40P01)
 ```
 
-Cách viết không thể tạo chu trình: khóa cả hai dòng theo thứ tự mã trước khi sửa.
+Cách viết không thể tạo chu trình: lock cả hai dòng theo thứ tự mã trước khi sửa.
 
 ```sql
 BEGIN;
@@ -113,7 +113,7 @@ SELECT id, bal FROM acct ORDER BY id;
 ROLLBACK;
 ```
 
-Job theo chiều ngược lại cũng khóa dòng 1 trước, nên nó chờ ngay ở dòng 1 khi chưa giữ gì, và không có chu trình.
+Job theo chiều ngược lại cũng lock dòng 1 trước, nên nó chờ ngay ở dòng 1 khi chưa giữ gì, và không có chu trình.
 
 ## Lỗi hay gặp
 
@@ -131,7 +131,7 @@ WITH l AS (SELECT id FROM acct WHERE id IN (1, 2) ORDER BY id FOR UPDATE)
 SELECT string_agg(id::text, ' -> ') AS lock_order FROM l;
 ```
 
-Câu sai khóa theo thứ tự đọc trên đĩa (`2 -> 1`), thứ tự này đổi theo dữ liệu và kế hoạch. Chỉ `ORDER BY` mới bảo đảm mọi job khóa `1 -> 2`.
+Câu sai lấy lock theo thứ tự đọc trên đĩa (`2 -> 1`), thứ tự này đổi theo dữ liệu và kế hoạch. Chỉ `ORDER BY` mới bảo đảm mọi job lock theo `1 -> 2`.
 
 Tưởng `lock_timeout = 0` nghĩa là không chờ:
 

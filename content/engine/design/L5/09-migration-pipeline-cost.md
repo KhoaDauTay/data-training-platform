@@ -8,6 +8,7 @@ title_en: Per-shard migrations and cost tags
 kind: lab
 runtime: browser
 minutes: 20
+figures: [{ name: ds-shard-migration, at: idea }]
 objectives:
   - vi: Tìm shard chậm phiên bản và đưa chúng lên, từng shard một, ghi phiên bản chỉ khi thay đổi đã thật sự có.
     en: Find shards behind on version and bring them up one at a time, recording the version only once the change really exists.
@@ -129,8 +130,8 @@ quiz:
     answer: 2
     trap: 1
     why:
-      vi: "Nghe hợp lý vì 0 thay đổi trông như 'đã cập nhật'. Thật ra bộ chạy không biết nó đã cập nhật chưa: nó không đọc được gì. Bộ chạy phải dừng khi danh mục không trả lời hay thư mục không có, và 0 áp dụng khi đang chờ có thay đổi là thất bại."
-      en: "It sounds right because 0 changes looks like 'up to date'. In fact the runner cannot know it is up to date: it read nothing. A runner must stop when the catalog does not answer or the folder is missing, and 0 applied when changes are expected is a failure."
+      vi: "0 thay đổi trông như \"đã cập nhật\", nhưng bộ chạy không đọc được thư mục nào, nên nó không biết shard đã ở phiên bản mới chưa. Cảnh báo rồi chạy tiếp thì lỗi lặp lại ở mọi shard sau. Thiếu thư mục, hay 0 áp dụng khi đang chờ có thay đổi, là thất bại: dừng và thoát mã khác 0."
+      en: "0 changes looks like \"up to date\", but the runner read no folder, so it cannot know whether the shard is on the new version. A warning and carrying on repeats the fault on every later shard. A missing folder, or 0 applied when changes are expected, is a failure: stop and exit with a non-zero code."
   - q:
       vi: "Hóa đơn tháng có 25 USD của tài nguyên không gắn thẻ shard. Chia khoản đó thế nào?"
       en: "The monthly bill has 25 USD from a resource with no shard tag. How should that amount be split?"
@@ -141,8 +142,8 @@ quiz:
     answer: 0
     trap: 1
     why:
-      vi: "Nhiều người nghĩ chia đều là công bằng. Thật ra nó làm sai chi phí của mọi khách, và lần sau vẫn có tài nguyên không thẻ. Mỗi tài nguyên phải mang thẻ shard, gói, môi trường và người sở hữu; chi phí mỗi shard là mẫu số cho quyết định về sức chứa và giá."
-      en: "Many people think an even split is fair. In fact it makes every tenant's cost wrong, and next month there are still untagged resources. Every resource must carry shard, tier, environment and owner tags; each shard's cost is the denominator for capacity and pricing decisions."
+      vi: "Chia đều hay cộng vào shard đắt nhất đều là đoán: 25 USD rơi vào khách không dùng nó, và tháng sau vẫn có tài nguyên không thẻ. Gắn thẻ shard, gói, môi trường và người sở hữu trước; khi đó khoản 25 USD vào đúng shard và chia theo `requests` như các khoản khác."
+      en: "An even split and the costliest shard are both guesses: the 25 USD lands on tenants who did not use it, and next month there are still untagged resources. Tag shard, tier, environment and owner first; then the 25 USD goes to the right shard and is split by `requests` like the rest."
 ---
 ## Mở bài
 
@@ -157,6 +158,8 @@ Nhiều người nghĩ thoát mã 0 là xong. Thật ra một lần chạy đư�
 Chi phí: gắn thẻ chi phí (tag của nhà cung cấp đám mây) cho mọi tài nguyên, gồm `shard_id`, gói (`tier`), môi trường và người sở hữu. Chi phí mỗi shard là tổng các tài nguyên mang thẻ đó; chia cho khách theo phần tải (số yêu cầu) để thấy ai đã lớn hơn gói của mình. Tài nguyên không thẻ thì gắn thẻ bổ sung, đừng chia đại.
 
 **Chạy lại phải an toàn**: lần chạy sau bắt đầu lại từ shard còn ở phiên bản cũ, nên mỗi bước chuyển đổi phải chạy lại được mà không hỏng: `ADD COLUMN IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`. Thay đổi phá vỡ (đổi tên hay xóa cột) chia làm hai đợt: đợt một thêm cái mới và ứng dụng đọc được cả hai; đợt hai, khi mọi shard đã lên, mới bỏ cái cũ. Nhờ vậy trong lúc các shard lệch phiên bản, ứng dụng vẫn chạy trên cả hai.
+
+Hình từng bước cuối mục này cho bộ chạy đi qua ba shard đang phục vụ của lab và dừng ở shard đầu tiên báo lỗi.
 
 ## Cú pháp
 
@@ -306,6 +309,8 @@ Many people think exit code 0 means done. In fact a run is judged by an explicit
 Cost: tag every resource with `shard_id`, tier (`tier`), environment and owner. A shard's cost is the sum of the resources carrying its tag; split it across tenants by their share of the load (requests) to see who has outgrown their tier. Fix untagged resources; do not split them at random.
 
 **Re-runs must be safe**: the next run starts again from the shard still on the old version, so every migration step must run twice without harm: `ADD COLUMN IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`. A breaking change (renaming or dropping a column) goes in two waves: the first adds the new thing and the app reads both; the second, once every shard is up, removes the old one. That way the app keeps working on both while the shards are on different versions.
+
+The step-through figure at the end of this section walks the runner through the lab's three serving shards and stops at the first one that fails.
 
 ## Syntax
 

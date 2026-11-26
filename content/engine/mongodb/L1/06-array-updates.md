@@ -8,6 +8,7 @@ title_en: Updating arrays with $push, $addToSet, $pull
 kind: lab
 runtime: browser
 minutes: 10
+figures: [{ name: mg-array-update-ops, at: idea }]
 objectives:
   - vi: Thêm phần tử vào mảng bằng `$push` (kể cả nhiều phần tử với `$each`) và `$addToSet`.
     en: Add elements to an array with `$push` (several at once with `$each`) and `$addToSet`.
@@ -111,6 +112,8 @@ Vì một update trên một tài liệu là nguyên tử (atomic), hai người
 
 Làm được: thêm, thêm không trùng và bỏ phần tử trong mảng mà không ghi đè cả mảng.
 
+Hình từng bước ở cuối mục này áp `$push`, `$addToSet` rồi `$pull` cùng giá trị `"vip"` lên mảng `tags` của khách `c1`.
+
 ## Cú pháp
 
 ```text
@@ -199,6 +202,8 @@ Do not apply two operators to the same field in one command (for example `$push`
 Because an update on one document is atomic, two clients that `$push` to the same array never lose each other's elements. Reading the array, changing it in the application and writing it back can lose them.
 
 You can now: add, add without duplicates and remove array elements without overwriting the whole array.
+
+The step-through figure at the end of this section applies `$push`, `$addToSet` and then `$pull` with the same value `"vip"` to the `tags` array of customer `c1`.
 
 ## Syntax
 

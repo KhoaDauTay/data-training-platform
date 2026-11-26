@@ -8,6 +8,7 @@ title_en: Testing a functional dependency on data with SQL
 kind: lab
 runtime: browser
 minutes: 20
+figures: [{ name: ds-fd-group-test, at: idea }]
 objectives:
   - vi: Tìm phản ví dụ của một phụ thuộc, kể cả khi vế trái có nhiều cột.
     en: Find counter-examples to a dependency, including one with a multi-column left side.
@@ -81,8 +82,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì NULL trông như một giá trị khác `'ruler'`, nhưng mọi hàm gộp trừ `count(*)` đều bỏ qua NULL. Kết quả là 1, và phép thử phụ thuộc bỏ sót vi phạm nếu bạn không đếm NULL riêng."
-      en: "It sounds right because NULL looks like a value other than `'ruler'`, but every aggregate except `count(*)` skips NULLs. The result is 1, and a dependency test misses the violation unless you count NULL separately."
+      vi: "2 nghe hợp lý vì NULL trông như một giá trị khác `'ruler'`, nhưng mọi hàm gộp trừ `count(*)` đều bỏ qua NULL. Còn lại `'ruler'`, `'ruler'`, và `DISTINCT` gộp hai chữ giống nhau làm một, nên kết quả là 1, không phải 3. Hệ quả: phép thử phụ thuộc hàm bỏ sót vi phạm (một dòng có tên, một dòng trống) nếu bạn không cộng thêm 1 cho nhóm có NULL, như bước 2 của lab."
+      en: "2 sounds right because NULL looks like a value other than `'ruler'`, but every aggregate except `count(*)` skips NULLs. That leaves `'ruler'`, `'ruler'`, and `DISTINCT` merges the two equal names into one, so the result is 1, not 3. As a result, a functional dependency test misses the violation (one line with a name, one without) unless you add 1 for a group that has a NULL, as in step 2 of the lab."
   - q:
       vi: "Bảng phẳng `order_lines` lặp tên sản phẩm trên mỗi dòng. Cách nào giữ đúng luật `product_code → product_name`?"
       en: "The flat table `order_lines` repeats the product name on every line. Which way keeps the rule `product_code → product_name`?"
@@ -93,8 +94,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nhiều người nghĩ phụ thuộc là một kiểu `UNIQUE`. Thật ra một mã xuất hiện trên nhiều dòng đơn là bình thường, nên `UNIQUE (product_code)` chặn cả dữ liệu đúng. Đặt phụ thuộc vào bảng mà vế trái là khóa thì khóa tự giữ luật."
-      en: "Many people think a dependency is a kind of `UNIQUE`. In fact one code on many order lines is normal, so `UNIQUE (product_code)` blocks correct data. Put the dependency in a table whose key is the left side, and the key keeps the rule."
+      vi: "Nhiều người nghĩ phụ thuộc hàm là một kiểu `UNIQUE`, nhưng mã P1 nằm trên dòng của đơn 1 lẫn đơn 2 là bình thường, nên `UNIQUE (product_code)` chặn cả dữ liệu đúng. `CHECK (product_name IS NOT NULL)` chỉ cấm tên trống, vẫn cho cùng một mã mang hai tên khác nhau. Chuyển tên sang bảng `products` có khóa chính `code` thì khóa không cho hai dòng cùng mã, nên một mã không thể có hai tên."
+      en: "Many people think a functional dependency is a kind of `UNIQUE`, but code P1 on lines of both order 1 and order 2 is normal, so `UNIQUE (product_code)` blocks correct data. `CHECK (product_name IS NOT NULL)` only forbids an empty name and still lets one code carry two different names. Move the name to a `products` table keyed by `code`, and the key forbids two rows with the same code, so a code cannot have two names."
 ---
 ## Mở bài
 
@@ -107,6 +108,8 @@ Phép thử `X → Y` trên dữ liệu luôn cùng một khuôn: gom theo X, đ
 Cái bẫy là NULL. `count(DISTINCT y)` bỏ qua NULL, nên một mã có lúc ghi tên, lúc để trống, vẫn đếm ra 1. Theo nghĩa phụ thuộc hàm, hai dòng cùng X mà một dòng có Y, một dòng không, là hai giá trị khác nhau. Hãy cộng thêm một khi nhóm có NULL.
 
 Khi đã tin một phụ thuộc là luật nghiệp vụ, đừng giữ nó bằng hy vọng. Tách nó ra bảng riêng mà vế trái là khóa chính: `products (code, name)`. Khóa không cho hai dòng cùng `code`, nên không thể có hai tên. Nhiều người thử giữ luật bằng `UNIQUE` trên bảng phẳng. Thật ra mã được lặp lại trên nhiều dòng đơn là đúng, nên ràng buộc đó chặn luôn dữ liệu hợp lệ.
+
+Hình từng bước cuối mục này chạy phép thử trên `order_lines`: P2 có hai giá nên bị bác, còn tên của P3 có một NULL mà `count(DISTINCT)` vẫn đếm ra 1.
 
 ## Cú pháp
 
@@ -207,6 +210,8 @@ Testing `X → Y` on data always follows one pattern: group by X, count the dist
 The trap is NULL. `count(DISTINCT y)` skips NULLs, so a code that sometimes has a name and sometimes an empty one still counts 1. For a functional dependency, two rows with the same X where one has Y and the other has none are two different values. Add one when the group holds a NULL.
 
 Once you trust a dependency as a business rule, do not keep it by hope. Move it to its own table whose primary key is the left side: `products (code, name)`. The key forbids two rows with the same `code`, so two names are impossible. Many people try to keep the rule with `UNIQUE` on the flat table. In fact a code repeated on many order lines is correct, so that constraint also blocks valid data.
+
+The step-through figure at the end of this section runs the test on `order_lines`: P2 has two prices, so it is refuted, while P3's names hold a NULL and `count(DISTINCT)` still counts 1.
 
 ## Syntax
 

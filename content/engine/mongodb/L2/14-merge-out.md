@@ -8,6 +8,7 @@ title_en: Saving pipeline results with $out and $merge
 kind: quiz
 runtime: docs
 minutes: 8
+figures: [{ name: mg-out-vs-merge, at: idea }]
 objectives:
   - vi: Chọn giữa `$out` (thay cả collection) và `$merge` (gộp vào collection có sẵn).
     en: Choose between `$out` (replace a whole collection) and `$merge` (merge into an existing collection).
@@ -80,6 +81,8 @@ Báo cáo doanh thu theo cửa hàng chạy mỗi đêm, và sáng ra màn hình
 
 Trong trình duyệt, mỗi lần chạy bắt đầu lại từ dữ liệu gốc, và kết quả hiện ra là collection đích sau khi ghi. Collection `store_revenue` có sẵn hai tài liệu: `S1` với số cũ và trường `manager`, `S3` không có trong `orders`.
 
+Hình từng bước ở cuối mục này ghi cùng một kết quả vào `store_revenue` bằng `$out`, `$merge` mặc định và `$merge` với `"replace"`.
+
 ## Ví dụ
 
 `$out` thay cả `store_revenue`: `S3` và trường `manager` mất:
@@ -125,6 +128,8 @@ The per-store revenue report runs every night, and in the morning the screen onl
 `$merge` suits incrementally updated reports (each night computes only the new day) or a home-made "materialized view". `$out` suits rebuilding everything every time.
 
 In the browser, every run starts again from the original data, and the result shown is the target collection after the write. Collection `store_revenue` already holds two documents: `S1` with an old figure and a `manager` field, and `S3`, which is not in `orders`.
+
+The step-through figure at the end of this section writes one result into `store_revenue` with `$out`, with `$merge` on its defaults, and with `$merge` and `"replace"`.
 
 ## Example
 

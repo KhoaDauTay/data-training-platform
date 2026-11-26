@@ -1,0 +1,48 @@
+# B3-6 (tools/v42/diagram-plan-v42.md): after five runs the plan may stop looking at $1. Lesson: e-pg-l4-06 (Ý chính).
+# Data (PGlite, lesson setup with plan_lines; tools/v42/b3check.log): parcels 20000 rows = delivered 14000, in_transit 4000,
+# returned 1800, lost 200; custom 'lost' → Bitmap Heap Scan over Bitmap Index Scan on parcels_status_idx; custom 'delivered' →
+# Seq Scan; generic ($1, EXPLAIN (GENERIC_PLAN)) → Bitmap Index Scan. Bars to scale (7 = 14000), the note is the real count.
+# The "1–5 / 6+" rule is plan_cache_mode = auto, quoted from the docs.
+# Source: https://www.postgresql.org/docs/18/sql-prepare.html
+title: { vi: "Kế hoạch riêng và kế hoạch chung", en: "Custom plans and the generic plan" }
+caption:
+  vi: "Một câu đã chuẩn bị lọc parcels theo status = $1. Năm lần đầu lập kế hoạch theo giá trị; từ lần 6 Postgres có thể chuyển hẳn sang một kế hoạch chung."
+  en: "One prepared query filtering parcels by status = $1. The first five runs are planned for the value; from run 6 Postgres may switch for good to one generic plan."
+alt:
+  vi: "Câu đã chuẩn bị chạy 5 lần đầu với kế hoạch riêng, rồi có thể chuyển hẳn sang một kế hoạch chung không nhìn giá trị. Với dữ liệu lệch, đó là bẫy; plan_cache_mode buộc được một loại."
+  en: "A prepared statement runs its first 5 executions with custom plans, then may switch for good to a generic plan that ignores the value. On skewed data that is a trap; plan_cache_mode can force one kind."
+nodes:
+  - id: dist
+    shape: bars
+    label: { vi: "parcels theo status", en: "parcels by status" }
+    items:
+      - { label: delivered, value: 7, note: "14000" }
+      - { label: in_transit, value: 2, note: "4000" }
+      - { label: returned, value: 0.9, note: "1800" }
+      - { label: lost, value: 0.1, note: "200" }
+  - id: runs
+    shape: grid
+    label: plan_cache_mode = auto
+    head: [{ vi: "lần", en: run }, { vi: "kế hoạch", en: plan }]
+    cells: [["1–5", { vi: "riêng", en: custom }], ["6+", { vi: "chung", en: generic }]]
+    rowTone: [null, warm]
+  - { id: c1, shape: key, mono: true, label: "'lost'", sub: Bitmap Index Scan, tone: live }
+  - { id: c2, shape: key, mono: true, label: "'delivered'", sub: Seq Scan, tone: live }
+  - { id: g, shape: key, mono: true, label: "$1", sub: Bitmap Index Scan, tone: warm }
+  - { id: bad, shape: note, label: { vi: "'delivered' cũng qua index: chậm", en: "'delivered' via index too: slow" }, tone: dead }
+rows:
+  - [dist, runs]
+  - [c1, c2, g]
+  - [bad]
+steps:
+  - say: { vi: "Kế hoạch riêng nhìn giá trị.", en: "A custom plan looks at the value." }
+    show: [dist, c1, c2]
+    alt: { vi: "lost chỉ 1% bảng nên đi index, delivered 70% nên đọc tuần tự.", en: "lost is 1% of the table so it uses the index, delivered is 70% so it reads sequentially." }
+  - say: { vi: "Từ lần 6: so với kế hoạch chung.", en: "From run 6: compare with a generic plan." }
+    show: [dist, runs, c1, c2, g]
+    alt: { vi: "Kế hoạch chung ước theo độ chọn lọc trung bình, nên nó chọn index cho mọi giá trị.", en: "The generic plan estimates from average selectivity, so it picks the index for every value." }
+  - say: { vi: "Chung thắng thì 'delivered' cũng đi index.", en: "If generic wins, 'delivered' uses the index too." }
+    show: [dist, runs, c1, c2, g, bad]
+    alt: { vi: "Khi kế hoạch chung không đắt hơn trung bình đáng kể, Postgres giữ nó và thôi nhìn tham số.", en: "When the generic plan is not much costlier than the average, Postgres keeps it and stops looking at the parameter." }
+    set:
+      c2: { sub: Bitmap Index Scan, tone: dead }

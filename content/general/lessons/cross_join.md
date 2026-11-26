@@ -4,8 +4,9 @@ title: "CROSS JOIN: dựng lưới mọi tổ hợp"
 title_en: "CROSS JOIN: build a grid of every combination"
 minutes: 25
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
+figures: [{ name: sql-cross-grid, at: idea }]
 objectives:
-  - vi: Ghép mọi dòng của bảng này với mọi dòng của bảng kia để có một lưới đầy đủ.
+  - vi: Nối mọi dòng của bảng này với mọi dòng của bảng kia để có một lưới đầy đủ.
     en: Pair every row of one table with every row of another to get a full grid.
   - vi: Dùng lưới cửa hàng × ngày rồi `LEFT JOIN` dữ liệu thật vào, để ô không có số liệu vẫn hiện số 0.
     en: Build a store × day grid, then `LEFT JOIN` the real data onto it, so cells with no data still show 0.
@@ -32,7 +33,7 @@ examples:
       WHERE d.date_key BETWEEN '2026-10-29' AND '2026-10-31'
       ORDER BY s.name, d.date_key
     read:
-      vi: "15 dòng = 5 cửa hàng × 3 ngày. Không có điều kiện ghép nào: mỗi cửa hàng gặp đủ mọi ngày. `dim_date` là bảng lịch, có mọi ngày của 2025–2026."
+      vi: "15 dòng = 5 cửa hàng × 3 ngày. Không có điều kiện nối nào: mỗi cửa hàng gặp đủ mọi ngày. `dim_date` là bảng lịch, có mọi ngày của 2025–2026."
       en: "15 rows = 5 stores × 3 days. There is no join condition: every store meets every day. `dim_date` is a calendar table holding every day of 2025–2026."
   - title: { vi: "Đặt số đơn lên lưới, kể cả số 0", en: "Order counts on the grid, zeros included" }
     sql: |-
@@ -44,7 +45,7 @@ examples:
       GROUP BY s.name, d.date_key
       ORDER BY s.name, d.date_key
     read:
-      vi: "Vẫn 15 dòng; Hoan Kiem ngày 29/10 có 0 đơn mà vẫn hiện. Chỉ nhóm theo `orders` thì ô đó biến mất và biểu đồ theo ngày bị \"hụt\" một cột."
+      vi: "Vẫn 15 dòng; Hoan Kiem ngày 29/10 có 0 đơn mà vẫn hiện. Chỉ gom nhóm trên `orders` thì ô đó biến mất và biểu đồ theo ngày bị \"hụt\" một cột."
       en: "Still 15 rows; Hoan Kiem on 29 October has 0 orders and still shows. Grouping `orders` alone would lose that cell and leave a gap in a daily chart."
   - title: { vi: "Một trục viết tay bằng VALUES", en: "A hand-written axis with VALUES" }
     sql: |-
@@ -61,7 +62,7 @@ examples:
       FROM products p, stores s
       WHERE p.category = 'Stationery' AND s.city = 'Hanoi'
     read:
-      vi: "6 dòng = 6 món văn phòng phẩm × 1 cửa hàng ở Hà Nội. Dấu phẩy giữa hai bảng là `CROSS JOIN`; các điều kiện ở đây chỉ lọc từng bảng, không ghép chúng."
+      vi: "6 dòng = 6 món văn phòng phẩm × 1 cửa hàng ở Hà Nội. Dấu phẩy giữa hai bảng là `CROSS JOIN`; các điều kiện ở đây chỉ lọc từng bảng, không nối chúng."
       en: "6 rows = 6 stationery items × 1 store in Hanoi. A comma between two tables is a `CROSS JOIN`; the conditions here only filter each table, they do not pair them."
   - title: { vi: "Kiểm tra cỡ của lưới", en: "Checking the size of the grid" }
     sql: |-
@@ -69,14 +70,14 @@ examples:
       FROM stores
       CROSS JOIN products
     read:
-      vi: "150 = 5 × 30. Trước khi ghép hai bảng lớn, nhân số dòng của chúng: 10.000 × 10.000 là 100 triệu dòng."
+      vi: "150 = 5 × 30. Trước khi nối hai bảng lớn, nhân số dòng của chúng: 10.000 × 10.000 là 100 triệu dòng."
       en: "150 = 5 × 30. Before crossing two big tables, multiply their row counts: 10,000 × 10,000 is 100 million rows."
 pitfalls:
   - title: { vi: "CROSS JOIN khi bạn muốn JOIN", en: "CROSS JOIN when you meant JOIN" }
     wrong: "SELECT count(*) FROM orders o CROSS JOIN stores s WHERE o.order_date = '2026-10-31'"
     fix: "SELECT count(*) FROM orders o JOIN stores s ON s.id = o.store_id WHERE o.order_date = '2026-10-31'"
     why:
-      vi: "Thiếu điều kiện ghép, mỗi đơn đi với cả 5 cửa hàng: 25 dòng thay vì 5, và mọi tổng tính trên đó gấp 5 lần. Khi số dòng tăng đúng bằng cỡ của một bảng, hãy tìm `ON` bị thiếu."
+      vi: "Thiếu điều kiện nối, mỗi đơn đi với cả 5 cửa hàng: 25 dòng thay vì 5, và mọi tổng tính trên đó gấp 5 lần. Khi số dòng tăng đúng bằng cỡ của một bảng, hãy tìm `ON` bị thiếu."
       en: "With no join condition, each order goes with all 5 stores: 25 rows instead of 5, and every total built on it is 5 times too big. When the row count grows by exactly one table's size, look for a missing `ON`."
   - title: { vi: "count(*) trên lưới đếm cả ô trống", en: "count(*) on the grid counts empty cells" }
     wrong: "SELECT s.name, d.date_key, count(*) AS orders FROM stores s CROSS JOIN dim_date d LEFT JOIN orders o ON o.store_id = s.id AND o.order_date = d.date_key WHERE d.date_key BETWEEN '2026-10-29' AND '2026-10-31' GROUP BY s.name, d.date_key"
@@ -101,7 +102,7 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "\"Ghép hai bảng\" nghe như đặt chúng nối đuôi nhau, nên dễ cộng 5 + 730. `CROSS JOIN` là mọi cặp, nên số dòng là tích: 5 × 730."
+      vi: "\"Nối hai bảng\" nghe như đặt chúng nối đuôi nhau, nên dễ cộng 5 + 730. `CROSS JOIN` là mọi cặp, nên số dòng là tích: 5 × 730."
       en: "\"Combining two tables\" sounds like stacking them, so 5 + 730 is a tempting sum. `CROSS JOIN` makes every pair, so the row count is the product: 5 × 730."
   - q:
       vi: "Khi nào nên dùng `CROSS JOIN` có chủ ý?"
@@ -113,10 +114,10 @@ quiz:
     answer: 0
     trap: 2
     why:
-      vi: "Vì `CROSS JOIN` vô tình là lỗi hay gặp, nhiều người nghĩ nó luôn sai. Dùng có chủ ý, nó là cách chuẩn để dựng lưới đầy đủ trước khi đặt số liệu lên. Hai bảng không có khóa chung thì ghép mọi cặp không làm chúng \"khớp\", chỉ nhân dòng."
+      vi: "Vì `CROSS JOIN` vô tình là lỗi hay gặp, nhiều người nghĩ nó luôn sai. Dùng có chủ ý, nó là cách chuẩn để dựng lưới đầy đủ trước khi đặt số liệu lên. Hai bảng không có khóa chung thì nối mọi cặp không làm chúng \"khớp\", chỉ nhân dòng."
       en: "Because an accidental `CROSS JOIN` is a common bug, many people think it is always wrong. Used on purpose, it is the standard way to build a full grid before laying data on it. For two tables with no shared key, pairing everything does not make them \"match\"; it only multiplies rows."
 recap:
-  - vi: "`CROSS JOIN` ghép mọi cặp: số dòng là tích hai bảng."
+  - vi: "`CROSS JOIN` nối mọi cặp: số dòng là tích hai bảng."
     en: "`CROSS JOIN` makes every pair: the row count is the product of both tables."
   - vi: "Dựng lưới bằng `CROSS JOIN`, đặt số liệu bằng `LEFT JOIN`, đếm bằng `count(o.id)`."
     en: "Build the grid with `CROSS JOIN`, lay data on with `LEFT JOIN`, count with `count(o.id)`."
@@ -132,9 +133,9 @@ Biểu đồ số đơn theo ngày của từng cửa hàng có chỗ "hụt": h
 
 ## Ý chính
 
-`CROSS JOIN` ghép mỗi dòng của bảng này với **mọi** dòng của bảng kia, không cần điều kiện. 5 cửa hàng × 3 ngày cho 15 dòng: một lưới đầy đủ. Sau đó `LEFT JOIN` bảng số liệu vào lưới; ô không có số liệu vẫn còn, và `count(o.id)` cho nó 0.
+`CROSS JOIN` nối mỗi dòng của bảng này với **mọi** dòng của bảng kia, không cần điều kiện. 5 cửa hàng × 3 ngày cho 15 dòng: một lưới đầy đủ. Sau đó `LEFT JOIN` bảng số liệu vào lưới; ô không có số liệu vẫn còn, và `count(o.id)` cho nó 0.
 
-Nhiều người nghĩ **`CROSS JOIN` chỉ là lỗi quên điều kiện ghép**. Đúng là quên `ON` sẽ cho ra đúng một `CROSS JOIN` ngoài ý muốn, nhân số dòng lên. Nhưng dùng có chủ ý, nó là công cụ duy nhất tạo ra những dòng **không có** trong dữ liệu, như ngày không bán được gì.
+Nhiều người nghĩ **`CROSS JOIN` chỉ là lỗi quên điều kiện nối**. Đúng là quên `ON` sẽ cho ra đúng một `CROSS JOIN` ngoài ý muốn, nhân số dòng lên. Nhưng dùng có chủ ý, nó là công cụ duy nhất tạo ra những dòng **không có** trong dữ liệu, như ngày không bán được gì.
 
 ## Cú pháp
 

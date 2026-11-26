@@ -8,6 +8,7 @@
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 import { analyze, samplePath, type OverlapFrame } from '../scripts/overlap-check.mjs';
+import { parseBestCard, type BpCard } from '../src/engine/best';
 import { parseEngineLesson, type EngineLesson } from '../src/engine/content';
 import type { Shape } from '../src/engine/viz/engineVizCore';
 import { resolveViz } from '../src/engine/viz/engineViz';
@@ -15,18 +16,30 @@ import { altTables, altText, type FigRef, type FigSpec, layout, linkGap, MARGIN,
 import { GLYPHS } from '../src/engine/viz/glyphs';
 import { parseFullLesson } from '../src/fullLesson';
 import { fullLessons, lessonIdOf } from '../src/generalLessonSources';
+import { lessonSource } from '../src/lessonSources';
+import { parseLessons } from '../src/lessons';
 import { VI_DIACRITIC } from './generalRules';
 
 const specs = Object.fromEntries(Object.entries(import.meta.glob<FigSpec>('../content/figures/*.yml', { import: 'default', eager: true }))
   .map(([p, s]) => [p.replace(/^.*\/(.+)\.yml$/, '$1'), s]));
-const engineFiles = import.meta.glob<string>('../content/engine/*/L*/*.md', { query: '?raw', import: 'default', eager: true });
+const engineFiles = import.meta.glob<string>('../content/engine/*/{L*,ext}/*.md', { query: '?raw', import: 'default', eager: true });
 const engine: EngineLesson[] = Object.entries(engineFiles).map(([p, s]) => parseEngineLesson(s, p, parse));
 const general = await Promise.all(Object.entries(fullLessons).map(async ([p, load]) => parseFullLesson(await load(), lessonIdOf(p))));
-const SHORT = { postgres: 'pg', mongodb: 'mg', dynamodb: 'dy', design: 'ds' } as const;
+/** v46 (L860): quick lessons (content/lessons.yml) carry one `figure:` each, drawn with the General (`sql`) prefix. */
+const quick = parseLessons(lessonSource);
+const SHORT = { postgres: 'pg', mongodb: 'mg', dynamodb: 'dy', design: 'ds', stack: 'st' } as const;
+// v44 B4 (P1, L812): Best Practice cards host figures too (engineBest's FIG_TRACK)
+const best = Object.entries(import.meta.glob<string>('../content/engine/best/*/*.md', { query: '?raw', import: 'default', eager: true })).map(([p, t]) => {
+  const m = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/.exec(t.replace(/\r\n/g, '\n'))!;
+  return parseBestCard({ fm: parse(m[1]), body: m[2] }, p) as BpCard;
+});
+const BP_SHORT = { sql: 'sql', postgres: 'pg', mongodb: 'mg', dynamodb: 'dy' } as const;
 /** Every figure reference in content: lesson id, its engine short name, the reference. */
 const refs: { id: string; eng: string; f: FigRef }[] = [
   ...engine.flatMap((l) => (l.figures ?? []).map((f) => ({ id: l.id, eng: SHORT[l.engine], f }))),
   ...general.flatMap((l) => (l.figures ?? []).map((f) => ({ id: l.id, eng: 'sql', f }))),
+  ...best.flatMap((c) => (c.figures ?? []).map((f) => ({ id: c.id, eng: BP_SHORT[c.track], f }))),
+  ...quick.flatMap((l) => (l.figure ? [{ id: `quick:${l.id}`, eng: 'sql', f: l.figure }] : [])),
 ];
 const specName = (r: { eng: string; f: FigRef }): string | undefined => [r.f.name, `${r.eng}-${r.f.name}`].find((n) => specs[n]);
 const WIDTHS = [640, 335, 280];
@@ -64,7 +77,7 @@ function extents(f: { nodes: Shape[] }): Map<string, { x0: number; y0: number; x
   const out = new Map<string, { x0: number; y0: number; x1: number; y1: number }>();
   const m = model(f, 0, 0);
   const add = (k: string | undefined, x: number, y: number, w: number, h: number): void => {
-    const id = /^n:([a-z0-9_-]+)/i.exec(k ?? '')?.[1];
+    const id = /^(?:pv:)?n:([a-z0-9_-]+)/i.exec(k ?? '')?.[1]; // v44 B4 X2: a faded preview holds its node's slot too
     if (!id) return;
     const o = out.get(id);
     out.set(id, o ? { x0: Math.min(o.x0, x), y0: Math.min(o.y0, y), x1: Math.max(o.x1, x + w), y1: Math.max(o.y1, y + h) } : { x0: x, y0: y, x1: x + w, y1: y + h });
@@ -94,6 +107,13 @@ describe('v39 figures: content links', () => {
     });
     expect(bad).toEqual([]);
   });
+  it('v46 (L860): bài học nhanh có hình là một spec thật (không sơ đồ registry); ≥ 35 bài có hình; cùng hình với bài đầy đủ khi bài đó có', () => {
+    const withFig = quick.filter((l) => l.figure);
+    expect(withFig.length).toBeGreaterThanOrEqual(35);
+    expect(withFig.filter((l) => !specs[l.figure!.name]).map((l) => `${l.id}: ${l.figure!.name}`)).toEqual([]);
+    const full = new Map(general.map((l) => [l.id, (l.figures ?? []).map((f) => f.name)]));
+    expect(withFig.filter((l) => full.has(l.id) && (full.get(l.id) ?? []).length > 0 && !full.get(l.id)!.includes(l.figure!.name)).map((l) => l.id)).toEqual([]);
+  });
   it('v42 (L696): không bài hay hình nào viết sơ đồ ER bằng ký tự (||--o{ …): vẽ bằng thực thể và chân chim', () => {
     const raw = import.meta.glob<string>(['../content/engine/**/*.md', '../content/general/**/*.md', '../content/figures/*.yml'], { query: '?raw', import: 'default', eager: true });
     expect(Object.keys(raw).length).toBeGreaterThan(100);
@@ -101,10 +121,55 @@ describe('v39 figures: content links', () => {
   });
 });
 
+// v44 (L766): diagrams drawn with characters are figures now (tools/v42/diagram-plan-v42.md §2A). A ```text block in a lesson
+// may not draw with box-drawing characters, arrowheads or `-->` at all, and a block of arrow lines (≥ 2 lines with -> / → / <- /
+// ←) must be one of the text tables, arithmetic chains, notation and real output that stay (§2B/§2C), listed here by file and
+// first line. A new one is a timeline or flow to draw as a figure, or a reviewed addition to this list.
+const ARROW_TEXT_OK: Record<string, string> = {
+  'design/L3/01-functional-dependency.md | X → Y     reflexivity': '2C: Armstrong axioms notation',
+  'design/L3/03-closure-keys.md | 1. split right sides': '2C: minimal cover steps',
+  'design/L3/04-level-check.md | R(A, B, C, D), F = {A → B': '2C: FD notation',
+  'dynamodb/L1/03-no-join-limits.md | SQL                          DynamoDB': '2B: SQL → DynamoDB table',
+  'dynamodb/L2/08-item-size.md | "shirt-color": "R"   -> 11 + 1': '2B: size arithmetic',
+  'dynamodb/L2/10-write-cost.md | PutItem 500 B           -> 1 WCU': '2B: cost arithmetic',
+  'dynamodb/L2/13-limit-filter.md | Limit 6, page 1  -> ScannedCount': '2B: page counts',
+  'dynamodb/L3/01-access-patterns.md | <access pattern>': '2C: access-pattern template',
+  'dynamodb/L3/01-access-patterns.md | 1. One customer profile': '2B: access patterns table',
+  'dynamodb/L3/06-sparse-index.md | {"op": "UpdateItem", "input": {..., "Upd': '2C: request sketch',
+  'dynamodb/L3/07-single-table.md | PK = <ENTITY>#<id>': '2C: key template',
+  'dynamodb/L3/07-single-table.md | // WRONG: one table per entity': '2C: WRONG/FIX code',
+  'dynamodb/L3/12-gsi-eventual.md | Query byStatus = NEW': '2B: read then strong read',
+  'dynamodb/L3/13-single-vs-multi-cost.md | Shop      Query PK = CUST#C-02': '2B: cost table',
+  'dynamodb/L4/03-hot-partition-math.md | 3 KB -> 4 KB = 1 RCU (strong)': '2B: rounding arithmetic',
+  'dynamodb/L4/03-hot-partition-math.md | 1.5 KB -> 2 KB = 2 WCU': '2B: rounding arithmetic',
+  'dynamodb/L4/03-hot-partition-math.md | Query:        40.8 KB -> 44 KB': '2B: rounding arithmetic',
+  'dynamodb/L4/06-capacity-modes.md | steady 280 WCU all day': '2B: mode choice table',
+  'dynamodb/L4/08-sparse-gsi.md | GSI key attributes present': '2C: rule lines',
+  'mongodb/L2/17-lookup-unwind.md | $lookup                          -> 4': '2B: stage counts',
+  'mongodb/L5/01-wiredtiger.md | RAM 4 GB   -> 0.5 x (4 - 1)': '2B: cache-size arithmetic',
+  'postgres/L4/15-parallel-query-jit.md | Finalize Aggregate': '2C: real EXPLAIN output',
+  'postgres/L4/16-capstone-slow-report.md | status MCV: {delivered,open,lost}': '2C: real pg_stats output',
+};
+describe('v44: no diagrams drawn with characters', () => {
+  const raw = import.meta.glob<string>(['../content/engine/**/*.md', '../content/general/**/*.md'], { query: '?raw', import: 'default', eager: true });
+  const blocks = Object.entries(raw).flatMap(([p, s]) => [...s.split(/\r?\n# EN\r?\n/)[0].matchAll(/```text\r?\n([\s\S]*?)```/g)]
+    .map((m) => ({ file: p.replace(/^.*content\/(engine|general)\//, ''), lines: m[1].split(/\r?\n/).filter(Boolean) })));
+  it('không ký tự khung, đầu mũi tên hay --> trong khối text', () => {
+    expect(blocks.length).toBeGreaterThan(100);
+    expect(blocks.filter((b) => b.lines.some((l) => /[─-╿▲-◄]|-->|<--|==>|\+--/.test(l))).map((b) => `${b.file} | ${b.lines[0]}`)).toEqual([]);
+  });
+  it('khối nhiều dòng mũi tên chỉ là bảng, phép tính, ký hiệu hay output thật đã duyệt (§2B/§2C)', () => {
+    const arrowy = blocks.filter((b) => b.lines.filter((l) => /->|→|<-|←/.test(l)).length >= 2).map((b) => `${b.file} | ${b.lines[0]}`);
+    const key = (s: string): string | undefined => Object.keys(ARROW_TEXT_OK).find((k) => s.startsWith(k));
+    expect(arrowy.filter((s) => !key(s))).toEqual([]);
+    expect(Object.keys(ARROW_TEXT_OK).filter((k) => !arrowy.some((s) => s.startsWith(k))), 'mục thừa').toEqual([]);
+  });
+});
+
 describe.each(Object.keys(specs))('v39 figure %s', (name) => {
   const spec = specs[name];
   it('giới hạn: ≤ 12 node, ≤ 14 mũi tên, ≤ 6 bước; tên file = [a-z0-9-]+; VI và EN đủ, EN không dấu', () => {
-    expect(name).toMatch(/^(sql|ds|pg|mg|dy)-[a-z0-9-]+$/);
+    expect(name).toMatch(/^(sql|ds|st|pg|mg|dy|bp)-[a-z0-9-]+$/); // v44 B4 (L812): bp- = a Best Practice card's figure
     expect(spec.nodes.length).toBeLessThanOrEqual(12);
     expect((spec.edges ?? []).length).toBeLessThanOrEqual(14);
     expect((spec.steps ?? []).length).toBeLessThanOrEqual(6);
@@ -139,7 +204,7 @@ describe.each(Object.keys(specs))('v39 figure %s', (name) => {
           for (const n of f.nodes) if (n.t === 't') {
             expect(n.size ?? 0, `${at}: "${n.s}"`).toBeGreaterThanOrEqual(13);
             // R1 E14: a note, and a table's or chart's title and sub, keep one line up to NOTE_CH characters on a wide figure
-            const note = W >= WIDE && (notes.has(/^n:(.+)\.t\d+$/.exec(n.k)?.[1] ?? '') || titled.has(/^n:(.+)\.[hs]\d+$/.exec(n.k)?.[1] ?? ''));
+            const note = W >= WIDE && (notes.has(/^(?:pv:)?n:(.+)\.t\d+$/.exec(n.k)?.[1] ?? '') || titled.has(/^(?:pv:)?n:(.+)\.[hs]\d+$/.exec(n.k)?.[1] ?? '')) // v44 B4 X2: pv: = a later step's node, faded;
             expect([...n.s].length, `${at}: "${n.s}"`).toBeLessThanOrEqual(note ? NOTE_CH : 18);
           }
           const ex = [...extents(f).entries()];
@@ -164,7 +229,7 @@ describe.each(Object.keys(specs))('v39 figure %s', (name) => {
             }
           }
           // tokens only: every tone and ink the builder writes maps to an --eng-* alias in the core
-          for (const n of f.nodes) expect(JSON.stringify(n)).not.toMatch(/#[0-9a-f]{3,6}\b|rgb\(|var\(--(?!eng-)/i);
+          for (const n of f.nodes) expect(JSON.stringify({ ...n, s: undefined })).not.toMatch(/#[0-9a-f]{3,6}\b|rgb\(|var\(--(?!eng-)/i); // v44 B4: drawn text is content (TENANT#C02, VOTE#2026), not a colour
           // R1 E10: two arrows into one box land ≥ 16 apart or share one tip (a bus), never a double arrowhead
           for (let p = 0; p < m.arrows.length; p++) for (let q = p + 1; q < m.arrows.length; q++) {
             const [A, B] = [m.arrows[p], m.arrows[q]];
@@ -207,10 +272,22 @@ describe.each(Object.keys(specs))('v39 figure %s', (name) => {
         const tables = altTables(spec, lang, variant);
         const v = variant === undefined ? undefined : spec.variants?.[variant];
         const shown = new Set(v?.step !== undefined ? spec.steps?.[v.step].show ?? spec.nodes.map((n) => n.id) : v?.show ?? spec.nodes.map((n) => n.id));
-        const grids = spec.nodes.filter((n) => (n.shape === 'grid' || n.shape === 'bars') && (v?.step !== undefined || v?.show ? shown.has(n.id) : true));
+        // v44 (L784, L802 eye E2): a variant may patch a grid's rows or bars (another lesson's data), and its tables are the grids its
+        // own frame draws, as the variant's and that step's set patch them (never the base's)
+        // B4 eye X4 (L822): the base figure's table is the node in `data_step`, else in the last step that shows it
+        const lastStep = (id: string): number | undefined => {
+          const st = spec.steps ?? [];
+          if (spec.data_step !== undefined && (!st[spec.data_step - 1]?.show || st[spec.data_step - 1].show!.includes(id))) return spec.data_step - 1;
+          for (let i = st.length - 1; i >= 0; i--) if (!st[i].show || st[i].show!.includes(id)) return i;
+          return undefined;
+        };
+        const stepOf = (id: string): number | undefined => (v ? v.step : lastStep(id));
+        const patch = (n: FigSpec['nodes'][number]): FigSpec['nodes'][number] => { const k = stepOf(n.id); return ({ ...n, ...v?.set?.[n.id], ...(k !== undefined ? spec.steps?.[k].set?.[n.id] : {}) }) as FigSpec['nodes'][number]; };
+        const grids = spec.nodes.filter((n) => (n.shape === 'grid' || n.shape === 'bars') && (v?.step !== undefined || v?.show ? shown.has(n.id) : !spec.steps?.length || spec.steps.some((st) => !st.show || st.show.includes(n.id)))).map(patch); // v44 B4: a node only a variant shows has no table in the base figure
         expect(tables.length, `${lang} bảng dữ liệu`).toBe(grids.length);
         for (const [i, t] of tables.entries()) {
           expect(t.caption, lang).not.toBe('');
+          if (variant && grids[i].label) expect(t.caption, `${lang}: bảng của variant phải là bảng nó vẽ`).toBe(tr(grids[i].label, lang));
           expect(t.rows.length, `${lang} ${t.caption}`).toBe(grids[i].cells?.length ?? grids[i].items?.length ?? 0);
           expect(t.rows.flat().some(Boolean), `${lang} ${t.caption}: ô nào cũng trống`).toBe(true);
           expect(t.head.every(Boolean), `${lang} ${t.caption}: tiêu đề cột trống`).toBe(true); // an empty th is an axe finding
@@ -552,7 +629,9 @@ describe('v42 ER mode', () => {
     expect((k('e:2.l') as { x: number }).x).toBeGreaterThan(Math.max(...loop.map(([x]) => x)));
   });
   // the content's ER figures: links clear of boxes, texts and each other at every width, step and variant
-  for (const name of ['ds-cardinality', 'ds-er-clinic', 'ds-er-to-tables']) for (const variant of [undefined, ...Object.keys(specs[name]?.variants ?? {})]) for (const lang of LANGS)
+  // v44 (L785): every spec that draws an entity, not a hand-kept list
+  const ER_SPECS = Object.keys(specs).filter((n) => specs[n].nodes.some((x) => x.shape === 'entity'));
+  for (const name of ER_SPECS) for (const variant of [undefined, ...Object.keys(specs[name]?.variants ?? {})]) for (const lang of LANGS)
     it.each(WIDTHS)(`${name} ${variant ?? ''} · ${lang} · W %i: đường quan hệ không cắt hộp, chữ; dấu không chạm chữ`, (W) => {
       const d = layout(specs[name], lang, W, variant);
       d.frames.forEach((f, i) => { const at = `${name} ${lang} W${W} ${i}`; expect(linkFindings(f, d.w, d.h), at).toEqual([]); marksClear(f, at); });
@@ -560,7 +639,7 @@ describe('v42 ER mode', () => {
     });
   // hosts are any width 280–640 (390–430 px phones, tablets): partial wraps must route as cleanly as the three test widths
   const sweep: [string, FigSpec, string | undefined][] = [...CARDS.map((c): [string, FigSpec, undefined] => [`er ${c}`, ER(c), undefined]),
-    ...['ds-cardinality', 'ds-er-clinic', 'ds-er-to-tables'].flatMap((n) => [undefined, ...Object.keys(specs[n].variants ?? {})].map((v): [string, FigSpec, string | undefined] => [n, specs[n], v]))];
+    ...ER_SPECS.flatMap((n) => [undefined, ...Object.keys(specs[n].variants ?? {})].map((v): [string, FigSpec, string | undefined] => [n, specs[n], v]))];
   for (const [name, spec, v] of sweep) for (const lang of LANGS) it(`${name} ${v ?? ''} · ${lang} · mọi bề rộng 280–640 (bước 4): không lỗi dựng, analyze, đường quan hệ và dấu sạch`, () => {
     for (let W = 280; W <= 640; W += 4) {
       const d = layout(spec, lang, W, v);

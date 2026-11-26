@@ -8,6 +8,7 @@ title_en: Query processing algorithms - external sort, selection, joins
 kind: concept
 runtime: browser
 minutes: 15
+figures: [{ name: ds-external-sort, at: idea }]
 objectives:
   - vi: Kể các bước xử lý một câu truy vấn và chỗ mỗi thuật toán xuất hiện trong EXPLAIN.
     en: List the steps of processing a query and where each algorithm shows up in EXPLAIN.
@@ -66,8 +67,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì vòng lồng dễ hiểu, nhưng không có index thì nó đọc bảng trong một lần cho mỗi dòng ngoài. Nối băm đọc mỗi bảng một lần; nối trộn chỉ thắng khi hai bên đã có thứ tự sẵn."
-      en: "It sounds right because a nested loop is easy to follow, but without an index it reads the inner table once per outer row. A hash join reads each table once; a merge join wins only when both sides are already ordered."
+      vi: "Vòng lồng đơn giản nhưng không có index thì nó đọc lại cả bảng trong cho mỗi dòng ngoài: với `R` và `S` của lab là 1.000 + 100.000 × 500 = 50.001.000 lượt đọc trang. Nối băm dựng bảng băm trên bảng nhỏ rồi quét bảng lớn một lần, khoảng 1.000 + 500 = 1.500 trang. Nối trộn không luôn nhanh nhất: hai bên chưa có thứ tự thì phải sắp cả hai trước, nên nó chỉ thắng khi dữ liệu đã có thứ tự sẵn."
+      en: "A nested loop is simple, but without an index it rereads the whole inner table for each outer row: for the lab's `R` and `S` that is 1,000 + 100,000 × 500 = 50,001,000 page reads. A hash join builds a hash table on the small table and scans the big one once, about 1,000 + 500 = 1,500 pages. A merge join is not always fastest: unordered inputs must both be sorted first, so it wins only when the data is already ordered."
   - q:
       vi: "EXPLAIN ghi `Sort Method: external merge  Disk: 900kB`. Nghĩa là gì?"
       en: "EXPLAIN shows `Sort Method: external merge  Disk: 900kB`. What does it mean?"
@@ -78,8 +79,8 @@ quiz:
     answer: 1
     trap: 2
     why:
-      vi: "Nhiều người nghĩ \"merge\" là dữ liệu đã có thứ tự. Thật ra đó là sắp xếp ngoài: sắp từng phần vừa bộ nhớ, ghi ra đĩa, rồi trộn. Tăng `work_mem` cho câu đó hoặc dùng index có thứ tự sẵn sẽ bỏ được bước ghi đĩa."
-      en: "Many people think \"merge\" means the data was already ordered. In fact it is an external sort: sort pieces that fit in memory, write them out, then merge. Raising `work_mem` for that query or using an index that is already ordered removes the disk step."
+      vi: "\"Merge\" không có nghĩa là bảng đã có thứ tự, và `Disk` không nói gì về ổ đĩa hỏng. Dòng này nghĩa là dữ liệu cần sắp lớn hơn `work_mem` (bộ nhớ mỗi phép sắp được dùng), nên Postgres làm sắp xếp ngoài: sắp từng phần vừa bộ nhớ thành một run, ghi 900 kB ra file tạm, rồi trộn các run lại. Tăng `work_mem` cho câu đó, hoặc dùng một index đã có thứ tự sẵn, sẽ bỏ được bước ghi đĩa."
+      en: "\"Merge\" does not mean the table is stored in order, and `Disk` says nothing about a failing drive. The line means the data to sort is bigger than `work_mem` (the memory each sort may use), so Postgres does an external sort: it sorts pieces that fit in memory into runs, writes 900 kB to temp files, then merges the runs. Raising `work_mem` for that query, or using an index that is already ordered, removes the disk step."
 ---
 ## Mở bài
 
@@ -92,6 +93,8 @@ Một câu đi qua bốn bước: phân tích cú pháp, viết lại (mở view
 **Sắp xếp ngoài** khi dữ liệu lớn hơn bộ nhớ: đọc từng phần vừa bộ nhớ, sắp, ghi ra thành một **run**; rồi trộn nhiều run một lượt cho tới khi còn một. Với N trang và B trang bộ nhớ: khoảng ⌈N/B⌉ run, mỗi lượt trộn gộp B − 1 run. **Chọn** (`WHERE`): quét tuần tự đọc mọi trang; quét index đi thẳng tới dòng khớp, tốt khi khớp ít; quét bitmap gom các vị trí từ index rồi đọc trang theo thứ tự, ở giữa hai cách trên.
 
 **Nối**: vòng lồng duyệt mỗi dòng ngoài và tìm dòng trong, rất tốt khi vòng ngoài ít dòng và bảng trong có index; bản theo khối đọc bảng trong một lần cho mỗi khối của bảng ngoài thay vì mỗi dòng. Nối băm dựng bảng băm trên bên nhỏ rồi quét bên lớn, chỉ dùng cho `=`. Nối trộn cần hai bên đã sắp theo khóa nối. **Chiếu bỏ trùng** và phép tập (`DISTINCT`, `UNION`, `EXCEPT`) dùng sắp xếp hoặc băm. Kế hoạch thật của Postgres và cách đọc chi phí có trong `e-pg-l4-04` và `e-pg-l3-14`.
+
+Hình từng bước cuối mục này sắp `nums` với bộ nhớ 4 giá trị: ba run đã sắp, rồi một lượt trộn.
 
 ## Ví dụ
 
@@ -180,6 +183,8 @@ A query goes through four steps: parse, rewrite (expand views, rules), plan, exe
 **External sorting** when data is bigger than memory: read a piece that fits in memory, sort it, write it out as a **run**; then merge several runs per pass until one is left. With N pages and B memory pages: about ⌈N/B⌉ runs, each merge pass combining B − 1 runs. **Selection** (`WHERE`): a sequential scan reads every page; an index scan goes straight to the matching rows, good when few match; a bitmap scan collects positions from the index and reads the pages in order, between the two.
 
 **Joins**: a nested loop takes each outer row and looks up inner rows, very good when the outer side is small and the inner table has an index; the block version reads the inner table once per block of the outer table instead of once per row. A hash join builds a hash table on the small side and scans the big side, for `=` only. A merge join needs both sides sorted on the join key. **Duplicate-removing projection** and set operations (`DISTINCT`, `UNION`, `EXCEPT`) use sorting or hashing. Real Postgres plans and how to read their costs are in `e-pg-l4-04` and `e-pg-l3-14`.
+
+The step-through figure at the end of this section sorts `nums` with memory for 4 values: three sorted runs, then one merge pass.
 
 ## Example
 

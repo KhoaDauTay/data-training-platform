@@ -5,6 +5,7 @@ level: L4
 module: transactions
 title: "Transaction PartiQL bị hủy: không ghi nửa chừng"
 title_en: "A cancelled PartiQL transaction: no half writes"
+figures: [{ name: dy-transact-all-or-nothing, at: idea, variant: cancel }]
 kind: predict
 runtime: browser
 minutes: 6
@@ -67,6 +68,8 @@ Nhiều người nghĩ mỗi câu trong transaction chạy riêng, như `BatchWr
 
 Đây là cách tập transaction ghi chạy được trong trình duyệt, vì `TransactWriteItems` chưa có (bài "TransactWriteItems: tất cả hoặc không gì cả"). Đoán trước, rồi đọc lại số dư ở bước lab.
 
+Hình dưới vẽ transaction bị hủy vì câu đầu có điều kiện sai, cùng lý do theo thứ tự câu.
+
 ## Ví dụ
 
 Cùng một chuyển khoản viết bằng PartiQL, theo chiều đủ tiền (`w1` có 300.000 đ):
@@ -100,6 +103,8 @@ One false condition cancels the whole transaction with `TransactionCanceledExcep
 Many people think each statement in a transaction runs on its own, as in `BatchWriteItem`. In fact one statement with a false condition means no statement is written; on real AWS, the capacity for every item is still charged.
 
 This is the way to practise write transactions in the browser, since `TransactWriteItems` is not available yet (lesson "TransactWriteItems: all or nothing"). Guess first, then read the balances back in the lab step.
+
+The figure below draws the transaction cancelled by the first statement's failed condition, with reasons in statement order.
 
 ## Example
 

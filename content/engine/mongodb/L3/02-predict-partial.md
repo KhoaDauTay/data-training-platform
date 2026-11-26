@@ -5,6 +5,7 @@ level: L3
 module: indexes
 title: "Đoán kế hoạch: index partial có được dùng?"
 title_en: "Predict the plan: can the partial index be used?"
+figures: [{ name: mg-multikey-partial, at: idea, variant: partial }]
 kind: predict
 minutes: 6
 runtime: docs
@@ -71,6 +72,8 @@ Bạn đã tạo một index partial cho phim sau năm 2000, rồi một màn h�
 
 Nhiều người nghĩ cứ cùng trường là index dùng được. Thật ra index partial thiếu hẳn một phần tài liệu, nên MongoDB chỉ dùng khi chứng minh được không thiếu tài liệu nào. Docs chính thức cũng nhắc: việc so tập con không giống nhau với mọi toán tử, nên trước khi dựa vào một index partial, hãy kiểm bằng `explain()`.
 
+Hình dưới vẽ khoảng 1991–2000 mà index partial thiếu, nên truy vấn rộng hơn phải đọc cả collection.
+
 ## Tóm tắt
 
 - Index partial chỉ giữ tài liệu khớp `partialFilterExpression`.
@@ -93,6 +96,8 @@ This is a prediction based on the MongoDB docs (page "Partial Indexes"); the bro
 - `{ year: { $gt: 1990 } }`: wider than the filter, cannot use it.
 
 Many people think the same field is enough for the index to be used. In fact a partial index lacks part of the documents, so MongoDB uses it only when it can prove no document is missed. The docs also warn that subset matching does not behave the same for every operator, so check with `explain()` before relying on a partial index.
+
+The figure below draws the 1991–2000 range the partial index lacks, so the wider query must read the whole collection.
 
 ## Recap
 

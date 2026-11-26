@@ -10,6 +10,7 @@
 # Code span VI = EN; EN không dấu.
 
 - id: select
+  figure: { name: sql-rows-columns, variant: cols }
   cues:
     vi: ["gửi mình …", "với mỗi … mình cần …", "theo thứ tự: …", "danh sách mọi …"]
     en: ["send me …", "for each … I need …", "in this order: …", "a list of every …"]
@@ -33,11 +34,12 @@
   docs: https://www.postgresql.org/docs/current/queries-select-lists.html
 
 - id: where
+  figure: { name: sql-rows-columns, variant: rows }
   cues:
     vi: ["chỉ …", "bỏ …", "không tính …", "thuộc …", "từ ngày … đến …", "trước ngày …"]
     en: ["only …", "leave out …", "not counting …", "in the … region", "from … to …", "before …"]
   concept:
-    vi: "SELECT chọn cột; WHERE chọn dòng. Mỗi dòng được kiểm điều kiện sau WHERE: đúng thì giữ, sai thì bỏ. Cần nhiều điều kiện cùng đúng thì nối bằng AND; chỉ cần một trong hai thì dùng OR."
+    vi: "SELECT chọn cột; WHERE chọn dòng. Mỗi dòng được kiểm điều kiện sau WHERE: đúng thì giữ, sai thì bỏ. Cần nhiều điều kiện cùng đúng thì kết hợp bằng AND; chỉ cần một trong hai thì dùng OR."
     en: "SELECT picks columns; WHERE picks rows. Every row is checked against the condition after WHERE: true keeps it, false drops it. When several conditions must all hold, join them with AND; when either one is enough, use OR."
   example: |-
     SELECT name, price_vnd
@@ -65,6 +67,7 @@
   docs: https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-WHERE
 
 - id: order_by
+  figure: { name: sql-clause-order, variant: tail }
   cues:
     vi: ["… lên đầu", "xếp theo …", "bằng nhau thì …", "trùng … thì …"]
     en: ["… first", "sorted by …", "on a tie …", "if two … the same"]
@@ -76,7 +79,7 @@
     FROM stores
     ORDER BY city, opened_on DESC
   explain:
-    vi: "① `ORDER BY city`: thành phố theo thứ tự chữ cái, Da Nang lên đầu. ② `, opened_on DESC`: Da Nang có hai cửa hàng, nên xếp tiếp theo ngày khai trương, mới nhất trước (Son Tra rồi Hai Chau). Thiếu tiêu chí phụ thì hai cửa hàng cùng thành phố có thể đổi chỗ giữa các lần chạy. ③ Ngày và chữ đều sắp xếp được: ngày sau lớn hơn ngày trước, chữ theo thứ tự chữ cái. Kết quả: 5 dòng."
+    vi: "① `ORDER BY city`: thành phố theo thứ tự chữ cái, Da Nang lên đầu. ② `, opened_on DESC`: Da Nang có hai cửa hàng, nên xếp tiếp theo ngày khai trương, mới nhất trước (Son Tra rồi Hai Chau). Thiếu tiêu chí sắp xếp phụ thì hai cửa hàng cùng thành phố có thể đổi chỗ giữa các lần chạy. ③ Ngày và chữ đều sắp xếp được: ngày sau lớn hơn ngày trước, chữ theo thứ tự chữ cái. Kết quả: 5 dòng."
     en: "① `ORDER BY city`: cities in alphabetical order, Da Nang first. ② `, opened_on DESC`: Da Nang has two stores, so they are sorted further by opening date, newest first (Son Tra, then Hai Chau). Without a tie-breaker two stores in the same city can swap places between runs. ③ Dates and text both sort: a later date is greater, text goes alphabetically. Result: 5 rows."
   mistake:
     sql: |-
@@ -98,6 +101,7 @@
   docs: https://www.postgresql.org/docs/current/queries-order.html
 
 - id: limit
+  figure: { name: sql-clause-order, variant: tail }
   cues:
     vi: ["… nặng nhất", "… mới nhất", "… đầu tiên", "… lớn nhất"]
     en: ["the … heaviest", "the … latest", "the first …", "the … largest"]
@@ -136,6 +140,7 @@
   docs: https://www.postgresql.org/docs/current/queries-limit.html
 
 - id: aggregate
+  figure: { name: sql-count-variants }
   cues:
     vi: ["bao nhiêu …", "tổng …", "trung bình …", "một con số", "một dòng duy nhất"]
     en: ["how many …", "total …", "average …", "a single number", "a single row"]
@@ -151,8 +156,8 @@
     en: "① `WHERE category = 'Drinks'`: drinks only. ② `COUNT(*)`: 6 products. ③ `MIN(price_vnd)`: the cheapest, 9,000. ④ `MAX(price_vnd)`: the most expensive, 35,000. Result: 1 row, 3 numbers."
   mistake:
     sql: "SELECT category, COUNT(*) FROM products"
-    vi: "Trộn một cột thường với hàm gộp: Postgres báo lỗi column \"products.category\" must appear in the GROUP BY clause. Muốn một con số cho mỗi danh mục thì phải gom nhóm (kỹ năng tiếp theo)."
-    en: "A plain column mixed with an aggregate: Postgres says column \"products.category\" must appear in the GROUP BY clause. One number per category needs grouping (the next skill)."
+    vi: "Trộn một cột thường với hàm gộp: Postgres báo lỗi column \"products.category\" must appear in the GROUP BY clause. Muốn một con số cho mỗi danh mục thì phải gom nhóm (kỹ năng \"Gom nhóm (GROUP BY)\")."
+    en: "A plain column mixed with an aggregate: Postgres says column \"products.category\" must appear in the GROUP BY clause. One number per category needs grouping (the \"Group by\" skill)."
   try:
     task:
       vi: "Từ bảng `orders`, chỉ các đơn có `channel` là `ONLINE` (mọi `status`): một dòng gồm số đơn, rồi `order_date` sớm nhất."
@@ -165,6 +170,7 @@
   docs: https://www.postgresql.org/docs/current/functions-aggregate.html
 
 - id: group_by
+  figure: { name: sql-group-fold }
   cues:
     vi: ["mỗi … một dòng", "với mỗi …", "từng …", "theo từng …"]
     en: ["one row per …", "for each …", "each …", "per …"]
@@ -188,6 +194,7 @@
   docs: https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-GROUP
 
 - id: having
+  figure: { name: sql-where-vs-having }
   cues:
     vi: ["những … có hơn …", "đạt tiêu chí", "chỉ giữ nhóm …", "… có từ … trở lên"]
     en: ["the … with more than …", "meets the rule", "keep only the groups …", "with at least …"]
@@ -223,11 +230,12 @@
   docs: https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-GROUP
 
 - id: join
+  figure: { name: sql-inner-join-pairs }
   cues:
     vi: ["tên … nằm ở hồ sơ …", "kèm tên …", "… và tên khách", "gọi … bằng tên"]
     en: ["the … name is on the … record", "with the … name", "… and the customer name", "named by …"]
   concept:
-    vi: "Mỗi bảng chỉ giữ thông tin của chính nó; đơn hàng chỉ ghi mã cửa hàng, tên cửa hàng nằm ở bảng cửa hàng. JOIN ghép mỗi dòng của bảng này với dòng khớp ở bảng kia, theo điều kiện ON (thường là khóa ngoại = khóa chính). Đặt tên ngắn (alias) cho bảng để biết cột thuộc bảng nào."
+    vi: "Mỗi bảng chỉ giữ thông tin của chính nó; đơn hàng chỉ ghi mã cửa hàng, tên cửa hàng nằm ở bảng cửa hàng. JOIN nối mỗi dòng của bảng này với dòng khớp ở bảng kia, theo điều kiện ON (thường là khóa ngoại = khóa chính). Đặt tên ngắn (alias) cho bảng để biết cột thuộc bảng nào."
     en: "Each table only holds its own information; an order records the store id, the store name is in the store table. JOIN pairs each row of one table with the matching row of the other, by the ON condition (usually foreign key = primary key). Give each table a short name (alias) to tell its columns apart."
   example: |-
     SELECT o.id, o.order_date, s.name
@@ -258,6 +266,7 @@
   docs: https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-JOIN
 
 - id: multi_join
+  figure: { name: sql-join-chain }
   cues:
     vi: ["gọi … bằng tên", "từ … lên …", "… nằm ở ba chỗ"]
     en: ["named by …", "from … up to …", "… live in three places"]
@@ -302,6 +311,7 @@
   docs: https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-JOIN
 
 - id: left_join
+  figure: { name: sql-left-join-on-vs-where }
   cues:
     vi: ["kể cả … chưa từng …", "tính cả … chưa …", "giữ mọi …", "mọi … dù …"]
     en: ["including … that never …", "include … who have never …", "keep every …", "every … even …"]
@@ -313,7 +323,7 @@
     FROM stores s
     LEFT JOIN orders o ON o.store_id = s.id AND o.order_date = '2026-10-26'
   explain:
-    vi: "① `stores s LEFT JOIN orders o`: giữ mọi cửa hàng. ② `AND o.order_date = '2026-10-26'`: chỉ ghép đơn của ngày 26/10/2026; điều kiện trên bảng bên phải đặt trong ON. ③ Cửa hàng không có đơn nào hôm đó vẫn có một dòng, `id` là NULL. Kết quả: 8 dòng, 2 dòng NULL (Ben Thanh, Hoan Kiem)."
+    vi: "① `stores s LEFT JOIN orders o`: giữ mọi cửa hàng. ② `AND o.order_date = '2026-10-26'`: chỉ nối đơn của ngày 26/10/2026; điều kiện trên bảng bên phải đặt trong ON. ③ Cửa hàng không có đơn nào hôm đó vẫn có một dòng, `id` là NULL. Kết quả: 8 dòng, 2 dòng NULL (Ben Thanh, Hoan Kiem)."
     en: "① `stores s LEFT JOIN orders o`: keep every store. ② `AND o.order_date = '2026-10-26'`: pair only the orders of 26 October 2026; a condition on the right-hand table goes in ON. ③ A store with no order that day still has one row, its `id` is NULL. Result: 8 rows, 2 of them NULL (Ben Thanh, Hoan Kiem)."
   mistake:
     sql: |-
@@ -335,11 +345,12 @@
   docs: https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-JOIN
 
 - id: anti_join
+  figure: { name: sql-left-join-on-vs-where, variant: anti }
   cues:
     vi: ["không có … nào", "chưa từng …", "… lâu không …"]
     en: ["with no … at all", "never …", "went quiet"]
   concept:
-    vi: "Anti-join tìm dòng không có cặp: khách chưa có đơn nào, sản phẩm chưa bán được. Cách hay dùng: LEFT JOIN rồi chỉ giữ dòng mà khóa bên phải là NULL, tức là không ghép được."
+    vi: "Anti-join tìm dòng không có cặp: khách chưa có đơn nào, sản phẩm chưa bán được. Cách hay dùng: LEFT JOIN rồi chỉ giữ dòng mà khóa bên phải là NULL, tức là dòng bên trái không tìm được dòng nào để nối."
     en: "An anti-join finds rows with no match: customers with no order, products never sold. The usual way: LEFT JOIN, then keep only the rows whose right-hand key is NULL, which means nothing matched."
   example: |-
     SELECT s.id, s.name
@@ -347,8 +358,8 @@
     LEFT JOIN orders o ON o.store_id = s.id AND o.order_date = '2026-10-26'
     WHERE o.id IS NULL
   explain:
-    vi: "① LEFT JOIN như bài trước: mọi cửa hàng, ghép với đơn ngày 26/10/2026. ② `WHERE o.id IS NULL`: chỉ giữ cửa hàng không ghép được đơn nào. Kết quả: 2 cửa hàng, Ben Thanh và Hoan Kiem. ③ So với NULL phải viết `IS NULL`; `= NULL` không bao giờ đúng. Cách khác: `NOT EXISTS (SELECT 1 FROM …)`."
-    en: "① A LEFT JOIN as in the previous lesson: every store, paired with the orders of 26 October 2026. ② `WHERE o.id IS NULL`: keep only the stores that matched no order. Result: 2 stores, Ben Thanh and Hoan Kiem. ③ Comparing with NULL needs `IS NULL`; `= NULL` is never true. Another way: `NOT EXISTS (SELECT 1 FROM …)`."
+    vi: "① `LEFT JOIN` giữ mọi cửa hàng, nối với đơn ngày 26/10/2026. ② `WHERE o.id IS NULL`: chỉ giữ cửa hàng không nối được đơn nào. Kết quả: 2 cửa hàng, Ben Thanh và Hoan Kiem. ③ So với NULL phải viết `IS NULL`; `= NULL` không bao giờ đúng. Cách khác: `NOT EXISTS (SELECT 1 FROM …)`."
+    en: "① `LEFT JOIN` keeps every store, joined to the orders of 26 October 2026. ② `WHERE o.id IS NULL`: keep only the stores that matched no order. Result: 2 stores, Ben Thanh and Hoan Kiem. ③ Comparing with NULL needs `IS NULL`; `= NULL` is never true. Another way: `NOT EXISTS (SELECT 1 FROM …)`."
   mistake:
     sql: |-
       SELECT s.id, s.name
@@ -370,6 +381,7 @@
   docs: https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-JOIN
 
 - id: date_math
+  figure: { name: sql-half-open-range }
   cues:
     vi: ["trễ hơn … ngày", "số ngày …", "… ngày sau …"]
     en: ["more than … days after", "the number of days …", "… days late"]
@@ -417,6 +429,7 @@
   docs: https://www.postgresql.org/docs/current/functions-datetime.html
 
 - id: date_bucket
+  figure: { name: sql-half-open-range, variant: month }
   cues:
     vi: ["từng tháng", "mỗi tháng …", "mỗi tuần …"]
     en: ["per month", "for each month …", "each week …"]
@@ -438,7 +451,7 @@
       FROM orders
       GROUP BY 1
       ORDER BY 1
-    vi: "`extract(month …)` chỉ ra số tháng (10), nên tháng 10/2025 và tháng 10/2026 bị gộp chung một dòng. Dùng `date_trunc` để giữ cả năm."
+    vi: "`extract(month …)` chỉ ra số tháng (10), nên tháng 10/2025 và tháng 10/2026 rơi vào cùng một nhóm. Dùng `date_trunc` để giữ cả năm."
     en: "`extract(month …)` only gives the month number (10), so October 2025 and October 2026 merge into one row. Use `date_trunc` to keep the year."
   try:
     task:
@@ -455,6 +468,7 @@
   docs: https://www.postgresql.org/docs/current/functions-datetime.html#FUNCTIONS-DATETIME-TRUNC
 
 - id: null_logic
+  figure: { name: sql-null-truth }
   cues:
     vi: ["vẫn chưa ghi nhận …", "chưa có …", "còn trống"]
     en: ["still … no …", "not recorded yet", "is still empty"]
@@ -487,6 +501,7 @@
   docs: https://www.postgresql.org/docs/current/functions-comparison.html
 
 - id: case_when
+  figure: { name: sql-case-buckets }
   cues:
     vi: ["chia … nhóm", "ghi nhóm bằng số", "xếp mỗi … vào …"]
     en: ["fall into … groups", "write the group as a number", "put each … into …"]
@@ -529,6 +544,7 @@
   docs: https://www.postgresql.org/docs/current/functions-conditional.html#FUNCTIONS-CASE
 
 - id: conditional_agg
+  figure: { name: sql-case-buckets, variant: filter }
   cues:
     vi: ["mỗi … một cột", "đặt cạnh nhau", "bao nhiêu … và bao nhiêu …"]
     en: ["one column per …", "side by side", "how many … and how many …"]
@@ -569,6 +585,7 @@
   docs: https://www.postgresql.org/docs/current/sql-expressions.html#SYNTAX-AGGREGATES
 
 - id: coalesce
+  figure: { name: sql-coalesce-fallback }
   cues:
     vi: ["chưa có … thì tính …", "… tạm tính 0", "trống thì ghi …"]
     en: ["no … counted as …", "count those as 0", "if empty, use …"]
@@ -604,6 +621,7 @@
   docs: https://www.postgresql.org/docs/current/functions-conditional.html#FUNCTIONS-COALESCE-NVL-IFNULL
 
 - id: self_join
+  figure: { name: sql-self-join-tree }
   cues:
     vi: ["… mà nó thay thế", "ghi số … cũ", "người quản lý của …"]
     en: ["the one it replaces", "records the number of …", "the manager of …"]
@@ -626,7 +644,7 @@
       JOIN staff m ON m.manager_id = e.id
       WHERE e.store_id = 3
       ORDER BY e.name
-    vi: "Ghép ngược chiều: `m.manager_id = e.id` tìm người mà `e` quản lý, không phải người quản lý `e`. Cột cuối thành tên cấp dưới, và ai không quản lý ai thì biến mất."
+    vi: "Nối ngược chiều: `m.manager_id = e.id` tìm người mà `e` quản lý, không phải người quản lý `e`. Cột cuối thành tên cấp dưới, và ai không quản lý ai thì biến mất."
     en: "Joined the wrong way round: `m.manager_id = e.id` finds the people `e` manages, not the manager of `e`. The last column becomes a report's name, and anyone who manages nobody disappears."
   try:
     task:
@@ -683,6 +701,7 @@
   docs: https://www.postgresql.org/docs/current/functions-string.html
 
 - id: pattern_match
+  figure: { name: sql-like-patterns }
   cues:
     vi: ["có chữ … ở bất kỳ đâu", "viết hoa hay thường đều tính", "bắt đầu bằng …"]
     en: ["anywhere in the …", "in capitals or lower case", "starts with …"]
@@ -706,6 +725,7 @@
   docs: https://www.postgresql.org/docs/current/functions-matching.html#FUNCTIONS-LIKE
 
 - id: distinct
+  figure: { name: sql-distinct-rows }
   cues:
     vi: ["… khác nhau", "mỗi … một lần", "không trùng"]
     en: ["different …", "each … once", "no duplicates"]
@@ -748,7 +768,7 @@
     vi: ["tính bằng phần trăm", "làm tròn … chữ số", "tỷ lệ …"]
     en: ["as a percentage", "rounded to … decimals", "… rate …"]
   concept:
-    vi: "Số nguyên chia số nguyên ra số nguyên: Postgres bỏ phần lẻ, 1 * 100 / 6 ra 16 chứ không phải 16,67. Đổi một vế sang numeric trước khi chia bằng ::numeric thì giữ được phần lẻ; ROUND(x, 2) làm tròn 2 chữ số."
+    vi: "Số nguyên chia số nguyên ra số nguyên: Postgres bỏ phần thập phân, 1 * 100 / 6 ra 16 chứ không phải 16,67. Đổi một vế sang numeric trước khi chia bằng ::numeric thì giữ được phần thập phân; ROUND(x, 2) làm tròn 2 chữ số."
     en: "An integer divided by an integer is an integer: Postgres drops the fraction, so 1 * 100 / 6 gives 16, not 16.67. Turn one side into numeric with ::numeric before dividing to keep the fraction; ROUND(x, 2) rounds to 2 decimals."
   example: |-
     SELECT category,
@@ -770,7 +790,7 @@
       FROM products
       GROUP BY category
       ORDER BY category
-    vi: "Thiếu `::numeric`: hai số nguyên chia nhau, phần lẻ bị bỏ mà không báo lỗi, Snacks ra 16 thay vì 16.67."
+    vi: "Thiếu `::numeric`: hai số nguyên chia nhau, phần thập phân bị bỏ mà không báo lỗi, Snacks ra 16 thay vì 16.67."
     en: "No `::numeric`: two integers divided, the fraction is dropped without a warning, so Snacks shows 16 instead of 16.67."
   try:
     task:
@@ -788,6 +808,7 @@
   docs: https://www.postgresql.org/docs/current/sql-expressions.html#SQL-SYNTAX-TYPE-CASTS
 
 - id: scalar_subquery
+  figure: { name: sql-scalar-subquery }
   cues:
     vi: ["hơn mức trung bình …", "so … với một con số …", "cao hơn mức …"]
     en: ["more than the average …", "compare each … with one number", "above the …"]
@@ -829,6 +850,7 @@
   docs: https://www.postgresql.org/docs/current/sql-expressions.html#SQL-SYNTAX-SCALAR-SUBQUERIES
 
 - id: in_subquery
+  figure: { name: sql-not-in-null }
   cues:
     vi: ["những khách gửi hơn …", "khách chủ lực", "thuộc danh sách …"]
     en: ["the customers with more than …", "key account", "on the list of …"]
@@ -873,6 +895,7 @@
   docs: https://www.postgresql.org/docs/current/functions-subquery.html#FUNCTIONS-SUBQUERY-IN
 
 - id: exists
+  figure: { name: sql-not-in-null }
   cues:
     vi: ["chưa có booking nào", "chưa … nào", "có ít nhất một …"]
     en: ["no booking at all", "have not … anything", "at least one …"]
@@ -920,6 +943,7 @@
   docs: https://www.postgresql.org/docs/current/functions-subquery.html#FUNCTIONS-SUBQUERY-EXISTS
 
 - id: correlated_value
+  figure: { name: sql-correlated-loop }
   cues:
     vi: ["còn hiệu lực vào …", "… của chính …", "… vào đúng ngày …"]
     en: ["in force on …", "of its own …", "on the … date"]
@@ -963,6 +987,7 @@
   docs: https://www.postgresql.org/docs/current/sql-expressions.html#SQL-SYNTAX-SCALAR-SUBQUERIES
 
 - id: cte
+  figure: { name: sql-cte-steps }
   cues:
     vi: ["bước có tên", "tổng … trừ tổng …", "trước hết tính …"]
     en: ["named steps", "minus the total …", "first work out …"]
@@ -997,7 +1022,7 @@
       JOIN stores s ON s.id = per_store.store_id
       WHERE per_store.n >= 30
       ORDER BY per_store.n DESC
-    vi: "Dấu phẩy thừa trước câu chính: Postgres báo lỗi syntax error at or near \"SELECT\". Dấu phẩy chỉ dùng để nối bước này với bước sau."
+    vi: "Dấu phẩy thừa trước câu chính: Postgres báo lỗi syntax error at or near \"SELECT\". Dấu phẩy chỉ dùng để ngăn bước này với bước sau."
     en: "An extra comma before the main query: Postgres reports syntax error at or near \"SELECT\". The comma only joins one step to the next."
   try:
     task:
@@ -1019,6 +1044,7 @@
   docs: https://www.postgresql.org/docs/current/queries-with.html
 
 - id: multi_cte
+  figure: { name: sql-cte-chain }
   cues:
     vi: ["các bước có tên", "cao hơn mức trung bình của …", "từ kết quả bước …"]
     en: ["named steps", "than the average of …", "from the result of …"]
@@ -1040,7 +1066,7 @@
     WHERE per_city.n > a.avg_n
     ORDER BY per_city.city
   explain:
-    vi: "① `per_city`: số khách mỗi thành phố (bỏ khách không ghi thành phố). ② `a`: đọc `per_city`, tính trung bình của 5 con số đó, khoảng 56,6. ③ `FROM per_city, a`: `a` chỉ có một dòng nên ghép được với mọi thành phố. Kết quả: 2 thành phố cao hơn trung bình, Da Nang 85 và Ho Chi Minh City 95."
+    vi: "① `per_city`: số khách mỗi thành phố (bỏ khách không ghi thành phố). ② `a`: đọc `per_city`, tính trung bình của 5 con số đó, khoảng 56,6. ③ `FROM per_city, a`: `a` chỉ có một dòng, nên nối vào mỗi thành phố mà không nhân thêm dòng nào. Kết quả: 2 thành phố cao hơn trung bình, Da Nang 85 và Ho Chi Minh City 95."
     en: "① `per_city`: customers per city (leaving out those with no city). ② `a`: reads `per_city` and averages those 5 numbers, about 56.6. ③ `FROM per_city, a`: `a` has one row, so it pairs with every city. Result: 2 cities above the average, Da Nang 85 and Ho Chi Minh City 95."
   mistake:
     sql: |-
@@ -1058,7 +1084,7 @@
       FROM per_city, a
       WHERE per_city.n > a.avg_n
       ORDER BY per_city.city
-    vi: "Viết `WITH` hai lần: Postgres báo lỗi syntax error at or near \"WITH\". Chỉ một `WITH` ở đầu, các bước nối bằng dấu phẩy."
+    vi: "Viết `WITH` hai lần: Postgres báo lỗi syntax error at or near \"WITH\". Chỉ một `WITH` ở đầu, các bước cách nhau bằng dấu phẩy."
     en: "Writing `WITH` twice: Postgres reports syntax error at or near \"WITH\". Use one `WITH` at the top and join the steps with commas."
   try:
     task:
@@ -1082,6 +1108,7 @@
   docs: https://www.postgresql.org/docs/current/queries-with.html
 
 - id: distinct_on
+  figure: { name: sql-distinct-on }
   cues:
     vi: ["… gần nhất trước đó", "mới nhất của mỗi …", "một dòng cho mỗi …"]
     en: ["the latest earlier …", "the newest … per …", "latest … before …"]
@@ -1093,7 +1120,7 @@
     FROM stores
     ORDER BY city, opened_on DESC
   explain:
-    vi: "① `DISTINCT ON (city)`: mỗi thành phố một dòng. ② `ORDER BY city, opened_on DESC`: trong mỗi thành phố, cửa hàng mới khai trương nhất đứng đầu nên được giữ. Kết quả: 3 dòng: Son Tra (Da Nang), Hoan Kiem (Hanoi), Thao Dien (Ho Chi Minh City). Cần tiêu chí phụ khi hai dòng cùng ngày."
+    vi: "① `DISTINCT ON (city)`: mỗi thành phố một dòng. ② `ORDER BY city, opened_on DESC`: trong mỗi thành phố, cửa hàng mới khai trương nhất đứng đầu nên được giữ. Kết quả: 3 dòng: Son Tra (Da Nang), Hoan Kiem (Hanoi), Thao Dien (Ho Chi Minh City). Cần tiêu chí sắp xếp phụ khi hai dòng cùng ngày."
     en: "① `DISTINCT ON (city)`: one row per city. ② `ORDER BY city, opened_on DESC`: within each city the most recently opened store comes first, so it is kept. Result: 3 rows: Son Tra (Da Nang), Hoan Kiem (Hanoi), Thao Dien (Ho Chi Minh City). Add a tie-breaker when two rows share a date."
   mistake:
     sql: |-
@@ -1114,11 +1141,12 @@
   docs: https://www.postgresql.org/docs/current/sql-select.html#SQL-DISTINCT
 
 - id: union
+  figure: { name: sql-set-ops, variant: union }
   cues:
     vi: ["chung một danh sách", "gom … vào một danh sách", "hai sổ …"]
     en: ["in one list", "into one list", "two different books"]
   concept:
-    vi: "UNION ALL nối kết quả của hai câu SELECT thành một danh sách, câu này nằm dưới câu kia. Hai câu phải có cùng số cột, cùng kiểu theo thứ tự. UNION (không ALL) còn bỏ các dòng trùng. ORDER BY viết một lần ở cuối, áp cho cả danh sách."
+    vi: "UNION ALL xếp chồng kết quả của hai câu SELECT thành một danh sách, câu này nằm dưới câu kia. Hai câu phải có cùng số cột, cùng kiểu theo thứ tự. UNION (không ALL) còn bỏ các dòng trùng. ORDER BY viết một lần ở cuối, áp cho cả danh sách."
     en: "UNION ALL stacks the results of two SELECTs into one list, one under the other. Both must have the same number of columns, with matching types in order. UNION (without ALL) also removes duplicate rows. ORDER BY goes once at the end and sorts the whole list."
   example: |-
     SELECT name, 'STORE' AS kind
@@ -1161,6 +1189,7 @@
   docs: https://www.postgresql.org/docs/current/queries-union.html
 
 - id: except
+  figure: { name: sql-set-ops, variant: except }
   cues:
     vi: ["mà đến nay chưa có …", "có trong … mà không có trong …", "… mà chưa …"]
     en: ["still have no …", "in … but not in …", "but never …"]
@@ -1208,11 +1237,12 @@
   docs: https://www.postgresql.org/docs/current/queries-union.html
 
 - id: full_join
+  figure: { name: sql-join-family }
   cues:
     vi: ["chỉ có ở một bên", "đối chiếu …", "… khớp nhau"]
     en: ["on one side only", "reconcile …", "… agree …"]
   concept:
-    vi: "FULL JOIN giữ mọi dòng của cả hai bên: dòng ghép được thì nằm chung, dòng chỉ có ở một bên vẫn có mặt, cột của bên kia để trống (NULL). Dùng để đối chiếu hai danh sách lệch nhau. COALESCE gộp khóa của hai bên thành một cột."
+    vi: "FULL JOIN giữ mọi dòng của cả hai bên: dòng nối được thì nằm chung, dòng chỉ có ở một bên vẫn có mặt, cột của bên kia để trống (NULL). Dùng để đối soát hai danh sách lệch nhau. COALESCE lấy khóa của bên nào có, thành một cột."
     en: "FULL JOIN keeps every row from both sides: matched rows sit together, a row found on one side only still appears, with the other side's columns empty (NULL). Use it to reconcile two lists that do not quite agree. COALESCE merges both sides' keys into one column."
   example: |-
     SELECT COALESCE(o.id, p.order_id) AS order_id, o.status, p.amount_vnd
@@ -1228,7 +1258,7 @@
     ) p ON p.order_id = o.id
     ORDER BY 1
   explain:
-    vi: "① `o`: đơn đặt ngày 1–3/10/2026; `p`: các khoản thanh toán cùng ba ngày. ② `FULL JOIN … ON p.order_id = o.id`: ghép theo mã đơn, giữ cả dòng chỉ có ở một bên. ③ `COALESCE(o.id, p.order_id)`: mã đơn của bên nào có. Kết quả: 22 dòng; 99901 và 99902 là khoản thu không khớp đơn nào (`status` trống)."
+    vi: "① `o`: đơn đặt ngày 1–3/10/2026; `p`: các khoản thanh toán cùng ba ngày. ② `FULL JOIN … ON p.order_id = o.id`: nối theo mã đơn, giữ cả dòng chỉ có ở một bên. ③ `COALESCE(o.id, p.order_id)`: mã đơn của bên nào có. Kết quả: 22 dòng; 99901 và 99902 là khoản thu không khớp đơn nào (`status` trống)."
     en: "① `o`: orders placed on 1–3 October 2026; `p`: the payments on the same three days. ② `FULL JOIN … ON p.order_id = o.id`: matches by order id and keeps rows found on one side only. ③ `COALESCE(o.id, p.order_id)`: the order id from whichever side has it. Result: 22 rows; 99901 and 99902 are payments that match no order (empty `status`)."
   mistake:
     sql: |-
@@ -1244,7 +1274,7 @@
         WHERE paid_at >= '2026-10-01' AND paid_at < '2026-10-04'
       ) p ON p.order_id = o.id
       ORDER BY 1
-    vi: "Dùng `LEFT JOIN`: khoản thanh toán không có đơn cùng kỳ bị mất (còn 20 dòng), nên đối chiếu chỉ thấy một chiều."
+    vi: "Dùng `LEFT JOIN`: khoản thanh toán không có đơn cùng kỳ bị mất (còn 20 dòng), nên đối soát chỉ thấy một chiều."
     en: "Using `LEFT JOIN`: payments with no order in the period disappear (20 rows left), so the check only sees one direction."
   try:
     task:
@@ -1267,6 +1297,7 @@
   docs: https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-JOIN
 
 - id: window_rank
+  figure: { name: sql-rank-ties }
   cues:
     vi: ["cùng hạng", "… nhảy hạng", "… hạng đầu"]
     en: ["share a rank", "skips ranks", "top … ranks"]
@@ -1301,6 +1332,7 @@
   docs: https://www.postgresql.org/docs/current/tutorial-window.html
 
 - id: window_lag
+  figure: { name: sql-lag-prev-row }
   cues:
     vi: ["so với tháng liền trước", "tăng giảm so với …", "… liền trước"]
     en: ["on the month just before", "the change on …", "… just before"]
@@ -1361,6 +1393,7 @@
   docs: https://www.postgresql.org/docs/current/functions-window.html
 
 - id: window_agg
+  figure: { name: sql-window-vs-group }
   cues:
     vi: ["cộng dồn", "… tới đâu rồi", "tính đến … này"]
     en: ["running total", "so far", "up to that …"]
@@ -1458,6 +1491,7 @@
   docs: https://www.postgresql.org/docs/current/using-explain.html
 
 - id: sargable
+  figure: { name: sql-sargable-index }
   cues:
     vi: ["chỉ mục không dùng được", "không đọc cả bảng", "cắt ngày … rồi mới so"]
     en: ["the index cannot be used", "not the whole table", "trims each date …"]
@@ -1478,7 +1512,7 @@
       FROM orders
       WHERE extract(day FROM order_date) <= 2 AND extract(month FROM order_date) = 10
       ORDER BY order_date, id
-    vi: "Cắt ngày bằng `extract`: chỉ mục không dùng được, và còn sai vì gộp cả ngày 1–2/10/2025 (17 dòng thay vì 13). Giữ cột trần, so với một khoảng ngày."
+    vi: "Cắt ngày bằng `extract`: chỉ mục không dùng được, và còn sai vì lấy cả ngày 1–2/10/2025 (17 dòng thay vì 13). Giữ cột trần, so với một khoảng ngày."
     en: "Cutting the date with `extract`: the index cannot be used, and it is also wrong because it picks up 1–2 October 2025 too (17 rows instead of 13). Keep the bare column and compare it with a date range."
   try:
     task:
@@ -1494,6 +1528,7 @@
   docs: https://www.postgresql.org/docs/current/indexes-types.html
 
 - id: index_design
+  figure: { name: sql-index-column-order }
   cues:
     vi: ["đề xuất một chỉ mục", "… không phải đọc toàn bộ …", "chưa có chỉ mục nào theo …"]
     en: ["propose one index", "does not have to read the whole …", "no index by …"]
@@ -1531,11 +1566,12 @@
 # v25 R1: General-only skills (content/general/skills-general.yml); no domain ticket grants them, so their cues are not
 # checked against a ticket (tests/lessons.test.ts).
 - id: cross_join
+  figure: { name: sql-cross-grid }
   cues:
     vi: ["mọi … với mọi …", "kể cả ngày không …", "đủ mọi tổ hợp …"]
     en: ["every … with every …", "including days with no …", "every combination of …"]
   concept:
-    vi: "CROSS JOIN ghép mỗi dòng của bảng này với mọi dòng của bảng kia, không cần điều kiện. Số dòng là tích hai bảng. Dùng nó để dựng một lưới đầy đủ (mọi cửa hàng × mọi ngày), rồi đặt số liệu thật lên bằng LEFT JOIN."
+    vi: "CROSS JOIN nối mỗi dòng của bảng này với mọi dòng của bảng kia, không cần điều kiện. Số dòng là tích hai bảng. Dùng nó để dựng một lưới đầy đủ (mọi cửa hàng × mọi ngày), rồi đặt số liệu thật lên bằng LEFT JOIN."
     en: "CROSS JOIN pairs each row of one table with every row of the other, with no condition. The row count is the product of both. Use it to build a full grid (every store × every day), then lay the real data on with LEFT JOIN."
   example: |-
     SELECT s.name, d.date_key
@@ -1566,6 +1602,7 @@
   docs: https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-JOIN
 
 - id: any_all
+  figure: { name: sql-any-all }
   cues:
     vi: ["hơn mọi …", "hơn ít nhất một …", "bằng một trong …"]
     en: ["more than every …", "more than at least one …", "equal to one of …"]
@@ -1602,6 +1639,7 @@
 # v26 R2 (L390): Part 9, writing data (General-only skills). Every SQL here runs inside BEGIN … ROLLBACK, so nothing persists;
 # RETURNING makes the written rows the result, which is what "Thử ngay" grades.
 - id: insert_select
+  figure: { name: sql-insert-select }
   cues:
     vi: ["thêm … vào …", "ghi thành các dòng mới …", "tạo một bảng mới …"]
     en: ["add … to …", "write it as new rows …", "create a new table …"]
@@ -1614,7 +1652,7 @@
            ('Sesame cookies', 'Snacks', 21000)
     RETURNING name, category, price_vnd
   explain:
-    vi: "① `INSERT INTO products (name, category, price_vnd)`: ba cột sẽ nhận giá trị; `id` không có trong danh sách nên tự sinh. ② `VALUES (…), (…)`: hai dòng, mỗi dòng ba giá trị theo đúng thứ tự cột. ③ `RETURNING`: trả hai dòng vừa thêm để bạn xem ngay. Ở đây mọi câu ghi chạy trong một giao dịch rồi được hoàn tác, nên bảng không đổi thật."
+    vi: "① `INSERT INTO products (name, category, price_vnd)`: ba cột sẽ nhận giá trị; `id` không có trong danh sách nên tự sinh. ② `VALUES (…), (…)`: hai dòng, mỗi dòng ba giá trị theo đúng thứ tự cột. ③ `RETURNING`: trả hai dòng vừa thêm để bạn xem ngay. Ở đây mọi câu ghi chạy trong một transaction rồi được hoàn tác, nên bảng không đổi thật."
     en: "① `INSERT INTO products (name, category, price_vnd)`: the three columns that get values; `id` is not listed, so it is generated. ② `VALUES (…), (…)`: two rows, each with three values in column order. ③ `RETURNING`: returns the two new rows so you see them at once. Here every write runs in a transaction that is then rolled back, so the table does not really change."
   mistake:
     sql: |-
@@ -1636,6 +1674,7 @@
   docs: https://www.postgresql.org/docs/current/sql-insert.html
 
 - id: update_join
+  figure: { name: sql-update-join }
   cues:
     vi: ["tăng thêm …", "xóa bản thừa …", "bỏ mọi … của …"]
     en: ["goes up by …", "delete the extra copy …", "drop every … for …"]
@@ -1676,6 +1715,7 @@
   docs: https://www.postgresql.org/docs/current/sql-update.html
 
 - id: upsert
+  figure: { name: sql-upsert-flow }
   cues:
     vi: ["đã có thì …", "chưa có thì thêm …", "giữ nguyên số cũ …"]
     en: ["already has … gets …", "without one gets a new row …", "keeps its old number …"]

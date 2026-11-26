@@ -21,19 +21,19 @@ variants:
   - { id: "4", branch: "Tam Ky", from: "2026-07-01", to: "2026-08-01", month: "7/2026", month_en: "July 2026" }
   - { id: "5", branch: "Hue", from: "2026-05-01", to: "2026-06-01", month: "5/2026", month_en: "May 2026" }
 reflect:
-  q: { vi: "Ghép trái từ phía ngân sách thì mất dòng nào?", en: "Which rows does a left join from the budget side lose?" }
+  q: { vi: "Nối trái từ phía ngân sách thì mất dòng nào?", en: "Which rows does a left join from the budget side lose?" }
   options:
     - { vi: "Khoản mục có chi mà không có ngân sách", en: "Cost lines with spending but no budget" }
     - { vi: "Khoản mục có ngân sách mà chưa chi", en: "Cost lines with a budget but no spending yet" }
     - { vi: "Không mất dòng nào", en: "No rows at all" }
   answer: 0
-  why: { vi: "Ghép trái giữ mọi dòng bên trái và chỉ dòng khớp bên phải. Ghép đủ hai phía giữ cả dòng chỉ có ở một bên, nên không mất khoản mục nào.", en: "A left join keeps every row on the left and only matching rows on the right. A full join keeps rows found on either side alone, so no cost line is lost." }
+  why: { vi: "Nối trái giữ mọi dòng bên trái và chỉ dòng khớp bên phải. Nối đủ hai phía giữ cả dòng chỉ có ở một bên, nên không mất khoản mục nào.", en: "A left join keeps every row on the left and only matching rows on the right. A full join keeps rows found on either side alone, so no cost line is lost." }
 wrong:
   - sql: "WITH b AS (SELECT bu.account_id, bu.amount FROM budgets bu JOIN accounts a ON a.id = bu.account_id WHERE a.kind = 'expense' AND bu.branch_id = {{id}} AND bu.month = '{{from}}'), x AS (SELECT g.account_id, sum(g.amount) AS amount FROM gl_entries g JOIN accounts a ON a.id = g.account_id WHERE a.kind = 'expense' AND g.branch_id = {{id}} AND g.posted_on >= '{{from}}' AND g.posted_on < '{{to}}' GROUP BY g.account_id) SELECT COALESCE(b.account_id, x.account_id), COALESCE(b.amount, 0), COALESCE(x.amount, 0) FROM b LEFT JOIN x ON x.account_id = b.account_id ORDER BY 1"
-    vi: "Thiếu khoản mục có chi mà không có ngân sách: ghép trái từ phía ngân sách bỏ những dòng chỉ có ở phía thực chi. Cần giữ dòng của cả hai phía."
+    vi: "Thiếu khoản mục có chi mà không có ngân sách: nối trái từ phía ngân sách bỏ những dòng chỉ có ở phía thực chi. Cần giữ dòng của cả hai phía."
     en: "The cost line with spending but no budget is missing: a left join from the budget side drops rows found only on the spending side. Keep the rows of both sides."
   - sql: "WITH b AS (SELECT bu.account_id, bu.amount FROM budgets bu JOIN accounts a ON a.id = bu.account_id WHERE a.kind = 'expense' AND bu.branch_id = {{id}} AND bu.month = '{{from}}'), x AS (SELECT g.account_id, sum(g.amount) AS amount FROM gl_entries g JOIN accounts a ON a.id = g.account_id WHERE a.kind = 'expense' AND g.branch_id = {{id}} AND g.posted_on >= '{{from}}' AND g.posted_on < '{{to}}' GROUP BY g.account_id) SELECT COALESCE(b.account_id, x.account_id), COALESCE(b.amount, 0), COALESCE(x.amount, 0) FROM b RIGHT JOIN x ON x.account_id = b.account_id ORDER BY 1"
-    vi: "Thiếu khoản mục có ngân sách mà chưa chi trong tháng: ghép chỉ giữ phía thực chi thì bỏ những dòng chỉ có ở phía ngân sách. Cần giữ dòng của cả hai phía."
+    vi: "Thiếu khoản mục có ngân sách mà chưa chi trong tháng: nối chỉ giữ phía thực chi thì bỏ những dòng chỉ có ở phía ngân sách. Cần giữ dòng của cả hai phía."
     en: "The cost line with a budget but no spending this month is missing: keeping only the spending side drops rows found only on the budget side. Keep the rows of both sides."
 ---
 Mùa lập ngân sách 2027 bắt đầu. Trước khi họp với từng chi nhánh, mình đặt ngân sách tháng cạnh thực chi của từng khoản mục chi phí. Có khoản mục có ngân sách mà tháng đó chưa chi, có khoản mục chi mà chưa bao giờ được lập ngân sách. Mình cần thấy cả hai loại.
@@ -67,11 +67,11 @@ Ví dụ: tháng 1/2026, khoản mục công nghệ thông tin, ngân sách cạ
 
 ② Ô trống của số tiền thay bằng 0.
 
-③ Ghép giữ dòng của cả hai phía: dòng khớp nằm chung, dòng chỉ có ở một bên vẫn được giữ.
+③ Nối giữ dòng của cả hai phía: dòng khớp nằm chung, dòng chỉ có ở một bên vẫn được giữ.
 
 ## Hints
-1. Hai bước có tên: ngân sách theo khoản mục và thực chi theo khoản mục. Ghép hai bước giữ dòng của cả hai phía, như ví dụ mẫu; mã khoản mục và số tiền lấy từ phía nào có, ô trống thay bằng 0.
-2. Ngân sách: `budgets` có `month` là ngày đầu tháng (`bu.month = '{{from}}'`). Thực chi: `gl_entries`, cộng theo `g.account_id`. Cả hai ghép `accounts` để lọc `a.kind = 'expense'`. Ghép hai bước bằng `FULL JOIN x ON x.account_id = b.account_id`.
+1. Hai bước có tên: ngân sách theo khoản mục và thực chi theo khoản mục. Nối hai bước giữ dòng của cả hai phía, như ví dụ mẫu; mã khoản mục và số tiền lấy từ phía nào có, ô trống thay bằng 0.
+2. Ngân sách: `budgets` có `month` là ngày đầu tháng (`bu.month = '{{from}}'`). Thực chi: `gl_entries`, cộng theo `g.account_id`. Cả hai nối `accounts` để lọc `a.kind = 'expense'`. Nối hai bước bằng `FULL JOIN x ON x.account_id = b.account_id`.
 3. `WITH b AS (...), x AS (...) SELECT COALESCE(b.account_id, x.account_id), COALESCE(b.amount, 0), COALESCE(x.amount, 0) FROM b FULL JOIN x ON ... ORDER BY 1`
 
 ## Solution

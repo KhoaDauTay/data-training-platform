@@ -17,6 +17,7 @@ objectives:
   - vi: Đọc kết quả từng phần bằng cursor, trong PL/pgSQL và bằng `DECLARE ... CURSOR` của SQL.
     en: Read a result piece by piece with a cursor, in PL/pgSQL and with SQL `DECLARE ... CURSOR`.
 requires: [e-pg-l2-18]
+figures: [{ name: pg-loop-continue-exit, at: idea }]
 sources:
   - https://www.postgresql.org/docs/18/sql-createprocedure.html
   - https://www.postgresql.org/docs/18/sql-call.html
@@ -116,8 +117,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì không có vòng qua mạng nào, nhưng mỗi vòng vẫn chạy executor cho một câu lệnh riêng, tìm lại dòng và cập nhật index từng lần. Một câu theo tập để planner chọn cách đọc cả bảng một lần."
-      en: "It sounds right because there is no network round trip, but each iteration still runs the executor for a separate statement, finds its row again and updates indexes one at a time. One set-based statement lets the planner read the table in one pass."
+      vi: "Đúng là khối `DO` không tốn vòng qua mạng, nhưng nó vẫn chạy 1 triệu câu `UPDATE` riêng: mỗi câu được thực thi riêng, tìm lại dòng của nó qua index rồi cập nhật index, một triệu lần. Mỗi `UPDATE` nhỏ hơn không làm tổng nhỏ hơn, vì chi phí cố định của từng câu bị nhân 1 triệu. Một câu `UPDATE ... WHERE` được lập kế hoạch một lần và đọc bảng một lượt."
+      en: "True, a `DO` block has no network round trips, but it still runs 1 million separate `UPDATE` statements: each is executed on its own, finds its row again through the index and updates the indexes, a million times. A smaller `UPDATE` does not make the total smaller, since each statement's fixed cost is multiplied by 1 million. One `UPDATE ... WHERE` is planned once and reads the table in one pass."
   - q:
       vi: "Thủ tục `archive()` có `COMMIT` bên trong. Bạn chạy `BEGIN; CALL archive();`. Chuyện gì xảy ra?"
       en: "Procedure `archive()` has a `COMMIT` inside. You run `BEGIN; CALL archive();`. What happens?"
@@ -128,8 +129,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì COMMIT trông như lệnh độc lập, nhưng khi bạn đã mở `BEGIN`, transaction thuộc về bạn, và thủ tục không được kết thúc nó thay bạn. Gọi `CALL` ngoài khối transaction thì thủ tục mới tự quản lý transaction."
-      en: "It sounds right because COMMIT looks like a standalone command, but once you opened `BEGIN` the transaction belongs to you, and the procedure may not end it for you. Only a `CALL` outside a transaction block lets the procedure manage transactions itself."
+      vi: "COMMIT trông như một lệnh độc lập, nhưng khi bạn đã mở `BEGIN`, transaction thuộc về bạn, và thủ tục không được kết thúc nó thay bạn. Postgres cũng không lặng lẽ bỏ qua `COMMIT` đó: nó dừng thủ tục với lỗi `2D000` (kết thúc transaction không hợp lệ). Gọi `CALL` ngoài khối transaction thì thủ tục mới tự commit được."
+      en: "COMMIT looks like a standalone command, but once you opened `BEGIN` the transaction belongs to you, and the procedure may not end it for you. Postgres does not silently skip that `COMMIT` either: it stops the procedure with error `2D000` (invalid transaction termination). Only a `CALL` outside a transaction block lets the procedure commit by itself."
 ---
 ## Mở bài
 
@@ -144,6 +145,8 @@ Khối `DO` là đoạn PL/pgSQL chạy một lần, không lưu lại. Bên tro
 Nhiều người nghĩ vòng lặp chạy trong server thì nhanh như một câu SQL. Thật ra mỗi vòng là một câu lệnh riêng: tìm dòng, ghi dòng, cập nhật index từng lần. Một câu theo tập như `INSERT ... SELECT` hay `UPDATE ... WHERE` để planner xử lý mọi dòng trong một lần quét. Chỉ dùng vòng lặp khi mỗi dòng cần một quyết định mà SQL không diễn đạt được.
 
 Cursor đọc một kết quả từng phần thay vì lấy hết một lần. Trong PL/pgSQL: `OPEN`, `FETCH ... INTO`, `CLOSE`. Ở mức SQL: `DECLARE ... CURSOR` rồi `FETCH`, và chỉ chạy được trong `BEGIN ... COMMIT`.
+
+Hình từng bước ở cuối mục này chạy khối `DO` của mục Ví dụ trên sáu đơn, từng dòng một, để thấy chỗ `CONTINUE` và chỗ `EXIT`.
 
 ## Cú pháp
 
@@ -275,6 +278,8 @@ A `DO` block is a piece of PL/pgSQL run once and not stored. Inside it you have 
 Many people think a loop running inside the server is as fast as one SQL statement. In fact each iteration is a separate statement: find the row, write it, update indexes, one at a time. One set-based statement such as `INSERT ... SELECT` or `UPDATE ... WHERE` lets the planner handle every row in one pass. Only use a loop when each row needs a decision SQL cannot express.
 
 A cursor reads a result piece by piece instead of all at once. In PL/pgSQL: `OPEN`, `FETCH ... INTO`, `CLOSE`. In SQL: `DECLARE ... CURSOR` then `FETCH`, and only inside `BEGIN ... COMMIT`.
+
+The step-through figure at the end of this section runs the Example's `DO` block over the six orders, row by row, to show where `CONTINUE` and `EXIT` act.
 
 ## Syntax
 

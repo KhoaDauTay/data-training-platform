@@ -1,0 +1,68 @@
+# B3-5 (tools/v42/diagram-plan-v42.md): the planner multiplies the MCV frequency by the row count. Lessons: e-pg-l2-15 (Ý chính),
+# e-pg-l4-02 (Ý chính, variant `mcv` = step 1 with that lesson's own parcels data, beside its registry pg-plan-tree).
+# Data (PGlite, lesson setups; tools/v42/b3check.log): tickets most_common_vals {open,pending,closed}, freqs {0.6,0.3,0.1},
+# reltuples 30000; status = 'closed' → Seq Scan rows=3000 (real 3000); closed_at null_frac 0.9 → IS NULL rows=27000 (real 27000).
+# parcels (e-pg-l4-02): {delivered,in_transit,returned,lost} = {0.7,0.2,0.09,0.01}, reltuples 20000; status = 'lost' → Bitmap Heap
+# Scan rows=200.
+# Deviation: the MCV list is a grid (value, freq), so the arrow leaves the very row it multiplies (eye SE-1); step 2 greys it and
+# null_frac feeds the product (0.9 × 30000);
+# the plan's variant was plain frame 1 (tickets data in a parcels lesson); it is step 1 patched with parcels' numbers.
+# Sources: https://www.postgresql.org/docs/18/planner-stats.html, https://www.postgresql.org/docs/18/row-estimation-examples.html
+title: { vi: "Planner ước số dòng bằng một phép nhân", en: "The planner estimates rows with one multiplication" }
+caption:
+  vi: "Bảng tickets của lab sau ANALYZE. rows= trong kế hoạch là tần suất đọc từ pg_stats nhân với reltuples."
+  en: "The lab's tickets table after ANALYZE. The plan's rows= is the frequency read from pg_stats times reltuples."
+alt:
+  vi: "Planner không đếm dòng mà nhân tần suất trong pg_stats với số dòng của bảng. Thống kê vừa ANALYZE nên ước lượng khớp số thật; thống kê cũ thì lệch theo."
+  en: "The planner does not count rows; it multiplies the frequency in pg_stats by the table's row count. Fresh after ANALYZE, the estimate matches the real count; stale statistics drift with it."
+nodes:
+  - id: mcv
+    shape: grid
+    label: most_common_freqs
+    sub: status
+    head: [{ vi: "giá trị", en: value }, freq]
+    cells: [[open, "0.6"], [pending, "0.3"], [closed, "0.1"]]
+    rowTone: [null, null, live]
+  - { id: x, label: "0.1 × 30000", sub: { vi: "= 3000 dòng", en: "= 3000 rows" }, tone: live }
+  - { id: nul, label: null_frac 0.9, sub: closed_at, tone: live }
+  - { id: n, shape: key, mono: true, label: reltuples 30000 }
+  - { id: plan, shape: key, mono: true, label: Seq Scan, sub: rows=3000 }
+rows:
+  - [n]
+  - [mcv, x, nul]
+  - [plan]
+phone: { rows: [[mcv], [x, nul], [n], [plan]] }
+edges:
+  - { id: f, from: "mcv#2", to: x }
+  - { id: g, from: nul, to: x }
+  - { from: n, to: x }
+  - { from: x, to: plan }
+steps:
+  - say: { vi: "Giá trị trong MCV: lấy đúng tần suất.", en: "A value in the MCV: use its exact frequency." }
+    show: [mcv, n, x, plan, f]
+    alt: { vi: "closed có tần suất đo được 0.1, nên ước lượng bằng 0.1 nhân 30000 dòng, khớp số thật.", en: "closed has a measured frequency of 0.1, so the estimate is 0.1 times 30000 rows, matching the real count." }
+  - say: { vi: "IS NULL dùng null_frac.", en: "IS NULL uses null_frac." }
+    show: [mcv, nul, n, x, plan, g]
+    alt: { vi: "Chín phần mười closed_at để trống, nên ước 0.9 nhân 30000 bằng 27000 dòng, cũng khớp số thật.", en: "Nine tenths of closed_at are empty, so the estimate is 0.9 times 30000, or 27000 rows, again the real count." }
+    set:
+      mcv: { rowTone: [ghost, ghost, ghost] }
+      x: { label: "0.9 × 30000", sub: { vi: "= 27000 dòng", en: "= 27000 rows" } }
+      plan: { sub: rows=27000 }
+variants:
+  mcv:
+    step: 0
+    title: { vi: "Ước số dòng của 'lost' từ MCV", en: "Estimating 'lost' from the MCV list" }
+    caption:
+      vi: "Bảng parcels của lab: tần suất của lost trong pg_stats nhân với reltuples ra đúng rows= của kế hoạch."
+      en: "The lab's parcels table: the frequency of lost in pg_stats times reltuples gives exactly the plan's rows=."
+    alt:
+      vi: "lost có tần suất 0.01 trong MCV của cột status, nên planner ước 0.01 nhân 20000 bằng 200 dòng, khớp số thật, và đi qua index cho giá trị hiếm này."
+      en: "lost has a frequency of 0.01 in the MCV list of status, so the planner estimates 0.01 times 20000, or 200 rows, matching the real count, and uses the index for this rare value."
+    set:
+      mcv:
+        cells: [[delivered, "0.7"], [in_transit, "0.2"], [returned, "0.09"], [lost, "0.01"]]
+        rowTone: [null, null, null, live]
+      f: { from: "mcv#3" }
+      n: { label: reltuples 20000 }
+      x: { label: "0.01 × 20000", sub: { vi: "= 200 dòng", en: "= 200 rows" } }
+      plan: { label: Bitmap Heap Scan, sub: rows=200 }

@@ -34,8 +34,8 @@ quiz:
     answer: 0
     trap: 1
     why:
-      vi: "Nghe hợp lý vì mỗi line pointer đúng là 4 byte, nhưng 24 byte đầu mà `lower` đếm là header trang. Mảng line pointer bắt đầu sau header và kết thúc ở `lower`: (36 − 24) / 4 = 3."
-      en: "It sounds right because each line pointer really is 4 bytes, but the first 24 bytes counted by `lower` are the page header. The line pointer array starts after the header and ends at `lower`: (36 - 24) / 4 = 3."
+      vi: "36 / 4 = 9 nghe hợp lý vì mỗi line pointer đúng là 4 byte, nhưng `lower` đếm từ byte đầu tiên của trang (page), nên 36 gồm cả 24 byte header trang. Mảng line pointer nằm ngay sau header và kết thúc ở `lower`: (36 − 24) / 4 = 3. Không cần đọc tuple: hai con số trong header trang đã đủ để tính."
+      en: "36 / 4 = 9 sounds right because each line pointer really is 4 bytes, but `lower` counts from the first byte of the page, so 36 includes the 24-byte page header. The line pointer array starts right after the header and ends at `lower`: (36 - 24) / 4 = 3. No need to read the tuples: the two numbers in the page header are enough."
   - q:
       vi: "Index lưu gì để tìm lại một dòng trong heap?"
       en: "What does an index store to find a row again in the heap?"
@@ -46,8 +46,8 @@ quiz:
     answer: 1
     trap: 2
     why:
-      vi: "Nghe hợp lý vì ta hay tìm dòng bằng khóa chính, nhưng index nào (kể cả index khóa chính) cũng phải dẫn tới chỗ dòng nằm trong heap. Index trỏ tới line pointer, không trỏ thẳng tới byte, nên Postgres dời được tuple trong trang (khi dọn chỗ) mà không phải sửa index."
-      en: "It sounds right because we usually look rows up by the primary key, but every index (the primary key index included) has to lead to where the row sits in the heap. Indexes point at the line pointer, not straight at bytes, so Postgres can move a tuple inside the page (when compacting) without touching any index."
+      vi: "Khóa chính nghe hợp lý vì ta hay tìm dòng bằng nó, nhưng index nào (kể cả index của khóa chính) cũng phải dẫn tới chỗ dòng nằm trong heap (các trang của bảng). Nên index lưu `ctid` = (số trang, số line pointer). Nó không lưu byte offset: line pointer là lớp gián tiếp, nên khi Postgres dồn tuple trong trang cho gọn, chỉ line pointer đổi, index không phải sửa."
+      en: "The primary key sounds right because we usually look rows up by it, but every index (the primary key's included) has to lead to where the row sits in the heap (the table's pages). So an index stores `ctid` = (page number, line pointer number). It does not store a byte offset: the line pointer is an indirection, so when Postgres compacts the tuples inside a page only the line pointer changes, and no index has to be updated."
 ---
 ## Mở bài
 

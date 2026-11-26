@@ -1,0 +1,38 @@
+# v43 R2 (extensions-plan §b, lesson e-pg-ext-10): crosstab's one-argument form fills columns from the left, so a missing
+# month slides the next value into the wrong column. Data (lesson setup, checked in PGlite 0.5.16): Hue has August 80 and
+# October 95, no September row. Two-argument form with VALUES (8), (9), (10): Hue 80 | NULL | 95. One-argument form:
+# Hue 80 | 95 | NULL. Source: https://www.postgresql.org/docs/18/tablefunc.html
+title: { vi: "crosstab một tham số dồn giá trị sang trái", en: "One-argument crosstab slides values left" }
+caption:
+  vi: "Hue không có dòng tháng 9. Dạng hai tham số đặt 95 vào cột tháng 10; dạng một tham số đặt nó vào cột tháng 9."
+  en: "Hue has no September row. The two-argument form puts 95 under October; the one-argument form puts it under September."
+alt:
+  vi: "crosstab dạng hai tham số đặt mỗi giá trị vào cột theo danh sách tháng, còn dạng một tham số chỉ điền từ trái sang phải. Vì Hue thiếu tháng 9, dạng một tham số đặt doanh thu tháng 10 vào cột tháng 9 mà không báo lỗi."
+  en: "The two-argument crosstab puts each value in the column its month names, while the one-argument form just fills from left to right. Because Hue has no September, the one-argument form puts October's revenue under September without any error."
+nodes:
+  - id: src
+    shape: grid
+    label: city_revenue
+    sub: { vi: "các dòng của Hue", en: "Hue's rows" }
+    head: [city, month, revenue]
+    cells: [[Hue, "8", "80"], [Hue, "10", "95"]]
+  - id: out
+    shape: grid
+    label: { vi: "kết quả xoay", en: "pivoted result" }
+    head: [city, m8, m9, m10]
+    cells: [[Hue, "80", "NULL", "95"]]
+    cellTone: { "0:3": new }
+  - { id: two, shape: key, label: { vi: "hai tham số: theo tháng", en: "two args: by month" }, tone: new }
+rows:
+  - [src, out]
+  - [two]
+edges:
+  - { from: src, to: out }
+steps:
+  - say: { vi: "Hai tham số: mỗi tháng có cột của nó.", en: "Two arguments: each month has its own column." }
+    alt: { vi: "Với danh sách tháng 8, 9, 10, crosstab đặt 95 của tháng 10 vào m10 và để m9 là NULL.", en: "With the month list 8, 9, 10, crosstab puts October's 95 under m10 and leaves m9 NULL." }
+  - say: { vi: "Một tham số: giá trị thứ hai vào cột thứ hai.", en: "One argument: the second value goes to the second column." }
+    alt: { vi: "Không có danh sách tháng, crosstab đặt giá trị thứ hai của Hue vào cột thứ hai, nên 95 nằm sai ở m9.", en: "With no month list, crosstab puts Hue's second value in the second column, so 95 lands wrongly under m9." }
+    set:
+      out: { cells: [[Hue, "80", "95", "NULL"]], cellTone: { "0:2": warm } }
+      two: { label: { vi: "một tham số: từ trái", en: "one arg: from left" }, tone: warm }

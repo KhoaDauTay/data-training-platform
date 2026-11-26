@@ -1,0 +1,38 @@
+# B2-4 (tools/v42/diagram-plan-v42.md): group by X, count distinct Y, and NULL hides a break. Lesson: e-ds-l3-02 (Ý chính;
+# ds-fd-check stays in e-ds-l3-01). Data: the lab's order_lines, run on PGlite (tools/v42/b2check.log): product_code →
+# unit_price gives P1 {5.00}, P2 {30.00, 35.00}, P3 {12.00}; P3's product_name rows are ruler, ruler, NULL and
+# count(DISTINCT product_name) = 1. Source: https://www.postgresql.org/docs/18/functions-aggregate.html (aggregates skip NULLs)
+title: { vi: "Thử X → Y bằng GROUP BY", en: "Testing X → Y with GROUP BY" }
+caption:
+  vi: "GROUP BY product_code HAVING count(DISTINCT unit_price) > 1 giữ đúng nhóm vi phạm; NULL thì count(DISTINCT) không đếm."
+  en: "GROUP BY product_code HAVING count(DISTINCT unit_price) > 1 keeps exactly the breaking groups; count(DISTINCT) does not count NULL."
+alt:
+  vi: "Phép thử X → Y luôn là gom theo X, đếm số Y khác nhau, giữ nhóm nào hơn 1. Dữ liệu chỉ bác bỏ được phụ thuộc, và NULL có thể giấu một lần vi phạm."
+  en: "Testing X → Y always means grouping by X, counting distinct Y and keeping groups over 1. Data can only refute a dependency, and NULL can hide a violation."
+nodes:
+  - { id: q, shape: key, mono: true, label: "count(DISTINCT Y)", sub: "HAVING > 1" }
+  - id: g
+    shape: grid
+    label: { vi: "giá, gom theo product_code", en: "prices by product_code" }
+    head: [product_code, { vi: giá, en: prices }, count]
+    cells: [[P1, "5.00", "1"], [P2, "30.00, 35.00", "2"], [P3, "12.00", "1"]]
+    rowTone: [null, dead, null]
+  - id: n
+    shape: grid
+    label: { vi: "thử product_code → tên: P3", en: "test product_code → name: P3" }
+    sub: { vi: "+1 khi nhóm có NULL", en: "+1 when a group has NULL" }
+    head: [product_code, { vi: tên, en: names }, count]
+    cells: [[P3, "ruler, ruler, NULL", "1"]]
+    cellTone: { "0:2": warm }
+rows:
+  - [q]
+  - [g]
+  - [n]
+edges:
+  - { from: q, to: g }
+steps:
+  - say: { vi: "P2 có hai giá: phản ví dụ.", en: "P2 has two prices: a counterexample." }
+    alt: { vi: "Một nhóm có hơn một giá trị Y là bằng chứng X không quyết định Y.", en: "A group with more than one Y value proves X does not determine Y." }
+    show: [q, g]
+  - say: { vi: "count(DISTINCT) bỏ NULL.", en: "count(DISTINCT) skips NULL." }
+    alt: { vi: "Một mã lúc có tên lúc trống vẫn đếm ra 1, nên phép thử phải cộng thêm khi nhóm có NULL.", en: "A code that sometimes has a name and sometimes none still counts 1, so the test must add one when the group has a NULL." }

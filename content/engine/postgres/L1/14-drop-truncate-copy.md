@@ -17,6 +17,7 @@ objectives:
   - vi: Xóa bảng có view phụ thuộc bằng `CASCADE` khi biết nó sẽ xóa thêm gì.
     en: Drop a table that has a dependent view with `CASCADE`, knowing what else it removes.
 requires: [e-pg-l1-13]
+figures: [{ name: pg-delete-truncate-drop, at: idea }]
 sources:
   - https://www.postgresql.org/docs/18/sql-droptable.html
   - https://www.postgresql.org/docs/18/sql-truncate.html
@@ -109,8 +110,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì chữ 'sao chép bảng' gợi một bản y hệt, nhưng `AS SELECT` chỉ lưu kết quả của câu SELECT: cột và dòng. Muốn có ràng buộc và index thì tạo bảng bằng `LIKE … INCLUDING ALL` rồi `INSERT … SELECT`."
-      en: "It sounds right because 'copy a table' suggests an exact twin, but `AS SELECT` only stores the result of the SELECT: columns and rows. For constraints and indexes, create the table with `LIKE … INCLUDING ALL` then `INSERT … SELECT`."
+      vi: "\"Cùng khóa chính, index và ràng buộc\" nghe hợp lý vì chữ 'sao chép bảng' gợi một bản y hệt, nhưng `AS SELECT` chỉ lưu kết quả của câu SELECT: tên và kiểu cột, cùng mọi dòng câu đó trả về. Nó có dòng, vì `SELECT * FROM orders` trả hết dòng. Muốn có ràng buộc và index thì tạo bảng bằng `LIKE … INCLUDING ALL` rồi `INSERT … SELECT`, như bước 2 của lab."
+      en: "\"Plus the primary key, indexes and constraints\" sounds right because 'copy a table' suggests an exact twin, but `AS SELECT` only stores the result of the SELECT: column names and types, and every row the query returns. It does have rows, since `SELECT * FROM orders` returns them all. For constraints and indexes, create the table with `LIKE … INCLUDING ALL` then `INSERT … SELECT`, as in step 2 of the lab."
   - q:
       vi: "Cần xóa 2 triệu dòng log cũ hơn 90 ngày trong bảng 5 triệu dòng. Dùng gì?"
       en: "You must remove 2 million log rows older than 90 days from a 5 million row table. What do you use?"
@@ -121,8 +122,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì `TRUNCATE` nhanh hơn nhiều, nhưng nó luôn làm rỗng cả bảng, kể cả 3 triệu dòng cần giữ. Chỉ `DELETE` lọc được dòng; với bảng rất lớn, người ta xóa theo từng đợt hoặc chia bảng theo thời gian (partition) để bỏ cả một phần."
-      en: "It sounds right because `TRUNCATE` is much faster, but it always empties the whole table, including the 3 million rows to keep. Only `DELETE` can filter rows; on a very big table people delete in batches or partition the table by time and drop a whole partition."
+      vi: "`TRUNCATE` nghe hợp lý vì nó nhanh hơn nhiều, nhưng nó luôn làm rỗng cả bảng, kể cả 3 triệu dòng cần giữ (5 triệu − 2 triệu). `DROP TABLE` còn mất luôn bảng cùng 3 triệu dòng đó. Chỉ `DELETE … WHERE` lọc được dòng; với bảng rất lớn, người ta xóa theo từng đợt, hoặc dùng bảng phân vùng (partitioned table) theo thời gian để bỏ cả một phân vùng con."
+      en: "`TRUNCATE` sounds right because it is much faster, but it always empties the whole table, including the 3 million rows to keep (5 million − 2 million). `DROP TABLE` also loses the table with those 3 million rows. Only `DELETE … WHERE` can filter rows; on a very big table people delete in batches, or use a table partitioned by time and drop a whole partition."
 ---
 ## Mở bài
 
@@ -137,6 +138,8 @@ Nhiều người nghĩ làm rỗng bảng là reset luôn số thứ tự. Thậ
 `DROP TABLE` xóa cả bảng lẫn định nghĩa. Mặc định `RESTRICT` từ chối khi còn view hay khóa ngoại phụ thuộc; `CASCADE` xóa view phụ thuộc và gỡ khóa ngoại ở bảng khác. `IF EXISTS` biến lỗi "không có bảng" thành một thông báo.
 
 Sao chép có hai cách. `CREATE TABLE … AS SELECT` chép cột và dòng, không chép khóa chính, NOT NULL, CHECK hay index. `CREATE TABLE … (LIKE table INCLUDING ALL)` chép cấu trúc gồm mặc định, CHECK, khóa chính và index, nhưng không chép dòng và không chép khóa ngoại. `CREATE TEMP TABLE` tạo bảng chỉ sống trong phiên hiện tại.
+
+Hình ở cuối mục này đặt ba lệnh cạnh nhau trên ba bảng của lab, trước và sau, để thấy mỗi lệnh để lại gì.
 
 ## Cú pháp
 
@@ -261,6 +264,8 @@ Many people think emptying a table also resets its numbering. In fact `TRUNCATE`
 `DROP TABLE` removes the table and its definition. The default `RESTRICT` refuses while views or foreign keys depend on it; `CASCADE` drops the dependent views and removes the foreign keys on other tables. `IF EXISTS` turns the "no such table" error into a notice.
 
 There are two ways to copy. `CREATE TABLE … AS SELECT` copies columns and rows, not the primary key, NOT NULL, CHECK or indexes. `CREATE TABLE … (LIKE table INCLUDING ALL)` copies the structure with defaults, CHECK, primary key and indexes, but no rows and no foreign keys. `CREATE TEMP TABLE` makes a table that lives only in the current session.
+
+The figure at the end of this section puts the three commands side by side on three of the lab's tables, before and after, to show what each one leaves.
 
 ## Syntax
 

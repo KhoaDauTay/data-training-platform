@@ -1,6 +1,6 @@
 import {
   blocksOf, docsNoteKey, ENGINES, engineXp, isRight, onPg, lessonPassed, parseEngineLesson, parseModules, partsOf, progressOf, treeOf,
-  type EngineId, type EngineLesson, type Kind, type LabStep, type LessonSource, type Level, type ModuleName, type Question, type SectionId, type Tree,
+  type EngineId, type EngineLesson, type Kind, type LabStep, type LessonSource, type Level, type ModuleName, type Rung, type Question, type SectionId, type Tree,
 } from '../engine/content';
 import { gradable, honestOf, honestRow, LAB_RUNNERS, type Honest, type LabEnv, type LabOutput, type LabRunner, type LabVerdict } from '../engine/labs';
 import { vizMountFor, type VizDeps, type VizMounted } from '../engine/vizRegistry';
@@ -64,29 +64,33 @@ export interface EngineSources { meta: Record<string, LessonSource>; full: Recor
 let d: EngineDeps;
 let lessons: EngineLesson[] = [];
 const trees = {} as Record<EngineId, Tree>;
-const NAME: Record<Exclude<EngineId, 'design'>, string> = { postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB' };
+/** modules.yml names per engine (the Extensions shelf groups its lessons by these, v43 L720). */
+const modNames = {} as Record<EngineId, ModuleName[]>;
+const NAME: Record<Exclude<EngineId, 'design' | 'stack'>, string> = { postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB' };
 /** v28 R4 (L420): product names stay as they are; the design track's name is translated. */
-const nameOf = (e: EngineId): string => (e === 'design' ? et('name.design') : NAME[e]);
+const nameOf = (e: EngineId): string => (e === 'design' || e === 'stack' ? et(`name.${e}`) : NAME[e]);
 /** L280: one generic picture per engine (no logos): a table grid, a JSON document, a key and its values. */
-const ENGINE_ICON = { postgres: 'engRelational', mongodb: 'engDocument', dynamodb: 'engKeyValue', design: 'engDesign' } as const satisfies Record<EngineId, Icons.IconName>;
+const ENGINE_ICON = { postgres: 'engRelational', mongodb: 'engDocument', dynamodb: 'engKeyValue', design: 'engDesign', stack: 'engStack' } as const satisfies Record<EngineId, Icons.IconName>;
 const KIND_ICON = { concept: 'kindConcept', lab: 'kindLab', predict: 'kindPredict', quiz: 'kindQuiz', capstone: 'kindCapstone' } as const satisfies Record<Kind, Icons.IconName>;
 const et = (key: EngineKey, params?: I18n.Params): string => engineText(d.getLang(), d.locale(), key, params);
 
 /** Parses every engine's content (throws on a broken file: the main part shows the load failure and Retry). */
-export function initEngine(deps: EngineDeps, src: EngineSources): void {
+export function initEngine(deps: EngineDeps, src: EngineSources, bp: Record<string, { fm: unknown }> = {}): void {
   d = deps;
+  bpTitles = Object.fromEntries(Object.values(bp).map(({ fm }) => fm as { id: string; title: string; title_en: string }).map((f) => [f.id, { vi: f.title, en: f.title_en }]));
   fullSrc = src.full;
   lessons = Object.entries(src.meta).map(([path, s]) => parseEngineLesson(s, path));
   for (const e of ENGINES) {
     const names: ModuleName[] = Object.entries(src.modules).filter(([path]) => path.includes(`/${e}/`)).flatMap(([path, s]) => parseModules(s, path));
     trees[e] = treeOf(e, lessons, names);
+    modNames[e] = names;
   }
 }
 
 /** Full lessons (sections, lab, quiz), parsed from their own chunk on first open; a failed load is retried by Retry. */
 let fullSrc: EngineSources['full'] = {};
 const fulls = new Map<string, EngineLesson | 'loading' | 'failed'>();
-const pathOf = (l: EngineLesson): string | undefined => Object.keys(fullSrc).find((p) => p.includes(`/${l.engine}/${l.level}/${String(l.order).padStart(2, '0')}-`));
+const pathOf = (l: EngineLesson): string | undefined => Object.keys(fullSrc).find((p) => p.includes(`/${l.engine}/${l.level === 'EXT' ? 'ext' : l.level}/${String(l.order).padStart(2, '0')}-`));
 export function fullLesson(l: EngineLesson): EngineLesson | 'loading' | 'failed' {
   const have = fulls.get(l.id);
   if (have) return have;
@@ -101,30 +105,53 @@ const done = (): Set<string> => new Set(d.app.save.completed);
 const lang = (): 'vi' | 'en' => d.getLang();
 const flat = (e: EngineId): EngineLesson[] => trees[e].levels.flatMap((l) => l.modules.flatMap((m) => m.lessons));
 const lessonHash = (l: EngineLesson): string => d.engineHash(l.engine, l.level, l.id);
-const levelName = (lv: Level): string => `${lv} · ${et(`level.${lv}`)}`;
+const levelName = (lv: Level): string => (lv === 'EXT' ? et('level.EXT') : `${lv} · ${et(`level.${lv}`)}`);
 const levelOf = (e: EngineId, lv: string | undefined) => trees[e].levels.find((x) => x.level === lv && x.modules.length);
+/** v43 (L720): the PostgreSQL Extensions shelf, in file order (never in a tree: no badge, no level row, no XP). */
+const extLessons = (): EngineLesson[] => lessons.filter((l) => l.level === 'EXT').sort((a, b) => a.order - b.order);
+const moduleName = (e: EngineId, id: string): { vi: string; en: string } => {
+  const n = modNames[e]?.find((x) => x.id === id);
+  return n ? { vi: n.vi, en: n.en } : { vi: id, en: id };
+};
+/** `done`/`total` of the Extensions shelf (#/me line, v43 L722). */
+export const extProgress = (): { done: number; total: number } => progressOf(extLessons(), done());
 const levelLessons = (e: EngineId, lv: Level): EngineLesson[] => levelOf(e, lv)?.modules.flatMap((m) => m.lessons) ?? [];
 /** The first lesson not done, in engine order (undefined = all done). */
 const nextOf = (all: EngineLesson[], ok: Set<string>): EngineLesson | undefined => all.find((x) => !ok.has(x.id));
 
 /**
  * Paragraphs and list items: `code` spans, and **bold** outside code (558 spans in content/engine; review v22 RC: the
- * asterisks showed as text). Nothing else is interpreted.
+ * asterisks showed as text), and lesson/card ids as titled links (v44, below). Nothing else is interpreted.
  */
-function inline(text: string, marked = false): (Node | string)[] {
-  const plain = (q: string): (Node | string)[] => (marked && mark ? mark.inline(q) : [q]); // v27: term buttons, never in code spans
-  return text.split(/(`[^`\n]+`)/).filter(Boolean).flatMap((p) => (p.length > 1 && p.startsWith('`') && p.endsWith('`') ? [codeOrLink(p.slice(1, -1))]
+export function inline(text: string, marked = false): (Node | string)[] {
+  // v27: term buttons (marked), never in code spans; v44: bare ids are links before the terms see them
+  const plain = (q: string): (Node | string)[] => q.split(BARE).flatMap((x, i) => (i % 2 ? idRef(x) : marked && mark ? mark.inline(x) : x ? [x] : []));
+  // v35 R1 (T1-C8-01, L559): inline code may break anywhere, so one long span never widens a 320 px page
+  return text.split(CODE).flatMap((p, i) => (!p ? [] : i % 2 ? (p.startsWith('`') && !new RegExp(`^\x60${ID}\x60$`).test(p) ? [d.h('code', { class: '[overflow-wrap:anywhere]' }, p.slice(1, -1))] : idRef(p))
     : p.split(/(\*\*[^*\n]+\*\*)/).filter(Boolean).flatMap((q) => (q.length > 4 && q.startsWith('**') && q.endsWith('**') ? [d.h('strong', {}, ...plain(q.slice(2, -2)))] : plain(q)))));
 }
-/** v28 R4 (L421): a code span holding a lesson id (`e-pg-l4-12`) is a link to that lesson, named by its title (the design track's "go deeper" links). */
-function codeOrLink(c: string): Node {
-  const to = /^e-(pg|mg|dy|ds)-l[1-5]-\d\d$/.test(c) ? lessons.find((x) => x.id === c) : undefined;
+/**
+ * v44 (L790–L791): a lesson or Best Practice id anywhere in Engine text (prose, quiz `why`, hints, facts, BP cards; bare or
+ * in backticks, with or without a "bài/lesson/thẻ/card" before it) is a link named by the lesson's or card's title only: a
+ * learner never reads `e-pg-l4-03`. The word before stays prose ("bài Thống kê nhiều cột ↗"); without a title (never for
+ * shipped content: tests/engineBpLink.test.ts) the link says "bài liên quan" and swallows that word, so no "bài bài".
+ */
+const ID = String.raw`e-(?:(?:pg|mg|dy|ds|st)-(?:l[1-5]|ext)-|bp-[a-z])\d\d`; // v43: + the Extensions shelf (e-pg-ext-NN)
+const PRE = String.raw`(?:(?<=^|[\s(])(?:bài|thẻ|lab|lesson|card) )?`;
+const CODE = new RegExp(`(${PRE}\x60${ID}\x60|\x60[^\x60\n]+\x60)`);
+const BARE = new RegExp(String.raw`(${PRE}\b${ID}(?![\w-]))`);
+const SHORT = { pg: 'postgres', mg: 'mongodb', dy: 'dynamodb', ds: 'design', st: 'stack' } as const;
+let bpTitles: Record<string, { vi: string; en: string }> = {};
+function idRef(seg: string): (Node | string)[] {
+  const word = /^\S+ /.exec(seg)?.[0] ?? '';
+  const id = seg.slice(word.length).replace(/`/g, '');
+  const m = /^e-(pg|mg|dy|ds|st)-(l[1-5]|ext)-/.exec(id);
+  const title = m ? lessons.find((x) => x.id === id)?.title : bpTitles[id];
+  const href = m ? d.engineHash(SHORT[m[1] as keyof typeof SHORT], (m[2] === 'ext' ? 'EXT' : m[2].toUpperCase()) as Level, id) : bpHashOf(id);
+  if (!href) return [seg]; // an e-bp code with no track letter: content tests keep this from shipping
   // v38 R3 (R3-05, L593): a completed lesson or card gets the done tick (with its sr-only word), so the hub's map shows progress
-  const seen = d.app.save.completed.includes(c);
-  if (to) return xref(lessonHash(to), `${nameOf(to.engine)} ${to.level} · ${to.title[lang()]}`, seen);
-  const bp = bpHashOf(c);
-  // v35 R1 (T1-C8-01, L559): inline code may break anywhere, so one long span never widens a 320 px page
-  return bp ? xref(bp, `Best Practice · ${c.slice(5).toUpperCase()}`, seen) : d.h('code', { class: '[overflow-wrap:anywhere]' }, c);
+  const a = xref(href, title?.[lang()] ?? et('xref.related'), d.app.save.completed.includes(id));
+  return title ? [word, a] : [a];
 }
 /**
  * v35 R1 (E01, L558): a lesson or card link reads as a link: accent ink (≥ 4.5:1 on every surface, both themes), a solid
@@ -188,6 +215,7 @@ export function subOf(): HomeView.PageSub | undefined {
   }
   const lesson = r.lesson ? lessons.find((x) => x.id === r.lesson && x.engine === e) : undefined;
   if (lesson) return { title: lesson.title[lang()], trail: [top, eng, { href: d.engineHash(e, lesson.level), text: levelName(lesson.level) }] };
+  if (e === 'postgres' && r.level === 'EXT') return { title: levelName('EXT'), trail: [top, eng] };
   const lv = levelOf(e, r.level);
   if (lv) return { title: levelName(lv.level), trail: [top, eng] };
   return { title: nameOf(e), trail: [top] };
@@ -216,7 +244,8 @@ export function enginePage(): HTMLElement {
   const extra = typeof full === 'object' ? chunksFor(full) : undefined;
   const terms = lesson ? termsView() : undefined; // v27: the glossary chunk loads beside the lesson's; a failed one = no term buttons
   const f = extra && extra !== 'ready' ? extra : terms === 'loading' && typeof full === 'object' ? 'loading' : full;
-  const page = !lesson ? (engine ? (lv ? levelPage(engine, lv.level) : enginePg(engine)) : overview())
+  const shelf = engine === 'postgres' && r.level === 'EXT';
+  const page = !lesson ? (engine ? (shelf ? extPage() : lv ? levelPage(engine, lv.level) : enginePg(engine)) : overview())
     : f === 'loading' ? loadingLine()
       : f === 'failed' ? failedBox(() => { fulls.delete(lesson.id); if (predMod === 'failed') predMod = undefined; if (capMod === 'failed') capMod = undefined; if (nosqlMod === 'failed') nosqlMod = undefined; if (fullMod === 'failed') fullMod = undefined; if (resMod === 'failed') resMod = undefined; d.rerender(); })
         : lessonPage(f!);
@@ -329,6 +358,7 @@ function enginePg(e: EngineId): HTMLElement {
         h('span', { class: 'min-w-0 text-body-sm text-muted' }, `${next.level} · ${next.title[lang()]}`))
         : h('p', { class: 'm-0 font-bold good' }, et('cont.allDone', { name: nameOf(e) })), d.best?.(e)),
     e === 'mongodb' ? h('section', { 'aria-labelledby': 'engine-path' }, h('h2', { id: 'engine-path', class: d.ui.GROUP_TITLE }, et('nosql.title')), pathRow()) : null,
+    e === 'postgres' && extLessons().length ? extRow(ok) : null,
     h('section', { 'aria-labelledby': 'engine-levels' },
       h('h2', { id: 'engine-levels', class: d.ui.GROUP_TITLE }, et('levels')),
       h('ul', { class: d.ui.LIST }, ...trees[e].levels.filter((lv) => lv.modules.length).map((lv) => {
@@ -343,7 +373,7 @@ function enginePg(e: EngineId): HTMLElement {
 }
 
 /** `#/engine/<engine>/<level>` (L280): the level's modules, each a titled list of lesson rows. */
-function levelPage(e: EngineId, lv: Level): HTMLElement {
+function levelPage(e: EngineId, lv: Rung): HTMLElement {
   const { h } = d;
   const ok = done();
   const ls = levelLessons(e, lv);
@@ -361,6 +391,41 @@ function levelPage(e: EngineId, lv: Level): HTMLElement {
           h('h2', { id: `mod-${m.id}`, class: 'm-0 text-title font-bold' }, m.name[lang()]),
           h('span', { class: 'text-body-sm tabular-nums text-muted' }, `${q.done}/${q.total}`)),
         h('ul', { class: d.ui.LIST }, ...m.lessons.map((l) => lessonRow(l, ok, l === next))));
+    }));
+}
+
+/** v43 (L720): the Extensions shelf's card on the PostgreSQL page, one list row like the NoSQL path's. */
+function extRow(ok: Set<string>): HTMLElement {
+  const p = progressOf(extLessons(), ok);
+  return d.h('section', { 'aria-labelledby': 'engine-ext' },
+    d.h('h2', { id: 'engine-ext', class: d.ui.GROUP_TITLE }, et('level.EXT')),
+    d.h('ul', { class: d.ui.LIST }, d.ui.listRow({
+      lead: p.total && p.done === p.total ? leadDisc('done', '') : d.h('span', { class: 'grid size-10 place-items-center rounded-full bg-accent-soft text-accent' }, d.icon('puzzle', 'size-6')),
+      title: et('ext.title'), sub: `${et('ext.short')} · ${et('progress', { k: p.done, n: p.total })}`, action: rowLink(d.engineHash('postgres', 'EXT'), et('ext.go'), true),
+    })));
+}
+
+/** `#/engine/postgres/ext` (v43 L720): the shelf's lessons by module, k/n, and the one "no XP, no badges" line. */
+function extPage(): HTMLElement {
+  const { h } = d;
+  const ok = done();
+  const ls = extLessons();
+  const p = progressOf(ls, ok);
+  const next = nextOf(ls, ok);
+  return h('div', { class: 'flex flex-col gap-8' },
+    h('div', { class: 'flex flex-col gap-3' },
+      h('p', { class: 'm-0 text-muted' }, et('ext.intro')),
+      h('p', { class: 'm-0 text-body-sm text-muted', 'data-ext-note': '' }, et('ext.noxp')),
+      h('div', { class: 'flex flex-wrap items-center gap-x-3 gap-y-1' }, h('div', { class: 'flex min-w-40 flex-1' }, bar(p.done, p.total)),
+        h('span', { class: 'text-body-sm tabular-nums text-muted' }, `${et('ext.done', { k: p.done, n: p.total })} · ${et('level.meta', { n: ls.length, m: ls.reduce((a, x) => a + x.minutes, 0) })}`))),
+    ...[...new Set(ls.map((l) => l.module))].map((m) => {
+      const mine = ls.filter((l) => l.module === m);
+      const q = progressOf(mine, ok);
+      return h('section', { class: 'flex flex-col gap-3', 'aria-labelledby': `mod-${m}` },
+        h('div', { class: 'flex items-baseline justify-between gap-3' },
+          h('h2', { id: `mod-${m}`, class: 'm-0 text-title font-bold' }, moduleName('postgres', m)[lang()]),
+          h('span', { class: 'text-body-sm tabular-nums text-muted' }, `${q.done}/${q.total}`)),
+        h('ul', { class: d.ui.LIST }, ...mine.map((l) => lessonRow(l, ok, l === next))));
     }));
 }
 
@@ -453,7 +518,7 @@ function complete(l: EngineLesson): void {
   d.app.save.completed.push(l.id);
   d.app.save.xp += xp;
   d.persist(true);
-  d.announce(et('complete.xp', { xp }));
+  d.announce(xp ? et('complete.xp', { xp }) : et('complete.noxp')); // v43 (L721): the Extensions shelf, no "+0 XP"
   d.rerender();
   // v23 CAP: Lily cheers at the event (after the redraw that drew the finish card), never while drawing.
   if (l.kind === 'capstone') {
@@ -617,7 +682,7 @@ function chunksFor(l: EngineLesson): 'ready' | 'loading' | 'failed' {
 const capChunk = (): CapChunk | undefined => (typeof capMod === 'object' ? capMod : undefined);
 const levelDone = (l: EngineLesson): boolean => {
   const ok = done();
-  return trees[l.engine].levels.find((x) => x.level === l.level)!.modules.every((m) => m.lessons.every((x) => ok.has(x.id)));
+  return !!trees[l.engine].levels.find((x) => x.level === l.level)?.modules.every((m) => m.lessons.every((x) => ok.has(x.id)));
 };
 function capCtx(l: EngineLesson, v: Visit): import('./engineCapstone').CapCtx {
   const isDone = done().has(l.id); // completed in an earlier visit: every graded step counts as passed
@@ -631,7 +696,9 @@ function capCtx(l: EngineLesson, v: Visit): import('./engineCapstone').CapCtx {
 
 /** Tables and columns of the lab's own schema after its setup (a lab on the shop chain: only the tables its steps name). */
 const TABLES_SQL = `SELECT c.table_name::text AS t, string_agg(c.column_name || ' ' || c.data_type, ', ' ORDER BY c.ordinal_position) AS cols
-FROM information_schema.columns c WHERE c.table_schema = current_schema() GROUP BY 1 ORDER BY 1`;
+FROM information_schema.columns c WHERE c.table_schema = current_schema()
+  AND NOT EXISTS (SELECT FROM pg_depend d WHERE d.classid = 'pg_class'::regclass AND d.deptype = 'e' AND d.objid = format('%I.%I', c.table_schema, c.table_name)::regclass)
+GROUP BY 1 ORDER BY 1`; // v43: not an extension's own tables and views (PostGIS: spatial_ref_sys, geometry_columns…)
 async function loadTables(l: EngineLesson, v: Visit): Promise<void> {
   v.tables = 'busy';
   d.rerender();
@@ -694,6 +761,8 @@ function labView(l: EngineLesson, v: Visit): HTMLElement {
     cap && cc ? cap.capBar(cc) : null,
     h('div', { class: 'flex flex-col gap-3 rounded-(--r-ctl) bg-info-soft p-4 text-body-sm ring-1 ring-info-line' },
       h('p', { class: 'm-0' }, !live ? et('lab.noRunner') : l.engine === 'mongodb' ? et('lab.dataMongo') : l.engine === 'dynamodb' ? et('lab.dataDynamo') : l.lab!.setup ? et('lab.dataPg') : et('lab.data')),
+      // v43 (L726): the PostGIS tarball (~20 MB) is not precached; say so before the first Run
+      live && onPg(l.engine) && /\bpostgis\b/i.test(l.lab!.setup ?? '') ? h('p', { class: 'm-0 text-muted', 'data-postgis-note': '' }, et('lab.postgisOnce')) : null,
       live && l.runtime !== 'docs' ? tablesPanel(l, v) : null),
     cap && cc ? cap.capChecks(cc) : null,
     h('ol', { class: 'm-0 list-none space-y-4 p-0' }, ...steps.map((s, i) => {
@@ -728,7 +797,7 @@ function labView(l: EngineLesson, v: Visit): HTMLElement {
         h('details', {}, h('summary', { class: 'cursor-pointer text-body-sm font-semibold text-accent-ink' }, et('lab.hint')), h('p', { class: 'mt-2 mb-0 text-body-sm' }, ...inline(s.hint[lang()]))),
         h('p', { role: 'status', 'data-ek': `${key}-status`, class: cls.cx('m-0 text-body-sm', msg ? (msg.ok ? 'good' : 'bad') : '') }, ...inline(msg?.text ?? '')),
         s.fact && passed ? h('p', { class: 'm-0 rounded-(--r-inset) bg-good-soft p-3 text-body-sm ring-1 ring-good-line' }, h('b', {}, `${et('lab.fact')}: `), ...inline(s.fact[lang()])) : null,
-        out ? h('div', { class: 'overflow-x-auto', tabindex: '0' }, shown ? d.renderResult(shown, undefined, undefined, onPg(l.engine) ? undefined : et(l.engine === 'mongodb' ? 'res.docs' : 'res.items', { n: shown.rows.length })) : d.errorView((out as { error: unknown }).error, false)) : null,
+        out ? h('div', { class: 'overflow-x-auto', tabindex: '0' }, shown ? d.renderResult(shown, undefined, undefined, onPg(l.engine) ? undefined : et(l.engine === 'mongodb' ? 'res.docs' : 'res.items', { n: shown.rows.length }), l.engine === 'stack' ? { empty: false } : undefined) : d.errorView((out as { error: unknown }).error, false)) : null,
         shown ? R().metaView(d, shown) : null,
         shown ? N()?.stepEnd(d, s, shown, passed, key) : null,
         shown ? R().insideView(d, vizSlot, shown, `${key}-inside`) : null,
@@ -778,7 +847,7 @@ function vizSlot(slot: string, name: string | undefined, engine: EngineId, model
   }, () => { vizHosts.delete(slot); }); // a failed chunk leaves the slot empty; the next visit tries again
   return entry.host;
 }
-const SHORT_OF: Record<EngineId, 'pg' | 'mg' | 'dy'> = { postgres: 'pg', mongodb: 'mg', dynamodb: 'dy', design: 'pg' }; // design diagrams are Postgres ones
+const SHORT_OF: Record<EngineId, 'pg' | 'mg' | 'dy'> = { postgres: 'pg', mongodb: 'mg', dynamodb: 'dy', design: 'pg', stack: 'pg' }; // design diagrams are Postgres ones
 
 const HONEST_CLS: Record<Honest, string> = {
   pg: 'bg-good-soft text-ink', mingo: 'bg-good-soft text-ink', dynoxide: 'bg-good-soft text-ink', diagram: 'bg-surface-2 text-muted', docs: 'bg-info-soft text-ink',
@@ -810,11 +879,12 @@ function lessonBody(l: EngineLesson): HTMLElement {
   const v = visitOf(l.id);
   const ok = done();
   const parts = partsOf(l, gradable);
-  const all = flat(l.engine);
+  const ext = l.level === 'EXT'; // v43: the shelf walks its own list, back to the shelf at the end
+  const all = ext ? extLessons() : flat(l.engine);
   const at = all.findIndex((x) => x.id === l.id);
   const prev = all[at - 1];
   const next = all[at + 1];
-  const module = levelOf(l.engine, l.level)!.modules.find((m) => m.id === l.module)!;
+  const module = ext ? { name: moduleName(l.engine, l.module) } : levelOf(l.engine, l.level)!.modules.find((m) => m.id === l.module)!;
   const req = l.requires.map((id) => lessons.find((x) => x.id === id)).filter((x): x is EngineLesson => !!x);
   const isDone = ok.has(l.id);
   const n = (pre: string): string | undefined => { const ps = parts.filter((p) => p.startsWith(pre)); return ps.length ? `${ps.filter((p) => isDone || v.passed.has(p)).length}/${ps.length}` : undefined; };
@@ -828,6 +898,7 @@ function lessonBody(l: EngineLesson): HTMLElement {
         h('a', { href: d.engineHash(l.engine, l.level), class: 'text-muted' }, module.name[lang()]),
         isDone ? h('span', { class: cls.cx(cls.PILL, cls.DONE_PILL) }, d.icon('check', 'size-4'), et('done')) : null),
       l.runtime === 'docs' ? h('p', { class: 'm-0 text-body-sm text-muted', 'data-runtime': 'docs' }, et(docsNoteKey(l) as EngineKey)) : null,
+      l.lab?.steps.some((s) => s.model) ? h('p', { class: 'm-0 text-body-sm text-muted', 'data-stack-sim': '' }, et('stack.sim')) : null, // v45 (L743)
       req.length ? h('p', { class: 'm-0 flex flex-wrap items-center gap-2 text-body-sm' }, h('span', { class: 'text-muted' }, `${et('requires')}:`),
         ...req.map((x) => h('a', { href: lessonHash(x), class: cls.cx(cls.PILL, 'min-h-6 bg-code text-ink no-underline hover:bg-accent-soft') }, x.title[lang()], tick(ok.has(x.id))))) : null),
     ...secs((id) => id === 'open'),
@@ -864,8 +935,8 @@ function lessonBody(l: EngineLesson): HTMLElement {
         next ? h('a', { href: lessonHash(next), class: cls.cx(isDone ? cls.BTN_GO : cls.BTN_SECONDARY, 'inline-flex items-center gap-1 px-4 py-2 no-underline'), title: et('next', { title: next.title[lang()] }) },
           et('lesson.next'), d.icon('chevronRight', 'size-4'))
           // R2 E13 (L578f): the track's last lesson is no dead end: back to the engine's page
-          : h('a', { href: d.engineHash(l.engine), class: cls.cx(isDone ? cls.BTN_GO : cls.BTN_SECONDARY, 'inline-flex items-center gap-1 px-4 py-2 no-underline'), 'data-ek': `${l.id}-to-engine` },
-            et('lesson.toEngine', { name: nameOf(l.engine) }), d.icon('chevronRight', 'size-4')))),
+          : h('a', { href: ext ? d.engineHash(l.engine, 'EXT') : d.engineHash(l.engine), class: cls.cx(isDone ? cls.BTN_GO : cls.BTN_SECONDARY, 'inline-flex items-center gap-1 px-4 py-2 no-underline'), 'data-ek': `${l.id}-to-engine` },
+            et('lesson.toEngine', { name: ext ? et('level.EXT') : nameOf(l.engine) }), d.icon('chevronRight', 'size-4')))),
     mark?.list() ?? null,
     l.sources.length ? h('section', { class: 'flex flex-col gap-2', 'aria-labelledby': `${l.id}-src` },
       h('h2', { id: `${l.id}-src`, class: 'm-0 text-body font-bold' }, et('sources')),
@@ -924,6 +995,11 @@ export function sideRows(ui: { row: (r: Row) => HTMLElement; group: (text: strin
     out.push(ui.row({ key: `e:${open}:${lv.level}`, href: d.engineHash(open, lv.level),
       lead: p.total && p.done === p.total ? d.icon('check', 'size-5 text-good') : d.h('b', { class: 'text-caption' }, lv.level),
       label: et(`level.${lv.level}`), full: levelName(lv.level), sub: et('me.line', { k: p.done, n: p.total }), current: r.level === lv.level }));
+  }
+  if (open === 'postgres' && extLessons().length) {
+    const p = progressOf(extLessons(), ok);
+    out.push(ui.row({ key: 'e:ext', href: d.engineHash('postgres', 'EXT'), lead: p.total && p.done === p.total ? d.icon('check', 'size-5 text-good') : d.icon('puzzle'),
+      label: et('level.EXT'), sub: et('me.line', { k: p.done, n: p.total }), current: r.level === 'EXT' }));
   }
   if (open === 'mongodb') out.push(ui.row({ key: 'e:path', href: d.enginePathHash(), lead: d.icon('nosqlPath'), label: et('nosql.title'), current: path }));
   return out;

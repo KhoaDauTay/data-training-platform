@@ -4,6 +4,7 @@ title: "Nhiều CTE: xây câu trả lời từng bước"
 title_en: "Several CTEs: build the answer step by step"
 minutes: 25
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
+figures: [{ name: sql-cte-chain, at: idea }]
 objectives:
   - vi: Viết nhiều CTE trong một `WITH`, bước sau đọc kết quả bước trước.
     en: Write several CTEs in one `WITH`, a later step reading an earlier one's result.
@@ -24,7 +25,7 @@ syntax: |-
 options:
   - { code: "WITH a AS (…), b AS (…)", vi: "một chữ `WITH`, các CTE ngăn bằng dấu phẩy", en: "one `WITH`, the CTEs separated by commas" }
   - { code: "b AS (SELECT … FROM a)", vi: "CTE sau đọc được CTE đứng trước nó", en: "a later CTE can read the ones before it" }
-  - { code: "FROM a, b", vi: "ghép với một CTE một dòng (như một trung bình) để so", en: "cross with a one-row CTE (such as an average) to compare" }
+  - { code: "FROM a, b", vi: "nối với một CTE một dòng (như một trung bình) để so", en: "cross with a one-row CTE (such as an average) to compare" }
   - { code: "WITH sales AS (…), targets AS (…)", vi: "mỗi CTE một tên khác nhau trong cùng `WITH`", en: "each CTE needs its own name inside one `WITH`" }
 examples:
   - title: { vi: "Cửa hàng bán trên mức trung bình", en: "Stores selling above the average" }
@@ -43,7 +44,7 @@ examples:
       FROM sales, avg_sales
       WHERE sales.total > avg_sales.a
     read:
-      vi: "Cửa hàng 1 và 3. Bước `avg_sales` đọc `sales` (một dòng duy nhất), rồi câu chính ghép mỗi cửa hàng với dòng đó để so."
+      vi: "Cửa hàng 1 và 3. Bước `avg_sales` đọc `sales` và trả một dòng duy nhất (mức trung bình), rồi câu chính nối mỗi cửa hàng với dòng đó để so."
       en: "Stores 1 and 3. The `avg_sales` step reads `sales` (a single row), then the main query pairs each store with that row to compare."
   - title: { vi: "Doanh số so với chỉ tiêu", en: "Sales against target" }
     sql: |-

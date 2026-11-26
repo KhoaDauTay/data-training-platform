@@ -17,6 +17,7 @@ objectives:
   - vi: Đọc `Rows Removed by Index Recheck` để thấy dương tính giả trong kế hoạch thật.
     en: Read `Rows Removed by Index Recheck` to see the false positives in a real plan.
 requires: [e-pg-l2-08]
+figures: [{ name: pg-bloom-signature, at: idea }]
 sources:
   - https://www.postgresql.org/docs/18/bloom.html
   - https://www.postgresql.org/docs/18/indexes-types.html
@@ -73,8 +74,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì bloom nổi tiếng là phục vụ tổ hợp cột bất kỳ, nhưng chỉ với dấu bằng. Chữ ký bit được dựng từ mã băm của từng giá trị, nên không biết giá trị nào nhỏ hơn giá trị nào. Planner Seq Scan; cần lọc khoảng thì phải có B-tree."
-      en: "It sounds right because bloom is known for serving any column combination, but only with equality. The bit signature is built from hashes of each value, so it cannot tell which value is smaller. The planner does a Seq Scan; a range filter needs a B-tree."
+      vi: "Bloom phục vụ tổ hợp cột bất kỳ, nhưng chỉ với dấu bằng. Với mỗi dòng, index lưu một chữ ký: một dãy bit bật theo mã băm của từng giá trị, nên nó không biết giá trị nào nhỏ hơn giá trị nào và không dùng được cho `c < 3`. Chỉ còn `e = 3`, mà bloom luôn phải đọc hết chữ ký của mọi dòng, nên planner thấy Seq Scan rẻ hơn. Index Only Scan cũng không có, vì chữ ký không chứa giá trị thật để trả về. Cần lọc khoảng thì phải có B-tree."
+      en: "Bloom serves any column combination, but only with equality. For each row the index stores a signature: a set of bits turned on by the hash of each value, so it cannot tell which value is smaller and cannot serve `c < 3`. Only `e = 3` is left, and bloom always reads the signature of every row, so the planner finds a Seq Scan cheaper. There is no Index Only Scan either, because a signature holds no real value to return. A range filter needs a B-tree."
   - q:
       vi: "Vì sao kế hoạch dùng index bloom luôn có `Recheck Cond`?"
       en: "Why does a plan using a bloom index always show `Recheck Cond`?"
@@ -84,8 +85,8 @@ quiz:
       - { vi: "Vì bloom nén dòng và phải giải nén", en: "Because bloom compresses rows and must decompress them" }
     answer: 1
     why:
-      vi: "Nhiều giá trị khác nhau có thể bật cùng các bit, nên index chỉ nói \"có thể khớp\". Bitmap Heap Scan đọc các dòng ứng viên và kiểm lại điều kiện thật; `Rows Removed by Index Recheck` đếm số dòng bị loại."
-      en: "Different values can turn on the same bits, so the index only says \"may match\". The Bitmap Heap Scan reads the candidate rows and checks the real condition; `Rows Removed by Index Recheck` counts the rows dropped."
+      vi: "Nhiều giá trị khác nhau có thể bật cùng các bit, nên index chỉ nói \"có thể khớp\": có dương tính giả (false positive). Bitmap Heap Scan đọc các dòng ứng viên và kiểm lại điều kiện thật; `Rows Removed by Index Recheck` đếm số dòng bị loại. Điều này có từ cách bloom lưu bit, không liên quan tới thống kê cũ, và bloom không nén dòng nào: dòng vẫn nằm nguyên trong bảng."
+      en: "Different values can turn on the same bits, so the index only says \"may match\": there are false positives. The Bitmap Heap Scan reads the candidate rows and checks the real condition; `Rows Removed by Index Recheck` counts the rows dropped. This comes from how bloom stores bits, not from stale statistics, and bloom compresses no rows: they stay as they are in the table."
 ---
 ## Mở bài
 
@@ -100,6 +101,8 @@ Index bloom (extension `bloom`) lưu cho mỗi dòng một "chữ ký" bit. Mỗ
 Vì nhiều giá trị khác nhau có thể bật trùng bit, bloom là index "thô": vài dòng không khớp vẫn lọt qua (dương tính giả), nên kế hoạch luôn có `Recheck Cond` và Bitmap Heap Scan kiểm lại từng dòng ứng viên. Bloom không bao giờ bỏ sót dòng khớp thật.
 
 Nhiều người nghĩ bloom phục vụ mọi kiểu lọc trên mọi cột. Thật ra nó chỉ hiểu `=`: không khoảng, không `IN`, không `IS NULL`, không unique. Opclass có sẵn chỉ cho `int4` và `text`. Một index bloom cỡ chừng một B-tree hai cột, nhưng thay được cả chục cái.
+
+Hình từng bước ở cuối mục này minh họa chữ ký bằng 8 bit và dùng số ứng viên thật của lab.
 
 ## Cú pháp
 
@@ -196,6 +199,8 @@ A bloom index (extension `bloom`) stores a bit "signature" per row. Each column 
 Because different values can turn on the same bits, bloom is lossy: a few non-matching rows slip through (false positives), so the plan always has a `Recheck Cond` and the Bitmap Heap Scan checks each candidate row again. Bloom never misses a row that truly matches.
 
 Many people think bloom serves any kind of filter on any column. In fact it only understands `=`: no ranges, no `IN`, no `IS NULL`, no uniqueness. Built-in opclasses exist only for `int4` and `text`. One bloom index is about the size of one two-column B-tree, but replaces a dozen of them.
+
+The step-through figure at the end of this section shows the signature with 8 bits and uses the lab's real candidate count.
 
 ## Syntax
 

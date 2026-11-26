@@ -8,6 +8,7 @@ title_en: "Hierarchical sort keys: country, city, district, store"
 kind: lab
 runtime: browser
 minutes: 10
+figures: [{ name: dy-sk-hierarchy, at: idea }]
 objectives:
   - vi: Ghép nhiều cấp vào sort key (`VN#DA-NANG#HAI-CHAU#S-01`) để đọc ở bất kỳ cấp nào bằng `begins_with`.
     en: Join several levels into a sort key (`VN#DA-NANG#HAI-CHAU#S-01`) to read at any level with `begins_with`.
@@ -148,6 +149,8 @@ Nhiều người nghĩ sort key phân cấp trả lời được mọi câu hỏ
 
 Ở đây mọi cửa hàng dùng chung `PK = STORE`. Với vài chục cửa hàng thì ổn; với hàng triệu item, một giá trị partition key sẽ thành điểm nóng, nên ta tách theo quốc gia hoặc tỉnh (`PK = STORE#VN`).
 
+Hình từng bước ở cuối mục này tách sort key của sáu cửa hàng thành từng cấp và đọc một tỉnh, một quận, rồi một quận không kèm tỉnh.
+
 ## Cú pháp
 
 ```text
@@ -230,6 +233,8 @@ End a prefix with `#` so that `VN#HUE` never matches `VN#HUE-SOUTH`. The same pa
 Many people think a hierarchical sort key answers every location question. In fact it reads only from the first level down: "every Hai Chau district whatever the city" is not a prefix, and `contains` cannot be used in a key condition. A question in another order needs another GSI.
 
 Here every store shares `PK = STORE`. For a few dozen stores that is fine; with millions of items one partition key value becomes a hot spot, so you split by country or city (`PK = STORE#VN`).
+
+The step-through figure at the end of this section splits the six stores' sort keys into their levels and reads one city, one district, then a district without its city.
 
 ## Syntax
 

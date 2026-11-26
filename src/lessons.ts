@@ -1,6 +1,7 @@
 import { bilingualOf, type Bilingual } from './progress';
 import { localStore, readJson, writeJson, type KV } from './storage';
 import type { SchemaId } from './domains';
+import type { FigRef } from './engine/viz/figure';
 
 /**
  * "Bài học nhanh" (product-design-v4 §C, L54): one card per skill, shown before the first task that grants it.
@@ -24,6 +25,18 @@ export interface Lesson {
   docs: string;
   /** Set on an advanced node's lesson (content/general/adv.yml): it runs on `lab` (Plan 8a D8a-8). */
   node?: string;
+  /** v46 (L860): one figure (a content/figures spec, usually the matching full lesson's), drawn at the end of the concept part. */
+  figure?: FigRef;
+}
+
+/** v46 (L860): `figure: { name, variant?, step? }`; `at` is always the concept part. Type-only import: the builder stays lazy. */
+export function parseLessonFigure(v: unknown, fail: (what: string) => never): FigRef | undefined {
+  if (v === undefined) return undefined;
+  const f = (v && typeof v === 'object' && !Array.isArray(v) ? v : fail('figure cần { name, variant?, step? }')) as Record<string, unknown>;
+  const name = typeof f.name === 'string' && /^[a-z0-9-]+$/.test(f.name) ? f.name : fail('figure.name phải là [a-z0-9-]+');
+  if (f.variant !== undefined && typeof f.variant !== 'string') fail('figure.variant phải là chuỗi');
+  if (f.step !== undefined && !(Number.isInteger(f.step) && (f.step as number) >= 0)) fail('figure.step phải là số nguyên ≥ 0');
+  return { name, at: 'concept', ...(typeof f.variant === 'string' ? { variant: f.variant } : {}), ...(typeof f.step === 'number' ? { step: f.step } : {}) };
 }
 
 /** Every lesson runs on `lab` (L84): skill lessons and advanced-node lessons alike, never on a domain's tables. */
@@ -67,7 +80,8 @@ export function parseLessons(data: unknown, origin = 'lessons.yml'): Lesson[] {
     const list = (v: unknown) => (Array.isArray(v) && v.every((x) => typeof x === 'string' && x.trim()) ? (v as string[]) : fail('cues cần { vi: [...], en: [...] }'));
     // Same order as before the split: cues are checked before the body.
     const parsedCues = { vi: list(cues.vi), en: list(cues.en) };
-    return { id, cues: parsedCues, ...parseLessonBody(o, fail) };
+    const figure = parseLessonFigure(o.figure, fail);
+    return { id, cues: parsedCues, ...parseLessonBody(o, fail), ...(figure ? { figure } : {}) };
   });
 }
 

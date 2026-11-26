@@ -49,8 +49,9 @@ function engineChunk(): Promise<EngineView> {
         cheer: { mascot, react, badge: () => illustration('aspect-square', (il) => il.doneBadge()) },
         best: (e) => b.entry(e),
       };
-      m.initEngine(deps, src);
-      b.initBest(deps, { ...bs, meta: { ...bs.meta, ...bm.meta, ...bd.meta } }, src.meta, { skill: (id) => SKILLS.find((x) => x.id === id)?.label, sourceTitle: m.sourceTitle });
+      const bpMeta = { ...bs.meta, ...bm.meta, ...bd.meta };
+      m.initEngine(deps, src, bpMeta); // v44 (L790): card titles for the id links
+      b.initBest(deps, { ...bs, meta: bpMeta }, src.meta, { skill: (id) => SKILLS.find((x) => x.id === id)?.label, sourceTitle: m.sourceTitle, inline: m.inline });
       best = b;
       failed = false;
       return (view = m);
@@ -93,6 +94,8 @@ export function engineTrees(): ReturnType<EngineView['engineTrees']> | undefined
   if (!view && !failed) load();
   return view?.engineTrees();
 }
+/** v43 (L722): the Extensions shelf's done/total for the #/me line (undefined until the chunk is in). */
+export const engineExt = (): ReturnType<EngineView['extProgress']> | undefined => view?.extProgress();
 registerNav({ id: 'engine', area: 'top', order: 25, label: 'nav.engineShort', icon: NAV_ICON.engine, href: hashOf('engine'), current: (r) => r === 'engine', mergeInto: 'learn' });
 // On a Best Practice page the engine rows are drawn with no current row: the Best Practice row is the one (H2).
 registerSide('engine', (ui) => (view ? [...view.sideRows(isBest() ? { ...ui, row: (r) => ui.row({ ...r, current: false }) } : ui), ...best!.sideRows(ui)] : []));

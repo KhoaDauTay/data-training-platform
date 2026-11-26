@@ -8,6 +8,7 @@ title_en: "Five kinds of expressions and their placeholders"
 kind: concept
 runtime: docs
 minutes: 8
+figures: [{ name: dy-expression-placeholders, at: idea }]
 objectives:
   - vi: Biết mỗi loại biểu thức (key condition, filter, projection, condition, update) làm việc ở bước nào của request.
     en: Know at which step of a request each kind of expression (key condition, filter, projection, condition, update) works.
@@ -85,6 +86,8 @@ Hai bảng thay thế đi kèm:
 Danh sách từ dành riêng có hơn 500 từ, gồm nhiều tên rất hay gặp như `status`, `total`, `name`, `date`, `data`, `count`. Thói quen an toàn: luôn dùng một tên thay thế như `#n` trong biểu thức. Giới hạn: mỗi biểu thức tối đa 4 KB và 300 toán tử (so sánh, `AND`/`OR`/`NOT`, `BETWEEN`, `IN`, hàm, `+`/`-`); `IN` tối đa 100 toán hạng.
 
 Nhiều người nghĩ `FilterExpression` làm request rẻ hơn, vì phản hồi có ít item hơn. Thật ra DynamoDB tính capacity theo lượng đã đọc, trước khi lọc: bộ lọc chỉ làm phản hồi gọn lại. `ProjectionExpression` cũng vậy: item vẫn được đọc đủ rồi mới bị cắt thuộc tính. Muốn đọc ít hơn, phải đưa điều kiện vào khóa, tức vào `KeyConditionExpression`.
+
+Hình từng bước ở cuối mục này cho thấy DynamoDB thay `#t` và `:x` vào bộ lọc của ví dụ, và điều gì xảy ra khi viết thẳng.
 
 ## Cú pháp
 
@@ -170,6 +173,8 @@ Two substitution maps come with them:
 The reserved word list has over 500 words, including very common names such as `status`, `total`, `name`, `date`, `data`, `count`. A safe habit: always use a stand-in name such as `#n` in expressions. Limits: each expression is at most 4 KB and 300 operators (comparisons, `AND`/`OR`/`NOT`, `BETWEEN`, `IN`, functions, `+`/`-`); `IN` takes at most 100 operands.
 
 Many people think a `FilterExpression` makes a request cheaper, because the response holds fewer items. In fact DynamoDB charges capacity for what it read, before the filter: the filter only makes the response smaller. A `ProjectionExpression` is the same: the whole item is read and then trimmed to the listed attributes. To read less, the condition has to go into the key, that is into the `KeyConditionExpression`.
+
+The step-through figure at the end of this section shows DynamoDB filling `#t` and `:x` into the example's filter, and what happens when you write them inline.
 
 ## Syntax
 

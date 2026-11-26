@@ -17,6 +17,7 @@ objectives:
   - vi: Chọn hành vi khi xóa dòng cha (`ON DELETE CASCADE` hay chặn) và đọc ràng buộc từ `pg_constraint`.
     en: Choose what happens when a parent row is deleted (`ON DELETE CASCADE` or block) and read constraints from `pg_constraint`.
 requires: [e-pg-l1-03]
+figures: [{ name: pg-constraint-gates, at: idea }]
 sources:
   - https://www.postgresql.org/docs/18/ddl-constraints.html
   - https://www.postgresql.org/docs/18/sql-altertable.html
@@ -73,8 +74,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì hai NULL trông giống hệt nhau, nhưng NULL là \"không biết\", và hai giá trị không biết không được coi là bằng nhau, nên `UNIQUE` thường nhận bao nhiêu NULL cũng được. Muốn chỉ cho một NULL thì viết `UNIQUE NULLS NOT DISTINCT` (từ Postgres 15)."
-      en: "It sounds right because two NULLs look identical, but NULL means \"unknown\", and two unknowns are not treated as equal, so a plain `UNIQUE` accepts any number of NULLs. To allow only one NULL, write `UNIQUE NULLS NOT DISTINCT` (since Postgres 15)."
+      vi: "\"Bị từ chối\" nghe hợp lý vì hai NULL trông giống hệt nhau, nhưng NULL nghĩa là \"không biết\", và hai giá trị không biết không được coi là bằng nhau. Vì thế `UNIQUE` thường không thấy hai NULL là trùng và nhận bao nhiêu NULL cũng được; Postgres cũng không bao giờ tự đổi NULL thành chuỗi rỗng. Muốn chỉ cho một NULL thì viết `UNIQUE NULLS NOT DISTINCT` (từ Postgres 15), như bước 3 của lab."
+      en: "\"Rejected\" sounds right because two NULLs look identical, but NULL means \"unknown\", and two unknowns are not treated as equal. So a plain `UNIQUE` does not see two NULLs as duplicates and accepts any number of them; Postgres never turns a NULL into an empty string either. To allow only one NULL, write `UNIQUE NULLS NOT DISTINCT` (since Postgres 15), as in step 3 of the lab."
   - q:
       vi: "Bảng đã có một dòng `qty = 0`. Bạn chạy `ALTER TABLE ... ADD CHECK (qty > 0)`. Chuyện gì xảy ra?"
       en: "The table already has a row with `qty = 0`. You run `ALTER TABLE ... ADD CHECK (qty > 0)`. What happens?"
@@ -85,8 +86,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì luật mới thường chỉ áp từ nay về sau, nhưng `ADD CONSTRAINT` kiểm mọi dòng hiện có, và một dòng sai làm cả lệnh lỗi (23514). Muốn bỏ qua dòng cũ thì thêm `NOT VALID`, sửa dữ liệu, rồi `VALIDATE CONSTRAINT`."
-      en: "It sounds right because new rules usually apply from now on, but `ADD CONSTRAINT` checks every existing row, and one bad row makes the whole command fail (23514). To skip old rows, add `NOT VALID`, fix the data, then `VALIDATE CONSTRAINT`."
+      vi: "\"Chỉ áp cho dòng sau này\" nghe hợp lý vì luật mới thường có hiệu lực từ nay về sau, nhưng `ADD CONSTRAINT` kiểm mọi dòng hiện có trước khi thêm. Dòng `qty = 0` vi phạm, nên cả lệnh lỗi với mã 23514 (vi phạm `CHECK`) và không có ràng buộc nào được thêm. Postgres không bao giờ tự xóa dữ liệu của bạn. Muốn bỏ qua dòng cũ thì thêm `NOT VALID`, sửa dữ liệu, rồi `VALIDATE CONSTRAINT`."
+      en: "\"Only rows written later\" sounds right because a new rule usually applies from now on, but `ADD CONSTRAINT` checks every existing row before adding. The `qty = 0` row breaks it, so the whole command fails with code 23514 (a `CHECK` violation) and no constraint is added. Postgres never deletes your data on its own. To skip old rows, add `NOT VALID`, fix the data, then `VALIDATE CONSTRAINT`."
 ---
 ## Mở bài
 
@@ -101,6 +102,8 @@ Nhiều người nghĩ `CHECK (qty > 0)` chặn luôn NULL. Thật ra `CHECK` ch
 Khóa ngoại còn quyết định chuyện gì xảy ra khi xóa dòng cha. Mặc định Postgres chặn việc xóa khi còn dòng con; `ON DELETE CASCADE` xóa luôn các dòng con; `ON DELETE SET NULL` để trống cột tham chiếu. Chọn theo nghĩa nghiệp vụ: xóa giỏ hàng thì xóa món trong giỏ, nhưng xóa khách thì không nên xóa hóa đơn.
 
 `ALTER TABLE ... ADD CONSTRAINT` kiểm mọi dòng đang có; một dòng vi phạm là cả lệnh thất bại. Với `CHECK` và khóa ngoại có thể thêm `NOT VALID` để bỏ qua dòng cũ, sửa dữ liệu, rồi chạy `VALIDATE CONSTRAINT`. Ràng buộc nằm trong catalog `pg_constraint`: `contype` là `c` (check), `f` (khóa ngoại), `p` (khóa chính), `u` (unique), và từ Postgres 18 có thêm `n` cho mỗi `NOT NULL`.
+
+Hình từng bước ở cuối mục này cho ba dòng đi qua các ràng buộc của bảng `stock`, kể cả dòng NULL lọt qua `CHECK`.
 
 ## Cú pháp
 
@@ -227,6 +230,8 @@ Many people think `CHECK (qty > 0)` also blocks NULL. In fact `CHECK` only rejec
 A foreign key also decides what happens when a parent row is deleted. By default Postgres blocks the delete while child rows exist; `ON DELETE CASCADE` deletes the child rows too; `ON DELETE SET NULL` empties the referencing column. Choose by business meaning: deleting a cart may delete its items, but deleting a customer should not delete their invoices.
 
 `ALTER TABLE ... ADD CONSTRAINT` checks every existing row; one violating row makes the whole command fail. For `CHECK` and foreign keys you can add `NOT VALID` to skip the old rows, fix the data, then run `VALIDATE CONSTRAINT`. Constraints live in the catalog `pg_constraint`: `contype` is `c` (check), `f` (foreign key), `p` (primary key), `u` (unique), and since Postgres 18 also `n` for each `NOT NULL`.
+
+The step-through figure at the end of this section sends three rows through the constraints of table `stock`, including the NULL row that slips past `CHECK`.
 
 ## Syntax
 

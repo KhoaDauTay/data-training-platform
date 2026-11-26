@@ -6,6 +6,7 @@ level: L2
 module: a
 title: "Trục ngày cho kỳ không có dữ liệu"
 title_en: "Use a date spine for empty periods"
+figures: [{ name: bp-date-spine, at: idea }]
 kind: quiz
 minutes: 4
 objectives:
@@ -58,6 +59,8 @@ quiz:
 
 Báo cáo theo ngày hay tháng phải sinh đủ các kỳ bằng `generate_series`, rồi `LEFT JOIN` dữ liệu vào, thay vì chỉ `GROUP BY` trên bảng sự kiện.
 
+Hình dưới so báo cáo chỉ dùng GROUP BY với báo cáo có trục ngày.
+
 ## Vì sao
 
 - Kỳ không có sự kiện nào biến khỏi kết quả.
@@ -73,6 +76,8 @@ Cửa hàng 4 mở ngày 2025-09-01. Từ tháng 6 tới tháng 11/2025, bản `
 ## Key idea
 
 A daily or monthly report must generate every period with `generate_series` and `LEFT JOIN` the data onto it, instead of only running `GROUP BY` on the event table.
+
+The figure below compares the report that only uses GROUP BY with the date-spine report.
 
 ## Why
 

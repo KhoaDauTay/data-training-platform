@@ -4,6 +4,7 @@ title: "COALESCE: thay ô trống bằng một giá trị dự phòng"
 title_en: "COALESCE: replace an empty cell with a fallback"
 minutes: 20
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
+figures: [{ name: sql-coalesce-fallback, at: idea }]
 objectives:
   - vi: Thay NULL bằng một giá trị mặc định để báo cáo dễ đọc.
     en: Replace NULL with a default value so a report reads well.
@@ -29,7 +30,7 @@ examples:
     read:
       vi: "4 dòng; khách 17 (Bui Hoa) chưa có thành phố nên hiện `Unknown`. Bảng gốc không đổi, chỉ kết quả có chữ thay thế."
       en: "4 rows; customer 17 (Bui Hoa) has no city, so `Unknown` shows. The table is unchanged; only the result carries the replacement."
-  - title: { vi: "Nhóm theo cột đã điền", en: "Grouping by the filled-in column" }
+  - title: { vi: "Gom nhóm theo cột đã điền", en: "Grouping by the filled-in column" }
     sql: |-
       SELECT COALESCE(city, 'Unknown') AS city, count(*)
       FROM customers

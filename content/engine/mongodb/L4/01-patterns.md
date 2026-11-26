@@ -8,6 +8,7 @@ title_en: "MongoDB schema design patterns"
 kind: concept
 minutes: 12
 runtime: docs
+figures: [{ name: mg-computed-bucket, at: example }]
 objectives:
   - vi: "Kể tên sáu nhóm mẫu thiết kế trong docs chính thức của MongoDB hiện hành"
     en: "Name the six pattern groups in the current MongoDB manual"
@@ -73,19 +74,9 @@ Archive              old data rarely read              move to another collectio
 
 ## Ví dụ
 
-Computed Values: một trường lưu sẵn thay cho phép cộng ở mỗi lần đọc.
+Computed Values: một trường lưu sẵn thay cho phép cộng ở mỗi lần đọc. Đơn 101 có hai dòng (2 × 12.5 và 1 × 40); lúc ghi, `itemCount: 3` và `total: 65` được lưu vào chính tài liệu.
 
-```text
-before: { _id: 101, lines: [ { qty: 2, price: 12.5 }, { qty: 1, price: 40 } ] }
-after:  { _id: 101, lines: [ ... ], itemCount: 3, total: 65 }
-```
-
-Bucket: bảy phép đo của một cảm biến trong một giờ thành một tài liệu.
-
-```text
-before: { sensor: "s1", ts: "08:05", temp: 21.0 }  x 7
-after:  { _id: { sensor: "s1", hour: "08:00" }, count: 7, temps: [ 21.0, ... ] }
-```
+Bucket: các phép đo của một cảm biến trong một giờ thành một tài liệu. Trong lab, ba phép đo của `s1` trong giờ 08:00 thành một bucket có `count: 3`. Hình cuối phần này vẽ cả hai.
 
 Schema Versioning: tài liệu cũ và mới sống cạnh nhau, mã đọc nhìn `schemaVersion`.
 
@@ -161,19 +152,9 @@ Archive              old data rarely read              move to another collectio
 
 ## Example
 
-Computed Values: a stored field instead of a sum on every read.
+Computed Values: a stored field instead of a sum on every read. Order 101 has two lines (2 × 12.5 and 1 × 40); on write, `itemCount: 3` and `total: 65` are stored in the document itself.
 
-```text
-before: { _id: 101, lines: [ { qty: 2, price: 12.5 }, { qty: 1, price: 40 } ] }
-after:  { _id: 101, lines: [ ... ], itemCount: 3, total: 65 }
-```
-
-Bucket: seven readings of one sensor in one hour become one document.
-
-```text
-before: { sensor: "s1", ts: "08:05", temp: 21.0 }  x 7
-after:  { _id: { sensor: "s1", hour: "08:00" }, count: 7, temps: [ 21.0, ... ] }
-```
+Bucket: the readings of one sensor in one hour become one document. In the lab, the three readings of `s1` in hour 08:00 become one bucket with `count: 3`. The figure at the end of this section draws both.
 
 Schema Versioning: old and new documents live side by side, the reading code looks at `schemaVersion`.
 

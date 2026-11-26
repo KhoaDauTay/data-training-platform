@@ -75,8 +75,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì vài hệ CSDL khác cho truy vấn chéo database bằng tên ba phần, nhưng ở Postgres mỗi kết nối gắn với đúng một database, và tên ba phần trỏ ra ngoài báo lỗi 0A000. Dữ liệu cần nối với nhau nên nằm ở hai schema của cùng một database."
-      en: "It sounds right because some other databases allow cross-database queries with three-part names, but in Postgres each connection is bound to exactly one database, and a three-part name pointing elsewhere fails with 0A000. Data that must be joined belongs in two schemas of the same database."
+      vi: "\"Được\" nghe hợp lý vì vài hệ cơ sở dữ liệu khác (như SQL Server) cho truy vấn chéo database bằng tên ba phần, nhưng ở Postgres mỗi kết nối gắn với đúng một database. Tên `crm.public.users` trỏ ra database khác nên báo lỗi 0A000 (\"chưa hỗ trợ\"), dù có chạy trong transaction hay không. Dữ liệu cần nối với nhau nên nằm ở hai schema của cùng một database; nếu thật sự phải nối hai database thì dùng `postgres_fdw`."
+      en: "\"Yes\" sounds right because some other databases (such as SQL Server) allow cross-database queries with three-part names, but in Postgres each connection is bound to exactly one database. The name `crm.public.users` points at another database, so it fails with 0A000 (\"not supported\"), inside a transaction or not. Data that must be joined belongs in two schemas of the same database; if two databases really must be joined, use `postgres_fdw`."
   - q:
       vi: "`search_path` là `sales, public`. Cả `sales` và `public` đều có bảng `notes`. `SELECT * FROM notes` đọc bảng nào?"
       en: "`search_path` is `sales, public`. Both `sales` and `public` have a table `notes`. Which table does `SELECT * FROM notes` read?"
@@ -87,8 +87,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì bảng tạo không ghi schema thường vào `public`, nhưng khi đọc, Postgres dò `search_path` từ trái sang phải và lấy bảng đầu tiên tìm thấy, không báo nhập nhằng. Ghi tên đầy đủ khi không muốn phụ thuộc thiết lập của phiên."
-      en: "It sounds right because a table created without a schema usually lands in `public`, but when reading, Postgres walks `search_path` left to right and takes the first table it finds, with no ambiguity error. Write the full name when you do not want to depend on the session's setting."
+      vi: "`public.notes` nghe hợp lý vì bảng tạo không ghi schema thường vào `public`, nhưng khi đọc một tên ngắn, Postgres dò `search_path` từ trái sang phải và lấy bảng đầu tiên tìm thấy. `sales` đứng trước `public`, nên `sales.notes` thắng, và Postgres không báo nhập nhằng. Ghi tên đầy đủ (`public.notes`) khi không muốn phụ thuộc thiết lập của phiên."
+      en: "`public.notes` sounds right because a table created without a schema usually lands in `public`, but when reading a short name, Postgres walks `search_path` left to right and takes the first table it finds. `sales` comes before `public`, so `sales.notes` wins, and Postgres raises no ambiguity error. Write the full name (`public.notes`) when you do not want to depend on the session's setting."
 ---
 ## Mở bài
 

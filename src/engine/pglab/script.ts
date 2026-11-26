@@ -11,7 +11,9 @@ import type { GradeResult } from '../../grader';
 export type PgExtension =
   | 'pageinspect' | 'pg_visibility' | 'amcheck' | 'pg_walinspect' | 'pg_buffercache' | 'pg_freespacemap'
   | 'bloom' | 'btree_gin' | 'btree_gist' | 'pg_trgm' | 'pg_stat_statements' | 'ltree' | 'pgcrypto' | 'cube' | 'earthdistance'
-  | 'postgis'; // L711: from @electric-sql/pglite-postgis 0.2.16, not contrib
+  | 'postgis' // L711: from @electric-sql/pglite-postgis 0.2.16, not contrib
+  | 'citext' | 'fuzzystrmatch' | 'unaccent' | 'uuid-ossp' | 'hstore' | 'tablefunc' // v43 (L723): the Extensions shelf's contrib
+  | 'vector'; // v43 (L724): pgvector, from @electric-sql/pglite-pgvector 0.0.17
 
 /** One statement (PGlite runs exactly one per step). `expectError` = the SQLSTATE this step must fail with (e.g. 25001). */
 export type ScriptStep = string | { sql: string; expectError?: string };
@@ -34,6 +36,8 @@ export type ScriptCheck =
 
 export interface LabScript {
   extensions?: PgExtension[];
+  /** v43 (L725): extensions loaded but not created at boot (a lab step creates them); default: read from `steps`. */
+  loadOnly?: string[];
   /**
    * Content SQL run before the steps, split into statements that each run on their own (so VACUUM works here too); no
    * results kept. A `CREATE EXTENSION x` of a listed extension is skipped (already created). A failure = `setupError`.

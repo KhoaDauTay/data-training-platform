@@ -8,6 +8,7 @@ title_en: "Counting and summing without a Scan"
 kind: lab
 runtime: browser
 minutes: 14
+figures: [{ name: dy-count-three-ways, at: idea }]
 objectives:
   - vi: Đếm item của một item collection bằng `Select` `COUNT` trên `Query`, và biết nó tốn RCU như khi đọc cả item.
     en: Count the items of one item collection with `Select` `COUNT` on a `Query`, and know it costs the same RCU as reading the items.
@@ -141,6 +142,8 @@ Tổng tính sẵn chỉ đáng tin khi mọi lần ghi đều cập nhật nó.
 - Ghi đơn và cập nhật tổng trong **cùng một transaction** (`ExecuteTransaction` ở đây): tất cả hoặc không, giá gấp đôi.
 - Để **DynamoDB Streams** gửi mỗi thay đổi cho một hàm (ví dụ Lambda) cộng vào tổng. Ghi đơn không chậm đi, nhưng tổng trễ một chút, và hàm phải chịu được việc một bản ghi tới hai lần (bài L5/01). Streams cần AWS thật, bộ máy trong trình duyệt chưa chạy.
 
+Hình từng bước ở cuối mục này so số item mỗi cách phải đọc để đếm đơn của `STORE#s2`.
+
 ## Cú pháp
 
 ```text
@@ -230,6 +233,8 @@ A precomputed total can be trusted only when every write updates it. Two ways ke
 
 - Write the order and update the total in **one transaction** (`ExecuteTransaction` here): all or nothing, at double price.
 - Let **DynamoDB Streams** send each change to a function (for example Lambda) that adds it to the total. Order writes do not slow down, but the total lags a little, and the function must cope with one record arriving twice (lesson L5/01). Streams need real AWS; the in-browser engine does not run them yet.
+
+The step-through figure at the end of this section compares how many items each way must read to count the orders of `STORE#s2`.
 
 ## Syntax
 

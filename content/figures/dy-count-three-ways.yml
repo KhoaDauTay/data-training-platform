@@ -1,0 +1,39 @@
+# DY-B6-6 (v46 Batch 6, L850–L859): three ways to count one store's orders, by items read. Lesson: e-dy-l2-14 (Ý chính).
+# Data (lab.setup, run on dynoxide): Shop 31 items; Scan + FilterExpression pk = STORE#s2 AND begins_with(sk, ORDER#) + COUNT →
+# Count 12, ScannedCount 31; Query same key condition + COUNT → Count 12, ScannedCount 12; GetItem STORE#s2 / STATS → 1 item,
+# orderCount 12; Query pk = STORE#s2 without begins_with + COUNT → Count 13 (the STATS item counted). Every call measured 0.5 RCU on
+# this small table (said in the caption). Bars at half scale (31 → 15.5), the note is ScannedCount.
+# Sources: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.Other.html, …/read-write-operations.html
+title: { vi: "Ba cách đếm đơn của một cửa hàng", en: "Three ways to count one store's orders" }
+caption:
+  vi: "Câu hỏi: cửa hàng STORE#s2 có bao nhiêu đơn, trên bảng Shop 31 item. Cả ba cách đều ra 12, nhưng số item phải đọc khác hẳn: Scan đọc cả bảng, Query có Select COUNT đọc cả item collection, GetItem đọc một item STATS tính sẵn. Bảng này nhỏ nên mỗi lần đều 0.5 RCU; bảng lớn lên thì giá đi theo số item đã đọc."
+  en: "The question: how many orders does store STORE#s2 have, on the 31-item Shop table. All three ways say 12, but the items they must read differ widely: Scan reads the whole table, Query with Select COUNT reads the whole item collection, GetItem reads one precomputed STATS item. This table is small, so each call is 0.5 RCU; as the table grows, the price follows the items read."
+alt:
+  vi: "DynamoDB không có COUNT(*) rẻ: đếm bằng Scan hay Query vẫn phải đọc từng item được đếm. Một item tổng tính sẵn biến câu hỏi thành một GetItem, bảng lớn bao nhiêu cũng vậy."
+  en: "DynamoDB has no cheap COUNT(*): counting with a Scan or a Query still reads every item it counts. A precomputed total item turns the question into one GetItem, however big the table gets."
+nodes:
+  - id: sc
+    shape: bars
+    label: { vi: "item đã đọc (ScannedCount)", en: "items read (ScannedCount)" }
+    items:
+      - { label: { vi: "Scan + lọc", en: "Scan + filter" }, value: 15.5, note: "31", tone: dead }
+      - { label: Query COUNT, value: 6, note: "12", tone: new }
+      - { label: GetItem STATS, value: 0.5, note: "1", tone: live }
+  - { id: res, shape: key, label: Count 12, sub: { vi: "cả ba cách", en: "all three ways" }, tone: live }
+rows:
+  - [sc]
+  - [res]
+edges:
+  - { from: sc, to: res }
+steps:
+  - say: { vi: "Cùng con số 12, số item phải đọc khác hẳn.", en: "The same answer 12, very different items read." }
+    alt: { vi: "Scan đọc cả 31 item rồi mới lọc, Query đọc 12 đơn của STORE#s2, còn GetItem chỉ đọc item STATS đã giữ sẵn orderCount 12.", en: "Scan reads all 31 items and filters afterwards, Query reads the 12 orders of STORE#s2, and GetItem reads only the STATS item that already holds orderCount 12." }
+  - say: { vi: "Quên begins_with: item tổng bị đếm cùng các đơn.", en: "Forget begins_with: the total item is counted with the orders." }
+    alt: { vi: "Query chỉ theo pk = STORE#s2 đếm cả item STATS nằm cùng item collection, nên ra 13 thay vì 12.", en: "A Query on pk = STORE#s2 alone also counts the STATS item that sits in the same item collection, so it says 13 instead of 12." }
+    set:
+      sc:
+        items:
+          - { label: { vi: "Scan + lọc", en: "Scan + filter" }, value: 15.5, note: "31", tone: ghost }
+          - { label: { vi: "Query thiếu SK", en: "Query, no SK" }, value: 6.5, note: "13", tone: warm }
+          - { label: GetItem STATS, value: 0.5, note: "1", tone: ghost }
+      res: { label: Count 13, sub: { vi: "tính cả STATS", en: "STATS counted too" }, tone: warm }

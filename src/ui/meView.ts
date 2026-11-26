@@ -55,6 +55,8 @@ export interface MeDeps {
   generalNow: typeof Content.generalNow; loadGeneral: typeof Content.loadGeneral;
   moduleTitle: typeof Progress.moduleTitle; startToday: () => void;
   engineTrees: () => Readonly<Record<string, Parameters<typeof Mastery.engineLevels>[0]>> | undefined;
+  /** v43 (L722): the PostgreSQL Extensions shelf, a plain k/n line (no level, no badge). */
+  engineExt: () => { done: number; total: number } | undefined;
 }
 let d: MeDeps;
 export const initMe = (deps: MeDeps): void => void (d = deps);
@@ -177,12 +179,12 @@ function nextCard(x: Measured): HTMLElement {
 
 // ---------- v24 (L323): skill map and badges, derived on every draw ----------
 
-const ENGINES = ['postgres', 'mongodb', 'dynamodb', 'design'];
+const ENGINES = ['postgres', 'mongodb', 'dynamodb', 'design', 'stack'];
 const LEVELS = ['L1', 'L2', 'L3', 'L4', 'L5'];
-const ENGINE_ICON: Record<string, Icons.IconName> = { postgres: 'engRelational', mongodb: 'engDocument', dynamodb: 'engKeyValue', design: 'engDesign' };
+const ENGINE_ICON: Record<string, Icons.IconName> = { postgres: 'engRelational', mongodb: 'engDocument', dynamodb: 'engKeyValue', design: 'engDesign', stack: 'engStack' };
 const DOMAIN_ICON: Record<string, Icons.IconName> = { logistics: 'anchor', ecommerce: 'box', finance: 'percent' };
 const ENGINE_NAME: Record<string, string> = { postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB' };
-const engineName = (e: string): string => ENGINE_NAME[e] ?? m('eng.design');
+const engineName = (e: string): string => ENGINE_NAME[e] ?? m(e === 'stack' ? 'eng.stack' : 'eng.design');
 const phone = (): boolean => typeof matchMedia === 'function' && !matchMedia('(min-width: 640px)').matches;
 
 /** Four dots, filled vs ring (shape, not colour alone); the words are in the row's label. */
@@ -235,6 +237,11 @@ function measure(list: Scope[]): Measured {
   return { levels, parts, engines, badges };
 }
 
+function extLine(): HTMLElement | null {
+  const p = d.engineExt();
+  return p?.total ? d.h('p', { class: 'm-0 flex items-center gap-2 text-body-sm', 'data-me': 'ext' }, d.icon('puzzle', 'size-4 shrink-0 text-accent'), m('map.ext', { k: p.done, n: p.total })) : null;
+}
+
 function skillMapCard(x: Measured): HTMLElement {
   const lang = d.getLang();
   const due = [...x.levels.values()].filter((s) => s.review).length;
@@ -280,8 +287,9 @@ function skillMapCard(x: Measured): HTMLElement {
       x.engines
         ? d.h('ul', { class: 'm-0 list-none space-y-2 p-0' }, ...ENGINES.map((e) => d.h('li', { class: 'flex flex-wrap items-center gap-2' },
           d.h('span', { class: 'flex w-40 items-center gap-2 text-body-sm font-semibold' }, d.icon(ENGINE_ICON[e], 'size-4 shrink-0 text-accent'), engineName(e)),
-          d.h('ol', { class: 'm-0 grid min-w-0 flex-1 list-none grid-cols-5 gap-1 p-0' }, ...LEVELS.map((lv) => cell(e, lv))))))
-        : d.h('p', { class: 'm-0 text-body-sm text-muted', 'aria-live': 'polite' }, m('map.engineLoading'))));
+          d.h('ol', { class: 'm-0 grid min-w-0 flex-1 list-none grid-cols-5 gap-1 p-0' }, ...LEVELS.filter((lv) => e !== 'stack' || lv <= 'L3').map((lv) => cell(e, lv))))))
+        : d.h('p', { class: 'm-0 text-body-sm text-muted', 'aria-live': 'polite' }, m('map.engineLoading')),
+      extLine()));
 }
 
 function badgeName(b: Badge, list: Scope[]): { name: string; cond: string; icon: Icons.IconName } {

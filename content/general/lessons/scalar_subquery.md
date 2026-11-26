@@ -4,6 +4,7 @@ title: "Truy vấn con một giá trị: so với một con số tính ra"
 title_en: "Scalar subqueries: compare with a computed number"
 minutes: 25
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
+figures: [{ name: sql-scalar-subquery, at: idea }]
 objectives:
   - vi: "Đặt một câu `SELECT` trả đúng một giá trị vào trong câu khác, như \"giá trung bình\"."
     en: "Put a `SELECT` that returns exactly one value inside another query, such as \"the average price\"."
@@ -67,8 +68,8 @@ pitfalls:
     wrong: "SELECT name FROM products WHERE price_vnd = (SELECT price_vnd FROM products WHERE category = 'Snacks')"
     fix: "SELECT name FROM products WHERE price_vnd = (SELECT max(price_vnd) FROM products WHERE category = 'Snacks')"
     why:
-      vi: "Nhóm `Snacks` có 6 giá, mà dấu `=` chỉ so được với một giá trị: lỗi 21000. Hoặc gộp về một giá trị (`max`, `avg`), hoặc dùng `IN` khi bạn thật sự muốn cả danh sách (bài tiếp)."
-      en: "The `Snacks` category has 6 prices, and `=` can only compare with one value: error 21000. Either fold them into one value (`max`, `avg`) or use `IN` when you really want the whole list (next lesson)."
+      vi: "Nhóm `Snacks` có 6 giá, mà dấu `=` chỉ so được với một giá trị: lỗi 21000. Hoặc gộp về một giá trị (`max`, `avg`), hoặc dùng `IN` khi bạn thật sự muốn cả danh sách (bài \"IN với truy vấn con: lọc theo một danh sách tính ra\")."
+      en: "The `Snacks` category has 6 prices, and `=` can only compare with one value: error 21000. Either fold them into one value (`max`, `avg`) or use `IN` when you really want the whole list (lesson \"IN with a subquery: filter by a computed list\")."
   - title: { vi: "Hàm gộp thẳng trong WHERE", en: "An aggregate straight in WHERE" }
     wrong: "SELECT name, price_vnd FROM products WHERE price_vnd > avg(price_vnd)"
     fix: "SELECT name, price_vnd FROM products WHERE price_vnd > (SELECT avg(price_vnd) FROM products)"

@@ -91,8 +91,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì nhiều hệ thống lưu quyền lúc đăng nhập, nhưng Postgres kiểm quyền ở mỗi câu, nên REVOKE có hiệu lực ngay khi transaction của nó commit. Quyền của một vai trò là hợp của quyền cấp cho chính nó, cho `PUBLIC` và cho các vai trò nó kế thừa; gỡ một nguồn không gỡ các nguồn khác."
-      en: "It sounds right because many systems load privileges at login, but Postgres checks privileges on every statement, so a REVOKE applies as soon as its transaction commits. A role's privileges are the union of those granted to itself, to `PUBLIC` and to the roles it inherits from; removing one source leaves the others."
+      vi: "Nhiều hệ thống nạp quyền lúc đăng nhập, nhưng Postgres kiểm quyền ở mỗi câu, nên REVOKE có hiệu lực ngay khi transaction của nó commit một lần, không cần đăng nhập lại hay commit thêm. Quyền của một vai trò là hợp của quyền cấp cho chính nó, cho `PUBLIC` và cho các vai trò nó kế thừa; gỡ một nguồn không gỡ các nguồn khác."
+      en: "Many systems load privileges at login, but Postgres checks privileges on every statement, so a REVOKE applies as soon as its transaction commits once, with no new login or extra commit. A role's privileges are the union of those granted to itself, to `PUBLIC` and to the roles it inherits from; removing one source leaves the others."
   - q:
       vi: "Vai trò `app` tạo bảng `logs`. Muốn `app` đọc và ghi `logs`, cần làm gì thêm?"
       en: "Role `app` creates table `logs`. What else is needed for `app` to read and write `logs`?"

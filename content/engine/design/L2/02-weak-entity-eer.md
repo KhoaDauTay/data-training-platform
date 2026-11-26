@@ -8,7 +8,7 @@ title_en: Weak entities, generalisation and the EER model
 kind: concept
 runtime: browser
 minutes: 15
-figures: [{ name: ds-er-to-tables, at: example, variant: weak }]
+figures: [{ name: ds-er-weak-isa, at: idea }, { name: ds-er-to-tables, at: example, variant: weak }]
 objectives:
   - vi: Nhận ra thực thể yếu và đưa nó lên bảng với khóa gồm khóa của chủ cộng khóa bộ phận.
     en: Spot a weak entity and map it to a table keyed by its owner's key plus a partial key.
@@ -55,8 +55,8 @@ lab:
       check: rows
       ordered: true
       hint:
-        vi: "Lọc `kind = 'saving'` rồi phản nối bằng `NOT EXISTS`."
-        en: "Filter `kind = 'saving'`, then anti-join with `NOT EXISTS`."
+        vi: "Lọc `kind = 'saving'` rồi giữ tài khoản không có dòng con, bằng phản nối (anti-join) `NOT EXISTS`."
+        en: "Filter `kind = 'saving'`, then keep the accounts with no child row, with an anti-join `NOT EXISTS`."
 quiz:
   - q:
       vi: "Dòng hóa đơn được đánh số 1, 2, 3 lại từ đầu trong mỗi hóa đơn. Khóa của bảng dòng hóa đơn là gì?"
@@ -68,8 +68,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì `line_no` trông như một mã, nhưng nó chỉ duy nhất trong một hóa đơn: hai hóa đơn đều có dòng 1. Thực thể yếu được nhận diện qua chủ của nó, nên khóa phải gồm `invoice_id`."
-      en: "It sounds right because `line_no` looks like an id, but it is unique only within one invoice: two invoices both have line 1. A weak entity is identified through its owner, so the key must include `invoice_id`."
+      vi: "`line_no` một mình nghe hợp lý vì nó trông như một mã, nhưng nó chỉ duy nhất trong một hóa đơn: hóa đơn nào cũng có dòng 1. Đó chính là thực thể yếu (weak entity): không tự phân biệt được, phải nhận diện qua chủ của nó là hóa đơn. \"Yếu\" không có nghĩa là không cần khóa; khóa của nó là khóa của chủ (`invoice_id`) cộng khóa bộ phận (partial key, ở đây `line_no`)."
+      en: "`line_no` alone sounds right because it looks like an id, but it is unique only within one invoice: every invoice has a line 1. That is exactly a weak entity: it cannot tell itself apart and is identified through its owner, the invoice. \"Weak\" does not mean no key; its key is the owner's key (`invoice_id`) plus the partial key (here `line_no`)."
   - q:
       vi: "Bạn dùng `CREATE TABLE companies (...) INHERITS (parties)`. `parties` có khóa chính `id`. Điều gì đúng?"
       en: "You use `CREATE TABLE companies (...) INHERITS (parties)`. `parties` has primary key `id`. What is true?"
@@ -80,8 +80,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nhiều người nghĩ kế thừa bảng là cách tự nhiên để vẽ EER. Thật ra theo tài liệu Postgres, index, `UNIQUE` và khóa ngoại chỉ áp lên một bảng, không lan sang con. Bảng cha dùng chung khóa với bảng con (khóa chính đồng thời là khóa ngoại) giữ được luật."
-      en: "Many people think table inheritance is the natural way to draw EER. In fact, per the Postgres docs, indexes, `UNIQUE` and foreign keys apply to one table only, not to its children. A shared-key design (the primary key is also the foreign key) keeps the rules."
+      vi: "\"`id` vẫn duy nhất\" nghe tự nhiên vì con kế thừa cột của cha, nhưng theo docs chính thức của Postgres, index, `UNIQUE`, khóa chính và khóa ngoại chỉ áp lên đúng một bảng, không lan sang con. Vì thế `companies` có thể chứa một `id` đã có trong `parties`, và khóa ngoại trỏ tới `parties` chỉ thấy dòng nằm trong chính `parties`. Postgres không cấm cách này, chỉ không bảo vệ nó. Cách giữ được luật là bảng con có khóa chính đồng thời là khóa ngoại tới cha, như `saving_accounts` trong lab."
+      en: "\"`id` stays unique\" sounds natural because the child inherits the parent's columns, but per the official Postgres docs, indexes, `UNIQUE`, primary keys and foreign keys apply to exactly one table, not to its children. So `companies` can hold an `id` already in `parties`, and a foreign key to `parties` only sees rows stored in `parties` itself. Postgres does not forbid this, it just does not protect it. The design that keeps the rules is a child table whose primary key is also a foreign key to the parent, like `saving_accounts` in the lab."
 ---
 ## Mở bài
 
@@ -94,6 +94,8 @@ Một dòng hóa đơn không tự đứng được: "dòng số 2" chỉ có ng
 **Chuyên biệt hóa** chia một tập thực thể cha thành các tập con có thuộc tính riêng; **tổng quát hóa** là chiều ngược lại, gom các tập giống nhau thành cha. Hai câu hỏi định hình cây: **rời nhau** hay **chồng nhau** (một thực thể có thể thuộc hai con không), và **toàn phần** hay **bộ phận** (mọi cha có phải thuộc một con không). **Tổng hợp** (aggregation) coi cả một mối quan hệ như một thực thể để nó tham gia mối quan hệ khác.
 
 Đưa cây cha - con lên bảng có ba cách. Một bảng với cột loại và `CHECK`: đơn giản, nhưng nhiều cột NULL. Mỗi con một bảng đủ cột: không NULL, nhưng truy vấn "mọi tài khoản" phải `UNION`. Bảng cha chung cộng bảng con có khóa chính đồng thời là khóa ngoại tới cha: chuẩn nhất, phải JOIN khi đọc. Postgres có `INHERITS`, nhưng `UNIQUE`, khóa chính và khóa ngoại không lan qua cây, nên ít dùng cho mô hình dữ liệu.
+
+Hình từng bước cuối mục này vẽ cả hai: dòng hóa đơn mượn khóa của hóa đơn, rồi cây xe đưa lên bảng bằng bảng cha chung và hai bảng con.
 
 ## Ví dụ
 
@@ -133,7 +135,7 @@ INSERT INTO ex_vehicle VALUES (1, 'car', 5, NULL), (2, 'truck', NULL, 3000), (3,
 SELECT kind, count(*) AS vehicles FROM ex_vehicle GROUP BY kind ORDER BY kind;
 ```
 
-Hình cuối mục này vẽ `ex_invoice_line` thành bảng có khóa ghép `(invoice_id, line_no)`.
+Hình cuối mục này vẽ `ex_invoice_line` thành bảng có khóa ghép `(invoice_id, line_no)`. Cây xe theo cách bảng cha chung cộng bảng con (khóa chính của bảng con cũng là khóa ngoại tới cha) có ở hình của mục Ý chính.
 
 ## Lỗi hay gặp
 
@@ -191,6 +193,8 @@ A **weak entity** has no key strong enough to tell it apart by itself; it is ide
 
 There are three ways to put the hierarchy into tables. One table with a type column and a `CHECK`: simple, but many NULL columns. One full table per child: no NULLs, but "every account" needs a `UNION`. A shared parent table plus child tables whose primary key is also a foreign key to the parent: the cleanest, at the price of a JOIN on read. Postgres has `INHERITS`, but `UNIQUE`, primary keys and foreign keys do not spread across the tree, so it is rarely used for data models.
 
+The step-through figure at the end of this section draws both: an invoice line borrowing its invoice's key, then the vehicle tree on tables as a shared parent plus two subtype tables.
+
 ## Example
 
 A weak entity: invoice lines, keyed by invoice and line number.
@@ -229,7 +233,7 @@ INSERT INTO ex_vehicle VALUES (1, 'car', 5, NULL), (2, 'truck', NULL, 3000), (3,
 SELECT kind, count(*) AS vehicles FROM ex_vehicle GROUP BY kind ORDER BY kind;
 ```
 
-The figure at the end of this section draws `ex_invoice_line` as a table with the composite key `(invoice_id, line_no)`.
+The figure at the end of this section draws `ex_invoice_line` as a table with the composite key `(invoice_id, line_no)`. The vehicle tree the shared-parent way (each subtype table's primary key is also a foreign key to the parent) is in the Key idea figure.
 
 ## Common mistakes
 

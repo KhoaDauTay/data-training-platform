@@ -8,6 +8,7 @@ title_en: Multi-tenant - three layers of protection and the topic map
 kind: concept
 runtime: browser
 minutes: 12
+figures: [{ name: ds-tenant-layers, at: idea }]
 objectives:
   - vi: Kể ba lớp giữ dữ liệu các khách hàng tách nhau trong pool - câu lọc, khóa, chính sách - và lớp nào chặn lỗi nào.
     en: Name the three layers that keep tenants apart in a pool - query filters, keys, policies - and which mistake each one stops.
@@ -72,8 +73,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì chính sách chặn mọi lần đọc nhầm, nhưng nó không kiểm một tham chiếu trỏ tới đâu. Mỗi lớp chặn một loại lỗi: câu lọc chặn đọc nhầm, khóa chặn ghi sai, chính sách là lưới khi một câu quên lọc."
-      en: "It sounds right because the policy stops every wrong read, but it does not check where a reference points. Each layer stops one kind of mistake: filters stop wrong reads, keys stop wrong writes, the policy is the net when a query forgets its filter."
+      vi: "Chính sách nghe như đã đủ vì nó chặn mọi lần đọc nhầm, nhưng Postgres kiểm khóa ngoại bên dưới chính sách: phép kiểm đó không bị bảo mật theo dòng (row-level security) lọc. Vì vậy chỉ khóa ngoại ghép `(tenant_id, invoice_id)` mới chặn một khoản trả của người bán 3 trỏ tới hóa đơn của người bán 2. Index trên `tenant_id` không liên quan: index làm câu nhanh, không giữ luật."
+      en: "The policy sounds like enough because it stops every wrong read, but Postgres checks foreign keys underneath the policy: that check is not filtered by row-level security. So only the composite foreign key `(tenant_id, invoice_id)` stops a payment of seller 3 from pointing to an invoice of seller 2. An index on `tenant_id` is beside the point: an index makes queries fast, it does not enforce a rule."
   - q:
       vi: "Một báo cáo nối `invoices` với `payments` chỉ bằng `p.invoice_id = i.id`, rồi lọc `i.tenant_id = 2`. Kết quả sai thế nào?"
       en: "A report joins `invoices` to `payments` only on `p.invoice_id = i.id`, then filters `i.tenant_id = 2`. How is the result wrong?"
@@ -84,8 +85,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nhiều người nghĩ một điều kiện tenant ở WHERE là đủ cho cả câu. Thật ra WHERE chỉ lọc bảng mà nó nhắc tới; bảng kia vẫn khớp theo số hóa đơn ở mọi khách. Trong lab, câu này ra 12 dòng thay vì 4."
-      en: "Many people think one tenant condition in WHERE covers the whole query. In fact WHERE only filters the table it names; the other table still matches by invoice number at every tenant. In the lab this query gives 12 rows instead of 4."
+      vi: "`i.tenant_id = 2` chỉ lọc `invoices`; `payments` vẫn khớp theo số hóa đơn ở mọi khách, vì số hóa đơn 1–4 lặp lại ở cả ba người bán. Câu không báo lỗi: nối một cột vẫn là SQL hợp lệ, khóa ngoại chỉ kiểm lúc ghi. Trong lab, 4 hóa đơn của người bán 2 mỗi cái khớp 3 khoản trả, ra 4 × 3 = 12 dòng thay vì 4. Sửa bằng `p.tenant_id = i.tenant_id` trong điều kiện nối."
+      en: "`i.tenant_id = 2` filters only `invoices`; `payments` still matches by invoice number at every tenant, because invoice numbers 1–4 repeat at all three sellers. The query raises no error: a one-column join is valid SQL, and the foreign key is checked only on writes. In the lab, seller 2's 4 invoices each match 3 payments, giving 4 × 3 = 12 rows instead of 4. The fix is `p.tenant_id = i.tenant_id` in the join condition."
 ---
 ## Mở bài
 
@@ -142,6 +143,8 @@ Bản đồ chủ đề: mỗi lớp một nhóm, mỗi dòng một bài đào s
 - `e-ds-l5-11`
 
 Nhiều người nghĩ có một lớp là đủ. Thật ra chúng không thay nhau được: chính sách không kiểm khóa ngoại trỏ đi đâu, kiểm duy nhất và khóa ngoại cũng không đi qua chính sách, còn khóa thì không ngăn một câu đọc thiếu điều kiện. Silo và bridge đẩy phần lớn việc cô lập xuống hạ tầng; pool đặt nó vào dữ liệu, nên cần đủ cả ba.
+
+Hình từng bước cuối mục này dựng ba lớp theo đúng thứ tự trên, mỗi lớp cạnh loại lỗi nó chặn.
 
 ## Ví dụ
 
@@ -276,6 +279,8 @@ The topic map: one group per layer, one line per lesson that goes deep on it.
 - `e-ds-l5-11`
 
 Many people think one layer is enough. In fact they cannot replace each other: a policy does not check where a foreign key points, unique and foreign key checks do not go through the policy, and keys do not stop a query that reads without its condition. Silo and bridge push most isolation down into the infrastructure; a pool puts it into the data, so it needs all three.
+
+The step-through figure at the end of this section builds the three layers in that order, each beside the kind of mistake it stops.
 
 ## Example
 

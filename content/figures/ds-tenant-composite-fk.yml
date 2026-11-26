@@ -1,0 +1,54 @@
+# B2-3 (tools/v42/diagram-plan-v42.md): two columns must match, so an order cannot point at another seller's customer. Lessons:
+# e-ds-l2-06 (Ý chính), e-ds-l2-07 (Ý chính, variant `unique`, static). Data run on PGlite (tools/v42/b2check.log): the l2-06 lab
+# customers holds 3 sellers × 10, so customer 7 exists for sellers 1, 2, 3; the Example ex_orders (1, 1, 7) can only mean (1, 7)
+# (the key in step 2); an order of seller 1 naming a customer only seller 2 has (added (2, 11), then (1, 3, 11)) fails 23503.
+# Variant: the l2-07 lab table shoppers, where sellers 1 and 2 both hold an@mail.vn. v44 eye fixes (L805, E9/E21): the key is drawn
+# as two lines, tenant_id to tenant_id and id to customer_id, and the step-2 note points at the row it means. Source: https://www.postgresql.org/docs/18/ddl-constraints.html#DDL-CONSTRAINTS-FK
+title: { vi: "Khóa ngoại ghép giữ đơn và khách cùng một người bán", en: "A composite foreign key keeps an order and its customer with one seller" }
+caption:
+  vi: "Hai đường giữa CUSTOMERS và ORDERS là một khóa ngoại ghép FK (tenant_id, customer_id) → (tenant_id, id): hai cột phải khớp cùng lúc."
+  en: "The two lines between CUSTOMERS and ORDERS are one composite foreign key FK (tenant_id, customer_id) → (tenant_id, id): both columns must match at once."
+alt:
+  vi: "Khi nhiều khách chung bảng (pool), cột tenant_id chỉ ghi chủ của dòng; khóa ghép mới là thứ database kiểm. Khóa ngoại (tenant_id, customer_id) buộc đơn và khách cùng một người bán."
+  en: "In a pool, a tenant_id column only records the owner; composite keys are what the database checks. The foreign key (tenant_id, customer_id) forces an order and its customer to share a seller."
+nodes:
+  - { id: sel, shape: entity, label: SELLERS, fields: [{ name: id, pk: true }, name] }
+  - { id: cus, shape: entity, label: CUSTOMERS, fields: [{ name: tenant_id, pk: true, fk: true }, { name: id, pk: true }, name] }
+  - { id: ord, shape: entity, label: ORDERS, fields: [{ name: tenant_id, pk: true, fk: true }, { name: id, pk: true }, { name: customer_id, fk: true }] }
+  - id: g
+    shape: grid
+    label: "customers, id = 7"
+    head: [tenant_id, id]
+    cells: [["1", "7"], ["2", "7"], ["3", "7"]]
+    cellTone: { "0:0": new }
+  - { id: bad, shape: key, label: { vi: "đơn người bán 1", en: "seller 1's order" }, sub: { vi: "khách 7 → (1, 7)", en: "client 7 → (1, 7)" }, tone: live }
+  - { id: uq, shape: key, label: UNIQUE, sub: "(tenant_id, email)", tone: live }
+rows:
+  - [sel, cus, ord]
+  - [g, bad, uq]
+phone: { rows: [[sel], [cus], [ord], [g, bad, uq]] }
+edges:
+  - { from: "sel#0", to: "cus#0", link: true, ends: [one, zero-many], label: { vi: "có", en: "has" } }
+  - { from: "cus#0", to: "ord#0", link: true, ends: [one, zero-many], label: { vi: "đặt", en: "places" } }
+  - { from: "cus#1", to: "ord#2", link: true, ends: [null, null] }
+  - { from: bad, to: "g#0" }
+steps:
+  - say: { vi: "tenant_id đứng đầu mọi khóa.", en: "tenant_id leads every key." }
+    alt: { vi: "Khóa chính (tenant_id, id) cho mỗi người bán đánh số riêng, nên ba người bán cùng có khách số 7.", en: "The primary key (tenant_id, id) lets each seller number on its own, so three sellers all have customer 7." }
+    show: [sel, cus, ord, g]
+  - say: { vi: "Khóa ngoại ghép chặn tham chiếu chéo.", en: "The composite foreign key blocks cross-references." }
+    alt: { vi: "Khóa ngoại so cả tenant_id lẫn customer_id cùng lúc, nên đơn của người bán 1 ghi khách 7 chỉ trỏ tới (1, 7), không bao giờ tới khách của người bán 2.", en: "The foreign key compares tenant_id and customer_id together, so seller 1's order naming customer 7 points at (1, 7) and never at seller 2's customer." }
+    show: [sel, cus, ord, g, bad]
+variants:
+  unique:
+    show: [sel, cus, g, uq]
+    set:
+      cus: { label: SHOPPERS, fields: [{ name: tenant_id, pk: true, fk: true }, { name: id, pk: true }, email] }
+      g: { label: { vi: "shoppers: cùng một email", en: "shoppers: one email" }, head: [tenant_id, email], cells: [["1", an@mail.vn], ["2", an@mail.vn], ["3", An@Mail.vn]], cellTone: {} }
+    title: { vi: "Duy nhất trong một người bán", en: "Unique within one seller" }
+    caption:
+      vi: "UNIQUE (tenant_id, email) bắt đầu bằng tenant_id: hai người bán cùng có an@mail.vn, một người bán thì không có hai lần."
+      en: "UNIQUE (tenant_id, email) starts with tenant_id: two sellers may both have an@mail.vn, one seller cannot have it twice."
+    alt:
+      vi: "Luật duy nhất theo tenant cho hai người bán cùng có một email khách, nhưng không cho trùng trong một người bán."
+      en: "A per-tenant unique rule lets two sellers share a customer email, but never twice within one seller."

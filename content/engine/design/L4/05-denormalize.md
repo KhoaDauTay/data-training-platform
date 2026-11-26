@@ -8,6 +8,7 @@ title_en: When to denormalise - grain, star schemas, controlled copies
 kind: concept
 runtime: browser
 minutes: 15
+figures: [{ name: ds-star-schema, at: idea }]
 objectives:
   - vi: Nói được vì sao bảng báo cáo hay bảng tài liệu cố ý lưu lặp, và cái giá phải trả khi ghi.
     en: Say why reporting tables and document tables repeat data on purpose, and what it costs on writes.
@@ -77,8 +78,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì view thường tính lại mỗi lần đọc, nhưng materialized view lưu kết quả như một bảng: nhanh khi đọc, cũ cho tới lần làm mới kế tiếp. Đó chính là bản sao có kiểm soát."
-      en: "It sounds right because a plain view recomputes on every read, but a materialized view stores its result like a table: fast to read, stale until the next refresh. That is exactly a controlled copy."
+      vi: "View thường thì tính lại mỗi lần đọc, nhưng materialized view lưu kết quả lúc 9 giờ như một bảng, nên lúc 11 giờ vẫn trả số cũ. Nó cũng không báo lỗi: Postgres không theo dõi bảng nguồn để biết view đã cũ. Số chỉ mới sau `REFRESH MATERIALIZED VIEW`; vì vậy mỗi bản sao cần ghi rõ ai làm mới và lúc nào."
+      en: "A plain view recomputes on every read, but a materialized view stored its 9 o'clock result like a table, so at 11 it still returns the old figure. It raises no error either: Postgres does not watch the source tables to know the view is stale. The figure updates only after `REFRESH MATERIALIZED VIEW`; that is why every copy needs a note saying who refreshes it and when."
   - q:
       vi: "Bảng fact `sales` có grain \"một dòng = một món trong một đơn\". Cột nào KHÔNG nên đặt vào nó?"
       en: "Fact table `sales` has the grain \"one row = one item in one order\". Which column should NOT go in it?"
@@ -89,8 +90,8 @@ quiz:
     answer: 1
     trap: 2
     why:
-      vi: "Nhiều người nghĩ khóa ngoại tới chiều dữ liệu là thứ thừa trong bảng fact. Thật ra số đo phải cùng grain với dòng: tổng cả đơn lặp ở mọi món và bị cộng nhiều lần khi `sum`; nó thuộc về một fact ở grain đơn hàng."
-      en: "Many people think foreign keys to dimensions are the redundant part of a fact table. In fact measures must share the row's grain: an order total repeats on every item and is added several times by `sum`; it belongs to a fact at order grain."
+      vi: "`product_id` không thừa: nó là khóa ngoại tới bảng chiều sản phẩm, cách bảng fact nối ra các chiều. `qty` cũng đúng chỗ vì nó đo chính món đó. `order_total` thì đo cả đơn, khác mức chi tiết (grain) của dòng: một đơn ba món lặp tổng ba lần, và `sum(order_total)` cộng nó ba lần. Tổng của đơn thuộc về một bảng fact ở grain đơn hàng, hoặc tính bằng `sum` trên các món."
+      en: "`product_id` is not redundant: it is the foreign key to the product dimension, the way a fact table joins out to its dimensions. `qty` belongs too, since it measures that item. `order_total` measures the whole order, a different grain from the row: a three-item order repeats the total three times, and `sum(order_total)` adds it three times. The order total belongs in a fact table at order grain, or is computed with `sum` over the items."
 ---
 ## Mở bài
 
@@ -98,13 +99,15 @@ Cấp 4 dạy tách bảng để mỗi sự thật nằm một chỗ, vậy mà 
 
 ## Ý chính
 
-Phi chuẩn hóa là cố ý lưu một sự thật ở nhiều chỗ để đọc ít phép nối hơn. Cái giá luôn trả ở phía ghi: mỗi lần nguồn đổi, mọi bản sao phải đổi theo, nếu không chúng lệch nhau như dị thường sửa của bài 1. Vì vậy câu hỏi đúng không phải "có chuẩn không", mà "bản sao này được ai giữ cho khớp".
+Phi chuẩn hóa là cố ý lưu một sự thật ở nhiều chỗ để đọc ít phép nối hơn. Cái giá luôn trả ở phía ghi: mỗi lần nguồn đổi, mọi bản sao phải đổi theo, nếu không chúng lệch nhau như dị thường sửa trong bài Dị thường dữ liệu và dạng chuẩn 1. Vì vậy câu hỏi đúng không phải "có chuẩn không", mà "bản sao này được ai giữ cho khớp".
 
 Báo cáo dùng **star schema**: một bảng **fact** ở giữa (mỗi dòng là một sự kiện đo được: một món bán ra) và các bảng **chiều** quanh nó (sản phẩm, cửa hàng, ngày). Điều đầu tiên phải chốt là **grain**: một dòng fact nghĩa là gì. Mọi số đo phải cùng grain, nếu không `sum` sẽ cộng lặp. Nút Nâng cao C2 "Star schema và grain" ở Lộ trình học đi sâu phần này.
 
 Ba cách giữ bản sao trong Postgres. **Materialized view**: lưu kết quả một truy vấn, đọc nhanh như bảng, cũ cho tới khi `REFRESH`. **Cột generated**: tính từ các cột cùng dòng, database tự cập nhật, không ghi tay được. **Trigger**: chạy code mỗi khi nguồn đổi, mạnh nhất và cũng dễ sai nhất. Với dữ liệu luôn đọc cả khối, một tài liệu `jsonb` gom các phần lại cũng là một dạng phi chuẩn hóa hợp lý.
 
 Khi nào đáng làm: đọc nhiều hơn ghi rất nhiều, phép nối hay phép gom đo được là chậm bằng `EXPLAIN ANALYZE` chứ không phải đoán, và người dùng chấp nhận số hơi cũ. Thử theo thứ tự rẻ trước: viết lại câu và thêm index, rồi materialized view, cuối cùng mới tới cột hay bảng bản sao giữ bằng trigger. Mỗi bản sao cần ba dòng ghi chú: nguồn là bảng nào, làm mới lúc nào, và trễ bao lâu thì chấp nhận được. Thiếu ba dòng đó, bản sao sớm muộn sẽ nói dối mà không ai biết. Vòng đo và sửa đó là bài `e-pg-l5-18`.
+
+Hình cuối mục này vẽ star schema của lab: `sales` ở giữa, `products` và `stores` quanh nó, và báo cáo doanh thu theo thành phố và loại hàng.
 
 ## Ví dụ
 
@@ -150,7 +153,7 @@ REFRESH MATERIALIZED VIEW ex_total;
 SELECT revenue FROM ex_total;
 ```
 
-Câu sai ra 1130, câu đúng ra 1230.
+Câu sai ra 1130, tổng của năm dòng bán ban đầu; câu đúng ra 1230, vì đã cộng thêm dòng mới 5 × 20 = 100.
 
 Đọc một materialized view tạo `WITH NO DATA` trước lần làm mới đầu tiên:
 
@@ -186,13 +189,15 @@ Level 4 teaches splitting tables so each fact lives in one place, yet data wareh
 
 ## Key idea
 
-Denormalising means storing one fact in several places on purpose so reads need fewer joins. The price is always paid on writes: whenever the source changes, every copy must follow, or they drift apart like the update anomaly of lesson 1. So the right question is not "is it normalised" but "who keeps this copy in step".
+Denormalising means storing one fact in several places on purpose so reads need fewer joins. The price is always paid on writes: whenever the source changes, every copy must follow, or they drift apart like the update anomaly in the lesson on data anomalies and first normal form. So the right question is not "is it normalised" but "who keeps this copy in step".
 
 Reporting uses a **star schema**: a **fact** table in the middle (each row a measured event: one item sold) and **dimension** tables around it (product, store, date). The first thing to settle is the **grain**: what one fact row means. Every measure must share that grain, or `sum` adds things twice. The advanced node C2 "Star schemas and grain" on the learning path goes deeper.
 
 Three ways to keep copies in Postgres. **Materialized view**: stores a query's result, reads as fast as a table, stale until `REFRESH`. **Generated column**: computed from columns of the same row, updated by the database, never written by hand. **Trigger**: runs code whenever the source changes, the most powerful and the easiest to get wrong. For data always read as a whole, a `jsonb` document that gathers the parts is a sound form of denormalisation too.
 
 When it is worth it: reads far outnumber writes, the join or aggregation is measured as slow with `EXPLAIN ANALYZE` rather than guessed, and users accept slightly old numbers. Try the cheap things first: rewrite the query and add an index, then a materialized view, and only last a copied column or table kept by a trigger. Every copy needs three lines of notes: which table is its source, when it is refreshed, and how much delay is acceptable. Without those three lines a copy will sooner or later lie and nobody will notice. That measure-and-fix loop is lesson `e-pg-l5-18`.
+
+The figure at the end of this section draws the lab's star schema: `sales` in the middle, `products` and `stores` around it, and the revenue report by city and category.
 
 ## Example
 
@@ -238,7 +243,7 @@ REFRESH MATERIALIZED VIEW ex_total;
 SELECT revenue FROM ex_total;
 ```
 
-The wrong query returns 1130, the fixed one 1230.
+The wrong query returns 1130, the total of the five original sales; the fixed one returns 1230, because it adds the new sale, 5 × 20 = 100.
 
 Reading a materialized view created `WITH NO DATA` before its first refresh:
 

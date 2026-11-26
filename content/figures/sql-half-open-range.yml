@@ -1,0 +1,65 @@
+# B3-11 (tools/v42/diagram-plan-v42.md): a day on a timestamp column is a range, not a point. Lessons: date_math (Ý chính),
+# date_bucket (Ý chính, variant `month` = step 2 with date_trunc's count; a variant showing only two nodes left the others' rows blank). Data (lab, PGlite; tools/v42/b3check.log): payments.paid_at BETWEEN '2026-10-01'
+# AND '2026-10-31' = 218; >= '2026-10-01' AND < '2026-11-01' = 223; date_trunc('month', paid_at) = '2026-10-01' = 223 (variant);
+# the 5 payments on 31 Oct are at 08:15, 12:25, 14:00, 14:37, 16:33. Bars to scale (10 = 223), the note is the real count.
+# Eye HO-1..3: the 31 Oct payments are a timeline grid, one row per instant, with [ = bound included and ) = bound excluded
+# (the glyph table has no filled/hollow dots); step 1 already shows it and both counts, step 2 adds the half-open key.
+# Source: https://www.postgresql.org/docs/current/functions-datetime.html
+title: { vi: "Một ngày trên cột timestamp là một khoảng", en: "A day on a timestamp column is a range" }
+caption:
+  vi: "Khoản thanh toán tháng 10 trong payments của lab. '2026-10-31' là nửa đêm đầu ngày 31, nên BETWEEN dừng trước năm khoản của ngày đó."
+  en: "October payments in the lab's payments table. '2026-10-31' is the midnight that starts the 31st, so BETWEEN stops before that day's five payments."
+alt:
+  vi: "Một ngày trên cột có giờ là một khoảng, nên viết >= đầu và < đầu kỳ sau. Kết quả: 223 khoản, không phải 218."
+  en: "A day on a column with a time is a range, so write >= start and < the next start. Result: 223 payments, not 218."
+nodes:
+  - { id: bt, shape: key, mono: true, label: "BETWEEN … '10-31'", sub: { vi: "dừng ở 00:00", en: "stops at 00:00" }, tone: dead }
+  - { id: ho, shape: key, mono: true, label: "< '11-01'", sub: { vi: "lấy cả ngày", en: "the whole day" }, tone: live }
+  - id: tl
+    shape: grid
+    label: { vi: "tháng 10 trên trục giờ", en: "October on the clock" }
+    sub: { vi: "[ lấy mốc, ) không lấy mốc", en: "[ bound in, ) bound out" }
+    head: [{ vi: "mốc", en: instant }, BETWEEN, { vi: "nửa mở", en: half-open }]
+    cells:
+      - ["10-01 00:00", { vi: "[ lấy", en: "[ in" }, { vi: "[ lấy", en: "[ in" }]
+      - ["10-31 00:00", { vi: "] dừng", en: "] stops" }, { vi: "đi tiếp", en: "goes on" }]
+      - ["08:15–16:33", { vi: "bỏ 5 khoản", en: "drops 5" }, { vi: "lấy 5 khoản", en: "takes 5" }]
+      - ["11-01 00:00", "", { vi: ") không lấy", en: ") out" }]
+    colTone: [null, null, ghost]
+    cellTone: { "2:1": dead }
+  - id: n
+    shape: bars
+    label: { vi: "khoản tháng 10", en: "October payments" }
+    sub: { vi: "chênh 5 khoản của ngày 31", en: "5 payments of the 31st apart" }
+    items:
+      - { label: BETWEEN, value: 9.8, note: "218", tone: dead }
+      - { label: { vi: "nửa mở", en: half-open }, value: 10, note: "223", tone: live }
+rows:
+  - [bt, ho]
+  - [tl]
+  - [n]
+steps:
+  - say: { vi: "'2026-10-31' là nửa đêm đầu ngày.", en: "'2026-10-31' is the midnight that starts the day." }
+    show: [bt, tl, n]
+    alt: { vi: "Trên cột timestamp, mốc ngày là một thời điểm, nên BETWEEN bỏ mọi khoản sau 00:00 ngày 31.", en: "On a timestamp column a date is an instant, so BETWEEN drops every payment after 00:00 on the 31st." }
+  - say: { vi: "Nửa mở: >= đầu tháng, < đầu tháng sau.", en: "Half-open: >= first day, < next month's first day." }
+    show: [bt, ho, tl, n]
+    alt: { vi: "Mốc cuối là đầu ngày kế tiếp và không được lấy, nên đủ cả ngày cuối mà không cần biết giây cuối là mấy giờ.", en: "The end is the next day's start and is excluded, so the whole last day is in without knowing its last second." }
+    set:
+      tl: { colTone: [null, ghost, null], cellTone: { "2:2": live } }
+variants:
+  month:
+    step: 1
+    title: { vi: "Một tháng là khoảng nửa mở", en: "A month is a half-open range" }
+    caption:
+      vi: "Khoản thanh toán tháng 10 trong payments của lab: date_trunc('month') đếm đúng như khoảng [10-01, 11-01)."
+      en: "October payments in the lab's payments table: date_trunc('month') counts exactly like the range [10-01, 11-01)."
+    alt:
+      vi: "date_trunc('month') cho mốc đầu tháng; tháng là khoảng nửa mở từ mốc đó tới mốc tháng sau. Kết quả: 223 khoản, còn BETWEEN tới '10-31' chỉ được 218."
+      en: "date_trunc('month') gives the month's start; a month is the half-open range up to the next month's start. Result: 223 payments, while BETWEEN up to '10-31' gets only 218."
+    set:
+      ho: { label: "[10-01, 11-01)", sub: { vi: "date_trunc tháng", en: "date_trunc month" } }
+      n:
+        items:
+          - { label: BETWEEN, value: 9.8, note: "218", tone: dead }
+          - { label: date_trunc, value: 10, note: "223", tone: live }

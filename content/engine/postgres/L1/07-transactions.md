@@ -58,8 +58,8 @@ lab:
         vi: "`UPDATE ... SET balance = balance - 20 WHERE id = 2` rồi thêm `RETURNING`."
         en: "`UPDATE ... SET balance = balance - 20 WHERE id = 2`, then add `RETURNING`."
       fact:
-        vi: "Còn 60. Nếu bạn thử phí 500 trước, câu đó lỗi 23514 và cả transaction bị hủy: mọi câu sau báo \"current transaction is aborted\" tới khi `ROLLBACK TO SAVEPOINT before_fee`."
-        en: "60 left. Had you tried the 500 fee first, that statement fails with 23514 and the whole transaction is aborted: every later statement reports \"current transaction is aborted\" until `ROLLBACK TO SAVEPOINT before_fee`."
+        vi: "Còn 60 (80 − 20). Nếu bạn thử phí 500 trước, số dư thành 80 − 500 < 0, vi phạm `CHECK (balance >= 0)` (mã lỗi 23514), và cả transaction bị hủy: mọi câu sau báo \"current transaction is aborted\" tới khi `ROLLBACK TO SAVEPOINT before_fee` quay về điểm lưu trước khoản phí."
+        en: "60 left (80 − 20). Had you tried the 500 fee first, the balance would become 80 − 500 < 0, breaking `CHECK (balance >= 0)` (error code 23514), and the whole transaction is aborted: every later statement reports \"current transaction is aborted\" until `ROLLBACK TO SAVEPOINT before_fee` goes back to the savepoint before the fee."
 quiz:
   - q:
       vi: "Trong một transaction, câu thứ hai báo lỗi. Bạn gõ tiếp một `SELECT` mà chưa `ROLLBACK`. Chuyện gì xảy ra?"
@@ -71,8 +71,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì `SELECT` chỉ đọc, chẳng liên quan gì tới câu bị lỗi; nhưng sau lỗi, transaction ở trạng thái hỏng: mọi câu nhận lỗi 25P02 \"current transaction is aborted\" cho tới `ROLLBACK` (hoặc `ROLLBACK TO SAVEPOINT`). Gõ `COMMIT` lúc này cũng chỉ là rollback."
-      en: "It sounds right because a `SELECT` only reads and has nothing to do with the failed statement, but after an error the transaction is aborted: every statement gets 25P02 \"current transaction is aborted\" until `ROLLBACK` (or `ROLLBACK TO SAVEPOINT`). Typing `COMMIT` at that point also just rolls back."
+      vi: "\"`SELECT` chạy bình thường\" nghe hợp lý vì nó chỉ đọc, chẳng liên quan gì tới câu bị lỗi; nhưng sau một lỗi, cả transaction bị đánh dấu hỏng (aborted). Mọi câu sau, kể cả `SELECT`, nhận lỗi 25P02 \"current transaction is aborted\" cho tới `ROLLBACK` (hoặc `ROLLBACK TO SAVEPOINT`). Postgres cũng không tự giữ phần đã chạy được: gõ `COMMIT` lúc này chỉ là rollback."
+      en: "\"The `SELECT` runs normally\" sounds right because it only reads and has nothing to do with the failed statement, but after an error the whole transaction is marked aborted. Every later statement, `SELECT` included, gets 25P02 \"current transaction is aborted\" until `ROLLBACK` (or `ROLLBACK TO SAVEPOINT`). Postgres does not keep the part that worked either: typing `COMMIT` at that point just rolls back."
   - q:
       vi: "Phiên A đã `UPDATE` một dòng nhưng chưa `COMMIT`. Phiên B đọc dòng đó. B thấy gì?"
       en: "Session A has run `UPDATE` on a row but not `COMMIT`. Session B reads that row. What does B see?"
@@ -83,8 +83,8 @@ quiz:
     answer: 1
     trap: 2
     why:
-      vi: "Nghe hợp lý vì A đang giữ lock trên dòng đó, nhưng lock ấy chỉ chặn người ghi khác. Thay đổi chưa commit không ai khác thấy, và nhờ MVCC, đọc không chờ ghi: B đọc phiên bản đã commit mà không bị chặn."
-      en: "It sounds right because A holds a lock on that row, but that lock only blocks other writers. Uncommitted changes are invisible to everyone else, and thanks to MVCC, readers do not wait for writers: B reads the committed version without blocking."
+      vi: "\"B phải chờ\" nghe hợp lý vì A đang giữ row lock trên dòng đó, nhưng lock ấy chỉ chặn phiên khác muốn ghi dòng đó. `UPDATE` của A không sửa đè dòng cũ mà tạo một phiên bản mới; cách này gọi là MVCC (multi-version concurrency control, nhiều phiên bản cho truy cập đồng thời). B đọc phiên bản đã commit trước đó mà không phải chờ; phiên bản mới của A chưa commit nên không ai khác thấy."
+      en: "\"B must wait\" sounds right because A holds a row lock on that row, but that lock only blocks other sessions that want to write the row. A's `UPDATE` does not overwrite the old row, it creates a new version; this is MVCC (multi-version concurrency control). B reads the previously committed version without waiting; A's new version is not committed yet, so nobody else sees it."
   - q:
       vi: "Mức cô lập mặc định là Read Committed. Trong một transaction, bạn chạy cùng một câu `SELECT count(*)` hai lần; giữa hai lần, phiên khác thêm một dòng và `COMMIT`. Lần thứ hai thấy gì?"
       en: "The default isolation level is Read Committed. Inside one transaction you run the same `SELECT count(*)` twice; in between, another session inserts a row and runs `COMMIT`. What does the second run see?"
@@ -95,8 +95,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì ta hay hình dung transaction là một khối tách khỏi thế giới bên ngoài, nhưng ở Read Committed mỗi câu lệnh lấy một ảnh chụp (snapshot) mới, nên câu sau thấy những gì đã commit trước nó. Muốn cả transaction thấy cùng một ảnh chụp thì dùng `REPEATABLE READ` (học kỹ ở L4)."
-      en: "It sounds right because a transaction is often pictured as sealed off from the outside world, but under Read Committed each statement takes a fresh snapshot, so a later statement sees whatever was committed before it. For one snapshot across the whole transaction use `REPEATABLE READ` (covered in depth in L4)."
+      vi: "\"Cùng con số\" nghe hợp lý vì ta hay hình dung transaction là một khối tách khỏi bên ngoài, nhưng ở mức cô lập (isolation level) Read Committed, mỗi câu lệnh lấy một snapshot mới: ảnh chụp những gì đã commit ngay lúc câu bắt đầu. Dòng của phiên kia commit trước lần đếm thứ hai, nên lần đó thấy nó. Dữ liệu đổi giữa hai câu là bình thường ở mức này, không gây lỗi. Muốn cả transaction dùng một snapshot thì chọn `REPEATABLE READ` (học kỹ ở L4)."
+      en: "\"The same number\" sounds right because a transaction is often pictured as sealed off from the outside, but under the Read Committed isolation level each statement takes a fresh snapshot: a picture of what was committed when the statement starts. The other session's row is committed before the second count, so that count sees it. Data changing between two statements is normal at this level and raises no error. For one snapshot across the whole transaction choose `REPEATABLE READ` (covered in depth in L4)."
 ---
 ## Mở bài
 

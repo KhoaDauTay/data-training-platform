@@ -8,6 +8,7 @@ title_en: Capstone - Lantern Market from pool to hybrid
 kind: capstone
 runtime: browser
 minutes: 30
+figures: [{ name: ds-pool-to-hybrid, at: practice }]
 objectives:
   - vi: Tìm shard quá tải và người bán làm nó quá tải từ dữ liệu đơn hàng.
     en: Find the overloaded shard, and the seller overloading it, from the order data.
@@ -89,8 +90,8 @@ lab:
       check: rows
       ordered: true
       hint:
-        vi: "Như bài `e-ds-l5-10`: một `UPDATE` có `AND version = 1`."
-        en: "As in lesson `e-ds-l5-10`: one `UPDATE` with `AND version = 1`."
+        vi: "Một `UPDATE` có `AND version = 1`: nếu ai đó đã đổi dòng trước bạn, `version` không còn là 1 và câu không sửa dòng nào."
+        en: "One `UPDATE` with `AND version = 1`: if someone changed the row before you, `version` is no longer 1 and the statement changes no row."
     - name: { vi: Index trang, en: Page index }
       task:
         vi: "Trang của người bán 1 luôn hỏi đơn của họ trong một khoảng ngày. Tạo index trên `orders (tenant_id, placed_on)`. Đừng đặt tên index."
@@ -122,8 +123,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì ngày là thứ lọc hẹp nhất trong một tuần. Nhưng ngày đầu index thì một tuần chứa đơn của mọi người bán xen nhau. Như ở Postgres, cột so bằng (`tenantId`) đứng đầu, khoảng ngày đứng sau; khóa shard cũng nên bắt đầu bằng `tenantId` (bài `e-mg-l3-19`)."
-      en: "It sounds right because the date is the narrowest filter within a week. But with the date first, one week holds every seller's orders interleaved. As in Postgres, the equality field (`tenantId`) comes first and the date range second; the shard key should start with `tenantId` too (lesson `e-mg-l3-19`)."
+      vi: "Ngày đứng đầu nghe hợp lý vì một tuần là bộ lọc hẹp, nhưng khi đó một tuần chứa đơn của cả 50 người bán xen nhau, nên index phải đọc hết rồi mới lọc người bán. `{ _id: 1 }` duy nhất nhưng không biết gì về người bán hay ngày. Như ở Postgres, trường so bằng (`tenantId`) đứng đầu, khoảng ngày đứng sau, nên đơn của một người bán trong một tuần nằm liền nhau. Khóa shard cũng nên bắt đầu bằng `tenantId` (`e-mg-l3-19`)."
+      en: "The date first sounds right because a week is a narrow filter, but then one week holds the orders of all 50 sellers interleaved, so the index must read them all before filtering the seller. `{ _id: 1 }` is unique but knows nothing about seller or date. As in Postgres, the equality field (`tenantId`) comes first and the date range second, so one seller's week sits together. The shard key should start with `tenantId` too (`e-mg-l3-19`)."
   - q:
       vi: "Trên DynamoDB, khóa nào giữ đơn của người bán 1 cùng nhau để đọc bằng Query, không cần Scan?"
       en: "On DynamoDB, which key keeps seller 1's orders together so they are read with a Query, not a Scan?"
@@ -134,8 +135,8 @@ quiz:
     answer: 0
     trap: 1
     why:
-      vi: "Nhiều người nghĩ lọc theo người bán sau là đủ. Thật ra bộ lọc chạy sau khi đọc, nên Scan vẫn đọc và tính phí đơn của mọi người bán. Tiền tố người bán trong khóa phân vùng cho một Query gọn, và quyền `dynamodb:LeadingKeys` chỉ giữ được người bán trong phần của họ khi mọi khóa bắt đầu bằng người bán (bài `e-dy-l3-14`)."
-      en: "Many people think filtering by seller afterwards is enough. In fact a filter runs after the read, so a Scan still reads and bills every seller's orders. A seller prefix in the partition key gives one tight Query, and the `dynamodb:LeadingKeys` permission can only keep a seller inside their own share when every key starts with the seller (lesson `e-dy-l3-14`)."
+      vi: "Lọc theo người bán sau nghe đủ, nhưng bộ lọc chạy sau khi đọc: với PK (partition key) `ORDER#<id>`, đơn của người bán 1 rải khắp các partition, nên phải Scan, đọc và trả phí cho đơn của mọi người bán. PK `<date>` thì gom một ngày của mọi người bán, và một tuần là bảy Query. PK `TENANT#1` đặt mọi đơn của người bán 1 trong một partition (phân vùng vật lý), sắp theo ngày trong SK (sort key), nên một Query đọc đúng tuần. Quyền `dynamodb:LeadingKeys` cũng chỉ giữ được người bán trong phần của họ khi mọi partition key bắt đầu bằng người bán (`e-dy-l3-14`)."
+      en: "Filtering by seller afterwards sounds enough, but a filter runs after the read: with PK (partition key) `ORDER#<id>`, seller 1's orders are spread over every partition, so it takes a Scan that reads and bills every seller's orders. PK `<date>` groups one day of every seller, and a week is seven Queries. PK `TENANT#1` puts all of seller 1's orders in one partition, sorted by date in the SK (sort key), so one Query reads exactly the week. The `dynamodb:LeadingKeys` permission also keeps a seller inside their own share only when every partition key starts with the seller (`e-dy-l3-14`)."
 ---
 ## Mở bài
 
@@ -148,6 +149,8 @@ Ba bảng: `shards` (`s1`, `s2` dùng chung, `s3` riêng), `directory` (50 ngư�
 Sáu bước. Bước 1 đo tải theo shard. Bước 2 và 3 đặt bảo mật theo dòng và chính sách `seller_rows` (chấm bằng catalog); `NULLIF(…, '')` làm chính sách đóng khi chưa đặt khách: không dòng nào, không báo lỗi. Bước 4 chuyển người bán 1 sang `s3` bằng một dòng danh mục có kiểm phiên bản. Bước 5 tạo index bắt đầu bằng `tenant_id`, và bước 6 hỏi tuần cuối của người bán 1, có thanh tốc độ.
 
 Lab chạy bằng superuser, nên chính sách không lọc câu của bạn ở bước 6; cách thử nó bằng một vai trò thường có ở `e-pg-l5-19`, cách tách người bán lớn ra partition riêng ở `e-pg-l4-20`. Cả cụm thật (nhiều shard, chép dữ liệu) không chạy trong trình duyệt: ở đây danh mục và dữ liệu là một database.
+
+Hình từng bước cuối mục này vẽ số đơn theo từng người bán (người bán 1 nặng gấp mười hai lần người kế tiếp), rồi bước 4: một dòng danh mục đưa họ sang `s3`.
 
 ## Tóm tắt
 
@@ -170,6 +173,8 @@ Three tables: `shards` (`s1`, `s2` shared, `s3` dedicated), `directory` (50 sell
 Six steps. Step 1 measures load per shard. Steps 2 and 3 turn on row-level security and the `seller_rows` policy (graded on the catalog); `NULLIF(…, '')` makes the policy closed when no tenant is set: no rows, no error. Step 4 moves seller 1 to `s3` with one version-checked catalog row. Step 5 creates an index that starts with `tenant_id`, and step 6 asks for seller 1's last week, with a speed bar.
 
 The lab runs as a superuser, so the policy does not filter your query in step 6; how to test it with a normal role is in `e-pg-l5-19`, and how to give a big seller its own partition is in `e-pg-l4-20`. The real cluster (several shards, data copies) does not run in the browser: here the catalog and the data are one database.
+
+The step-through figure at the end of this section draws the orders per seller (seller 1 is twelve times the next one), then step 4: one catalog row moves them to `s3`.
 
 ## Recap
 

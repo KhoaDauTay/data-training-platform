@@ -58,8 +58,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì người ta quen nghĩ mỗi bảng có một khóa, nhưng A, B, C quyết định lẫn nhau theo vòng, nên mỗi cái ghép với D đều thành siêu khóa tối thiểu. D không nằm ở vế phải nào nên có trong cả ba khóa."
-      en: "It sounds right because people expect one key per table, but A, B and C determine each other in a cycle, so each of them with D is a minimal superkey. D is on no right side, so it is in all three keys."
+      vi: "\"Một khóa\" nghe hợp lý vì người ta quen nghĩ mỗi bảng có một khóa, nhưng A, B, C quyết định lẫn nhau theo vòng: từ A ra B, từ B ra C, từ C lại ra A. Vì thế bao đóng của `{A}`, `{B}` hay `{C}` đều là `{A, B, C}`. D không nằm ở vế phải nào, nên phải có trong mọi khóa; ghép D với bất kỳ một trong ba là đủ cả bốn thuộc tính, cho ba khóa ứng viên. `{A, B, C, D}` là siêu khóa nhưng không tối thiểu: bỏ B và C vẫn đủ."
+      en: "\"One key\" sounds right because people expect one key per table, but A, B and C determine each other in a cycle: A gives B, B gives C, C gives A again. So the closure of `{A}`, `{B}` or `{C}` is `{A, B, C}`. D is on no right side, so it must be in every key; D with any one of the three covers all four attributes, giving three candidate keys. `{A, B, C, D}` is a superkey but not minimal: dropping B and C still covers everything."
   - q:
       vi: "Khóa là `(student_id, course_id)` và có `course_id → course_title`. Đó là phụ thuộc gì?"
       en: "The key is `(student_id, course_id)` and `course_id → course_title` holds. What kind of dependency is that?"
@@ -70,8 +70,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nhiều người gọi mọi phụ thuộc \"đi qua một cột khác\" là bắc cầu. Thật ra ở đây `course_title` phụ thuộc một phần của khóa ghép: đó là phụ thuộc bộ phận, thứ mà 2NF loại bỏ. Bắc cầu là đi qua một cột không thuộc khóa."
-      en: "Many people call any dependency that \"goes through another column\" transitive. In fact here `course_title` depends on part of the composite key: a partial dependency, the thing 2NF removes. Transitive means going through a non-key column."
+      vi: "Nhiều người gọi mọi phụ thuộc \"đi qua một cột khác\" là bắc cầu, nhưng bắc cầu là khóa → một cột không thuộc khóa → cột khác. Ở đây `course_id` là một phần của chính khóa ghép, và chỉ phần đó đã đủ quyết định `course_title`: đó là phụ thuộc bộ phận (partial dependency), thứ mà dạng chuẩn 2 (2NF) loại bỏ. Nó cũng không tầm thường, vì `course_title` không nằm trong vế trái."
+      en: "Many people call any dependency that \"goes through another column\" transitive, but transitive means key → a non-key column → another column. Here `course_id` is part of the composite key itself, and that part alone determines `course_title`: a partial dependency, the thing second normal form (2NF) removes. It is not trivial either, since `course_title` is not on the left side."
   - q:
       vi: "Phủ tối thiểu của `{A → BC, B → C, A → B}` là gì?"
       en: "What is the minimal cover of `{A → BC, B → C, A → B}`?"
@@ -82,8 +82,8 @@ quiz:
     answer: 0
     trap: 1
     why:
-      vi: "Tách vế phải xong, nhiều người dừng lại và giữ `A → C`. Thật ra `A → C` suy ra được từ `A → B` và `B → C` (bắc cầu) nên là thừa; phủ tối thiểu còn đúng hai phụ thuộc."
-      en: "After splitting the right sides, many people stop and keep `A → C`. In fact `A → C` follows from `A → B` and `B → C` (transitivity), so it is redundant; the minimal cover keeps just two dependencies."
+      vi: "Bước đầu của phủ tối thiểu (minimal cover) là tách vế phải: `A → BC` thành `A → B` và `A → C`. Tách xong nhiều người dừng lại và giữ `A → C`, nhưng `A → C` suy ra được từ `A → B` và `B → C` (bắc cầu) nên thừa; `A → B` ghi hai lần cũng chỉ giữ một. Còn đúng hai phụ thuộc `{A → B, B → C}`. Giữ `A → BC` thì sai luật \"mỗi vế phải một thuộc tính\"."
+      en: "The first step of a minimal cover is splitting right sides: `A → BC` becomes `A → B` and `A → C`. Many people stop there and keep `A → C`, but `A → C` follows from `A → B` and `B → C` (transitivity), so it is redundant; `A → B` written twice is kept once. Exactly two dependencies remain, `{A → B, B → C}`. Keeping `A → BC` breaks the rule \"one attribute per right side\"."
   - q:
       vi: "Hai tập phụ thuộc F và G khi nào tương đương?"
       en: "When are two dependency sets F and G equivalent?"
@@ -94,8 +94,8 @@ quiz:
     answer: 1
     trap: 2
     why:
-      vi: "Nghe hợp lý vì hai tập giống hệt chắc chắn tương đương, nhưng điều ngược lại không cần: `{A → BC}` và `{A → B, A → C}` khác chữ mà vẫn tương đương. Kiểm bằng bao đóng theo cả hai chiều."
-      en: "It sounds right because identical sets are surely equivalent, but the converse is not needed: `{A → BC}` and `{A → B, A → C}` differ in text yet are equivalent. Check with closures in both directions."
+      vi: "\"Giống hệt từng dòng\" nghe hợp lý vì hai tập giống hệt chắc chắn tương đương, nhưng không bắt buộc: `{A → BC}` và `{A → B, A → C}` khác chữ, khác cả số phụ thuộc (1 và 2), mà vẫn tương đương, vì luật hợp và luật tách đi qua lại được. Nên đếm số phụ thuộc cũng không nói gì. Cách kiểm: với mỗi phụ thuộc `L → R` của tập này, R phải nằm trong bao đóng của L tính theo tập kia, theo cả hai chiều."
+      en: "\"Identical line by line\" sounds right because identical sets are surely equivalent, but it is not required: `{A → BC}` and `{A → B, A → C}` differ in text and even in count (1 and 2) yet are equivalent, since the union and decomposition rules go back and forth. So counting dependencies tells you nothing. The check: for each `L → R` of one set, R must be in the closure of L computed with the other set, both ways."
   - q:
       vi: "Bảng `users` có `id` tự tăng làm khóa chính. Cột `email` cũng xác định duy nhất một người. Nên làm gì với `email`?"
       en: "Table `users` has an auto-generated `id` as primary key. Column `email` also identifies one person. What should you do with `email`?"
@@ -106,8 +106,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nhiều người nghĩ có khóa chính rồi là đủ. Thật ra khóa nhân tạo chỉ chặn trùng `id`, không chặn hai dòng cùng `email`; khóa ứng viên còn lại phải được giữ bằng `UNIQUE`."
-      en: "Many people think a primary key is enough. In fact a surrogate key only blocks duplicate `id` values, not two rows with the same `email`; the other candidate key must be kept with `UNIQUE`."
+      vi: "Nhiều người nghĩ có khóa chính rồi là đủ, nhưng `id` tự tăng là khóa nhân tạo (surrogate key): mỗi lần chèn nó ra số mới, nên hai dòng cùng `email` vẫn mang hai `id` khác nhau và cùng qua. `email` là khóa ứng viên thứ hai, phải giữ bằng `UNIQUE`. Đổi khóa chính sang `email` cũng giữ được luật, nhưng mọi bảng trỏ tới `users` phải đổi theo, và email đổi được, nên giữ `id` ổn định hơn."
+      en: "Many people think a primary key is enough, but an auto-generated `id` is a surrogate key: each insert gets a new number, so two rows with the same `email` still get two different `id` values and both pass. `email` is a second candidate key and must be kept with `UNIQUE`. Making `email` the primary key would also keep the rule, but every table pointing at `users` would have to change, and emails do change, so keeping `id` is more stable."
 ---
 ## Mở bài
 

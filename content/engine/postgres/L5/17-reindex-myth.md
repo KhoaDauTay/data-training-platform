@@ -15,6 +15,7 @@ objectives:
   - vi: Tách trong `Buffers:` phần trang index và phần trang bảng của một câu chậm
     en: Split a slow query's `Buffers:` into index pages and table pages
 requires: [e-pg-l5-01]
+figures: [{ name: pg-index-two-costs, at: idea }]
 sources:
   - https://www.postgresql.org/docs/18/sql-reindex.html
   - https://www.postgresql.org/docs/18/indexes-index-only-scans.html
@@ -91,8 +92,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Chuyện REINDEX nghe hợp lý vì index tách lộn xộn đúng là to hơn (37 so với 25 trang) và REINDEX đúng là làm nó gọn lại. Nhưng câu này chỉ đọc 6 trang index; 364 trang còn lại là bảng, vì 2000 dòng nằm rải trên mọi trang. Đó là thành phần thứ hai của một lần tra index chậm: truy cập bảng. Index phủ bỏ hẳn phần đó: 9 trang."
-      en: "The REINDEX story sounds right because the split index really is bigger (37 against 25 pages) and a REINDEX really does pack it again. But this query reads only 6 index pages; the other 364 are table pages, because the 2000 rows sit on every page. That is the second ingredient of a slow index lookup: the table access. A covering index removes that part entirely: 9 pages."
+      vi: "REINDEX nghe hợp lý vì index tách lộn xộn đúng là to hơn (37 so với 25 trang) và REINDEX đúng là làm nó gọn lại. Nhưng câu này đọc 370 trang mà chỉ 6 là trang index; 364 là trang bảng, vì 2000 dòng của khách 100–299 nằm rải trên mọi trang. REINDEX chỉ bớt 2 trang (370 → 368); DROP rồi CREATE cũng chỉ cho đúng index gọn đó, và REINDEX mỗi đêm là tốn công vô ích. Chỗ đắt là truy cập bảng: index phủ bỏ hẳn phần đó, còn 9 trang."
+      en: "A REINDEX sounds right because the split index really is bigger (37 against 25 pages) and a REINDEX really does pack it again. But this query reads 370 pages and only 6 are index pages; 364 are table pages, because the 2000 rows of customers 100–299 sit on every page. A REINDEX saves just 2 pages (370 → 368); DROP and CREATE give the same compact index, and a nightly REINDEX is wasted work. The expensive part is the table access: a covering index removes it entirely, leaving 9 pages."
   - q:
       vi: "Khi nào REINDEX thật sự đáng làm?"
       en: "When is a REINDEX really worth doing?"
@@ -117,6 +118,8 @@ Nhiều người nghĩ câu dùng index mà chậm là do index "thoái hóa", v
 Index B-tree lớn dần qua các lần tách trang, nên một index nạp theo thứ tự lộn xộn thường to hơn index xây một lần trên dữ liệu có sẵn. REINDEX xây lại cây gọn như mới. Nó đáng làm khi chính index phình to (ví dụ sau một đợt xóa hàng loạt) và trang index chiếm phần lớn số trang mà câu đọc, hoặc khi `amcheck` báo index hỏng. Postgres không tự xây lại index.
 
 Đo trước bằng `EXPLAIN (ANALYZE, BUFFERS)`: dòng `Buffers` của nút Bitmap Index Scan là trang index, `Heap Blocks` là trang bảng. Cột `correlation` trong `pg_stats` cho biết thứ tự của cột có đi theo thứ tự vật lý của bảng không; gần 0 nghĩa là các dòng cùng khoảng giá trị nằm rải khắp nơi. Cách chữa phần truy cập bảng là đừng về bảng: index phủ (`INCLUDE`) cho Index Only Scan, hoặc sắp lại bảng theo khách.
+
+Hình từng bước ở cuối mục này tách số trang của báo cáo chậm thành trang cây và trang bảng, trên ba bảng của lab.
 
 ## Cú pháp
 
@@ -226,6 +229,8 @@ Many people think a slow query that uses an index means the index has "degraded"
 A B-tree grows through page splits, so an index loaded in random order is usually bigger than one built once on existing data. REINDEX rebuilds the tree as compact as new. It pays off when the index itself has bloated (for example after a mass delete) and index pages make up most of the pages the query reads, or when `amcheck` reports the index as corrupt. Postgres never rebuilds an index on its own.
 
 Measure first with `EXPLAIN (ANALYZE, BUFFERS)`: the `Buffers` line of the Bitmap Index Scan node is index pages, `Heap Blocks` is table pages. The `correlation` column in `pg_stats` says whether a column's order follows the table's physical order; near 0 means rows in the same value range are spread everywhere. The fix for the table access is to avoid the table: a covering index (`INCLUDE`) for an Index Only Scan, or reordering the table by customer.
+
+The step-through figure at the end of this section splits the slow report's pages into tree pages and table pages, on the lab's three tables.
 
 ## Syntax
 

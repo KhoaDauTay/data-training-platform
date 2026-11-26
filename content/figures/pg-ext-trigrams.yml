@@ -1,0 +1,35 @@
+# v43 EXT-05 (tools/v43/extensions-plan.md): two spellings cut into trigrams, the shared ones, the ratio. Lesson: e-pg-ext-05 (Ý chính).
+# Data (PGlite 0.5.16, pg_trgm): show_trgm('Hoi An') = {"  a","  h"," an"," ho","an ","hoi","oi "} (7),
+# show_trgm('Hoi Ann') = {"  a","  h"," an"," ho","ann","hoi","nn ","oi "} (8); 6 shared, 9 distinct; similarity = 0.6666667.
+# Deviation: a padding space is drawn as "·" (stated in the caption). Source: https://www.postgresql.org/docs/18/pgtrgm.html
+title: { vi: "Đếm bộ ba ký tự chung", en: "Count the shared trigrams" }
+caption:
+  vi: "pg_trgm viết thường hai chuỗi, đệm khoảng trắng (vẽ là ·) quanh mỗi từ, rồi cắt thành bộ ba. similarity = số trigram chung chia số trigram khác nhau."
+  en: "pg_trgm lower-cases both strings, pads each word with spaces (drawn as ·), then cuts them into groups of three. similarity = shared trigrams divided by distinct trigrams."
+alt:
+  vi: "Hai cách gõ được cắt thành các bộ ba ký tự rồi so với nhau, và phần lớn bộ ba của chúng trùng nhau. Kết quả: độ giống là số bộ ba chung chia cho số bộ ba khác nhau của cả hai, khoảng 0,67."
+  en: "Both spellings are cut into groups of three characters and compared, and most of their groups match. Result: the similarity is the shared groups divided by all distinct groups of both, about 0.67."
+nodes:
+  - id: a
+    shape: grid
+    label: show_trgm('Hoi An')
+    sub: { vi: "7 trigram", en: "7 trigrams" }
+    head: [trigram]
+    cells: [["··a"], ["··h"], ["·an"], ["·ho"], ["an·"], ["hoi"], ["oi·"]]
+    mono: true
+    rowTone: [live, live, live, live, null, live, live]
+  - id: b
+    shape: grid
+    label: show_trgm('Hoi Ann')
+    sub: { vi: "8 trigram", en: "8 trigrams" }
+    head: [trigram]
+    cells: [["··a"], ["··h"], ["·an"], ["·ho"], ["ann"], ["hoi"], ["nn·"], ["oi·"]]
+    mono: true
+    rowTone: [live, live, live, live, null, live, null, live]
+  - { id: sim, label: { vi: "độ giống 0,67", en: "similarity 0.67" }, sub: { vi: "6 chung trên 9", en: "6 shared of 9" }, tone: new }
+rows:
+  - [a, b]
+  - [sim]
+edges:
+  - { from: a, to: sim }
+  - { from: b, to: sim }

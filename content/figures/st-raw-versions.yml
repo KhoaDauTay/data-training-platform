@@ -1,0 +1,25 @@
+# ST-2 (tools/v43/de-tools-plan.md §4): three versions of one payment in an append-mode raw table, and the one that survives.
+# Lesson: e-st-l1-02 (Ví dụ). Data = the lab's raw_pay.payments rows for payment 9001 (a1–a3).
+# Source: https://docs.airbyte.com/platform/understanding-airbyte/airbyte-metadata-fields
+title: { vi: "Ba bản của một thanh toán", en: "Three versions of one payment" }
+caption:
+  vi: "Chế độ nối thêm chép một bản mỗi lần đồng bộ; DISTINCT ON xếp theo _airbyte_extracted_at giảm dần giữ bản mới nhất."
+  en: "Append mode copies one version per sync; DISTINCT ON sorted by _airbyte_extracted_at descending keeps the newest."
+alt:
+  vi: "Mỗi lần đồng bộ ở chế độ nối thêm chép thêm một bản của thanh toán 9001, nên bảng raw có ba bản cho cùng một khóa. Xếp theo thời điểm lấy dữ liệu giảm dần rồi giữ dòng đầu cho đúng một bản: bản mới nhất. Kết quả: thanh toán 9001 là captured."
+  en: "Each append-mode sync copies one more version of payment 9001, so the raw table holds three versions of one key. Sorting by extraction time, newest first, and keeping the first row leaves exactly one: the newest. Result: payment 9001 is captured."
+groups:
+  - { id: ver, label: { vi: "raw_pay.payments", en: "raw_pay.payments" }, nodes: [v1, v2, v3] }
+nodes:
+  - { id: v1, mono: true, label: pending, sub: "22:00", tone: ghost }
+  - { id: v2, mono: true, label: authorized, sub: "23:00", tone: ghost }
+  - { id: v3, mono: true, label: captured, sub: "01:00", tone: new }
+  - { id: rule, mono: true, label: "DISTINCT ON", sub: { vi: "mới nhất trước", en: "newest first" }, tone: warm }
+  - { id: keep, label: { vi: "9001: captured", en: "9001: captured" }, sub: { vi: "một dòng mỗi khóa", en: "one row per key" }, tone: live }
+rows:
+  - [v1, v2, v3]
+  - [rule]
+  - [keep]
+edges:
+  - { from: ver, to: rule }
+  - { from: rule, to: keep }

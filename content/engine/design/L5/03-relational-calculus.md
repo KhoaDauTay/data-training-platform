@@ -8,6 +8,7 @@ title_en: Tuple and domain relational calculus
 kind: concept
 runtime: browser
 minutes: 15
+figures: [{ name: ds-division, at: idea, variant: forall }]
 objectives:
   - vi: Đọc một biểu thức phép tính bộ {t | P(t)} và phép tính miền, rồi viết câu SQL tương ứng.
     en: Read a tuple calculus expression {t | P(t)} and a domain calculus one, then write the matching SQL.
@@ -61,8 +62,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì phủ định của một bảng có vẻ là rỗng, nhưng phép tính không giới hạn biến vào bảng nào, nên kết quả vô hạn. Biểu thức an toàn chỉ trả giá trị có trong các quan hệ đã cho; SQL ép điều đó vì mọi biến phải đứng trong `FROM`."
-      en: "It sounds right because the negation of a table seems empty, but the calculus does not tie the variable to any table, so the result is infinite. A safe expression returns only values found in the given relations; SQL enforces this because every variable must sit in `FROM`."
+      vi: "Rỗng nghe hợp lý vì phủ định một bảng có vẻ không còn gì, nhưng ở đây biến `t` không bị buộc chạy trên bảng nào, nên mọi bộ có thể tưởng tượng mà không nằm trong `students` đều thỏa: vô số bộ. Phép tính cũng không biết lịch sử, nên không có nghĩa \"học viên đã bị xóa\". Biểu thức an toàn chỉ trả giá trị có trong các quan hệ nhắc tới; SQL ép điều đó vì mọi biến phải được khai báo trong `FROM`."
+      en: "Empty sounds right because negating a table seems to leave nothing, but here the variable `t` is not bound to any table, so every imaginable tuple not in `students` qualifies: infinitely many. The calculus knows no history either, so it cannot mean \"students that were deleted\". A safe expression returns only values found in the relations it mentions; SQL enforces this because every variable must be declared in `FROM`."
   - q:
       vi: "Học viên chưa học khóa nào có thỏa `∀ e ∈ took (e.student_id = t.id → e.grade >= 5)` không?"
       en: "Does a student with no course at all satisfy `∀ e ∈ took (e.student_id = t.id → e.grade >= 5)`?"
@@ -72,8 +73,8 @@ quiz:
     answer: 0
     trap: 1
     why:
-      vi: "Nhiều người nghĩ cần ít nhất một điểm mới kết luận. Thật ra \"với mọi\" trên tập rỗng là đúng; câu `NOT EXISTS` trong lab trả cả Dung. Nếu nghiệp vụ cần \"có học và đều đạt\", thêm một `EXISTS` nữa."
-      en: "Many people think at least one grade is needed. In fact \"for all\" over an empty set is true; the lab's `NOT EXISTS` query returns Dung too. If the business means \"took something and passed all\", add an `EXISTS`."
+      vi: "\"Chưa có điểm thì không kết luận được\" nghe hợp lý, nhưng công thức là một phép kéo theo: với mỗi lượt học `e`, nếu `e` là của học viên này thì điểm ≥ 5. Dung không có lượt học nào, nên vế trái `e.student_id = t.id` sai với mọi `e`, và kéo theo có vế trái sai luôn đúng. Vì vậy câu `NOT EXISTS` trong lab trả cả Dung. Nếu nghiệp vụ cần \"có học và đều đạt\", thêm một `EXISTS` nữa."
+      en: "\"Without grades you cannot conclude\" sounds right, but the formula is an implication: for each take `e`, if `e` belongs to this student, the grade is ≥ 5. Dung has no takes, so the left side `e.student_id = t.id` is false for every `e`, and an implication with a false left side is always true. That is why the lab's `NOT EXISTS` query returns Dung too. If the business means \"took something and passed all\", add an `EXISTS`."
 ---
 ## Mở bài
 
@@ -88,6 +89,8 @@ SQL mượn trực tiếp: biến bộ là bí danh trong `FROM`, ∃ là `EXIST
 Một biểu thức có thể trả vô hạn bộ, ví dụ "mọi bộ không thuộc `students`". Biểu thức **an toàn** chỉ trả giá trị lấy từ các quan hệ có mặt trong nó. Codd chứng minh phép tính an toàn và đại số quan hệ có cùng sức biểu diễn: mọi câu viết được bằng cái này đều viết được bằng cái kia. Ngôn ngữ có sức mạnh đó gọi là **đầy đủ quan hệ**; SQL còn hơn thế nhờ gom nhóm, sắp xếp và đệ quy.
 
 Hai bẫy khi dịch ∀ sang SQL. Thứ nhất, ∀ trên tập rỗng luôn đúng: sinh viên chưa có điểm nào vẫn thỏa "mọi điểm đều ≥ 5", nên câu `NOT EXISTS` trả cả họ. Nếu yêu cầu ngầm hiểu "có điểm và mọi điểm đều ≥ 5" thì phải thêm một `EXISTS` nữa. Thứ hai, `NOT IN` không phải ¬∃: khi danh sách con có một NULL, `x NOT IN (…)` không bao giờ đúng, còn `NOT EXISTS` vẫn đúng như logic hai trị của phép tính. Vì vậy dịch phủ định theo phép tính thì dùng `NOT EXISTS`. Bài `e-pg-l4-18` cho thấy ba cách viết "không có" còn khác nhau cả ở kế hoạch.
+
+Hình cuối mục này dùng lại dữ liệu bài phép chia `e-ds-l5-02`: "học đủ mọi môn core" được đọc là "không có môn core nào chưa học".
 
 ## Ví dụ
 
@@ -174,6 +177,8 @@ SQL borrows directly: a tuple variable is an alias in `FROM`, ∃ is `EXISTS`. S
 An expression can return infinitely many tuples, for example "every tuple not in `students`". A **safe** expression returns only values taken from the relations it mentions. Codd proved that safe calculus and relational algebra have the same expressive power: anything written in one can be written in the other. A language with that power is called **relationally complete**; SQL goes further with grouping, ordering and recursion.
 
 Two traps when turning ∀ into SQL. First, ∀ over an empty set is always true: a student with no grades still satisfies "every grade is ≥ 5", so the `NOT EXISTS` query returns them too. If the request really means "has grades and every grade is ≥ 5", add one more `EXISTS`. Second, `NOT IN` is not ¬∃: when the subquery's list holds a NULL, `x NOT IN (…)` is never true, while `NOT EXISTS` stays true as in the calculus' two-valued logic. So to translate a negation from the calculus, use `NOT EXISTS`. Lesson `e-pg-l4-18` shows that the three ways to write "has none" also differ in their plans.
+
+The figure at the end of this section reuses the data of the division lesson `e-ds-l5-02`: "took every core course" is read as "no core course not taken".
 
 ## Example
 

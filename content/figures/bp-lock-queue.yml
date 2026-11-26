@@ -1,0 +1,48 @@
+# B4-13 (tools/v42/diagram-plan-v42.md): a waiting ALTER blocks everything queued behind it. Card: e-bp-p13 (Ý chính).
+# Data (from the docs the card cites; PGlite has one session, so nothing runs): a long SELECT holds ACCESS SHARE; ALTER TABLE
+# waits for ACCESS EXCLUSIVE; SELECTs that arrive later queue behind the ALTER; with SET LOCAL lock_timeout = '2s' the ALTER
+# gives up and the queue drains. The optional reuse in e-pg-l1-13 is skipped (hosts.txt).
+# Deviation: the ALTER's sub "waits: ACCESS EXCLUSIVE" (22 characters) is "cần khóa độc quyền" / "needs EXCLUSIVE" and the
+# caption names ACCESS EXCLUSIVE; in frame 3 the queue's rows run (live)
+# and the two wait edges are gone; etry is a box, not a note (an arrow into a bare note ends on its text, rule i).
+# Eye LQ1 (L825): the queue and the report share the top row, the ALTER waits under them; step 3 keeps its edges: the
+# queue runs beside the report ("chạy cùng", both ACCESS SHARE) and lock_timeout points at the ALTER it cancels.
+# Source: https://www.postgresql.org/docs/18/explicit-locking.html#LOCKING-TABLES
+title: { vi: "ALTER đang chờ chặn cả hàng phía sau", en: "A waiting ALTER blocks the whole queue behind it" }
+caption:
+  vi: "Báo cáo dài giữ ACCESS SHARE. ALTER TABLE cần ACCESS EXCLUSIVE nên chờ, và SELECT đến sau xếp hàng sau ALTER chứ không sau báo cáo. SET LOCAL lock_timeout = '2s' cho ALTER bỏ cuộc để hàng chạy tiếp."
+  en: "A long report holds ACCESS SHARE. ALTER TABLE needs ACCESS EXCLUSIVE, so it waits, and SELECTs that arrive later queue behind the ALTER, not behind the report. SET LOCAL lock_timeout = '2s' lets the ALTER give up so the queue moves on."
+alt:
+  vi: "Một lệnh DDL đang chờ khóa cũng chặn mọi truy vấn xếp sau nó, nên ALTER sau một báo cáo dài có thể làm đứng cả bảng. Chạy DDL sau SET LOCAL lock_timeout vài giây và có thử lại."
+  en: "A DDL statement waiting for a lock also blocks every query queued after it, so an ALTER behind a long report can stall the whole table. Run DDL after SET LOCAL lock_timeout of a few seconds, with retries."
+nodes:
+  - id: s
+    shape: grid
+    label: { vi: "SELECT đến sau", en: SELECTs after }
+    cells: [[q1], [q2], [q3]]
+    rowTone: [dead, dead, dead]
+  - { id: r, label: { vi: "báo cáo dài", en: long report }, sub: ACCESS SHARE }
+  - { id: a, label: ALTER TABLE, sub: { vi: "cần khóa độc quyền", en: needs EXCLUSIVE }, tone: warm }
+  - { id: lt, shape: key, mono: true, label: lock_timeout 2s, tone: live }
+rows:
+  - [s, r]
+  - [a]
+  - [lt]
+edges:
+  - { id: ar, from: a, to: r, label: { vi: "chờ", en: waits } }
+  - { id: sa, from: s, to: a, label: { vi: "chờ", en: wait } }
+  - { id: sr, from: s, to: r, label: { vi: "chạy cùng", en: run alongside } }
+  - { id: la, from: lt, to: a, label: { vi: "hủy sau 2s", en: cancels after 2s } }
+steps:
+  - say: { vi: "ALTER chờ báo cáo dài.", en: "The ALTER waits for the long report." }
+    show: [a, r, ar]
+    alt: { vi: "ACCESS EXCLUSIVE xung đột với mọi khóa, kể cả ACCESS SHARE của câu đọc đang chạy.", en: "ACCESS EXCLUSIVE conflicts with every lock, even the running reader's ACCESS SHARE." }
+  - say: { vi: "SELECT mới xếp hàng sau ALTER.", en: "New SELECTs queue behind the ALTER." }
+    show: [s, a, r, ar, sa]
+    alt: { vi: "Một yêu cầu khóa đang chờ cũng chặn các yêu cầu xung đột đến sau, nên cả bảng đứng.", en: "A waiting lock request also blocks conflicting requests that arrive later, so the whole table stalls." }
+  - say: { vi: "lock_timeout: ALTER bỏ cuộc, hàng thông.", en: "lock_timeout: the ALTER gives up, the queue clears." }
+    show: [s, a, r, lt, sr, la]
+    alt: { vi: "SET LOCAL lock_timeout giới hạn lúc chờ chỉ trong transaction đó, nên migration hỏng nhanh thay vì làm đứng bảng.", en: "SET LOCAL lock_timeout caps the wait for that transaction only, so the migration fails fast instead of stalling the table." }
+    set:
+      s: { rowTone: [live, live, live] }
+      a: { tone: ghost, sub: { vi: "bỏ cuộc, thử lại", en: "gives up, retries" } }

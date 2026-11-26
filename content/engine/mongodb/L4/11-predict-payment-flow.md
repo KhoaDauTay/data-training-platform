@@ -5,6 +5,7 @@ level: L4
 module: consistency
 title: "Đoán kết quả: luồng ghi thanh toán đọc từ secondary"
 title_en: "Predict the outcome: a payment write read back from a secondary"
+figures: [{ name: mg-causal-session, at: idea, variant: nosession }]
 kind: predict
 minutes: 7
 runtime: docs
@@ -71,6 +72,8 @@ Theo docs, từ MongoDB 8.0, ghi `{ w: "majority" }` trả xác nhận sau khi �
 
 Ứng dụng cần đọc ngay thay đổi đó từ secondary thì chạy trong session nhân quả (`startSession({ causalConsistency: true })`), ghi `w: "majority"` và đọc read concern `majority`. Lần đọc mang `afterClusterTime`, nên secondary chờ tới thời điểm của lần ghi rồi mới trả lời.
 
+Hình dưới vẽ lần đọc từ secondary ngay sau lần ghi, khi chưa có session.
+
 ## Tóm tắt
 
 - `w: "majority"` từ 8.0 = đa số đã ghi bền oplog, chưa chắc đã áp vào dữ liệu.
@@ -90,6 +93,8 @@ This is a prediction based on the MongoDB docs (page "Write Concern", the part a
 Per the docs, starting in MongoDB 8.0, a `{ w: "majority" }` write is acknowledged after a majority of data-bearing members durably write the oplog entry; members then apply the change to the data asynchronously. A query on a secondary right after the acknowledgement may read before the secondary applies the write.
 
 An application that needs to read that change from a secondary at once should run in a causally consistent session (`startSession({ causalConsistency: true })`), writing with `w: "majority"` and reading with read concern `majority`. The read carries `afterClusterTime`, so the secondary waits until it reaches the write's time before answering.
+
+The figure below draws a read from a secondary right after the write, with no session.
 
 ## Recap
 

@@ -8,6 +8,7 @@ title_en: "Global tables: MREC or MRSC"
 kind: concept
 runtime: docs
 minutes: 8
+figures: [{ name: dy-global-lww, at: example }]
 objectives:
   - { vi: "Phân biệt nhất quán cuối cùng đa vùng (MREC, mặc định) và nhất quán mạnh đa vùng (MRSC)", en: "Tell multi-Region eventual consistency (MREC, the default) from multi-Region strong consistency (MRSC)" }
   - { vi: "Biết cách MREC giải xung đột (last writer wins) và các giới hạn của MRSC", en: "Know how MREC resolves conflicts (last writer wins) and the limits of MRSC" }
@@ -71,13 +72,7 @@ RPO = 0, strong reads in every Region  MRSC (3 Regions, or 2 + witness)
 uses TTL or transactions               MREC
 ```
 
-Hai vùng cùng sửa một item trên MREC:
-
-```text
-12:00:00.100  Singapore  SET stock = 4
-12:00:00.180  Tokyo      SET stock = 7
-after replication, every replica: stock = 7   (last writer wins; the Singapore write is lost)
-```
+Hai vùng cùng sửa một item trên MREC: Singapore ghi `stock = 4` lúc 12:00:00.100, Tokyo ghi `stock = 7` lúc 12:00:00.180. Sau khi sao chép, mọi bản sao có 7 và lần ghi của Singapore mất, như hình dưới.
 
 ## Lỗi hay gặp
 
@@ -155,13 +150,7 @@ RPO = 0, strong reads in every Region  MRSC (3 Regions, or 2 + witness)
 uses TTL or transactions               MREC
 ```
 
-Two Regions changing the same item on MREC:
-
-```text
-12:00:00.100  Singapore  SET stock = 4
-12:00:00.180  Tokyo      SET stock = 7
-after replication, every replica: stock = 7   (last writer wins; the Singapore write is lost)
-```
+Two Regions changing the same item on MREC: Singapore writes `stock = 4` at 12:00:00.100, Tokyo writes `stock = 7` at 12:00:00.180. After replication every replica has 7 and the Singapore write is lost, as the figure below shows.
 
 ## Common mistakes
 

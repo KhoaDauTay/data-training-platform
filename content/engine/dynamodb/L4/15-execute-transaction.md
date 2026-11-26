@@ -5,6 +5,7 @@ level: L4
 module: transactions
 title: "ExecuteTransaction: tự viết một lần chuyển tiền"
 title_en: "ExecuteTransaction: write a money transfer yourself"
+figures: [{ name: dy-transact-all-or-nothing, at: idea, variant: partiql }]
 kind: lab
 runtime: browser
 minutes: 14
@@ -111,6 +112,8 @@ Nhiều người nghĩ transaction tự bảo vệ số dư. Thật ra transacti
 
 Lab chạy bằng dynoxide trong trình duyệt; `WriteCapacityUnits` là số đo thật của engine.
 
+Hình dưới vẽ hai câu UPDATE của lần chuyển tiền cùng thành công với 4 WCU.
+
 ## Cú pháp
 
 ```text
@@ -202,6 +205,8 @@ Price: each item costs 2 WCU per 1 KB (one prepare, one commit). Two wallets are
 Many people think a transaction protects the balance by itself. In fact a transaction only promises all or nothing; the "no negative balance" rule is a condition you must write. Without it, the transaction succeeds and the wallet goes below 0.
 
 The lab runs on dynoxide in the browser; `WriteCapacityUnits` is the engine's real measured number.
+
+The figure below draws the transfer's two UPDATE statements succeeding together for 4 WCU.
 
 ## Syntax
 

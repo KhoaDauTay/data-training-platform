@@ -8,7 +8,7 @@ verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Đổi một giá trị sang kiểu khác bằng `CAST(x AS kiểu)` hoặc `x::kiểu`.
     en: Turn a value into another type with `CAST(x AS type)` or `x::type`.
-  - vi: Tránh chia số nguyên bị cắt phần lẻ.
+  - vi: Tránh chia số nguyên bị cắt phần thập phân.
     en: Avoid integer division dropping the fraction.
   - vi: Biết vì sao so sánh phải đúng kiểu, và vì sao ép kiểu cột trong `WHERE` làm câu chậm.
     en: Know why comparisons need the right type, and why casting a column in `WHERE` makes a query slow.
@@ -19,7 +19,7 @@ syntax: |-
 options:
   - { code: "CAST(x AS int)", vi: "cách viết chuẩn SQL", en: "the standard SQL spelling" }
   - { code: "x::int", vi: "cách viết ngắn của Postgres, cùng nghĩa", en: "the Postgres short form, same meaning" }
-  - { code: "int / bigint", vi: "số nguyên; chia hai số nguyên thì cắt phần lẻ", en: "whole numbers; dividing two of them drops the fraction" }
+  - { code: "int / bigint", vi: "số nguyên; chia hai số nguyên thì cắt phần thập phân", en: "whole numbers; dividing two of them drops the fraction" }
   - { code: "numeric", vi: "số thập phân chính xác (tiền, tỉ lệ)", en: "exact decimal (money, ratios)" }
   - { code: "text", vi: "chữ; so sánh theo thứ tự chữ cái, không theo giá trị số", en: "text; compares letter by letter, not by numeric value" }
   - { code: "date / timestamp", vi: "ngày / ngày và giờ; `timestamp::date` bỏ phần giờ", en: "date / date and time; `timestamp::date` drops the time" }
@@ -36,7 +36,7 @@ examples:
       FROM products
       WHERE id <= 3
     read:
-      vi: "Với nước cam (35.000), chia 3 cho ra khoảng 11666.67 khi một bên là `numeric`. `price_vnd / 1000` giữ kiểu số nguyên; chỉ cần một bên có phần thập phân là phép chia giữ phần lẻ."
+      vi: "Với nước cam (35.000), chia 3 cho ra khoảng 11666.67 khi một bên là `numeric`. `price_vnd / 1000` giữ kiểu số nguyên; chỉ cần một bên là số thập phân thì kết quả giữ được phần sau dấu phẩy."
       en: "For the orange juice (35,000), dividing by 3 gives about 11666.67 once one side is `numeric`. `price_vnd / 1000` stays a whole number; one decimal operand is enough to keep the fraction."
   - title: { vi: "Bỏ phần giờ của một thời điểm", en: "Dropping the time from a timestamp" }
     sql: |-
@@ -45,8 +45,8 @@ examples:
       ORDER BY id
       LIMIT 3
     read:
-      vi: "`paid_at` có giờ phút (08:33 ngày 01/01/2025); `paid_at::date` chỉ còn ngày. Hữu ích khi hiển thị, nhưng xem bẫy 3 trước khi dùng nó trong `WHERE`."
-      en: "`paid_at` carries hours and minutes (08:33 on 1 January 2025); `paid_at::date` keeps only the day. Handy for display, but read pitfall 3 before using it in `WHERE`."
+      vi: "`paid_at` có giờ phút (08:33 ngày 01/01/2025); `paid_at::date` chỉ còn ngày. Hữu ích khi hiển thị, nhưng đọc lỗi hay gặp \"So số dưới dạng chữ\" trước khi dùng nó trong `WHERE`."
+      en: "`paid_at` carries hours and minutes (08:33 on 1 January 2025); `paid_at::date` keeps only the day. Handy for display, but read the pitfall \"Comparing numbers as text\" before using it in `WHERE`."
   - title: { vi: "Hai cách viết cho cùng một việc", en: "Two spellings for one job" }
     sql: |-
       SELECT CAST('42' AS int) + 1 AS answer, '3.5'::numeric * 2 AS doubled
@@ -66,7 +66,7 @@ pitfalls:
     wrong: "SELECT 7 / 2 AS half"
     fix: "SELECT 7 / 2.0 AS half"
     why:
-      vi: "Hai số nguyên chia nhau cho số nguyên: 7 / 2 = 3, phần lẻ bị cắt mà không báo. Tỉ lệ và trung bình tự tính hay sai vì điều này; cho một bên thành `numeric` (hoặc viết `2.0`)."
+      vi: "Hai số nguyên chia nhau cho số nguyên: 7 / 2 = 3, phần thập phân bị cắt mà không báo. Tỉ lệ và trung bình tự tính hay sai vì phép chia bị cắt này; cho một bên thành `numeric` (hoặc viết `2.0`)."
       en: "Two whole numbers divide into a whole number: 7 / 2 = 3, the fraction silently dropped. Ratios and hand-made averages often go wrong this way; make one side `numeric` (or write `2.0`)."
   - title: { vi: "Ép chữ không phải số thành số", en: "Casting text that is not a number" }
     wrong: "SELECT 'abc'::int AS n"
@@ -108,7 +108,7 @@ quiz:
 recap:
   - vi: "`CAST(x AS int)` = `x::int`; ép kiểu kiểm tra giá trị (lỗi 22P02 nếu không đọc được)."
     en: "`CAST(x AS int)` = `x::int`; a cast checks the value (error 22P02 if it cannot be read)."
-  - vi: "Số nguyên chia số nguyên cắt phần lẻ; dùng `numeric` khi cần."
+  - vi: "Số nguyên chia số nguyên cắt phần thập phân; dùng `numeric` khi cần."
     en: "Whole number divided by whole number drops the fraction; use `numeric` when needed."
   - vi: "So đúng kiểu: số với số, ngày với ngày; không ép cột trong `WHERE`."
     en: "Compare the right types: numbers with numbers, dates with dates; never cast the column in `WHERE`."
@@ -123,7 +123,7 @@ Báo cáo tỉ lệ đơn hủy ra 0% cho mọi cửa hàng, dù ai cũng biết
 
 ## Ý chính
 
-Mỗi cột và mỗi giá trị có một **kiểu**: số nguyên (`int`), số thập phân (`numeric`), chữ (`text`), ngày (`date`), thời điểm (`timestamp`). Kiểu quyết định phép tính nào được và kết quả ra sao: ngày trừ ngày ra số ngày, chữ so theo từng ký tự, số nguyên chia số nguyên cắt phần lẻ. Ép kiểu (`CAST(x AS int)` hay `x::int`) đổi một giá trị sang kiểu khác, và báo lỗi nếu giá trị không đổi được.
+Mỗi cột và mỗi giá trị có một **kiểu**: số nguyên (`int`), số thập phân (`numeric`), chữ (`text`), ngày (`date`), thời điểm (`timestamp`). Kiểu quyết định phép tính nào được và kết quả ra sao: ngày trừ ngày ra số ngày, chữ so theo từng ký tự, số nguyên chia số nguyên cắt phần thập phân. Ép kiểu (`CAST(x AS int)` hay `x::int`) đổi một giá trị sang kiểu khác, và báo lỗi nếu giá trị không đổi được.
 
 Nhiều người nghĩ **kiểu chỉ là chuyện hiển thị**. Thật ra nó đổi kết quả (so `'9000' > '50000'` là đúng với chữ) và đổi tốc độ: chỉ mục được xây trên kiểu của cột, nên ép kiểu cột trong `WHERE` buộc Postgres đọc cả bảng.
 

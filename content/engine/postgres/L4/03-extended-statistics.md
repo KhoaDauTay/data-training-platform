@@ -57,7 +57,7 @@ quiz:
       - { vi: "Tăng `random_page_cost`", en: "Raise `random_page_cost`" }
     answer: 0
     trap: 1
-    why: { vi: "Nghe hợp lý vì Nested Loop chậm là thứ bạn nhìn thấy, nhưng nó chỉ là hậu quả. Lỗi nằm ở ước lượng: planner nhân hai độ chọn lọc như thể độc lập. Thống kê phụ thuộc hàm cho nó biết district quyết định city. Tắt một loại join chỉ che triệu chứng và làm hỏng câu khác.", en: "It sounds right because the slow Nested Loop is what you see, but it is only the consequence. The error is in the estimate: the planner multiplies two selectivities as if independent. Functional-dependency statistics tell it that district determines city. Disabling a join type only hides the symptom and hurts other queries." }
+    why: { vi: "Tắt `enable_nestloop` nghe hợp lý vì Nested Loop chậm là thứ bạn nhìn thấy, nhưng nó chỉ là hậu quả. Gốc nằm ở ước lượng số dòng (row estimate): planner coi hai điều kiện độc lập và nhân độ chọn lọc, 1/10 × 1/100, trong khi quận đã quyết định thành phố, nên ước lượng thấp 10 lần và planner tưởng vòng lặp chỉ chạy vài lần. Thống kê mở rộng (extended statistics) loại `dependencies` cho planner biết điều đó; tắt Nested Loop cho cả server làm hỏng những câu mà nó là cách nhanh nhất. `random_page_cost` là giá đọc trang, không sửa được ước lượng số dòng.", en: "Turning `enable_nestloop` off sounds right because the slow Nested Loop is what you see, but it is only the consequence. The root is the row estimate: the planner treats the two conditions as independent and multiplies the selectivities, 1/10 × 1/100, while the district already decides the city, so the estimate is ten times too low and the planner thinks the loop runs only a few times. Extended statistics of kind `dependencies` tell the planner that; disabling Nested Loop server-wide hurts the queries where it is the fastest way. `random_page_cost` prices page reads and cannot fix a row estimate." }
   - q: { vi: "`GROUP BY city, district` bị ước lượng quá nhiều nhóm. Loại thống kê nào giúp?", en: "`GROUP BY city, district` is estimated with far too many groups. Which statistics kind helps?" }
     options:
       - { vi: "`mcv`", en: "`mcv`" }
@@ -65,15 +65,15 @@ quiz:
       - { vi: "`dependencies`", en: "`dependencies`" }
     answer: 1
     trap: 2
-    why: { vi: "Nghe hợp lý vì hai cột phụ thuộc nhau, nhưng `dependencies` chỉ sửa ước lượng của điều kiện lọc, không phải số nhóm. `ndistinct` lưu số tổ hợp khác nhau của nhóm cột, đúng thứ GROUP BY cần để đoán số nhóm.", en: "It sounds right because the two columns depend on each other, but `dependencies` only fixes the estimate of filter conditions, not the group count. `ndistinct` stores the number of distinct combinations of the columns, exactly what GROUP BY needs to guess the number of groups." }
+    why: { vi: "`dependencies` nghe hợp lý vì hai cột phụ thuộc nhau, nhưng nó chỉ sửa ước lượng của điều kiện bằng trong WHERE, không sửa số nhóm. Không có thống kê mở rộng, planner nhân số giá trị khác nhau của từng cột: 10 thành phố × 100 quận = 1.000 nhóm, trong khi thật chỉ có 100 cặp. `ndistinct` lưu đúng số tổ hợp khác nhau của nhóm cột, thứ GROUP BY cần để ước lượng số nhóm. `mcv` chỉ giữ các tổ hợp phổ biến và tần suất của chúng, dùng cho điều kiện lọc.", en: "`dependencies` sounds right because the columns depend on each other, but it only fixes the estimate of equality conditions in WHERE, not the group count. Without extended statistics the planner multiplies each column's distinct count: 10 cities × 100 districts = 1,000 groups, while only 100 pairs exist. `ndistinct` stores the exact number of distinct combinations of the columns, which is what GROUP BY needs to estimate the group count. `mcv` only keeps the common combinations and their frequencies, for filter conditions." }
 ---
 ## Mở bài
 
-Bảng địa chỉ lọc theo thành phố và quận, và planner đoán 10 dòng trong khi thật là 100. Mỗi cột có thống kê đúng, vậy sai ở đâu?
+Bảng địa chỉ lọc theo thành phố và quận, và planner ước lượng 10 dòng trong khi thật là 100. Mỗi cột có thống kê đúng, vậy sai ở đâu?
 
 ## Ý chính
 
-Thống kê thường (`pg_stats`) nói về từng cột riêng. Khi câu có hai điều kiện trên hai cột, mặc định planner coi chúng độc lập và nhân độ chọn lọc: sel(`city = 3`) × sel(`district = 33`) = 1/10 × 1/100. Với 10.000 dòng, nó đoán 10.
+Thống kê thường (`pg_stats`) nói về từng cột riêng. Khi câu có hai điều kiện trên hai cột, mặc định planner coi chúng độc lập và nhân độ chọn lọc: sel(`city = 3`) × sel(`district = 33`) = 1/10 × 1/100. Với 10.000 dòng, nó ước lượng 10.
 
 Nhiều người nghĩ planner biết các cột liên quan với nhau. Thật ra nó không biết, trừ khi bạn khai báo. Ở đây quận 33 luôn thuộc thành phố 3, nên điều kiện thành phố không lọc thêm dòng nào: số thật là 100, gấp 10 lần ước lượng. Cột tương quan kiểu này rất hay gặp: quận và thành phố, mã bưu điện và tỉnh, mẫu xe và hãng.
 
@@ -98,14 +98,14 @@ DROP STATISTICS [ IF EXISTS ] stat_name;
 
 ## Ví dụ
 
-Đoán thấp 10 lần khi không có thống kê mở rộng:
+Ước lượng thấp 10 lần khi không có thống kê mở rộng:
 
 ```sql
 SELECT est('SELECT * FROM addr_plain WHERE city = 7 AND district = 77') AS estimate, count(*) AS actual
 FROM addr_plain WHERE city = 7 AND district = 77;
 ```
 
-Số nhóm của `GROUP BY` cũng bị đoán sai, theo chiều ngược lại:
+Số nhóm của `GROUP BY` cũng bị ước lượng sai, theo chiều ngược lại:
 
 ```sql
 SELECT est('SELECT city, district FROM addr_plain GROUP BY city, district') AS groups_guess,
@@ -138,7 +138,7 @@ ANALYZE addr_stats;
 SELECT est('SELECT * FROM addr_stats WHERE city = 3 AND district = 34') AS mcv_guess;
 ```
 
-Chỉ có `dependencies`, planner vẫn đoán 100 cho một tổ hợp rỗng. Có `mcv`, nó thấy tổ hợp này không nằm trong danh sách và đoán 1, mức thấp nhất.
+Vậy tổ hợp (3, 34) không có dòng nào. Chỉ có `dependencies`, planner vẫn ước lượng 100, vì nó chỉ biết quận quyết định thành phố chứ không biết cặp nào tồn tại. Có `mcv`, nó thấy tổ hợp này không nằm trong danh sách và ước lượng 1, mức thấp nhất.
 
 ## Lỗi hay gặp
 
@@ -175,7 +175,7 @@ Ba bước: so ước lượng với số thật trên hai bảng, đọc đối
 
 ## Tóm tắt
 
-- Mặc định planner nhân độ chọn lọc của các cột như thể độc lập, nên cột tương quan bị đoán thấp.
+- Mặc định planner nhân độ chọn lọc của các cột như thể độc lập, nên cột tương quan bị ước lượng thấp.
 - `dependencies` cho điều kiện bằng, `ndistinct` cho `GROUP BY`, `mcv` chính xác nhất và biết tổ hợp không tồn tại.
 - Thống kê mở rộng cần ít nhất hai cột và chỉ có dữ liệu sau `ANALYZE`.
 - Sửa ước lượng tận gốc, đừng tắt một loại join để che triệu chứng.
@@ -184,11 +184,11 @@ Ba bước: so ước lượng với số thật trên hai bảng, đọc đối
 
 ## Opening
 
-An address table is filtered by city and district, and the planner guesses 10 rows while the truth is 100. Each column has correct statistics, so what went wrong?
+An address table is filtered by city and district, and the planner estimates 10 rows while the truth is 100. Each column has correct statistics, so what went wrong?
 
 ## Key idea
 
-Plain statistics (`pg_stats`) describe each column on its own. When a query has two conditions on two columns, the planner by default treats them as independent and multiplies the selectivities: sel(`city = 3`) × sel(`district = 33`) = 1/10 × 1/100. With 10,000 rows it guesses 10.
+Plain statistics (`pg_stats`) describe each column on its own. When a query has two conditions on two columns, the planner by default treats them as independent and multiplies the selectivities: sel(`city = 3`) × sel(`district = 33`) = 1/10 × 1/100. With 10,000 rows it estimates 10.
 
 Many people think the planner knows which columns are related. In fact it does not, unless you declare it. Here district 33 always belongs to city 3, so the city condition removes no extra row: the real count is 100, ten times the estimate. Correlated columns like these are common: district and city, postcode and province, car model and maker.
 
@@ -253,7 +253,7 @@ ANALYZE addr_stats;
 SELECT est('SELECT * FROM addr_stats WHERE city = 3 AND district = 34') AS mcv_guess;
 ```
 
-With `dependencies` only, the planner still guesses 100 for an empty combination. With `mcv` it sees the combination is not in the list and guesses 1, the lowest it ever goes.
+So the pair (3, 34) has no row at all. With `dependencies` only, the planner still estimates 100, because it only knows that the district decides the city, not which pairs exist. With `mcv` it sees the combination is not in the list and estimates 1, the lowest it ever goes.
 
 ## Common mistakes
 

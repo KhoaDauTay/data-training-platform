@@ -5,6 +5,7 @@ level: L3
 module: single-table
 title: "Lab: khách đứng đầu partition key (TENANT#)"
 title_en: "Lab: the tenant leads the partition key (TENANT#)"
+figures: [{ name: dy-tenant-isolation, at: idea, variant: keys }]
 kind: lab
 runtime: browser
 minutes: 15
@@ -165,6 +166,8 @@ Không bao giờ dùng Scan trên đường đi của một khách: Scan đọc 
 
 Lab chạy bằng dynoxide trong trình duyệt: số item, `ScannedCount` và RCU là số đo thật.
 
+Hình dưới đặt khóa của bảng và khóa của GSI cạnh nhau: cả hai mở đầu bằng mã khách.
+
 ## Cú pháp
 
 ```text
@@ -299,6 +302,8 @@ Every other access pattern of one tenant needs a key that also starts with the t
 Never use a Scan on a single tenant's path: a Scan reads every item before it filters, and charges RCU for every item it read.
 
 The lab runs on dynoxide in the browser: item counts, `ScannedCount` and RCU are real measurements.
+
+The figure below sets the table keys and the GSI keys side by side: both start with the tenant id.
 
 ## Syntax
 

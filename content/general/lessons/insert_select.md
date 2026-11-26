@@ -4,6 +4,7 @@ title: "Thêm dòng: INSERT, INSERT … SELECT và CREATE TABLE AS"
 title_en: "Adding rows: INSERT, INSERT … SELECT and CREATE TABLE AS"
 minutes: 25
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
+figures: [{ name: sql-insert-select, at: idea }]
 objectives:
   - vi: Thêm một hay nhiều dòng bằng `INSERT … VALUES`, luôn kèm danh sách cột.
     en: Add one or many rows with `INSERT … VALUES`, always with a column list.
@@ -40,7 +41,7 @@ examples:
       VALUES ('My Khe', 'Da Nang', '2026-12-01')
       RETURNING id, name, city
     read:
-      vi: "Trên dữ liệu vừa nạp, cửa hàng mới nhận `id` 6. Bấm Chạy lần nữa: số tăng lên 7, dù lần trước đã được hoàn tác. Bộ đếm sinh id không bao giờ lùi khi giao dịch hoàn tác, nên id có thể nhảy cóc; đừng dựa vào việc chúng liền nhau."
+      vi: "Trên dữ liệu vừa nạp, cửa hàng mới nhận `id` 6. Bấm Chạy lần nữa: số tăng lên 7, dù lần trước đã được hoàn tác. Bộ đếm sinh id không bao giờ lùi khi transaction hoàn tác, nên id có thể nhảy cóc; đừng dựa vào việc chúng liền nhau."
       en: "On freshly loaded data the new store gets `id` 6. Press Run again: the number goes up to 7, even though the previous run was rolled back. The counter behind generated ids never moves back on a rollback, so ids can skip; never rely on them being consecutive."
   - title: { vi: "Chép dòng từ một câu đọc", en: "Copying rows from a query" }
     sql: |-
@@ -84,7 +85,7 @@ pitfalls:
       en: "Number 5 already belongs to another item, so the primary key raises 23505. Even if you pick a free number, the id counter does not know about it and will later hit that very number. Let Postgres generate `id`."
 quiz:
   - q:
-      vi: "Bạn chạy một câu thêm dòng, nhận `id` 6, rồi giao dịch bị hoàn tác. Lần thêm kế tiếp nhận id nào?"
+      vi: "Bạn chạy một câu thêm dòng, nhận `id` 6, rồi transaction bị hoàn tác. Lần thêm kế tiếp nhận id nào?"
       en: "You run an insert, get `id` 6, then the transaction is rolled back. Which id does the next insert get?"
     options:
       - { vi: "6, vì lần trước đã bị hoàn tác như chưa từng xảy ra", en: "6, because the earlier one was rolled back as if it never happened" }
@@ -93,7 +94,7 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Hoàn tác xóa dòng, nhưng không trả lại số đã cấp: bộ đếm (sequence) nằm ngoài giao dịch để nhiều người thêm dòng cùng lúc không phải chờ nhau. Id vì thế có lỗ hổng, và đó là bình thường."
+      vi: "Hoàn tác xóa dòng, nhưng không trả lại số đã cấp: bộ đếm (sequence) nằm ngoài transaction để nhiều người thêm dòng cùng lúc không phải chờ nhau. Id vì thế có lỗ hổng, và đó là bình thường."
       en: "A rollback removes the row but does not give the number back: the counter (a sequence) lives outside the transaction so that many people can insert at once without waiting for each other. Ids therefore have gaps, and that is normal."
   - q:
       vi: "`CREATE TABLE price_copy AS SELECT * FROM products` chép những gì sang bảng mới?"
@@ -144,7 +145,7 @@ Nhiều người nghĩ **giá trị được ghép với cột theo tên**. Th�
 
 ## Cú pháp
 
-Ở BoonData mọi câu ghi chạy trong một giao dịch rồi được hoàn tác, nên bạn thử thoải mái: bảng không đổi thật.
+Ở BoonData mọi câu ghi chạy trong một transaction rồi được hoàn tác, nên bạn thử thoải mái: bảng không đổi thật.
 
 Postgres cũng nhận `SELECT … INTO new_table FROM …` (cách viết của SQL Server) để tạo bảng từ kết quả, nhưng tài liệu Postgres khuyên dùng `CREATE TABLE … AS`, vì `INTO` còn có nghĩa khác bên trong hàm PL/pgSQL.
 

@@ -2,8 +2,11 @@ import type { QueryResult } from '../../db/run';
 import type { GradeResult } from '../../grader';
 import type { Lab, LabStep } from '../content';
 import { perfVerdict, planLines, type LabEnv, type LabRunner, type LabVerdict } from '../labs';
+import { callsOf, compileStep, DbtError, isDbtLab } from '../stack/dbt';
+import { stackText } from '../stack/text';
 import { PgLabClient } from './client';
 import type { PgExtension } from './script';
+import { createdIn } from './split';
 
 /**
  * ENG-PGLAB (L230) + integration (L248): ENG-CORE's Postgres LabRunner on the lab runtime, for labs with `setup`.
@@ -16,9 +19,12 @@ interface Env {
   grade(run: (sql: string) => Promise<QueryResult>, solution: string, player: string, ordered: boolean): Promise<GradeResult>;
   verdict(r: Exclude<GradeResult, { ok: true }>): string;
   slow?: LabEnv['slow'];
+  /** v45: the language of the dbt lab's own sentences (src/engine/stack/text.ts); VI when absent. */
+  lang?: LabEnv['lang'];
 }
 
-const KNOWN: readonly PgExtension[] = ['pageinspect', 'pg_visibility', 'amcheck', 'pg_walinspect', 'pg_buffercache', 'pg_freespacemap', 'bloom', 'btree_gin', 'btree_gist', 'pg_trgm', 'pg_stat_statements', 'ltree', 'pgcrypto', 'cube', 'earthdistance', 'postgis'];
+const KNOWN: readonly PgExtension[] = ['pageinspect', 'pg_visibility', 'amcheck', 'pg_walinspect', 'pg_buffercache', 'pg_freespacemap', 'bloom', 'btree_gin', 'btree_gist', 'pg_trgm', 'pg_stat_statements', 'ltree', 'pgcrypto', 'cube', 'earthdistance', 'postgis',
+  'citext', 'fuzzystrmatch', 'unaccent', 'uuid-ossp', 'hstore', 'tablefunc', 'vector'];
 /** Functions → the extension that defines them (a step may call one the setup did not create). */
 const BY_FUNCTION: [RegExp, PgExtension][] = [
   [/\b(get_raw_page|heap_page_items|heap_tuple_infomask_flags|page_header|bt_metap|bt_page_items|bt_page_stats|brin_page_items|brin_metapage_info|brin_revmap_data|gin_metapage_info|gin_page_opaque_info|gin_leafpage_items|hash_page_items|fsm_page_contents)\s*\(/i, 'pageinspect'],
@@ -29,21 +35,46 @@ const BY_FUNCTION: [RegExp, PgExtension][] = [
   [/\bpg_buffercache\b/i, 'pg_buffercache'],
   [/\bpg_freespace\s*\(/i, 'pg_freespacemap'],
   [/\bST_[A-Za-z0-9_]+\s*\(/i, 'postgis'],
+  // v43 (L723–L724): the Extensions shelf. Only names no other extension and no core function uses; `<->` is shared by
+  // PostGIS, pg_trgm and cube, so pgvector is found by its type and its own operators.
+  [/\b(similarity|word_similarity|strict_word_similarity|show_trgm)\s*\(/i, 'pg_trgm'],
+  [/\b(levenshtein|levenshtein_less_equal|soundex|difference|metaphone|dmetaphone|dmetaphone_alt|daitch_mokotoff)\s*\(/i, 'fuzzystrmatch'],
+  [/\bunaccent\s*\(/i, 'unaccent'],
+  [/\buuid_(generate_v[1345](mc)?|ns_(url|dns|oid|x500)|nil)\s*\(/i, 'uuid-ossp'],
+  [/\bcrosstab[0-9]*\s*\(|\bconnectby\s*\(|\bnormal_rand\s*\(/i, 'tablefunc'],
+  [/\b(crypt|gen_salt|digest|hmac|pgp_sym_encrypt|pgp_sym_decrypt|pgp_pub_encrypt|pgp_pub_decrypt|armor|dearmor|gen_random_bytes)\s*\(/i, 'pgcrypto'],
+  [/\b(nlevel|subpath|subltree|lca|text2ltree|ltree2text)\s*\(|::\s*l(tree|query|txtquery)\b/i, 'ltree'],
+  [/::\s*citext\b|\bcitext\b(?!\s*\()/i, 'citext'],
+  [/::\s*hstore\b|\bhstore\s*\(/i, 'hstore'],
+  [/\b(vector|halfvec|sparsevec)\s*\(\s*\d|::\s*(vector|halfvec|sparsevec)\b|<=>|<#>|<\+>|\b(vector_cosine_ops|vector_l2_ops|vector_ip_ops)\b/i, 'vector'],
 ];
 export function extensionsOf(...sql: (string | undefined)[]): PgExtension[] {
   const text = sql.filter(Boolean).join('\n');
-  const named = [...text.matchAll(/\bCREATE\s+EXTENSION\s+(?:IF\s+NOT\s+EXISTS\s+)?"?(\w+)"?/gi)].map((m) => m[1].toLowerCase() as PgExtension);
+  const named = [...text.matchAll(/\bCREATE\s+EXTENSION\s+(?:IF\s+NOT\s+EXISTS\s+)?"?([\w-]+)"?/gi)].map((m) => m[1].toLowerCase() as PgExtension); // v43: "uuid-ossp" keeps its hyphen
   const used = BY_FUNCTION.filter(([re]) => re.test(text)).map(([, x]) => x);
   // earthdistance needs cube first
   const all = [...new Set([...named, ...used])].filter((x) => KNOWN.includes(x));
   return all.sort((a, b) => (a === 'cube' ? -1 : b === 'cube' ? 1 : 0));
 }
 
+/**
+ * v43 (L725): the extensions a lab's own steps install (plain `CREATE EXTENSION x` in a Solution, not in setup). They are
+ * loaded but never created at boot, in every run of the lab, so a player who skips the install step does not get it.
+ */
+export const loadOnlyOf = (lab: Lab): string[] => {
+  const inSetup = createdIn(lab.setup ?? '', false);
+  return [...createdIn(lab.steps.map((s) => s.solution).join('\n'), true)].filter((x) => !inSetup.has(x));
+};
+
 /** A statement that only reads (its replay would change nothing). */
 const reads = (sql: string): boolean => /^\s*(\(\s*)?(select|with|explain|table|values|show)\b/i.test(sql.replace(/^\s*(--[^\n]*\n\s*)*/, ''));
 /** The earlier steps' solutions that change the database, in order (DDL, VACUUM, ANALYZE, DML). */
 export const replayOf = (lab: Lab, step: number | undefined): string[] =>
-  (step === undefined ? [] : lab.steps.slice(0, step)).map((s) => s.solution).filter((s) => !reads(s));
+  (step === undefined ? [] : lab.steps.slice(0, step)).flatMap((s, j) =>
+    (isDbtLab(lab.steps) ? (s.model || !reads(s.solution) ? compileStep(lab.setup, lab.steps, j, s.solution) : []) : reads(s.solution) ? [] : [s.solution]));
+/** v45 (L742): a dbt lab compiles step `i`'s code (a model build may be several statements); any other lab runs it as written. */
+const stmtsOf = (lab: Lab, step: number | undefined, code: string): string[] =>
+  step !== undefined && isDbtLab(lab.steps) ? compileStep(lab.setup, lab.steps, step, code) : [code];
 
 /**
  * What a DDL step left behind, one row per object: index definitions, columns, constraints, views, statistics, and (v27
@@ -80,24 +111,59 @@ const stepIndex = (lab: Lab, step: LabStep): number => lab.steps.indexOf(step);
 const explainSql = (sql: string): string => `EXPLAIN (FORMAT JSON) ${sql.trim().replace(/;\s*$/, '')}`;
 
 export function pgScriptRunner(env: Env, client: Pick<PgLabClient, 'run' | 'reset'> = new PgLabClient()) {
+  const lang = (): 'vi' | 'en' => env.lang?.() ?? 'vi';
+  /** v45 S-04: a compiler error keeps its code chip and position, with the VI/EN explanation and line:column as its message. */
+  const dbtError = (e: unknown, lab: Lab, step: number | undefined): unknown => {
+    if (!(e instanceof DbtError)) return e;
+    const want = (step !== undefined && lab.steps[step]?.model?.materialized) || 'view';
+    const text = stackText(lang(), e.code, { what: '', name: '', list: '-', want, ...e.params });
+    return Object.assign(new Error(`${stackText(lang(), 'at', { line: e.line, col: e.col })}: ${text}`), { code: e.code, ...(e.position ? { position: e.position } : {}) });
+  };
   /** Setup + replay + `code` (+ `then`); returns the last statement's result. Throws the Postgres error like DbClient (string `code`). */
   const exec = async (lab: Lab, code: string, step: number | undefined, then?: string): Promise<QueryResult> => {
     const replay = replayOf(lab, step);
-    const steps = [...replay, code, ...(then ? [then] : [])];
-    const r = await client.run({ setup: lab.setup, extensions: extensionsOf(lab.setup, ...lab.steps.map((s) => s.solution), code), steps });
+    let own: string[];
+    try {
+      own = stmtsOf(lab, step, code);
+    } catch (e) {
+      throw dbtError(e, lab, step);
+    }
+    const steps = [...replay, ...own, ...(then ? [then] : [])];
+    const r = await client.run({ setup: lab.setup, extensions: extensionsOf(lab.setup, ...lab.steps.map((s) => s.solution), code), loadOnly: loadOnlyOf(lab), steps });
     if (r.setupError) throw Object.assign(new Error(r.setupError.message), r.setupError);
-    for (const s of r.steps) if (s.error) throw Object.assign(new Error(s.error.message), s.error);
+    // a compiled statement's error position points into the compiled SQL, not the player's code: drop it
+    const bad = r.steps.findIndex((s) => s.error);
+    if (bad >= 0) {
+      const e = r.steps[bad].error!;
+      // v45 S-03: the hidden check read failed (not the player's statement): say so, with the model's real columns
+      if (then && bad === steps.length - 1 && isDbtLab(lab.steps) && step !== undefined) throw await afterError(lab, step, code, replay, own, then, e);
+      throw Object.assign(new Error(e.message), e, own[0] !== code ? { position: undefined } : {});
+    }
     const s = r.steps[r.steps.length - 1];
     return { columns: s.columns, types: s.types, rows: s.rows, ms: s.ms, ...(s.truncated ? { truncated: s.truncated } : {}) };
+  };
+  const afterError = async (lab: Lab, step: number, code: string, replay: string[], own: string[], then: string, e: { message: string; code?: string }): Promise<Error> => {
+    const m = lab.steps[step].model;
+    const rel = m ? `${m.layer}.${m.name}` : (/\bFROM\s+([a-z_]+\.[a-z_]+)/i.exec(then)?.[1] ?? '?');
+    let cols = '';
+    if (m) {
+      const r = await client.run({ setup: lab.setup, extensions: extensionsOf(lab.setup, code), loadOnly: loadOnlyOf(lab), steps: [...replay, ...own, `SELECT * FROM ${rel} LIMIT 0`] });
+      const last = r.steps[r.steps.length - 1];
+      cols = last && !last.error ? last.columns.join(', ') : '';
+    }
+    const text = stackText(lang(), m && cols ? 'afterMissing' : 'afterNoModel', { model: rel, err: e.message, cols, sql: then.replace(/\s+/g, ' ').trim() });
+    return Object.assign(new Error(text), { code: e.code ?? 'ERROR' });
   };
   const plan = async (lab: Lab, sql: string, step?: number): Promise<string[]> =>
     planLines((await exec(lab, explainSql(sql), step)).rows[0]?.[0]).map((l) => l.text);
   const runner: LabRunner & { reset(): void } = {
     prepare: async (lab: Lab): Promise<void> => {
-      const r = await client.run({ setup: lab.setup, extensions: extensionsOf(lab.setup, ...lab.steps.map((s) => s.solution)), steps: [] });
+      const r = await client.run({ setup: lab.setup, extensions: extensionsOf(lab.setup, ...lab.steps.map((s) => s.solution)), loadOnly: loadOnlyOf(lab), steps: [] });
       if (r.setupError) throw Object.assign(new Error(r.setupError.message), r.setupError);
     },
-    run: (lab, code, step) => exec(lab, code, step),
+    // v45: Run on a dbt model step shows what the model holds (its `after:` read), not the empty CREATE
+    // S-02: in a dbt lab any step with `after:` (a sync, a fix) shows that read too, so its effect is visible
+    run: (lab, code, step) => exec(lab, code, step, step !== undefined && isDbtLab(lab.steps) ? lab.steps[step]?.after : undefined),
     // the script replays every block above the one run, so it gets more than one lab's LAB_TIMEOUT_MS
     demo: (setup, steps) => client.run({ setup, extensions: extensionsOf(setup, ...steps.map((s) => (typeof s === 'string' ? s : s.sql))), steps, timeoutMs: 60_000 }),
     explain: async (lab, sql) => planLines((await exec(lab, explainSql(sql), undefined)).rows[0]?.[0]),
@@ -114,6 +180,21 @@ export function pgScriptRunner(env: Env, client: Pick<PgLabClient, 'run' | 'rese
         const want = await plan(lab, step.solution, i);
         if (want.join('|') !== mine.join('|')) return { ok: false, reason: 'wrong', why: 'plan', params: { got: mine.join(' → '), want: want.join(' → ') } };
         // the plan is right: the rows must be too (an index-friendly query that answers something else is still wrong)
+      }
+      // v45 S-01: a dbt step must use what it teaches: every ref()/source() of the Solution, and the incremental filter
+      if (isDbtLab(lab.steps)) {
+        const want = callsOf(step.solution), got = callsOf(code);
+        if (want && got) {
+          const ref = want.refs.find((x) => !got.refs.includes(x));
+          const src = want.sources.find((x) => !got.sources.includes(x));
+          const why = ref ? stackText(lang(), 'needRef', { name: ref }) : src ? stackText(lang(), 'needSource', { s: src.split('.')[0], t: src.split('.')[1] })
+            : want.filter && !got.filter ? stackText(lang(), 'needFilter') : undefined;
+          if (why) {
+            // the shape is checked only once the statement runs: a broken answer keeps its own error
+            try { await exec(lab, code, i, step.after); } catch (e) { return { ok: false, reason: 'error', message: e instanceof Error ? e.message : String(e) }; }
+            return { ok: false, reason: 'wrong', message: why };
+          }
+        }
       }
       if (step.after) {
         // v27 R3: GRANT, CALL, TRUNCATE, a write… are graded on the read that follows them, not on their (empty) result

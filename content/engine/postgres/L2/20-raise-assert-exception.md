@@ -17,6 +17,7 @@ objectives:
   - vi: Dùng `ASSERT` cho điều phải luôn đúng, không cho kiểm tra dữ liệu vào, và biết khối bắt lỗi hoàn tác phần việc bên trong nó.
     en: Use `ASSERT` for things that must always hold, never for input checks, and know a catching block undoes the work inside it.
 requires: [e-pg-l2-19]
+figures: [{ name: pg-exception-subtx, at: idea }]
 sources:
   - https://www.postgresql.org/docs/18/plpgsql-errors-and-messages.html
   - https://www.postgresql.org/docs/18/plpgsql-control-structures.html
@@ -100,8 +101,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì ASSERT đúng là báo lỗi khi bật, nhưng nó được thiết kế để bắt lỗi lập trình và có thể bị tắt bằng một tham số. Kiểm tra dữ liệu vào phải dùng `IF ... RAISE EXCEPTION`, thứ không tham số nào tắt được."
-      en: "It sounds right because ASSERT does raise an error while it is on, but it is meant to catch programming bugs and a setting can turn it off. Input checks must use `IF ... RAISE EXCEPTION`, which no setting can disable."
+      vi: "ASSERT đúng là báo lỗi `P0004` khi đang bật, nhưng nó dành cho lỗi lập trình (điều code tin là luôn đúng), và chỉ cần đặt `plpgsql.check_asserts = off` là mọi ASSERT bị bỏ qua, số âm lọt vào. ASSERT không chỉ chạy trong `DO`; nó chạy trong mọi hàm PL/pgSQL. Kiểm tra dữ liệu vào phải dùng `IF ... RAISE EXCEPTION`, thứ không tham số nào tắt được."
+      en: "ASSERT does raise `P0004` while it is on, but it is meant for programming bugs (things the code believes are always true), and setting `plpgsql.check_asserts = off` makes every ASSERT skip, so negative amounts get in. ASSERT is not limited to `DO`; it works in any PL/pgSQL function. Input checks must use `IF ... RAISE EXCEPTION`, which no setting can disable."
   - q:
       vi: "Một hàm thêm dòng A, rồi trong một khối `BEGIN ... EXCEPTION` thêm dòng B và gặp lỗi chia cho 0; nhánh bắt lỗi chỉ ghi `NULL;`. Khi hàm xong, bảng còn gì?"
       en: "A function inserts row A, then inside a `BEGIN ... EXCEPTION` block inserts row B and hits a division by zero; the handler only says `NULL;`. When the function ends, what does the table hold?"
@@ -112,8 +113,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì bắt lỗi trông như bỏ qua lỗi, nhưng mỗi khối có `EXCEPTION` chạy trong một subtransaction. Khi lỗi xảy ra, Postgres quay lui subtransaction đó (mất B) rồi mới chạy nhánh bắt lỗi; việc làm trước khối (A) vẫn còn."
-      en: "It sounds right because catching looks like ignoring the error, but each block with `EXCEPTION` runs in a subtransaction. On an error Postgres rolls that subtransaction back (B is gone) and only then runs the handler; work done before the block (A) stays."
+      vi: "Bắt lỗi trông như bỏ qua lỗi, nhưng mỗi khối có `EXCEPTION` chạy trong một subtransaction (transaction con bên trong transaction của hàm). Khi phép chia cho 0 xảy ra, Postgres rollback đúng subtransaction đó, nên mất B, rồi mới chạy nhánh bắt lỗi. Lỗi đã được bắt nên không lan ra ngoài: việc làm trước khối (A) vẫn còn, không phải mất cả hàm."
+      en: "Catching looks like ignoring the error, but each block with `EXCEPTION` runs in a subtransaction (a child transaction inside the function's transaction). When the division by zero happens, Postgres rolls back just that subtransaction, so B is gone, and only then runs the handler. The error was caught, so it does not spread: work done before the block (A) stays, rather than the whole function being undone."
 ---
 ## Mở bài
 
@@ -130,6 +131,8 @@ Khối `BEGIN ... EXCEPTION WHEN condition THEN ... END` bắt lỗi theo tên (
 Nhiều người nghĩ bắt lỗi là bỏ qua lỗi và giữ mọi thứ đã làm. Thật ra khối có `EXCEPTION` chạy trong một subtransaction: khi lỗi xảy ra, mọi thay đổi bên trong khối bị hoàn tác trước khi nhánh bắt lỗi chạy. Subtransaction có giá, nên đừng bọc mọi câu bằng `EXCEPTION` khi không cần.
 
 `ASSERT condition, 'message'` báo lỗi `P0004` khi điều kiện sai, để bắt lỗi lập trình. Tham số `plpgsql.check_asserts` có thể tắt nó, nên không bao giờ dùng `ASSERT` để kiểm tra dữ liệu vào.
+
+Hình từng bước ở cuối mục này theo hàm `open_two` của mục Ví dụ: dòng ghi trong khối bị hoàn tác, dòng ghi ngoài khối thì còn.
 
 ## Cú pháp
 
@@ -243,7 +246,7 @@ RESET plpgsql.check_asserts;
 
 Bản sai trả `took -50`: khi `check_asserts` tắt, `ASSERT` không chạy. Bản sửa trả mã `22023`.
 
-`ASSERT` đúng chỗ: điều phải luôn đúng, ở đây là không tài khoản nào dưới 1000000:
+Dùng `ASSERT` cho việc của nó: kiểm một điều mà code tin là luôn đúng, ở đây là không tài khoản nào dưới 1000000:
 
 ```sql
 -- ERROR P0004: a balance is below 1000000
@@ -290,6 +293,8 @@ A `BEGIN ... EXCEPTION WHEN condition THEN ... END` block catches errors by name
 Many people think catching an error ignores it and keeps everything done so far. In fact a block with `EXCEPTION` runs in a subtransaction: on an error, every change inside the block is undone before the handler runs. Subtransactions have a cost, so do not wrap every statement in `EXCEPTION` without a reason.
 
 `ASSERT condition, 'message'` raises `P0004` when the condition is false, to catch programming bugs. The setting `plpgsql.check_asserts` can turn it off, so never use `ASSERT` to check input.
+
+The step-through figure at the end of this section follows the Example's `open_two` function: the row written inside the block is undone, the one written outside stays.
 
 ## Syntax
 
@@ -403,7 +408,7 @@ RESET plpgsql.check_asserts;
 
 The wrong version returns `took -50`: with `check_asserts` off, `ASSERT` does not run. The fix returns code `22023`.
 
-`ASSERT` in the right place: something that must always hold, here that no account is under 1000000:
+Use `ASSERT` for its own job: checking something the code believes always holds, here that no account is under 1000000:
 
 ```sql
 -- ERROR P0004: a balance is below 1000000

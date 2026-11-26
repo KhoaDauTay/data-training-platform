@@ -1,0 +1,39 @@
+# v46 (L862): DISTINCT keeps each different result row once. Lessons: distinct (Ý chính) + its quick lesson.
+# Data (lab, checked in PGlite 2026-11-26): stores 1 Hai Chau / 2 Son Tra = Da Nang, 3 Ben Thanh / 4 Thao Dien = Ho Chi Minh City,
+# 5 Hoan Kiem = Hanoi. SELECT DISTINCT city FROM stores ORDER BY city → Da Nang, Hanoi, Ho Chi Minh City (3 rows).
+# The stores are listed by city (as DISTINCT's sort would group them). No row links: at the quick card's 384 px the five links
+# bunched into one column (v46 eye check), so the arrow, the shared tone and the city names carry the merge.
+# The tone follows the city and the city's name is in every cell, so colour never carries the meaning alone.
+# Source: https://www.postgresql.org/docs/current/sql-select.html#SQL-DISTINCT
+title: { vi: "DISTINCT giữ mỗi giá trị một lần", en: "DISTINCT keeps each value once" }
+caption:
+  vi: "5 cửa hàng nằm ở 3 thành phố: SELECT DISTINCT city trả mỗi thành phố đúng một dòng."
+  en: "5 stores sit in 3 cities: SELECT DISTINCT city returns each city exactly once."
+alt:
+  vi: "DISTINCT xét cả dòng kết quả và giữ mỗi dòng khác nhau đúng một lần. Câu chỉ chọn cột city, nên hai cửa hàng cùng thành phố cho cùng một dòng và gộp làm một. Kết quả: 3 dòng từ 5 cửa hàng."
+  en: "DISTINCT looks at the whole result row and keeps each different row exactly once. The query selects only city, so two stores in one city give the same row and collapse into one. Result: 3 rows from 5 stores."
+nodes:
+  - id: stores
+    shape: grid
+    label: stores
+    head: [name, city]
+    cells:
+      - [Hai Chau, Da Nang]
+      - [Son Tra, Da Nang]
+      - [Hoan Kiem, Hanoi]
+      - [Ben Thanh, Ho Chi Minh City]
+      - [Thao Dien, Ho Chi Minh City]
+    toneOf: { "Da Nang": new, "Ho Chi Minh City": warm, Hanoi: live }
+  - id: res
+    shape: grid
+    label: { vi: "Kết quả", en: "Result" }
+    sub: "DISTINCT city"
+    head: [city]
+    cells: [[Da Nang], [Hanoi], [Ho Chi Minh City]]
+    toneOf: { "Da Nang": new, "Ho Chi Minh City": warm, Hanoi: live }
+  - { id: n, shape: note, label: { vi: "5 dòng → 3 dòng", en: "5 rows → 3 rows" } }
+rows:
+  - [stores, res]
+  - [n]
+edges:
+  - { from: stores, to: res }

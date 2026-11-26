@@ -14,6 +14,7 @@ objectives:
   - { vi: "Đọc `n_distinct` trong `pg_stats` và biết đặt đè nó chỉ có hiệu lực sau `ANALYZE` kế tiếp", en: "Read `n_distinct` in `pg_stats` and know that an override only takes effect at the next `ANALYZE`" }
   - { vi: "Thấy một thay đổi `work_mem` đổi hẳn kế hoạch, và chứng minh bằng kế hoạch chứ không bằng cảm giác", en: "See a `work_mem` change switch the whole plan, and prove it with the plan, not a feeling" }
 requires: [e-pg-l5-12]
+figures: [{ name: pg-tuning-loop, at: idea }]
 sources:
   - https://www.postgresql.org/docs/18/performance-tips.html
   - https://www.postgresql.org/docs/18/using-explain.html
@@ -53,11 +54,11 @@ quiz:
   - q: { vi: "Một báo cáo chậm. Đồng nghiệp đề xuất nâng `work_mem` toàn server ngay. Nên làm gì trước?", en: "A report is slow. A colleague proposes raising `work_mem` for the whole server right away. What should come first?" }
     options:
       - { vi: "Nâng `work_mem` trước vì đó là cách nhanh nhất", en: "Raise `work_mem` first because it is the fastest fix" }
-      - { vi: "Đọc kế hoạch: nếu thấy Seq Scan lọc ít dòng, ước lượng lệch xa thực tế, hay tràn đĩa thì sửa đúng chỗ đó (index, `ANALYZE`, rồi mới bộ nhớ)", en: "Read the plan: a Seq Scan that keeps few rows, estimates far from the actual rows, or a spill to disk each point to their own fix (index, `ANALYZE`, and only then memory)" }
+      - { vi: "Đọc kế hoạch: nếu thấy Seq Scan lọc ít dòng, ước lượng lệch xa thực tế, hay tràn đĩa thì sửa theo đó (index, `ANALYZE`, rồi mới bộ nhớ)", en: "Read the plan: a Seq Scan that keeps few rows, estimates far from the actual rows, or a spill to disk each point to their own fix (index, `ANALYZE`, and only then memory)" }
       - { vi: "Chạy `VACUUM FULL` cho mọi bảng", en: "Run `VACUUM FULL` on every table" }
     answer: 1
     trap: 0
-    why: { vi: "Nghe hợp lý vì bộ nhớ hay giúp, nhưng nếu câu chậm vì thiếu index hay thống kê cũ thì thêm bộ nhớ không sửa gì, và `work_mem` lớn cho mọi phiên còn có thể làm server hết RAM. Vòng đúng: đo, sửa nguyên nhân rẻ nhất, đo lại.", en: "It sounds reasonable because memory often helps, but if the query is slow from a missing index or stale statistics, more memory fixes nothing, and a large `work_mem` for every session can run the server out of RAM. The right loop: measure, fix the cheapest cause, measure again." }
+    why: { vi: "Nâng `work_mem` nghe hợp lý vì bộ nhớ hay giúp, nhưng nếu câu chậm vì thiếu index hay thống kê cũ thì thêm bộ nhớ không sửa gì; và `work_mem` áp cho từng nút sort/hash của từng phiên, nên nâng toàn server có thể làm hết RAM. `VACUUM FULL` mọi bảng giữ lock chặn từng bảng mà không nhắm vào nguyên nhân nào. Kế hoạch (execution plan) chỉ ra nguyên nhân: Seq Scan bỏ gần hết dòng thì thiếu index; ước lượng số dòng (row estimate) lệch xa thực tế thì cần `ANALYZE`; sort tràn ra đĩa thì mới tới bộ nhớ. Vòng đúng: đo, sửa nguyên nhân rẻ nhất, đo lại.", en: "Raising `work_mem` sounds reasonable because memory often helps, but if the query is slow from a missing index or stale statistics, more memory fixes nothing; and `work_mem` applies per sort/hash node of each session, so raising it server-wide can run out of RAM. `VACUUM FULL` on every table locks each table without targeting any cause. The plan shows the cause: a Seq Scan that discards almost every row means a missing index; a row estimate far from the actual rows calls for `ANALYZE`; only a sort spilling to disk points at memory. The right loop: measure, fix the cheapest cause, measure again." }
   - q: { vi: "Bạn chạy `ALTER TABLE orders ALTER COLUMN customer_id SET (n_distinct = 5000)`. Đọc `pg_stats` ngay sau đó thấy gì?", en: "You run `ALTER TABLE orders ALTER COLUMN customer_id SET (n_distinct = 5000)`. What does `pg_stats` show right after?" }
     options:
       - { vi: "`5000` ngay lập tức", en: "`5000` at once" }
@@ -65,7 +66,7 @@ quiz:
       - { vi: "Lỗi, vì `n_distinct` chỉ đọc được", en: "An error, because `n_distinct` is read-only" }
     answer: 1
     trap: 0
-    why: { vi: "Nhiều người nghĩ lệnh đặt đè sửa thẳng thống kê. Thật ra nó chỉ lưu một tùy chọn của cột; `ANALYZE` lần sau mới dùng nó thay cho số tự ước lượng. Phần Lỗi hay gặp chạy đúng cảnh này.", en: "Many people think the override edits the statistics directly. In fact it only stores a column option; the next `ANALYZE` uses it in place of its own estimate. The Common mistakes section runs exactly this." }
+    why: { vi: "\"`5000` ngay lập tức\" nghe hợp lý vì lệnh trông như sửa thẳng thống kê, nhưng `pg_stats` chỉ hiện kết quả của lần `ANALYZE` gần nhất. Lệnh này cũng không lỗi: nó chỉ lưu một tùy chọn của cột, và `ANALYZE` lần sau mới dùng tùy chọn đó thay cho số giá trị khác nhau tự ước lượng từ mẫu. Phần Lỗi hay gặp chạy đúng cảnh này.", en: "\"`5000` at once\" sounds right because the command looks like it edits the statistics, but `pg_stats` only shows the result of the latest `ANALYZE`. The command does not error either: it only stores a column option, and the next `ANALYZE` uses that option instead of the distinct-value count it estimates from its sample. The Common mistakes section runs exactly this." }
 ---
 ## Mở bài
 
@@ -78,6 +79,8 @@ Tinh chỉnh là một vòng lặp, không phải một danh sách mẹo: đo, s
 Thứ tự sửa theo giá rẻ. Một: câu viết sao cho dùng được index (so sánh thẳng cột) và có index hợp với câu hay chạy. Hai: thống kê. Planner chọn kế hoạch từ `pg_stats`; bảng vừa nạp hay vừa đổi nhiều mà chưa `ANALYZE` thì planner đoán bằng số mặc định. `n_distinct` là số giá trị khác nhau ước lượng (số âm nghĩa là tỉ lệ theo số dòng); khi mẫu đoán sai, `ALTER TABLE … ALTER COLUMN … SET (n_distinct = …)` đặt đè và `SET STATISTICS` lấy mẫu lớn hơn, cả hai chỉ có hiệu lực ở `ANALYZE` sau.
 
 Ba: cấu hình, và ở phạm vi hẹp nhất. Nhiều người nghĩ cấu hình là chỗ chỉnh đầu tiên. Thật ra nó đứng cuối: nâng `work_mem` cho phiên hay vai trò cần nó, rồi đo lại. Trong lab, cùng một câu gom đổi từ `GroupAggregate` đọc 25.000 lần qua index sang `HashAggregate` đọc 161 trang chỉ vì `work_mem`.
+
+Hình từng bước ở cuối mục này đi hết vòng đó trên bảng `orders` của lab, mỗi lần sửa nằm giữa hai lần đo.
 
 ## Cú pháp
 
@@ -192,6 +195,8 @@ Tuning is a loop, not a list of tips: measure, fix the cheapest cause, measure a
 Fix in order of cost. One: the query is written so it can use an index (compare the column directly) and there is an index that fits the frequent query. Two: statistics. The planner picks a plan from `pg_stats`; a freshly loaded or heavily changed table that has not been through `ANALYZE` makes the planner guess with default numbers. `n_distinct` is the estimated number of distinct values (a negative number means a ratio of the row count); when the sample guesses wrong, `ALTER TABLE … ALTER COLUMN … SET (n_distinct = …)` overrides it and `SET STATISTICS` takes a bigger sample, both only at the next `ANALYZE`.
 
 Three: configuration, at the narrowest scope. Many people think configuration is the first thing to tune. In fact it comes last: raise `work_mem` for the session or role that needs it, then measure again. In the lab the same grouping switches from a `GroupAggregate` reading 25,000 times through the index to a `HashAggregate` reading 161 pages, only because of `work_mem`.
+
+The step-through figure at the end of this section walks that loop on the lab's `orders` table, each fix sitting between two measurements.
 
 ## Syntax
 

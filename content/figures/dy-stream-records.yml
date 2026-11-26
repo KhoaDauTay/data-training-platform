@@ -1,0 +1,56 @@
+# B1-6 (tools/v42/diagram-plan-v42.md): each change is a record with its own images. Lesson: e-dy-l5-01 (Ví dụ), replaces its two
+# text blocks. Data (quoted from the lesson): ORDER#o1 INSERT total 200000, MODIFY 200000 → 250000, REMOVE 250000; S01 += 200000,
+# += 50000, -= 250000; then T1 and T2 interleaved on WALLET#a, WALLET#b. Deviation: the running total is a grid (change, total),
+# not bars (a bar cannot be negative); "-" is the minus sign (glyph table).
+# Source: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Streams.html
+title: { vi: "Mỗi thay đổi là một bản ghi có ảnh cũ và mới", en: "Each change is a record with its old and new images" }
+caption:
+  vi: "Với StreamViewType NEW_AND_OLD_IMAGES, mỗi lần ghi item thành một bản ghi mang ảnh cũ và ảnh mới. Bộ xử lý cộng phần chênh vào tổng của cửa hàng mà không đọc lại bảng."
+  en: "With StreamViewType NEW_AND_OLD_IMAGES, every item write becomes one record carrying the old and the new image. The consumer adds the difference to the store's total without reading the table again."
+alt:
+  vi: "DynamoDB Streams ghi mỗi thay đổi của item thành một bản ghi, giữ 24 giờ, đúng thứ tự trong từng item. Bộ xử lý dùng ảnh cũ và mới để cập nhật tổng và phải chịu được lần chạy lặp."
+  en: "DynamoDB Streams turns each item change into one record, kept 24 hours, in order per item. A consumer uses the old and new images to keep totals, and must tolerate being run again."
+nodes:
+  - id: log
+    shape: grid
+    label: { vi: "stream của ORDER#o1", en: "stream of ORDER#o1" }
+    head: [eventName, OLD, NEW]
+    cells:
+      - [INSERT, "·", "200000"]
+      - [MODIFY, "200000", "250000"]
+      - [REMOVE, "250000", "·"]
+  - { id: fn, label: { vi: "bộ xử lý", en: consumer }, sub: Lambda }
+  - id: sum
+    shape: grid
+    label: { vi: "tổng S01", en: "S01 total" }
+    head: [{ vi: "cộng", en: add }, { vi: "tổng", en: total }]
+    cells:
+      - ["+200000", "200000"]
+      - ["+50000", "250000"]
+      - ["-250000", "0"]
+  - id: tx
+    shape: grid
+    label: { vi: "hai transaction xen nhau", en: "two transactions interleaved" }
+    head: [item, transaction]
+    cells:
+      - [WALLET#a, T1]
+      - [WALLET#b, T2]
+      - [WALLET#b, T1]
+    cellTone: { "1:1": warm }
+rows:
+  - [log, fn, sum]
+  - [tx]
+phone:
+  rows: [[log], [fn], [sum], [tx]]
+edges:
+  - { from: log, to: fn }
+  - { from: fn, to: sum }
+steps:
+  - say: { vi: "Mỗi lần ghi item là một bản ghi.", en: "Every item write is one record." }
+    alt: { vi: "Bản ghi có ảnh cũ và mới của chính item, nên bộ xử lý tính được phần chênh mà không đọc lại bảng.", en: "A record carries the item's old and new images, so the consumer computes the change without reading the table." }
+    show: [log, fn]
+  - say: { vi: "Cộng phần chênh vào tổng cửa hàng.", en: "Add the difference to the store total." }
+    alt: { vi: "Thứ tự được giữ trong từng item, nên ba bản ghi của o1 luôn đến đúng thứ tự và tổng về 0 khi đơn bị xóa.", en: "Order is kept per item, so o1's three records always arrive in order and the total returns to 0 when the order is deleted." }
+    show: [log, fn, sum]
+  - say: { vi: "Một transaction đến thành nhiều bản ghi, có thể xen.", en: "A transaction arrives as several records, possibly interleaved." }
+    alt: { vi: "Streams không gom một transaction thành một khối, nên bộ xử lý không được giả định hai ví đổi cùng lúc.", en: "Streams do not bundle a transaction, so the consumer must not assume both wallets change together." }

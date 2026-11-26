@@ -8,6 +8,7 @@ title_en: Updating documents and upserts
 kind: lab
 runtime: browser
 minutes: 12
+figures: [{ name: mg-upsert-flow, at: idea }]
 objectives:
   - vi: Dùng `$set`, `$inc`, `$unset` với `updateOne` và `updateMany`.
     en: Use `$set`, `$inc` and `$unset` with `updateOne` and `updateMany`.
@@ -113,6 +114,8 @@ Một lệnh update trên một tài liệu luôn nguyên tử (atomic): mọi t
 
 Làm được: sửa đúng trường trên đúng tài liệu và ghi "sửa hoặc tạo" trong một lệnh.
 
+Hình từng bước ở cuối mục này chạy cùng một lệnh lên `p10` chưa có, một lần không có `upsert`, một lần có `{ upsert: true }`.
+
 ## Cú pháp
 
 ```text
@@ -206,6 +209,8 @@ Upsert: with `{ upsert: true }`, if no document matches, MongoDB builds a new do
 An update on a single document is always atomic: every change in the command happens, or none does.
 
 You can now: change the right fields on the right documents and write "update or create" as one command.
+
+The step-through figure at the end of this section runs one command on `p10`, which does not exist yet, once without `upsert` and once with `{ upsert: true }`.
 
 ## Syntax
 

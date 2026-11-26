@@ -8,7 +8,7 @@ title_en: Unique per tenant - UNIQUE (tenant_id, email)
 kind: lab
 runtime: browser
 minutes: 16
-figures: [{ name: pg-tenancy-models, at: idea, step: 3 }]
+figures: [{ name: pg-tenancy-models, at: idea, step: 3 }, { name: ds-tenant-composite-fk, at: idea, variant: unique }]
 objectives:
   - vi: Viết luật duy nhất trong phạm vi một khách hàng thay vì cho cả hệ thống.
     en: Write a uniqueness rule scoped to one tenant instead of the whole system.
@@ -77,8 +77,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì luật duy nhất thường là để bảo vệ dữ liệu. Thật ra phạm vi của luật là phạm vi của tenant: luật toàn cục chặn khách hợp lệ, và vì kiểm duy nhất không đi qua bảo mật theo dòng, nó còn tiết lộ dữ liệu của tenant khác."
-      en: "It sounds right because uniqueness rules usually protect data. In fact the rule's scope is the tenant's scope: a global rule blocks a valid shopper, and since unique checks do not go through row-level security, it also reveals another tenant's data."
+      vi: "\"Luật càng chặt càng an toàn\" nghe hợp lý, nhưng `UNIQUE (email)` xét cả 300 người bán chung một lượt: `an@mail.vn` đã có ở Lan Silk, nên lần đăng ký ở Minh Tea bị từ chối với lỗi 23505 (trùng giá trị duy nhất), dù đó là một người mua hợp lệ. Lỗi ấy còn là kênh rò rỉ: phép kiểm duy nhất không đi qua bảo mật theo dòng (row-level security, RLS), nên Minh Tea biết email đã có ở người bán khác. `tenant_id` khác nhau không cứu được vì nó không nằm trong luật; `UNIQUE (tenant_id, email)` mới đúng phạm vi."
+      en: "\"The stricter the safer\" sounds right, but `UNIQUE (email)` checks all 300 sellers at once: `an@mail.vn` already exists at Lan Silk, so the sign-up at Minh Tea is refused with error 23505 (duplicate unique value), even though the shopper is valid. The error also leaks: unique checks do not go through row-level security (RLS), so Minh Tea learns the email exists at another seller. Different `tenant_id` values do not help because that column is not in the rule; `UNIQUE (tenant_id, email)` has the right scope."
   - q:
       vi: "Vì sao luật mã số thuế cần `WHERE tax_code <> ''`?"
       en: "Why does the tax code rule need `WHERE tax_code <> ''`?"
@@ -89,8 +89,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nhiều người nghĩ điều kiện của index một phần chỉ để tiết kiệm chỗ. Thật ra nó đổi luật: các dòng ngoài điều kiện không bị kiểm, nên nhiều dòng `''` cùng sống được. Với `NULL` thay cho `''` thì không cần điều kiện, vì `NULL` mặc định không trùng nhau."
-      en: "Many people think a partial index's condition only saves space. In fact it changes the rule: rows outside the condition are not checked, so many `''` rows can live together. With `NULL` instead of `''` no condition is needed, since `NULL` values are not equal by default."
+      vi: "Nhiều người nghĩ điều kiện của index một phần (partial index) chỉ để tiết kiệm chỗ, nhưng nó đổi luật: dòng ngoài điều kiện không bị kiểm. Người bán 1 có hai người mua chưa có mã (`''`); không có điều kiện thì hai chuỗi rỗng ấy bị coi là trùng và lệnh tạo index lỗi 23505. Index duy nhất vẫn nhận chuỗi rỗng, chỉ không nhận hai chuỗi rỗng trùng nhau. Nếu ghi \"chưa có\" bằng `NULL` thay cho `''` thì không cần điều kiện, vì mặc định hai `NULL` không bị coi là trùng."
+      en: "Many people think a partial index's condition only saves space, but it changes the rule: rows outside the condition are not checked. Seller 1 has two shoppers with no code yet (`''`); without the condition those two empty strings count as duplicates and creating the index fails with 23505. A unique index does accept an empty string, just not two equal ones. If \"none yet\" were stored as `NULL` instead of `''`, no condition would be needed, since by default two `NULL`s are not duplicates."
 ---
 ## Mở bài
 
@@ -110,7 +110,7 @@ Hai biến thể hay gặp. Email không phân biệt hoa thường: index duy n
 
 **Thêm luật vào bảng đang chạy**: `CREATE UNIQUE INDEX CONCURRENTLY` dựng index mà không chặn ghi. Nếu dữ liệu cũ đã có hai dòng trùng trong cùng một tenant, lệnh dừng với lỗi 23505 và để lại một index ở trạng thái INVALID, phải xóa đi rồi dựng lại. Vì vậy tìm và gộp các dòng trùng trước, bằng `GROUP BY tenant_id, lower(email) HAVING count(*) > 1`. Index trên cột trần còn có thể thành ràng buộc nhờ `ADD CONSTRAINT … UNIQUE USING INDEX`; index biểu thức thì giữ là index.
 
-Hình từng bước ở cuối mục này so ba cách chia khách và mở ở bước Pool; khi nhiều khách dùng chung bảng, mỗi ràng buộc duy nhất phải bắt đầu bằng `tenant_id`.
+Hình từng bước thứ nhất ở cuối mục này so ba cách chia khách và mở ở bước Pool; khi nhiều khách dùng chung bảng, mỗi ràng buộc duy nhất phải bắt đầu bằng `tenant_id`. Hình thứ hai vẽ luật `UNIQUE (tenant_id, email)` trên bảng `shoppers`: người bán 1 và 2 cùng có `an@mail.vn`.
 
 ## Cú pháp
 
@@ -224,7 +224,7 @@ Ba bước, đều chấm bằng catalog: luật email theo người bán, luậ
 - "Duy nhất" trong pool là duy nhất trong một tenant: `UNIQUE (tenant_id, email)`.
 - Luật toàn cục chặn khách hợp lệ và để lỗi 23505 tiết lộ dữ liệu của tenant khác.
 - Không phân biệt hoa thường: index trên `(tenant_id, lower(email))`; giá trị không bắt buộc: index một phần.
-- Đọc tiếp: thẻ `e-bp-s07` (`NULLS NOT DISTINCT`), bài `e-ds-l2-06` (khóa ghép) và `e-ds-l4-09` (bản đồ chủ đề).
+- Đọc tiếp: thẻ `e-bp-s07` (`NULLS NOT DISTINCT`), `e-ds-l2-06` (khóa ghép) và `e-ds-l4-09` (bản đồ chủ đề).
 
 # EN
 
@@ -246,7 +246,7 @@ Two common variants. Case-insensitive email: a unique index on the expression `(
 
 **Adding the rule to a live table**: `CREATE UNIQUE INDEX CONCURRENTLY` builds the index without blocking writes. If the old data already holds two duplicate rows inside one tenant, the command stops with error 23505 and leaves an INVALID index behind, which must be dropped and built again. So find and merge the duplicates first, with `GROUP BY tenant_id, lower(email) HAVING count(*) > 1`. An index on plain columns can then become a constraint through `ADD CONSTRAINT … UNIQUE USING INDEX`; an expression index stays an index.
 
-The step-through figure at the end of this section compares the three ways to split tenants and opens on the Pool step; when tenants share tables, every unique constraint must start with `tenant_id`.
+The first step-through figure at the end of this section compares the three ways to split tenants and opens on the Pool step; when tenants share tables, every unique constraint must start with `tenant_id`. The second draws the rule `UNIQUE (tenant_id, email)` on the table `shoppers`: sellers 1 and 2 both have `an@mail.vn`.
 
 ## Syntax
 
@@ -360,4 +360,4 @@ Three steps, all graded on the catalog: the per-seller email rule, the case-inse
 - "Unique" in a pool means unique within one tenant: `UNIQUE (tenant_id, email)`.
 - A global rule blocks valid customers and lets error 23505 reveal another tenant's data.
 - Case-insensitive: an index on `(tenant_id, lower(email))`; optional values: a partial index.
-- Read next: card `e-bp-s07` (`NULLS NOT DISTINCT`), lessons `e-ds-l2-06` (composite keys) and `e-ds-l4-09` (the topic map).
+- Read next: card `e-bp-s07` (`NULLS NOT DISTINCT`), `e-ds-l2-06` (composite keys) and `e-ds-l4-09` (the topic map).

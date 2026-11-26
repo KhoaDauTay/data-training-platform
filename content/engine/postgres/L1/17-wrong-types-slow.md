@@ -17,6 +17,7 @@ objectives:
   - vi: Lọc một ngày trên cột `timestamptz` bằng khoảng nửa mở thay vì ép cột về `date`.
     en: Filter one day on a `timestamptz` column with a half-open range instead of casting the column to `date`.
 requires: [e-pg-l1-09]
+figures: [{ name: pg-text-compare, at: idea }]
 sources:
   - https://www.postgresql.org/docs/18/datatype.html
   - https://www.postgresql.org/docs/18/datatype-datetime.html
@@ -98,8 +99,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì `42.0` và `42` bằng nhau, nhưng Postgres không ép một `numeric` xuống `int` (có thể mất phần lẻ). Nó ép cột lên `numeric`, và index xếp theo `int` không dùng được cho biểu thức đó. So với `bigint` thì vẫn dùng index, vì các kiểu số nguyên cùng một họ toán tử."
-      en: "It sounds right because `42.0` equals `42`, but Postgres does not cast a `numeric` down to `int` (it could lose the fraction). It casts the column up to `numeric`, and an index ordered by `int` cannot serve that expression. Comparing with a `bigint` still uses the index, since the integer types share one operator family."
+      vi: "\"Postgres đổi `42.0` thành `42`\" nghe hợp lý vì hai số bằng nhau, nhưng Postgres không ép một `numeric` xuống `int` (có thể mất phần lẻ). Nó ép cột lên `numeric` cho từng dòng, và index xếp theo `int` không tra được giá trị `numeric`, nên kế hoạch đọc cả bảng. Không lỗi: kết quả vẫn đúng, chỉ chậm. So với `bigint` thì vẫn dùng index, vì Postgres có sẵn phép so `int` với `bigint` mà index hiểu được."
+      en: "\"Postgres turns `42.0` into `42`\" sounds right because the two numbers are equal, but Postgres does not cast a `numeric` down to `int` (it could lose the fraction). It casts the column up to `numeric` on every row, and an index ordered by `int` cannot look up a `numeric` value, so the plan reads the whole table. No error: the result is right, just slow. Comparing with a `bigint` still uses the index, because Postgres has a built-in `int`-to-`bigint` comparison the index understands."
   - q:
       vi: "Ngày lưu dạng `text` theo mẫu `DD/MM/YYYY`. `WHERE read_on BETWEEN '01/03/2026' AND '31/03/2026'` trả gì?"
       en: "Dates are stored as `text` in the form `DD/MM/YYYY`. What does `WHERE read_on BETWEEN '01/03/2026' AND '31/03/2026'` return?"
@@ -109,8 +110,8 @@ quiz:
       - { vi: "Lỗi vì không phải kiểu `date`", en: "An error because it is not a `date`" }
     answer: 1
     why:
-      vi: "So sánh chữ đi từ trái sang phải, nên `'15/07/2026'` nằm giữa `'01/03/2026'` và `'31/03/2026'`. Lưu ngày bằng kiểu `date` hoặc `timestamptz` thì thứ tự và khoảng mới đúng."
-      en: "Text compares left to right, so `'15/07/2026'` falls between `'01/03/2026'` and `'31/03/2026'`. Store dates as `date` or `timestamptz` to get the right order and ranges."
+      vi: "Không lỗi, vì cả cột lẫn hai mốc đều là chữ, và Postgres so chữ với chữ: từng ký tự từ trái sang phải. Ký tự đầu là ngày, nên `'15/07/2026'` (\"15\") nằm giữa `'01/03/2026'` (\"01\") và `'31/03/2026'` (\"31\") dù là tháng 7. Mọi ngày từ 01 tới 31 của mọi tháng đều lọt vào. Lưu ngày bằng kiểu `date` hoặc `timestamptz` thì thứ tự và khoảng mới đúng."
+      en: "No error, because the column and both bounds are text, and Postgres compares text with text: character by character, left to right. The first characters are the day, so `'15/07/2026'` (\"15\") falls between `'01/03/2026'` (\"01\") and `'31/03/2026'` (\"31\") although it is in July. Every day 01 to 31 of every month gets in. Store dates as `date` or `timestamptz` to get the right order and ranges."
 ---
 ## Mở bài
 
@@ -125,6 +126,8 @@ Index B-tree chỉ dùng được khi điều kiện so chính cột đó với 
 Ép cột về kiểu khác trong `WHERE` cũng vậy: `read_at::date = …`, `sensor_id::int = 42` trên cột chữ. Cách sửa: chọn đúng kiểu ngay từ đầu, viết hằng cùng kiểu với cột, lọc ngày bằng khoảng nửa mở trên cột trần. Nếu chưa sửa được bảng, index trên biểu thức là đường lui.
 
 Lưu ý: ép `timestamptz` về `date` dùng múi giờ của phiên, nên cùng một câu có thể ra ngày khác nhau ở hai máy. Lab này chạy ở UTC.
+
+Hình từng bước ở cuối mục này so cùng dữ liệu lưu bằng kiểu đúng và bằng `text`: cả số dòng trả về cũng khác.
 
 ## Cú pháp
 
@@ -231,6 +234,8 @@ A B-tree index only helps when the condition compares the column itself with a v
 Casting the column in `WHERE` does the same: `read_at::date = …`, `sensor_id::int = 42` on a text column. The fix: pick the right type from the start, write constants of the column's type, filter a day with a half-open range on the bare column. If you cannot fix the table yet, an index on the expression is a fallback.
 
 Note: casting `timestamptz` to `date` uses the session time zone, so the same query can give different days on two machines. This lab runs in UTC.
+
+The step-through figure at the end of this section compares the same data stored with the right types and as `text`: even the row counts differ.
 
 ## Syntax
 

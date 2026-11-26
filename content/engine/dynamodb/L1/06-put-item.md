@@ -8,6 +8,7 @@ title_en: "PutItem: insert or replace a whole item"
 kind: lab
 runtime: browser
 minutes: 8
+figures: [{ name: dy-put-replaces, at: idea }]
 objectives:
   - vi: Thêm một item bằng `PutItem`.
     en: Insert an item with `PutItem`.
@@ -110,6 +111,8 @@ Nhiều người nghĩ `PutItem` lên một khóa đã có sẽ báo trùng khó
 
 `ReturnValues: "ALL_OLD"` trả về item trước khi bị thay. Khi khóa còn mới, phản hồi không có `Attributes`. `PutItem` chỉ nhận `NONE` hoặc `ALL_OLD`.
 
+Hình từng bước ở cuối mục này ghi cùng một giá mới lên cuốn `978-0-02`, một lần bằng `PutItem`, một lần bằng `UpdateItem`, để thấy thuộc tính nào còn lại.
+
 ## Cú pháp
 
 ```text
@@ -190,6 +193,8 @@ This differs from SQL `UPDATE`. To change only some attributes, use `UpdateItem`
 Many people think a `PutItem` on an existing key reports a duplicate key, like an SQL `INSERT`. In fact it overwrites without a word: no error, no warning, and by default the response does not even say an old item was there.
 
 `ReturnValues: "ALL_OLD"` returns the item as it was before the replace. When the key is new, the response has no `Attributes`. `PutItem` accepts only `NONE` or `ALL_OLD`.
+
+The step-through figure at the end of this section writes the same new price to book `978-0-02`, once with `PutItem` and once with `UpdateItem`, to show which attributes survive.
 
 ## Syntax
 

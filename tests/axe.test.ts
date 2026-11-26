@@ -109,6 +109,28 @@ describe('axe-core (v15 Q10)', () => {
     byId('palette').closest('dialog')!.close();
   });
 
+  it('v46 (L861): the quick lesson dialog draws its figure at the end of the concept part, and axe passes with it', async () => {
+    await visit('#/learn');
+    // the harness's IntersectionObserver never fires; here one that sees every host at once (the figure mounts when on screen)
+    const stub = globalThis.IntersectionObserver;
+    vi.stubGlobal('IntersectionObserver', class {
+      constructor(private cb: (xs: { isIntersecting: boolean }[]) => void) {}
+      observe() { queueMicrotask(() => this.cb([{ isIntersecting: true }])); }
+      unobserve() {}
+      disconnect() {}
+    });
+    (await import('../src/ui/lessonCard')).openLesson('group_by', undefined, { guide: true });
+    vi.stubGlobal('IntersectionObserver', stub);
+    const fig = (): Element | null => document.querySelector('#lesson-dialog [data-fig-slot="sql-group-fold"] figure[data-fig] svg');
+    await vi.waitFor(() => expect(fig()).not.toBeNull(), { timeout: 20_000 });
+    const slot = fig()!.closest('[data-fig-slot]')!;
+    expect(slot.closest('section')?.getAttribute('aria-label')).toBe('Ý chính');
+    expect(fig()!.closest('figure')?.querySelector('details[data-fig-alt]')).not.toBeNull();
+    const v = await problems();
+    byId('lesson-dialog').closest('dialog')!.close();
+    expect(v).toEqual([]);
+  });
+
   it.each(DIALOGS)('dialog: %s', async (name, open) => {
     if (location.hash !== '#/d/logistics/play') await visit('#/d/logistics/play');
     await open();

@@ -1,0 +1,52 @@
+# B1-10 (tools/v42/diagram-plan-v42.md): reshape once at write time, read cheaply forever. Lessons: e-mg-l4-01 (Ví dụ), replaces
+# the Computed Values and Bucket text blocks; variants `computed` (e-mg-l4-02, Ý chính) and `bucket` (e-mg-l4-03, Ý chính).
+# Data (each lab's setup, mingo 7.2.6): order 101 lines 2 × 12.5 + 1 × 40 → itemCount 3, total 65; readings of s1 in hour
+# 08:00 sorted by ts → count 3, temps [21, 21.2, 21.6] (the lab's real data: the old text block's "x 7" was an illustration).
+# Deviation: the plan's ule key ("computed on write") is the arrow's label, so nothing floats beside the documents.
+# Source: https://www.mongodb.com/docs/manual/data-modeling/design-patterns/group-data/
+title: { vi: "Đổi dạng một lần lúc ghi, đọc rẻ mãi về sau", en: "Reshape once on write, read cheaply forever" }
+caption:
+  vi: "Computed Values lưu sẵn tổng của đơn; Bucket gom các lần đo cùng giờ của một cảm biến vào một tài liệu. Cả hai làm việc khi ghi để mọi lần đọc khỏi phải tính."
+  en: "Computed Values stores the order's total; Bucket groups one sensor's readings of the same hour into one document. Both do the work on write so that no read has to compute it."
+alt:
+  vi: "Hai mẫu đổi dạng tài liệu theo cách đọc: tính sẵn tổng khi ghi, và gom chuỗi đo dài thành bucket theo giờ. Đổi lại, mọi lệnh ghi phải giữ phần tính sẵn đúng."
+  en: "Two patterns reshape documents for how they are read: store the total on write, and group long series into hourly buckets. In return, every write must keep the stored part correct."
+nodes:
+  - { id: before, shape: doc, label: { vi: "đơn 101", en: "order 101" }, sub: { vi: "2 dòng, chưa tổng", en: "2 lines, no total" } }
+  - { id: after, shape: doc, label: { vi: "đơn 101", en: "order 101" }, sub: { vi: "total 65 · 3 món", en: "total 65 · 3 items" }, tone: new }
+  - id: g
+    shape: grid
+    label: temps
+    cells: [["21", "21.2", "21.6"]]
+rows:
+  - [before, after]
+  - [g]
+edges:
+  - { id: op, from: before, to: after, label: { vi: "$set lúc ghi", en: "$set on write" } }
+  - { from: after, to: g, link: true, dash: true }
+steps:
+  - say: { vi: "Computed Values: lưu sẵn tổng.", en: "Computed Values: store the total." }
+    alt: { vi: "Đơn được đọc nhiều hơn ghi, nên cộng một lần lúc ghi rẻ hơn cộng ở mọi lần đọc.", en: "The order is read far more than written, so adding once on write beats adding on every read." }
+    show: [before, after]
+  - say: { vi: "Bucket: một tài liệu cho một giờ của một cảm biến.", en: "Bucket: one document per sensor hour." }
+    alt: { vi: "Gom các lần đo cùng giờ giảm số tài liệu và số khóa index, nhưng bucket phải có giới hạn kích thước.", en: "Grouping one hour's readings cuts documents and index keys, but each bucket needs a size limit." }
+    show: [before, after, g]
+    set:
+      before: { label: { vi: "3 lần đo s1", en: "3 s1 readings" }, sub: "ts 08:05–08:35" }
+      after: { label: bucket s1 08:00, sub: count 3 }
+      op: { label: { vi: "$group lúc ghi", en: "$group on write" } }
+variants:
+  computed:
+    step: 0
+    title: { vi: "Computed Values: lưu sẵn tổng của đơn", en: "Computed Values: store the order's total" }
+    caption: { vi: "Đơn 101 lưu sẵn itemCount và total khi ghi, nên lần đọc không phải cộng các dòng.", en: "Order 101 stores itemCount and total on write, so a read does not add up the lines." }
+    alt:
+      vi: "Tổng của đơn được tính một lần khi ghi và lưu vào chính tài liệu, nên mọi lần đọc lấy ngay itemCount và total. Đổi lại, lệnh nào sửa dòng hàng cũng phải sửa luôn hai trường đó."
+      en: "The order's total is computed once on write and stored in the document itself, so every read gets itemCount and total at once. In return, any write that changes a line must also change those two fields."
+  bucket:
+    step: 1
+    title: { vi: "Bucket: gom các lần đo theo giờ", en: "Bucket: group readings by hour" }
+    caption: { vi: "Ba lần đo của s1 trong giờ 08:00 thành một tài liệu bucket, mảng temps giữ từng giá trị theo thời gian.", en: "The three readings of s1 in hour 08:00 become one bucket document; the temps array keeps each value in time order." }
+    alt:
+      vi: "Các lần đo cùng giờ của một cảm biến gom vào một tài liệu, nên ít tài liệu và ít khóa index hơn. Mỗi bucket cần giới hạn số phần tử để tài liệu không phình mãi."
+      en: "One sensor's readings of the same hour go into one document, so there are fewer documents and index keys. Each bucket needs a cap on its entries so the document does not grow forever."

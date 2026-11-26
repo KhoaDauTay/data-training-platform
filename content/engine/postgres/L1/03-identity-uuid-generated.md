@@ -17,6 +17,7 @@ objectives:
   - vi: Khai báo cột sinh (generated column) và biết ở Postgres 18 nó mặc định là ảo (`VIRTUAL`).
     en: Declare a generated column and know that in Postgres 18 it is virtual (`VIRTUAL`) by default.
 requires: [e-pg-l1-02]
+figures: [{ name: pg-identity-gap, at: idea }]
 sources:
   - https://www.postgresql.org/docs/18/ddl-identity-columns.html
   - https://www.postgresql.org/docs/18/functions-sequence.html
@@ -33,7 +34,7 @@ lab:
       solution: CREATE TABLE tickets (id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY, public_id uuid NOT NULL DEFAULT uuidv7(), price numeric(10,2) NOT NULL, qty int NOT NULL, total numeric(12,2) GENERATED ALWAYS AS (price * qty))
       check: catalog
       hint:
-        vi: "Cột tính sẵn viết `name type GENERATED ALWAYS AS (expression)`; biểu thức phải nằm trong ngoặc."
+        vi: "Cột sinh (generated column) viết `name type GENERATED ALWAYS AS (expression)`; biểu thức phải nằm trong ngoặc."
         en: "A generated column is `name type GENERATED ALWAYS AS (expression)`; the expression needs parentheses."
     - task:
         vi: "Thêm hai vé (giá 9.50, số lượng 2) và (giá 4.00, số lượng 3), trả về `price, qty, total`."
@@ -49,8 +50,8 @@ lab:
       solution: SELECT attname, attgenerated FROM pg_attribute WHERE attrelid = 'tickets'::regclass AND attgenerated <> ''
       check: rows
       hint:
-        vi: "Cột không tính sẵn có `attgenerated` rỗng. `v` là ảo, `s` là lưu sẵn."
-        en: "Ordinary columns have an empty `attgenerated`. `v` means virtual, `s` means stored."
+        vi: "Cột thường (không phải cột sinh) có `attgenerated` rỗng. `v` là cột sinh VIRTUAL, `s` là cột sinh STORED."
+        en: "Ordinary (non-generated) columns have an empty `attgenerated`. `v` is a VIRTUAL generated column, `s` a STORED one."
 quiz:
   - q:
       vi: "Bảng `orders` có khóa identity. Đơn 1 được ghi, đơn 2 nằm trong một transaction bị `ROLLBACK`, rồi đơn 3 được ghi. Đơn 3 nhận `id` nào?"
@@ -62,8 +63,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì `ROLLBACK` hủy mọi thứ transaction đã làm, nhưng sequence nằm ngoài transaction: số đã phát ra thì không thu lại, để nhiều phiên lấy số cùng lúc mà không phải chờ nhau. Vì thế `id` có lỗ, và không dùng nó làm số hóa đơn bắt buộc liên tục."
-      en: "It sounds right because `ROLLBACK` undoes everything the transaction did, but a sequence lives outside transactions: a number once handed out is never taken back, so many sessions can take numbers at once without waiting for each other. That is why `id` has gaps and must not serve as a gap-free invoice number."
+      vi: "\"Số 2 được trả lại\" nghe hợp lý vì `ROLLBACK` hủy mọi thứ transaction đã làm, nhưng cột identity lấy số từ một sequence, và sequence nằm ngoài transaction. Đơn 2 đã gọi `nextval()` và lấy số 2; `ROLLBACK` xóa dòng nhưng không thu số lại, nên đơn 3 nhận 3. Postgres làm vậy để nhiều phiên lấy số cùng lúc mà không phải chờ nhau. Sequence không hỏng, chỉ có lỗ, nên đừng dùng `id` làm số hóa đơn bắt buộc liên tục."
+      en: "\"Number 2 is given back\" sounds right because `ROLLBACK` undoes everything the transaction did, but an identity column takes its numbers from a sequence, and a sequence lives outside transactions. Order 2 called `nextval()` and took 2; `ROLLBACK` removes the row but does not take the number back, so order 3 gets 3. Postgres does this so many sessions can take numbers at once without waiting for each other. The sequence is not broken, it just has gaps, so do not use `id` as a gap-free invoice number."
   - q:
       vi: "Ở Postgres 18 bạn viết `total numeric GENERATED ALWAYS AS (price * qty)` mà không ghi `STORED` hay `VIRTUAL`. Cột này là loại nào?"
       en: "In Postgres 18 you write `total numeric GENERATED ALWAYS AS (price * qty)` without `STORED` or `VIRTUAL`. Which kind is the column?"
@@ -74,8 +75,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì từ Postgres 12 tới 17 cột sinh chỉ có loại `STORED`, nhưng Postgres 18 thêm `VIRTUAL` và lấy nó làm mặc định. Catalog ghi `v` trong `attgenerated`. Cần đánh index trên cột sinh thì khai báo `STORED`."
-      en: "It sounds right because from Postgres 12 to 17 generated columns could only be `STORED`, but Postgres 18 adds `VIRTUAL` and makes it the default. The catalog shows `v` in `attgenerated`. If you need an index on the generated column, declare it `STORED`."
+      vi: "`STORED` nghe hợp lý vì từ Postgres 12 tới 17 cột sinh chỉ có loại `STORED`, nhưng Postgres 18 thêm `VIRTUAL` và lấy nó làm mặc định, nên bỏ từ khóa không gây lỗi. Bước 3 của lab cho thấy điều đó: catalog ghi `v` trong `attgenerated`. Cột `VIRTUAL` không đánh index được, nên cần index thì khai báo `STORED`."
+      en: "`STORED` sounds right because from Postgres 12 to 17 generated columns could only be `STORED`, but Postgres 18 adds `VIRTUAL` and makes it the default, so leaving the keyword out is no error. Step 3 of the lab shows it: the catalog has `v` in `attgenerated`. A `VIRTUAL` column cannot be indexed, so declare it `STORED` if you need an index."
 ---
 ## Mở bài
 
@@ -90,6 +91,8 @@ Nhiều người nghĩ id do identity sinh luôn liên tục. Thật ra `nextval
 UUID. `uuid` là 16 byte, sinh được ở bất cứ đâu mà không cần hỏi database, hợp cho id công khai (đường dẫn, API) không để lộ số lượng đơn. `gen_random_uuid()` sinh bản 4, hoàn toàn ngẫu nhiên. `uuidv7()` (mới ở Postgres 18) sinh bản 7, bắt đầu bằng thời điểm tạo, nên giá trị mới nằm cuối index (chỉ mục) B-tree, ít xáo trộn trang hơn bản 4.
 
 Cột sinh (generated column). `GENERATED ALWAYS AS (expression)` luôn tính từ các cột khác của cùng dòng; không ai ghi tay được. `STORED` tính khi ghi và chiếm chỗ trên đĩa; `VIRTUAL` tính mỗi lần đọc và không chiếm chỗ. Từ Postgres 18, không ghi gì thì là `VIRTUAL`. Postgres 18 chưa cho đánh index trên cột `VIRTUAL`.
+
+Hình từng bước ở cuối mục này theo ba lệnh `INSERT` của ví dụ `events`: số 2 đã phát cho dòng bị hủy và không quay lại.
 
 ## Cú pháp
 
@@ -225,6 +228,8 @@ Many people think identity ids are always consecutive. In fact `nextval()` is ne
 UUID. A `uuid` is 16 bytes and can be generated anywhere without asking the database, which suits public ids (URLs, APIs) that should not reveal how many orders exist. `gen_random_uuid()` makes version 4, fully random. `uuidv7()` (new in Postgres 18) makes version 7, which starts with the creation time, so new values land at the end of a B-tree index and disturb fewer pages than version 4.
 
 Generated columns. `GENERATED ALWAYS AS (expression)` is always computed from other columns of the same row; nobody can write it by hand. `STORED` is computed on write and takes disk space; `VIRTUAL` is computed on every read and takes none. Since Postgres 18, writing neither gives `VIRTUAL`. Postgres 18 cannot index a `VIRTUAL` column yet.
+
+The step-through figure at the end of this section follows the three `INSERT`s of the `events` example: number 2 went to the cancelled row and never comes back.
 
 ## Syntax
 
