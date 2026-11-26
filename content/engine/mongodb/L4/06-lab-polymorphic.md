@@ -31,7 +31,7 @@ lab:
     ]}}
   steps:
     - task:
-        vi: "Collection `policies` chứa ba loại hợp đồng, phân biệt bằng `kind`. Trả một dòng tổng hợp cho mỗi `kind`: `_id` là `kind`, `count`, `totalInsured` (tổng `insured`), `labels` là mảng nhãn theo `_id` hợp đồng tăng dần. Nhãn: `plate` với `car`, `address` với `home`, `destination` với `travel`. Xếp theo `_id` tăng dần."
+        vi: "Collection `policies` chứa ba loại hợp đồng, phân biệt bằng `kind`. Trả một tài liệu tổng hợp cho mỗi `kind`: `_id` là `kind`, `count`, `totalInsured` (tổng `insured`), `labels` là mảng nhãn theo `_id` hợp đồng tăng dần. Nhãn: `plate` với `car`, `address` với `home`, `destination` với `travel`. Xếp theo `_id` tăng dần."
         en: "The `policies` collection holds three kinds of policy, told apart by `kind`. Return one summary per `kind`: `_id` is the `kind`, `count`, `totalInsured` (sum of `insured`), `labels` the array of labels by policy `_id` ascending. Label: `plate` for `car`, `address` for `home`, `destination` for `travel`. Order by `_id` ascending."
       solution: |
         db.policies.aggregate([

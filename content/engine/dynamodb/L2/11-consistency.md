@@ -71,7 +71,7 @@ Không có đọc nhất quán mạnh trên **GSI** (global secondary index) và
 
 Chọn đọc nhất quán mạnh cho chỗ cần "đọc ngay sau khi ghi" (giỏ hàng, số dư), nhất quán cuối cho phần còn lại. Bộ mô phỏng trong trình duyệt chạy một nút, nên không bao giờ cho thấy đọc cũ; nhưng nó vẫn từ chối `ConsistentRead` trên GSI như DynamoDB thật.
 
-Nhiều người nghĩ cứ bật `ConsistentRead` ở mọi nơi cho chắc. Thật ra phần lớn màn hình chịu được dữ liệu cũ trong chốc lát: danh sách sản phẩm, lịch sử đơn, báo cáo. Bật đọc mạnh ở đó chỉ làm tiền đọc gấp đôi, còn trên GSI thì bị từ chối hẳn. Hãy bật nó đúng chỗ người dùng vừa ghi và nhìn lại ngay kết quả của mình.
+Nhiều người nghĩ cứ bật `ConsistentRead` ở mọi nơi cho chắc. Thật ra phần lớn màn hình chịu được dữ liệu cũ trong chốc lát: danh sách sản phẩm, lịch sử đơn, báo cáo. Bật đọc nhất quán mạnh ở đó chỉ làm tiền đọc gấp đôi, còn trên GSI thì bị từ chối hẳn. Hãy bật nó đúng chỗ người dùng vừa ghi và nhìn lại ngay kết quả của mình.
 
 ## Cú pháp
 

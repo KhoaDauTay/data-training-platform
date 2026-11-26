@@ -25,7 +25,7 @@ quiz:
     answer: 0
     trap: 2
     why: { vi: "Đặt 1 RCU (read capacity unit) và 1 WCU (write capacity unit) nghe rẻ, nhưng chế độ provisioned chỉ cho dùng đúng phần đã đặt: request vượt mức bị throttle (DynamoDB từ chối và bắt gửi lại), nên ngày đông ứng dụng lỗi hàng loạt. Đặt mức cao nhất thì hết lỗi nhưng trả tiền cả những ngày vắng. On-demand trả theo từng request và tự co giãn, nên hợp với tải chưa biết trước; provisioned chỉ rẻ hơn khi tải đều và dự đoán được.", en: "Setting 1 RCU (read capacity unit) and 1 WCU (write capacity unit) sounds cheap, but provisioned mode lets you use only what you set: requests over it are throttled (DynamoDB refuses them and you must retry), so busy days fail in bulk. Setting the highest level ends the errors but you pay for the quiet days too. On-demand bills each request and scales by itself, so it fits unknown traffic; provisioned is cheaper only for steady, predictable load." }
-  - q: { vi: "Mỗi giây: 200 lần ghi item 0,8 KB và 600 lần đọc nhất quán cuối cùng item 2 KB. Cần bao nhiêu WCU và RCU?", en: "Per second: 200 writes of a 0.8 KB item and 600 eventually consistent reads of a 2 KB item. How many WCU and RCU?" }
+  - q: { vi: "Mỗi giây: 200 lần ghi item 0,8 KB và 600 lần đọc nhất quán cuối item 2 KB. Cần bao nhiêu WCU và RCU?", en: "Per second: 200 writes of a 0.8 KB item and 600 eventually consistent reads of a 2 KB item. How many WCU and RCU?" }
     options:
       - { vi: "200 WCU và 300 RCU", en: "200 WCU and 300 RCU" }
       - { vi: "160 WCU và 600 RCU", en: "160 WCU and 600 RCU" }

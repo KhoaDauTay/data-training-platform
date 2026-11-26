@@ -59,7 +59,7 @@ Ba tình huống thật trong một hệ thanh toán: một secondary đang bả
 
 ## Ý chính
 
-Ba câu kiểm lại ba ý của module: write concern `majority` đếm thành viên mang dữ liệu, không đếm arbiter; read concern `linearizable` là mức đọc mạnh nhất cho một tài liệu trên primary; một transaction hủy vì write conflict khi lệnh ghi ngoài transaction đổi trước tài liệu mà nó định đổi. Đáp án theo docs chính thức của MongoDB hiện hành.
+Ba câu kiểm lại ba ý của module: write concern `majority` đếm thành viên mang dữ liệu, không đếm arbiter; read concern `linearizable` là mức nhất quán mạnh nhất cho một tài liệu trên primary; một transaction hủy vì write conflict khi lệnh ghi ngoài transaction đổi trước tài liệu mà nó định đổi. Đáp án theo docs chính thức của MongoDB hiện hành.
 
 ## Ví dụ
 
