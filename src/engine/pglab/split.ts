@@ -30,3 +30,9 @@ export function splitSql(sql: string): string[] {
   out.push(sql.slice(start));
   return out.map((s) => s.trim()).filter((s) => s && !/^(--[^\n]*\n?\s*)+$/.test(s + '\n'));
 }
+
+/** v43 (L725): extension names a script creates (`plainOnly`: without IF NOT EXISTS), lower case; `uuid-ossp` keeps its hyphen. */
+export function createdIn(sql: string, plainOnly: boolean): Set<string> {
+  const re = plainOnly ? /\bCREATE\s+EXTENSION\s+(?!IF\b)"?([\w-]+)"?/gi : /\bCREATE\s+EXTENSION\s+(?:IF\s+NOT\s+EXISTS\s+)?"?([\w-]+)"?/gi;
+  return new Set([...sql.matchAll(re)].map((m) => m[1].toLowerCase()));
+}

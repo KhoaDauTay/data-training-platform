@@ -25,7 +25,7 @@ import { vector } from '@electric-sql/pglite-pgvector';
 import { sqlErrorInfo } from '../../db/run';
 import type { ScriptResult, LabScript, PgExtension, StepResult } from './script';
 import { runCheck } from './check';
-import { splitSql } from './split';
+import { createdIn, splitSql } from './split';
 
 /**
  * ENG-PGLAB (L230): the lab runtime, run inside src/engine/pglab/pglabWorker.ts (Node tests call it directly). Never the
@@ -90,12 +90,6 @@ function templateWith(pre: readonly PgExtension[]): Promise<Blob> {
 
 export { splitSql } from './split';
 
-/** Extension names a script creates (`plainOnly`: without IF NOT EXISTS), lower case; `uuid-ossp` keeps its hyphen. */
-function createdIn(sql: string, plainOnly: boolean): Set<string> {
-  const re = plainOnly ? /\bCREATE\s+EXTENSION\s+(?!IF\b)"?([\w-]+)"?/gi : /\bCREATE\s+EXTENSION\s+(?:IF\s+NOT\s+EXISTS\s+)?"?([\w-]+)"?/gi;
-  return new Set([...sql.matchAll(re)].map((m) => m[1].toLowerCase()));
-}
-
 const blank = (sql: string): StepResult => ({ sql, status: 'skipped', columns: [], types: [], rows: [], notices: [], ms: 0 });
 
 /** Runs `script` on a fresh database and closes it. Throws only when the runtime cannot start (unknown extension, boot). */
@@ -105,8 +99,9 @@ export async function runLabScript(script: LabScript): Promise<ScriptResult> {
   const bad = names.find((n) => !Object.hasOwn(EXTENSIONS, n));
   if (bad) throw new Error(`unknown extension ${bad}`);
   // v43 (L725): an extension a step creates itself (plain `CREATE EXTENSION x`, the Extensions shelf's install step) and the
-  // setup never names is only loaded, so that step does not fail with 42710.
-  const late = createdIn(script.steps.map((st) => (typeof st === 'string' ? st : st.sql)).join('\n'), true);
+  // setup never names is only loaded, so that step does not fail with 42710. A lab passes `loadOnly` from its Solutions, so a
+  // player who skips the install step does not get it for free.
+  const late = script.loadOnly ? new Set<string>(script.loadOnly) : createdIn(script.steps.map((st) => (typeof st === 'string' ? st : st.sql)).join('\n'), true);
   const inSetup = createdIn(script.setup ?? '', false);
   const create = names.filter((n) => !late.has(n) || inSetup.has(n));
   const pre = PREINSTALLED.filter((n) => create.includes(n));

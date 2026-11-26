@@ -3,9 +3,10 @@
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 import v5 from './fixtures/save-v5.json?raw';
-import { DOCS_WHY, docsNoteKey, ENGINE_XP, engineXp, parseEngineLesson, treeOf, type EngineLesson } from '../src/engine/content';
-import { extensionsOf } from '../src/engine/pglab/runner';
-import { EXTENSIONS } from '../src/engine/pglab/session';
+import { DOCS_WHY, docsNoteKey, ENGINE_XP, engineXp, parseEngineLesson, treeOf, type EngineLesson, type Lab } from '../src/engine/content';
+import { extensionsOf, loadOnlyOf, pgScriptRunner } from '../src/engine/pglab/runner';
+import { EXTENSIONS, runLabScript } from '../src/engine/pglab/session';
+import { grade } from '../src/grader';
 import { badges, engineLevels } from '../src/mastery';
 import { paletteItems } from '../src/palette';
 import { engineHash, enginePlayOf, engineRouteOf, parseRoute } from '../src/route';
@@ -102,6 +103,26 @@ describe('no XP, no badge, no level row (L721)', () => {
     const input = (done: Set<string>) => ({ parts: [], levels: new Map(), foundation: [], perf: [], completed: done, engines: { postgres: engineLevels(tree, done) }, domains: [] });
     expect(badges(input(new Set(withExt.completed)))).toEqual(badges(input(new Set(without.completed))));
   });
+});
+
+describe('lab runtime: an install step is graded (L725)', () => {
+  const runner = pgScriptRunner({ grade, verdict: (x) => JSON.stringify(x).slice(0, 200) }, { run: runLabScript, reset: () => undefined });
+  const lab: Lab = {
+    setup: 'CREATE TABLE staff (id int PRIMARY KEY, email text)',
+    steps: [
+      { task: { vi: 'a', en: 'a' }, hint: { vi: 'a', en: 'a' }, check: 'rows', ordered: false, solution: 'CREATE EXTENSION citext', after: "SELECT extname FROM pg_extension WHERE extname = 'citext'" },
+      { task: { vi: 'b', en: 'b' }, hint: { vi: 'b', en: 'b' }, check: 'rows', ordered: false, solution: "SELECT 'A'::citext = 'a' AS same" },
+    ],
+  };
+  it('loadOnlyOf: the Solutions\' plain CREATE EXTENSION, not the setup\'s', () => {
+    expect(loadOnlyOf(lab)).toEqual(['citext']);
+    expect(loadOnlyOf({ ...lab, setup: 'CREATE EXTENSION IF NOT EXISTS citext' })).toEqual([]);
+  });
+  it('skipping the install fails it; a later step still has the extension (replay)', async () => {
+    expect(await runner.check(lab, lab.steps[0], 'SELECT 1')).toMatchObject({ ok: false });
+    expect(await runner.check(lab, lab.steps[0], 'CREATE EXTENSION citext')).toMatchObject({ ok: true });
+    expect(await runner.check(lab, lab.steps[1], "SELECT 'A'::citext = 'a' AS same")).toMatchObject({ ok: true });
+  }, 60_000);
 });
 
 describe('lab runtime: the shelf\'s extensions (L723–L725)', () => {

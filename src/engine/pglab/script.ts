@@ -36,6 +36,8 @@ export type ScriptCheck =
 
 export interface LabScript {
   extensions?: PgExtension[];
+  /** v43 (L725): extensions loaded but not created at boot (a lab step creates them); default: read from `steps`. */
+  loadOnly?: string[];
   /**
    * Content SQL run before the steps, split into statements that each run on their own (so VACUUM works here too); no
    * results kept. A `CREATE EXTENSION x` of a listed extension is skipped (already created). A failure = `setupError`.

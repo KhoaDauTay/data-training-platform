@@ -4,6 +4,7 @@ import type { Lab, LabStep } from '../content';
 import { perfVerdict, planLines, type LabEnv, type LabRunner, type LabVerdict } from '../labs';
 import { PgLabClient } from './client';
 import type { PgExtension } from './script';
+import { createdIn } from './split';
 
 /**
  * ENG-PGLAB (L230) + integration (L248): ENG-CORE's Postgres LabRunner on the lab runtime, for labs with `setup`.
@@ -52,6 +53,15 @@ export function extensionsOf(...sql: (string | undefined)[]): PgExtension[] {
   return all.sort((a, b) => (a === 'cube' ? -1 : b === 'cube' ? 1 : 0));
 }
 
+/**
+ * v43 (L725): the extensions a lab's own steps install (plain `CREATE EXTENSION x` in a Solution, not in setup). They are
+ * loaded but never created at boot, in every run of the lab, so a player who skips the install step does not get it.
+ */
+export const loadOnlyOf = (lab: Lab): string[] => {
+  const inSetup = createdIn(lab.setup ?? '', false);
+  return [...createdIn(lab.steps.map((s) => s.solution).join('\n'), true)].filter((x) => !inSetup.has(x));
+};
+
 /** A statement that only reads (its replay would change nothing). */
 const reads = (sql: string): boolean => /^\s*(\(\s*)?(select|with|explain|table|values|show)\b/i.test(sql.replace(/^\s*(--[^\n]*\n\s*)*/, ''));
 /** The earlier steps' solutions that change the database, in order (DDL, VACUUM, ANALYZE, DML). */
@@ -97,7 +107,7 @@ export function pgScriptRunner(env: Env, client: Pick<PgLabClient, 'run' | 'rese
   const exec = async (lab: Lab, code: string, step: number | undefined, then?: string): Promise<QueryResult> => {
     const replay = replayOf(lab, step);
     const steps = [...replay, code, ...(then ? [then] : [])];
-    const r = await client.run({ setup: lab.setup, extensions: extensionsOf(lab.setup, ...lab.steps.map((s) => s.solution), code), steps });
+    const r = await client.run({ setup: lab.setup, extensions: extensionsOf(lab.setup, ...lab.steps.map((s) => s.solution), code), loadOnly: loadOnlyOf(lab), steps });
     if (r.setupError) throw Object.assign(new Error(r.setupError.message), r.setupError);
     for (const s of r.steps) if (s.error) throw Object.assign(new Error(s.error.message), s.error);
     const s = r.steps[r.steps.length - 1];
@@ -107,7 +117,7 @@ export function pgScriptRunner(env: Env, client: Pick<PgLabClient, 'run' | 'rese
     planLines((await exec(lab, explainSql(sql), step)).rows[0]?.[0]).map((l) => l.text);
   const runner: LabRunner & { reset(): void } = {
     prepare: async (lab: Lab): Promise<void> => {
-      const r = await client.run({ setup: lab.setup, extensions: extensionsOf(lab.setup, ...lab.steps.map((s) => s.solution)), steps: [] });
+      const r = await client.run({ setup: lab.setup, extensions: extensionsOf(lab.setup, ...lab.steps.map((s) => s.solution)), loadOnly: loadOnlyOf(lab), steps: [] });
       if (r.setupError) throw Object.assign(new Error(r.setupError.message), r.setupError);
     },
     run: (lab, code, step) => exec(lab, code, step),
