@@ -20,7 +20,7 @@ describe('Database Engine lesson pages (fixtures)', () => {
     await visit(hash);
     expect(byId('engine-page')?.dataset.lesson).toBe(hash.split('/').pop());
     // L280: the lesson title is the page's h1, under the trail Engine › PostgreSQL › L1
-    expect(byId('home-title')?.textContent).not.toBe('Database Engine');
+    expect(byId('home-title')?.textContent).not.toBe('Cơ sở dữ liệu');
     expect([...document.querySelectorAll('#home nav[aria-label="Đường dẫn"] a')].map((a) => a.getAttribute('href'))).toEqual(['#/engine', '#/engine/postgres', '#/engine/postgres/L1']);
     expect(await problems()).toEqual([]);
   });

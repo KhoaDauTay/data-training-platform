@@ -118,13 +118,13 @@ export const vi = {
   'voice.rowsAndValues': 'Số dòng và giá trị đều lệch, bạn xem lại điều kiện lọc nhé.',
   'nav.practice': 'Luyện SQL',
   'nav.practiceShort': 'Luyện SQL', // review v22 RC: the top-bar label (EN is shorter there)
-  'nav.engine': 'Database Engine', // ENG-CORE (L220): a proper name in both languages (SAME_OK)
-  'nav.engineShort': 'Engine', // review v22 RC (product-design-db-engine §7.2): the top-bar label; the page title stays "Database Engine" (SAME_OK)
-  'deep.title': 'Đào sâu trong Database Engine:',
-  'engine.loading': 'Đang mở khu Database Engine…',
-  'engine.failed': 'Không tải được khu Database Engine. Kiểm tra kết nối mạng rồi thử lại.',
+  'nav.engine': 'Cơ sở dữ liệu', // v47 S1 (L900): was "Database Engine"; the route id stays `engine`
+  'nav.engineShort': 'CSDL', // v47 S1 (L900): the top-bar label and the phone switch (was "Engine"); the page h1 is nav.engine
+  'deep.title': 'Đào sâu trong Cơ sở dữ liệu:',
+  'engine.loading': 'Đang mở khu Cơ sở dữ liệu…',
+  'engine.failed': 'Không tải được khu Cơ sở dữ liệu. Kiểm tra kết nối mạng rồi thử lại.',
   'engine.switch': 'Chọn phần học',
-  'nav.learnBoth': 'Học', // L219 D-E1: the phone bottom bar's one item for Lộ trình + Database Engine
+  'nav.learnBoth': 'Học', // L219 D-E1: the phone bottom bar's one item for Lộ trình + Cơ sở dữ liệu
   'nav.me': 'Tiến bộ',
   'me.title': 'Tiến bộ của tôi',
   'me.loading': 'Đang mở trang tiến bộ…',
@@ -805,7 +805,7 @@ export const vi = {
   'home.domains': 'Lĩnh vực',
   'home.enter': 'Vào làm',
   'home.skillsTeaser': 'Kỹ năng SQL: đã học {n}/{total}',
-  'home.pathTitle': 'Lộ trình học: SQL nền tảng, rồi Database Engine',
+  'home.pathTitle': 'Lộ trình học: SQL nền tảng, rồi Cơ sở dữ liệu',
   'home.pathSql': 'Lộ trình SQL',
   'search.open': 'Tìm bài và thuật ngữ', // F12 (L490); v42 (L710): the top-bar search box's tooltip
   'search.keys': '{mod}+K',

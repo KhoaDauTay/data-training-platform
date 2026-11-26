@@ -120,11 +120,11 @@ export const en: Record<Key, Msg> = {
   'voice.rowsAndValues': 'Both the row count and some values are off. Could you check the filters?',
   'nav.practice': 'Practise SQL',
   'nav.practiceShort': 'Practise', // review v22 RC: the top bar has no room for "Practise SQL" at 1024 px in EN
-  'nav.engine': 'Database Engine', // ENG-CORE (L220): a proper name in both languages (SAME_OK)
-  'nav.engineShort': 'Engine', // review v22 RC (product-design-db-engine §7.2): the top-bar label; the page title stays "Database Engine" (SAME_OK)
-  'deep.title': 'Go deeper in Database Engine:',
-  'engine.loading': 'Opening the Database Engine area…',
-  'engine.failed': 'Could not load the Database Engine area. Check your connection, then try again.',
+  'nav.engine': 'Databases', // v47 S1 (L900): was "Database Engine"
+  'nav.engineShort': 'Databases', // v47 S1 (L900): the top-bar label (was "Engine")
+  'deep.title': 'Go deeper in Databases:',
+  'engine.loading': 'Opening the Databases area…',
+  'engine.failed': 'Could not load the Databases area. Check your connection, then try again.',
   'engine.switch': 'Choose what to learn',
   'nav.learnBoth': 'Learn',
   'nav.me': 'Progress',
@@ -804,7 +804,7 @@ export const en: Record<Key, Msg> = {
   'home.domains': 'Domains',
   'home.enter': 'Go to work',
   'home.skillsTeaser': 'SQL skills: {n}/{total} learned',
-  'home.pathTitle': 'Learning path: SQL basics, then Database Engine',
+  'home.pathTitle': 'Learning path: SQL basics, then Databases',
   'home.pathSql': 'SQL path',
   'search.open': 'Search lessons and terms',
   'search.keys': '{mod}+K',

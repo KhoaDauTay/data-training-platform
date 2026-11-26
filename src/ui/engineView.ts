@@ -23,6 +23,8 @@ import type * as Storage from '../storage';
 import type { CapState } from './engineCapstone';
 import type { PredictState } from './enginePredict';
 import type { FullCtx } from './engineFull';
+import type { HubCtx } from './engineHub';
+type HubView = typeof import('./engineHub');
 
 /**
  * ENG-CORE (L220), redesign L280: the Database Engine pages (#/engine, #/engine/<engine>, #/engine/<engine>/<level>,
@@ -77,8 +79,9 @@ const KIND_ICON = { concept: 'kindConcept', lab: 'kindLab', predict: 'kindPredic
 const et = (key: EngineKey, params?: I18n.Params): string => engineText(d.getLang(), d.locale(), key, params);
 
 /** Parses every engine's content (throws on a broken file: the main part shows the load failure and Retry). */
-export function initEngine(deps: EngineDeps, src: EngineSources, bp: Record<string, { fm: unknown }> = {}): void {
+export function initEngine(deps: EngineDeps, src: EngineSources, bp: Record<string, { fm: unknown }> = {}, hubView?: HubView): void {
   d = deps;
+  if (hubView) hub = hubView;
   bpTitles = Object.fromEntries(Object.values(bp).map(({ fm }) => fm as { id: string; title: string; title_en: string }).map((f) => [f.id, { vi: f.title, en: f.title_en }]));
   fullSrc = src.full;
   lessons = Object.entries(src.meta).map(([path, s]) => parseEngineLesson(s, path));
@@ -259,53 +262,6 @@ const loadingLine = (): HTMLElement => d.h('p', { class: 'm-0 flex min-h-40 item
 const failedBox = (retry: () => void): HTMLElement => d.h('div', { role: 'alert', class: 'flex flex-col gap-2' }, d.h('p', { class: 'm-0' }, d.t('engine.failed')),
   d.h('button', { type: 'button', onclick: retry }, d.t('data.retry')));
 
-/** "Start here" / "Pick up where you left off": the first engine with unfinished progress (else PostgreSQL), its next lesson. */
-function continueCard(ok: Set<string>): HTMLElement | null {
-  const { h, cls } = d;
-  const e = ENGINES.find((x) => { const p = progressOf(flat(x), ok); return p.done > 0 && p.done < p.total; }) ?? 'postgres';
-  const all = flat(e);
-  const next = nextOf(all, ok);
-  if (!next) return null;
-  const started = all.some((x) => ok.has(x.id));
-  return h('section', { class: cls.cx(cls.CARD, 'flex flex-col gap-3 p-6 max-sm:p-4'), 'aria-labelledby': 'engine-cont' },
-    h('p', { class: 'm-0 flex items-center gap-2 text-body-sm font-semibold text-accent-ink' }, d.icon(ENGINE_ICON[e], 'size-4'),
-      `${et(started ? 'cont.resume' : 'cont.start')} · ${nameOf(e)} · ${next.level}`),
-    h('h2', { id: 'engine-cont', class: 'm-0 text-title font-bold' }, next.title[lang()]),
-    h('p', { class: 'm-0 flex flex-wrap items-center gap-2 text-body-sm text-muted' }, kindChip(next.kind), h('span', {}, et('minutes', { n: next.minutes }))),
-    h('div', {}, h('a', { href: lessonHash(next), class: cls.cx(cls.BTN_GO, 'inline-flex items-center gap-2 px-4 py-2 no-underline') },
-      et(started ? 'cont.btnResume' : 'cont.btnStart'), d.icon('arrowRight', 'size-4'))));
-}
-
-/** L280: one card per engine (like the learning path's module cards): picture, name, one line, the L1–L5 tiles, progress. */
-function engineCard(e: EngineId, ok: Set<string>): HTMLElement {
-  const { h, cls } = d;
-  const all = flat(e);
-  const p = progressOf(all, ok);
-  const next = nextOf(all, ok);
-  return h('li', { class: 'relative cursor-pointer flex flex-col gap-4 rounded-(--r-card) bg-panel p-5 ring-1 ring-line hover:ring-accent max-sm:p-4' },
-    h('div', { class: 'flex items-start gap-4' }, engineBadge(e, true),
-      h('div', { class: 'min-w-0 flex-1 flex flex-col gap-1' },
-        h('h3', { class: 'm-0 text-title font-bold' }, h('a', { href: d.engineHash(e), class: 'text-ink no-underline after:absolute after:inset-0' }, nameOf(e))),
-        h('p', { class: 'm-0 text-body-sm text-muted' }, et(`desc.${e}`)),
-        e === 'design' ? h('p', { class: d.cls.cx(d.ui.ABOVE, 'm-0 text-caption text-muted') }, h('a', { href: d.engineHash('postgres', 'L3'), class: 'text-muted' }, et('design.deep'))) : null)),
-    h('ol', { class: 'm-0 grid list-none grid-cols-5 gap-2 p-0', 'aria-label': et('levels') }, ...trees[e].levels.filter((lv) => lv.modules.length).map((lv) => {
-      const q = progressOf(lv.modules.flatMap((m) => m.lessons), ok);
-      const here = next?.level === lv.level;
-      return h('li', { class: 'min-w-0' }, h('a', {
-        href: d.engineHash(e, lv.level), title: `${levelName(lv.level)}: ${et(`ladder.${e}.${lv.level}`)}`,
-        class: cls.cx(d.ui.ABOVE, 'flex min-h-14 flex-col items-center justify-center gap-1 rounded-(--r-inset) px-1 py-2 text-ink no-underline hover:bg-accent-soft',
-          here ? 'bg-accent-soft ring-2 ring-accent' : 'bg-code ring-1 ring-line'),
-      }, h('span', { class: 'flex items-center gap-1 font-bold' }, lv.level, q.total && q.done === q.total ? d.icon('check', 'size-4 text-good') : null),
-        h('span', { class: 'sr-only' }, `${et(`level.${lv.level}`)}, ${et('progress', { k: q.done, n: q.total })}`),
-        h('span', { class: 'text-caption text-muted tabular-nums', 'aria-hidden': 'true' }, `${q.done}/${q.total}`),
-        bar(q.done, q.total, 'h-1')));
-    })),
-    h('div', { class: 'flex flex-wrap items-center gap-x-4 gap-y-2' },
-      h('div', { class: 'flex min-w-40 flex-1 items-center gap-3' }, bar(p.done, p.total), h('span', { class: 'shrink-0 text-body-sm tabular-nums text-muted' }, et('progress', { k: p.done, n: p.total }))),
-      next ? h('a', { href: lessonHash(next), class: cls.cx(cls.BTN_SECONDARY, d.ui.ABOVE, 'px-4 py-1.5 whitespace-nowrap no-underline') },
-        `${et(p.done ? 'cont.btnResume' : 'cont.btnStart')} · ${next.level}`) : null));
-}
-
 /** The NoSQL path as one list row (overview and the MongoDB page): its own picture, a short line, one link. */
 function pathRow(): HTMLElement {
   return d.h('ul', { class: d.ui.LIST }, d.ui.listRow({
@@ -317,32 +273,14 @@ function pathRow(): HTMLElement {
 /** v38 R3 (R3-01, L592): the multi-tenant hub lesson, the one topic map the overview links (its row on the level page gets a chip). */
 const TOPIC_HUB = 'e-ds-l4-09';
 const topicChip = (): HTMLElement => d.h('span', { class: d.cls.cx(d.cls.PILL, 'mr-2 bg-accent-soft text-accent-ink align-[1px]') }, et('topic.map'));
-function topicRow(): HTMLElement | null {
-  const hub = lessons.find((x) => x.id === TOPIC_HUB);
-  return hub ? d.h('section', { 'aria-labelledby': 'engine-topic' },
-    d.h('h2', { id: 'engine-topic', class: d.ui.GROUP_TITLE }, et('topic.title')),
-    d.h('ul', { class: d.ui.LIST }, d.ui.listRow({
-      lead: d.h('span', { class: 'grid size-10 place-items-center rounded-full bg-accent-soft text-accent' }, d.icon(KIND_ICON.concept, 'size-6')),
-      title: d.h('span', {}, topicChip(), et('topic.tenancy'), tick(done().has(hub.id))), sub: et('topic.tenancyShort'), action: rowLink(lessonHash(hub), et('topic.go'), true),
-    }))) : null;
-}
 
-function overview(): HTMLElement {
-  const { h } = d;
-  const ok = done();
-  return h('div', { class: 'flex flex-col gap-8' },
-    h('p', { class: 'm-0 text-muted' }, et('intro')),
-    continueCard(ok),
-    h('section', { 'aria-labelledby': 'engine-list' },
-      h('h2', { id: 'engine-list', class: d.ui.GROUP_TITLE }, et('engines')),
-      h('ul', { class: 'm-0 grid list-none gap-4 p-0 xl:grid-cols-2' }, ...ENGINES.map((e) => engineCard(e, ok)))), // v28 R4: four cards, 2 × 2 (ux-route-v24 §193)
-    h('section', { 'aria-labelledby': 'engine-path' },
-      h('h2', { id: 'engine-path', class: d.ui.GROUP_TITLE }, et('nosql.title')),
-      pathRow()),
-    topicRow(),
-    d.best?.(),
-    v27Rows());
-}
+/** v47 S1 (L902): the landing page and the sidebar are the lazy `engineHub` chunk, loaded beside this one (src/ui/engine.ts). */
+let hub: HubView;
+const hubCtx = (): HubCtx => ({
+  d, et, engines: ENGINES, trees, lessons: () => lessons, done, lang, nameOf, flat, progressOf, nextOf, lessonHash, levelName, levelLessons, extLessons,
+  engineBadge, bar, kindChip, tick, topicChip, rowLink, engineIcon: ENGINE_ICON, conceptIcon: KIND_ICON.concept, refHere: v27Here,
+});
+const overview = (): HTMLElement => hub.overview(hubCtx());
 
 /** `#/engine/<engine>`: the engine's line and progress, the next lesson, then one row per level (like the Overview's chapters). */
 function enginePg(e: EngineId): HTMLElement {
@@ -978,37 +916,7 @@ export function sourceTitle(u: string, title?: string): string {
 /** v24 (L334): the #/me skill map reads each engine's modules from here (src/mastery.ts engineLevels). */
 export const engineTrees = (): Readonly<Record<EngineId, Tree>> => trees;
 
-export function sideRows(ui: { row: (r: Row) => HTMLElement; group: (text: string) => HTMLElement }): (Node | null)[] {
-  const r = d.engineRouteOf(location.hash);
-  const ok = done();
-  const open = ENGINES.find((e) => e === r.engine);
-  const path = open === 'mongodb' && d.enginePathOf(location.hash) !== undefined;
-  const out: (Node | null)[] = [
-    ui.row({ key: 'e:all', href: d.hashOf('engine'), lead: d.icon('engine'), label: d.t('nav.engine'), current: !open && !v27Here() }),
-    ui.group(et('side.engines')),
-    ...ENGINES.map((e) => {
-      const p = progressOf(flat(e), ok);
-      return ui.row({ key: `e:${e}`, href: d.engineHash(e), lead: d.icon(ENGINE_ICON[e]), label: nameOf(e),
-        sub: et('me.line', { k: p.done, n: p.total }), current: open === e && !r.level && !path });
-    }),
-  ];
-  if (!open) return [...out, ...v27Side(ui)];
-  // engine-ux-spec §3.1 (L189): one row per level, the number only in its badge, its short name, done/total; the one current
-  // row is the smallest unit holding the page (the level page or the open lesson's level).
-  for (const lv of trees[open].levels.filter((x) => x.modules.length)) {
-    const p = progressOf(levelLessons(open, lv.level), ok);
-    out.push(ui.row({ key: `e:${open}:${lv.level}`, href: d.engineHash(open, lv.level),
-      lead: p.total && p.done === p.total ? d.icon('check', 'size-5 text-good') : d.h('b', { class: 'text-caption' }, lv.level),
-      label: et(`level.${lv.level}`), full: levelName(lv.level), sub: et('me.line', { k: p.done, n: p.total }), current: r.level === lv.level }));
-  }
-  if (open === 'postgres' && extLessons().length) {
-    const p = progressOf(extLessons(), ok);
-    out.push(ui.row({ key: 'e:ext', href: d.engineHash('postgres', 'EXT'), lead: p.total && p.done === p.total ? d.icon('check', 'size-5 text-good') : d.icon('puzzle'),
-      label: et('level.EXT'), sub: et('me.line', { k: p.done, n: p.total }), current: r.level === 'EXT' }));
-  }
-  if (open === 'mongodb') out.push(ui.row({ key: 'e:path', href: d.enginePathHash(), lead: d.icon('nosqlPath'), label: et('nosql.title'), current: path }));
-  return out;
-}
+export const sideRows = (ui: { row: (r: Row) => HTMLElement; group: (text: string) => HTMLElement }, bestRows: Node[] = []): (Node | null)[] => hub.sideRows(hubCtx(), ui, bestRows);
 
 // ---- MongoDB path ("Lộ trình NoSQL", L248): its own lazy chunk since L280 (budget `engineuiPath`)
 
@@ -1090,22 +998,4 @@ function v27Sub(): HomeView.PageSub | undefined {
   const iv = d.engineInterviewOf(location.hash);
   if (iv) return typeof ivMod === 'object' ? ivMod.subOf(iv) : { title: et('v27.interview'), trail: top };
   return undefined;
-}
-/** The overview's "Reference and practice" rows: the glossary and the interview room. */
-function v27Rows(): HTMLElement {
-  const row = (href: string, icon: Icons.IconName, title: string, sub: string): HTMLElement => d.ui.listRow({
-    lead: d.h('span', { class: 'grid size-10 place-items-center rounded-full bg-accent-soft text-accent' }, d.icon(icon, 'size-6')),
-    title, sub, action: rowLink(href, et('v27.open'), false),
-  });
-  return d.h('section', { 'aria-labelledby': 'engine-more' },
-    d.h('h2', { id: 'engine-more', class: d.ui.GROUP_TITLE }, et('v27.more')),
-    d.h('ul', { class: d.ui.LIST }, row(d.engineCompareHash(), 'scale', et('v28.compare'), et('v28.compareLine')),
-      row(d.engineTermsHash(), 'bookIndex', et('v27.terms'), et('v27.termsLine')),
-      row(d.engineInterviewHash(), 'secPractice', et('v27.interview'), et('v27.interviewLine'))));
-}
-function v27Side(ui: { row: (r: Row) => HTMLElement; group: (text: string) => HTMLElement }): HTMLElement[] {
-  return [ui.group(et('v27.more')),
-    ui.row({ key: 'e:cmp', href: d.engineCompareHash(), lead: d.icon('scale'), label: et('v28.compare'), current: d.engineCompareOf(location.hash) }),
-    ui.row({ key: 'e:terms', href: d.engineTermsHash(), lead: d.icon('bookIndex'), label: et('v27.terms'), current: d.engineTermsOf(location.hash) !== undefined }),
-    ui.row({ key: 'e:iv', href: d.engineInterviewHash(), lead: d.icon('secPractice'), label: et('v27.interview'), current: !!d.engineInterviewOf(location.hash) })];
 }

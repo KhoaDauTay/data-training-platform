@@ -90,10 +90,10 @@ describe('id e-… trong Save', () => {
 });
 
 describe('chunk lười engineView không import giá trị từ module main (Plan 6 U3)', () => {
-  const files = import.meta.glob<string>(['../src/ui/engineView.ts', '../src/ui/engineCompare.ts', '../src/ui/engineFull.ts', '../src/ui/engineResult.ts', '../src/engine/*.ts', '../src/i18n/engine.ts', '../src/i18n/engineCompare.ts', '../src/i18n/engineFull.ts', '../src/i18n/engineResult.ts'], { query: '?raw', import: 'default', eager: true });
+  const files = import.meta.glob<string>(['../src/ui/engineView.ts', '../src/ui/engineCompare.ts', '../src/ui/engineFull.ts', '../src/ui/engineResult.ts', '../src/ui/engineHub.ts', '../src/engine/*.ts', '../src/i18n/engine.ts', '../src/i18n/engineCompare.ts', '../src/i18n/engineFull.ts', '../src/i18n/engineResult.ts', '../src/i18n/engineHub.ts'], { query: '?raw', import: 'default', eager: true });
   it.each(Object.keys(files))('%s', (f) => {
     const values = [...files[f].matchAll(/^import (?!type )[^;]*? from '([^']+)';/gm)].map((m) => m[1]);
-    for (const v of values) expect([f, v]).toEqual([f, expect.stringMatching(/^(\.\.\/engine\/\w+|\.\.\/i18n\/engine(Compare|Full|Result)?|\.\/(content|labs|vizRegistry|pglab\/split|figureSlot|stack\/dbt))$/)]); // v39: figureSlot is engine code (lazy), not main; v45: stack/dbt too
+    for (const v of values) expect([f, v]).toEqual([f, expect.stringMatching(/^(\.\.\/engine\/\w+|\.\.\/i18n\/engine(Compare|Full|Result|Hub)?|\.\/(content|labs|vizRegistry|pglab\/split|figureSlot|stack\/dbt))$/)]); // v39: figureSlot is engine code (lazy), not main; v45: stack/dbt too
   });
 });
 
