@@ -83,11 +83,11 @@ lab:
     - task:
         vi: "Có bao nhiêu đơn không nằm trong vùng giao hàng nào? Một cột `outside`."
         en: "How many orders lie in no delivery zone at all? One column `outside`."
-      solution: SELECT count(*) AS outside FROM orders o WHERE NOT EXISTS (SELECT FROM zones z WHERE ST_Covers(z.area, o.pos))
+      solution: SELECT (SELECT count(*) FROM orders) - count(DISTINCT o.id) AS outside FROM zones z JOIN orders o ON ST_Covers(z.area, o.pos)
       check: rows
       hint:
-        vi: "`NOT EXISTS` với một truy vấn con dùng `ST_Covers`."
-        en: "`NOT EXISTS` with a subquery that uses `ST_Covers`."
+        vi: "Lấy tổng số đơn trừ số đơn khác nhau mà `ST_Covers` xếp được vào một vùng; đi từ `zones` để index giúp."
+        en: "Take the total orders minus the distinct orders `ST_Covers` puts in some zone; start from `zones` so the index helps."
     - task:
         vi: "Với mỗi quầy, số đơn trong bán kính 3 km: tên quầy (`name`) và số đơn (`orders`), theo `id` của quầy."
         en: "For each stall, the orders within 3 km: stall name (`name`) and order count (`orders`), by stall `id`."

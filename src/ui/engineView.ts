@@ -745,6 +745,8 @@ function labView(l: EngineLesson, v: Visit): HTMLElement {
     cap && cc ? cap.capBar(cc) : null,
     h('div', { class: 'flex flex-col gap-3 rounded-(--r-ctl) bg-info-soft p-4 text-body-sm ring-1 ring-info-line' },
       h('p', { class: 'm-0' }, !live ? et('lab.noRunner') : l.engine === 'mongodb' ? et('lab.dataMongo') : l.engine === 'dynamodb' ? et('lab.dataDynamo') : l.lab!.setup ? et('lab.dataPg') : et('lab.data')),
+      // v43 (L726): the PostGIS tarball (~20 MB) is not precached; say so before the first Run
+      live && onPg(l.engine) && /\bpostgis\b/i.test(l.lab!.setup ?? '') ? h('p', { class: 'm-0 text-muted', 'data-postgis-note': '' }, et('lab.postgisOnce')) : null,
       live && l.runtime !== 'docs' ? tablesPanel(l, v) : null),
     cap && cc ? cap.capChecks(cc) : null,
     h('ol', { class: 'm-0 list-none space-y-4 p-0' }, ...steps.map((s, i) => {

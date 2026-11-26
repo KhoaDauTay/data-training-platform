@@ -49,6 +49,9 @@ lab:
       (1, 'Lantern Star', 'POINT(109.00 14.50)'),
       (2, 'Cargo Queen', 'POINT(105.10 8.10)'),
       (3, 'Han River', 'POINT(112.50 18.40)');
+    CREATE INDEX ports_geog_gist ON ports USING gist (geog);
+    ANALYZE ports;
+    ANALYZE ships;
   steps:
     - task:
         vi: "Khoảng cách trên mặt đất từ cảng `VNDAD` tới `VNSGN`, đổi ra km và làm tròn tới số nguyên (một cột `km`)."
