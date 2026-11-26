@@ -61,6 +61,33 @@ export function labTemplate(): Promise<Blob> {
   return template;
 }
 
+/**
+ * v43 spike (L726): `CREATE EXTENSION postgis` takes 4–5 s (Node) and ran on every Run, ~9 s a run in all. A second template
+ * with PostGIS already created is dumped once per worker (~6 MB gzip), so a later run only boots it and loads the library:
+ * ~1.8 s. Only for extensions whose CREATE is that slow; the others are created per run as before (≤ 0.2 s each).
+ */
+const PREINSTALLED: readonly PgExtension[] = ['postgis'];
+const withExt = new Map<string, Promise<Blob>>();
+function templateWith(pre: readonly PgExtension[]): Promise<Blob> {
+  if (!pre.length) return labTemplate();
+  const key = pre.join(',');
+  let t = withExt.get(key);
+  if (!t) {
+    t = (async () => {
+      const db = await PGlite.create({ loadDataDir: await labTemplate(), extensions: Object.fromEntries(pre.map((n) => [n, EXTENSIONS[n]])) });
+      try {
+        for (const n of pre) await db.exec(`CREATE EXTENSION "${n}"`);
+        return await db.dumpDataDir('gzip');
+      } finally {
+        await db.close();
+      }
+    })();
+    withExt.set(key, t);
+    t.catch(() => withExt.delete(key)); // a failed build (offline, no tarball) is retried by the next run
+  }
+  return t;
+}
+
 export { splitSql } from './split';
 
 /** Extension names a script creates (`plainOnly`: without IF NOT EXISTS), lower case; `uuid-ossp` keeps its hyphen. */
@@ -77,13 +104,15 @@ export async function runLabScript(script: LabScript): Promise<ScriptResult> {
   const names = [...new Set(script.extensions ?? [])];
   const bad = names.find((n) => !Object.hasOwn(EXTENSIONS, n));
   if (bad) throw new Error(`unknown extension ${bad}`);
-  const db = await PGlite.create({ loadDataDir: await labTemplate(), extensions: Object.fromEntries(names.map((n) => [n, EXTENSIONS[n]])) });
+  // v43 (L725): an extension a step creates itself (plain `CREATE EXTENSION x`, the Extensions shelf's install step) and the
+  // setup never names is only loaded, so that step does not fail with 42710.
+  const late = createdIn(script.steps.map((st) => (typeof st === 'string' ? st : st.sql)).join('\n'), true);
+  const inSetup = createdIn(script.setup ?? '', false);
+  const create = names.filter((n) => !late.has(n) || inSetup.has(n));
+  const pre = PREINSTALLED.filter((n) => create.includes(n));
+  const db = await PGlite.create({ loadDataDir: await templateWith(pre), extensions: Object.fromEntries(names.map((n) => [n, EXTENSIONS[n]])) });
   try {
-    // n is a key of EXTENSIONS, never player text. v43 (L725): an extension a step creates itself (plain `CREATE EXTENSION x`,
-    // the Extensions shelf's install step) and the setup never names is only loaded, so that step does not fail with 42710.
-    const late = createdIn(script.steps.map((st) => (typeof st === 'string' ? st : st.sql)).join('\n'), true);
-    const inSetup = createdIn(script.setup ?? '', false);
-    for (const n of names) if (!late.has(n) || inSetup.has(n)) await db.exec(`CREATE EXTENSION "${n}"`);
+    for (const n of create) if (!pre.includes(n)) await db.exec(`CREATE EXTENSION "${n}"`); // n is a key of EXTENSIONS, never player text
     const bootMs = Math.round(performance.now() - t0);
     const steps = script.steps.map((st) => blank(typeof st === 'string' ? st : st.sql));
     const done = (more: Partial<ScriptResult>): ScriptResult => {

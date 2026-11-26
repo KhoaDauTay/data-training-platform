@@ -81,6 +81,22 @@ describe('PgLabClient', () => {
     expect(LAB_TIMEOUT_MS).toBeGreaterThan(0);
   });
 
+  it('v43 (L726): lab PostGIS đầu tiên của một worker được giới hạn boot (tải ~20 MB + dựng template), lần sau 20 s', async () => {
+    const lab = new PgLabClient();
+    const geo = { steps: ['SELECT 1'], extensions: ['postgis' as const] };
+    const a = lab.run(geo);
+    await vi.advanceTimersByTimeAsync(0);
+    const w = last();
+    w.send({ type: 'ready' });
+    await vi.advanceTimersByTimeAsync(LAB_TIMEOUT_MS + 1000);
+    expect(w.terminated).toBe(false); // still building its template
+    w.answer(0);
+    await expect(a).resolves.toMatchObject({ ok: true });
+    const b = lab.run(geo).catch((e) => e);
+    await vi.advanceTimersByTimeAsync(LAB_TIMEOUT_MS);
+    expect(await b).toBeInstanceOf(LabTimeoutError); // warm now: the usual limit
+  });
+
   it('reset: lab đang chạy bị LabResetError, lab sau chạy trên worker mới', async () => {
     const lab = new PgLabClient();
     const a = lab.run(script).catch((e) => e);
