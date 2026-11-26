@@ -2036,6 +2036,7 @@
   needs: [c2, c3]
   links:
     - { title: { vi: "Kimball Group: Kỹ thuật mô hình hóa chiều", en: "Kimball Group: Dimensional modeling techniques" }, url: "https://www.kimballgroup.com/data-warehouse-business-intelligence-resources/kimball-techniques/dimensional-modeling-techniques/" }
+    - { title: { vi: "Công cụ dữ liệu: Mart, fact, dimension và grain", en: "Data stack: Marts, facts, dimensions and grain" }, url: "#/engine/stack/L2/e-st-l2-08" }
 
 - id: d7
   group: D
@@ -2054,3 +2055,13 @@
   needs: [d4, d5]
   links:
     - { title: { vi: "roadmap.sh: Lộ trình Data Analyst (nhóm ML, Big Data)", en: "roadmap.sh: Data Analyst roadmap (ML, Big Data groups)" }, url: "https://roadmap.sh/data-analyst" }
+
+- id: d9
+  group: D
+  status: external
+  title: { vi: "Công cụ dữ liệu (dbt, Fivetran, Snowflake)", en: "Data stack (dbt, Fivetran, Snowflake)" }
+  why: { vi: "Mọi con số bạn báo đều đi qua một đường ống người khác dựng: đọc được nó, tin được nó, và bắt được khi nó sai.", en: "Every number you report passes through a pipeline someone else built: read it, trust it, and catch it when it is wrong." }
+  needs: [d6]
+  links:
+    - { title: { vi: "Thẻ Công cụ dữ liệu trong Database Engine (19 bài chạy trong trình duyệt)", en: "The Data stack card in Database Engine (19 lessons that run in the browser)" }, url: "#/engine/stack" }
+    - { title: { vi: "dbt: Giới thiệu model", en: "dbt: About models" }, url: "https://docs.getdbt.com/docs/build/models" }

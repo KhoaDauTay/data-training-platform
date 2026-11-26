@@ -140,7 +140,8 @@ export function parseAdv(data: unknown, origin: string, parseLessonBody: LessonB
     const status = STATUSES.includes(o.status as NodeStatus) ? (o.status as NodeStatus) : fail(`status lạ: ${String(o.status)}`);
     const needs = Array.isArray(o.needs) && o.needs.every((x) => typeof x === 'string') ? (o.needs as string[]) : fail('needs cần một danh sách id');
     const links = (Array.isArray(o.links) ? o.links : []).map((l: Raw) => {
-      const url = typeof l.url === 'string' && l.url.startsWith('https://') ? l.url : fail('link cần url https://');
+      // v46 (L830): an in-app Engine page (`#/engine/…`) is allowed beside https links (d9 → the Data stack card, d6 → e-st-l2-08)
+      const url = typeof l.url === 'string' && (l.url.startsWith('https://') || /^#\/engine\/[A-Za-z0-9/-]+$/.test(l.url)) ? l.url : fail('link cần url https:// hoặc #/engine/…');
       return { title: both(l.title, 'link.title'), url };
     });
     const code = (v: unknown, what: string): string => (typeof v === 'string' && v.trim() ? v.trim() : fail(`thiếu ${what}`));
