@@ -125,7 +125,7 @@ Giám đốc hỏi: "Hôm 26/10 mỗi cửa hàng bán những đơn nào? Cửa
 
 `LEFT JOIN` nối như `JOIN`, nhưng giữ **mọi** dòng của bảng bên trái. Dòng không tìm được cặp vẫn ra một dòng, các cột của bảng bên phải để trống (NULL). `RIGHT JOIN` giữ bảng bên phải; đổi chỗ hai bảng là thành `LEFT JOIN`, nên thường chỉ cần một loại.
 
-Nhiều người nghĩ **đặt điều kiện ở `ON` hay `WHERE` là như nhau**. Với `LEFT JOIN` thì khác hẳn: trong `ON`, điều kiện chọn cặp nào được ghép; trong `WHERE`, nó lọc sau khi ghép và loại luôn những dòng trống mà bạn muốn giữ.
+Nhiều người nghĩ **đặt điều kiện ở `ON` hay `WHERE` là như nhau**. Với `LEFT JOIN` thì khác hẳn: trong `ON`, điều kiện chọn cặp nào được nối; trong `WHERE`, nó lọc sau khi nối và loại luôn những dòng trống mà bạn muốn giữ.
 
 ## Cú pháp
 

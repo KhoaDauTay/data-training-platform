@@ -110,8 +110,8 @@ quiz:
     answer: 0
     trap: 1
     why:
-      vi: "Nhiều hàm khoảng trong lập trình bỏ đầu cuối, nên người ta hay nghĩ SQL cũng vậy. `BETWEEN` thì tính cả hai đầu. Lưu ý: trên cột có giờ (`timestamp`), `'2026-10-31'` là nửa đêm đầu ngày, nên phần còn lại của ngày 31 bị bỏ; Phần 3 dạy cách viết khoảng nửa mở."
-      en: "Many range functions in programming leave out the upper end, so people expect SQL to do the same. `BETWEEN` includes both ends. Note: on a column with a time (`timestamp`), `'2026-10-31'` is midnight at the start of the day, so the rest of the 31st is left out; Part 3 shows the half-open range."
+      vi: "Nhiều hàm khoảng trong lập trình bỏ đầu cuối, nên người ta hay nghĩ SQL cũng vậy. `BETWEEN` thì tính cả hai đầu. Lưu ý: trên cột có giờ (`timestamp`), `'2026-10-31'` là nửa đêm đầu ngày, nên phần còn lại của ngày 31 bị bỏ; bài \"Tính toán với ngày: khoảng cách, cộng ngày và khoảng nửa mở\" dạy cách viết khoảng nửa mở."
+      en: "Many range functions in programming leave out the upper end, so people expect SQL to do the same. `BETWEEN` includes both ends. Note: on a column with a time (`timestamp`), `'2026-10-31'` is midnight at the start of the day, so the rest of the 31st is left out; the lesson \"Date arithmetic: gaps, adding days and half-open ranges\" shows the half-open range."
   - q:
       vi: "Vì sao `WHERE category IN ('Snacks', 'Stationery')` an toàn hơn hai phép so bằng nối bằng `OR` khi còn điều kiện khác?"
       en: "Why is `WHERE category IN ('Snacks', 'Stationery')` safer than two equalities joined by `OR` when there are other conditions?"

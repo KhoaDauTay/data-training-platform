@@ -8,7 +8,7 @@ verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Xếp kết quả tăng hoặc giảm theo một cột, kể cả cột tính ra.
     en: Sort a result up or down by a column, including a computed one.
-  - vi: Xếp theo nhiều cột, mỗi cột một chiều riêng, để các dòng hòa nhau có thứ tự chắc chắn.
+  - vi: Xếp theo nhiều cột, mỗi cột một chiều riêng, để các dòng bằng nhau có thứ tự chắc chắn.
     en: Sort by several columns, each with its own direction, so tied rows get a firm order.
   - vi: Quyết định ô trống (NULL) nằm đầu hay cuối.
     en: Decide whether empty cells (NULL) go first or last.
@@ -21,7 +21,7 @@ options:
   - { code: "ASC", vi: "tăng dần (mặc định khi không ghi gì)", en: "ascending (the default when you write nothing)" }
   - { code: "DESC", vi: "giảm dần; chỉ áp cho cột đứng ngay trước nó", en: "descending; applies only to the column right before it" }
   - { code: "NULLS FIRST / NULLS LAST", vi: "ô trống lên đầu hay xuống cuối", en: "empty cells first or last" }
-  - { code: "sort_key_1, sort_key_2", vi: "cột sau chỉ dùng để xếp các dòng hòa nhau ở cột trước", en: "a later key only orders rows tied on the earlier key" }
+  - { code: "sort_key_1, sort_key_2", vi: "cột sau chỉ dùng để xếp các dòng bằng nhau ở cột trước", en: "a later key only orders rows tied on the earlier key" }
   - { code: "alias", vi: "có thể xếp theo tên vừa đặt bằng `AS` trong `SELECT`", en: "you may sort by a name given with `AS` in the `SELECT`" }
 examples:
   - title: { vi: "Đắt nhất lên đầu", en: "Most expensive first" }
@@ -40,7 +40,7 @@ examples:
     read:
       vi: "Nhóm hàng xếp A → Z (`Drinks` đầu tiên), trong mỗi nhóm thì giá giảm dần: nước cam 35.000 đứng đầu nhóm đồ uống. Cột thứ hai chỉ xếp các dòng cùng nhóm."
       en: "Categories run A to Z (`Drinks` first), and inside each category prices go down: the orange juice at 35,000 leads the drinks. The second key only orders rows of the same category."
-  - title: { vi: "Ô trống xuống cuối, tên để phân xử", en: "Empty cells last, name as a tie-breaker" }
+  - title: { vi: "Ô trống xuống cuối, tên làm tiêu chí sắp xếp phụ", en: "Empty cells last, name as a tie-breaker" }
     sql: |-
       SELECT name, birth_year
       FROM customers
@@ -111,15 +111,15 @@ quiz:
       vi: "Trong bảng tính, ô trống thường nằm cuối dù xếp chiều nào, nên nhiều người đoán như vậy. Postgres thì xếp NULL như giá trị lớn nhất: cuối khi tăng dần, đầu khi giảm dần. `NULLS LAST` đổi điều đó."
       en: "In a spreadsheet, blank cells usually sink to the bottom whichever way you sort, so many people guess that. Postgres sorts NULL as the largest value: last going up, first going down. `NULLS LAST` changes that."
   - q:
-      vi: "Vì sao nên thêm một cột phân xử, như `name`, sau cột xếp chính?"
+      vi: "Vì sao nên thêm một tiêu chí sắp xếp phụ, như `name`, sau cột xếp chính?"
       en: "Why add a tie-breaker such as `name` after the main sort key?"
     options:
-      - { vi: "Để các dòng hòa nhau ở cột chính có thứ tự cố định", en: "So rows tied on the main key get a fixed order" }
+      - { vi: "Để các dòng bằng nhau ở cột chính có thứ tự cố định", en: "So rows tied on the main key get a fixed order" }
       - { vi: "Để câu chạy nhanh hơn", en: "So the query runs faster" }
       - { vi: "Vì Postgres bắt buộc ít nhất hai cột", en: "Because Postgres requires at least two keys" }
     answer: 0
     why:
-      vi: "Nhiều dòng có cùng giá trị ở cột chính (cùng năm sinh). Không có cột phân xử, thứ tự giữa chúng không được hứa, và kết quả có thể đổi giữa hai lần chạy. Đặc biệt quan trọng khi sau đó có `LIMIT`."
+      vi: "Nhiều dòng có cùng giá trị ở cột chính (cùng năm sinh). Không có tiêu chí sắp xếp phụ, thứ tự giữa chúng không được hứa, và kết quả có thể đổi giữa hai lần chạy. Đặc biệt quan trọng khi sau đó có `LIMIT`."
       en: "Many rows share a value on the main key (the same birth year). Without a tie-breaker their order is not promised and can change between two runs. It matters most when a `LIMIT` follows."
 recap:
   - vi: "`ORDER BY` chỉ đổi thứ tự, không đổi số dòng; không có nó thì không có thứ tự nào được hứa."
@@ -128,7 +128,7 @@ recap:
     en: "`ASC` is the default; `DESC` only applies to the key right before it."
   - vi: "NULL là lớn nhất: dùng `NULLS LAST` khi xếp giảm dần."
     en: "NULL counts as the largest: use `NULLS LAST` when sorting down."
-  - vi: "Thêm cột phân xử để thứ tự lần nào cũng như nhau."
+  - vi: "Thêm tiêu chí sắp xếp phụ để thứ tự lần nào cũng như nhau."
     en: "Add a tie-breaker so the order is the same every time."
 sources:
   - https://www.postgresql.org/docs/current/queries-order.html

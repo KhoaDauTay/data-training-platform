@@ -67,7 +67,7 @@ pitfalls:
     wrong: "EXPLAIN SELECT id FROM orders WHERE date_trunc('month', order_date) = '2026-10-01'"
     fix: "EXPLAIN SELECT id FROM orders WHERE order_date >= '2026-10-01' AND order_date < '2026-11-01'"
     why:
-      vi: "`date_trunc` phải chạy trên từng dòng trước khi so, nên Postgres đọc cả bảng (Seq Scan). Planner còn đoán chỉ 7 dòng thay vì 222, vì nó không biết hàm trả gì. Viết lại thành khoảng nửa mở trên cột trần."
+      vi: "`date_trunc` phải chạy trên từng dòng trước khi so, nên Postgres đọc cả bảng (Seq Scan). Bộ lập kế hoạch (planner) còn ước tính chỉ 7 dòng thay vì 222 dòng thật, vì nó không biết hàm trả gì. Viết lại thành khoảng nửa mở trên cột trần."
       en: "`date_trunc` must run on every row before the comparison, so Postgres reads the whole table (Seq Scan). The planner even guesses 7 rows instead of 222, since it cannot know what the function returns. Rewrite it as a half-open range on the bare column."
   - title: { vi: "Đổi kiểu chính cột", en: "Casting the column itself" }
     wrong: "EXPLAIN SELECT id FROM orders WHERE customer_id::text = '42'"
