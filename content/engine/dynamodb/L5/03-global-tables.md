@@ -16,7 +16,7 @@ requires: [e-dy-l4-11]
 sources:
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/V2globaltables_HowItWorks.html
 quiz:
-  - q: { vi: "Ứng dụng thanh toán chạy ở hai vùng, yêu cầu RPO bằng 0 và đọc mạnh ở vùng nào cũng thấy bản mới nhất. Chọn gì?", en: "A payments app runs in two Regions, needs an RPO of zero and strong reads that see the latest version in any Region. Which choice?" }
+  - q: { vi: "Ứng dụng thanh toán chạy ở hai vùng, yêu cầu RPO bằng 0 và đọc nhất quán mạnh ở vùng nào cũng thấy bản mới nhất. Chọn gì?", en: "A payments app runs in two Regions, needs an RPO of zero and strong reads that see the latest version in any Region. Which choice?" }
     options:
       - { vi: "MREC, vì là mặc định", en: "MREC, because it is the default" }
       - { vi: "MRSC: ba vùng (ba bản sao, hoặc hai bản sao và một witness), ghi chậm hơn", en: "MRSC: three Regions (three replicas, or two replicas and a witness), slower writes" }

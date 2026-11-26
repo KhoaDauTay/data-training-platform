@@ -84,7 +84,7 @@ lab:
       expect: { Count: 2 }
       hint: { vi: "Hai `Get` trong `TransactItems`; kết quả theo đúng thứ tự các `Get`.", en: "Two `Get` actions in `TransactItems`; the result follows the order of the `Get` actions." }
 quiz:
-  - q: { vi: "Bước 1 trả `Count` 2, `ScannedCount` 5. Một khách khác để lại 40 giỏ, 38 giỏ đã hết hạn nhưng TTL chưa xóa, mỗi giỏ 1 KB. Query bước 1 (đọc cuối cùng) cho khách này tốn bao nhiêu RCU?", en: "Step 1 returns `Count` 2, `ScannedCount` 5. Another customer left 40 carts, 38 of them expired but not yet deleted by TTL, 1 KB each. How many RCU does the step 1 Query (eventually consistent) cost for this customer?" }
+  - q: { vi: "Bước 1 trả `Count` 2, `ScannedCount` 5. Một khách khác để lại 40 giỏ, 38 giỏ đã hết hạn nhưng TTL chưa xóa, mỗi giỏ 1 KB. Query bước 1 (đọc nhất quán cuối) cho khách này tốn bao nhiêu RCU?", en: "Step 1 returns `Count` 2, `ScannedCount` 5. Another customer left 40 carts, 38 of them expired but not yet deleted by TTL, 1 KB each. How many RCU does the step 1 Query (eventually consistent) cost for this customer?" }
     options:
       - { vi: "0,5 RCU, vì chỉ 2 giỏ được trả về", en: "0.5 RCU, because only 2 carts are returned" }
       - { vi: "5 RCU: 40 KB đã đọc = 10 khối 4 KB, × 0,5", en: "5 RCU: 40 KB read = 10 blocks of 4 KB, × 0.5" }

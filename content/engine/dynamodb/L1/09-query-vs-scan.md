@@ -302,7 +302,7 @@ Theo tài liệu API, `Scan` không có tham số `KeyConditionExpression`. Dyno
 {"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-12"}}, "Select": "COUNT"}}
 ```
 
-Engine ghi 1 RCU (read capacity unit, đơn vị đọc) cho Scan, 0.5 cho Query. Capacity tính theo khối 4 KB của tổng dữ liệu đã đọc, mỗi khối 0.5 RCU khi đọc nhất quán cuối (eventually consistent): 120 item nhỏ cộng lại vượt một khối nên thành 2 khối × 0.5 = 1, còn 4 item của Query nằm trong 1 khối × 0.5 = 0.5. Trên bảng nhỏ này chênh lệch capacity còn nhỏ, nhưng `ScannedCount` 120 so với 4 cho thấy Scan tăng theo cả bảng.
+Engine ghi 1 RCU (read capacity unit, đơn vị đọc) cho Scan, 0.5 cho Query. Đây là số engine đo, theo luật của AWS: Scan và Query cộng cỡ mọi item đã đọc, làm tròn lên bội 4 KB, mỗi 4 KB là 1 RCU khi đọc nhất quán mạnh, rồi chia đôi khi đọc nhất quán cuối (eventually consistent). 120 item ở đây khoảng 66 byte mỗi item, tổng chừng 7,8 KB, làm tròn lên 8 KB = 2 RCU, chia đôi = 1; 4 item của Query dưới 4 KB nên 1 ÷ 2 = 0.5. Tổng sát mức 8 KB, nên nếu ước thô 100 byte mỗi item thì ra 12 KB và 1.5 RCU: hãy tin số engine đo, không tin con số ước. Trên bảng nhỏ này chênh lệch capacity còn nhỏ, nhưng `ScannedCount` 120 so với 4 cho thấy Scan tăng theo cả bảng.
 
 ## Thực hành
 
@@ -400,7 +400,7 @@ Counting one customer's orders with a `Scan` because "it only returns a number":
 {"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-12"}}, "Select": "COUNT"}}
 ```
 
-The engine records 1 RCU (read capacity unit) for the Scan and 0.5 for the Query. Capacity counts 4 KB blocks of the total data read, each block 0.5 RCU for an eventually consistent read: the 120 small items add up to more than one block, so 2 blocks × 0.5 = 1, while the Query's 4 items fit in 1 block × 0.5 = 0.5. On this small table the capacity gap is still small, but a `ScannedCount` of 120 against 4 shows the Scan grows with the whole table.
+The engine records 1 RCU (read capacity unit) for the Scan and 0.5 for the Query. These are the engine's measurements, following the AWS rule: a Scan or Query adds up the size of every item read, rounds up to a multiple of 4 KB, counts 1 RCU per 4 KB for a strongly consistent read, then halves it for an eventually consistent read. The 120 items here are about 66 bytes each, roughly 7.8 KB in total, rounded up to 8 KB = 2 RCU, halved = 1; the Query's 4 items are under 4 KB, so 1 ÷ 2 = 0.5. The total sits just under 8 KB, so a rough guess of 100 bytes per item would give 12 KB and 1.5 RCU: trust the measured number, not the guess. On this small table the capacity gap is still small, but a `ScannedCount` of 120 against 4 shows the Scan grows with the whole table.
 
 ## Practice
 

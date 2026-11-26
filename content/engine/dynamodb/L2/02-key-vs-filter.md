@@ -299,7 +299,7 @@ Lọc theo khách bằng `Scan`:
 {"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-02"}}}}
 ```
 
-`ScannedCount` của `Scan` là 120, của Query là 4. Engine tính `Scan` 1 RCU (read capacity unit, đơn vị đọc), Query 0.5 RCU: tổng dữ liệu 120 item vượt một khối 4 KB nên thành 2 khối × 0.5 = 1, còn 4 item của Query nằm trong 1 khối × 0.5 = 0.5. Bảng chỉ có 120 item nhỏ nên chênh lệch còn nhỏ, nhưng `Scan` lớn dần theo cỡ bảng, còn Query chỉ theo cỡ item collection.
+`ScannedCount` của `Scan` là 120, của Query là 4. Engine đo `Scan` 1 RCU (read capacity unit, đơn vị đọc), Query 0.5 RCU. Luật của AWS: cộng cỡ các item đã đọc, làm tròn lên bội 4 KB, mỗi 4 KB là 1 RCU nhất quán mạnh, rồi chia đôi khi đọc nhất quán cuối. 120 item tổng chừng 7,8 KB, làm tròn lên 8 KB = 2, chia đôi = 1; 4 item của Query dưới 4 KB nên 1 ÷ 2 = 0.5. Bảng chỉ có 120 item nhỏ nên chênh lệch còn nhỏ, nhưng `Scan` lớn dần theo cỡ bảng, còn Query chỉ theo cỡ item collection.
 
 ## Thực hành
 
@@ -384,7 +384,7 @@ Filtering on the customer with a `Scan`:
 {"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-02"}}}}
 ```
 
-The `Scan` has a `ScannedCount` of 120, the Query 4. The engine charges the `Scan` 1 RCU (read capacity unit) and the Query 0.5 RCU: the 120 items add up to more than one 4 KB block, so 2 blocks × 0.5 = 1, while the Query's 4 items fit in 1 block × 0.5 = 0.5. With only 120 small items the gap is still small, but a `Scan` grows with the table while a Query grows only with its item collection.
+The `Scan` has a `ScannedCount` of 120, the Query 4. The engine measures the `Scan` at 1 RCU (read capacity unit) and the Query at 0.5 RCU. The AWS rule: add up the size of the items read, round up to a multiple of 4 KB, count 1 strongly consistent RCU per 4 KB, then halve it for an eventually consistent read. The 120 items total roughly 7.8 KB, rounded up to 8 KB = 2, halved = 1; the Query's 4 items are under 4 KB, so 1 ÷ 2 = 0.5. With only 120 small items the gap is still small, but a `Scan` grows with the table while a Query grows only with its item collection.
 
 ## Practice
 

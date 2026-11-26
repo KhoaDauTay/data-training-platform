@@ -147,7 +147,7 @@ quiz:
       - { vi: "Ít nhất 4 vì mỗi item tốn 2 WCU", en: "At least 4 because each item costs 2 WCU" }
     answer: 1
     why: { vi: "Ghi làm tròn lên bội 1 KB: 0,6 KB → 1 KB = 1 WCU (write capacity unit) mỗi lần, 2000 lần là 2000 WCU mỗi giây. Một partition chịu tối đa 1000 WCU, nên cần ít nhất 2000 / 1000 = 2 shard. On-demand không nâng trần của một partition, nên 1 shard vẫn bị throttle; mỗi item cũng không tốn 2 WCU vì 0,6 KB chưa tới 1 KB. Bài chọn 4 shard (500 WCU mỗi shard) để còn dư khi hậu tố rải không đều.", en: "Writes round up to a multiple of 1 KB: 0.6 KB → 1 KB = 1 WCU (write capacity unit) each, so 2000 writes are 2000 WCU per second. One partition takes at most 1000 WCU, so at least 2000 / 1000 = 2 shards. On-demand does not raise a partition's ceiling, so 1 shard would still throttle; and an item does not cost 2 WCU, since 0.6 KB is under 1 KB. The lesson picks 4 shards (500 WCU each) to leave room when the suffix spreads unevenly." }
-  - q: { vi: "Mỗi lần xem bảng xếp hạng gửi 4 Query (một mỗi shard), mỗi Query đọc 3 item tổng dưới 4 KB, đọc nhất quán cuối cùng. 300 lượt xem mỗi giây tốn bao nhiêu RCU?", en: "Each leaderboard view sends 4 Queries (one per shard), each reading 3 items totalling under 4 KB, eventually consistent. How many RCU do 300 views per second cost?" }
+  - q: { vi: "Mỗi lần xem bảng xếp hạng gửi 4 Query (một mỗi shard), mỗi Query đọc 3 item tổng dưới 4 KB, đọc nhất quán cuối. 300 lượt xem mỗi giây tốn bao nhiêu RCU?", en: "Each leaderboard view sends 4 Queries (one per shard), each reading 3 items totalling under 4 KB, eventually consistent. How many RCU do 300 views per second cost?" }
     options:
       - { vi: "150 RCU", en: "150 RCU" }
       - { vi: "600 RCU", en: "600 RCU" }
