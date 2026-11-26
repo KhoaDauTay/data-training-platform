@@ -97,8 +97,10 @@ export function engineLevels(tree: { levels: readonly { level: string; modules: 
 // ---------- badges: readable conditions, recomputed on every draw, lost and won back (L333) ----------
 
 /** Fixed order; an engine with no content yet (design, L322) keeps its five badges, never held. */
-export const BADGE_ENGINES = ['postgres', 'mongodb', 'dynamodb', 'design'] as const;
+export const BADGE_ENGINES = ['postgres', 'mongodb', 'dynamodb', 'design', 'stack'] as const;
 export const ENGINE_LEVELS = ['L1', 'L2', 'L3', 'L4', 'L5'] as const;
+/** v45 (L745): the levels an engine has badges for; the data stack has three (no badge nobody can hold). */
+export const levelsOf = (e: string): readonly string[] => (e === 'stack' ? ENGINE_LEVELS.slice(0, 3) : ENGINE_LEVELS);
 
 export type Badge =
   | { kind: 'part'; id: string; have: boolean; n: number }
@@ -131,7 +133,7 @@ export function badges(x: BadgeInput): Badge[] {
     { kind: 'fast', id: 'fast', have: all(x.perf, (p) => x.completed.has(p)) },
     // L333: the old certificate's condition, on the evidence level (an overdue card does not take it away)
     { kind: 'foundation', id: 'foundation', have: all(x.foundation, (s) => (lv(s)?.base ?? 0) >= 2) },
-    ...BADGE_ENGINES.flatMap((e) => ENGINE_LEVELS.map((l): Badge =>
+    ...BADGE_ENGINES.flatMap((e) => levelsOf(e).map((l): Badge =>
       ({ kind: 'engine', id: `${e}-${l}`, engine: e, level: l, have: !!x.engines[e]?.find((y) => y.level === l)?.done }))),
     { kind: 'path', id: 'path', have: all(x.path ?? [], (p) => x.completed.has(p)) },
     ...x.domains.map((dm): Badge => ({ kind: 'domain', id: `domain-${dm.id}`, domain: dm.id, have: dm.done })),

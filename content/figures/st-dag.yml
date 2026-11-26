@@ -1,0 +1,25 @@
+# ST-7 (tools/v43/de-tools-plan.md §4): the lab's own DAG. Lesson: e-st-l2-02 (Ý chính). Node ids are the model names:
+# tests/engineStack.test.ts checks that every ref() of the lab's model steps (dagOrder/refsOf, src/engine/stack/dbt.ts) is an edge here.
+# Source: https://docs.getdbt.com/reference/dbt-jinja-functions/ref
+title: { vi: "Đồ thị phụ thuộc của lab", en: "The lab's dependency graph" }
+caption:
+  vi: "Mỗi ref() hay source() là một mũi tên; model ở mũi nhọn chạy sau. Hai model staging không phụ thuộc nhau nên chạy song song được."
+  en: "Each ref() or source() is an arrow; the model at the arrowhead runs later. The two staging models do not depend on each other, so they can run in parallel."
+alt:
+  vi: "Mỗi ref() trong một model là một cạnh, và các cạnh xếp thành đồ thị không vòng từ bảng raw tới mart. Vì fct_orders đọc cả hai model staging, nó chỉ chạy được khi cả hai đã xong."
+  en: "Each ref() in a model is an edge, and the edges form a graph with no cycle from the raw tables to the mart. Because fct_orders reads both staging models, it can only run once both are done."
+nodes:
+  - { id: raw_orders, shape: table, mono: true, label: raw_shop.orders, sub: source() }
+  - { id: raw_customers, shape: table, mono: true, label: raw_shop.customers, sub: source() }
+  - { id: stg_orders, mono: true, label: stg_orders, sub: staging }
+  - { id: stg_customers, mono: true, label: stg_customers, sub: staging }
+  - { id: fct_orders, mono: true, label: fct_orders, sub: { vi: "marts · 2 ref()", en: "marts · 2 ref()" }, tone: new }
+rows:
+  - [raw_orders, raw_customers]
+  - [stg_orders, stg_customers]
+  - [fct_orders]
+edges:
+  - { from: raw_orders, to: stg_orders }
+  - { from: raw_customers, to: stg_customers }
+  - { from: stg_orders, to: fct_orders }
+  - { from: stg_customers, to: fct_orders }

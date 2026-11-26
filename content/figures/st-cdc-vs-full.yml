@@ -1,0 +1,57 @@
+# ST-4 (tools/v43/de-tools-plan.md §4; v45 S-06): full refresh, cursor, CDC, 3 steps. Lesson: e-st-l1-04 (Ý chính).
+# Data = the lesson's demo: app.orders (row 303 deleted at the source), raw_shop.orders (303 still there), the change log
+# app.order_changes (303 with op 'd'). The log comes out of the source database (its write-ahead log, logical replication).
+# Sources: https://docs.airbyte.com/platform/using-airbyte/core-concepts/sync-modes ; https://www.postgresql.org/docs/18/logical-replication.html
+title: { vi: "Ba cách chép một bảng", en: "Three ways to copy a table" }
+caption:
+  vi: "Chép cả bảng đọc mọi dòng; con trỏ chỉ lấy dòng có updated_at mới hơn nên không thấy dòng bị xóa; CDC đọc nhật ký của database nên thấy cả xóa."
+  en: "A full refresh reads every row; a cursor takes only rows with a newer updated_at, so it never sees a deleted row; CDC reads the database's log, so it sees deletes too."
+alt:
+  vi: "Có ba cách để bảng raw theo kịp nguồn, và chúng khác nhau ở chỗ có thấy dòng bị xóa hay không. Con trỏ rẻ nhưng chỉ hỏi dòng nào mới đổi, nên dòng 303 đã xóa vẫn nằm trong kho; CDC đọc nhật ký thay đổi nên đánh dấu được nó."
+  en: "There are three ways to keep a raw table in step with its source, and they differ in whether they see deleted rows. A cursor is cheap but only asks which rows changed, so the deleted row 303 stays in the warehouse; CDC reads the change log, so it can flag it."
+nodes:
+  - { id: src, shape: table, mono: true, label: app.orders, sub: { vi: "303 đã xóa", en: "303 deleted" } }
+  - { id: log, label: { vi: "nhật ký thay đổi", en: "change log" }, sub: { vi: "của database", en: "of the database" } }
+  - { id: full, label: { vi: "chép cả bảng", en: "full refresh" }, sub: { vi: "mọi dòng", en: "every row" } }
+  - { id: cur, label: { vi: "con trỏ", en: "cursor" }, sub: updated_at }
+  - { id: cdc, label: CDC, sub: { vi: "thêm, sửa, xóa", en: "add, edit, delete" } }
+  - { id: raw, shape: table, mono: true, label: raw_shop.orders, sub: { vi: "trong kho", en: "in the warehouse" } }
+rows:
+  - [src, log]
+  - [full, cur, cdc]
+  - [raw]
+edges:
+  - { from: src, to: log }
+  - { from: src, to: full }
+  - { from: src, to: cur }
+  - { from: log, to: cdc }
+  - { from: full, to: raw }
+  - { from: cur, to: raw }
+  - { from: cdc, to: raw }
+steps:
+  - say: { vi: "Chép cả bảng: đọc lại mọi dòng mỗi lần.", en: "Full refresh: reread every row each time." }
+    show: [src, full, raw]
+    alt: { vi: "Chép cả bảng luôn đúng vì đọc lại mọi dòng, nhưng chi phí tăng theo cỡ bảng chứ không theo số thay đổi.", en: "A full refresh is always right because it rereads every row, but its cost grows with the table's size rather than with the number of changes." }
+    set:
+      full: { tone: live }
+      cur: { tone: ghost }
+      cdc: { tone: ghost }
+      log: { tone: ghost }
+  - say: { vi: "Con trỏ: chỉ dòng mới đổi, nên 303 đã xóa vẫn ở kho.", en: "Cursor: only changed rows, so the deleted 303 stays." }
+    show: [src, cur, raw]
+    alt: { vi: "Con trỏ chỉ hỏi dòng nào có updated_at mới hơn lần trước, mà dòng 303 đã bị xóa thì không còn để trả lời, nên bảng raw giữ nó mãi.", en: "The cursor only asks which rows have a newer updated_at than last time, and the deleted row 303 is no longer there to answer, so the raw table keeps it forever." }
+    set:
+      full: { tone: ghost }
+      cur: { tone: live }
+      cdc: { tone: ghost }
+      log: { tone: ghost }
+      raw: { sub: { vi: "303 vẫn còn", en: "303 still there" }, tone: warm }
+  - say: { vi: "CDC: đọc nhật ký, thấy cả dòng bị xóa.", en: "CDC: read the log, deletes included." }
+    show: [src, log, cdc, raw]
+    alt: { vi: "Nhật ký thay đổi của database ghi cả thao tác xóa, nên CDC biết dòng 303 đã mất ở nguồn và công cụ nạp đánh dấu xóa mềm cho nó.", en: "The database's change log records deletes too, so CDC learns that row 303 is gone at the source and the ingestion tool flags it as soft-deleted." }
+    set:
+      full: { tone: ghost }
+      cur: { tone: ghost }
+      log: { tone: live }
+      cdc: { tone: new }
+      raw: { sub: { vi: "303 có dấu xóa", en: "303 flagged" } }

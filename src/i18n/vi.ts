@@ -421,7 +421,7 @@ export const vi = {
   'res.runFirst': 'Chạy truy vấn ({mod}+Enter) để xem kết quả.',
   'res.stale': 'SQL đã thay đổi — {mod}+Enter để cập nhật.',
   'res.noTable': 'Câu lệnh đã chạy và được hoàn tác (ROLLBACK). Dữ liệu không đổi, không có kết quả dạng bảng.',
-  'res.empty': 'Truy vấn chạy được nhưng ra 0 dòng — kiểm tra điều kiện WHERE / JOIN.',
+  'res.empty': 'Truy vấn chạy được nhưng ra 0 dòng: kiểm tra điều kiện WHERE / JOIN.',
   'res.rows': 'Kết quả: {n} dòng',
   'res.more': '+{n} dòng nữa',
   'res.shown': 'Kết quả: {n} dòng (hiển thị {max} dòng đầu)',

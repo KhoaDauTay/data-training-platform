@@ -1,0 +1,26 @@
+# ST-5 (tools/v43/de-tools-plan.md §4): one payment event whose JSON array becomes three rows. Lesson: e-st-l1-05 (Ví dụ).
+# Data = the lab's raw_pay.webhooks event 1 (items: LAMP-RED × 2, LAMP-GOLD × 1, SILK-01 × 1), checked in PGlite.
+# Sources: https://www.postgresql.org/docs/18/functions-json.html ; https://docs.snowflake.com/en/sql-reference/functions/flatten
+title: { vi: "Một sự kiện thành ba dòng", en: "One event becomes three rows" }
+caption:
+  vi: "jsonb_array_elements trong LATERAL mở mảng items của từng sự kiện: mỗi phần tử một dòng, vẫn mang event_id của sự kiện."
+  en: "jsonb_array_elements inside LATERAL opens each event's items array: one row per element, still carrying the event's event_id."
+alt:
+  vi: "Một sự kiện thanh toán chứa cả mảng items trong một ô JSON, nên không gom theo sản phẩm được. Mở mảng bằng LATERAL cho mỗi phần tử một dòng riêng, cùng event_id, và từ đó SQL thường làm tiếp được. Kết quả: sự kiện 1 thành 3 dòng."
+  en: "A payment event holds its whole items array in one JSON cell, so you cannot group by product yet. Opening the array with LATERAL gives each element its own row with the same event_id, and plain SQL can carry on from there. Result: event 1 becomes 3 rows."
+nodes:
+  - { id: ev, shape: doc, mono: true, label: event_id 1, sub: { vi: "items: 3 phần tử", en: "items: 3 elements" } }
+  - { id: fn, mono: true, label: LATERAL, sub: { vi: "mở mảng items", en: "opens items" }, tone: warm }
+  - id: res
+    shape: grid
+    mono: true
+    label: { vi: "Kết quả", en: "Result" }
+    head: [event_id, sku, qty]
+    cells: [["1", LAMP-RED, "2"], ["1", LAMP-GOLD, "1"], ["1", SILK-01, "1"]]
+rows:
+  - [ev]
+  - [fn]
+  - [res]
+edges:
+  - { from: ev, to: fn }
+  - { from: fn, to: res }

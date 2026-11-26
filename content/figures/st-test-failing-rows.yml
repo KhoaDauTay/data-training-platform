@@ -1,0 +1,38 @@
+# ST-9 (tools/v43/de-tools-plan.md §4): a test returns failing rows, then 0 rows once the model is fixed. Lesson: e-st-l2-04 (Ý chính).
+# Data = the lab: the unfixed staging.stg_orders has order 402 twice (unique fails); the fixed model keeps one version per order.
+# Source: https://docs.getdbt.com/docs/build/data-tests
+title: { vi: "Test trả về dòng hỏng", en: "A test returns the failing rows" }
+caption:
+  vi: "Test unique trả các order_id lặp lại. Có dòng là trượt; sửa model rồi chạy lại, 0 dòng là qua."
+  en: "The unique test returns the order_id values that repeat. Any row means fail; fix the model and rerun, 0 rows means pass."
+alt:
+  vi: "Một test kiểu dbt là câu SELECT trả về chính các dòng vi phạm luật, nên số dòng nó trả là số lỗi. Model giữ hai bản của một đơn thì test trượt; model bỏ trùng thì test không trả dòng nào và qua."
+  en: "A dbt-style test is a SELECT that returns the very rows that break the rule, so the number of rows it returns is the number of errors. While the model keeps two versions of an order the test fails; once the model removes duplicates the test returns nothing and passes."
+nodes:
+  - { id: model, shape: table, mono: true, label: staging.stg_orders, sub: { vi: "chưa sửa", en: "not fixed" } }
+  - { id: test, mono: true, label: unique, sub: order_id, tone: warm }
+  - id: fail
+    shape: grid
+    mono: true
+    label: { vi: "1 dòng: trượt", en: "1 row: fail" }
+    head: [order_id, n]
+    cells: [["402", "2"]]
+    rowTone: [dead]
+  - { id: pass, label: { vi: "0 dòng: qua", en: "0 rows: pass" }, sub: { vi: "sau khi sửa", en: "after the fix" }, tone: new }
+rows:
+  - [model]
+  - [test]
+  - [fail, pass]
+edges:
+  - { from: model, to: test }
+  - { from: test, to: fail }
+  - { from: test, to: pass }
+steps:
+  - say: { vi: "Model chưa sửa: test trả một dòng, nên trượt.", en: "Unfixed model: the test returns one row, so it fails." }
+    alt: { vi: "Model chưa bỏ bản trùng nên đơn 402 có hai dòng, và test unique trả đúng đơn đó cùng số lần lặp.", en: "The model has not removed duplicates, so order 402 has two rows, and the unique test returns that order with its repeat count." }
+    show: [model, test, fail]
+  - say: { vi: "Model đã sửa: test không trả dòng nào, nên qua.", en: "Fixed model: the test returns no row, so it passes." }
+    alt: { vi: "Sau khi model giữ một bản mới nhất cho mỗi đơn, không order_id nào lặp lại nên test không trả dòng nào và qua.", en: "Once the model keeps one newest version per order, no order_id repeats, so the test returns no rows and passes." }
+    show: [model, test, pass]
+    set:
+      model: { sub: { vi: "đã sửa", en: "fixed" }, tone: new }

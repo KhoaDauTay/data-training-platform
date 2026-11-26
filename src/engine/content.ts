@@ -12,15 +12,16 @@
  */
 import type { PerfSpec } from '../planCheck';
 import { type FigRef, parseFigures } from './figureSlot';
+import { LAYERS, MATERIALIZED, type ModelSpec } from './stack/dbt';
 
 /** v28 R4 (L322, L420): `design` = database design and DBMS theory, the fourth card; its labs run on PostgreSQL (`onPg`). */
-export const ENGINES = ['postgres', 'mongodb', 'dynamodb', 'design'] as const;
+export const ENGINES = ['postgres', 'mongodb', 'dynamodb', 'design', 'stack'] as const; // v45 (L740): + stack, the data stack (dbt, Fivetran, Snowflake)
 export type EngineId = (typeof ENGINES)[number];
 /** The three database products (the interview room and the glossary): every engine but the design track. */
-export type ProductEngine = Exclude<EngineId, 'design'>;
-export const ENGINE_SHORT: Record<EngineId, 'pg' | 'mg' | 'dy' | 'ds'> = { postgres: 'pg', mongodb: 'mg', dynamodb: 'dy', design: 'ds' };
+export type ProductEngine = Exclude<EngineId, 'design' | 'stack'>;
+export const ENGINE_SHORT: Record<EngineId, 'pg' | 'mg' | 'dy' | 'ds' | 'st'> = { postgres: 'pg', mongodb: 'mg', dynamodb: 'dy', design: 'ds', stack: 'st' };
 /** The engines whose labs, predicts and plans run on PostgreSQL (PGlite): Postgres itself and the design track (L420). */
-export const onPg = (e: EngineId): boolean => e === 'postgres' || e === 'design';
+export const onPg = (e: EngineId): boolean => e === 'postgres' || e === 'design' || e === 'stack';
 export const LEVELS = ['L1', 'L2', 'L3', 'L4', 'L5'] as const;
 /** A rung of an engine's ladder (the trees, badges and skill map hold only these). */
 export type Rung = (typeof LEVELS)[number];
@@ -50,6 +51,8 @@ export interface LabStep {
   rule?: 'esr' | 'covered' | 'match-first'; index?: string; error?: string; sql?: string;
   /** v27 R3: a read run right after the statement on a Postgres setup lab; the step is graded on its rows (GRANT, CALL, TRUNCATE, a write). */
   after?: string;
+  /** v45 (L742): a dbt-style model step (engine stack): the code is a Jinja SELECT compiled by src/engine/stack/dbt.ts; graded by `after`. */
+  model?: ModelSpec;
 }
 export interface Lab { setup?: string; steps: LabStep[] }
 export interface Question { q: Bi; options: Bi[]; answer: number; why: Bi }
@@ -121,7 +124,7 @@ export interface EngineLesson {
 
 /** `e-pg-l1-01`: engine short name, level, the file's NN. */
 export const lessonIdFor = (engine: EngineId, level: Level, nn: string): string => `e-${ENGINE_SHORT[engine]}-${level.toLowerCase()}-${nn}`;
-const PATH_RE = /engine\/(postgres|mongodb|dynamodb|design)\/(L[1-5]|ext)\/(\d{2})-[a-z0-9-]+\.md$/;
+const PATH_RE = /engine\/(postgres|mongodb|dynamodb|design|stack)\/(L[1-5]|ext)\/(\d{2})-[a-z0-9-]+\.md$/;
 const FM_RE = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/;
 const EN_RE = /^# EN[ \t]*$/m;
 
@@ -171,6 +174,14 @@ export function parseEngineLesson(source: string | LessonSource, path: string, y
     return { table: String(p.table), ...(typeof p.max_ratio === 'number' ? { max_ratio: p.max_ratio } : {}) };
   };
 
+  const modelOf = (v: unknown, what: string): ModelSpec => {
+    const m = (v ?? {}) as Record<string, unknown>;
+    if (typeof m.name !== 'string' || !/^[a-z_][a-z0-9_]*$/.test(m.name)) fail(`${what}.name`);
+    if (!(LAYERS as readonly unknown[]).includes(m.layer)) fail(`${what}.layer phải là ${LAYERS.join(', ')}`);
+    if (m.materialized !== undefined && !(MATERIALIZED as readonly unknown[]).includes(m.materialized)) fail(`${what}.materialized`);
+    return { name: String(m.name), layer: m.layer as ModelSpec['layer'], ...(m.materialized ? { materialized: m.materialized as ModelSpec['materialized'] } : {}) };
+  };
+
   const [engine, level, nn] = [where[1] as EngineId, (where[2] === 'ext' ? 'EXT' : where[2]) as Level, where[3]];
   if (level === 'EXT' && engine !== 'postgres') fail('ext/ chỉ có ở content/engine/postgres/ext');
   const kind = KINDS.includes(fm.kind as Kind) ? (fm.kind as Kind) : fail(`kind phải là một trong ${KINDS.join(', ')}`);
@@ -216,10 +227,12 @@ export function parseEngineLesson(source: string | LessonSource, path: string, y
         ...(s.fact !== undefined ? { fact: fact(s.fact, `lab.steps[${i}].fact`) } : {}),
         ...(s.name !== undefined ? { name: bi(s.name, `lab.steps[${i}].name`) } : {}),
         ...(s.perf !== undefined ? { perf: perfOf(s.perf, s.slow, `lab.steps[${i}]`) } : {}),
+        ...(s.model !== undefined ? { model: modelOf(s.model, `lab.steps[${i}].model`) } : {}),
         ...Object.fromEntries(['target', 'slow', 'rule', 'index', 'error', 'sql', 'after'].flatMap((k) => (typeof s[k] === 'string' && s[k] ? [[k, s[k].trim()]] : []))),
       };
     });
     if (!steps.length) fail('lab cần ít nhất một bước');
+    if (steps.some((s) => s.model && !s.after)) fail('bước model cần after (CREATE VIEW không trả dòng nào)');
     lesson.lab = { steps, ...(typeof lab.setup === 'string' && lab.setup.trim() ? { setup: lab.setup.trim() } : {}) };
   }
   if (typeof fm.demo_setup === 'string' && fm.demo_setup.trim()) lesson.demoSetup = fm.demo_setup.trim();

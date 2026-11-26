@@ -23,7 +23,7 @@ const specs = Object.fromEntries(Object.entries(import.meta.glob<FigSpec>('../co
 const engineFiles = import.meta.glob<string>('../content/engine/*/{L*,ext}/*.md', { query: '?raw', import: 'default', eager: true });
 const engine: EngineLesson[] = Object.entries(engineFiles).map(([p, s]) => parseEngineLesson(s, p, parse));
 const general = await Promise.all(Object.entries(fullLessons).map(async ([p, load]) => parseFullLesson(await load(), lessonIdOf(p))));
-const SHORT = { postgres: 'pg', mongodb: 'mg', dynamodb: 'dy', design: 'ds' } as const;
+const SHORT = { postgres: 'pg', mongodb: 'mg', dynamodb: 'dy', design: 'ds', stack: 'st' } as const;
 // v44 B4 (P1, L812): Best Practice cards host figures too (engineBest's FIG_TRACK)
 const best = Object.entries(import.meta.glob<string>('../content/engine/best/*/*.md', { query: '?raw', import: 'default', eager: true })).map(([p, t]) => {
   const m = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/.exec(t.replace(/\r\n/g, '\n'))!;
@@ -157,7 +157,7 @@ describe('v44: no diagrams drawn with characters', () => {
 describe.each(Object.keys(specs))('v39 figure %s', (name) => {
   const spec = specs[name];
   it('giới hạn: ≤ 12 node, ≤ 14 mũi tên, ≤ 6 bước; tên file = [a-z0-9-]+; VI và EN đủ, EN không dấu', () => {
-    expect(name).toMatch(/^(sql|ds|pg|mg|dy|bp)-[a-z0-9-]+$/); // v44 B4 (L812): bp- = a Best Practice card's figure
+    expect(name).toMatch(/^(sql|ds|st|pg|mg|dy|bp)-[a-z0-9-]+$/); // v44 B4 (L812): bp- = a Best Practice card's figure
     expect(spec.nodes.length).toBeLessThanOrEqual(12);
     expect((spec.edges ?? []).length).toBeLessThanOrEqual(14);
     expect((spec.steps ?? []).length).toBeLessThanOrEqual(6);
