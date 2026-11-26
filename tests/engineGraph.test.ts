@@ -152,6 +152,22 @@ describe('Engine Graph: mọi bước lab qua bằng lời giải, không qua kh
   }, 120_000);
 });
 
+describe('Engine Graph: wiring kept through merges (regex sites tsc cannot see)', () => {
+  it('ENGINE_ID, routes, play alias, onPg, runner, two badge levels', async () => {
+    const { ENGINE_ID } = await import('../src/save');
+    const { engineRouteOf, enginePlayOf } = await import('../src/route');
+    const { onPg } = await import('../src/engine/content');
+    const { LAB_RUNNERS } = await import('../src/engine/labs');
+    const { levelsOf } = await import('../src/mastery');
+    expect(ENGINE_ID.test('e-gr-l2-06')).toBe(true);
+    expect(engineRouteOf('#/engine/graph/L2/e-gr-l2-06')).toEqual({ engine: 'graph', level: 'L2', lesson: 'e-gr-l2-06' });
+    expect(enginePlayOf('#/engine/play/e-gr-l2-06')).toBe('#/engine/graph/L2/e-gr-l2-06');
+    expect(onPg('graph')).toBe(true);
+    expect(LAB_RUNNERS.graph).toBe(LAB_RUNNERS.postgres);
+    expect(levelsOf('graph')).toEqual(['L1', 'L2']);
+  });
+});
+
 describe('Engine Graph: PostgreSQL 18 của PGlite có SEARCH và CYCLE', () => {
   it('version() là PostgreSQL 18; SEARCH BREADTH FIRST và CYCLE chạy', async () => {
     const r = await runLabScript({
