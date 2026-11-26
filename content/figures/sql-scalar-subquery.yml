@@ -1,0 +1,41 @@
+# v46 (L867): a scalar subquery runs once and gives one value the outer query compares with. Lessons: scalar_subquery (Ý chính) + its quick lesson.
+# Data (lab, checked in PGlite 2026-11-26): avg(price_vnd) over the 30 products = 52833.33; WHERE price_vnd > (SELECT avg(price_vnd) FROM products)
+# → 8 products: Desk lamp 259000, Sunscreen 185000, Shampoo 650ml 149000, Laundry powder 3kg 129000, Face wash 99000,
+# Cashew nuts 200g 89000, Stapler 65000, Floor cleaner 56000 (shown by price, highest first).
+# Source: https://www.postgresql.org/docs/current/sql-expressions.html#SQL-SYNTAX-SCALAR-SUBQUERIES
+title: { vi: "Truy vấn con cho một giá trị", en: "A subquery that gives one value" }
+caption:
+  vi: "Câu trong ngoặc chạy một lần và ra một con số; câu ngoài so 30 sản phẩm với số đó."
+  en: "The query in brackets runs once and gives one number; the outer query compares the 30 products with it."
+alt:
+  vi: "Một truy vấn con trả đúng một dòng, một cột dùng được như một con số bình thường. Postgres tính giá trung bình một lần, rồi câu ngoài giữ các sản phẩm đắt hơn số đó. Kết quả: 8 sản phẩm."
+  en: "A subquery that returns exactly one row and one column works like a plain number. Postgres computes the average price once, then the outer query keeps the products that cost more. Result: 8 products."
+nodes:
+  - { id: sub, label: { vi: "Truy vấn con", en: "Subquery" }, sub: "avg(price_vnd)" }
+  - { id: val, shape: key, label: "52833.33", sub: { vi: "một giá trị", en: "one value" }, tone: new }
+  - id: res
+    shape: grid
+    label: { vi: "Câu ngoài", en: "Outer query" }
+    sub: "price_vnd > 52833.33"
+    head: [name, price_vnd]
+    cells:
+      - [Desk lamp, "259000"]
+      - [Sunscreen, "185000"]
+      - [Shampoo 650ml, "149000"]
+      - [Laundry powder 3kg, "129000"]
+      - [Face wash, "99000"]
+      - [Cashew nuts 200g, "89000"]
+      - [Stapler, "65000"]
+      - [Floor cleaner, "56000"]
+rows:
+  - [sub, val]
+  - [res]
+edges:
+  - { from: sub, to: val, label: { vi: "chạy 1 lần", en: "runs once" } }
+  - { from: val, to: res }
+steps:
+  - say: { vi: "Câu trong ngoặc chạy trước và ra một con số.", en: "The query in brackets runs first and gives one number." }
+    show: [sub, val]
+    alt: { vi: "Hàm gộp không có GROUP BY luôn trả đúng một dòng, nên truy vấn con này là một con số: giá trung bình 52833.33.", en: "An aggregate with no GROUP BY always returns exactly one row, so this subquery is one number: the average price, 52833.33." }
+  - say: { vi: "Câu ngoài so từng sản phẩm với con số đó.", en: "The outer query compares every product with that number." }
+    alt: { vi: "Câu ngoài xét từng sản phẩm với cùng một con số và giữ 8 sản phẩm đắt hơn mức trung bình.", en: "The outer query tests every product against the same number and keeps the 8 that cost more than the average." }

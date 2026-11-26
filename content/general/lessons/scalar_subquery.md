@@ -3,7 +3,8 @@ id: scalar_subquery
 title: "Truy vấn con một giá trị: so với một con số tính ra"
 title_en: "Scalar subqueries: compare with a computed number"
 minutes: 25
-verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
+verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
+figures: [{ name: sql-scalar-subquery, at: idea }]
 objectives:
   - vi: "Đặt một câu `SELECT` trả đúng một giá trị vào trong câu khác, như \"giá trung bình\"."
     en: "Put a `SELECT` that returns exactly one value inside another query, such as \"the average price\"."

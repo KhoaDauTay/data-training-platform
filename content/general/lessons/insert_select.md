@@ -3,7 +3,8 @@ id: insert_select
 title: "Thêm dòng: INSERT, INSERT … SELECT và CREATE TABLE AS"
 title_en: "Adding rows: INSERT, INSERT … SELECT and CREATE TABLE AS"
 minutes: 25
-verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
+verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
+figures: [{ name: sql-insert-select, at: idea }]
 objectives:
   - vi: Thêm một hay nhiều dòng bằng `INSERT … VALUES`, luôn kèm danh sách cột.
     en: Add one or many rows with `INSERT … VALUES`, always with a column list.

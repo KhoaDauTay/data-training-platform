@@ -1,0 +1,40 @@
+# v46 (L868): UPDATE … FROM takes its condition from another table. Lessons: update_join (Ý chính) + its quick lesson.
+# Data (lab, checked in PGlite 2026-11-26): stores 1 Hai Chau, 2 Son Tra (Da Nang), 3 Ben Thanh, 4 Thao Dien (Ho Chi Minh City), 5 Hoan Kiem (Hanoi);
+# store_targets for 2026-12-01: 1 10000000, 2 5000000, 3 15000000, 4 6000000, 5 9000000.
+# UPDATE store_targets t SET target_vnd = t.target_vnd + 1000000 FROM stores s WHERE s.id = t.store_id AND s.city = 'Hanoi'
+# AND t.month = '2026-12-01' → 1 row: store 5 from 9000000 to 10000000 (the lesson's second example).
+# Source: https://www.postgresql.org/docs/current/sql-update.html
+title: { vi: "UPDATE … FROM lấy điều kiện ở bảng khác", en: "UPDATE … FROM takes the condition from another table" }
+caption:
+  vi: "Thành phố nằm ở stores, chỉ tiêu ở store_targets: FROM stores đưa thành phố vào, s.id = t.store_id nối hai bảng."
+  en: "The city lives in stores, the target in store_targets: FROM stores brings the city in, s.id = t.store_id links the two tables."
+alt:
+  vi: "UPDATE kèm FROM đưa thêm một bảng vào chỉ để chọn dòng cần sửa: điều kiện city = 'Hanoi' nằm ở stores, còn dòng bị sửa nằm ở store_targets. Chỉ dòng nối được với cửa hàng ở Hà Nội đổi giá trị; các dòng khác giữ nguyên."
+  en: "UPDATE with FROM brings in another table only to pick the rows to change: the condition city = 'Hanoi' lives in stores, while the changed row lives in store_targets. Only the row that links to the Hanoi store changes; the others stay as they are."
+nodes:
+  - id: s
+    shape: grid
+    label: stores s
+    head: [id, city]
+    cells: [["1", Da Nang], ["2", Da Nang], ["3", Ho Chi Minh City], ["4", Ho Chi Minh City], ["5", Hanoi]]
+    rowTone: [null, null, null, null, new]
+  - id: t
+    shape: grid
+    label: { vi: "store_targets t, 12/2026", en: "store_targets t, Dec" }
+    head: [store_id, target_vnd]
+    cells: [["1", "10000000"], ["2", "5000000"], ["3", "15000000"], ["4", "6000000"], ["5", "9000000"]]
+  - { id: on, mono: true, label: "s.id = t.store_id", sub: "s.city = 'Hanoi'" }
+rows:
+  - [s, t]
+  - [on]
+edges:
+  - { from: "s#4.1", to: "t#4.0", link: true }
+steps:
+  - say: { vi: "FROM stores tìm cửa hàng ở Hà Nội: id 5.", en: "FROM stores finds the Hanoi store: id 5." }
+    alt: { vi: "Điều kiện thành phố chỉ có ở stores, nên Postgres tìm cửa hàng 5 ở đó rồi nối sang dòng có store_id 5 của store_targets.", en: "The city condition exists only in stores, so Postgres finds store 5 there and links it to the store_targets row with store_id 5." }
+    set:
+      t: { rowTone: [null, null, null, null, new] }
+  - say: { vi: "SET chỉ sửa dòng nối được: 9 triệu lên 10 triệu.", en: "SET changes only the linked row: 9M up to 10M." }
+    alt: { vi: "SET tính giá mới từ giá cũ của chính dòng đó, và chỉ dòng của cửa hàng 5 đổi; bốn dòng còn lại giữ nguyên.", en: "SET computes the new value from the row's own old value, and only store 5's row changes; the other four stay as they are." }
+    set:
+      t: { cells: [["1", "10000000"], ["2", "5000000"], ["3", "15000000"], ["4", "6000000"], ["5", "10000000"]], cellTone: { "4:1": new }, rowTone: [ghost, ghost, ghost, ghost, null] }

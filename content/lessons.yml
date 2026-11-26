@@ -585,6 +585,7 @@
   docs: https://www.postgresql.org/docs/current/sql-expressions.html#SYNTAX-AGGREGATES
 
 - id: coalesce
+  figure: { name: sql-coalesce-fallback }
   cues:
     vi: ["chưa có … thì tính …", "… tạm tính 0", "trống thì ghi …"]
     en: ["no … counted as …", "count those as 0", "if empty, use …"]
@@ -700,6 +701,7 @@
   docs: https://www.postgresql.org/docs/current/functions-string.html
 
 - id: pattern_match
+  figure: { name: sql-like-patterns }
   cues:
     vi: ["có chữ … ở bất kỳ đâu", "viết hoa hay thường đều tính", "bắt đầu bằng …"]
     en: ["anywhere in the …", "in capitals or lower case", "starts with …"]
@@ -723,6 +725,7 @@
   docs: https://www.postgresql.org/docs/current/functions-matching.html#FUNCTIONS-LIKE
 
 - id: distinct
+  figure: { name: sql-distinct-rows }
   cues:
     vi: ["… khác nhau", "mỗi … một lần", "không trùng"]
     en: ["different …", "each … once", "no duplicates"]
@@ -805,6 +808,7 @@
   docs: https://www.postgresql.org/docs/current/sql-expressions.html#SQL-SYNTAX-TYPE-CASTS
 
 - id: scalar_subquery
+  figure: { name: sql-scalar-subquery }
   cues:
     vi: ["hơn mức trung bình …", "so … với một con số …", "cao hơn mức …"]
     en: ["more than the average …", "compare each … with one number", "above the …"]
@@ -983,6 +987,7 @@
   docs: https://www.postgresql.org/docs/current/sql-expressions.html#SQL-SYNTAX-SCALAR-SUBQUERIES
 
 - id: cte
+  figure: { name: sql-cte-steps }
   cues:
     vi: ["bước có tên", "tổng … trừ tổng …", "trước hết tính …"]
     en: ["named steps", "minus the total …", "first work out …"]
@@ -1039,6 +1044,7 @@
   docs: https://www.postgresql.org/docs/current/queries-with.html
 
 - id: multi_cte
+  figure: { name: sql-cte-chain }
   cues:
     vi: ["các bước có tên", "cao hơn mức trung bình của …", "từ kết quả bước …"]
     en: ["named steps", "than the average of …", "from the result of …"]
@@ -1560,6 +1566,7 @@
 # v25 R1: General-only skills (content/general/skills-general.yml); no domain ticket grants them, so their cues are not
 # checked against a ticket (tests/lessons.test.ts).
 - id: cross_join
+  figure: { name: sql-cross-grid }
   cues:
     vi: ["mọi … với mọi …", "kể cả ngày không …", "đủ mọi tổ hợp …"]
     en: ["every … with every …", "including days with no …", "every combination of …"]
@@ -1595,6 +1602,7 @@
   docs: https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-JOIN
 
 - id: any_all
+  figure: { name: sql-any-all }
   cues:
     vi: ["hơn mọi …", "hơn ít nhất một …", "bằng một trong …"]
     en: ["more than every …", "more than at least one …", "equal to one of …"]
@@ -1631,6 +1639,7 @@
 # v26 R2 (L390): Part 9, writing data (General-only skills). Every SQL here runs inside BEGIN … ROLLBACK, so nothing persists;
 # RETURNING makes the written rows the result, which is what "Thử ngay" grades.
 - id: insert_select
+  figure: { name: sql-insert-select }
   cues:
     vi: ["thêm … vào …", "ghi thành các dòng mới …", "tạo một bảng mới …"]
     en: ["add … to …", "write it as new rows …", "create a new table …"]
@@ -1665,6 +1674,7 @@
   docs: https://www.postgresql.org/docs/current/sql-insert.html
 
 - id: update_join
+  figure: { name: sql-update-join }
   cues:
     vi: ["tăng thêm …", "xóa bản thừa …", "bỏ mọi … của …"]
     en: ["goes up by …", "delete the extra copy …", "drop every … for …"]
