@@ -21,9 +21,10 @@ define<TenancyModel>('pg-tenancy-models', {}, (m, tr) => {
   const rates: [string, string[], Tone[]][] = [
     [tr('Cô lập', 'Isolation'), [tr('mạnh', 'strong'), tr('vừa', 'medium'), tr('yếu', 'weak')], ['live', 'cell', 'dead']],
     [tr('Chi phí mỗi khách', 'Cost per tenant'), [tr('đắt', 'expensive'), tr('vừa', 'medium'), tr('rẻ', 'cheap')], ['dead', 'cell', 'live']],
-    [tr('Công vận hành', 'Operations work'), [tr('nhiều', 'a lot'), tr('vừa', 'some'), tr('ít', 'little')], ['dead', 'cell', 'live']],
+    [tr('Công sức vận hành', 'Operations work'), [tr('nhiều', 'a lot'), tr('vừa', 'some'), tr('ít', 'little')], ['dead', 'cell', 'live']],
   ];
-  const POOL = [0, 1, 2, 0, 2, 1]; // the strips' tenants, as the spec's A, B, C, A, C, B
+  // v39 R1 E9 (L627): 4 strips 20 high on a 24 pitch (6 × 15 on 16 merged their strokes and sat the labels on them)
+  const POOL = [0, 1, 2, 0]; // the strips' tenants: A, B, C, A
 
   /** `focus`: the column in focus (-1 = none: every column plain); `rated`: the rating rows highlighted. */
   const draw = (focus: number, rated: boolean, app: boolean): Shape[] => {
@@ -32,26 +33,27 @@ define<TenancyModel>('pg-tenancy-models', {}, (m, tr) => {
     const tone = (c: number, t: Tone): Tone => (on(c) ? t : 'ghost');
     out.push(...box('app', 6, 6, 328, 28, tr('Ứng dụng', 'App'), app ? 'new' : 'cell'));
     COLS.forEach((x, c) => {
-      out.push(line(`a${c}`, x + W / 2, 34, x + W / 2, 42, { arrow: true, ink: app || focus === c ? 'new' : 'edge' }));
-      out.push(text(`hn${c}`, x + W / 2, 52, heads[c][0], { a: 'm', b: true, ink: on(c) ? 'ink' : 'muted' }));
-      out.push(text(`hs${c}`, x + W / 2, 70, heads[c][1], { a: 'm', ink: on(c) ? 'ink' : 'muted' }));
+      // R1 E22: 6 units between the arrowheads and the column names (everything below moved down 8)
+      out.push(line(`a${c}`, x + W / 2, 34, x + W / 2, 44, { arrow: true, ink: app || focus === c ? 'new' : 'edge' }));
+      out.push(text(`hn${c}`, x + W / 2, 60, heads[c][0], { a: 'm', b: true, ink: on(c) ? 'ink' : 'muted' }));
+      out.push(text(`hs${c}`, x + W / 2, 78, heads[c][1], { a: 'm', ink: on(c) ? 'ink' : 'muted' }));
     });
     // Silo: one database per tenant
-    ts.forEach((t, i) => out.push(...box(`silo${i}`, COLS[0], 90 + i * 40, W, 32, `DB ${t}`, tone(0, TENANT_TONE[i]))));
+    ts.forEach((t, i) => out.push(...box(`silo${i}`, COLS[0], 98 + i * 40, W, 32, `DB ${t}`, tone(0, TENANT_TONE[i]))));
     // Bridge: one database, one schema per tenant
-    out.push({ k: 'br', t: 'r', x: COLS[1], y: 86, w: W, h: 120, tone: tone(1, 'cell') });
-    out.push(text('brh', COLS[1] + W / 2, 96, 'DB', { a: 'm', b: true, ink: on(1) ? 'ink' : 'muted' }));
-    ts.forEach((t, i) => out.push(...box(`sch${i}`, COLS[1] + 6, 108 + i * 32, W - 12, 26, `schema ${t.toLowerCase()}`, tone(1, TENANT_TONE[i]))));
+    out.push({ k: 'br', t: 'r', x: COLS[1], y: 94, w: W, h: 120, tone: tone(1, 'cell') });
+    out.push(text('brh', COLS[1] + W / 2, 104, 'DB', { a: 'm', b: true, ink: on(1) ? 'ink' : 'muted' }));
+    ts.forEach((t, i) => out.push(...box(`sch${i}`, COLS[1] + 6, 116 + i * 32, W - 12, 26, `schema ${t.toLowerCase()}`, tone(1, TENANT_TONE[i]))));
     // Pool: one table, every row tagged with its tenant
-    out.push({ k: 'pl', t: 'r', x: COLS[2], y: 86, w: W, h: 120, tone: tone(2, 'cell') });
-    out.push(text('plh', COLS[2] + W / 2, 96, table, { a: 'm', b: true, ink: on(2) ? 'ink' : 'muted' }));
+    out.push({ k: 'pl', t: 'r', x: COLS[2], y: 94, w: W, h: 120, tone: tone(2, 'cell') });
+    out.push(text('plh', COLS[2] + W / 2, 104, table, { a: 'm', b: true, ink: on(2) ? 'ink' : 'muted' }));
     POOL.forEach((ti, i) => {
-      out.push({ k: `ps${i}`, t: 'r', x: COLS[2] + 6, y: 105.5 + i * 16, w: W - 12, h: 15, tone: tone(2, TENANT_TONE[ti]), rx: 2 }); // v39 F3 (L622): 15 high, the label's ink fits
-      out.push(text(`pt${i}`, COLS[2] + 10, 113 + i * 16, `tenant_id ${ts[ti]}`, { ink: on(2) ? 'ink' : 'muted' }));
+      out.push({ k: `ps${i}`, t: 'r', x: COLS[2] + 6, y: 114 + i * 24, w: W - 12, h: 20, tone: tone(2, TENANT_TONE[ti]), rx: 2 });
+      out.push(text(`pt${i}`, COLS[2] + 10, 123 + i * 24, `tenant_id ${ts[ti]}`, { ink: on(2) ? 'ink' : 'muted' }));
     });
     // The three rating rows: a full-width heading, then one word per column (the word carries the meaning)
     rates.forEach(([head, words, good], r) => {
-      const y = 222 + r * 46; // T1-C9-01: 14 units between a row's cells and the next heading
+      const y = 230 + r * 46; // T1-C9-01: 14 units between a row's cells and the next heading
       out.push(text(`rh${r}`, 6, y, head, { b: rated, ink: rated ? 'ink' : 'muted' }));
       COLS.forEach((x, c) => out.push(...box(`r${r}c${c}`, x, y + 10, W, 22, words[c], rated ? good[c] : on(c) ? 'cell' : 'ghost')));
     });
@@ -61,7 +63,7 @@ define<TenancyModel>('pg-tenancy-models', {}, (m, tr) => {
   return {
     title: tr('Ba mô hình nhiều khách hàng', 'Three tenancy models'),
     w: 340,
-    h: 352,
+    h: 360,
     frames: [
       { say: tr(`Ba khách ${names} dùng chung một ứng dụng. Câu hỏi: dữ liệu của họ nằm ở đâu?`, `Three tenants ${names} share one application. The question: where does their data live?`), nodes: draw(-1, false, true) },
       { say: tr('Silo: mỗi khách một database. Cô lập mạnh nhất, nhưng mỗi khách mới là một database phải tạo, sao lưu và nâng cấp.', 'Silo: one database per tenant. The strongest isolation, but every new tenant is a database to create, back up and upgrade.'), nodes: draw(0, false, false) },

@@ -265,7 +265,8 @@ define<ReplicationModel>('pg-replication', REPLICATION_SAMPLE, (m, tr) => {
       ...box('pw', 10, RY(2), 150, 34, 'pg_wal', s.slot ? 'warm' : tone('pw'), s.slot ? tr('giữ từ restart_lsn', 'kept from restart_lsn') : undefined),
       ...box('ws', 10, RY(3), 150, 34, 'walsender', tone('ws'), s.logical ? 'pgoutput' : undefined),
       ...box('wr', 180, RY(3), 150, 34, s.logical ? tr('subscription', 'subscription') : 'walreceiver', s.slot ? 'ghost' : tone('wr'), s.slot ? tr('đang tắt', 'offline') : undefined),
-      ...box('sw', 180, RY(2), 150, 34, s.logical ? 'INSERT/UPDATE/DELETE' : 'pg_wal', s.slot ? 'ghost' : tone('sw')),
+      // v39 R1 (L627): the long verb list is the regular-weight sub line (bold, it touched the box's edge at 375)
+      ...box('sw', 180, RY(2), 150, 34, s.logical ? tr('thay đổi từng dòng', 'row changes') : 'pg_wal', s.slot ? 'ghost' : tone('sw'), s.logical ? 'INSERT/UPDATE/DELETE' : undefined),
       ...box('st', 180, RY(1), 150, 34, s.logical ? tr('áp từng dòng', 'applies rows') : tr('startup (replay)', 'startup (replay)'), s.slot ? 'ghost' : tone('st')),
       ...box('sd', 180, RY(0), 150, 34, s.logical ? tr('bảng của bên nhận', 'subscriber tables') : tr('dữ liệu · chỉ đọc', 'data · read-only'), s.slot ? 'ghost' : tone('sd')),
       ...[0, 1, 2].map((i) => line(`pa${i}`, 85, RY(i) + 34, 85, RY(i + 1), { ink: s.on.includes(['wb', 'pw', 'ws'][i]) ? 'new' : 'edge', arrow: true, to: { x: 10, y: RY(i + 1), w: 150, h: 34 } })),

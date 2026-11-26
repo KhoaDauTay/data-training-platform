@@ -1,23 +1,28 @@
 # GA-3 (tools/v39/diagram-plan.md): count(*), count(col), count(DISTINCT col). Lesson: aggregate (Ý chính).
 # Data (lab, checked in PGlite): customers 300 rows; city NULL on 17 → count(city) 283; 5 distinct non-NULL cities.
-# The strip is 8 sample cells of `city`. Source: https://www.postgresql.org/docs/current/functions-aggregate.html
+# R1 E7 (L625): the big numbers count the 8 sample rows drawn (8 / 6 / 5); the whole table's counts sit under them.
+# R1 E16: `align` puts the three function boxes in one column at every width. Source: functions-aggregate.html
 title: { vi: "Ba kiểu count trên cùng một cột", en: "Three counts on one column" }
 caption:
-  vi: "Hàm gộp bỏ qua ô NULL; chỉ count(*) đếm mọi dòng."
-  en: "Aggregates skip NULL cells; only count(*) counts every row."
+  vi: "Số lớn đếm 8 dòng mẫu; dòng nhỏ là kết quả trên cả bảng 300 khách. Hàm gộp bỏ qua ô NULL; chỉ count(*) đếm mọi dòng."
+  en: "The big numbers count the 8 sample rows; the small line is the result on the whole 300-customer table. Aggregates skip NULL cells; only count(*) counts every row."
+alt:
+  vi: "Cột city của 8 dòng mẫu: Da Nang, HCM City, NULL, Hue, Da Nang, Hanoi, NULL, Can Tho. count(*) cho 8, đếm mọi dòng (cả bảng: 300). count(city) cho 6, bỏ hai ô NULL (cả bảng: 283). count(DISTINCT city) cho 5 giá trị khác nhau, Da Nang chỉ tính một lần (cả bảng: 5)."
+  en: "The city column of 8 sample rows: Da Nang, HCM City, NULL, Hue, Da Nang, Hanoi, NULL, Can Tho. count(*) gives 8, every row (whole table: 300). count(city) gives 6, skipping the two NULL cells (whole table: 283). count(DISTINCT city) gives 5 distinct values, Da Nang counted once (whole table: 5)."
+align: true
 nodes:
   - id: city
     shape: grid
-    label: { vi: "customers.city (8 ô mẫu)", en: "customers.city (8 samples)" }
+    label: { vi: "customers.city: 8 dòng mẫu", en: "customers.city: 8 sample rows" }
     head: [city]
     cells: [[Da Nang], [HCM City], ["NULL"], [Hue], [Da Nang], [Hanoi], ["NULL"], [Can Tho]]
     toneOf: { "NULL": ghost }
-  - { id: star, mono: true, label: "count(*)" }
-  - { id: col, mono: true, label: "count(city)" }
+  - { id: star, mono: true, label: "count(*)", sub: { vi: "mọi dòng", en: "every row" } }
+  - { id: col, mono: true, label: "count(city)", sub: { vi: "bỏ ô NULL", en: "skips NULL cells" } }
   - { id: dist, mono: true, label: "count(DISTINCT city)" }
-  - { id: n300, label: "300", sub: { vi: "mọi dòng", en: "every row" }, tone: new }
-  - { id: n283, label: "283", sub: { vi: "bỏ ô trống", en: "skips empty cells" }, tone: new }
-  - { id: n5, label: "5", sub: { vi: "giá trị khác nhau", en: "distinct values" }, tone: new }
+  - { id: n300, label: "8", sub: { vi: "cả bảng: 300", en: "whole table: 300" }, tone: new }
+  - { id: n283, label: "6", sub: { vi: "cả bảng: 283", en: "whole table: 283" }, tone: new }
+  - { id: n5, label: "5", sub: { vi: "cả bảng: 5", en: "whole table: 5" }, tone: new }
 rows:
   - [city]
   - [star, n300]

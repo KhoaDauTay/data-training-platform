@@ -1,32 +1,38 @@
 # GA-9 (tools/v39/diagram-plan.md): INNER, LEFT, FULL on the same data (rows, not a Venn diagram). Lesson: full_join (Ý chính).
-# Data (lab, checked in PGlite): February targets t for stores 1 2 3 5; February sales a for stores 1 2 3 4 5 (store 4: sales, no target).
-# Source: https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-JOIN
+# R1 E2 (L625): two days of orders, so each side has a store the other lacks (the February targets/sales pair was a subset, which
+# made LEFT = INNER). Data (lab, checked in PGlite: SELECT order_date, array_agg(DISTINCT store_id) FROM orders GROUP BY 1):
+# 23 Oct has orders from stores 1 2 3 5, 24 Oct from 1 2 3 4 → INNER 3 rows, LEFT (23) 4 rows, FULL 5 rows with NULL on both sides.
+# Same shape as the lesson's "two days, every store with orders" example. Source: queries-table-expressions.html#QUERIES-JOIN
 title: { vi: "INNER, LEFT, FULL trên cùng dữ liệu", en: "INNER, LEFT, FULL on the same data" }
 caption:
-  vi: "Chỉ tiêu tháng 2 (t) và doanh số tháng 2 (a), theo mã cửa hàng. Loại JOIN quyết định dòng không có cặp của bên nào được giữ."
-  en: "February targets (t) and February sales (a), by store id. The join type decides whose unmatched rows survive."
+  vi: "Cửa hàng có đơn ngày 23/10 (d23) và ngày 24/10 (d24). Loại JOIN quyết định dòng không có cặp của bên nào được giữ."
+  en: "Stores with orders on 23 Oct (d23) and on 24 Oct (d24). The join type decides whose unmatched rows survive."
+alt:
+  vi: "Hai danh sách mã cửa hàng: d23 có 1, 2, 3, 5; d24 có 1, 2, 3, 4. Ba bảng kết quả đặt cạnh nhau. INNER: 3 dòng, chỉ các cặp 1–1, 2–2, 3–3. LEFT (d23): 4 dòng, thêm 5 với d24 là NULL; cửa hàng 4 bị mất. FULL: 5 dòng, thêm 5 với d24 là NULL và 4 với d23 là NULL, nên có NULL ở cả hai bên."
+  en: "Two lists of store ids: d23 has 1, 2, 3, 5; d24 has 1, 2, 3, 4. Three result tables side by side. INNER: 3 rows, only the pairs 1–1, 2–2, 3–3. LEFT (d23): 4 rows, adding 5 with d24 NULL; store 4 is lost. FULL: 5 rows, adding 5 with d24 NULL and 4 with d23 NULL, so there are NULLs on both sides."
 nodes:
-  - { id: kt, mono: true, label: "t: 1 2 3 5", sub: { vi: "chỉ tiêu", en: "targets" } }
-  - { id: ka, mono: true, label: "a: 1 2 3 4 5", sub: { vi: "doanh số", en: "sales" } }
+  - { id: kt, mono: true, label: "d23: 1 2 3 5", sub: { vi: "đơn ngày 23/10", en: "orders on 23 Oct" } }
+  - { id: ka, mono: true, label: "d24: 1 2 3 4", sub: { vi: "đơn ngày 24/10", en: "orders on 24 Oct" } }
   - id: inner
     shape: grid
     label: INNER
-    head: [t, a]
-    cells: [["1", "1"], ["2", "2"], ["3", "3"], ["5", "5"]]
-    sub: { vi: "4 dòng · chỉ có cặp", en: "4 rows · matched only" }
+    head: [d23, d24]
+    cells: [["1", "1"], ["2", "2"], ["3", "3"]]
+    sub: { vi: "3 dòng: chỉ cặp", en: "3 rows: pairs only" }
   - id: left
     shape: grid
-    label: LEFT (t)
-    head: [t, a]
-    cells: [["1", "1"], ["2", "2"], ["3", "3"], ["5", "5"]]
+    label: LEFT (d23)
+    head: [d23, d24]
+    cells: [["1", "1"], ["2", "2"], ["3", "3"], ["5", "NULL"]]
+    toneOf: { "NULL": warm }
     sub: { vi: "mất cửa hàng 4", en: "store 4 lost" }
   - id: full
     shape: grid
     label: FULL
-    head: [t, a]
-    cells: [["1", "1"], ["2", "2"], ["3", "3"], ["5", "5"], ["NULL", "4"]]
+    head: [d23, d24]
+    cells: [["1", "1"], ["2", "2"], ["3", "3"], ["5", "NULL"], ["NULL", "4"]]
     toneOf: { "NULL": warm }
-    sub: { vi: "5 dòng · đủ cả hai", en: "5 rows · both sides" }
+    sub: { vi: "5 dòng: đủ hai bên", en: "5 rows: both sides" }
 rows:
   - [kt, ka]
   - [inner, left, full]

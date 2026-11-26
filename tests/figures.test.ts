@@ -11,7 +11,7 @@ import { analyze, samplePath, type OverlapFrame } from '../scripts/overlap-check
 import { parseEngineLesson, type EngineLesson } from '../src/engine/content';
 import type { Shape } from '../src/engine/viz/engineVizCore';
 import { resolveViz } from '../src/engine/viz/engineViz';
-import { altText, type FigRef, type FigSpec, layout, textWidth, tr } from '../src/engine/viz/figure';
+import { altText, type FigRef, type FigSpec, layout, linkGap, MARGIN, NOTE_CH, textWidth, tr, WIDE } from '../src/engine/viz/figure';
 import { GLYPHS } from '../src/engine/viz/glyphs';
 import { parseFullLesson } from '../src/fullLesson';
 import { fullLessons, lessonIdOf } from '../src/generalLessonSources';
@@ -43,12 +43,12 @@ function model(f: { nodes: Shape[] }, W: number, H: number): OverlapFrame {
       const w = textWidth(n.s, size, !!n.b, !!n.mono);
       const x = n.a === 'm' ? n.x - w / 2 : n.a === 'e' ? n.x - w : n.x;
       texts.push({ k: n.k, s: n.s, x, y: n.y - (size * 1.364) / 2, w, h: size * 1.364, size, px: size, owner: n.attrs?.['data-owner'] });
-    } else if (n.t === 'r') boxes.push({ k: n.k, kind: 'rect', x: n.x, y: n.y, w: n.w, h: n.h, parent: n.attrs?.['data-parent'] });
+    } else if (n.t === 'r') boxes.push({ k: n.k, kind: 'rect', x: n.x, y: n.y, w: n.w, h: n.h, sw: n.bold ? 2.2 : 1.2, parent: n.attrs?.['data-parent'] }); // look()'s strokes
     else if (n.t === 'p' && n.tone) { // v40: a filled path (table cylinder, doc page) is a box to the checker, as getBBox makes it in the browser
       const pts = samplePath(n.d, 0.25);
       const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
       const [x0, y0] = [Math.min(...xs), Math.min(...ys)];
-      boxes.push({ k: n.k, kind: 'path', x: x0, y: y0, w: Math.max(...xs) - x0, h: Math.max(...ys) - y0, parent: n.attrs?.['data-parent'] });
+      boxes.push({ k: n.k, kind: 'path', x: x0, y: y0, w: Math.max(...xs) - x0, h: Math.max(...ys) - y0, sw: n.w ?? 1.4, parent: n.attrs?.['data-parent'] });
     } else if (n.t === 'p' && n.arrow) {
       const pts = samplePath(n.d);
       const [p, q] = [pts[pts.length - 2], pts[pts.length - 1]];
@@ -113,7 +113,10 @@ describe.each(Object.keys(specs))('v39 figure %s', (name) => {
   });
   it('mọi ký tự vẽ ra có trong bảng độ rộng Nunito (ký tự lạ ước 0,62 em: đo lại bảng trước)', () => {
     const fold = (s: string): string => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D');
-    const odd = [...new Set(strings({ ...spec, steps: (spec.steps ?? []).map((s) => ({ ...s, say: '' })), caption: '', title: '', alt: '', variants: Object.fromEntries(Object.entries(spec.variants ?? {}).map(([k, v]) => [k, { ...v, alt: '', title: '', caption: '' }])) }).flatMap((s) => [...fold(s)]))].filter((c) => !GLYPHS.includes(c));
+    // drawn text only: title, caption, sentences and alt texts are HTML (any character)
+    const drawn = { ...spec, steps: (spec.steps ?? []).map((s) => ({ ...s, say: '', alt: '' })), caption: '', title: '', alt: '',
+      variants: Object.fromEntries(Object.entries(spec.variants ?? {}).map(([k, v]) => [k, { ...v, title: '', caption: '', alt: '' }])) };
+    const odd = [...new Set(strings(drawn).flatMap((s) => [...fold(s)]))].filter((c) => !GLYPHS.includes(c));
     expect(odd).toEqual([]);
   });
 
@@ -122,88 +125,133 @@ describe.each(Object.keys(specs))('v39 figure %s', (name) => {
       it.each(WIDTHS)(`${variant ?? 'gốc'} · ${lang} · W %i: không chồng lấn (analyze a–e), khoảng cách, mũi tên, cỡ chữ, màu token`, (W) => {
         const d = layout(spec, lang, W, variant);
         expect(d.w).toBe(W);
-        d.frames.forEach((f, i) => checkFrame(f, d, W, `${name} ${variant ?? ''} ${lang} W${W} bước ${i + 1}`));
+        d.frames.forEach((f, i) => {
+          const at = `${name} ${variant ?? ''} ${lang} W${W} bước ${i + 1}`;
+          expect(analyze(model(f, d.w, d.h), W), at).toEqual([]);
+          // builder promises beyond the checker's thresholds
+          const notes = new Set(spec.nodes.filter((n) => n.shape === 'note').map((n) => n.id));
+          const titled = new Set(spec.nodes.filter((n) => n.shape === 'grid' || n.shape === 'bars').map((n) => n.id));
+          for (const n of f.nodes) if (n.t === 't') {
+            expect(n.size ?? 0, `${at}: "${n.s}"`).toBeGreaterThanOrEqual(13);
+            // R1 E14: a note, and a table's or chart's title and sub, keep one line up to NOTE_CH characters on a wide figure
+            const note = W >= WIDE && (notes.has(/^n:(.+)\.t\d+$/.exec(n.k)?.[1] ?? '') || titled.has(/^n:(.+)\.[hs]\d+$/.exec(n.k)?.[1] ?? ''));
+            expect([...n.s].length, `${at}: "${n.s}"`).toBeLessThanOrEqual(note ? NOTE_CH : 18);
+          }
+          const ex = [...extents(f).entries()];
+          for (let a = 0; a < ex.length; a++) for (let b = a + 1; b < ex.length; b++) {
+            const [p, q] = [ex[a][1], ex[b][1]];
+            const dx = Math.max(p.x0 - q.x1, q.x0 - p.x1), dy = Math.max(p.y0 - q.y1, q.y0 - p.y1);
+            if (dx < 0 && dy < 0) throw new Error(`${at}: ${ex[a][0]} / ${ex[b][0]} chồng nhau`);
+            if (dy < 0) expect(dx, `${at}: ${ex[a][0]} ↔ ${ex[b][0]}`).toBeGreaterThanOrEqual(15.5);
+            else if (dx < 0) expect(dy, `${at}: ${ex[a][0]} ↕ ${ex[b][0]}`).toBeGreaterThanOrEqual(notes.has(ex[a][0]) || notes.has(ex[b][0]) ? 15.5 : GAP_MIN_Y);
+          }
+          const m = model(f, d.w, d.h);
+          // (g) twin: every box and arrow point inside the viewBox (the svg is exactly W wide, so nothing scrolls)
+          for (const b of m.boxes) expect(b.x >= 0 && b.y >= 0 && b.x + b.w <= d.w && b.y + b.h <= d.h, `${at}: ${b.k} hors viewBox`).toBe(true);
+          for (const a of m.arrows) for (const [x, y] of a.pts) expect(x >= 0 && y >= 0 && x <= d.w && y <= d.h, `${at}: ${a.k} hors viewBox`).toBe(true);
+          // lines the checker skips (links, the bars mark; strikes cross their own row on purpose) never cross a label
+          for (const n of f.nodes) {
+            if ((n.t !== 'l' && n.t !== 'p') || n.arrow || (n.t === 'p' && !!n.tone) || /:x\d+$/.test(n.k)) continue; // v40: a filled path is a box
+            const pts = n.t === 'l' ? samplePath(`M${n.x1} ${n.y1} L${n.x2} ${n.y2}`) : samplePath(n.d);
+            for (const t of m.texts) {
+              const hit = pts.some(([x, y]) => x > t.x + 0.5 && x < t.x + t.w - 0.5 && y > t.y + t.size * 0.15 && y < t.y + t.h - t.size * 0.15);
+              expect(hit, `${at}: ${n.k} cắt chữ "${t.s}"`).toBe(false);
+            }
+          }
+          // tokens only: every tone and ink the builder writes maps to an --eng-* alias in the core
+          for (const n of f.nodes) expect(JSON.stringify(n)).not.toMatch(/#[0-9a-f]{3,6}\b|rgb\(|var\(--(?!eng-)/i);
+          // R1 E10: two arrows into one box land ≥ 16 apart or share one tip (a bus), never a double arrowhead
+          for (let p = 0; p < m.arrows.length; p++) for (let q = p + 1; q < m.arrows.length; q++) {
+            const [A, B] = [m.arrows[p], m.arrows[q]];
+            const d = Math.hypot(A.tip[0] - B.tip[0], A.tip[1] - B.tip[1]);
+            if (A.to && A.to === B.to) expect(d < 0.5 || d >= 16, `${at}: ${A.k} / ${B.k} tips ${d}`).toBe(true);
+          }
+          // R1 E4/E5 (L626): linked tables side by side are linkGap(lines) apart, or the row already fills the room
+          const xs = extents(f);
+          const pairs = new Map<string, number>();
+          for (const e of spec.edges ?? []) if (e.link) { const k = [e.from, e.to].map((x) => x.split('#')[0]).sort().join('|'); pairs.set(k, (pairs.get(k) ?? 0) + 1); }
+          for (const [k, lines] of pairs) {
+            const [p, q] = k.split('|').map((id) => xs.get(id));
+            if (!p || !q || Math.min(p.y1, q.y1) <= Math.max(p.y0, q.y0)) continue; // stacked: no lines drawn
+            const gap = Math.max(p.x0 - q.x1, q.x0 - p.x1);
+            const row = [...xs.values()].filter((o) => Math.min(o.y1, p.y1) > Math.max(o.y0, p.y0));
+            const span = Math.max(...row.map((o) => o.x1)) - Math.min(...row.map((o) => o.x0));
+            if (gap < linkGap(lines) - 1) expect(span, `${at}: ${k} gap ${gap} < ${linkGap(lines)} with room left`).toBeGreaterThanOrEqual(W - 2 * MARGIN - 2);
+          }
+          for (const a of m.arrows) {
+            const t = m.boxes.find((b) => b.k === a.to);
+            if (!t) continue; // a grid end: analyze() finds its nearest cell (rule e, tip < 2)
+            const g = Math.max(t.x - a.tip[0], a.tip[0] - (t.x + t.w), t.y - a.tip[1], a.tip[1] - (t.y + t.h));
+            expect(g, `${at}: ${a.k} mũi tên cách đích`).toBeGreaterThanOrEqual(2.99);
+          }
+          checkGroups(f, at);
+        });
       });
     }
-    it(`${variant ?? 'gốc'}: lời thay hình nêu mọi node và mọi mũi tên (VI, EN), hoặc lời viết tay`, () => {
+    // v40 (R1 E8/E13): a figure whose text alternative is written by hand gives every variant it is shown with its own title
+    if (variant && spec.alt) it(`${variant}: variant có tiêu đề riêng`, () => expect(spec.variants?.[variant]?.title).toBeTruthy());
+    it(`${variant ?? 'gốc'}: lời thay hình (R1 E11): bản sinh ra nêu mọi node, mọi mũi tên, mọi bước, bảng đọc theo dòng; bản viết tay (nếu có) đủ VI/EN`, () => {
       for (const lang of LANGS) {
-        const alt = altText(spec, lang, variant).join(' ');
-        if (spec.alt || (variant && spec.variants?.[variant]?.alt)) { // v40 (R1 E11): written by hand, a real paragraph
-          expect(alt.length, `${lang}: ${alt}`).toBeGreaterThanOrEqual(80);
-          continue;
-        }
-        for (const n of spec.nodes) {
+        const gen = altText(spec, lang, variant, true).join(' ');
+        const v = variant === undefined ? undefined : spec.variants?.[variant];
+        const shown = v?.step !== undefined ? new Set(spec.steps?.[v.step].show ?? spec.nodes.map((n) => n.id)) : undefined;
+        const patch = v?.step !== undefined ? spec.steps?.[v.step].set : v?.set;
+        for (const n of spec.nodes.filter((x) => !shown || shown.has(x.id)).map((x) => ({ ...x, ...patch?.[x.id] }))) {
           const words = n.shape === 'grid' ? (n.cells ?? []).flat().map((c) => tr(c, lang)) : n.shape === 'bars' ? (n.items ?? []).map((i) => tr(i.label, lang)) : [tr(n.label, lang)];
-          for (const w of words.filter(Boolean)) expect(alt, `${lang} ${n.id}: ${w}`).toContain(w);
+          for (const w of words.filter(Boolean)) expect(gen, `${lang} ${n.id}: ${w}`).toContain(w);
         }
-        expect(alt.split('→').length - 1 + alt.split('–').length - 1).toBeGreaterThanOrEqual((spec.edges ?? []).length);
+        // natural sentences: no kind tags, a table with a header reads "header: value" (R1 E11)
+        expect(gen).not.toMatch(/\((hộp|bảng|box|table|nhãn|label|ghi chú|note)\)/);
+        for (const n of spec.nodes.map((x) => ({ ...x, ...patch?.[x.id] }))) if (n.shape === 'grid' && n.head && n.head.length > 1 && n.cells?.length && tr(n.head[1], lang) && tr(n.cells[0][1], lang) && (!shown || shown.has(n.id)))
+          expect(gen, `${lang} ${n.id}`).toContain(`${tr(n.head[1], lang)}: ${tr(n.cells[0][1], lang)}`);
+        const verbs = (gen.match(/trỏ tới|points to|nối với|is linked to/g) ?? []).length;
+        if (!shown) expect(verbs).toBeGreaterThanOrEqual((spec.edges ?? []).length);
+        // every later step is described (its sentence is in the step list beside the alt)
+        if (!variant && (spec.steps?.length ?? 0) > 1) spec.steps!.slice(1).forEach((_, i) => expect(gen).toContain(`${lang === 'vi' ? 'Bước' : 'Step'} ${i + 2}: `));
+        const hand = altText(spec, lang, variant).join(' ');
+        expect(hand.trim(), lang).not.toBe('');
+        expect(hand).not.toMatch(/\((hộp|bảng|box|table)\)/);
       }
     });
-    // v40 (R1 E8/E13): a figure whose text is written by hand gives every variant it is shown with its own title
-    if (variant && spec.alt) it(`${variant}: variant có tiêu đề riêng`, () => expect(spec.variants?.[variant]?.title).toBeTruthy());
   }
 });
 
-/**
- * One drawn frame against every rule: the checker's analyze() (a text/text, b text out of its box or the viewBox, c box/box,
- * d arrow through a box or a label, e tip < 2), the (g) twin (everything inside the viewBox, which is exactly W wide), and
- * the builder's own promises: ≥ 13 px, ≤ 18 characters a line, gaps ≥ 16 / ≥ 36, tips ≥ 3, tokens only, plain lines off
- * labels, groups around their members (v40), and never two arrowheads side by side on one box (v40, R1 E10).
- */
-function checkFrame(f: { nodes: Shape[] }, d: { w: number; h: number }, W: number, at: string): void {
-  expect(analyze(model(f, d.w, d.h), W), at).toEqual([]);
-  for (const n of f.nodes) if (n.t === 't') {
-    expect(n.size ?? 0, `${at}: "${n.s}"`).toBeGreaterThanOrEqual(13);
-    expect([...n.s].length, `${at}: "${n.s}"`).toBeLessThanOrEqual(18);
-  }
-  const ex = [...extents(f).entries()];
-  for (let a = 0; a < ex.length; a++) for (let b = a + 1; b < ex.length; b++) {
-    const [p, q] = [ex[a][1], ex[b][1]];
-    const dx = Math.max(p.x0 - q.x1, q.x0 - p.x1), dy = Math.max(p.y0 - q.y1, q.y0 - p.y1);
-    if (dx < 0 && dy < 0) throw new Error(`${at}: ${ex[a][0]} / ${ex[b][0]} chồng nhau`);
-    if (dy < 0) expect(dx, `${at}: ${ex[a][0]} ↔ ${ex[b][0]}`).toBeGreaterThanOrEqual(15.5);
-    else if (dx < 0) expect(dy, `${at}: ${ex[a][0]} ↕ ${ex[b][0]}`).toBeGreaterThanOrEqual(GAP_MIN_Y);
-  }
-  const m = model(f, d.w, d.h);
-  for (const b of m.boxes) expect(b.x >= 0 && b.y >= 0 && b.x + b.w <= d.w && b.y + b.h <= d.h, `${at}: ${b.k} hors viewBox`).toBe(true);
-  for (const a of m.arrows) for (const [x, y] of a.pts) expect(x >= 0 && y >= 0 && x <= d.w && y <= d.h, `${at}: ${a.k} hors viewBox`).toBe(true);
-  // lines the checker skips (links, the bars mark, a cylinder's cap, a page's fold; strikes cross their own row on purpose) never cross a label
-  for (const n of f.nodes) {
-    if ((n.t !== 'l' && n.t !== 'p') || n.arrow || (n.t === 'p' && n.tone) || /:x\d+$/.test(n.k)) continue;
-    const pts = n.t === 'l' ? samplePath(`M${n.x1} ${n.y1} L${n.x2} ${n.y2}`) : samplePath(n.d);
-    for (const t of m.texts) {
-      const hit = pts.some(([x, y]) => x > t.x + 0.5 && x < t.x + t.w - 0.5 && y > t.y + t.size * 0.15 && y < t.y + t.h - t.size * 0.15);
-      expect(hit, `${at}: ${n.k} cắt chữ "${t.s}"`).toBe(false);
+describe('v39 R1: checker and builder regressions', () => {
+  it('E9: analyze() sees strokes that merge and text sitting on its strip (the old pool strips: 15 high on a 16 pitch)', () => {
+    const strip = (i: number) => ({ k: `ps${i}`, kind: 'rect', x: 10, y: 10 + i * 16, w: 92, h: 15, sw: 1.2 });
+    // Nunito's box is 1.364 em; dominant-baseline middle puts it ~1.25 lower than the strip's middle (what Edge's getBBox gave)
+    const label = (i: number) => ({ k: `pt${i}`, s: 'tenant_id A', x: 14, y: 17.5 + i * 16 - 8.53 + 1.25, w: 70, h: 17.05, size: 12.5, px: 12.5 });
+    const got = analyze({ vb: [0, 0, 120, 60], texts: [label(0), label(1)], boxes: [strip(0), strip(1)], arrows: [] }, 375);
+    expect(got.some((x) => x.t === 'c' && /nearly touch/.test(x.what))).toBe(true);
+    expect(got.some((x) => x.t === 'b' && /hugs/.test(x.what))).toBe(true);
+    // flush cells (a grid) and cells 4 apart stay clean
+    const cells = [0, 1].map((i) => ({ k: `c${i}`, kind: 'rect', x: 10 + i * 40, y: 10, w: 40, h: 24, sw: 1.2 }));
+    const apart = [0, 1].map((i) => ({ k: `d${i}`, kind: 'rect', x: 10, y: 50 + i * 24, w: 40, h: 20, sw: 1.2 }));
+    expect(analyze({ vb: [0, 0, 120, 120], texts: [], boxes: [...cells, ...apart], arrows: [] }, 375)).toEqual([]);
+  });
+  it('E4/E5: the linked tables keep their lines side by side at 335 (the wider gap never wraps them)', () => {
+    // (EN clause-order is wider than 335 even at the 32 floor: it stacks there, as it did before)
+    for (const [name, lang] of [['sql-clause-order', 'vi'], ['sql-inner-join-pairs', 'vi'], ['sql-inner-join-pairs', 'en']] as const) {
+      const d = layout(specs[name], lang, 335);
+      const lines = d.frames[0].nodes.filter((n) => n.t === 'p' && !n.arrow).length;
+      expect(lines, `${name} ${lang}`).toBe((specs[name].edges ?? []).filter((e) => e.link).length);
     }
-  }
-  for (const n of f.nodes) expect(JSON.stringify(n)).not.toMatch(/#[0-9a-f]{3,6}\b|rgb\(|var\(--(?!eng-)/i);
-  for (const a of m.arrows) {
-    const t = m.boxes.find((b) => b.k === a.to);
-    if (!t) continue; // a grid end: analyze() finds its nearest cell (rule e, tip < 2)
-    const g = Math.max(t.x - a.tip[0], a.tip[0] - (t.x + t.w), t.y - a.tip[1], a.tip[1] - (t.y + t.h));
-    expect(g, `${at}: ${a.k} mũi tên cách đích`).toBeGreaterThanOrEqual(2.99);
-  }
-  // v40 (R1 E10): two arrowheads into one box sit ≥ 16 apart, never as one double head
-  for (let i = 0; i < m.arrows.length; i++) for (let j = i + 1; j < m.arrows.length; j++) {
-    const [p, q] = [m.arrows[i], m.arrows[j]];
-    if (p.to && p.to === q.to) expect(Math.hypot(p.tip[0] - q.tip[0], p.tip[1] - q.tip[1]), `${at}: ${p.k}/${q.k} cùng đích, sát nhau`).toBeGreaterThanOrEqual(16);
-  }
-  // v40 groups: members ≥ 10 inside the frame (below its label band), every other node ≥ 12 outside it
-  const ext = extents(f);
-  for (const g of m.boxes.filter((b) => /^g:[^.]+$/.test(b.k ?? ''))) {
-    for (const [id, e] of ext) {
-      const r = m.boxes.find((b) => b.k === `n:${id}`);
-      const member = m.boxes.some((b) => b.k?.startsWith(`n:${id}`) && b.parent === g.k) || (r?.parent === g.k);
-      const gap = Math.max(g.x - e.x1, e.x0 - (g.x + g.w), g.y - e.y1, e.y0 - (g.y + g.h));
-      if (member) expect(Math.min(e.x0 - g.x, g.x + g.w - e.x1, e.y0 - g.y - 20, g.y + g.h - e.y1), `${at}: ${id} sát mép nhóm ${g.k}`).toBeGreaterThanOrEqual(9.5);
-      else expect(gap, `${at}: ${id} sát nhóm ${g.k}`).toBeGreaterThanOrEqual(12);
-    }
+  });
+});
+
+/** v40 groups: members ≥ 10 inside the frame (below its 20-unit label band), every other node ≥ 12 outside it. */
+function checkGroups(f: { nodes: Shape[] }, at: string): void {
+  const m = model(f, 0, 0);
+  for (const g of m.boxes.filter((b) => /^g:[^.]+$/.test(b.k ?? ''))) for (const [id, e] of extents(f)) {
+    const member = m.boxes.some((b) => b.k === `n:${id}` && b.parent === g.k);
+    if (member) expect(Math.min(e.x0 - g.x, g.x + g.w - e.x1, e.y0 - g.y - 20, g.y + g.h - e.y1), `${at}: ${id} sát mép nhóm ${g.k}`).toBeGreaterThanOrEqual(9.5);
+    else expect(Math.max(g.x - e.x1, e.x0 - (g.x + g.w), g.y - e.y1, e.y0 - (g.y + g.h)), `${at}: ${id} sát nhóm ${g.k}`).toBeGreaterThanOrEqual(12);
   }
 }
 
 // v40 builder shapes on a spec of their own (CI proves each shape at every width, not only where content happens to use it):
 // a group, a table cylinder, a doc page, a cell highlight, a labelled elbow, a routed plain link and a side lane between rows
-// that are not neighbours (the lane also appears whenever a row wraps on a phone and leaves a neighbour behind).
+// that are not neighbours (content uses a lane where a row wraps on a phone: ds-2nf-split at 335/280).
 const SHAPES: FigSpec = {
   title: 'v40 shapes', caption: 'test',
   groups: [{ id: 'g', label: { vi: 'Một database', en: 'One database' }, nodes: ['t', 'f'] }],
@@ -226,7 +274,17 @@ describe('v40 builder shapes', () => {
   for (const lang of LANGS) it.each(WIDTHS)(`${lang} · W %i: nhóm, trụ, tài liệu, ô tô sáng, nhãn gấp khúc, đường nối, làn bên`, (W) => {
     const d = layout(SHAPES, lang, W);
     const f = d.frames[0];
-    checkFrame(f, d, W, `shapes ${lang} W${W}`);
+    const at = `shapes ${lang} W${W}`;
+    const m = model(f, d.w, d.h);
+    expect(analyze(m, W), at).toEqual([]);
+    checkGroups(f, at);
+    for (const n of f.nodes) if (n.t === 't') expect(n.size ?? 0).toBeGreaterThanOrEqual(13);
+    for (const b of m.boxes) expect(b.x >= 0 && b.y >= 0 && b.x + b.w <= d.w && b.y + b.h <= d.h, `${at}: ${b.k} hors viewBox`).toBe(true);
+    for (const a of m.arrows) for (const [x, y] of a.pts) expect(x >= 0 && y >= 0 && x <= d.w && y <= d.h, `${at}: ${a.k} hors viewBox`).toBe(true);
+    for (const a of m.arrows) {
+      const t = m.boxes.find((b) => b.k === a.to);
+      if (t) expect(Math.max(t.x - a.tip[0], a.tip[0] - (t.x + t.w), t.y - a.tip[1], a.tip[1] - (t.y + t.h)), `${at}: ${a.k}`).toBeGreaterThanOrEqual(2.99);
+    }
     const k = (s: string): Shape | undefined => f.nodes.find((n) => n.k === s);
     expect(k('g:g')?.t, 'group frame').toBe('r');
     expect(f.nodes.findIndex((n) => n.k === 'g:g'), 'group under everything').toBe(0);

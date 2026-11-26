@@ -4,6 +4,9 @@ title: { vi: "Logic ba giá trị", en: "Three-valued logic" }
 caption:
   vi: "NULL là “không biết”: so sánh với NULL cho ra NULL, và WHERE chỉ giữ dòng TRUE."
   en: "NULL means unknown: a comparison with NULL gives NULL, and WHERE keeps TRUE rows only."
+alt:
+  vi: "Hai bảng chân trị. AND: TRUE AND TRUE là TRUE; FALSE AND bất kỳ giá trị nào là FALSE; TRUE AND NULL là NULL; NULL AND NULL là NULL. OR: TRUE OR bất kỳ giá trị nào là TRUE; FALSE OR FALSE là FALSE; FALSE OR NULL là NULL; NULL OR NULL là NULL. Bên dưới ba ví dụ: NULL = NULL cho NULL, NULL IS NULL cho TRUE, 1 + NULL cho NULL. Dòng cuối: WHERE chỉ giữ TRUE."
+  en: "Two truth tables. AND: TRUE AND TRUE is TRUE; FALSE AND anything is FALSE; TRUE AND NULL is NULL; NULL AND NULL is NULL. OR: TRUE OR anything is TRUE; FALSE OR FALSE is FALSE; FALSE OR NULL is NULL; NULL OR NULL is NULL. Below, three examples: NULL = NULL gives NULL, NULL IS NULL gives TRUE, 1 + NULL gives NULL. Last line: WHERE keeps TRUE only."
 nodes:
   - id: and
     shape: grid

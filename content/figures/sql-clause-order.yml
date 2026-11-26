@@ -4,8 +4,11 @@
 # Order: https://www.postgresql.org/docs/current/sql-select.html#SQL-SELECT-DESCRIPTION
 title: { vi: "Thứ tự viết và thứ tự chạy", en: "Written order and run order" }
 caption:
-  vi: "Bạn viết SELECT đầu tiên, Postgres chạy nó gần cuối. Trên điện thoại hai danh sách xếp chồng; số thứ tự ở danh sách chạy."
-  en: "You write SELECT first; Postgres runs it near the end. On a phone the two lists stack; the run list carries the numbers."
+  vi: "Bạn viết SELECT đầu tiên, Postgres chạy nó gần cuối; số thứ tự là thứ tự chạy."
+  en: "You write SELECT first, Postgres runs it near the end; the numbers are the run order."
+alt:
+  vi: "Hai danh sách. Thứ tự viết: SELECT, FROM, WHERE, GROUP BY, HAVING, ORDER BY, LIMIT. Thứ tự chạy: 1 FROM (30 dòng), 2 WHERE (bỏ món từ 50k), 3 GROUP BY (5 nhóm), 4 HAVING (giữ 4 nhóm), 5 SELECT (tính cột), 6 ORDER BY (sắp xếp), 7 LIMIT (cắt N dòng). Đường nối mỗi mệnh đề đã viết với vị trí chạy của nó: SELECT viết đầu tiên nhưng chạy thứ 5."
+  en: "Two lists. Written order: SELECT, FROM, WHERE, GROUP BY, HAVING, ORDER BY, LIMIT. Run order: 1 FROM (30 rows), 2 WHERE (drop items of 50k or more), 3 GROUP BY (5 groups), 4 HAVING (keep 4 groups), 5 SELECT (compute columns), 6 ORDER BY (sort), 7 LIMIT (cut N rows). Lines join each written clause to its run position: SELECT is written first but runs fifth."
 nodes:
   - id: w
     shape: grid
@@ -34,20 +37,24 @@ edges:
   - { from: "w#6", to: "r#6", link: true }
 steps:
   - say: { vi: "Bạn viết SELECT trước, nhưng Postgres chạy FROM trước.", en: "You write SELECT first, but Postgres runs FROM first." }
+    alt: { vi: "Sáng lên: SELECT ở đầu danh sách viết, FROM ở số 1 của danh sách chạy.", en: "Highlighted: SELECT at the top of the written list, FROM at number 1 of the run list." }
     set:
       w: { rowTone: [new] }
       r: { rowTone: [new] }
   - say: { vi: "WHERE lọc từng dòng trước khi có nhóm.", en: "WHERE filters single rows before any group exists." }
+    alt: { vi: "Sáng lên: FROM và WHERE, số 1 và 2, trước GROUP BY.", en: "Highlighted: FROM and WHERE, numbers 1 and 2, before GROUP BY." }
     set:
       w: { rowTone: [null, new, new] }
       r: { rowTone: [new, new] }
   - say: { vi: "HAVING lọc cả nhóm, sau khi đếm xong.", en: "HAVING filters whole groups, after counting." }
+    alt: { vi: "Sáng lên: GROUP BY (5 nhóm) rồi HAVING (giữ 4 nhóm), số 3 và 4.", en: "Highlighted: GROUP BY (5 groups) then HAVING (keep 4 groups), numbers 3 and 4." }
     set:
       w: { rowTone: [null, null, null, new, new] }
       r: { rowTone: [null, null, new, new] }
   - say:
       vi: "Bí danh đặt ở SELECT không dùng được trong WHERE hay HAVING, vì chúng chạy trước SELECT."
       en: "An alias made in SELECT cannot be used in WHERE or HAVING: they run before SELECT."
+    alt: { vi: "Sáng lên: SELECT, ORDER BY và LIMIT, số 5 đến 7; WHERE và HAVING đã chạy xong ở số 2 và 4.", en: "Highlighted: SELECT, ORDER BY and LIMIT, numbers 5 to 7; WHERE and HAVING already ran at numbers 2 and 4." }
     set:
       w: { rowTone: [new, null, null, null, null, new, new] }
       r: { rowTone: [null, null, null, null, new, new, new] }

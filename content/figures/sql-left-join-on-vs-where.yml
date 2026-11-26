@@ -1,23 +1,30 @@
 # GA-8 (tools/v39/diagram-plan.md): where the condition goes. Lessons: left_join (Lỗi hay gặp), anti_join (Ý chính, variant `anti` = step 3).
 # Data (lab, checked in PGlite): stores LEFT JOIN orders ON o.store_id = s.id AND o.order_date = '2026-10-26' → 8 rows:
 # Hai Chau 1382 1383, Son Tra 1378, Ben Thanh NULL, Thao Dien 1379 1380 1381, Hoan Kiem NULL; date in WHERE → 6 rows.
+# R1 E1 (L625): one result row per pair, so the 8 rows on the badge are 8 drawn rows (a store with 3 orders = 3 rows).
 # Source: https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-JOIN
 title: { vi: "Điều kiện ở ON hay ở WHERE", en: "The condition in ON or in WHERE" }
 caption:
-  vi: "Cửa hàng LEFT JOIN đơn ngày 26/10."
-  en: "Stores LEFT JOIN orders of 26 Oct."
+  vi: "Bẫy 1: cửa hàng LEFT JOIN đơn ngày 26/10, mỗi cặp cửa hàng và đơn là một dòng."
+  en: "Trap 1: stores LEFT JOIN orders of 26 Oct, one row per store and order pair."
+alt:
+  vi: "Bảng kết quả 8 dòng, mỗi dòng một cặp cửa hàng và đơn: Hai Chau với đơn 1382 và 1383 (2 dòng), Son Tra với đơn 1378, Ben Thanh không có đơn (o.id NULL), Thao Dien với đơn 1379, 1380 và 1381 (3 dòng), Hoan Kiem không có đơn (o.id NULL). Bên dưới: điều kiện AND o.order_date nằm trong ON, và nhãn 8 dòng."
+  en: "A result table of 8 rows, one per store and order pair: Hai Chau with orders 1382 and 1383 (2 rows), Son Tra with order 1378, Ben Thanh with no order (o.id NULL), Thao Dien with orders 1379, 1380 and 1381 (3 rows), Hoan Kiem with no order (o.id NULL). Below: the condition AND o.order_date sits in ON, and a badge says 8 rows."
 nodes:
   - id: t
     shape: grid
-    head: [{ vi: "cửa hàng", en: store }, o.id, "", ""]
+    head: [{ vi: "cửa hàng", en: store }, o.id]
     cells:
-      - [Hai Chau, "1382", "1383", ""]
-      - [Son Tra, "1378", "", ""]
-      - [Ben Thanh, "NULL", "", ""]
-      - [Thao Dien, "1379", "1380", "1381"]
-      - [Hoan Kiem, "NULL", "", ""]
+      - [Hai Chau, "1382"]
+      - [Hai Chau, "1383"]
+      - [Son Tra, "1378"]
+      - [Ben Thanh, "NULL"]
+      - [Thao Dien, "1379"]
+      - [Thao Dien, "1380"]
+      - [Thao Dien, "1381"]
+      - [Hoan Kiem, "NULL"]
     toneOf: { "NULL": warm }
-  - { id: cond, mono: true, label: "AND o.order_date", sub: { vi: "ngày ở ON", en: "date in ON" } }
+  - { id: cond, mono: true, label: "AND o.order_date", sub: { vi: "lọc ngày trong ON", en: "filter in ON" } }
   - { id: count, label: { vi: "8 dòng", en: "8 rows" }, tone: new }
 rows:
   - [t]
@@ -25,14 +32,28 @@ rows:
 steps:
   - say: { vi: "LEFT JOIN giữ mọi cửa hàng; thiếu đơn thì cột đơn là NULL.", en: "LEFT JOIN keeps every store; no order means NULL order columns." }
   - say: { vi: "WHERE chạy sau phép nối: NULL không bằng ngày nào, hai cửa hàng biến mất.", en: "WHERE runs after the join: NULL equals no date, two stores vanish." }
+    alt:
+      vi: "Điều kiện chuyển sang WHERE o.order_date. Hai dòng NULL (Ben Thanh, Hoan Kiem) bị gạch bỏ; nhãn đổi thành 6 dòng."
+      en: "The condition moves to WHERE o.order_date. The two NULL rows (Ben Thanh, Hoan Kiem) are struck out; the badge now says 6 rows."
     set:
-      t: { strike: [2, 4], rowTone: [null, null, dead, null, dead] }
-      cond: { label: "WHERE o.order_date", sub: { vi: "ngày ở WHERE", en: "date in WHERE" }, tone: dead }
+      t: { strike: [3, 7], rowTone: [null, null, null, dead, null, null, null, dead] }
+      cond: { label: "WHERE o.order_date", sub: { vi: "lọc ngày ở WHERE", en: "filter in WHERE" }, tone: dead }
       count: { label: { vi: "6 dòng", en: "6 rows" }, tone: dead }
   - say: { vi: "Giữ đúng dòng không có cặp: cửa hàng không bán được gì.", en: "Keep only rows with no partner: stores that sold nothing." }
+    alt:
+      vi: "Điều kiện là WHERE o.id IS NULL (anti-join). Sáu dòng có đơn mờ đi; chỉ còn Ben Thanh và Hoan Kiem, cột o.id là NULL; nhãn 2 dòng."
+      en: "The condition is WHERE o.id IS NULL (anti-join). The six rows with an order fade; only Ben Thanh and Hoan Kiem stay, with o.id NULL; the badge says 2 rows."
     set:
-      t: { rowTone: [ghost, ghost, null, ghost, null] }
+      t: { rowTone: [ghost, ghost, ghost, null, ghost, ghost, ghost, null] }
       cond: { label: "WHERE o.id IS NULL", sub: anti-join, tone: live }
       count: { label: { vi: "2 dòng", en: "2 rows" }, tone: live }
 variants:
-  anti: { step: 2 }
+  anti:
+    step: 2
+    title: { vi: "Anti-join: giữ dòng không có cặp", en: "Anti-join: keep the rows with no partner" }
+    caption:
+      vi: "LEFT JOIN cửa hàng với đơn ngày 26/10, rồi chỉ giữ dòng mà bên phải là NULL."
+      en: "LEFT JOIN stores to the orders of 26 Oct, then keep only the rows whose right side is NULL."
+    alt:
+      vi: "Bảng 8 dòng của phép LEFT JOIN cửa hàng với đơn ngày 26/10, mỗi dòng một cặp. Sáu dòng có đơn (Hai Chau 1382 và 1383, Son Tra 1378, Thao Dien 1379, 1380 và 1381) mờ đi. Chỉ Ben Thanh và Hoan Kiem còn rõ, cột o.id là NULL. Bên dưới: điều kiện WHERE o.id IS NULL (anti-join) và nhãn 2 dòng."
+      en: "The 8-row table of stores LEFT JOIN the orders of 26 Oct, one row per pair. The six rows with an order (Hai Chau 1382 and 1383, Son Tra 1378, Thao Dien 1379, 1380 and 1381) fade. Only Ben Thanh and Hoan Kiem stay clear, with o.id NULL. Below: the condition WHERE o.id IS NULL (anti-join) and a badge saying 2 rows."

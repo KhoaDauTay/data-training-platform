@@ -1,11 +1,15 @@
 # GA-7 (tools/v39/diagram-plan.md): rows meet through the key. Lesson: join (Ý chính).
 # Query: orders o JOIN stores s ON s.id = o.store_id WHERE o.order_date = '2026-10-31'
 # Data (lab, checked in PGlite): 1416→5 Hoan Kiem, 1417→3 Ben Thanh, 1418→3 Ben Thanh, 1419→1 Hai Chau, 1420→4 Thao Dien.
+# R1 E18: the Son Tra note is the stores table's own line, so it stays next to the table on a phone.
 # Source: https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-JOIN
 title: { vi: "INNER JOIN ghép dòng qua khóa", en: "INNER JOIN pairs rows through the key" }
 caption:
   vi: "Đơn ngày 31/10 tìm cửa hàng của nó qua ON s.id = o.store_id. Son Tra không có đơn nào hôm đó nên không có trong kết quả."
   en: "Each order of 31 Oct finds its store through ON s.id = o.store_id. Son Tra had no order that day, so it is not in the result."
+alt:
+  vi: "Bảng orders o có 5 đơn ngày 31/10: 1416 của cửa hàng 5, 1417 và 1418 của cửa hàng 3, 1419 của cửa hàng 1, 1420 của cửa hàng 4. Bảng stores s: 1 Hai Chau, 2 Son Tra, 3 Ben Thanh, 4 Thao Dien, 5 Hoan Kiem; Son Tra mờ vì không có đơn. Đường nối mỗi đơn với cửa hàng có id bằng store_id của nó. Điều kiện ON s.id = o.store_id cho 5 dòng kết quả: 1416 Hoan Kiem, 1417 Ben Thanh, 1418 Ben Thanh, 1419 Hai Chau, 1420 Thao Dien."
+  en: "The orders o table has 5 orders of 31 Oct: 1416 from store 5, 1417 and 1418 from store 3, 1419 from store 1, 1420 from store 4. The stores s table: 1 Hai Chau, 2 Son Tra, 3 Ben Thanh, 4 Thao Dien, 5 Hoan Kiem; Son Tra is faded, it had no order. A line joins each order to the store whose id equals its store_id. The condition ON s.id = o.store_id gives 5 result rows: 1416 Hoan Kiem, 1417 Ben Thanh, 1418 Ben Thanh, 1419 Hai Chau, 1420 Thao Dien."
 nodes:
   - id: o
     shape: grid
@@ -19,8 +23,8 @@ nodes:
     head: [id, name]
     cells: [["1", Hai Chau], ["2", Son Tra], ["3", Ben Thanh], ["4", Thao Dien], ["5", Hoan Kiem]]
     rowTone: [new, ghost, new, new, new]
+    sub: { vi: "Son Tra: không có đơn 31/10", en: "Son Tra: no order on 31 Oct" }
   - { id: on, mono: true, label: "s.id = o.store_id", sub: { vi: "ON → 5 dòng", en: "ON → 5 rows" } }
-  - { id: none, shape: note, label: { vi: "Son Tra: không có đơn 31/10", en: "Son Tra: no order on 31 Oct" } }
   - id: res
     shape: grid
     label: { vi: "Kết quả", en: "Result" }
@@ -28,7 +32,7 @@ nodes:
     cells: [["1416", Hoan Kiem], ["1417", Ben Thanh], ["1418", Ben Thanh], ["1419", Hai Chau], ["1420", Thao Dien]]
 rows:
   - [o, s]
-  - [on, none]
+  - [on]
   - [res]
 edges:
   - { from: "o#0", to: "s#4", link: true }

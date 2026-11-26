@@ -8,8 +8,8 @@ caption:
   vi: "Mỗi tầng có schema riêng; đổi tầng dưới không bắt tầng trên đổi theo. Đó là độc lập dữ liệu: logic giữa tầng ngoài và tầng khái niệm, vật lý giữa tầng khái niệm và tầng trong."
   en: "Each level has its own schema; changing a lower level does not force the level above to change. That is data independence: logical between the external and conceptual levels, physical between the conceptual and internal levels."
 alt:
-  vi: "Ba tầng xếp từ trên xuống. Tầng ngoài: view price_list chỉ có tên và giá, view cheap_products cho nhóm bán hàng, cả hai đọc bảng products. Tầng khái niệm: bảng products với id, name, price, khóa chính và NOT NULL. Tầng trong: file chia trang 8 kB, và chỗ cho index products_price_idx. Bước 2: thêm cột stock vào products, hai view vẫn chạy, đó là độc lập logic. Bước 3: thêm index products_price_idx, câu SQL không đổi một ký tự, đó là độc lập vật lý."
-  en: "Three levels from top to bottom. External level: the view price_list with names and prices only, and the view cheap_products for the sales team, both reading the table products. Conceptual level: the table products with id, name, price, a primary key and NOT NULL. Internal level: a file cut into 8 kB pages, and room for the index products_price_idx. Step 2: add the column stock to products, and both views still run: logical independence. Step 3: add the index products_price_idx, and the SQL does not change one character: physical independence."
+  vi: "Ba tầng xếp từ trên xuống. Tầng ngoài: view price_list chỉ có tên và giá, view cheap_products cho nhóm bán hàng. Tầng khái niệm: bảng products với khóa chính và NOT NULL. Tầng trong: file chia trang 8 kB, và chỗ cho index products_price_idx, chưa có."
+  en: "Three levels from top to bottom. External level: the view price_list with names and prices only, and the view cheap_products for the sales team. Conceptual level: the table products with a primary key and NOT NULL. Internal level: a file cut into 8 kB pages, and room for the index products_price_idx, not there yet."
 groups:
   - { id: ext, label: { vi: "Tầng ngoài", en: "External level" }, nodes: [v1, v2] }
   - { id: con, label: { vi: "Tầng khái niệm", en: "Conceptual level" }, nodes: [tbl] }
@@ -27,11 +27,13 @@ rows:
 steps:
   - say: { vi: "Mỗi tầng có schema riêng; người dùng chỉ thấy tầng ngoài.", en: "Each level has its own schema; users only see the external level." }
   - say: { vi: "Thêm cột stock: view cũ vẫn chạy. Đó là độc lập logic.", en: "Add the column stock: old views still run. That is logical independence." }
+    alt: { vi: "Bảng products có thêm cột stock; hai view vẫn chạy, không phải sửa: độc lập logic.", en: "The table products gains the column stock; both views still run with no edit: logical independence." }
     set:
       tbl: { sub: "+ stock", tone: new }
       v1: { sub: { vi: "vẫn chạy", en: "still runs" }, tone: live }
       v2: { sub: { vi: "vẫn chạy", en: "still runs" }, tone: live }
   - say: { vi: "Thêm index: câu SQL không đổi một ký tự. Đó là độc lập vật lý.", en: "Add an index: the SQL does not change one character. That is physical independence." }
+    alt: { vi: "Index products_price_idx được thêm ở tầng trong; câu SQL của hai view không đổi một ký tự: độc lập vật lý.", en: "The index products_price_idx is added at the internal level; the SQL of both views does not change one character: physical independence." }
     set:
       idx: { sub: { vi: "index mới", en: "new index" }, tone: new }
       v1: { sub: { vi: "SQL không đổi", en: "same SQL" }, tone: live }

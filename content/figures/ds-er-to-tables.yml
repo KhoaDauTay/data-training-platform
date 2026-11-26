@@ -8,8 +8,8 @@ caption:
   vi: "Mỗi dạng quan hệ ER có một dạng bảng chuẩn; cột tô đậm là cột luật đó thêm vào."
   en: "Each ER shape has one standard table shape; the highlighted columns are the ones the rule adds."
 alt:
-  vi: "Ba bước, mỗi bước một luật. Bước 1, quan hệ 1:N giữa ex_dept và ex_emp: khóa ngoại đặt ở bên N, cột dept_id của ex_emp trỏ tới ex_dept.id; NOT NULL nghĩa là mỗi nhân viên bắt buộc có phòng. Bảng ex_emp: Lan phòng 1, Minh phòng 1, Nga phòng 2. Bước 2, quan hệ M:N giữa orders và products: thêm bảng nối order_items với order_id, product_id và qty; khóa chính là cặp hai khóa. Bước 3, thực thể yếu ex_invoice_line phụ thuộc ex_invoice: khóa chính ghép (invoice_id, line_no), và ON DELETE CASCADE xóa dòng con theo hóa đơn."
-  en: "Three steps, one rule each. Step 1, a 1:N relationship between ex_dept and ex_emp: the foreign key goes on the N side, column dept_id of ex_emp points at ex_dept.id; NOT NULL means every employee must have a department. Table ex_emp: Lan dept 1, Minh dept 1, Nga dept 2. Step 2, an M:N relationship between orders and products: add the junction table order_items with order_id, product_id and qty; its primary key is the pair of keys. Step 3, the weak entity ex_invoice_line depends on ex_invoice: a composite primary key (invoice_id, line_no), and ON DELETE CASCADE removes the lines with their invoice."
+  vi: "Ba bước, mỗi bước một luật. Bước 1, quan hệ 1:N giữa ex_dept và ex_emp: khóa ngoại đặt ở bên N, cột dept_id của ex_emp trỏ tới ex_dept.id; NOT NULL nghĩa là mỗi nhân viên bắt buộc có phòng. Bảng ex_emp: Lan phòng 1, Minh phòng 1, Nga phòng 2."
+  en: "Three steps, one rule each. Step 1, a 1:N relationship between ex_dept and ex_emp: the foreign key goes on the N side, column dept_id of ex_emp points at ex_dept.id; NOT NULL means every employee must have a department. Table ex_emp: Lan dept 1, Minh dept 1, Nga dept 2."
 nodes:
   - { id: rule, label: { vi: "1:N → FK bên N", en: "1:N → FK on N side" }, tone: new }
   - { id: er, mono: true, label: "ex_dept ||--|{ ex_emp" }
@@ -30,12 +30,14 @@ edges:
 steps:
   - say: { vi: "1:N: khóa ngoại đặt ở bảng bên N.", en: "1:N: the foreign key goes in the table on the N side." }
   - say: { vi: "M:N: thêm một bảng nối, khóa là cặp hai khóa.", en: "M:N: add a junction table keyed by the pair of keys." }
+    alt: { vi: "Quan hệ M:N giữa orders và products: bảng nối order_items với order_id, product_id và qty; khóa chính là cặp hai khóa, qty là dữ liệu của chính quan hệ.", en: "An M:N relationship between orders and products: the junction table order_items with order_id, product_id and qty; its primary key is the pair of keys, and qty is the relationship's own data." }
     set:
       rule: { label: { vi: "M:N → bảng nối", en: "M:N → junction table" } }
       er: { label: "orders }o--o{ products" }
       tbl: { label: order_items, head: [order_id, product_id, qty], cells: [], colTone: [new, new, null], sub: { vi: "PK = cặp hai khóa", en: "PK = the key pair" } }
       chip: { label: { vi: "qty: thuộc tính của quan hệ", en: "qty: the link's own data" } }
   - say: { vi: "Thực thể yếu: khóa ghép với khóa của cha, xóa theo cha.", en: "Weak entity: a composite key with the parent's key, deleted with the parent." }
+    alt: { vi: "Thực thể yếu ex_invoice_line phụ thuộc ex_invoice: khóa chính ghép (invoice_id, line_no); ba dòng: hóa đơn 1 dòng 1 là 100, dòng 2 là 40, hóa đơn 2 dòng 1 là 75; ON DELETE CASCADE xóa các dòng theo hóa đơn.", en: "The weak entity ex_invoice_line depends on ex_invoice: a composite primary key (invoice_id, line_no); three rows: invoice 1 line 1 is 100, line 2 is 40, invoice 2 line 1 is 75; ON DELETE CASCADE removes the lines with their invoice." }
     set:
       rule: { label: { vi: "thực thể yếu → khóa ghép", en: "weak entity → composite key" } }
       er: { label: "ex_invoice ||--|{ ex_invoice_line" }

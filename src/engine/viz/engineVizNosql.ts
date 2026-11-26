@@ -48,16 +48,16 @@ define<Record<string, unknown>>('mg-bson-doc', {
       out.push({ k: `row${i}`, t: 'r', x: 10 + r.depth * 12, y, w: 320 - r.depth * 12, h: 18, tone: hot ? 'new' : 'plain' });
       out.push(text(`n${i}`, 16 + r.depth * 12, y + 9, cut(r.name, 10), { size: SM, b: true, mono: true }));
       out.push(text(`v${i}`, s.types ? 196 : 100, y + 9, cut(r.preview, s.types ? 13 : 24), { size: SM, mono: true, ink: 'muted' }));
-      if (s.types) out.push(...box(`ty${i}`, 122, y + 1, 64, 16, r.type, r.type === 'array' || r.type === 'object' ? 'ptr' : 'cell'));
+      if (s.types) out.push(...box(`ty${i}`, 122, y, 64, 18, r.type, r.type === 'array' || r.type === 'object' ? 'ptr' : 'cell')); // v39 R1 (L627): as tall as its row, the label clears the stroke
       if (s.sizes) out.push(text(`b${i}`, 326, y + 9, String(r.size), { size: SM, mono: true, a: 'e' }));
     });
     if (s.strip) {
       const y = 22 + rows.length * 21 + 10;
       const sx = (b: number) => 10 + (b / size) * 320;
       let at = 4;
-      out.push(...box('len', sx(0), y, sx(4) - sx(0) - 1, 20, '', 'ptr')); // v39 F3 (L622): 1 unit before seg0, like the segments
+      out.push(...box('len', sx(0), y, sx(4) - sx(0) - 2, 20, '', 'ptr')); // v39 R1 (L627): 2 units between segments (1 merged their strokes)
       top.forEach((r, i) => {
-        out.push(...box(`seg${i}`, sx(at), y, sx(at + r.size) - sx(at) - 1, 20, '', i % 2 ? 'cell' : 'new'));
+        out.push(...box(`seg${i}`, sx(at), y, sx(at + r.size) - sx(at) - 2, 20, '', i % 2 ? 'cell' : 'new'));
         at += r.size;
       });
       out.push(...box('eoo', sx(size - 1), y, Math.max(4, sx(size) - sx(size - 1)), 20, '', 'ptr'));
@@ -103,7 +103,7 @@ define<EsrModel>('mg-compound-index-esr', {
       cols.forEach((c, j) => out.push(text(`c${d.status}${d.created}${c}`, 20 + j * 64, y + 8, `${c[0]}=${(d as Record<string, unknown>)[c]}`, { size: SM, mono: true })));
     });
     if (s.scan) out.push(text('ks', 222, 70, `keysExamined ${sc.length}`, { size: SM, mono: true }), text('nr', 222, 86, `nReturned ${sc.filter(match).length}`, { size: SM, mono: true }));
-    if (s.result) out.push(...box('stage', 222, 100, 108, 30, o === 'esr' ? tr('không SORT', 'no SORT') : 'SORT', o === 'esr' ? 'live' : 'dead', o === 'esr' ? tr('đã đúng thứ tự', 'already in order') : tr('sắp trong RAM', 'in-memory sort')));
+    if (s.result) out.push(...box('stage', 222, 100, 108, 34, o === 'esr' ? tr('không SORT', 'no SORT') : 'SORT', o === 'esr' ? 'live' : 'dead', o === 'esr' ? tr('đã đúng thứ tự', 'already in order') : tr('sắp trong RAM', 'in-memory sort')));
     return out;
   };
   return {

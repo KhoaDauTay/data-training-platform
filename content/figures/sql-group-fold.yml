@@ -6,6 +6,10 @@ title: { vi: "GROUP BY gộp nhiều dòng thành một", en: "GROUP BY folds ma
 caption:
   vi: "P = PAID, C = CANCELLED, R = REFUNDED. Mỗi dòng vào đúng một nhóm; mỗi nhóm ra một dòng."
   en: "P = PAID, C = CANCELLED, R = REFUNDED. Every row lands in exactly one group; every group gives one row."
+alt:
+  vi: "Phần trên: 12 đơn mẫu trong 1428 đơn, mỗi ô một chữ cho status: 9 ô P (PAID), 2 ô C (CANCELLED), 1 ô R (REFUNDED)."
+  en: "Top: 12 sample orders out of 1428, one letter per cell for the status: 9 cells P (PAID), 2 cells C (CANCELLED), 1 cell R (REFUNDED)."
+align: true
 nodes:
   - id: all
     shape: grid
@@ -32,6 +36,11 @@ edges:
 steps:
   - say: { vi: "Mỗi đơn có một status.", en: "Every order has a status." }
     show: [all]
+    alt: { vi: "Chỉ có hàng 12 ô mẫu.", en: "Only the row of 12 sample cells." }
   - say: { vi: "GROUP BY xếp dòng cùng status vào một nhóm.", en: "GROUP BY puts rows with the same status in one group." }
     show: [all, gp, gc, gr]
+    alt: { vi: "Bên dưới hiện ba đống: 9 ô P, 2 ô C, 1 ô R.", en: "Three piles appear below: 9 cells P, 2 cells C, 1 cell R." }
   - say: { vi: "Mỗi nhóm thành một dòng; count(*) đếm số dòng của nhóm.", en: "Each group becomes one row; count(*) counts the group's rows." }
+    alt:
+      vi: "Mỗi đống có mũi tên tới một dòng kết quả: PAID 1298, CANCELLED 92, REFUNDED 38 (số trên cả bảng). Dòng cuối: 1298 + 92 + 38 = 1428."
+      en: "Each pile has an arrow to one result row: PAID 1298, CANCELLED 92, REFUNDED 38 (counts on the whole table). Last line: 1298 + 92 + 38 = 1428."

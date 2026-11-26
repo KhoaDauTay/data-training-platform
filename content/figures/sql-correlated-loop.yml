@@ -7,8 +7,8 @@ caption:
   vi: "Truy vấn con nhắc tới s.id của dòng ngoài, nên mỗi cửa hàng có một lần chạy riêng, với giá trị của chính nó."
   en: "The subquery names s.id of the outer row, so each store gets a run of its own, with its own value."
 alt:
-  vi: "Bên trái là bảng stores với 5 cửa hàng. Ở giữa là truy vấn con max(order_date) lọc theo store_id. Với Hai Chau (id 1), truy vấn con chạy với store_id = 1 và ra 2026-10-31. Với Son Tra (id 2), nó chạy lại với store_id = 2 và ra 2026-10-30. Cuối cùng cả 5 dòng đều có giá trị: Son Tra 2026-10-30, bốn cửa hàng còn lại 2026-10-31. Truy vấn con đã chạy 5 lần, mỗi dòng ngoài một lần."
-  en: "On the left is the stores table with 5 stores. In the middle is the subquery max(order_date) filtered by store_id. For Hai Chau (id 1) the subquery runs with store_id = 1 and gives 2026-10-31. For Son Tra (id 2) it runs again with store_id = 2 and gives 2026-10-30. In the end all 5 rows have a value: Son Tra 2026-10-30, the other four stores 2026-10-31. The subquery ran 5 times, once per outer row."
+  vi: "Bên trái là bảng stores với 5 cửa hàng. Ở giữa là truy vấn con max(order_date) lọc theo store_id. Bên phải là cột kết quả, các ô chưa tính ghi dấu hỏi. Với Hai Chau (id 1), truy vấn con chạy với store_id = 1 và ra 2026-10-31."
+  en: "On the left is the stores table with 5 stores. In the middle is the subquery max(order_date) filtered by store_id. On the right is the result column; cells not computed yet show a question mark. For Hai Chau (id 1) the subquery runs with store_id = 1 and gives 2026-10-31."
 nodes:
   - id: s
     shape: grid
@@ -37,12 +37,14 @@ steps:
       s: { rowTone: [new] }
       r: { cells: [["2026-10-31"], ["?"], ["?"], ["?"], ["?"]], cellTone: { "0:0": new } }
   - say: { vi: "Dòng tiếp theo, chạy lại với s.id = 2.", en: "Next row, run again with s.id = 2." }
+    alt: { vi: "Với Son Tra (id 2), truy vấn con chạy lại với store_id = 2 và ra 2026-10-30.", en: "For Son Tra (id 2) the subquery runs again with store_id = 2 and gives 2026-10-30." }
     show: [s, q, r]
     set:
       s: { rowTone: [null, new] }
       q: { sub: "WHERE store_id = 2" }
       r: { cells: [["2026-10-31"], ["2026-10-30"], ["?"], ["?"], ["?"]], cellTone: { "1:0": new } }
   - say: { vi: "Một lần cho mỗi dòng ngoài; Postgres có thể tối ưu, nhưng ý nghĩa là vậy.", en: "Once per outer row; Postgres may optimise it, but that is the meaning." }
+    alt: { vi: "Cả 5 dòng đều có giá trị: Son Tra 2026-10-30, bốn cửa hàng còn lại 2026-10-31. Truy vấn con đã chạy 5 lần.", en: "All 5 rows have a value: Son Tra 2026-10-30, the other four stores 2026-10-31. The subquery ran 5 times." }
     set:
       q: { sub: { vi: "mỗi s.id một lần", en: "once per s.id" } }
       r: { cells: [["2026-10-31"], ["2026-10-30"], ["2026-10-31"], ["2026-10-31"], ["2026-10-31"]] }
