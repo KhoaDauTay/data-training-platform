@@ -157,6 +157,7 @@ lab:
         SELECT container_id,
           count(*) AS hours,
           sum(readings) AS readings,
+          sum(sum_c) AS sum_c,
           max(max_c) AS max_c
         FROM reefer_hourly
         GROUP BY container_id
