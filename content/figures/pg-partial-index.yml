@@ -1,0 +1,38 @@
+# B3-2 (tools/v42/diagram-plan-v42.md): index only the rows you ask about. Lesson: e-pg-l2-03 (Ý chính).
+# Data (PGlite, lesson setup; tools/v42/b3check.log): tasks 30000 rows = done 29400, open 600; CREATE INDEX … (due_date) WHERE
+# status = 'open' = 16384 B against 221184 B for the full (due_date) index; status = 'open' AND due_date < 2026-03-01 → Bitmap
+# Index Scan on the partial index; bars are drawn to scale (12 = the larger value), the note is the real number; status <> 'done' AND … → Seq Scan (same 177 estimated rows).
+# Source: https://www.postgresql.org/docs/18/indexes-partial.html
+title: { vi: "Index partial: chỉ giữ dòng bạn hỏi", en: "A partial index keeps only the rows you ask about" }
+caption:
+  vi: "Index có WHERE status = 'open' chỉ chứa 600 việc đang mở, nên nhỏ hơn index toàn bảng 13 lần. Planner chỉ dùng nó khi câu lặp lại đúng điều kiện đó."
+  en: "An index with WHERE status = 'open' holds only the 600 open tasks, so it is 13 times smaller than the full index. The planner uses it only when the query repeats that condition."
+alt:
+  vi: "Index partial chỉ giữ các dòng thỏa điều kiện của nó nên nhỏ và nhanh, nhưng planner chỉ dùng nó khi câu lặp lại đúng điều kiện đó. Kết quả: 16 kB so với 216 kB."
+  en: "A partial index keeps only the rows matching its condition, so it is small and fast, but the planner uses it only when the query repeats that condition. Result: 16 kB against 216 kB."
+nodes:
+  - id: rows
+    shape: bars
+    label: { vi: "dòng của tasks", en: "rows of tasks" }
+    items:
+      - { label: done, value: 12, note: "29400" }
+      - { label: open, value: 0.25, note: "600", tone: live }
+  - id: b
+    shape: bars
+    label: { vi: "kích thước index", en: "index size" }
+    sub: { vi: "đơn vị kB", en: "in kB" }
+    items:
+      - { label: { vi: "toàn bảng", en: "full" }, value: 12, note: "216" }
+      - { label: partial, value: 0.9, note: "16", tone: live }
+  - { id: ok, shape: key, mono: true, label: "status = 'open'", sub: Bitmap Index Scan, tone: live }
+  - { id: no, shape: key, mono: true, label: "status <> 'done'", sub: Seq Scan, tone: dead }
+rows:
+  - [rows, b]
+  - [ok, no]
+steps:
+  - say: { vi: "Index chỉ chứa 600 dòng đang mở.", en: "The index holds only the 600 open rows." }
+    show: [rows, b]
+    alt: { vi: "Điều kiện WHERE của index loại 98% bảng, nên index nhỏ hơn 13 lần.", en: "The index's WHERE drops 98% of the table, so it is 13 times smaller." }
+  - say: { vi: "Planner phải chứng minh được điều kiện.", en: "The planner must prove the condition." }
+    show: [rows, b, ok, no]
+    alt: { vi: "Planner so biểu thức chứ không nhìn dữ liệu, nên <> 'done' không suy ra = 'open' và bị Seq Scan.", en: "The planner compares expressions, not data, so <> 'done' does not imply = 'open' and gets a Seq Scan." }

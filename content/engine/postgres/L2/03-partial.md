@@ -8,6 +8,7 @@ title_en: Partial indexes cover only the rows you need
 kind: lab
 runtime: browser
 minutes: 14
+figures: [{ name: pg-partial-index, at: idea }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Tạo index có `WHERE` cho phần nhỏ của bảng mà câu hỏi hay đọc, để index nhỏ và rẻ khi ghi.
@@ -118,6 +119,8 @@ Nhiều người nghĩ chỉ cần câu hỏi cùng ý nghĩa với điều ki�
 
 `CREATE UNIQUE INDEX ... WHERE ...` biến điều kiện thành luật: mỗi `owner_id` chỉ xuất hiện một lần trong các dòng đang mở, còn số việc đã xong thì không giới hạn. Hàm dùng trong điều kiện phải `IMMUTABLE`, vì index được dựng một lần và không tự tính lại theo thời gian.
 
+Hình cuối mục này so kích thước hai index trên `tasks` và hai câu cùng ý nghĩa nhưng ra hai kế hoạch.
+
 ## Cú pháp
 
 ```sql
@@ -222,6 +225,8 @@ The planner uses a partial index only when it can prove that the query's conditi
 Many people think a query with the same meaning as the index condition is enough. In fact `status <> 'done'` picks exactly the open rows with today's data, but the planner does not know the column has only two values, so it drops the index and reads the whole table.
 
 `CREATE UNIQUE INDEX ... WHERE ...` turns the condition into a rule: each `owner_id` appears once among open rows, while done tasks are unlimited. A function in the condition must be `IMMUTABLE`, because the index is built once and never recomputes itself as time passes.
+
+The figure at the end of this section compares the size of two indexes on `tasks` and two queries with the same meaning but two plans.
 
 ## Syntax
 

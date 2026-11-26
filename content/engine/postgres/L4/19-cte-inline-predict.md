@@ -8,6 +8,7 @@ title_en: "Predict: is a CTE folded into the outer query or computed apart?"
 kind: predict
 runtime: browser
 minutes: 15
+figures: [{ name: pg-cte-inline, at: idea }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Đọc trong kế hoạch một CTE đã được gộp vào câu ngoài hay được tính riêng (`CTE Scan`)
@@ -108,6 +109,8 @@ Từ PostgreSQL 12, một CTE (`WITH`) không đệ quy, không có tác dụng 
 - `MATERIALIZED` buộc tính riêng; `NOT MATERIALIZED` buộc gộp vào.
 - Gộp vào nghĩa là chép thân CTE vào mỗi chỗ dùng. Có lợi khi điều kiện bên ngoài cắt được nhiều; có hại khi thân CTE là việc nặng bị làm lại.
 
+Hình từng bước ở cuối mục này vẽ hai cây kế hoạch của cùng một câu: CTE được gộp vào, rồi viết `MATERIALIZED`.
+
 ## Ví dụ
 
 ```sql
@@ -139,6 +142,8 @@ Since PostgreSQL 12, a CTE (`WITH`) that is not recursive, has no side effects a
 
 - `MATERIALIZED` forces it apart; `NOT MATERIALIZED` forces it in.
 - Folding in copies the CTE body into each use. It helps when the outer condition cuts a lot; it hurts when the body is heavy work done again.
+
+The step-through figure at the end of this section draws two plan trees for the same query: the CTE folded in, then written `MATERIALIZED`.
 
 ## Example
 

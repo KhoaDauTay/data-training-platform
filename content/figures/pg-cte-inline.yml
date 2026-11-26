@@ -1,0 +1,38 @@
+# B3-7 (tools/v42/diagram-plan-v42.md): a CTE used once is folded in; MATERIALIZED computes it apart. Lesson: e-pg-l4-19 (Ý chính).
+# Data (PGlite, lesson setup; tools/v42/b3check.log): WITH t AS (SELECT customer_id, amount FROM orders) SELECT sum(amount) FROM t
+# WHERE customer_id = 42 → Aggregate → Bitmap Heap Scan → Bitmap Index Scan on orders_customer_idx (rows=40), cost 84.24;
+# AS MATERIALIZED → Aggregate → CTE Scan on t (Filter: customer_id = 42) over CTE t = Seq Scan on orders (20000 rows), cost 759.11.
+# Deviation: one tree whose two lower nodes change name per frame (not two trees side by side); the Seq Scan sits under "CTE t"
+# in EXPLAIN, so the edge into the CTE Scan is labelled CTE t in frame 2.
+# Source: https://www.postgresql.org/docs/18/queries-with.html
+title: { vi: "CTE gộp vào hay tính riêng", en: "A CTE folded in or computed apart" }
+caption:
+  vi: "Cùng câu WITH t AS (…) SELECT sum(amount) FROM t WHERE customer_id = 42, hai cây kế hoạch. Gộp vào thì điều kiện xuống tới index; MATERIALIZED thì đọc cả 20000 dòng rồi mới lọc."
+  en: "The same query WITH t AS (…) SELECT sum(amount) FROM t WHERE customer_id = 42, two plan trees. Folded in, the condition reaches the index; MATERIALIZED reads all 20000 rows before filtering."
+alt:
+  vi: "Từ PostgreSQL 12, CTE dùng một lần được gộp vào câu ngoài để điều kiện đi xuống bảng, còn MATERIALIZED buộc tính riêng. Kết quả: chi phí 84 so với 759."
+  en: "Since PostgreSQL 12 a once-used CTE is folded into the outer query so conditions reach the table, while MATERIALIZED forces it apart. Result: cost 84 against 759."
+nodes:
+  - { id: q, shape: key, mono: true, label: "WHERE customer_id = 42" }
+  - { id: cost, shape: key, label: cost 84, tone: live }
+  - { id: a, label: Aggregate, sub: sum(amount) }
+  - { id: mid, label: Bitmap Heap Scan, sub: orders }
+  - { id: low, label: Bitmap Index Scan, sub: { vi: "40 dòng", en: "40 rows" }, tone: live }
+rows:
+  - [q, cost]
+  - [a]
+  - [mid]
+  - [low]
+edges:
+  - { id: up, from: low, to: mid }
+  - { from: mid, to: a }
+steps:
+  - say: { vi: "Gộp: điều kiện đi xuống tới index.", en: "Folded: the condition reaches the index." }
+    alt: { vi: "CTE dùng một lần, không tác dụng phụ, nên Postgres chép thân nó vào câu ngoài và dùng được index.", en: "The CTE is used once with no side effects, so Postgres copies its body into the outer query and can use the index." }
+  - say: { vi: "MATERIALIZED: tính hết rồi mới lọc.", en: "MATERIALIZED: compute it all, then filter." }
+    alt: { vi: "CTE được tính riêng thành kết quả đầy đủ, nên điều kiện chỉ còn là Filter trên CTE Scan và chi phí gấp chín lần.", en: "The CTE is computed in full first, so the condition is only a Filter on the CTE Scan and the cost is nine times higher." }
+    set:
+      cost: { label: cost 759, tone: dead }
+      mid: { label: CTE Scan, sub: "Filter 42", tone: dead }
+      low: { label: Seq Scan, sub: { vi: "20000 dòng", en: "20000 rows" }, tone: dead }
+      up: { label: CTE t }
