@@ -2,7 +2,7 @@
 # (Ý chính), replaces the request-path text block; the registry `pg-tenant-placement` stays as `viz:`. Data: the lesson's
 # illustration (t-04 on s2 through proxy-s2.lab; after the move, version 1 → 2, on s1). Deviation: step 2 also turns the
 # proxy and writer to s1 (the plan kept s2 there, which would contradict the directory row), and the plan's separate `err`
-# note is the old-shard box itself in step 3 (one slot; L761 edge `ro` changes label and dash), so no blank row shows.
+# note is the old-shard box itself in step 3 (one slot; L761 edge `ro` changes label and dash), so no blank row shows. The router → directory arrow carries no label (its "look up" crossed the stale-cache arrow beside it on a phone; the caption says it).
 # Fact: the lesson's own design rules; sibling source https://docs.aws.amazon.com/wellarchitected/latest/saas-lens/silo-pool-and-bridge-models.html
 title: { vi: "Yêu cầu tìm shard qua danh mục", en: "A request finds its shard through the directory" }
 caption:
@@ -14,7 +14,7 @@ alt:
 align: true
 nodes:
   - { id: req, shape: key, mono: true, label: tenant_id = t-04 }
-  - { id: router, label: { vi: "bộ định tuyến", en: router } }
+  - { id: router, label: { vi: "bộ định tuyến", en: "request router" } }
   - { id: dir, shape: table, label: directory, sub: "t-04 → s2 · v1" }
   - { id: old, label: { vi: "s2 chặn ghi t-04", en: "s2 refuses t-04" }, sub: { vi: "khách đã chuyển", en: "tenant moved" }, tone: warm }
   - { id: w, shape: table, label: s2 writer }
@@ -26,10 +26,10 @@ phone:
   rows: [[req], [router], [dir, old], [proxy], [w]]
 edges:
   - { from: req, to: router }
-  - { from: router, to: dir, label: { vi: "tra", en: "look up" } }
+  - { from: router, to: dir }
   - { from: dir, to: proxy, label: { vi: "địa chỉ proxy", en: "proxy address" } }
   - { from: proxy, to: w }
-  - { id: ro, from: router, to: old, dash: true, label: { vi: "bản nhớ cũ", en: "stale cache" } }
+  - { id: ro, from: router, to: old, dash: true, label: { vi: "bản nhớ cũ", en: "old copy" } }
 steps:
   - say: { vi: "Router tra danh mục rồi đi qua proxy của shard.", en: "The router looks up the directory, then goes through the shard's proxy." }
     alt: { vi: "Danh mục chỉ ghi địa chỉ proxy, nên không ứng dụng nào đi tắt tới máy ghi khi proxy hỏng.", en: "The directory stores only the proxy address, so no app can skip straight to the writer when the proxy is down." }
