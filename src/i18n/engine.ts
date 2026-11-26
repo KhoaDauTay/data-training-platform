@@ -225,6 +225,7 @@ const vi = {
   'row.levelOpen': 'Xem cấp',
   'level.meta': '{n} bài · khoảng {m} phút',
   'short.run': 'Chạy thật',
+  'short.sim': 'Mô phỏng', // eye-v47b B-04 (L1112): Redis, Elasticsearch and PromQL lesson rows
   'short.diagram': 'Sơ đồ',
   'short.docs': 'Tài liệu',
   'lesson.prev': 'Bài trước',
@@ -470,6 +471,7 @@ const en: Record<EngineKey, string> = {
   'row.levelOpen': 'See level',
   'level.meta': '{n} lessons · about {m} min',
   'short.run': 'Runs for real',
+  'short.sim': 'Simulated',
   'short.diagram': 'Diagram',
   'short.docs': 'Docs',
   'lesson.prev': 'Previous lesson',

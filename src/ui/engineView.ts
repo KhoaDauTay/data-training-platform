@@ -264,7 +264,7 @@ export function enginePage(): HTMLElement {
 }
 const loadingLine = (): HTMLElement => d.h('p', { class: 'm-0 flex min-h-40 items-start gap-2 text-muted', 'aria-live': 'polite' }, d.loader(), d.t('engine.loading'));
 const failedBox = (retry: () => void): HTMLElement => d.h('div', { role: 'alert', class: 'flex flex-col gap-2' }, d.h('p', { class: 'm-0' }, d.t('engine.failed')),
-  d.h('button', { type: 'button', onclick: retry }, d.t('data.retry')));
+  d.h('div', { class: 'flex flex-wrap gap-2' }, d.h('button', { type: 'button', onclick: retry }, d.t('data.retry')), d.h('button', { type: 'button', onclick: () => location.reload() }, d.t('app.reload')))); // B-01 (L1110)
 
 /** The NoSQL path as one list row (overview and the MongoDB page): its own picture, a short line, one link. */
 function pathRow(): HTMLElement {
@@ -386,7 +386,7 @@ function lessonRow(l: EngineLesson, ok: Set<string>, isNext: boolean, call: 'hea
   return d.ui.listRow({
     lead: leadDisc(isDone ? 'done' : isNext ? 'current' : 'todo', d.icon(KIND_ICON[l.kind], 'size-5')),
     title: l.id === TOPIC_HUB ? d.h('span', {}, topicChip(), l.title[lang()]) : l.title[lang()],
-    sub: `${et(`kind.${l.kind}`)} · ${et('minutes', { n: l.minutes })} · ${et(k === 'diagram' ? 'short.diagram' : k === 'docs' ? 'short.docs' : 'short.run')}`,
+    sub: `${et(`kind.${l.kind}`)} · ${et('minutes', { n: l.minutes })} · ${et(k === 'diagram' ? 'short.diagram' : k === 'docs' ? 'short.docs' : k === 'redis' || k === 'es' || k === 'promql' ? 'short.sim' : 'short.run')}`,
     action: rowLink(lessonHash(l), isDone ? et('row.again') : isNext && call !== 'head' ? et(call === 'start' ? 'row.start' : 'row.next') : et('row.open'), isNext && call !== 'head'),
     current: isNext,
   });

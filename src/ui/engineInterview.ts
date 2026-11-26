@@ -75,7 +75,7 @@ const mmss = (ms: number): string => { const s = Math.max(0, Math.round(ms / 100
 const card = (...c: (Node | string | null)[]): HTMLElement => d.h('section', { class: d.cls.cx(d.cls.CARD, 'flex flex-col gap-4 p-5 max-sm:p-4') }, ...c);
 const loading = (): HTMLElement => d.h('p', { class: 'm-0 flex min-h-40 items-start gap-2 text-muted', 'aria-live': 'polite' }, d.loader(), d.t('engine.loading'));
 const failed = (e: EngineId): HTMLElement => d.h('div', { role: 'alert', class: 'flex flex-col gap-2' }, d.h('p', { class: 'm-0' }, d.t('engine.failed')),
-  d.h('button', { type: 'button', onclick: () => { banks.delete(e); d.rerender(); } }, d.t('data.retry')));
+  d.h('div', { class: 'flex flex-wrap gap-2' }, d.h('button', { type: 'button', onclick: () => { banks.delete(e); d.rerender(); } }, d.t('data.retry')), d.h('button', { type: 'button', onclick: () => location.reload() }, d.t('app.reload')))); // B-01 (L1110)
 
 /**
  * v47 S4 (L980–L983): the banks are three tabs of the one room under Học (#/learn/interview?e=pg|mg|dy); a set run or a

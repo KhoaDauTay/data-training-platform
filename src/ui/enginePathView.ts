@@ -56,7 +56,7 @@ export function pathPage(ctx: PathCtx, slug: string): HTMLElement {
   const m = pathChunk();
   if (m === 'loading') return h('p', { class: 'm-0 flex min-h-40 items-start gap-2 text-muted', 'aria-live': 'polite' }, d.loader(), d.t('engine.loading'));
   if (m === 'failed') return h('div', { role: 'alert', class: 'flex flex-col gap-2' }, h('p', { class: 'm-0' }, d.t('engine.failed')),
-    h('button', { type: 'button', onclick: () => { pathMod = undefined; d.rerender(); } }, d.t('data.retry')));
+    h('div', { class: 'flex flex-wrap gap-2' }, h('button', { type: 'button', onclick: () => { pathMod = undefined; d.rerender(); } }, d.t('data.retry')), h('button', { type: 'button', onclick: () => location.reload() }, d.t('app.reload')))); // B-01 (L1110)
   const { path } = m;
   const ok = c.done();
   const skill = path.skills.find((x) => slugOf(x.id) === slug);

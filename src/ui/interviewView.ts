@@ -502,14 +502,14 @@ export function listPage(): HTMLElement {
   return h('div', { class: 'flex flex-col gap-6' },
     // v21 U18: the breadcrumb and the h1 "Phòng phỏng vấn" are drawn above by homeView; v47 S4 (L982): the room's tabs, SQL open
     ivTabs(h, 'sql', d$.interviewTabHash, d$.getLang()),
-    h('p', { class: 'm-0 text-[15px]' }, it('iv.intro')),
+    h('p', { class: 'm-0 text-muted' }, it('iv.intro')), // B-08 (L1116): the engine tabs' intro style
     h('section', { class: 'flex flex-col gap-3', 'aria-labelledby': 'iv-sets' },
       h('h2', { id: 'iv-sets', class: 'm-0 text-title font-bold' }, it('iv.sets')),
       h('p', { class: 'm-0 text-body-sm text-muted' }, it('iv.setsIntro')),
       h('label', { class: 'flex min-h-6 items-center gap-2' }, pick, it('iv.timerPick')),
       h('ul', { class: 'm-0 flex list-none flex-col gap-3 p-0' }, ...c$.sets.map((s, i) => {
         const last = p.sets[s.id];
-        return h('li', { class: ROW }, disc(i, !!last), h('div', { class: 'flex min-w-0 flex-1 flex-col gap-1' },
+        return h('li', { class: ROW }, disc(i, !!last), h('div', { class: 'flex min-w-0 flex-1 basis-48 flex-col gap-1' },
           h('h3', { class: 'm-0 text-body font-bold' }, s.title[lang]),
           h('p', { class: 'm-0 text-body-sm text-muted' }, `${it(`iv.level.${s.level}`)} · ${it('iv.setLine', { ...range(s.modules), n: s.questions.length, min: s.minutes })}`),
           h('p', { class: 'm-0 text-body-sm' }, knownLine(s.modules)),
@@ -521,7 +521,7 @@ export function listPage(): HTMLElement {
       h('p', { class: 'm-0 text-body-sm text-muted' }, it('iv.thIntro')),
       h('ul', { class: 'm-0 flex list-none flex-col gap-3 p-0' }, ...takeHomes.map((x, i) => {
         const last = p.takeHomes[x.id];
-        return h('li', { class: ROW }, disc(i, !!last), h('div', { class: 'flex min-w-0 flex-1 flex-col gap-1' },
+        return h('li', { class: ROW }, disc(i, !!last), h('div', { class: 'flex min-w-0 flex-1 basis-48 flex-col gap-1' },
           h('h3', { class: 'm-0 text-body font-bold' }, x.title[lang]),
           h('p', { class: 'm-0 text-body-sm text-muted' }, `${it('iv.thLine', { ...range(x.modules), n: x.steps.length })}`),
           h('p', { class: 'm-0 text-body-sm' }, knownLine(x.modules)),
