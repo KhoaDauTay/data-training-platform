@@ -6,7 +6,7 @@ import { bpHashOf } from '../src/ui/engineView';
 
 const cards = Object.keys(import.meta.glob('../content/engine/best/*/*.md'));
 
-describe('codeOrLink: Best Practice ids', () => {
+describe('bpHashOf: Best Practice ids', () => {
   it('every card id maps to its own track folder and round-trips through bestRouteOf', () => {
     expect(cards.length).toBeGreaterThan(100);
     for (const p of cards) {
@@ -22,11 +22,11 @@ describe('codeOrLink: Best Practice ids', () => {
   });
 });
 
-// v38 (link check): every `e-…` id written in Engine content (lessons, Best Practice cards, path, glossary, interview sets) or
+// v38 (link check): every `e-…` id written in content (v44, L792: all of content/, so quiz `why`, hints, facts, General and figures too) or
 // in the multi-tenant knowledge doc names something that exists. Broad match first, then membership, so a typo such as
 // `e-pg-l5-1` fails instead of being skipped by a narrow pattern.
 const texts = {
-  ...import.meta.glob<string>('../content/engine/**/*.{md,yml}', { query: '?raw', import: 'default', eager: true }),
+  ...import.meta.glob<string>('../content/**/*.{md,yml}', { query: '?raw', import: 'default', eager: true }),
   ...import.meta.glob<string>('../docs/knowledge/database/multi-tenant.md', { query: '?raw', import: 'default', eager: true }),
 };
 describe('Engine ids mentioned in content exist', () => {

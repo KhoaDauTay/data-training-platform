@@ -8,6 +8,7 @@ title_en: "Eventually or strongly consistent"
 kind: concept
 runtime: docs
 minutes: 7
+figures: [{ name: dy-eventual-read, at: example }]
 objectives:
   - vi: Giải thích đọc nhất quán cuối có thể thấy dữ liệu cũ, và khi nào cần đọc nhất quán mạnh.
     en: Explain that an eventually consistent read can see stale data, and when you need a strongly consistent one.
@@ -109,15 +110,9 @@ Tìm người dùng theo email qua GSI `byEmail`, chỉ nhất quán cuối:
 
 Kết quả chỉ có `email` và `userId`, vì GSI `byEmail` chỉ chiếu khóa. 0.5 RCU được tính trên index, không trên bảng.
 
-Trên DynamoDB thật, theo thời gian:
+Trên DynamoDB thật, theo thời gian: lúc t0 `PutItem` ghi địa chỉ "Hue" thành công; lúc t1 một `GetItem` mặc định có thể còn trả địa chỉ cũ, còn `GetItem` với `ConsistentRead` trả "Hue". Hình dưới vẽ các bản sao lúc đó.
 
-```text
-t0  PutItem address = "Hue"            -> success
-t1  GetItem                            -> may return the old address
-t1  GetItem ConsistentRead = true      -> returns "Hue"
-```
-
-Trong trình duyệt, hai dòng t1 luôn cho cùng kết quả: engine chỉ có một bản sao, nên bước này chỉ đọc được, không thấy được.
+Trong trình duyệt, hai lần đọc lúc t1 luôn cho cùng kết quả: engine chỉ có một bản sao, nên bước này chỉ đọc được, không thấy được.
 
 ## Lỗi hay gặp
 
@@ -207,15 +202,9 @@ Finding a user by email through the GSI `byEmail`, eventually consistent only:
 
 The result holds only `email` and `userId`, because the GSI `byEmail` projects only the keys. The 0.5 RCU is charged on the index, not on the table.
 
-On real DynamoDB, over time:
+On real DynamoDB, over time: at t0 a `PutItem` writes the address "Hue" successfully; at t1 a default `GetItem` may still return the old address, while a `GetItem` with `ConsistentRead` returns "Hue". The figure below draws the copies at that moment.
 
-```text
-t0  PutItem address = "Hue"            -> success
-t1  GetItem                            -> may return the old address
-t1  GetItem ConsistentRead = true      -> returns "Hue"
-```
-
-In the browser both t1 lines always give the same result: the engine has only one copy, so this step can be read about but not seen.
+In the browser both t1 reads always give the same result: the engine has only one copy, so this step can be read about but not seen.
 
 ## Common mistakes
 

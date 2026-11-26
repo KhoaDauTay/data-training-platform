@@ -1,0 +1,49 @@
+# B1-12 (tools/v42/diagram-plan-v42.md): the last checkpoint plus the journal brings it back. Lesson: e-mg-l5-01 (Ví dụ), replaces
+# the crash timeline text block; the cache-size arithmetic above it is a 2B chain and stays. Data (quoted from the lesson):
+# 10:00:00 checkpoint A; 10:00:20 insert order 501 → journal; 10:00:40 crash; restart opens A and replays the journal, 501 is
+# back. Deviation: checkpoint and journal sit either side of the restart (both arrows level, and straight when stacked on a
+# phone); the timeline grid gains one row per step. The optional reuse in e-mg-l5-04 is skipped (that predict is about an
+# election, not the journal).
+# Source: https://www.mongodb.com/docs/manual/core/journaling/
+title: { vi: "Checkpoint cuối cộng journal đưa dữ liệu trở lại", en: "The last checkpoint plus the journal brings the data back" }
+caption:
+  vi: "WiredTiger ghi checkpoint (một ảnh chụp nhất quán) mỗi 60 giây và ghi trước mọi thay đổi ở giữa vào journal. Sau khi sập, MongoDB mở checkpoint cuối rồi phát lại journal."
+  en: "WiredTiger writes a checkpoint (a consistent snapshot) every 60 seconds and writes every change in between ahead to the journal. After a crash, MongoDB opens the last checkpoint and replays the journal."
+alt:
+  vi: "WiredTiger bền nhờ hai thứ: checkpoint mỗi 60 giây và journal ghi mọi thay đổi ở giữa. Khi sập, MongoDB mở checkpoint cuối rồi phát lại journal, nên không lần ghi đã xác nhận nào mất."
+  en: "WiredTiger is durable through two things: a checkpoint every 60 seconds and a journal of every change in between. After a crash, MongoDB opens the last checkpoint and replays the journal, so no acknowledged write is lost."
+nodes:
+  - id: tl
+    shape: grid
+    label: { vi: "một lần sập", en: "one crash" }
+    head: [{ vi: "giờ", en: time }, { vi: "sự kiện", en: event }]
+    cells:
+      - ["10:00:00", checkpoint A]
+      - ["10:00:20", insert 501]
+      - ["10:00:40", { vi: "sập", en: crash }]
+    rowTone: [null, new, dead]
+  - { id: ck, shape: table, label: checkpoint A, sub: { vi: "không có 501", en: "no 501" } }
+  - { id: back, label: { vi: "khởi động lại", en: restart }, sub: { vi: "501 trở lại", en: "501 is back" }, tone: live }
+  - { id: j, shape: doc, label: journal, sub: { vi: "có 501", en: "has 501" }, tone: new }
+rows:
+  - [tl]
+  - [ck, back, j]
+phone:
+  rows: [[tl], [ck], [back], [j]]
+edges:
+  - { from: ck, to: back, label: { vi: "mở", en: open } }
+  - { from: j, to: back, label: { vi: "phát lại", en: replay } }
+steps:
+  - say: { vi: "Checkpoint ghi một ảnh chụp nhất quán.", en: "A checkpoint writes a consistent snapshot." }
+    alt: { vi: "Checkpoint cũ còn hợp lệ trong lúc ghi cái mới, nên sập giữa chừng vẫn có một checkpoint dùng được.", en: "The old checkpoint stays valid while a new one is written, so a crash mid-way still leaves a usable one." }
+    show: [tl, ck]
+    set:
+      tl: { cells: [["10:00:00", checkpoint A]] }
+      ck: { sub: { vi: "ảnh chụp lúc 10:00", en: "snapshot at 10:00" } }
+  - say: { vi: "Đơn 501 vào journal.", en: "Order 501 goes into the journal." }
+    alt: { vi: "Mọi thay đổi giữa hai checkpoint được ghi trước vào journal, nên đơn 501 đã bền dù chưa có trong checkpoint nào.", en: "Every change between checkpoints is written ahead to the journal, so order 501 is durable though no checkpoint holds it yet." }
+    show: [tl, ck, j]
+    set:
+      tl: { cells: [["10:00:00", checkpoint A], ["10:00:20", insert 501]] }
+  - say: { vi: "Sập: mở checkpoint rồi phát lại journal.", en: "Crash: open the checkpoint, replay the journal." }
+    alt: { vi: "Checkpoint A chưa có 501 nhưng journal có, nên phát lại journal sau checkpoint đưa 501 về.", en: "Checkpoint A lacks 501 but the journal has it, so replaying the journal after the checkpoint brings 501 back." }

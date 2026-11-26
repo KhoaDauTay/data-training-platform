@@ -1,0 +1,52 @@
+# B1-8 (tools/v42/diagram-plan-v42.md): an update refreshes the item cache, not the query cache. Lesson: e-dy-l5-06 (Ví dụ),
+# replaces the timeline text block; the "served from" table above it is a 2B text table and stays. Data (quoted from the
+# lesson): 12:00:00 Query category = tea → 12 items, cached; 12:00:30 UpdateItem P-01 price = 50000 → DynamoDB + item cache;
+# 12:00:40 GetItem P-01 → 50000; 12:00:45 Query → P-01 at the old price. Deviation: a 2 × 2 square (item cache · app over
+# DynamoDB · query cache) instead of the plan's app-on-top rows, so every arrow is straight or level at every width; the
+# timeline grid gains one row per step (one row per request), and step 2 relabels the item-cache path (L761 edge ids).
+# Source: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DAX.consistency.html
+title: { vi: "DAX có hai bộ đệm", en: "DAX has two caches" }
+caption:
+  vi: "DAX giữ item theo khóa trong item cache và kết quả Query theo tham số trong query cache. Ghi qua DAX làm mới item cache, nhưng query cache giữ kết quả cũ tới hết query-ttl-millis."
+  en: "DAX keeps items by key in the item cache and Query results by parameters in the query cache. A write through DAX refreshes the item cache, but the query cache keeps its old result until query-ttl-millis runs out."
+alt:
+  vi: "Ghi qua DAX làm mới item cache nhưng không làm mới query cache, nên cùng một sản phẩm có thể mang hai giá tùy bộ đệm nào trả lời. Trang cần số mới phải đọc theo khóa hoặc đặt TTL ngắn."
+  en: "A write through DAX refreshes the item cache but not the query cache, so one product can show two prices depending on which cache answers. A page that needs fresh numbers reads by key or sets a short TTL."
+align: true
+nodes:
+  - { id: ic, shape: table, label: item cache }
+  - { id: app, label: { vi: "ứng dụng", en: app } }
+  - { id: ddb, shape: table, label: DynamoDB }
+  - { id: qc, shape: table, label: query cache }
+  - id: tl
+    shape: grid
+    label: { vi: "đọc lại sau một lần ghi", en: "reading again after a write" }
+    head: [{ vi: "giờ", en: time }, { vi: "yêu cầu", en: request }, { vi: "giá P-01", en: P-01 price }]
+    cells:
+      - ["12:00:00", Query tea, { vi: "cũ, lưu lại", en: "old, cached" }]
+      - ["12:00:30", UpdateItem, "50000"]
+      - ["12:00:40", GetItem, "50000"]
+      - ["12:00:45", Query tea, { vi: "cũ", en: old }]
+    cellTone: { "3:2": warm }
+rows:
+  - [ic, app]
+  - [ddb, qc]
+  - [tl]
+edges:
+  - { id: ai, from: app, to: ic, label: GetItem }
+  - { from: app, to: qc, label: Query }
+  - { id: id, from: ic, to: ddb, label: miss }
+  - { from: qc, to: ddb, label: miss }
+steps:
+  - say: { vi: "Hai bộ đệm riêng.", en: "Two separate caches." }
+    alt: { vi: "DAX giữ item theo khóa và kết quả Query theo tham số, mỗi loại một bộ đệm, nên Query đầu tiên lưu giá cũ vào query cache.", en: "DAX keeps items by key and Query results by parameters, each in its own cache, so the first Query stores the old price in the query cache." }
+    set:
+      tl: { cells: [["12:00:00", Query tea, { vi: "cũ, lưu lại", en: "old, cached" }]], cellTone: {} }
+  - say: { vi: "UpdateItem ghi DynamoDB và item cache.", en: "UpdateItem writes DynamoDB and the item cache." }
+    alt: { vi: "Ghi qua DAX cập nhật item cache ngay, nên GetItem sau đó thấy giá mới.", en: "A write through DAX updates the item cache at once, so a later GetItem sees the new price." }
+    set:
+      ai: { label: { vi: "ghi", en: write } }
+      id: { label: { vi: "ghi tiếp", en: "write on" } }
+      tl: { cells: [["12:00:00", Query tea, { vi: "cũ, lưu lại", en: "old, cached" }], ["12:00:30", UpdateItem, "50000"], ["12:00:40", GetItem, "50000"]], cellTone: { "1:2": new, "2:2": new } }
+  - say: { vi: "Query vẫn trả giá cũ tới khi hết TTL.", en: "Query still returns the old price until its TTL." }
+    alt: { vi: "Query cache không biết item nào đã đổi, nên nó giữ kết quả cũ tới hết query-ttl-millis.", en: "The query cache does not know which item changed, so it keeps the old result until query-ttl-millis runs out." }
