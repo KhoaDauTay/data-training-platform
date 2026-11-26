@@ -56,13 +56,13 @@ lab:
       (604, 21, '2026-10-12', 300000);
   steps:
     - task:
-        vi: "Khách nào đã đổi ở nguồn so với bản hiện hành trong snapshot (bản có `dbt_valid_to` trống)? Trả `customer_id`, `old_tier` (trong snapshot), `new_tier` (ở nguồn), chỉ những khách có `updated_at` ở nguồn mới hơn."
-        en: "Which customers changed at the source compared with the snapshot's current version (the one with an empty `dbt_valid_to`)? Return `customer_id`, `old_tier` (snapshot), `new_tier` (source), only customers whose source `updated_at` is newer."
+        vi: "Khách nào đã đổi ở nguồn (`source('shop', 'customers')`) so với bản hiện hành trong snapshot (bản có `dbt_valid_to` trống)? Trả `customer_id`, `old_tier` (trong snapshot), `new_tier` (ở nguồn), chỉ những khách có `updated_at` ở nguồn mới hơn."
+        en: "Which customers changed at the source (`source('shop', 'customers')`) compared with the snapshot's current version (the one with an empty `dbt_valid_to`)? Return `customer_id`, `old_tier` (snapshot), `new_tier` (source), only customers whose source `updated_at` is newer."
       solution: |
         select c.customer_id,
           s.tier as old_tier,
           c.tier as new_tier
-        from raw_shop.customers c
+        from {{ source('shop', 'customers') }} c
         join snapshots.customers_snapshot s
           on s.customer_id = c.customer_id
           and s.dbt_valid_to is null
@@ -72,11 +72,11 @@ lab:
         vi: "Nối nguồn với bản hiện hành (`dbt_valid_to is null`) rồi so `updated_at`."
         en: "Join the source to the current version (`dbt_valid_to is null`) and compare `updated_at`."
     - task:
-        vi: "Một câu `MERGE` vào `snapshots.customers_snapshot` từ `raw_shop.customers`, khớp theo `customer_id` trên bản hiện hành: bản nào có `updated_at` ở nguồn mới hơn thì đặt `dbt_valid_to` = `updated_at` của nguồn; khách chưa có thì thêm một dòng với `dbt_valid_from` = `updated_at` và `dbt_valid_to` trống."
-        en: "One `MERGE` into `snapshots.customers_snapshot` from `raw_shop.customers`, matching `customer_id` on the current version: when the source `updated_at` is newer, set `dbt_valid_to` = the source `updated_at`; a customer not there yet gets a row with `dbt_valid_from` = `updated_at` and an empty `dbt_valid_to`."
+        vi: "Một câu `MERGE` vào `snapshots.customers_snapshot` từ nguồn `shop`, bảng `customers`, khớp theo `customer_id` trên bản hiện hành: bản nào có `updated_at` ở nguồn mới hơn thì đặt `dbt_valid_to` = `updated_at` của nguồn; khách chưa có thì thêm một dòng với `dbt_valid_from` = `updated_at` và `dbt_valid_to` trống."
+        en: "One `MERGE` into `snapshots.customers_snapshot` from source `shop`, table `customers`, matching `customer_id` on the current version: when the source `updated_at` is newer, set `dbt_valid_to` = the source `updated_at`; a customer not there yet gets a row with `dbt_valid_from` = `updated_at` and an empty `dbt_valid_to`."
       solution: |
         merge into snapshots.customers_snapshot s
-        using raw_shop.customers c
+        using {{ source('shop', 'customers') }} c
         on s.customer_id = c.customer_id
           and s.dbt_valid_to is null
         when matched
@@ -88,8 +88,8 @@ lab:
       after: SELECT customer_id, tier, dbt_valid_from, dbt_valid_to FROM snapshots.customers_snapshot
       check: rows
       hint:
-        vi: "`on … and s.dbt_valid_to is null`, `when matched and c.updated_at > s.updated_at then update …`, `when not matched then insert …`."
-        en: "`on … and s.dbt_valid_to is null`, `when matched and c.updated_at > s.updated_at then update …`, `when not matched then insert …`."
+        vi: "`using {{ source('shop', 'customers') }} c on … and s.dbt_valid_to is null`, `when matched and c.updated_at > s.updated_at then update …`, `when not matched then insert …`."
+        en: "`using {{ source('shop', 'customers') }} c on … and s.dbt_valid_to is null`, `when matched and c.updated_at > s.updated_at then update …`, `when not matched then insert …`."
     - task:
         vi: "Các khách vừa được đóng bản cũ giờ không còn bản hiện hành. Thêm cho mỗi khách ở nguồn chưa có bản hiện hành một dòng mới: `tier` và `updated_at` của nguồn, `dbt_valid_from` = `updated_at`, `dbt_valid_to` trống."
         en: "The customers whose old version was just closed now have no current version. For every source customer without a current version, insert a new row: the source `tier` and `updated_at`, `dbt_valid_from` = `updated_at`, an empty `dbt_valid_to`."
@@ -97,7 +97,7 @@ lab:
         insert into snapshots.customers_snapshot
         select c.customer_id, c.tier,
           c.updated_at, c.updated_at, null
-        from raw_shop.customers c
+        from {{ source('shop', 'customers') }} c
         where not exists (
           select 1
           from snapshots.customers_snapshot s
@@ -251,7 +251,7 @@ WHERE o.customer_id = 22;
 
 ## Thực hành
 
-Bốn bước của một lần chạy snapshot viết tay: tìm khách đã đổi, `MERGE` đóng bản cũ và thêm khách mới, `INSERT` bản mới cho khách vừa đóng, rồi đọc hạng của mọi khách vào ngày 22/10. Mỗi bước được chấm bằng cách đọc lại cả bảng snapshot.
+Bốn bước của một lần chạy snapshot viết tay: tìm khách đã đổi, `MERGE` đóng bản cũ và thêm khách mới, `INSERT` bản mới cho khách vừa đóng, rồi đọc hạng của mọi khách vào ngày 22/10. Nguồn đọc bằng source(), như một snapshot thật; hai bước ghi được chấm bằng cách đọc lại cả bảng snapshot.
 
 ## Tóm tắt
 
@@ -366,7 +366,7 @@ WHERE o.customer_id = 22;
 
 ## Practice
 
-The four steps of a hand-written snapshot run: find the customers who changed, `MERGE` to close old versions and add new customers, `INSERT` the new versions of the customers just closed, then read every customer's tier on 22 Oct. Each step is graded by reading the whole snapshot table back.
+The four steps of a hand-written snapshot run: find the customers who changed, `MERGE` to close old versions and add new customers, `INSERT` the new versions of the customers just closed, then read every customer's tier on 22 Oct. Read the source with source(), as a real snapshot does; the two writing steps are graded by reading the whole snapshot table back.
 
 ## Recap
 
