@@ -175,7 +175,7 @@ quiz:
       - { vi: "DynamoDB báo lỗi vì giá trị không hợp lệ", en: "DynamoDB raises an error because the value is invalid" }
     answer: 1
     trap: 0
-    why: { vi: "Nghe hợp lý vì ý nghĩa là \"đã đóng\", nhưng DynamoDB không hiểu ý nghĩa: item có thuộc tính khóa của GSI là có mặt trong GSI. Mọi phiếu đóng dồn vào partition `CLOSED`, GSI phình ra và tốn capacity ghi. Phải `REMOVE` thuộc tính.", en: "It sounds right because the meaning is \"closed\", but DynamoDB does not read meanings: an item with the GSI key attributes is in the GSI. Every closed ticket piles into the `CLOSED` partition, the GSI grows and costs write capacity. You must `REMOVE` the attribute." }
+    why: { vi: "Rời GSI (global secondary index, index phụ toàn bảng) nghe hợp lý vì phiếu \"đã đóng\", nhưng DynamoDB không đọc ý nghĩa giá trị: item còn đủ thuộc tính khóa của GSI là còn trong GSI. `CLOSED` cũng là một chuỗi hợp lệ, nên không có lỗi nào báo cho bạn. Mỗi phiếu đóng dồn thêm vào partition key `CLOSED`, GSI phình dần và mỗi lần ghi phiếu vẫn tốn capacity ghi cho GSI. Phải `REMOVE` thuộc tính để phiếu rời index.", en: "Leaving the GSI (global secondary index) sounds right because the ticket is \"closed\", but DynamoDB does not read what a value means: an item that still has the GSI key attributes stays in the GSI. `CLOSED` is a valid string, so no error warns you. Every closed ticket piles onto the `CLOSED` partition key, the GSI keeps growing and each ticket write still costs GSI write capacity. You must `REMOVE` the attribute so the ticket leaves the index." }
 predict:
   sql: |
     {"op": "Scan", "input": {"TableName": "Tickets", "FilterExpression": "open_queue = :q", "ExpressionAttributeValues": {":q": {"S": "SHIPPING"}}}}
@@ -186,7 +186,7 @@ predict:
     - { vi: "120, mọi phiếu", en: "120, every ticket" }
   answer: 2
   trap: 0
-  why: { vi: "Đáp án 5 nghe hợp lý vì chỉ 5 phiếu được trả về. Nhưng Scan đọc cả 120 item rồi mới lọc. Sparse GSI chỉ có 10 item (các phiếu đang mở), nên Query trên nó chỉ đọc 5 item của hàng đợi `SHIPPING`.", en: "5 sounds right because only 5 tickets come back. But the Scan reads all 120 items before filtering. The sparse GSI holds only 10 items (the open tickets), so a Query on it reads just the 5 items of the `SHIPPING` queue." }
+  why: { vi: "5 nghe hợp lý vì chỉ 5 phiếu được trả về, nhưng đó là `Count`, số item sau bộ lọc. Scan này chạy trên bảng gốc, nơi có cả 120 phiếu, mở lẫn đóng; nó đọc hết rồi mới áp `FilterExpression`, nên `ScannedCount` là 120. 10 là số item của sparse GSI, nhưng câu này không có `IndexName` nên không đọc GSI. Query trên GSI thì chỉ đọc 5 item của hàng đợi `SHIPPING`.", en: "5 sounds right because only 5 tickets come back, but that is `Count`, the items after the filter. This Scan runs on the base table, which holds all 120 tickets, open and closed; it reads them all and only then applies the `FilterExpression`, so `ScannedCount` is 120. 10 is the size of the sparse GSI, but this request has no `IndexName`, so it does not read the GSI. A Query on the GSI reads only the 5 items of the `SHIPPING` queue." }
 ---
 ## Mở bài
 

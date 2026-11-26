@@ -94,8 +94,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì ít tài liệu hơn thì có vẻ nhanh hơn, nhưng một mảng không có trần làm tài liệu to dần tới giới hạn 16 MiB và mỗi lần ghi phải viết lại tài liệu lớn. Bucket cần trần: theo giờ, hoặc theo số phần tử."
-      en: "It sounds right because fewer documents seem faster, but an unbounded array grows the document towards the 16 MiB limit and every write rewrites a big document. A bucket needs a cap: per hour, or per element count."
+      vi: "Một tài liệu cho mỗi cảm biến nghe gọn vì ít tài liệu hơn, nhưng đo mỗi giây thì mảng thêm 60 × 60 × 24 = 86.400 giá trị mỗi ngày: tài liệu to dần tới giới hạn 16 MiB, và mỗi lần thêm một phép đo phải viết lại cả tài liệu lớn. Đúng một phép đo thì không còn là bucket, mà quay lại dạng một tài liệu cho mỗi phép đo mà mẫu này muốn bỏ. Bucket cần một trần, theo khoảng thời gian (một phút = 60 phép đo) hoặc theo số phần tử, để mỗi tài liệu gom đủ nhiều mà không lớn mãi."
+      en: "One document per sensor sounds neat because there are fewer documents, but at one reading a second the array gains 60 × 60 × 24 = 86,400 values a day: the document grows towards the 16 MiB limit, and adding each reading rewrites the whole big document. Exactly one reading is no bucket at all, just the one-document-per-reading shape this pattern wants to drop. A bucket needs a cap, by time window (one minute = 60 readings) or by element count, so each document groups enough without growing forever."
   - q:
       vi: "Vì sao bước 1 có `$sort` theo thời gian trước `$group`?"
       en: "Why does step 1 have a `$sort` by time before `$group`?"
@@ -105,8 +105,8 @@ quiz:
       - { vi: "Để `$avg` đúng", en: "So that `$avg` is right" }
     answer: 1
     why:
-      vi: "`$group` không hứa thứ tự đầu ra hay thứ tự trong mảng; `$push` chỉ nối theo thứ tự nhận. Trung bình thì không phụ thuộc thứ tự."
-      en: "`$group` promises no output order and no order inside arrays; `$push` appends in the order it receives. An average does not depend on order."
+      vi: "`$group` không sắp gì cả: nó không hứa thứ tự các nhóm đầu ra, càng không sắp bên trong mảng. `$push` chỉ nối giá trị theo thứ tự tài liệu đi vào, mà `readings` lưu phép đo 08:20 của `s1` sau phép đo 08:35, nên thiếu `$sort` thì `temps` giờ 08 ra 21, 21.6, 21.2 thay vì 21, 21.2, 21.6. `$avg` không phụ thuộc thứ tự: cộng theo thứ tự nào cũng ra cùng trung bình."
+      en: "`$group` sorts nothing: it promises no order of the output groups, let alone inside arrays. `$push` only appends values in the order documents arrive, and `readings` stores the 08:20 reading of `s1` after the 08:35 one, so without the `$sort` the hour-08 `temps` come out 21, 21.6, 21.2 instead of 21, 21.2, 21.6. `$avg` does not depend on order: any order of adding gives the same average."
 ---
 ## Mở bài
 

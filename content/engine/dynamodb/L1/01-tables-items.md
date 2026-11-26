@@ -35,8 +35,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: Nghe hợp lý vì bảng SQL bắt mọi dòng có đủ cột, nhưng bảng DynamoDB không có schema, trừ khóa chính. Mỗi item phải có đủ thuộc tính khóa, còn lại tùy item.
-      en: It sounds right because an SQL table makes every row carry every column, but a DynamoDB table is schemaless except for the primary key. Every item must carry the key attributes, the rest is up to the item.
+      vi: Nghe hợp lý vì bảng SQL bắt mọi dòng có đủ cột, nhưng bảng DynamoDB không khai báo cột nào ngoài khóa chính, nên cuốn này có `tags`, cuốn kia không vẫn hợp lệ. Mỗi item phải có đủ thuộc tính khóa, còn lại tùy item. Câu "kể cả khóa chính cũng không bắt buộc" sai vì DynamoDB tìm và lưu item theo khóa chính; một PutItem thiếu khóa bị từ chối bằng `ValidationException`.
+      en: It sounds right because an SQL table makes every row carry every column, but a DynamoDB table declares nothing beyond the primary key, so one book with `tags` and one without are both valid. Every item must carry the key attributes, the rest is up to the item. "Not even the primary key" is wrong because DynamoDB finds and stores each item by its primary key; a PutItem without the key is refused with a `ValidationException`.
   - q:
       vi: Trong DynamoDB JSON, số 42 được gửi đi dưới dạng nào?
       en: In DynamoDB JSON, how is the number 42 sent?
@@ -50,8 +50,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: Nghe hợp lý vì 42 là số trong JSON, nhưng số được gửi bằng chuỗi JSON để không mất độ chính xác (tới 38 chữ số). Nhãn `N` cho DynamoDB biết đó là số.
-      en: It sounds right because 42 is a JSON number, but numbers travel as JSON strings so no precision is lost (up to 38 digits). The `N` tag tells DynamoDB it is a number.
+      vi: 'Nghe hợp lý vì 42 là số trong JSON, nhưng số JSON thường bị đọc thành số thực 64 bit, chỉ giữ chừng 15–17 chữ số, còn DynamoDB nhận số tới 38 chữ số. Vì vậy chữ số được gửi trong chuỗi, và nhãn `N` cho DynamoDB biết đó là số. Bản `{"S": "42"}` lưu một chuỗi, nên khi so hay sắp, "42" đứng trước "5" như chữ, không như số.'
+      en: 'It sounds right because 42 is a JSON number, but a JSON number is usually read as a 64-bit float that keeps only about 15–17 digits, while DynamoDB accepts numbers of up to 38 digits. So the digits travel inside a string, and the `N` tag tells DynamoDB it is a number. The `{"S": "42"}` version stores a string, so when compared or sorted "42" comes before "5" as text, not as a number.'
 demo_setup: |
   {"tables": [{"TableName":"Books","KeySchema":[{"AttributeName":"isbn","KeyType":"HASH"}],"AttributeDefinitions":[{"AttributeName":"isbn","AttributeType":"S"}],"BillingMode":"PAY_PER_REQUEST"}],
    "items": {"Books": [

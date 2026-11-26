@@ -118,8 +118,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: Nghe hợp lý vì `SK` có giá trị cần tìm, nhưng Query bắt buộc bằng trên partition key; chỉ biết `SK` thì phải Scan. LSI vẫn chia theo đơn. GSI đảo khóa biến sản phẩm thành partition key.
-      en: It sounds right because `SK` holds the value you need, but a Query requires equality on the partition key; knowing only `SK` means a Scan. An LSI is still split by order. A GSI with swapped keys makes the product the partition key.
+      vi: '`SK` đúng là chứa `PRODUCT#P-04`, nhưng Query bắt buộc phép bằng trên partition key, ở đây là đơn; chỉ biết `SK` thì DynamoDB phải Scan cả bảng. LSI (local secondary index) giữ partition key của bảng, nên vẫn chia theo đơn và gặp đúng vấn đề đó. GSI (global secondary index) đảo khóa (`GSI1PK` = sản phẩm, `GSI1SK` = đơn) biến sản phẩm thành partition key, nên một Query trả mọi đơn có `P-04`.'
+      en: '`SK` does hold `PRODUCT#P-04`, but a Query requires equality on the partition key, which is the order here; knowing only `SK`, DynamoDB must Scan the whole table. An LSI (local secondary index) keeps the table''s partition key, so it is still split by order and hits the same problem. A GSI (global secondary index) with swapped keys (`GSI1PK` = product, `GSI1SK` = order) makes the product the partition key, so one Query returns every order with `P-04`.'
   - q:
       vi: Item cạnh `ORDER#O-503 / PRODUCT#P-04` nên mang thêm gì?
       en: What should the edge item `ORDER#O-503 / PRODUCT#P-04` also carry?
@@ -129,8 +129,8 @@ quiz:
       - { vi: "Không gì ngoài khóa", en: "Nothing but the keys" }
     answer: 0
     why:
-      vi: Như bảng nối trong SQL, item cạnh giữ dữ liệu thuộc về cặp (đơn, sản phẩm). Giá lúc mua phải lưu ở đây vì giá sản phẩm có thể đổi sau.
-      en: Like a SQL join table, the edge item holds data that belongs to the pair (order, product). The purchase price must live here because the product price may change later.
+      vi: 'Như bảng nối trong SQL, item cạnh giữ dữ liệu thuộc về cặp (đơn, sản phẩm): số lượng và giá lúc mua chỉ có nghĩa với đúng cặp đó, và giá sản phẩm có thể đổi sau. Chỉ có khóa thì trang đơn phải đọc thêm từng sản phẩm mà vẫn không biết giá cũ. Chép cả hồ sơ khách vào mỗi item cạnh thì làm item to ra và phải sửa ở mọi nơi khi khách đổi tên; hồ sơ đã nằm ở item `PROFILE` của khách.'
+      en: 'Like a SQL join table, the edge item holds data that belongs to the pair (order, product): the quantity and purchase price mean something only for that pair, and the product price may change later. With only the keys, the order page must read every product as well and still not know the old price. Copying the whole customer profile into every edge item makes items bigger and means editing every copy when the customer changes their name; the profile already lives in the customer''s `PROFILE` item.'
 ---
 
 ## Mở bài
@@ -200,7 +200,7 @@ Dùng khóa của bảng khi Query GSI:
 {"op": "Query", "input": {"TableName": "Shop", "IndexName": "GSI1", "KeyConditionExpression": "PK = :p", "ExpressionAttributeValues": {":p": {"S": "PRODUCT#P-02"}}}}
 ```
 
-Trên `GSI1`, điều kiện khóa phải dùng `GSI1PK` (và `GSI1SK`), không phải `PK`.
+Trên `GSI1`, điều kiện khóa phải dùng `GSI1PK` (và `GSI1SK`), không phải `PK`: index được chia và sắp theo khóa của chính nó, còn `PK` ở đó chỉ là thuộc tính được chép theo.
 
 ## Thực hành
 
@@ -282,7 +282,7 @@ Using the table's key when querying the GSI:
 {"op": "Query", "input": {"TableName": "Shop", "IndexName": "GSI1", "KeyConditionExpression": "PK = :p", "ExpressionAttributeValues": {":p": {"S": "PRODUCT#P-02"}}}}
 ```
 
-On `GSI1`, the key condition must use `GSI1PK` (and `GSI1SK`), not `PK`.
+On `GSI1`, the key condition must use `GSI1PK` (and `GSI1SK`), not `PK`: the index is split and sorted by its own keys, and `PK` there is only an attribute copied along.
 
 ## Practice
 

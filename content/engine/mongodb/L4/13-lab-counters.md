@@ -76,8 +76,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý khi lo trùng số, nhưng `$inc` trên một tài liệu là atomic nên không trùng. Cái giá thật là mọi lần cấp số cùng ghi vào một tài liệu, nên chúng phải lần lượt. Khi không cần số liền nhau, `_id` kiểu `ObjectId` tránh được tài liệu nóng này."
-      en: "Worrying about duplicates sounds right, but `$inc` on one document is atomic, so numbers never repeat. The real cost is that every number handed out writes to the same document, so the writes take turns. When numbers need not be consecutive, an `ObjectId` `_id` avoids this hot document."
+      vi: "Lo trùng số là tự nhiên, nhưng `findOneAndUpdate` với `$inc` tăng và trả về trong một thao tác atomic trên một tài liệu, nên hai đơn không bao giờ nhận cùng số. Giới hạn 16 MiB cũng không đáng lo: bộ đếm chỉ có `_id` và một số `seq`, tăng bao nhiêu lần cũng vẫn vài chục byte. Cái giá thật là 2.000 lần ghi mỗi giây cùng chạm một tài liệu nóng, nên chúng phải xếp hàng lần lượt. Khi không cần số liền nhau, `_id` kiểu `ObjectId` tránh được tài liệu nóng này."
+      en: "Worrying about duplicates is natural, but `findOneAndUpdate` with `$inc` increases and returns in one atomic operation on one document, so two orders never get the same number. The 16 MiB limit is no worry either: the counter holds only `_id` and one `seq` number, a few dozen bytes however often it grows. The real cost is that 2,000 writes a second all touch one hot document, so they queue and take turns. When numbers need not be consecutive, an `ObjectId` `_id` avoids this hot document."
   - q:
       vi: "`db.counters.findOneAndUpdate({ _id: \"order\" }, { $inc: { seq: 1 } })` chạy khi `seq` đang là 1042. Lệnh trả `seq` bằng mấy?"
       en: "`db.counters.findOneAndUpdate({ _id: \"order\" }, { $inc: { seq: 1 } })` runs while `seq` is 1042. What `seq` does the command return?"
@@ -88,8 +88,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì lệnh vừa tăng, nhưng mặc định `findOneAndUpdate` trả tài liệu trước khi sửa. Dùng số đó làm số đơn sẽ cấp lại số cũ; thêm `returnDocument: \"after\"`."
-      en: "It sounds right because the command just increased it, but by default `findOneAndUpdate` returns the document before the change. Using that number as the order number hands out the old one again; add `returnDocument: \"after\"`."
+      vi: "Lệnh vừa tăng nên 1043 nghe hợp lý, nhưng mặc định `findOneAndUpdate` trả tài liệu trước khi sửa: `seq` là 1042, dù trên đĩa đã là 1043. Dùng 1042 làm số đơn là cấp lại số của đơn `1042` đã có. Lệnh cũng có trả tài liệu: chỉ `updateOne` mới trả số tài liệu khớp và đã sửa. Muốn nhận 1043 thì thêm `returnDocument: \"after\"`."
+      en: "The command just increased it, so 1043 sounds right, but by default `findOneAndUpdate` returns the document before the change: `seq` is 1042, even though on disk it is already 1043. Using 1042 as the order number hands out the number of the existing order `1042` again. The command does return a document: it is `updateOne` that returns only the matched and modified counts. To get 1043, add `returnDocument: \"after\"`."
 ---
 ## Mở bài
 

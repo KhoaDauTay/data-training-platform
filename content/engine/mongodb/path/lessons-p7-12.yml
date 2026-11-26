@@ -170,8 +170,8 @@
         { $group: { _id: '$store_id', n: { $sum: 1 } } },
         { $match: { order_date: { $gte: ISODate('2026-10-01') } } }
       ])
-    vi: "Lọc ngày sau `$group`: tài liệu nhóm không còn `order_date`, nên không nhóm nào khớp. Lọc dòng gốc phải đặt trước `$group`."
-    en: "Filtering the date after `$group`: group documents no longer have `order_date`, so no group matches. Filters on source rows go before `$group`."
+    vi: "Lọc ngày sau `$group`: tài liệu nhóm không còn `order_date`, nên không nhóm nào khớp và kết quả rỗng. Điều kiện trên đơn gốc phải đặt trước `$group`."
+    en: "Filtering the date after `$group`: group documents no longer have `order_date`, so no group matches and the result is empty. Conditions on the source orders go before `$group`."
   try:
     task:
       vi: "Năm 2026, mỗi cửa hàng (`_id` là mã cửa hàng): số tháng có hơn 30 đơn (`busy_months`). Cửa hàng không có tháng nào như vậy thì không cần hiện."
@@ -202,8 +202,8 @@
       { $limit: 5 }
     ])
   explain:
-    vi: "① Bỏ đơn vãng lai. ② Sắp mới nhất trước, cùng ngày thì mã lớn trước. ③ `$group` theo khách: `$first` lấy mã và ngày của cùng một đơn đứng đầu. ④ Sắp theo khách và lấy 5 dòng để xem."
-    en: "① Drop walk-in orders. ② Newest first, then the larger id. ③ `$group` by customer: `$first` takes the id and date of the same leading order. ④ Sort by customer and keep 5 rows to look at."
+    vi: "① Bỏ đơn vãng lai. ② Sắp mới nhất trước, cùng ngày thì mã lớn trước. ③ `$group` theo khách: `$first` lấy mã và ngày của cùng một đơn đứng đầu. ④ Sắp theo khách và lấy 5 tài liệu để xem."
+    en: "① Drop walk-in orders. ② Newest first, then the larger id. ③ `$group` by customer: `$first` takes the id and date of the same leading order. ④ Sort by customer and keep 5 documents to look at."
   mistake:
     query: |-
       db.products.aggregate([
@@ -421,8 +421,8 @@
         { $sort: { birth_year: -1 } },
         { $group: { _id: '$birth_year', n: { $sum: 1 } } }
       ])
-    vi: "`$group` gộp mất từng khách: còn lại mỗi năm một dòng chứ không có thứ hạng của từng người."
-    en: "`$group` collapses the customers: one row per year is left, not each person's rank."
+    vi: "`$group` gộp mất từng khách: còn lại mỗi năm một tài liệu chứ không có thứ hạng của từng người. Xếp hạng cần giữ nguyên từng tài liệu và chỉ thêm một trường hạng."
+    en: "`$group` collapses the customers: one document per year is left, not each person's rank. Ranking must keep every document and only add a rank field."
   try:
     task:
       vi: "Năm 2026, mỗi cửa hàng (`_id` là mã cửa hàng): số đơn `CANCELLED` (`n`) và hạng (`rk`), nhiều nhất hạng 1; cùng số thì cùng hạng và hạng sau bị nhảy."
@@ -495,8 +495,8 @@
       } } }
     ])
   explain:
-    vi: "① Số đơn mỗi ngày của cửa hàng 5 trong tháng 10/2026. ② `running`: lũy kế từ đầu tới ngày hiện tại. ③ `last7`: tổng 7 ngày lịch tính tới hôm nay (ngày không có đơn vẫn tính là ngày). ④ `month`: không có `window`, nên mọi dòng đều là tổng cả tháng."
-    en: "① Store 5's daily order count in October 2026. ② `running`: cumulative up to the current day. ③ `last7`: the total over the 7 calendar days up to today (days without orders still count as days). ④ `month`: no `window`, so every row shows the month total."
+    vi: "① Số đơn mỗi ngày của cửa hàng 5 trong tháng 10/2026. ② `running`: lũy kế từ đầu tới ngày hiện tại. ③ `last7`: tổng 7 ngày lịch tính tới hôm nay (ngày không có đơn vẫn tính là ngày). ④ `month`: không có `window`, nên mọi tài liệu đều mang tổng cả tháng."
+    en: "① Store 5's daily order count in October 2026. ② `running`: cumulative up to the current day. ③ `last7`: the total over the 7 calendar days up to today (days without orders still count as days). ④ `month`: no `window`, so every document shows the month total."
   mistake:
     query: |-
       db.orders.aggregate([
@@ -556,8 +556,8 @@
       - { vi: "0 vì không có khóa nào được xét", en: "0 because no keys were examined" }
     answer: 1
     why:
-      vi: "`COLLSCAN` đọc 300 tài liệu để trả 2. Hai điều kiện bằng trên `city` và `birth_year` hợp với một index ghép trên hai trường đó."
-      en: "`COLLSCAN` reads 300 documents to return 2. Two equality conditions on `city` and `birth_year` fit a compound index on those two fields."
+      vi: "`COLLSCAN` đọc cả 300 tài liệu để trả 2: 300 / 2 = 150 tài liệu đọc cho mỗi tài liệu trả về. Hai điều kiện bằng trên `city` và `birth_year` hợp với một index ghép trên hai trường đó. \"1 trên 1\" sai vì `totalDocsExamined` là 300 chứ không phải 2; `totalKeysExamined: 0` chỉ cho biết không có index nào được dò, còn tài liệu vẫn bị đọc hết."
+      en: "`COLLSCAN` reads all 300 documents to return 2: 300 / 2 = 150 documents read per document returned. Two equality conditions on `city` and `birth_year` fit a compound index on those two fields. \"1 per 1\" is wrong because `totalDocsExamined` is 300, not 2; `totalKeysExamined: 0` only says no index was walked, while every document was still read."
   docs: https://www.mongodb.com/docs/manual/reference/explain-results/
 
 - id: mg.esr
@@ -644,8 +644,8 @@
       - { vi: "Nhúng mọi cửa hàng vào tài liệu của quản lý", en: "Embed every store in the manager's document" }
     answer: 0
     why:
-      vi: "Quan hệ một-một, nhỏ, luôn đọc cùng trang cửa hàng: nhúng là một lần đọc và không có mảng lớn dần."
-      en: "A small one-to-one relation, always read with the store page: embedding is one read and no growing array."
+      vi: "Quan hệ một-một, nhỏ, luôn đọc cùng trang cửa hàng: nhúng là một lần đọc và không có mảng lớn dần. Collection `managers` riêng thêm một `$lookup` mỗi lần mở trang, mà thông tin chỉ dùng ở đó và vài năm mới đổi. Nhúng mọi cửa hàng vào quản lý đảo ngược chiều: trang cửa hàng phải đi tìm trong tài liệu của người khác."
+      en: "A small one-to-one relation, always read with the store page: embedding is one read and no growing array. A separate `managers` collection adds a `$lookup` on every page view, for details used only there and changed every few years. Embedding every store in the manager turns it upside down: the store page must search inside another person's document."
   docs: https://www.mongodb.com/docs/manual/data-modeling/concepts/embedding-vs-references/
 
 - id: mg.array_ops

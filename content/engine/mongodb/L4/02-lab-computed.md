@@ -80,8 +80,8 @@ quiz:
     answer: 0
     trap: 1
     why:
-      vi: "Nghe hợp lý vì cột tính toán ở vài hệ khác tự cập nhật, nhưng trường MongoDB là dữ liệu thường: không ai tính lại nó. Ứng dụng phải sửa `total` trong cùng lệnh ghi đổi `lines`, nếu không nó lệch."
-      en: "It sounds right because computed columns update themselves in some other systems, but a MongoDB field is plain data: nothing recomputes it. The application must fix `total` in the same write that changes `lines`, or it drifts."
+      vi: "Cột tính toán ở vài hệ khác tự cập nhật nên nghe hợp lý, nhưng trường MongoDB là dữ liệu thường: không ai tính lại nó khi `lines` đổi. Chính vì là bản sao nên `total` mới lệch được: thêm một dòng mà không sửa `total` thì 10.000 lần đọc mỗi giờ đều thấy số cũ. Đổi chác thật là: đọc rẻ hơn vì không phải cộng lại mỗi lần, đổi lại mọi lệnh ghi đổi `lines` phải sửa `total` trong cùng lệnh đó."
+      en: "Computed columns update themselves in some other systems, so it sounds right, but a MongoDB field is plain data: nothing recomputes it when `lines` changes. Being a copy is exactly why `total` can drift: add a line without fixing `total` and all 10,000 reads an hour see the old number. The real trade: reads get cheaper because nothing is summed again, and in exchange every write that changes `lines` must fix `total` in that same write."
   - q:
       vi: "Vì sao bước 2 viết `updateMany({}, [ { $set: … } ])` với dấu `[ ]`?"
       en: "Why does step 2 write `updateMany({}, [ { $set: … } ])` with the `[ ]`?"
@@ -91,8 +91,8 @@ quiz:
       - { vi: "Bắt buộc với mọi `updateMany`", en: "Every `updateMany` requires it" }
     answer: 1
     why:
-      vi: "Update dạng pipeline chạy các stage như `$set`, `$unset`, `$replaceWith` trên từng tài liệu, nên biểu thức như `$sum`, `$map` dùng được giá trị hiện có. Số tài liệu bị đổi do bộ lọc và `updateMany` quyết định, không phải do mảng."
-      en: "A pipeline-style update runs stages such as `$set`, `$unset`, `$replaceWith` on each document, so expressions like `$sum` and `$map` can use the existing values. How many documents change is decided by the filter and `updateMany`, not by the array."
+      vi: "Update dạng pipeline chạy các stage như `$set`, `$unset`, `$replaceWith` trên từng tài liệu, nên biểu thức như `$sum`, `$map` dùng được giá trị hiện có. Số tài liệu bị đổi do bộ lọc `{}` và `updateMany` quyết định, không phải do mảng. Mảng cũng không bắt buộc: `updateMany` với tài liệu update thường như `{ $inc: … }` vẫn chạy, chỉ là `$set` thường không đọc được `$lines` của tài liệu."
+      en: "A pipeline-style update runs stages such as `$set`, `$unset`, `$replaceWith` on each document, so expressions like `$sum` and `$map` can use the existing values. How many documents change is decided by the filter `{}` and `updateMany`, not by the array. Nor is the array required: `updateMany` with a plain update document such as `{ $inc: … }` still runs, but a plain `$set` cannot read the document's `$lines`."
 ---
 ## Mở bài
 
@@ -162,7 +162,7 @@ db.orders.aggregate([{ $project: { total: { $sum: "$lines.price" } } }])
 db.orders.aggregate([{ $project: { total: { $sum: { $map: { input: "$lines", as: "l", in: { $multiply: ["$$l.qty", "$$l.price"] } } } } } }])
 ```
 
-Câu sai cho đơn `101` là 52.5 thay vì 65; không có lỗi nào báo, chỉ số sai.
+Câu sai cho đơn `101` là 12.5 + 40 = 52.5 thay vì 65, vì dòng hàng `A` có `qty: 2` mà chỉ được cộng một lần; không có lỗi nào báo, chỉ số sai.
 
 Thêm dòng hàng mà quên sửa giá trị đã tính:
 
@@ -259,7 +259,7 @@ db.orders.aggregate([{ $project: { total: { $sum: "$lines.price" } } }])
 db.orders.aggregate([{ $project: { total: { $sum: { $map: { input: "$lines", as: "l", in: { $multiply: ["$$l.qty", "$$l.price"] } } } } } }])
 ```
 
-The wrong query gives 52.5 for order `101` instead of 65; no error is raised, only the number is wrong.
+The wrong query gives 12.5 + 40 = 52.5 for order `101` instead of 65, because line `A` has `qty: 2` but is added only once; no error is raised, only the number is wrong.
 
 Adding a line and forgetting the computed values:
 

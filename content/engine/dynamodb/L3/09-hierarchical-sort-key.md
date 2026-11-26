@@ -119,8 +119,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: Nghe hợp lý vì `contains` có trong DynamoDB, nhưng nó chỉ dùng được trong bộ lọc, không trong điều kiện khóa. Sort key phân cấp chỉ trả lời câu hỏi theo đúng thứ tự cấp đã ghép, từ trái sang.
-      en: It sounds right because `contains` exists in DynamoDB, but it only works in a filter, never in a key condition. A hierarchical sort key only answers questions in the order its levels were joined, from the left.
+      vi: '`contains` có trong DynamoDB, nhưng chỉ dùng được trong `FilterExpression` (lọc sau khi đọc), không trong điều kiện khóa. `begins_with(SK, "HAI-CHAU")` hợp lệ nhưng không khớp item nào, vì mọi sort key bắt đầu bằng `VN#`, không phải bằng mã quận. Sort key phân cấp chỉ đọc theo đúng thứ tự cấp đã ghép, từ trái sang; muốn hỏi theo quận trước thì cần một GSI có khóa bắt đầu bằng quận.'
+      en: '`contains` exists in DynamoDB, but only in a `FilterExpression` (filtering after the read), never in a key condition. `begins_with(SK, "HAI-CHAU")` is valid but matches no item, because every sort key starts with `VN#`, not with a district code. A hierarchical sort key only reads in the order its levels were joined, from the left; to ask by district first you need a GSI whose key starts with the district.'
   - q:
       vi: Vì sao nên kết thúc tiền tố bằng `#`, như `VN#HUE#`?
       en: Why should a prefix end with `#`, as in `VN#HUE#`?
@@ -130,8 +130,8 @@ quiz:
       - { vi: "Để Query nhanh hơn", en: "To make the Query faster" }
     answer: 0
     why:
-      vi: "`begins_with` so chuỗi theo byte. Dấu phân cách cuối đánh dấu hết một cấp, nên chỉ đúng cấp đó khớp."
-      en: "`begins_with` compares strings by bytes. The closing separator marks the end of a level, so only that level matches."
+      vi: "`begins_with` chỉ so chuỗi theo byte, nên tiền tố `VN#HUE` cũng khớp `VN#HUE-SOUTH#…` và trả nhầm cửa hàng của mã đó. Dấu `#` cuối đánh dấu hết một cấp: `VN#HUE#` chỉ khớp đúng tỉnh Huế. DynamoDB không bắt buộc dấu này, và nó không làm Query nhanh hơn; nó chỉ làm kết quả đúng."
+      en: "`begins_with` only compares strings by bytes, so the prefix `VN#HUE` also matches `VN#HUE-SOUTH#…` and wrongly returns that code's stores. The closing `#` marks the end of a level: `VN#HUE#` matches only Hue. DynamoDB does not require it, and it does not make the Query faster; it only makes the result right."
 ---
 
 ## Mở bài
@@ -202,7 +202,7 @@ Cùng hai cửa hàng, nhưng câu sai đọc cả bảng (38 item), câu sửa 
 {"op": "Query", "input": {"TableName": "Shop", "KeyConditionExpression": "begins_with(PK, :p)", "ExpressionAttributeValues": {":p": {"S": "STORE"}}}}
 ```
 
-Partition key chỉ nhận phép bằng; mọi điều kiện tiền tố hay khoảng nằm trên sort key.
+Partition key được băm (hash) để chọn partition, nên các giá trị gần nhau không nằm cạnh nhau và DynamoDB chỉ nhận phép bằng trên nó. Mọi điều kiện tiền tố hay khoảng nằm trên sort key, thứ được sắp trong từng partition.
 
 ## Thực hành
 
@@ -285,7 +285,7 @@ Putting `begins_with` on the partition key:
 {"op": "Query", "input": {"TableName": "Shop", "KeyConditionExpression": "begins_with(PK, :p)", "ExpressionAttributeValues": {":p": {"S": "STORE"}}}}
 ```
 
-The partition key takes only equality; every prefix or range condition goes on the sort key.
+The partition key is hashed to pick a partition, so nearby values do not sit next to each other and DynamoDB accepts only equality on it. Every prefix or range condition goes on the sort key, which is sorted inside each partition.
 
 ## Practice
 

@@ -94,7 +94,7 @@ Tính theo cỡ item thật thay vì cỡ đã làm tròn:
 // FIX: each write rounds up to 1 KB -> 200 x 1 = 200 WCU
 ```
 
-Sai 20 % thì bảng provisioned bị throttle đúng lúc đông nhất.
+Đặt 160 WCU (write capacity unit, đơn vị ghi) cho tải thật 200 WCU là thiếu 40, tức 20 %: bảng provisioned bị throttle đúng lúc đông nhất.
 
 Đặt provisioned thấp để tiết kiệm:
 
@@ -177,7 +177,7 @@ Counting the real item size instead of the rounded size:
 // FIX: each write rounds up to 1 KB -> 200 x 1 = 200 WCU
 ```
 
-Being 20% short means a provisioned table throttles right at the busiest moment.
+Setting 160 WCU (write capacity unit) for a real load of 200 WCU leaves you 40 short, that is 20%: a provisioned table throttles right at the busiest moment.
 
 Setting provisioned low to save money:
 

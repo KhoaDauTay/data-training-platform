@@ -86,8 +86,8 @@ quiz:
     answer: 1
     trap: 2
     why:
-      vi: "Nghe hợp lý vì validator có vẻ là \"schema\" của collection, nhưng validator chỉ kiểm lệnh ghi mới; nó không sửa tài liệu đã có. Mẫu này để hai dạng cùng sống và chuyển dần, không cần dừng hệ thống."
-      en: "It sounds right because a validator looks like the collection's \"schema\", but a validator only checks new writes; it never fixes existing documents. This pattern lets both shapes live together and migrates gradually, with no downtime."
+      vi: "Validator có vẻ là \"schema\" của collection nên nghe hợp lý, nhưng validator chỉ kiểm lệnh ghi mới; tài liệu đã có vẫn giữ ba trường điện thoại rời cho tới khi chính bạn sửa. Dừng ứng dụng một đêm để chuyển hết thì chạy được, nhưng đó chính là lần di chuyển lớn có thời gian chết mà mẫu này tránh. Schema Versioning để hai dạng cùng sống: tài liệu mới ghi `schemaVersion: 2`, mã đọc hiểu cả hai, tài liệu cũ được chuyển dần trong khi hệ thống vẫn chạy."
+      en: "A validator looks like the collection's \"schema\", so it sounds right, but a validator only checks new writes; existing documents keep their three separate phone fields until you fix them yourself. Stopping the application overnight to migrate everything works, but that is exactly the big migration with downtime this pattern avoids. Schema Versioning lets both shapes live together: new documents store `schemaVersion: 2`, the reading code understands both, and old documents migrate gradually while the system keeps running."
   - q:
       vi: "Vì sao `find({ schemaVersion: 1 })` không trả khách phiên bản 1 trong lab này?"
       en: "Why does `find({ schemaVersion: 1 })` return none of the version 1 customers in this lab?"
@@ -97,8 +97,8 @@ quiz:
       - { vi: "Số 1 phải viết là chuỗi `\"1\"`", en: "The number 1 must be written as the string `\"1\"`" }
     answer: 0
     why:
-      vi: "Phiên bản mặc định là quy ước của ứng dụng (`$ifNull` cho 1), không phải giá trị lưu trên đĩa. Truy vấn tìm phiên bản 1 phải hỏi trường thiếu: `$exists: false`."
-      en: "The default version is the application's convention (`$ifNull` gives 1), not a stored value. A query for version 1 must ask for the missing field: `$exists: false`."
+      vi: "Khách 1, 2 và 4 không lưu trường `schemaVersion` nào; phiên bản 1 chỉ là quy ước của ứng dụng (`$ifNull` cho 1), không phải giá trị trên đĩa, nên `schemaVersion: 1` không khớp tài liệu nào. Index chỉ làm truy vấn nhanh hơn, không đổi tài liệu nào khớp; viết chuỗi `\"1\"` cũng không khớp vì vẫn không có trường để so. Truy vấn tìm phiên bản 1 phải hỏi trường thiếu: `$exists: false`."
+      en: "Customers 1, 2 and 4 store no `schemaVersion` field at all; version 1 is only the application's convention (`$ifNull` gives 1), not a stored value, so `schemaVersion: 1` matches no document. An index only makes a query faster, it never changes which documents match; the string `\"1\"` matches nothing either, since there is still no field to compare. A query for version 1 must ask for the missing field: `$exists: false`."
 ---
 ## Mở bài
 

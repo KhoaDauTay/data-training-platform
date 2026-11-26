@@ -28,7 +28,7 @@ quiz:
       - { vi: "Ở partition có ít dữ liệu nhất lúc ghi", en: "In whichever partition holds the least data at write time" }
     answer: 0
     trap: 1
-    why: { vi: "Nghe hợp lý vì khóa chính gồm cả hai phần, nhưng chỉ partition key đi qua hàm băm. Các item cùng partition key nằm gần nhau, sắp theo sort key; đó là item collection mà Query đọc.", en: "It sounds right because the primary key has both parts, but only the partition key goes through the hash function. Items with the same partition key sit close together, ordered by sort key; that is the item collection a Query reads." }
+    why: { vi: "Băm cả sort key nghe hợp lý vì khóa chính gồm hai phần, nhưng chỉ partition key đi qua hàm băm, nên hai item cùng partition key luôn về cùng một partition. Trong đó chúng nằm cạnh nhau, sắp tăng dần theo sort key: đó là item collection (nhóm item cùng partition key) mà một Query đọc liền một mạch. DynamoDB cũng không chọn partition theo chỗ trống lúc ghi: kết quả băm quyết định, nên lần đọc sau mới tìm lại được item.", en: "Hashing the sort key too sounds right because the primary key has two parts, but only the partition key goes through the hash function, so two items with the same partition key always land in the same partition. There they sit side by side in ascending sort key order: that is the item collection (the items sharing a partition key) that one Query reads in a single pass. DynamoDB does not pick a partition by free space at write time either: the hash decides, which is how a later read finds the item again." }
   - q: { vi: "Một partition nhận 1200 thao tác ghi mỗi giây, mỗi item dưới 1 KB. Chuyện gì xảy ra?", en: "One partition receives 1200 writes per second, each item under 1 KB. What happens?" }
     options:
       - { vi: "Không sao, bảng on-demand không có giới hạn nào", en: "Nothing, an on-demand table has no limit at all" }
@@ -36,7 +36,7 @@ quiz:
       - { vi: "DynamoDB tự chuyển sang đọc nhất quán cuối cùng", en: "DynamoDB switches to eventually consistent reads by itself" }
     answer: 1
     trap: 0
-    why: { vi: "Nghe hợp lý vì on-demand tự co giãn theo tổng tải, nhưng đọc và ghi trên một partition vẫn có trần riêng: quá 3000 đọc hoặc 1000 ghi mỗi giây trên một partition là có thể bị throttle, bất kể chế độ capacity.", en: "It sounds right because on-demand scales with total load, but reads and writes on one partition still have their own ceiling: more than 3000 reads or 1000 writes per second on one partition can be throttled, whatever the capacity mode." }
+    why: { vi: "On-demand tự co giãn theo tổng tải của bảng, nhưng mỗi partition vẫn có trần riêng 1000 WCU (write capacity unit, đơn vị ghi 1 KB) mỗi giây, ở mọi chế độ capacity. Item dưới 1 KB nên mỗi lần ghi tốn 1 WCU: 1200 × 1 = 1200 WCU, vượt 1000, nên khoảng 200 lần ghi mỗi giây có thể bị throttle (bị DynamoDB từ chối vì vượt mức) dù bảng còn dư. Còn kiểu nhất quán chỉ áp cho đọc và do request chọn, DynamoDB không tự đổi, và nó không giảm tải ghi.", en: "On-demand scales with the table's total load, but each partition still has its own ceiling of 1000 WCU (write capacity unit, 1 KB) per second, in every capacity mode. The items are under 1 KB, so each write costs 1 WCU: 1200 × 1 = 1200 WCU, above 1000, so about 200 writes per second can be throttled (refused by DynamoDB for going over the limit) even though the table has room left. Consistency applies only to reads and is chosen by the request; DynamoDB never switches it, and it would not reduce write load anyway." }
 ---
 ## Mở bài
 
@@ -102,7 +102,7 @@ PK = "VOTE#2026-11-20"
 PK = "VOTE#2026-11-20#" + (voterId mod 10)
 ```
 
-Kết quả đọc giống nhau, nhưng thiết kế sai chỉ dùng được một partition, tức tối đa 1000 WCU cho cả ngày.
+Kết quả đọc giống nhau, nhưng thiết kế sai dồn mọi phiếu trong ngày vào một partition, tức tối đa 1000 WCU (write capacity unit, đơn vị ghi) mỗi giây cho cả ngày. Thêm hậu tố `voterId mod 10` tạo 10 giá trị khóa, rải ra tối đa 10 partition.
 
 Tin rằng on-demand xóa mọi giới hạn:
 
@@ -186,7 +186,7 @@ PK = "VOTE#2026-11-20"
 PK = "VOTE#2026-11-20#" + (voterId mod 10)
 ```
 
-Reads give the same data, but the wrong design can use only one partition, that is at most 1000 WCU for the whole day.
+Reads give the same data, but the wrong design piles every vote of the day into one partition, that is at most 1000 WCU (write capacity unit) per second for the whole day. The `voterId mod 10` suffix makes 10 key values, spread over up to 10 partitions.
 
 Believing on-demand removes every limit:
 

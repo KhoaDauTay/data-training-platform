@@ -36,8 +36,8 @@ predict:
   answer: 1
   trap: 0
   why:
-    vi: "\"Đã xác nhận là an toàn\" nghe hợp lý, nhưng `w: 1` chỉ xác nhận rằng primary đã nhận. Lệnh 2 dùng `w: \"majority\"` nên đã nằm trong oplog của một secondary trước khi được xác nhận. Oplog áp theo thứ tự, nên secondary có lệnh 2 cũng đã có lệnh 1; secondary được bầu phải có optime cao nhất nên có cả 1 và 2. Lệnh 3 chỉ ở primary cũ, nên bị rollback."
-    en: "\"Acknowledged means safe\" sounds right, but `w: 1` only confirms the primary received it. Command 2 used `w: \"majority\"`, so it was in a secondary's oplog before being acknowledged. The oplog is applied in order, so a secondary holding command 2 also holds command 1; the elected secondary must have the highest optime, so it has both 1 and 2. Command 3 was only on the old primary, so it is rolled back."
+    vi: "\"Đã xác nhận là an toàn\" nghe hợp lý, nhưng `w: 1` chỉ xác nhận rằng primary đã nhận. Lệnh 2 dùng `w: \"majority\"` nên đã nằm trong oplog của một secondary trước khi được xác nhận. Oplog áp theo thứ tự, nên secondary có lệnh 2 cũng đã có lệnh 1: vì vậy \"chỉ `_id` 2\" sai. Secondary được bầu phải có optime (thời điểm của mục oplog mới nhất nó đã áp) cao nhất, nên có cả 1 và 2. Lệnh 3 chỉ ở primary cũ, nên bị rollback."
+    en: "\"Acknowledged means safe\" sounds right, but `w: 1` only confirms the primary received it. Command 2 used `w: \"majority\"`, so it was in a secondary's oplog before being acknowledged. The oplog is applied in order, so a secondary holding command 2 also holds command 1: that is why \"only `_id` 2\" is wrong. The elected secondary must have the highest optime (the time of the newest oplog entry it has applied), so it has both 1 and 2. Command 3 was only on the old primary, so it is rolled back."
   recorded:
     tier: docs
     server: MongoDB
@@ -55,8 +55,8 @@ quiz:
     answer: 1
     trap: 2
     why:
-      vi: "Nghe hợp lý rằng cluster tự sửa, nhưng primary mới không biết gì về lệnh 3. Khi primary cũ quay lại làm secondary, nó hoàn tác các lần ghi chưa được chép và ghi chúng ra tệp rollback; áp lại là việc của người vận hành."
-      en: "It sounds right that the cluster heals itself, but the new primary knows nothing of command 3. When the old primary returns as a secondary, it reverts the writes that were never replicated and saves them to rollback files; reapplying them is an operator's job."
+      vi: "Nghe hợp lý rằng cluster tự sửa, nhưng primary mới không biết gì về lệnh 3. Khi primary cũ quay lại làm secondary, nó hoàn tác các lần ghi chưa được chép và ghi chúng ra tệp rollback; áp lại là việc của người vận hành. Vì có tệp đó nên dữ liệu không mất hẳn, chỉ không còn trong collection."
+      en: "It sounds right that the cluster heals itself, but the new primary knows nothing of command 3. When the old primary returns as a secondary, it reverts the writes that were never replicated and saves them to rollback files; reapplying them is an operator's job. Because of those files the data is not gone for good, only out of the collection."
 ---
 ## Mở bài
 

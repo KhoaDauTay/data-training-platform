@@ -216,8 +216,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: 'Nghe hợp lý vì phản hồi nhỏ đi, nhưng `COUNT` chỉ bỏ item khỏi phản hồi. DynamoDB vẫn đọc từng item, nên `ScannedCount` và capacity không đổi.'
-      en: 'It sounds right because the response gets smaller, but `COUNT` only drops the items from the response. DynamoDB still reads every item, so `ScannedCount` and the capacity stay the same.'
+      vi: 'Nghe hợp lý vì phản hồi nhỏ đi, nhưng `COUNT` chỉ bỏ item khỏi phản hồi. DynamoDB vẫn đọc từng item để áp bộ lọc rồi đếm, và capacity tính theo dữ liệu đã đọc, nên `ScannedCount` (120 ở bảng này) và capacity không đổi. Việc đếm cũng không bị tính thêm, nên "đắt hơn" cũng sai.'
+      en: 'It sounds right because the response gets smaller, but `COUNT` only drops the items from the response. DynamoDB still reads every item to apply the filter and count, and capacity is charged on the data read, so `ScannedCount` (120 in this table) and the capacity stay the same. The counting is not charged either, so "more expensive" is wrong too.'
 ---
 ## Mở bài
 
@@ -302,7 +302,7 @@ Theo tài liệu API, `Scan` không có tham số `KeyConditionExpression`. Dyno
 {"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-12"}}, "Select": "COUNT"}}
 ```
 
-Engine ghi 1 RCU cho Scan, 0.5 cho Query. Trên bảng nhỏ này chênh lệch capacity còn nhỏ vì capacity tính theo 4 KB dữ liệu đọc, nhưng `ScannedCount` 120 so với 4 cho thấy Scan tăng theo cả bảng.
+Engine ghi 1 RCU (read capacity unit, đơn vị đọc) cho Scan, 0.5 cho Query. Capacity tính theo khối 4 KB của tổng dữ liệu đã đọc, mỗi khối 0.5 RCU khi đọc nhất quán cuối (eventually consistent): 120 item nhỏ cộng lại vượt một khối nên thành 2 khối × 0.5 = 1, còn 4 item của Query nằm trong 1 khối × 0.5 = 0.5. Trên bảng nhỏ này chênh lệch capacity còn nhỏ, nhưng `ScannedCount` 120 so với 4 cho thấy Scan tăng theo cả bảng.
 
 ## Thực hành
 
@@ -400,7 +400,7 @@ Counting one customer's orders with a `Scan` because "it only returns a number":
 {"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-12"}}, "Select": "COUNT"}}
 ```
 
-The engine records 1 RCU for the Scan and 0.5 for the Query. On this small table the capacity gap is small because capacity counts 4 KB blocks of data read, but a `ScannedCount` of 120 against 4 shows the Scan grows with the whole table.
+The engine records 1 RCU (read capacity unit) for the Scan and 0.5 for the Query. Capacity counts 4 KB blocks of the total data read, each block 0.5 RCU for an eventually consistent read: the 120 small items add up to more than one block, so 2 blocks × 0.5 = 1, while the Query's 4 items fit in 1 block × 0.5 = 0.5. On this small table the capacity gap is still small, but a `ScannedCount` of 120 against 4 shows the Scan grows with the whole table.
 
 ## Practice
 

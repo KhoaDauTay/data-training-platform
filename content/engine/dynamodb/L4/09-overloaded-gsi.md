@@ -92,14 +92,14 @@ quiz:
       - { vi: "Đúng nếu bảng ở chế độ on-demand", en: "Yes if the table is on-demand" }
     answer: 1
     trap: 0
-    why: { vi: "Nghe hợp lý vì nhìn qua đó là ngày, nhưng DynamoDB chỉ có chuỗi, số và nhị phân: `1/2/2026` đứng trước `15/11/2025` theo byte. Viết năm trước, đủ hai chữ số tháng và ngày thì thứ tự chuỗi trùng thứ tự thời gian.", en: "It sounds right because they look like dates, but DynamoDB has only strings, numbers and binary: `1/2/2026` comes before `15/11/2025` by bytes. Year first, with two digits for month and day, makes string order match time order." }
+    why: { vi: "Nhìn qua thì đó là ngày, nhưng sort key của DynamoDB chỉ là chuỗi, số hoặc nhị phân; không có kiểu ngày. Chuỗi so từng byte từ trái sang: `1/2/2026` và `15/11/2025` cùng ký tự đầu `1`, rồi `/` đứng trước `5`, nên ngày năm 2026 lại xếp trước ngày năm 2025 và `BETWEEN` trả sai mà không báo lỗi. Chế độ capacity chỉ đổi cách tính tiền, không đổi cách so chuỗi. Viết năm trước, đủ hai chữ số tháng và ngày (`YYYY-MM-DD`) thì thứ tự chuỗi trùng thứ tự thời gian.", en: "They look like dates, but a DynamoDB sort key is only a string, number or binary; there is no date type. Strings compare byte by byte from the left: `1/2/2026` and `15/11/2025` share the first character `1`, then `/` comes before `5`, so the 2026 date sorts before the 2025 one and `BETWEEN` returns wrong items with no error. The capacity mode only changes billing, not how strings compare. Year first, with two digits for month and day (`YYYY-MM-DD`), makes string order match time order." }
   - q: { vi: "Vì sao GSI `ByLookup` lấy sort key của bảng (`sk`) làm partition key của nó?", en: "Why does the GSI `ByLookup` use the table's sort key (`sk`) as its own partition key?" }
     options:
       - { vi: "Để mỗi loại item (`PROFILE`, `WAREHOUSE`, `HIRED`) là một partition riêng trên GSI, chọn được loại câu hỏi", en: "So each item type (`PROFILE`, `WAREHOUSE`, `HIRED`) is its own partition on the GSI, picking the kind of question" }
       - { vi: "Vì GSI bắt buộc dùng sort key của bảng", en: "Because a GSI must use the table's sort key" }
       - { vi: "Để GSI nhất quán mạnh", en: "To make the GSI strongly consistent" }
     answer: 0
-    why: { vi: "Partition key của GSI chọn loại item, sort key `lookup` trả lời câu hỏi bằng `=`, `BETWEEN` hay `begins_with`. Lưu ý: chỉ có ba giá trị `sk`, nên với tải lớn GSI này dồn mỗi loại vào một partition; khi đó cần thêm hậu tố shard.", en: "The GSI partition key picks the item type, the sort key `lookup` answers the question with `=`, `BETWEEN` or `begins_with`. Note: there are only three `sk` values, so under heavy load this GSI piles each type onto one partition; then add a shard suffix." }
+    why: { vi: "Lấy `sk` làm partition key của GSI (global secondary index, index phụ toàn bảng) thì mỗi loại item là một partition key riêng: Query `sk = WAREHOUSE` chỉ đọc item kho, rồi sort key `lookup` trả lời bằng `=`, `BETWEEN` hay `begins_with`. GSI không bắt buộc dùng sort key của bảng: nó nhận bất kỳ thuộc tính nào, đây là lựa chọn thiết kế. Và GSI luôn chỉ đọc nhất quán cuối (eventually consistent), chọn khóa nào cũng vậy. Lưu ý: chỉ có ba giá trị `sk`, nên với tải lớn mỗi loại dồn vào một partition; khi đó cần thêm hậu tố shard.", en: "Using `sk` as the partition key of the GSI (global secondary index) makes each item type its own partition key: a Query on `sk = WAREHOUSE` reads only warehouse items, then the sort key `lookup` answers with `=`, `BETWEEN` or `begins_with`. A GSI does not have to use the table's sort key: it takes any attribute, and this is a design choice. And a GSI always reads eventually consistent, whatever its keys. Note: there are only three `sk` values, so under heavy load each type piles onto one partition; then add a shard suffix." }
 ---
 ## Mở bài
 
@@ -169,7 +169,7 @@ Viết ngày thiếu số 0:
 {"op": "Query", "input": {"TableName": "Staff", "IndexName": "ByLookup", "KeyConditionExpression": "sk = :t AND lookup BETWEEN :a AND :b", "ExpressionAttributeValues": {":t": {"S": "HIRED"}, ":a": {"S": "2026-01-01"}, ":b": {"S": "2026-06-30"}}}}
 ```
 
-Câu sai chỉ trả `2026-10-22`, một ngày nằm ngoài khoảng; câu sửa trả đúng ba người.
+Câu sai chỉ trả `2026-10-22`, một ngày nằm ngoài khoảng: theo byte, `-` đứng trước `0`, nên mọi ngày `2026-0…` nằm dưới cận `2026-1-1`, còn `2026-10-22` lọt vào giữa hai cận. Câu sửa trả đúng ba người.
 
 Dùng `begins_with` trên partition key của GSI:
 
@@ -261,7 +261,7 @@ Writing dates without leading zeros:
 {"op": "Query", "input": {"TableName": "Staff", "IndexName": "ByLookup", "KeyConditionExpression": "sk = :t AND lookup BETWEEN :a AND :b", "ExpressionAttributeValues": {":t": {"S": "HIRED"}, ":a": {"S": "2026-01-01"}, ":b": {"S": "2026-06-30"}}}}
 ```
 
-The wrong query returns only `2026-10-22`, a date outside the range; the fix returns the right three people.
+The wrong query returns only `2026-10-22`, a date outside the range: by bytes, `-` comes before `0`, so every `2026-0…` date falls below the bound `2026-1-1`, while `2026-10-22` slips in between the two bounds. The fix returns the right three people.
 
 Using `begins_with` on the GSI's partition key:
 

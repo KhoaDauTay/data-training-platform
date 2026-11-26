@@ -38,8 +38,8 @@ predict:
   answer: 1
   trap: 0
   why:
-    vi: "Nghe hợp lý vì \"majority\" có vẻ là đa số đã có dữ liệu, nhưng từ 8.0, `w: \"majority\"` xác nhận khi đa số đã ghi bền mục oplog, còn việc áp vào dữ liệu là không đồng bộ. Docs chính thức nói truy vấn trên secondary ngay sau đó có thể chưa thấy lần ghi, và khuyên dùng session nhân quả."
-    en: "It sounds right because \"majority\" seems to mean a majority already has the data, but from 8.0, `w: \"majority\"` acknowledges once a majority has durably written the oplog entry, while applying it to the data is asynchronous. The docs say a query on a secondary right after may not see the write, and recommend a causally consistent session."
+    vi: "\"Majority\" nghe như đa số đã có dữ liệu, nhưng từ 8.0, `w: \"majority\"` xác nhận khi 2 trong 3 node đã ghi bền mục oplog (nhật ký thao tác), còn việc áp mục đó vào dữ liệu đọc được chạy sau, không đồng bộ. Vì vậy truy vấn trên secondary ngay sau xác nhận có thể chưa thấy thanh toán. \"Không bao giờ thấy\" cũng sai: secondary đọc được ngay khi đã áp mục oplog, không phải chờ checkpoint (lần ghi định kỳ dữ liệu xuống đĩa). Docs khuyên dùng session nhân quả, ghi và đọc `majority`, để secondary chờ tới lần ghi."
+    en: "\"Majority\" sounds like a majority already has the data, but from 8.0, `w: \"majority\"` acknowledges once 2 of the 3 nodes have durably written the oplog entry (the operation log), while applying that entry to the readable data happens later, asynchronously. So a query on a secondary right after the acknowledgement may not see the payment yet. \"Never\" is wrong too: a secondary can read the write as soon as it applies the oplog entry, it does not wait for a checkpoint (the periodic flush of data to disk). The docs recommend a causal session with `majority` writes and reads, so the secondary waits for the write."
   recorded:
     tier: docs
     server: MongoDB
@@ -56,8 +56,8 @@ quiz:
       - { vi: "Tự chuyển sang đọc primary", en: "Switches to reading the primary by itself" }
     answer: 1
     why:
-      vi: "Driver gắn `afterClusterTime` cho lần đọc; node chỉ trả lời khi dữ liệu của nó đã tới thời điểm đó. Lần đọc vẫn ở secondary, chỉ chậm hơn một chút."
-      en: "The driver attaches `afterClusterTime` to the read; the node answers only once its data has reached that time. The read stays on the secondary, it is just a little slower."
+      vi: "Trong session, driver gắn cho lần đọc `afterClusterTime` = thời điểm của lần ghi thanh toán; secondary chỉ trả lời khi dữ liệu của nó đã áp tới thời điểm đó, nên không bao giờ trả trạng thái cũ thiếu thanh toán. Session cũng không đổi read preference: lần đọc vẫn ở secondary, không tự chuyển sang primary, chỉ chậm hơn một chút vì phải chờ."
+      en: "Inside the session the driver gives the read `afterClusterTime` = the time of the payment write; the secondary answers only once its data has applied up to that time, so it never returns the old state without the payment. Nor does the session change the read preference: the read stays on the secondary, it does not switch to the primary, it is just a little slower because it waits."
 ---
 ## Mở bài
 

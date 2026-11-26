@@ -33,8 +33,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì index thường thì thêm bao nhiêu cũng được, nhưng mỗi collection chỉ có một index text; index đó gồm được nhiều trường. Index wildcard không phục vụ `$text`."
-      en: "It sounds right because you can add as many regular indexes as you like, but a collection has only one text index; that index can hold several fields. A wildcard index cannot serve `$text`."
+      vi: "Index thường thì thêm bao nhiêu cũng được, nhưng mỗi collection chỉ có một index text, nên `mongod` từ chối `{ body: \"text\" }` khi `articles` đã có index text trên `title`. Một index text gồm được nhiều trường, nên xóa index cũ rồi tạo một index trên cả hai. Index wildcard lưu giá trị nguyên của từng trường, không tách từ, nên `$text` không dùng được nó."
+      en: "Regular indexes can be added as many as you like, but a collection has only one text index, so `mongod` refuses `{ body: \"text\" }` while `articles` already has a text index on `title`. One text index can hold several fields, so drop the old one and create one on both. A wildcard index stores each field's whole value without splitting words, so `$text` cannot use it."
   - q:
       vi: "Cửa hàng ở Đà Nẵng có vĩ độ 16,07 và kinh độ 108,22. Viết điểm GeoJSON nào cho index 2dsphere?"
       en: "A store in Da Nang is at latitude 16.07 and longitude 108.22. Which GeoJSON point do you write for a 2dsphere index?"
@@ -48,8 +48,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì ta quen nói \"vĩ độ, kinh độ\", nhưng GeoJSON ghi kinh độ trước, vĩ độ sau. Viết ngược thì 108,22 nằm ở chỗ vĩ độ, ngoài khoảng -90 đến 90 cho phép."
-      en: "It sounds right because we usually say \"latitude, longitude\", but GeoJSON lists longitude first, then latitude. Reversed, 108.22 sits in the latitude slot, outside the allowed -90 to 90."
+      vi: "Ta quen nói \"vĩ độ, kinh độ\", nhưng GeoJSON ghi kinh độ trước, vĩ độ sau. Viết ngược thì 108,22 nằm ở chỗ vĩ độ, ngoài khoảng -90 đến 90 cho phép, và index 2dsphere từ chối tài liệu. `{ lat, lng }` thì không phải điểm GeoJSON: thiếu `type` và `coordinates`."
+      en: "We usually say \"latitude, longitude\", but GeoJSON lists longitude first, then latitude. Reversed, 108.22 sits in the latitude slot, outside the allowed -90 to 90, and the 2dsphere index refuses the document. `{ lat, lng }` is not a GeoJSON point: it lacks `type` and `coordinates`."
   - q:
       vi: "Có index không phân biệt hoa thường `{ name: 1 }` với `collation: { locale: \"en\", strength: 2 }`. Truy vấn nào dùng được index này?"
       en: "There is a case-insensitive index `{ name: 1 }` with `collation: { locale: \"en\", strength: 2 }`. Which query can use it?"
@@ -62,8 +62,8 @@ quiz:
         en: "`find({ name: \"an\" }).collation({ locale: \"en\", strength: 1 })`"
     answer: 1
     why:
-      vi: "Chỉ truy vấn ghi đúng collation của index mới dùng được nó. `$regex` không theo collation nên không dùng được index loại này, còn `strength: 1` là collation khác."
-      en: "Only a query that states the index's exact collation can use it. `$regex` is not collation-aware, so it cannot use this kind of index, and `strength: 1` is a different collation."
+      vi: "Chỉ truy vấn ghi đúng collation của index mới dùng được nó. `$regex` với cờ `i` không theo collation nên không dùng được index loại này. `strength: 1` cũng bỏ qua hoa thường và trả đúng tài liệu, nhưng khác `strength` là collation khác, nên index không được dùng."
+      en: "Only a query that states the index's exact collation can use it. `$regex` with the `i` flag is not collation-aware, so it cannot use this kind of index. `strength: 1` also ignores case and returns the right documents, but a different `strength` is a different collation, so the index is not used."
   - q:
       vi: "Bạn nghi index `{ status: 1 }` không còn truy vấn nào cần, nhưng xóa rồi dựng lại trên collection lớn rất tốn. Bước an toàn trước tiên là gì?"
       en: "You suspect no query needs the index `{ status: 1 }` any more, but dropping and rebuilding it on a large collection is costly. What is the safe first step?"
@@ -76,8 +76,8 @@ quiz:
         en: "Make the index sparse so it gets smaller"
     answer: 0
     why:
-      vi: "Index ẩn không được planner dùng nhưng vẫn được cập nhật khi ghi, nên bỏ ẩn là dùng được ngay, không phải dựng lại."
-      en: "A hidden index is not used by the planner but is still updated on writes, so unhiding makes it usable at once, with no rebuild."
+      vi: "Index ẩn không được planner dùng nhưng vẫn được cập nhật khi ghi, nên nếu truy vấn chậm đi thì bỏ ẩn là dùng được ngay, không phải dựng lại. `dropIndex` thì đúng cái giá bạn muốn tránh: nếu đoán sai phải dựng lại trên collection lớn. Đổi sang sparse không cho biết index còn cần không, mà còn phải dựng lại."
+      en: "A hidden index is not used by the planner but is still updated on writes, so if queries slow down, unhiding makes it usable at once, with no rebuild. `dropIndex` is exactly the cost you want to avoid: a wrong guess means a rebuild on a large collection. Making it sparse does not tell whether the index is still needed, and it needs a rebuild too."
 ---
 ## Mở bài
 

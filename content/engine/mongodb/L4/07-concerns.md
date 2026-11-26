@@ -31,8 +31,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì primary đã xác nhận, nhưng xác nhận của một node không giữ được lần ghi khi node đó mất vai trò. Docs chính thức: với `w: 1`, dữ liệu có thể bị rollback nếu primary bước xuống trước khi lần ghi được chép sang secondary nào. `w: \"majority\"` chờ đa số thành viên bỏ phiếu ghi bền vào oplog."
-      en: "It sounds right because the primary acknowledged it, but one node's acknowledgement cannot keep the write once that node loses its role. The docs: with `w: 1`, data can be rolled back if the primary steps down before the write reaches any secondary. `w: \"majority\"` waits for a majority of voting members to durably write it to their oplog."
+      vi: "Primary đã xác nhận nên nghe an toàn, nhưng `w: 1` chỉ chờ primary, nên lần ghi chỉ nằm trên primary cũ; hai secondary chưa có nó, và một trong hai được bầu làm primary mới. Khi primary cũ quay lại làm secondary, nó phải rollback (gỡ bỏ) mọi lần ghi mà primary mới không có, dù lần ghi đã nằm trên đĩa của nó. Client cũng không nhận lỗi nào để tự ghi lại: nó đã nhận \"OK\" từ trước. `w: \"majority\"` chờ 2 trong 3 thành viên ghi bền vào oplog, nên primary mới nào cũng đã có lần ghi đó."
+      en: "The primary acknowledged it, so it sounds safe, but `w: 1` waits only for the primary, so the write lives only on the old primary; neither secondary has it, and one of them is elected the new primary. When the old primary comes back as a secondary, it must roll back (remove) every write the new primary lacks, even though the write is on its disk. Nor does the client get an error to retry on: it already received \"OK\". `w: \"majority\"` waits for 2 of the 3 members to durably write it to their oplog, so any new primary already has it."
   - q:
       vi: "Lần ghi `w: \"majority\"` với `wtimeout: 1000` trả lỗi hết giờ. Dữ liệu đã ghi trên primary thì sao?"
       en: "A `w: \"majority\"` write with `wtimeout: 1000` returns a timeout error. What about the data already written on the primary?"

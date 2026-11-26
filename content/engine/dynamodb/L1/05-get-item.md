@@ -64,8 +64,8 @@ lab:
       check: doc
       expect: { CapacityUnits: 1 }
       hint:
-        vi: 'Thêm `"ConsistentRead": true`. Một lần đọc nhất quán cuối của item nhỏ tốn 0.5 RCU, nhất quán mạnh tốn 1.'
-        en: 'Add `"ConsistentRead": true`. An eventually consistent read of a small item costs 0.5 RCU, a strongly consistent one costs 1.'
+        vi: 'Thêm `"ConsistentRead": true`. Item dưới 4 KB là một khối đọc: đọc nhất quán cuối (eventually consistent) tốn 0.5 RCU (read capacity unit, đơn vị đọc), đọc nhất quán mạnh (strongly consistent) tốn 1.'
+        en: 'Add `"ConsistentRead": true`. An item under 4 KB is one read block: an eventually consistent read costs 0.5 RCU (read capacity unit), a strongly consistent one costs 1.'
 quiz:
   - q:
       vi: 'Bạn gọi `GetItem` với `"ProjectionExpression": "title"` trên một item 3 KB. Lần đọc tốn bao nhiêu so với đọc cả item?'
@@ -80,8 +80,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: 'Nghe hợp lý vì phản hồi nhỏ đi, nhưng capacity tính theo kích thước item được đọc, không theo phần trả về. `ProjectionExpression` chỉ làm phản hồi gọn hơn.'
-      en: 'It sounds right because the response gets smaller, but capacity is charged by the size of the item read, not by what comes back. `ProjectionExpression` only makes the response smaller.'
+      vi: 'Nghe hợp lý vì phản hồi nhỏ đi, nhưng capacity tính theo kích thước item DynamoDB phải đọc, không theo phần trả về. Item 3 KB làm tròn lên một khối 4 KB, nên dù lấy `title` hay cả item, lần đọc nhất quán cuối vẫn là 1 × 0.5 = 0.5 RCU (read capacity unit, đơn vị đọc). `ProjectionExpression` chỉ cắt phản hồi sau khi đọc; việc cắt đó cũng không bị tính thêm, nên "đắt hơn" cũng sai.'
+      en: 'It sounds right because the response gets smaller, but capacity is charged by the size of the item DynamoDB has to read, not by what comes back. A 3 KB item rounds up to one 4 KB block, so whether you take `title` or the whole item, an eventually consistent read is 1 × 0.5 = 0.5 RCU (read capacity unit). `ProjectionExpression` only trims the response after the read; the trimming is not charged either, so "more" is wrong too.'
   - q:
       vi: 'Bạn `GetItem` cuốn `978-0-99`, không có trong bảng. DynamoDB trả về gì?'
       en: 'You `GetItem` book `978-0-99`, which is not in the table. What does DynamoDB return?'
@@ -95,8 +95,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: 'Nghe hợp lý vì nhiều API báo lỗi khi không tìm thấy, nhưng `ResourceNotFoundException` là khi bảng không tồn tại. Item không có thì phản hồi chỉ thiếu `Item`, và DynamoDB vẫn tính tiền lần đọc.'
-      en: 'It sounds right because many APIs raise an error when nothing is found, but `ResourceNotFoundException` means the table does not exist. A missing item only leaves `Item` out of the response, and DynamoDB still charges for the read.'
+      vi: 'Nghe hợp lý vì nhiều API báo lỗi khi không tìm thấy, nhưng `ResourceNotFoundException` là khi bảng không tồn tại. Ở đây bảng `Books` có thật, chỉ item không có, nên phản hồi chỉ thiếu `Item`, và DynamoDB vẫn tính tiền lần đọc vì nó đã phải tìm theo khóa. `GetItem` cũng không trả item gần nhất: nó so khóa đúng từng ký tự, tìm gần đúng là việc của `Query` trên sort key.'
+      en: 'It sounds right because many APIs raise an error when nothing is found, but `ResourceNotFoundException` means the table does not exist. Here table `Books` exists and only the item is missing, so the response just leaves `Item` out, and DynamoDB still charges for the read because it had to look the key up. `GetItem` never returns the closest item either: it matches the key exactly, and range lookups are the job of `Query` on a sort key.'
 ---
 ## Mở bài
 

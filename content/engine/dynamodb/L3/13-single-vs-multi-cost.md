@@ -38,8 +38,8 @@ predict:
   answer: 0
   trap: 2
   why:
-    vi: 'Query cộng cỡ mọi item đã đọc rồi làm tròn một lần: 4 item nhỏ, tổng dưới 4 KB, thành 4 KB, tức 1 RCU mạnh, 0,5 RCU cuối. Chọn 2 là tính 0,5 cho từng item, như đọc 4 lần `GetItem`. Đây đúng là ví dụ của AWS: "A single query for two items totalling less than 4KB is 0.5 RCU".'
-    en: 'A Query adds up the size of every item read and rounds once: 4 small items, under 4 KB in total, become 4 KB, which is 1 RCU strong, 0.5 RCU eventual. Picking 2 means paying 0.5 per item, as 4 separate `GetItem` calls would. This is the AWS example: "A single query for two items totalling less than 4KB is 0.5 RCU".'
+    vi: 'Query cộng cỡ mọi item đã đọc rồi làm tròn một lần lên bội 4 KB: 4 item × dưới 200 byte = dưới 800 byte, làm tròn thành 4 KB. 4 KB là 1 RCU (read capacity unit, đơn vị đọc) khi đọc nhất quán mạnh, và một nửa, 0,5 RCU, khi đọc nhất quán cuối như ở đây. Chọn 1 là quên rằng request không có `ConsistentRead`; chọn 2 là tính 0,5 cho từng item, như đọc 4 lần `GetItem`. Đây đúng là ví dụ của AWS: "A single query for two items totalling less than 4KB is 0.5 RCU".'
+    en: 'A Query adds up the size of every item read and rounds once up to a multiple of 4 KB: 4 items × under 200 bytes = under 800 bytes, rounded to 4 KB. 4 KB is 1 RCU (read capacity unit) for a strongly consistent read, and half that, 0.5 RCU, for an eventually consistent read as here. Picking 1 forgets that the request has no `ConsistentRead`; picking 2 means paying 0.5 per item, as 4 separate `GetItem` calls would. This is the AWS example: "A single query for two items totalling less than 4KB is 0.5 RCU".'
 quiz:
   - q:
       vi: 'Hồ sơ của `C-02` phình lên 5 KB (thêm ghi chú), 3 đơn vẫn nhỏ (tổng 0,5 KB). Đọc nhất quán cuối. Một Query trên `Shop` so với `GetItem` `Customers` + Query `Orders` tốn bao nhiêu?'
@@ -53,8 +53,8 @@ quiz:
         en: 0.5 RCU versus 1 RCU
     answer: 0
     why:
-      vi: 'Một bảng: 5 + 0,5 = 5,5 KB, làm tròn lên 8 KB = 2 RCU mạnh, 1 RCU cuối. Hai bảng: `GetItem` 5 KB làm tròn lên 8 KB = 1 RCU cuối, cộng Query 0,5 KB = 0,5 RCU cuối, tổng 1,5. Một bảng vẫn rẻ hơn, nhưng khoảng cách tùy cỡ item, không cố định là "một nửa".'
-      en: 'One table: 5 + 0.5 = 5.5 KB, rounded up to 8 KB = 2 RCU strong, 1 RCU eventual. Two tables: the 5 KB `GetItem` rounds up to 8 KB = 1 RCU eventual, plus the 0.5 KB Query = 0.5 RCU eventual, 1.5 in total. One table is still cheaper, but the gap depends on item size; it is not always "half".'
+      vi: 'RCU (read capacity unit, đơn vị đọc) tính theo khối 4 KB; đọc nhất quán cuối trả 0,5 RCU mỗi khối. Một bảng: 5 + 0,5 = 5,5 KB, làm tròn lên 8 KB = 2 khối × 0,5 = 1 RCU. Hai bảng: `GetItem` 5 KB làm tròn lên 8 KB = 1 RCU, cộng Query 0,5 KB làm tròn lên 4 KB = 0,5 RCU, tổng 1,5. "0,5 so với 1" là con số khi mọi item còn nhỏ, quên rằng hồ sơ đã phình; "1 so với 1" quên rằng mỗi request làm tròn riêng. Một bảng vẫn rẻ hơn, nhưng khoảng cách tùy cỡ item, không cố định là "một nửa".'
+      en: 'RCU (read capacity units) are charged per 4 KB block; an eventually consistent read pays 0.5 RCU per block. One table: 5 + 0.5 = 5.5 KB, rounded up to 8 KB = 2 blocks × 0.5 = 1 RCU. Two tables: the 5 KB `GetItem` rounds up to 8 KB = 1 RCU, plus the 0.5 KB Query rounded up to 4 KB = 0.5 RCU, 1.5 in total. "0.5 versus 1" is the figure while every item was small, forgetting the profile grew; "1 versus 1" forgets that each request rounds on its own. One table is still cheaper, but the gap depends on item size; it is not always "half".'
   - q:
       vi: 'Bạn cần lưu thêm nhật ký đăng nhập: ghi rất nhiều, không bao giờ đọc cùng đơn hàng, và cần sao lưu theo lịch riêng. Đặt ở đâu?'
       en: 'You also need to store login logs: written a lot, never read together with orders, and backed up on their own schedule. Where do they go?'
@@ -122,8 +122,8 @@ lab:
       slow: |
         {"op":"Scan","input":{"TableName":"Customers","FilterExpression":"#k0 = :k0","ExpressionAttributeNames":{"#k0":"customerId"},"ExpressionAttributeValues":{":k0":{"S":"C-02"}}}}
       hint:
-        vi: '`GetItem` theo `customerId`. Một item nhỏ, đọc nhất quán cuối: 0,5 RCU.'
-        en: '`GetItem` by `customerId`. One small item, eventually consistent: 0.5 RCU.'
+        vi: '`GetItem` theo `customerId`. Một item nhỏ làm tròn lên 4 KB, đọc nhất quán cuối: 0,5 RCU (read capacity unit, đơn vị đọc).'
+        en: '`GetItem` by `customerId`. One small item rounds up to 4 KB, eventually consistent: 0.5 RCU (read capacity unit).'
     - task:
         vi: 'Phần 2: lấy mọi đơn của `C-02` từ bảng `Orders`, đơn cũ trước. Cộng RCU của bước 2 và bước 3, rồi so với bước 1.'
         en: 'Part 2: get every order of `C-02` from table `Orders`, oldest first. Add the RCU of steps 2 and 3, then compare with step 1.'
@@ -139,8 +139,8 @@ lab:
       ordered: true
       expect: { Count: 3 }
       hint:
-        vi: 'Query `customerId = :c`. Hai bảng: 0,5 + 0,5 = 1 RCU, gấp đôi một Query trên `Shop`.'
-        en: 'Query `customerId = :c`. Two tables: 0.5 + 0.5 = 1 RCU, twice one Query on `Shop`.'
+        vi: 'Query `customerId = :c`. Hai bảng: 0,5 + 0,5 = 1 RCU (read capacity unit, đơn vị đọc), gấp đôi một Query trên `Shop`, vì mỗi request làm tròn lên 4 KB riêng.'
+        en: 'Query `customerId = :c`. Two tables: 0.5 + 0.5 = 1 RCU (read capacity unit), twice one Query on `Shop`, because each request rounds up to 4 KB on its own.'
     - task:
         vi: 'Màn hình thanh toán cần bản mới nhất. Đọc lại khách và đơn của `C-02` từ `Shop` bằng đọc nhất quán mạnh, và xem RCU tăng thế nào.'
         en: 'The checkout screen needs the latest version. Read the customer and orders of `C-02` from `Shop` again with a strongly consistent read, and see how the RCU changes.'
@@ -157,8 +157,8 @@ lab:
       ordered: true
       expect: { Count: 4 }
       hint:
-        vi: 'Thêm `"ConsistentRead": true`. Cùng 4 KB đã làm tròn, đọc mạnh tốn 1 RCU thay vì 0,5.'
-        en: 'Add `"ConsistentRead": true`. The same rounded 4 KB costs 1 RCU for a strong read instead of 0.5.'
+        vi: 'Thêm `"ConsistentRead": true`. Cùng 4 KB đã làm tròn, đọc nhất quán mạnh tốn 1 RCU (read capacity unit, đơn vị đọc) thay vì 0,5 khi đọc nhất quán cuối.'
+        en: 'Add `"ConsistentRead": true`. The same rounded 4 KB costs 1 RCU (read capacity unit) for a strongly consistent read instead of 0.5 for an eventually consistent one.'
 ---
 
 ## Mở bài

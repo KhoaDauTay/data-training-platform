@@ -28,8 +28,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì nó trông như collection thường, nhưng trang giới hạn của time series ghi: lệnh update chỉ được khớp theo giá trị `metaField` và chỉ được sửa `metaField`. Phép đo sai thường được xóa theo `metaField` rồi chèn lại."
-      en: "It sounds right because it looks like a normal collection, but the time series limitations page says an update can only match on the `metaField` value and only modify the `metaField`. A wrong measurement is usually deleted by `metaField` and inserted again."
+      vi: "Nghe hợp lý vì khi đọc nó trông như collection thường, nhưng bên dưới mỗi tài liệu lưu là một bucket gom nhiều phép đo của cùng nguồn, ở dạng cột. Trang giới hạn của time series ghi: lệnh update chỉ được khớp theo giá trị `metaField` và chỉ được sửa `metaField`, nên bộ lọc trên `temperature` bị từ chối. Phép đo sai thường được xóa theo `metaField` rồi chèn lại."
+      en: "It sounds right because on reads it looks like a normal collection, but underneath each stored document is a bucket packing many measurements of one source in columns. The time series limitations page says an update can only match on the `metaField` value and only modify the `metaField`, so a filter on `temperature` is refused. A wrong measurement is usually deleted by `metaField` and inserted again."
   - q:
       vi: "Shard một collection time series mới trên MongoDB 8.0. Shard key nên dựa vào trường nào?"
       en: "Sharding a new time series collection on MongoDB 8.0. Which field should the shard key be based on?"
@@ -39,8 +39,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "`timeField` nghe hợp lý vì dữ liệu xếp theo thời gian, nhưng nó tăng đơn điệu, và từ 8.0 shard key chứa `timeField` bị deprecated cho collection time series. Dựa shard key vào `metaField`."
-      en: "`timeField` sounds right because the data is ordered by time, but it grows monotonically, and from 8.0 shard keys containing the `timeField` are deprecated for time series collections. Base the shard key on the `metaField`."
+      vi: "`timeField` nghe hợp lý vì dữ liệu xếp theo thời gian, nhưng nó tăng đơn điệu: mọi phép đo mới có thời điểm lớn nhất, nên dồn vào chunk cuối của một shard. Docs cũng ghi từ 8.0 shard key chứa `timeField` bị deprecated cho collection time series. `metaField` (ví dụ mã cảm biến) có nhiều giá trị và không tăng dần, nên lượt ghi của các cảm biến chia ra nhiều shard."
+      en: "`timeField` sounds right because the data is ordered by time, but it grows monotonically: every new measurement has the latest time, so it piles into the last chunk on one shard. The docs also say that from 8.0 shard keys containing the `timeField` are deprecated for time series collections. The `metaField` (for example the sensor id) has many values and does not keep increasing, so the sensors' writes spread over many shards."
 ---
 ## Mở bài
 

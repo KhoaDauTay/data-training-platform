@@ -39,8 +39,8 @@ lab:
         vi: "`directors` so bằng, `title` là trường sắp, `year` là khoảng (`$gte`)."
         en: "`directors` is an equality, `title` is the sort field, `year` is a range (`$gte`)."
       fact:
-        vi: "Bước này chấm theo quy tắc ESR trong docs chính thức, không đo trên `mongod`: mingo không có index."
-        en: "This step is graded by the ESR rule in the official docs, not measured on `mongod`: mingo has no indexes."
+        vi: "Bước này chấm theo luật ESR (Equality, Sort, Range: trường so bằng, rồi trường sắp xếp, rồi trường so khoảng) trong docs chính thức, chỉ xét thứ tự trường của index, không đo trên `mongod`: mingo không có index."
+        en: "This step is graded by the ESR rule in the official docs (Equality, Sort, Range: equality fields, then sort fields, then range fields), checking only the index's field order, not measured on `mongod`: mingo has no indexes."
 sources:
   - https://www.mongodb.com/docs/manual/tutorial/equality-sort-range-guideline/
   - https://www.mongodb.com/docs/manual/reference/explain-results/
@@ -56,8 +56,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì đó là thứ tự các trường trong câu lệnh, nhưng thứ tự index theo vai trò, không theo cách viết: `status` là bằng nên đứng đầu, `day` là trường sắp xếp nên thứ hai, `qty` là khoảng nên cuối. Đặt `qty` trước `day` thì MongoDB phải sắp trong bộ nhớ."
-      en: "It sounds right because that is the order the fields appear in the command, but index order follows the role, not the writing: `status` is equality so it comes first, `day` is the sort field so it is second, `qty` is a range so it is last. Putting `qty` before `day` forces an in-memory sort."
+      vi: "`status`, `qty`, `day` là thứ tự các trường trong câu lệnh, nhưng luật ESR (Equality, Sort, Range: trường so bằng, rồi trường sắp xếp, rồi trường so khoảng) xếp theo vai trò: `status` so bằng nên đầu, `day` là trường sắp xếp nên thứ hai, `qty` là khoảng nên cuối. Đặt `qty` trước `day` thì trong khối `status` A các khóa xếp theo `qty`, không theo `day`, nên MongoDB phải sắp lại trong bộ nhớ (stage `SORT`). Đặt `day` đầu tiên thì có sẵn thứ tự nhưng phải quét cả tài liệu có `status` khác A."
+      en: "`status`, `qty`, `day` is the order the fields appear in the command, but the ESR rule (Equality, Sort, Range: equality fields, then sort fields, then range fields) orders by role: `status` is equality so it comes first, `day` is the sort field so it is second, `qty` is a range so it is last. With `qty` before `day`, the keys inside the `status` A block are ordered by `qty`, not `day`, so MongoDB must sort again in memory (a `SORT` stage). With `day` first the order is there, but the scan also walks documents whose `status` is not A."
   - q:
       vi: "Trong luật ESR, `$ne` được tính là gì?"
       en: "Under ESR, what does `$ne` count as?"
@@ -68,8 +68,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì `$ne` so với một giá trị cố định, nhưng nó chọn mọi giá trị trừ một, tức hai khoảng trong index. Docs chính thức ghi rõ `$ne` và `$nin` là toán tử range. `$regex` cũng là range."
-      en: "It sounds right because `$ne` compares with one fixed value, but it selects every value but one, which is two ranges in the index. The docs state that `$ne` and `$nin` are range operators. `$regex` is a range too."
+      vi: "Equality nghe hợp lý vì `$ne` nhắc một giá trị cố định, nhưng nó chọn mọi giá trị trừ một, tức hai khoảng trong index (nhỏ hơn và lớn hơn giá trị đó). Vì vậy trong luật ESR (Equality, Sort, Range: trường so bằng, rồi trường sắp xếp, rồi trường so khoảng), docs chính thức xếp `$ne` cùng `$nin` vào Range; `$regex` cũng là range. Sort chỉ dành cho trường trong `.sort()`, còn `$ne` là điều kiện lọc."
+      en: "Equality sounds right because `$ne` names one fixed value, but it selects every value but one, which is two ranges in the index (below and above that value). So under the ESR rule (Equality, Sort, Range: equality fields, then sort fields, then range fields), the docs put `$ne` with `$nin` under Range; `$regex` is a range too. Sort is only for fields in `.sort()`, while `$ne` is a filter condition."
 ---
 ## Mở bài
 

@@ -28,8 +28,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì arbiter có phiếu bầu, nhưng phiếu bầu chỉ dùng để chọn primary. Với P-S-A, đa số tính được là 2 mà chỉ có 2 thành viên mang dữ liệu, nên cần cả hai. Arbiter không giữ dữ liệu nên không xác nhận được. Docs chính thức khuyên dùng P-S-S."
-      en: "It sounds right because the arbiter has a vote, but that vote only elects a primary. For P-S-A the calculated majority is 2 and there are only 2 data-bearing members, so both are needed. The arbiter holds no data and cannot acknowledge. The docs recommend P-S-S."
+      vi: "Arbiter có phiếu bầu nên nghe hợp lý, nhưng phiếu đó chỉ dùng để chọn primary. Với P-S-A, 3 thành viên bầu cho đa số là 2, mà chỉ có 2 thành viên mang dữ liệu, nên cần cả hai; secondary tắt thì chỉ còn 1 node xác nhận được, thiếu 1. Arbiter không giữ dữ liệu nên không ghi được gì để xác nhận. Docs chính thức khuyên dùng P-S-S."
+      en: "The arbiter has a vote, so it sounds right, but that vote only elects a primary. For P-S-A, 3 voting members give a majority of 2, and there are only 2 data-bearing members, so both are needed; with the secondary down only 1 node can acknowledge, one short. The arbiter holds no data, so it has nothing to write and acknowledge. The docs recommend P-S-S."
   - q:
       vi: "Bạn cần đọc một tài liệu theo `_id` phản ánh mọi lần ghi majority đã xong trước khi đọc, trên primary. Read concern nào?"
       en: "You need to read one document by `_id` reflecting every majority write completed before the read, on the primary. Which read concern?"
@@ -39,8 +39,8 @@ quiz:
       - { vi: "`linearizable`, kèm `maxTimeMS`", en: "`linearizable`, with `maxTimeMS`" }
     answer: 2
     why:
-      vi: "`linearizable` trả dữ liệu phản ánh mọi lần ghi majority xong trước khi đọc; chỉ trên primary, bộ lọc trúng một tài liệu, và nên có `maxTimeMS` để không chờ mãi."
-      en: "`linearizable` returns data reflecting every majority write completed before the read; primary only, a filter that hits one document, and `maxTimeMS` so it never waits forever."
+      vi: "`local` và `available` trả ngay dữ liệu node đang có, kể cả lần ghi chưa được đa số xác nhận và có thể bị rollback, nên không bảo đảm phản ánh mọi lần ghi majority đã xong. `linearizable` trên primary kiểm với đa số rằng node vẫn là primary trước khi trả, nên phản ánh mọi lần ghi majority xong trước khi đọc. Nó chỉ chạy trên primary, bộ lọc phải trúng một tài liệu, và nên có `maxTimeMS` để không chờ mãi."
+      en: "`local` and `available` return the node's data at once, including writes a majority has not acknowledged and that may be rolled back, so they do not promise to reflect every completed majority write. `linearizable` on the primary checks with a majority that the node is still primary before answering, so it reflects every majority write completed before the read. It runs on the primary only, the filter must hit one document, and it should have `maxTimeMS` so it never waits forever."
   - q:
       vi: "Trong transaction, một lệnh ghi ngoài transaction sửa tài liệu mà transaction định sửa sau đó. Kết quả?"
       en: "During a transaction, a write outside it modifies a document the transaction later tries to modify. Result?"
@@ -49,8 +49,8 @@ quiz:
       - { vi: "Lệnh ghi ngoài bị hoàn tác", en: "The outside write is undone" }
     answer: 0
     why:
-      vi: "Docs chính thức: nếu một lần ghi ngoài transaction sửa tài liệu mà thao tác trong transaction định sửa sau đó, transaction hủy vì write conflict."
-      en: "The docs: if a write outside the transaction modifies a document that an operation in the transaction later tries to modify, the transaction aborts with a write conflict."
+      vi: "Lệnh ghi ngoài đã xong và đã được xác nhận trước, nên MongoDB không hoàn tác nó. Transaction đọc trên một snapshot cũ; khi nó định sửa tài liệu đã bị đổi sau snapshot đó, ghi tiếp sẽ đè mất thay đổi kia, nên docs chính thức nói transaction hủy vì write conflict. Lỗi mang nhãn `TransientTransactionError`: ứng dụng chạy lại cả transaction trên dữ liệu mới."
+      en: "The outside write has already finished and been acknowledged, so MongoDB does not undo it. The transaction reads from an older snapshot; when it tries to modify a document changed after that snapshot, going on would overwrite the other change, so the docs say the transaction aborts with a write conflict. The error carries the `TransientTransactionError` label: the application runs the whole transaction again on the new data."
 ---
 ## Mở bài
 

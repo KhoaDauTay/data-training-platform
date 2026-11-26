@@ -31,8 +31,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì một tài liệu thường là một khóa, nhưng index multikey sinh một khóa cho mỗi giá trị khác nhau trong mảng; giá trị lặp lại chỉ có một khóa. Hai giá trị khác nhau nên có 2 khóa."
-      en: "It sounds right because one document is usually one key, but a multikey index stores one key per distinct array value; a repeated value gets only one key. Two distinct values, so 2 keys."
+      vi: "1 khóa nghe hợp lý vì một tài liệu thường ứng với một khóa, nhưng `genres` là mảng nên index này là multikey: mỗi giá trị khác nhau trong mảng thành một khóa. 3 khóa thì đếm cả phần tử lặp, mà Drama xuất hiện hai lần vẫn chỉ có một khóa. Mảng có hai giá trị khác nhau (Drama, Action) nên có 2 khóa."
+      en: "1 key sounds right because a document usually maps to one key, but `genres` is an array, so this index is multikey: each distinct array value becomes one key. 3 keys counts the repeated element too, yet Drama appearing twice still gets one key. The array has two distinct values (Drama, Action), so 2 keys."
   - q:
       vi: "Index TTL `{ lastSeen: 1 }` với `expireAfterSeconds: 3600`. Một tài liệu hết hạn lúc 10:00. Khi nào nó bị xóa?"
       en: "TTL index `{ lastSeen: 1 }` with `expireAfterSeconds: 3600`. A document expires at 10:00. When is it removed?"
@@ -43,8 +43,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì có con số giờ hết hạn, nhưng việc xóa do một tác vụ nền làm, chạy mỗi 60 giây, nên tài liệu có thể còn thêm một lúc sau khi hết hạn (lâu hơn nếu máy bận)."
-      en: "It sounds right because there is an expiry time, but removal is done by a background task that runs every 60 seconds, so a document can stay a while after it expires (longer on a busy server)."
+      vi: "Đúng 10:00:00 nghe hợp lý vì giờ hết hạn tính được (`lastSeen` cộng 3600 giây), nhưng MongoDB không xóa ngay lúc đó: một tác vụ nền chạy mỗi 60 giây mới tìm và xóa tài liệu đã quá hạn. Vì vậy tài liệu còn tới lần chạy kế tiếp sau 10:00, có thể lâu hơn nếu máy bận. Việc đọc không gây xóa: trước lần chạy đó, truy vấn vẫn trả tài liệu đã hết hạn."
+      en: "Exactly 10:00:00 sounds right because the expiry time is known (`lastSeen` plus 3600 seconds), but MongoDB does not remove it at that moment: a background task that runs every 60 seconds finds and removes expired documents. So the document stays until the next run after 10:00, longer on a busy server. Reading does not trigger removal: until that run, queries still return the expired document."
 ---
 ## Mở bài
 
@@ -120,12 +120,16 @@ db.movies.createIndex({ year: 1 }, { partialFilterExpression: { year: { $gt: 200
 db.movies.find({ year: { $gt: 1990 } })   // COLLSCAN, the partial index is not used
 ```
 
+Index chỉ giữ phim sau năm 2000, nên đọc qua nó sẽ thiếu phim 1991–2000; MongoDB bỏ index và quét cả collection (COLLSCAN).
+
 Hai trường mảng trong một index kép:
 
 ```text
 // ERROR: cannot index parallel arrays [tags] [sizes]
 db.items.createIndex({ tags: 1, sizes: 1 })   // when one document has both as arrays
 ```
+
+Nếu cả hai là mảng, index phải giữ mọi cặp tag × size, số khóa nhân lên, nên MongoDB từ chối.
 
 ## Tóm tắt
 
@@ -210,12 +214,16 @@ db.movies.createIndex({ year: 1 }, { partialFilterExpression: { year: { $gt: 200
 db.movies.find({ year: { $gt: 1990 } })   // COLLSCAN, the partial index is not used
 ```
 
+The index holds only movies after 2000, so reading through it would miss 1991-2000; MongoDB skips the index and scans the whole collection (COLLSCAN).
+
 Two array fields in one compound index:
 
 ```text
 // ERROR: cannot index parallel arrays [tags] [sizes]
 db.items.createIndex({ tags: 1, sizes: 1 })   // when one document has both as arrays
 ```
+
+If both are arrays, the index would have to hold every tag × size pair, multiplying the keys, so MongoDB refuses.
 
 ## Recap
 

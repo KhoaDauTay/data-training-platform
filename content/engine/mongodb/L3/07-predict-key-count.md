@@ -37,8 +37,8 @@ predict:
   answer: 1
   trap: 2
   why:
-    vi: "Nghe hợp lý vì hai index chứa cùng hai trường, nhưng thứ tự quyết định khóa nào nằm liền nhau. Với `{ rated: 1, year: 1 }`, `rated: \"PG\"` cố định một khối, trong đó các `year` từ 2000 đến 2005 liền nhau: đọc đúng 235 khóa. Với `{ year: 1, rated: 1 }`, khóa PG rải trong sáu khối năm; MongoDB nhảy qua từng khối nên đọc thêm vài khóa ở chỗ chuyển: 246 khóa."
-    en: "It sounds right because both indexes hold the same two fields, but the order decides which keys sit together. With `{ rated: 1, year: 1 }`, `rated: \"PG\"` fixes one block, and inside it the `year` values 2000 to 2005 are contiguous: exactly 235 keys. With `{ year: 1, rated: 1 }`, the PG keys sit in six separate year blocks; MongoDB jumps from block to block and reads a few extra keys at each boundary: 246 keys."
+    vi: "Hai index chứa cùng hai trường, nhưng thứ tự trường quyết định khóa nào nằm liền nhau. Với `{ rated: 1, year: 1 }`, `rated: \"PG\"` cố định một khối, trong đó các `year` từ 2000 đến 2005 liền nhau: đọc đúng 235 khóa, bằng số tài liệu trả về. Với `{ year: 1, rated: 1 }`, khóa PG rải trong sáu khối năm (2000 đến 2005); ở mỗi chỗ chuyển khối MongoDB phải đọc qua vài khóa không phải PG mới biết khối PG đã hết: 246 khóa, tức 246 − 235 = 11 khóa thừa."
+    en: "Both indexes hold the same two fields, but the field order decides which keys sit together. With `{ rated: 1, year: 1 }`, `rated: \"PG\"` fixes one block, and inside it the `year` values 2000 to 2005 are contiguous: exactly 235 keys, the number of documents returned. With `{ year: 1, rated: 1 }`, the PG keys sit in six year blocks (2000 to 2005); at each block boundary MongoDB must read past a few non-PG keys to learn the PG run has ended: 246 keys, so 246 - 235 = 11 extra keys."
   recorded:
     tier: docs
     server: MongoDB
@@ -64,8 +64,8 @@ quiz:
       - { vi: "Chỉ `{ rated: 1, year: 1 }` dùng được", en: "Only `{ rated: 1, year: 1 }` can be used" }
     answer: 0
     why:
-      vi: "Thứ tự giữa các trường so bằng không đổi vùng quét: cặp `(PG, 2003)` hay `(2003, PG)` đều là một đoạn liền. Khác biệt chỉ xuất hiện khi có trường khoảng hoặc trường sắp."
-      en: "The order among equality fields does not change the scanned range: the pair `(PG, 2003)` or `(2003, PG)` is one contiguous run either way. The difference only appears with a range or sort field."
+      vi: "Thứ tự giữa các trường so bằng không đổi vùng quét: cặp `(PG, 2003)` hay `(2003, PG)` đều là một đoạn liền. \"Gấp sáu lần\" mượn sáu khối năm của truy vấn khoảng ở trên, nhưng giờ `year` chỉ có một giá trị nên chỉ còn một khối. Cả hai index đều dùng được, vì trường đầu của mỗi index đều được so bằng trong truy vấn. Khác biệt chỉ xuất hiện khi có trường khoảng hoặc trường sắp."
+      en: "The order among equality fields does not change the scanned range: the pair `(PG, 2003)` or `(2003, PG)` is one contiguous run either way. \"Six times more\" borrows the six year blocks of the range query above, but now `year` has one value, so there is only one block. Both indexes can be used, since the leading field of each is matched by equality in the query. The difference only appears with a range or sort field."
 ---
 ## Mở bài
 

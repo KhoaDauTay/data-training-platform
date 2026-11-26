@@ -134,7 +134,7 @@ quiz:
       - { vi: "Một Scan là đủ và rẻ nhất", en: "One Scan is enough and the cheapest" }
     answer: 1
     trap: 0
-    why: { vi: "Nghe hợp lý vì `sk` là duy nhất, nhưng GetItem cần cả khóa chính, gồm partition key có số shard. Với hậu tố ngẫu nhiên, ứng dụng không biết số đó nên phải thử từng shard. Bài 5 tính hậu tố từ chính id để đọc lại bằng một GetItem.", en: "It sounds right because `sk` is unique, but GetItem needs the whole primary key, including the partition key with its shard number. With a random suffix the application does not know that number, so it must try each shard. Lesson 5 calculates the suffix from the id itself so one GetItem reads it back." }
+    why: { vi: "`sk` là duy nhất trong một ngày, nhưng GetItem cần cả khóa chính, tức cả partition key có số shard `VOTE#2026-11-20#<shard>`. Hậu tố được bốc ngẫu nhiên lúc ghi và không lưu ở đâu khác, nên ứng dụng phải thử lần lượt 8 shard, tệ nhất là 8 lần đọc. Một Scan thì đọc cả 80 item của bảng rồi mới lọc, nên đắt nhất chứ không rẻ nhất. Bài \"Hậu tố tính được\" sửa chuyện này: tính số shard từ chính mã phiếu, rồi đọc lại bằng một GetItem.", en: "`sk` is unique within a day, but GetItem needs the whole primary key, including the partition key with its shard number `VOTE#2026-11-20#<shard>`. The suffix was drawn at random on write and stored nowhere else, so the application must try the 8 shards in turn, 8 reads at worst. A Scan reads all 80 items of the table and filters afterwards, so it is the most expensive, not the cheapest. The lesson \"Calculated suffix\" fixes this: compute the shard number from the vote id itself, then read it back with one GetItem." }
 predict:
   sql: |
     {"op": "Scan", "input": {"TableName": "Votes", "FilterExpression": "pk = :p", "ExpressionAttributeValues": {":p": {"S": "VOTE#2026-11-20#3"}}}}
@@ -145,7 +145,7 @@ predict:
     - { vi: "80, mọi item trong bảng", en: "80, every item in the table" }
   answer: 2
   trap: 0
-  why: { vi: "Đáp án 6 nghe hợp lý vì kết quả chỉ có 6 phiếu. Nhưng Scan đọc toàn bảng (80 item của hai ngày) rồi mới lọc; `Count` vẫn là 6 nhưng bạn trả tiền cho 80 item đã đọc. Query đi thẳng tới một item collection.", en: "6 sounds right because only 6 votes come back. But a Scan reads the whole table (80 items over two days) and filters afterwards; `Count` is still 6 but you pay for the 80 items read. A Query goes straight to one item collection." }
+  why: { vi: "6 nghe hợp lý vì kết quả chỉ có 6 phiếu, nhưng đó là `Count`, số item còn lại sau bộ lọc. Scan không dùng partition key để tìm chỗ: nó đọc mọi item của bảng, 48 phiếu ngày 2026-11-20 cộng 32 phiếu ngày 2026-11-19 = 80, rồi mới áp `FilterExpression`. 48 sai vì Scan không biết dừng ở ngày 20: bộ lọc chạy sau khi đọc. Bạn trả capacity cho cả 80 item; Query đi thẳng tới một item collection nên chỉ đọc 6.", en: "6 sounds right because only 6 votes come back, but that is `Count`, the items left after the filter. A Scan does not use the partition key to find its place: it reads every item of the table, 48 votes of 2026-11-20 plus 32 votes of 2026-11-19 = 80, and only then applies the `FilterExpression`. 48 is wrong because the Scan cannot stop at the 20th: the filter runs after the read. You pay capacity for all 80 items; a Query goes straight to one item collection and reads only 6." }
 ---
 ## Mở bài
 

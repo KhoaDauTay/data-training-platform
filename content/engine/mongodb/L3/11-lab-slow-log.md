@@ -79,8 +79,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì COLLSCAN thường là dấu hiệu xấu, nhưng điều docs chính thức nhấn mạnh là khoảng cách giữa tài liệu đọc và tài liệu trả về. `q4` có tỉ lệ khoảng 1, còn `q1` đọc 400 tài liệu cho mỗi tài liệu trả về: đó mới là chỗ index giúp nhiều."
-      en: "It sounds right because a COLLSCAN is usually a bad sign, but what the docs stress is the gap between documents read and documents returned. `q4` has a ratio of about 1, while `q1` reads 400 documents per document returned: that is where an index helps most."
+      vi: "Quét cả collection (COLLSCAN) thường là dấu hiệu xấu, nhưng docs chính thức nhấn mạnh khoảng cách giữa tài liệu đọc và tài liệu trả về. `q4` đọc 5000 trả 4900, tỉ lệ 5000 / 4900 ≈ 1: index cũng phải dẫn tới 4900 tài liệu, gần như không bớt việc. `q1` đọc 48000 trả 120, tức 400 tài liệu cho mỗi tài liệu trả về: index giúp nhiều nhất ở đó. \"Không bao giờ\" thì quá tay: trả nhiều tài liệu vẫn dùng được index, chỉ là lợi ít."
+      en: "A whole-collection scan (COLLSCAN) is usually a bad sign, but the docs stress the gap between documents read and documents returned. `q4` reads 5000 and returns 4900, a ratio of 5000 / 4900 ≈ 1: an index would still lead to 4900 documents, saving almost no work. `q1` reads 48000 and returns 120, so 400 documents per document returned: that is where an index helps most. \"Never\" goes too far: a query returning many documents can still use an index, it just gains little."
   - q:
       vi: "Vì sao pipeline bước 1 lọc `nReturned` lớn hơn 0 trước khi chia?"
       en: "Why does the step 1 pipeline filter `nReturned` greater than 0 before dividing?"
@@ -90,8 +90,8 @@ quiz:
       - { vi: "`$divide` cho 0 khi mẫu số bằng 0, làm sai thứ hạng", en: "`$divide` gives 0 when the divisor is 0, which skews the ranking" }
     answer: 0
     why:
-      vi: "`$divide` với mẫu số 0 là lỗi, không phải 0 hay null. Lọc trước thì không còn mẫu số 0; truy vấn trả 0 tài liệu được tìm riêng ở bước 2."
-      en: "`$divide` with a divisor of 0 is an error, not 0 or null. Filtering first leaves no zero divisor; queries that return 0 documents are found separately in step 2."
+      vi: "`$divide` với mẫu số 0 là lỗi, không phải 0 hay null, nên một tài liệu như `q5` (`nReturned` = 0) làm cả pipeline dừng. Lọc trước thì không còn mẫu số 0; truy vấn trả 0 tài liệu được tìm riêng ở bước 2. Việc sắp do `$sort` ở cuối lo, không liên quan tới bước lọc này."
+      en: "`$divide` with a divisor of 0 is an error, not 0 or null, so one document like `q5` (`nReturned` = 0) stops the whole pipeline. Filtering first leaves no zero divisor; queries that return 0 documents are found separately in step 2. Sorting is done by the `$sort` at the end and has nothing to do with this filter."
 ---
 ## Mở bài
 
@@ -158,7 +158,7 @@ db.slowlog.aggregate([{ $match: { ratio: { $gte: 10 } } }, { $project: { ratio: 
 db.slowlog.aggregate([{ $match: { nReturned: { $gt: 0 } } }, { $project: { ratio: { $divide: ["$docsExamined", "$nReturned"] } } }, { $match: { ratio: { $gte: 10 } } }])
 ```
 
-Câu sai không báo lỗi, chỉ trả rỗng, nên dễ tưởng là không có truy vấn nào chậm.
+Ở `$match` đầu tiên chưa tài liệu nào có trường `ratio`, nên không tài liệu nào khớp. Câu sai không báo lỗi, chỉ trả rỗng, nên dễ tưởng là không có truy vấn nào chậm.
 
 Chia theo khóa index thay vì tài liệu:
 
@@ -261,7 +261,7 @@ db.slowlog.aggregate([{ $match: { ratio: { $gte: 10 } } }, { $project: { ratio: 
 db.slowlog.aggregate([{ $match: { nReturned: { $gt: 0 } } }, { $project: { ratio: { $divide: ["$docsExamined", "$nReturned"] } } }, { $match: { ratio: { $gte: 10 } } }])
 ```
 
-The wrong pipeline raises no error, it just returns nothing, so it is easy to believe no query is slow.
+At the first `$match` no document has a `ratio` field yet, so none matches. The wrong pipeline raises no error, it just returns nothing, so it is easy to believe no query is slow.
 
 Dividing index keys instead of documents:
 

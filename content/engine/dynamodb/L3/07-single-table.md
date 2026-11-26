@@ -44,8 +44,8 @@ quiz:
         en: An error, because the items are of different types.
     answer: 1
     why:
-      vi: Mọi item cùng `PK` là một item collection, dù khác loại. `SK` sắp chúng - "ORDER#…" đứng trước "PROFILE" theo thứ tự byte.
-      en: Every item with the same `PK` is one item collection, whatever its type. `SK` sorts them - "ORDER#..." comes before "PROFILE" in byte order.
+      vi: 'Query chỉ đặt điều kiện trên `PK`, không có điều kiện nào trên `SK`, nên không dừng ở hồ sơ: nó trả mọi item có `PK` đó. Các item này là một item collection (mọi item chung một giá trị partition key), và DynamoDB không có schema theo loại item, nên trộn hồ sơ với đơn không gây lỗi. `SK` sắp chúng: "ORDER#…" đứng trước "PROFILE" theo thứ tự byte, nên hai đơn ra trước rồi mới tới hồ sơ.'
+      en: 'The Query sets a condition only on `PK`, none on `SK`, so it does not stop at the profile: it returns every item with that `PK`. Those items form one item collection (every item sharing one partition key value), and DynamoDB has no per-type schema, so mixing a profile with orders is no error. `SK` sorts them: "ORDER#..." comes before "PROFILE" in byte order, so the two orders come first, then the profile.'
   - q:
       vi: Vì sao bảng một-bảng thường đặt tên khóa là `PK`, `SK` thay vì `customerId`, `orderId`?
       en: Why does a single table usually name its keys `PK`, `SK` rather than `customerId`, `orderId`?
@@ -58,8 +58,8 @@ quiz:
         en: Because short names make Queries faster.
     answer: 1
     why:
-      vi: Khóa chung cho phép nhiều loại thực thể dùng chung bảng và chung index (GSI overloading). Tên ngắn cũng làm item nhẹ hơn, nhưng đó không phải lý do chính.
-      en: Generic keys let many entity types share the table and its indexes (GSI overloading). Short names also make items lighter, but that is not the main reason.
+      vi: 'DynamoDB nhận tên khóa nào cũng được, nên không có tên bắt buộc. Trong bảng `Shop`, cùng thuộc tính `PK` chứa mã khách ở hồ sơ và mã đơn ở dòng hàng; gọi nó là `customerId` sẽ sai với một nửa số item. Tên chung còn cho nhiều loại dùng chung một GSI (GSI overloading: một index phục vụ nhiều loại item). Tên ngắn chỉ làm item nhẹ đi vài byte, không làm Query nhanh hơn: tốc độ phụ thuộc vào khóa, không vào độ dài tên.'
+      en: 'DynamoDB accepts any key name, so no name is required. In table `Shop`, the same `PK` attribute holds a customer id on a profile and an order id on an order line; calling it `customerId` would be wrong for half the items. Generic names also let many types share one GSI (GSI overloading: one index serving several item types). Short names only make items a few bytes lighter, not Queries faster: speed depends on the key, not on the name''s length.'
   - q:
       vi: Tiệm muốn lưu thêm nhật ký đăng nhập. Nhật ký chỉ ghi, không bao giờ được đọc cùng khách hay đơn, và cần lớp lưu trữ rẻ (Standard-IA) với lịch backup riêng. Đặt nó ở đâu?
       en: The shop wants to store a login log as well. The log is write-only, never read together with customers or orders, and needs a cheap table class (Standard-IA) and its own backup schedule. Where should it go?
@@ -73,8 +73,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: 'Nghe hợp lý vì bài này khen single-table. Nhưng lợi ích của nó chỉ có khi các thực thể được đọc cùng nhau trong một Query. Nhật ký không bao giờ đọc cùng ai, mà table class, backup và Streams lại đặt theo bảng. AWS ghi rõ: ứng dụng không truy vấn nhiều thực thể cùng lúc thì nhiều bảng là đủ.'
-      en: 'It sounds right because this lesson praises single-table design. But its benefit exists only when entities are read together in one Query. The log is never read with anything, while table class, backups and Streams are set per table. AWS says it plainly: if the app does not query several entities together, multiple tables are good enough.'
+      vi: 'Single-table có lợi chỉ khi các thực thể được đọc cùng nhau trong một Query; nhật ký đăng nhập không bao giờ đọc cùng khách hay đơn, nên đặt vào `Shop` không được gì. Ngược lại, table class (Standard-IA) và lịch backup đặt theo từng bảng: để nhật ký trong `Shop` thì cả bảng phải theo một cài đặt. Thêm GSI riêng cũng không tách được, vì GSI dùng table class và backup của bảng gốc. AWS ghi rõ: ứng dụng không truy vấn nhiều thực thể cùng lúc thì nhiều bảng là đủ.'
+      en: 'A single table pays off only when entities are read together in one Query; the login log is never read with customers or orders, so putting it in `Shop` gains nothing. Meanwhile table class (Standard-IA) and the backup schedule are set per table: keeping the log in `Shop` forces one setting on the whole table. A GSI of its own does not separate it either, because a GSI follows the base table''s table class and backups. AWS says it plainly: if the app does not query several entities together, multiple tables are good enough.'
 ---
 
 ## Mở bài
@@ -129,7 +129,7 @@ Viết thẳng `type` trong biểu thức:
 {"op": "Query", "input": {"TableName": "Shop", "KeyConditionExpression": "PK = :pk", "FilterExpression": "type = :t", "ExpressionAttributeValues": {":pk": {"S": "CUST#C-02"}, ":t": {"S": "order"}}}}
 ```
 
-`type` là từ dành riêng. Viết `#t = :t` kèm `"ExpressionAttributeNames": {"#t": "type"}`, hoặc tốt hơn là chọn loại bằng tiền tố sort key.
+`type` là từ dành riêng. Viết `#t = :t` kèm `"ExpressionAttributeNames": {"#t": "type"}`, hoặc tốt hơn là chọn loại bằng tiền tố sort key (`begins_with(SK, :type)`): bộ lọc chạy sau khi đọc nên vẫn tính capacity cho cả collection, còn điều kiện khóa chỉ đọc đúng loại cần.
 
 Thiết kế theo bảng SQL:
 
@@ -204,7 +204,7 @@ Writing `type` straight into an expression:
 {"op": "Query", "input": {"TableName": "Shop", "KeyConditionExpression": "PK = :pk", "FilterExpression": "type = :t", "ExpressionAttributeValues": {":pk": {"S": "CUST#C-02"}, ":t": {"S": "order"}}}}
 ```
 
-`type` is a reserved word. Write `#t = :t` with `"ExpressionAttributeNames": {"#t": "type"}`, or better, pick the type by sort key prefix.
+`type` is a reserved word. Write `#t = :t` with `"ExpressionAttributeNames": {"#t": "type"}`, or better, pick the type by sort key prefix (`begins_with(SK, :type)`): a filter runs after the read, so the whole collection is still charged, while a key condition reads only the type you need.
 
 Designing like SQL tables:
 

@@ -96,8 +96,8 @@ lab:
         vi: "`$match` trên `status` đứng đầu, rồi `$lookup`, `$unwind`, `$group` theo `$s.city`."
         en: "Put the `$match` on `status` first, then `$lookup`, `$unwind`, `$group` by `$s.city`."
       fact:
-        vi: "Bước này chấm theo quy tắc trong docs chính thức (đặt `$match` trước stage nặng), không đo trên `mongod`: mingo không có index hay explain."
-        en: "This step is graded by the rule in the official docs (put `$match` before the heavy stages), not measured on `mongod`: mingo has no index or explain."
+        vi: "Bước này chấm theo quy tắc trong docs chính thức (đặt `$match` trước stage nặng), không đo trên `mongod`: mingo không có index hay explain. Trong lab, lọc trước thì `$lookup` chỉ nối 6 đơn `paid` thay vì cả 8 đơn."
+        en: "This step is graded by the rule in the official docs (put `$match` before the heavy stages), not measured on `mongod`: mingo has no index or explain. In the lab, filtering first means `$lookup` joins only the 6 `paid` orders instead of all 8."
 predict:
   sql: |
     db.orders.find(
@@ -115,8 +115,8 @@ predict:
       en: "`{ createdAt: -1, store: 1, status: 1 }`"
   answer: 1
   why:
-    vi: "Theo luật ESR trong docs chính thức của MongoDB: hai trường bằng `store`, `status` trước, trường sắp `createdAt` sau, trường khoảng `total` cuối. Đặt `total` trước `createdAt` thì phải sắp trong bộ nhớ."
-    en: "By the ESR rule in the MongoDB docs: the equality fields `store`, `status` first, the sort field `createdAt` next, the range field `total` last. Putting `total` before `createdAt` forces an in-memory sort."
+    vi: "Theo luật ESR (Equality, Sort, Range: trường so bằng, rồi trường sắp xếp, rồi trường so khoảng) trong docs chính thức: `store`, `status` trước, `createdAt` sau, `total` cuối. Đặt `total` trước `createdAt` thì index trả các đơn theo `total`, không theo `createdAt`, nên `mongod` phải sắp lại trong bộ nhớ (stage `SORT`). Đưa `createdAt` lên đầu thì thứ tự đúng, nhưng `store` và `status` không còn là tiền tố liền nhau, nên index phải quét đơn của mọi cửa hàng."
+    en: "By the ESR rule (Equality, Sort, Range: equality fields, then the sort field, then range fields) in the official docs: `store`, `status` first, `createdAt` next, `total` last. Putting `total` before `createdAt` makes the index return orders by `total`, not by `createdAt`, so `mongod` must sort again in memory (a `SORT` stage). Putting `createdAt` first gives the right order, but `store` and `status` are no longer a leading prefix, so the index must scan the orders of every store."
   recorded:
     tier: docs
     server: MongoDB
@@ -133,8 +133,8 @@ quiz:
       - { vi: "`{ w: \"majority\" }`", en: "`{ w: \"majority\" }`" }
     answer: 2
     why:
-      vi: "Với `w: 1` hay `w: 0`, dữ liệu có thể bị rollback nếu primary bước xuống trước khi chép. `w: \"majority\"` chỉ xác nhận khi đa số đã ghi bền vào oplog, nên primary mới chắc chắn có nó."
-      en: "With `w: 1` or `w: 0`, data can be rolled back if the primary steps down before replication. `w: \"majority\"` acknowledges only once a majority has durably written it to the oplog, so the new primary is sure to have it."
+      vi: "`w: 1` chỉ chờ primary xác nhận: nếu primary sập trước khi chép sang secondary, lần ghi bị rollback khi primary cũ quay lại. `w: 0` còn yếu hơn: server không gửi xác nhận nào, nên ứng dụng không biết lần ghi có thành công hay không. `w: \"majority\"` chỉ xác nhận khi 2 trong 3 node đã ghi bền vào oplog, nên primary mới nào cũng chắc chắn có nó."
+      en: "`w: 1` waits only for the primary: if the primary fails before copying to a secondary, the write is rolled back when the old primary returns. `w: 0` is weaker still: the server sends no acknowledgement, so the application does not know whether the write succeeded at all. `w: \"majority\"` acknowledges only once 2 of the 3 nodes have durably written it to the oplog, so any new primary is sure to have it."
 ---
 
 ## Mở bài

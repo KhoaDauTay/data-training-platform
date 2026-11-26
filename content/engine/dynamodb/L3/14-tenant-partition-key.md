@@ -136,8 +136,8 @@ quiz:
     answer: 0
     trap: 1
     why:
-      vi: "Nghe hợp lý vì bộ lọc nằm ngay trong request. Nhưng `FilterExpression` áp sau khi đọc: `ScannedCount` là mọi item của bảng, RCU tính theo phần đã đọc. Đặt khách vào partition key thì Query chỉ đọc phần của khách đó."
-      en: "It sounds right because the filter sits right in the request. But `FilterExpression` applies after the read: `ScannedCount` is every item of the table, and RCU is charged on what was read. Put the tenant in the partition key and a Query reads only that tenant's part."
+      vi: "Nghe hợp lý vì bộ lọc nằm ngay trong request. Nhưng `FilterExpression` áp sau khi đọc: `ScannedCount` là mọi item của bảng, RCU (read capacity unit, đơn vị đọc) tính theo phần đã đọc. Đặt khách vào partition key thì Query chỉ đọc phần của khách đó. Chuyện thứ tự không phải vấn đề chính: Scan không sắp theo ngày, nhưng ứng dụng sắp lại được; cái đắt là mọi lô của mọi khách đều bị đọc và tính tiền, và bảng càng nhiều khách thì mỗi trang càng đắt."
+      en: "It sounds right because the filter sits right in the request. But `FilterExpression` applies after the read: `ScannedCount` is every item of the table, and RCU (read capacity units) are charged on what was read. Put the tenant in the partition key and a Query reads only that tenant's part. Order is not the main problem: a Scan does not sort by date, but the application can sort again; the costly part is that every shipment of every tenant is read and billed, and the more tenants the table holds, the dearer each page gets."
   - q:
       vi: "Bảng có thêm GSI `byStatus` với partition key chỉ là `status`. Dùng nó cho trang \"Đang vận chuyển\" của một khách thì rủi ro gì?"
       en: "The table also has GSI `byStatus` whose partition key is only `status`. What is the risk of using it for one tenant's \"In transit\" page?"
@@ -148,8 +148,8 @@ quiz:
     answer: 2
     trap: 1
     why:
-      vi: "Lọc lại trong ứng dụng nghe đủ, nhưng request đã đọc và trả dữ liệu của khách khác, và một lỗi nhỏ trong code là lộ ra. Điều kiện IAM `dynamodb:LeadingKeys` cũng chỉ giữ được khách khi khóa của index mở đầu bằng mã khách. GSI `byTenantStatus` làm đúng việc đó."
-      en: "Filtering again in the application sounds enough, but the request has already read and returned other tenants' data, and one small bug exposes it. The IAM condition `dynamodb:LeadingKeys` can only hold a tenant in when the index key starts with the tenant id. GSI `byTenantStatus` does exactly that."
+      vi: "Lọc lại trong ứng dụng nghe đủ, nhưng request đã đọc và trả dữ liệu của khách khác (ở bảng này: 8 lô đang mở của cả ba khách), và một lỗi nhỏ trong code là lộ ra. Điều kiện IAM (Identity and Access Management, hệ phân quyền của AWS) `dynamodb:LeadingKeys` cũng chỉ giữ được khách khi khóa của index mở đầu bằng mã khách. GSI `byTenantStatus` làm đúng việc đó. Thiếu thuộc tính thì không phải rủi ro ở đây: `byStatus` project `ALL`, nên cảng và khối lượng vẫn có."
+      en: "Filtering again in the application sounds enough, but the request has already read and returned other tenants' data (in this table: the 8 open shipments of all three tenants), and one small bug exposes it. The IAM (Identity and Access Management, the AWS permission system) condition `dynamodb:LeadingKeys` can only hold a tenant in when the index key starts with the tenant id. GSI `byTenantStatus` does exactly that. Missing attributes are not the risk here: `byStatus` projects `ALL`, so the port and weight are still there."
 ---
 ## Mở bài
 
@@ -271,7 +271,7 @@ Muốn đọc "mọi khách bắt đầu bằng `TENANT#`" bằng Query. Partiti
     ":p": {"S": "TENANT#"}}}}
 ```
 
-Báo cáo chéo khách không đi qua đường của một khách; đó là việc của một kho phân tích riêng.
+Partition key được băm (hash) để chọn partition, nên các mã khách gần nhau không nằm cạnh nhau và không có "khoảng" nào để đọc theo tiền tố. Báo cáo chéo khách không đi qua đường của một khách; đó là việc của một kho phân tích riêng.
 
 ## Thực hành
 
@@ -406,7 +406,7 @@ Trying to read "every tenant starting with `TENANT#`" with a Query. The partitio
     ":p": {"S": "TENANT#"}}}}
 ```
 
-A cross-tenant report does not go through a single tenant's path; that is the job of a separate analytics store.
+The partition key is hashed to pick a partition, so nearby tenant ids do not sit next to each other and there is no "range" to read by prefix. A cross-tenant report does not go through a single tenant's path; that is the job of a separate analytics store.
 
 ## Practice
 

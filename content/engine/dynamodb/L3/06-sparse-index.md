@@ -196,8 +196,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: Nghe hợp lý vì trạng thái mới là `DELIVERED`, nhưng `openOrders` không có khóa `status`; nó chỉ quan tâm item có `openSince` hay không. Còn `openSince` thì đơn còn trong index. Index không nhận lệnh ghi trực tiếp.
-      en: It sounds right because the new status is `DELIVERED`, but `openOrders` has no `status` key; it only cares whether the item has `openSince`. While `openSince` stays, the order stays in the index. An index takes no direct writes.
+      vi: 'Đổi sang `DELIVERED` chưa đủ: `openOrders` không có khóa `status`, nó chỉ xét item có `openSince` hay không, nên còn `openSince` thì đơn còn trong index. `DeleteItem` cũng không được vì index không nhận lệnh ghi trực tiếp. `REMOVE openSince` làm item thiếu khóa index, và DynamoDB tự xóa bản sao trong index.'
+      en: 'Setting `DELIVERED` is not enough: `openOrders` has no `status` key, it only checks whether the item has `openSince`, so while `openSince` stays the order stays in the index. `DeleteItem` fails too, because an index takes no direct writes. `REMOVE openSince` leaves the item without the index key, and DynamoDB deletes its copy from the index.'
   - q:
       vi: 102 đơn không có `openSince` được ghi vào bảng. GSI `openOrders` tốn gì cho chúng?
       en: 102 orders without `openSince` are written to the table. What does GSI `openOrders` cost for them?
@@ -207,8 +207,8 @@ quiz:
       - { vi: "Một nửa WCU mỗi đơn", en: "Half a WCU per order" }
     answer: 0
     why:
-      vi: GSI chỉ ghi khi item có đủ khóa index (hoặc vừa mất khóa, lúc đó index xóa bản chiếu). Vì vậy sparse index vừa nhỏ vừa rẻ khi ghi.
-      en: A GSI writes only when an item has every index key (or has just lost one, when the index deletes its copy). That is why a sparse index is both small and cheap to write.
+      vi: 'GSI chỉ ghi khi item có đủ khóa index (hoặc vừa mất khóa, lúc đó index xóa bản sao). 102 đơn này không có `openSince` nên không vào `openOrders`: không lưu và không tốn WCU (write capacity unit, đơn vị ghi) nào cho index. "Một WCU mỗi đơn" chỉ đúng với item thật sự vào index; không có mức "nửa WCU" cho lượt ghi.'
+      en: 'A GSI writes only when an item has every index key (or has just lost one, when the index deletes its copy). These 102 orders have no `openSince`, so they never enter `openOrders`: no storage and no WCU (write capacity units) for the index. "One WCU per order" holds only for items that do enter the index; there is no "half WCU" for a write.'
 ---
 
 ## Mở bài

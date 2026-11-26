@@ -40,8 +40,8 @@ quiz:
       - { vi: "Ngoài MongoDB, trên ổ đĩa của máy chủ", en: "Outside MongoDB, on the server's disk" }
     answer: 1
     why:
-      vi: "Một tài liệu tối đa 16 MiB, nên 300 MB không thể nằm trong một tài liệu. GridFS ghi thông tin tệp (tên, cỡ, cỡ mảnh) vào `fs.files` và cắt nội dung thành các mảnh 255 KiB, mỗi mảnh là một tài liệu ở `fs.chunks`."
-      en: "A document is at most 16 MiB, so 300 MB cannot fit in one document. GridFS writes the file details (name, size, chunk size) to `fs.files` and splits the content into 255 KiB chunks, each one a document in `fs.chunks`."
+      vi: "Một tài liệu tối đa 16 MiB, nên 300 MB không thể nằm trong một tài liệu ở `fs.files`. GridFS cũng không đẩy tệp ra ổ đĩa ngoài: mọi byte vẫn nằm trong MongoDB, nên được chép sang secondary và sao lưu như dữ liệu khác. Nó ghi thông tin tệp (tên, cỡ, cỡ mảnh) vào `fs.files` và cắt nội dung thành các mảnh 255 KiB, mỗi mảnh là một tài liệu ở `fs.chunks`: 314.572.800 / 261.120 ≈ 1.205 mảnh."
+      en: "A document is at most 16 MiB, so 300 MB cannot fit in one document in `fs.files`. Nor does GridFS push the file out to the server's disk: every byte stays inside MongoDB, so it is replicated to secondaries and backed up like other data. It writes the file details (name, size, chunk size) to `fs.files` and splits the content into 255 KiB chunks, each one a document in `fs.chunks`: 314,572,800 / 261,120 ≈ 1,205 chunks."
   - q:
       vi: "Ảnh đại diện của khách, mỗi ảnh khoảng 40 KB, cần được thay cả ảnh một lần. GridFS có cần không?"
       en: "Customer avatars of about 40 KB each must be replaced whole, in one go. Is GridFS needed?"

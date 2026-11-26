@@ -45,11 +45,11 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: Nghe hợp lý vì câu này trông giống WHERE của SQL, nhưng biểu thức DynamoDB không nhận giá trị viết thẳng, và mọi từ dành riêng (`total`, `status`, `name`, `date`…) phải được thay bằng một tên `#…` trong `ExpressionAttributeNames`.
-      en: It sounds right because it looks like an SQL WHERE, but DynamoDB expressions never take literal values, and every reserved word (`total`, `status`, `name`, `date`...) must be replaced by a `#…` name declared in `ExpressionAttributeNames`.
+      vi: Nghe hợp lý vì câu này trông giống WHERE của SQL, nhưng biểu thức DynamoDB không nhận giá trị viết thẳng như `500000`, và mọi từ dành riêng (`total`, `status`, `name`, `date`…) phải được thay bằng một tên `#…` trong `ExpressionAttributeNames`. Request bị từ chối ngay khi đọc cú pháp, trước khi chạm item nào, nên lỗi là `ValidationException`. `ConditionalCheckFailedException` chỉ xảy ra với một lệnh ghi có `ConditionExpression` sai điều kiện, không phải với bộ lọc.
+      en: It sounds right because it looks like an SQL WHERE, but DynamoDB expressions never take a literal value such as `500000`, and every reserved word (`total`, `status`, `name`, `date`...) must be replaced by a `#…` name declared in `ExpressionAttributeNames`. The request is refused while its syntax is read, before any item is touched, so the error is a `ValidationException`. `ConditionalCheckFailedException` only happens to a write whose `ConditionExpression` is false, never to a filter.
   - q:
-      vi: Biểu thức lọc `#a = :v OR #b = :v` có bao nhiêu toán tử theo cách DynamoDB đếm?
-      en: How many operators does the filter `#a = :v OR #b = :v` have, the way DynamoDB counts them?
+      vi: 'Biểu thức lọc `#a = :v OR #b = :v` có bao nhiêu toán tử theo cách DynamoDB đếm?'
+      en: 'How many operators does the filter `#a = :v OR #b = :v` have, the way DynamoDB counts them?'
     options:
       - vi: "1"
         en: "1"
@@ -59,8 +59,8 @@ quiz:
         en: "3"
     answer: 2
     why:
-      vi: Hai phép so `=` và một `OR`. Giới hạn là 300 toán tử mỗi biểu thức. Trong `SET a = a + :v`, dấu `=` của `SET` không tính, chỉ `+` tính.
-      en: Two `=` comparisons and one `OR`. The limit is 300 operators per expression. In `SET a = a + :v`, the `=` of `SET` does not count, only the `+` does.
+      vi: Hai phép so `=` và một `OR`, tổng 2 + 1 = 3; đáp án 1 hay 2 là quên rằng `OR` và mỗi phép so đều tính riêng. Giới hạn là 300 toán tử mỗi biểu thức. Trong `SET a = a + :v`, dấu `=` của `SET` không tính, chỉ `+` tính.
+      en: Two `=` comparisons and one `OR`, 2 + 1 = 3; answering 1 or 2 forgets that the `OR` and each comparison count separately. The limit is 300 operators per expression. In `SET a = a + :v`, the `=` of `SET` does not count, only the `+` does.
 ---
 
 ## Mở bài

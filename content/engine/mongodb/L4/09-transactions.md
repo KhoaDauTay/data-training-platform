@@ -29,8 +29,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì hai trường cùng đổi, như hai câu UPDATE trong SQL. Nhưng docs chính thức nói thao tác trên một tài liệu là atomic, nên một `updateOne` đã đủ. Transaction nhiều tài liệu tốn hơn ghi một tài liệu; nhúng dữ liệu liên quan vào một tài liệu giảm nhu cầu dùng nó."
-      en: "It sounds right because two fields change, like two UPDATE statements in SQL. But the docs say an operation on a single document is atomic, so one `updateOne` is enough. A multi-document transaction costs more than a single-document write; embedding related data in one document reduces the need for it."
+      vi: "Hai trường cùng đổi nghe như cần transaction, như hai câu UPDATE trong SQL. Nhưng ở đây cả hai trường nằm trong một tài liệu và đổi bằng một lệnh `updateOne`, mà docs chính thức nói thao tác trên một tài liệu là atomic: dòng mới và tổng mới cùng được ghi hoặc cùng không, không ai đọc được trạng thái nửa chừng. Transaction nhiều tài liệu chỉ cần khi thay đổi trải trên nhiều tài liệu, và nó tốn hơn một lần ghi một tài liệu."
+      en: "Two fields changing together sounds like a transaction, like two UPDATE statements in SQL. But here both fields live in one document and change with one `updateOne`, and the docs say an operation on one document is atomic: the new line and the new total are both written or neither is, and no reader sees a halfway state. A multi-document transaction is needed only when a change spans several documents, and it costs more than a single-document write."
   - q:
       vi: "Một transaction chạy quá lâu với cấu hình mặc định. Điều gì xảy ra?"
       en: "A transaction runs too long with the default settings. What happens?"
@@ -39,8 +39,8 @@ quiz:
       - { vi: "Quá một phút thì nó bị coi là hết hạn và bị hủy", en: "After one minute it is considered expired and aborted" }
     answer: 1
     why:
-      vi: "Mặc định transaction phải chạy dưới một phút (`transactionLifetimeLimitSeconds`); quá hạn thì một tiến trình dọn định kỳ hủy nó."
-      en: "By default a transaction must run for less than one minute (`transactionLifetimeLimitSeconds`); an expired one is aborted by a periodic cleanup."
+      vi: "Transaction không được chạy mãi, vì trong lúc chạy nó giữ lock và giữ bản snapshot dữ liệu cũ trong bộ nhớ. Mặc định nó phải xong dưới một phút (`transactionLifetimeLimitSeconds` = 60); quá hạn thì một tiến trình dọn định kỳ hủy nó, mọi thay đổi chưa commit bị bỏ, và lần commit sau đó báo lỗi. Việc dài nên chia nhỏ thành nhiều transaction ngắn."
+      en: "A transaction cannot run forever, because while it runs it holds locks and keeps a snapshot of old data in memory. By default it must finish in under one minute (`transactionLifetimeLimitSeconds` = 60); past that a periodic cleanup aborts it, every uncommitted change is dropped, and a later commit fails. Split long work into several short transactions."
 ---
 ## Mở bài
 

@@ -30,8 +30,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì secondary đúng là chép chậm, nhưng trong session driver gắn `afterClusterTime` cho lần đọc; node chỉ trả lời khi dữ liệu của nó đã tới thời điểm đó. Lần đọc có thể chờ, nhưng không trả trạng thái cũ."
-      en: "It sounds right because secondaries do replicate late, but inside the session the driver attaches `afterClusterTime` to the read; a node answers only once its data has reached that time. The read may wait, but it never returns the old state."
+      vi: "Secondary đúng là chép không đồng bộ, nên ngoài session câu đầu đúng. Nhưng trong session, driver gắn cho lần đọc `afterClusterTime` = thời điểm của lần ghi vừa xong; secondary chỉ trả lời khi dữ liệu của nó đã chép tới thời điểm đó. Lần đọc có thể chờ một chút, nhưng không trả trạng thái trước lần ghi."
+      en: "Secondaries do replicate asynchronously, so outside a session the first option would be right. But inside the session the driver gives the read `afterClusterTime` = the time of the write that just finished; the secondary answers only once its data has replicated up to that time. The read may wait a little, but it never returns the state from before the write."
   - q:
       vi: "Session nhất quán nhân quả nhưng ghi bằng `w: 1` và đọc `local`. Bốn bảo đảm có còn chắc chắn không?"
       en: "A causally consistent session, but writes use `w: 1` and reads use `local`. Are the four guarantees still certain?"
@@ -41,8 +41,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì session là thứ mang thời điểm, nhưng một lần ghi `w: 1` có thể bị rollback và kéo theo cả chuỗi nhân quả. Docs chính thức: session chỉ bảo đảm nhân quả cho đọc read concern `majority` và ghi write concern `majority`."
-      en: "It sounds right because the session carries the timestamps, but a `w: 1` write can be rolled back and take the causal chain with it. The docs: sessions guarantee causality only for reads with read concern `majority` and writes with write concern `majority`."
+      vi: "Session mang thời điểm nên nghe như đủ, nhưng thời điểm đó có thể trỏ vào dữ liệu không bền. Lần ghi `w: 1` chỉ nằm trên primary; nếu primary sập, lần ghi bị rollback, và lần đọc `local` trước đó đã thấy một trạng thái không còn tồn tại, nên \"đọc được điều mình ghi\" và \"đọc đơn điệu\" đều gãy. Docs chính thức: session chỉ bảo đảm nhân quả khi đọc read concern `majority` và ghi write concern `majority`, vì chỉ dữ liệu đa số đã xác nhận mới không bị rollback."
+      en: "The session carries the timestamps, so it sounds like enough, but those timestamps can point at data that is not durable. A `w: 1` write lives only on the primary; if the primary fails the write is rolled back, and a `local` read made earlier saw a state that no longer exists, so \"read your writes\" and \"monotonic reads\" both break. The docs: sessions guarantee causality only with read concern `majority` and write concern `majority`, because only data a majority acknowledged cannot be rolled back."
 ---
 ## Mở bài
 

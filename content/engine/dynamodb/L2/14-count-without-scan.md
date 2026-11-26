@@ -108,8 +108,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: 'Nghe hợp lý là đếm thì rẻ, vì không có item nào trả về. Nhưng DynamoDB vẫn phải đọc từng item để đếm, nên phí tính như đọc cả item: cộng 40 KB, làm tròn lên bội 4 KB được 10, nhân 0,5 cho đọc nhất quán cuối là 5 RCU. `COUNT` chỉ bớt dữ liệu gửi về, không bớt phí đọc.'
-      en: 'Counting sounds cheap, since no item comes back. But DynamoDB still reads every item to count it, so it is charged like reading them: 40 KB added up, rounded up to a multiple of 4 KB gives 10, times 0.5 for an eventually consistent read is 5 RCU. `COUNT` only trims the data sent back, not the read charge.'
+      vi: 'Nghe hợp lý là đếm thì rẻ, vì không có item nào trả về. Nhưng DynamoDB vẫn phải đọc từng item để đếm, nên phí tính như đọc cả item: cộng 40 × 1 KB = 40 KB, chia 4 KB được 10 khối, nhân 0,5 cho đọc nhất quán cuối là 5 RCU (read capacity unit, đơn vị đọc). `COUNT` chỉ bớt dữ liệu gửi về, không bớt phí đọc. Chọn 40 là tính mỗi item một RCU riêng như `GetItem`, trong khi Query cộng cỡ mọi item rồi mới làm tròn theo khối 4 KB.'
+      en: 'Counting sounds cheap, since no item comes back. But DynamoDB still reads every item to count it, so it is charged like reading them: 40 × 1 KB = 40 KB, divided by 4 KB gives 10 blocks, times 0.5 for an eventually consistent read is 5 RCU (read capacity unit). `COUNT` only trims the data sent back, not the read charge. Picking 40 charges each item one RCU of its own as `GetItem` would, while a Query adds up all item sizes and then rounds to 4 KB blocks.'
   - q:
       vi: '`Query` với `"KeyConditionExpression": "pk = :p"` và `"Select": "COUNT"` trên `STORE#s2` trả `Count` bao nhiêu?'
       en: 'What `Count` does a `Query` with `"KeyConditionExpression": "pk = :p"` and `"Select": "COUNT"` on `STORE#s2` return?'
@@ -120,8 +120,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: 'Nghe hợp lý vì cửa hàng có 12 đơn, nhưng item collection `STORE#s2` còn chứa item `STATS`. Muốn chỉ đếm đơn thì thêm `begins_with(sk, :o)` vào điều kiện khóa.'
-      en: 'It sounds right because the store has 12 orders, but the item collection `STORE#s2` also holds the `STATS` item. To count orders only, add `begins_with(sk, :o)` to the key condition.'
+      vi: 'Nghe hợp lý vì cửa hàng có 12 đơn, nhưng item collection `STORE#s2` còn chứa item `STATS`, nên 12 + 1 = 13. Không phải 31, vì `pk = :p` chỉ đọc item collection của `STORE#s2`, không đọc hai cửa hàng kia. Muốn chỉ đếm đơn thì thêm `begins_with(sk, :o)` vào điều kiện khóa.'
+      en: 'It sounds right because the store has 12 orders, but the item collection `STORE#s2` also holds the `STATS` item, so 12 + 1 = 13. Not 31, because `pk = :p` reads only the item collection of `STORE#s2`, not the other two stores. To count orders only, add `begins_with(sk, :o)` to the key condition.'
 ---
 
 ## Mở bài

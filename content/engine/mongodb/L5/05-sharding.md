@@ -31,8 +31,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì thêm máy thường thêm sức, nhưng cardinality giới hạn số chunk: 7 giá trị thì tối đa 7 chunk, nên shard thứ 8 không có gì để giữ. Docs chính thức khuyên dùng shard key kép (nhiều trường) để tăng cardinality."
-      en: "It sounds right because more machines usually mean more capacity, but cardinality caps the number of chunks: 7 values means at most 7 chunks, so an 8th shard has nothing to hold. The docs suggest a compound shard key to raise cardinality."
+      vi: "Thêm máy thường thêm sức nên nghe hợp lý, nhưng cardinality (số giá trị khác nhau của shard key) giới hạn số chunk: mọi tài liệu cùng `continent` phải nằm chung một chunk, 7 giá trị thì tối đa 7 chunk, nên balancer không có chunk nào để chuyển sang shard thứ 8. Docs chính thức khuyên dùng shard key kép (nhiều trường) để tăng cardinality."
+      en: "More machines usually mean more capacity, so it sounds right, but cardinality (the number of distinct shard key values) caps the number of chunks: all documents with the same `continent` must share one chunk, 7 values means at most 7 chunks, so the balancer has no chunk to move to an 8th shard. The docs suggest a compound shard key (several fields) to raise cardinality."
   - q:
       vi: "Shard key là thời điểm tạo, luôn tăng. Điều gì xảy ra với lượt chèn mới?"
       en: "The shard key is the creation time, always increasing. What happens to new inserts?"
@@ -42,8 +42,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Rải đều nghe hợp lý vì có nhiều giá trị khác nhau, nhưng giá trị luôn tăng đi vào chunk có cận trên `MaxKey`. Docs chính thức khuyên dùng hashed sharding cho khóa đơn điệu."
-      en: "Spreading evenly sounds right because there are many distinct values, but ever-increasing values go to the chunk bounded by `MaxKey`. The docs recommend hashed sharding for a monotonic key."
+      vi: "Rải đều nghe hợp lý vì có nhiều giá trị khác nhau, nhưng sharding theo khoảng xếp chunk theo thứ tự giá trị. Mỗi lượt chèn mới có thời điểm lớn hơn mọi giá trị đã có, nên luôn rơi vào chunk cuối, chunk có cận trên `MaxKey` (giá trị lớn hơn mọi giá trị), và shard giữ chunk đó nhận hết lượt ghi. Docs chính thức khuyên dùng hashed sharding cho khóa đơn điệu: hash của các thời điểm liền nhau nằm rải rác, nên lượt chèn chia ra mọi shard."
+      en: "Spreading evenly sounds right because there are many distinct values, but ranged sharding orders chunks by value. Each new insert has a time later than every existing value, so it always lands in the last chunk, the one bounded by `MaxKey` (a value above every value), and the shard holding that chunk takes every write. The docs recommend hashed sharding for a monotonic key: the hashes of consecutive times are scattered, so inserts spread over every shard."
 ---
 ## Mở bài
 
@@ -122,7 +122,7 @@ sh.shardCollection("shop.orders", { status: 1 })
 sh.shardCollection("shop.orders", { status: 1, customerId: 1 })
 ```
 
-Chờ balancer chuyển ngay khi lệch một chút: lệch 300 MB với range size 128 MB vẫn là "cân bằng", vì ngưỡng là 384 MB.
+Chờ balancer chuyển ngay khi lệch một chút: lệch 300 MB với range size 128 MB vẫn là "cân bằng", vì ngưỡng là 3 × 128 = 384 MB.
 
 ## Tóm tắt
 
@@ -210,7 +210,7 @@ sh.shardCollection("shop.orders", { status: 1 })
 sh.shardCollection("shop.orders", { status: 1, customerId: 1 })
 ```
 
-Expecting the balancer to move data at the first small gap: a 300 MB gap with a 128 MB range size still counts as "balanced", because the threshold is 384 MB.
+Expecting the balancer to move data at the first small gap: a 300 MB gap with a 128 MB range size still counts as "balanced", because the threshold is 3 × 128 = 384 MB.
 
 ## Recap
 

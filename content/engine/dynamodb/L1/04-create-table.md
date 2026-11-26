@@ -81,8 +81,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: 'Nghe hợp lý vì `CREATE TABLE` của SQL khai mọi cột, nhưng DynamoDB chỉ cần kiểu của thuộc tính khóa. Khai thêm `title` ở đây là `ValidationException`.'
-      en: 'It sounds right because SQL `CREATE TABLE` declares every column, but DynamoDB needs only the types of key attributes. Declaring `title` here is a `ValidationException`.'
+      vi: 'Nghe hợp lý vì `CREATE TABLE` của SQL khai mọi cột, nhưng DynamoDB chỉ cần kiểu của thuộc tính khóa, vì chỉ khóa mới được kiểm kiểu và dùng để xếp item. Khai thêm `title` làm `AttributeDefinitions` có hai dòng trong khi `KeySchema` chỉ có `isbn`, nên bị từ chối bằng `ValidationException`. `AttributeDefinitions` cũng không tùy chọn: thiếu nó, DynamoDB không biết `isbn` là `S`, `N` hay `B`.'
+      en: 'It sounds right because SQL `CREATE TABLE` declares every column, but DynamoDB needs only the types of key attributes, since only keys are type-checked and used to place items. Declaring `title` gives `AttributeDefinitions` two lines while `KeySchema` holds only `isbn`, so it is refused with a `ValidationException`. `AttributeDefinitions` is not optional either: without it, DynamoDB does not know whether `isbn` is `S`, `N` or `B`.'
   - q:
       vi: 'Sort key `ts` lưu giây Unix. Nên khai kiểu `S` hay `N`?'
       en: 'Sort key `ts` holds Unix seconds. Should it be declared as `S` or `N`?'
@@ -96,8 +96,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: 'Nghe hợp lý vì số đi trong request bằng chuỗi, nhưng nhãn `N` mới cho DynamoDB biết đó là số. Sort key `S` so theo byte, nên `"999"` đứng sau `"1000"`.'
-      en: 'It sounds right because numbers travel as strings in a request, but the `N` tag is what tells DynamoDB it is a number. An `S` sort key compares bytes, so `"999"` sorts after `"1000"`.'
+      vi: 'Nghe hợp lý vì số đi trong request bằng chuỗi, nhưng nhãn `N` mới cho DynamoDB biết đó là số. Sort key `S` so theo byte từ trái sang, ký tự `9` lớn hơn `1`, nên `"999"` đứng sau `"1000"` và số đo sẽ ra sai thứ tự thời gian. Vì vậy thứ tự không như nhau: chỉ `N` sắp 999 trước 1000.'
+      en: 'It sounds right because numbers travel as strings in a request, but the `N` tag is what tells DynamoDB it is a number. An `S` sort key compares bytes from the left, and the character `9` is greater than `1`, so `"999"` sorts after `"1000"` and the readings come back out of time order. So the order is not the same: only `N` puts 999 before 1000.'
 demo_setup: |
   {"tables": [{"TableName":"Books","KeySchema":[{"AttributeName":"isbn","KeyType":"HASH"}],"AttributeDefinitions":[{"AttributeName":"isbn","AttributeType":"S"}],"BillingMode":"PAY_PER_REQUEST"}],
    "items": {"Books": [{"isbn":"978-0-01","title":"Data at Rest"}]}}

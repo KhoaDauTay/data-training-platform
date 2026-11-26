@@ -217,8 +217,8 @@ quiz:
       - { vi: "Đổi Query sang `ConsistentRead`", en: "Switch the Query to `ConsistentRead`" }
     answer: 1
     why:
-      vi: GSI chỉ giữ thuộc tính đã project và không đọc ngược về bảng, nên `ProjectionExpression` không tạo ra `city`. Project thêm (tốn lưu trữ và WCU cho index) hoặc đọc bảng gốc bằng khóa `customerId` + `orderId` có trong kết quả.
-      en: A GSI holds only projected attributes and never reads back from the table, so `ProjectionExpression` cannot produce `city`. Project it (costing index storage and WCU) or read the base table with the `customerId` + `orderId` keys found in the result.
+      vi: 'GSI (global secondary index) `byStatus` chỉ giữ khóa và `total`, và không đọc ngược về bảng. `ProjectionExpression` chỉ chọn trong những gì index đang có, nên thêm `city` vào đó không làm `city` xuất hiện. `ConsistentRead` cũng không giúp: nó chỉ đổi mức nhất quán, không thêm thuộc tính, và trên GSI còn bị từ chối. Cách đúng: project thêm `city` vào index (tốn lưu trữ và WCU, write capacity unit, cho mỗi lần ghi), hoặc đọc bảng gốc bằng khóa `customerId` + `orderId` có trong kết quả.'
+      en: 'GSI (global secondary index) `byStatus` holds only the keys and `total`, and never reads back from the table. `ProjectionExpression` only picks among what the index already has, so adding `city` there does not make `city` appear. `ConsistentRead` does not help either: it changes the consistency level, not the attributes, and a GSI refuses it anyway. The fix: project `city` into the index (costing storage and WCU, write capacity units, on every write), or read the base table with the `customerId` + `orderId` keys found in the result.'
 ---
 
 ## Mở bài
@@ -282,16 +282,16 @@ Scan cả bảng rồi lọc theo trạng thái:
 {"op": "Query", "input": {"TableName": "Orders", "IndexName": "byStatus", "KeyConditionExpression": "#s = :s", "ExpressionAttributeNames": {"#s": "status"}, "ExpressionAttributeValues": {":s": {"S": "NEW"}}}}
 ```
 
-Câu sai có `ScannedCount` 120, câu sửa 18. Câu sai còn trả cả `city`, nên dễ tưởng nó "tốt hơn".
+Câu sai có `ScannedCount` 120, câu sửa 18: Scan đọc mọi item rồi mới lọc, và bạn trả tiền cho cả 120. Câu sai còn trả cả `city` vì nó đọc bảng gốc chứ không đọc index, nên dễ tưởng nó "tốt hơn".
 
-Xin đọc strong trên GSI:
+Xin đọc nhất quán mạnh (strongly consistent) trên GSI:
 
 ```json
 // ERROR ValidationException
 {"op": "Query", "input": {"TableName": "Orders", "IndexName": "byStatus", "KeyConditionExpression": "#s = :s", "ExpressionAttributeNames": {"#s": "status"}, "ExpressionAttributeValues": {":s": {"S": "NEW"}}, "ConsistentRead": true}}
 ```
 
-GSI chỉ có đọc eventually consistent. Một đơn vừa đổi trạng thái có thể chưa hiện trong index ngay.
+GSI nhận thay đổi của bảng bất đồng bộ, nên chỉ cho đọc nhất quán cuối (eventually consistent) và DynamoDB từ chối cả request. Hệ quả: một đơn vừa đổi trạng thái có thể chưa hiện trong index ngay.
 
 ## Thực hành
 
@@ -367,16 +367,16 @@ Scanning the whole table and filtering on status:
 {"op": "Query", "input": {"TableName": "Orders", "IndexName": "byStatus", "KeyConditionExpression": "#s = :s", "ExpressionAttributeNames": {"#s": "status"}, "ExpressionAttributeValues": {":s": {"S": "NEW"}}}}
 ```
 
-The wrong one has a `ScannedCount` of 120, the fix 18. The wrong one also returns `city`, so it is easy to think it is "better".
+The wrong one has a `ScannedCount` of 120, the fix 18: a Scan reads every item before filtering, and you pay for all 120. The wrong one also returns `city` because it reads the base table, not the index, so it is easy to think it is "better".
 
-Asking for a strong read on a GSI:
+Asking for a strongly consistent read on a GSI:
 
 ```json
 // ERROR ValidationException
 {"op": "Query", "input": {"TableName": "Orders", "IndexName": "byStatus", "KeyConditionExpression": "#s = :s", "ExpressionAttributeNames": {"#s": "status"}, "ExpressionAttributeValues": {":s": {"S": "NEW"}}, "ConsistentRead": true}}
 ```
 
-A GSI has only eventually consistent reads. An order whose status just changed may not show in the index right away.
+A GSI receives the table's changes asynchronously, so it allows only eventually consistent reads and DynamoDB refuses the whole request. As a result, an order whose status just changed may not show in the index right away.
 
 ## Practice
 

@@ -107,14 +107,14 @@ LSI cho phép `ConsistentRead`; item trả về có đủ thuộc tính vì `byT
 
 ## Lỗi hay gặp
 
-Xin đọc strong trên GSI:
+Xin đọc nhất quán mạnh (strongly consistent) trên GSI:
 
 ```json
 // ERROR ValidationException
 {"op": "Query", "input": {"TableName": "Orders", "IndexName": "byStatus", "KeyConditionExpression": "#s = :s", "ExpressionAttributeNames": {"#s": "status"}, "ExpressionAttributeValues": {":s": {"S": "NEW"}}, "ConsistentRead": true}}
 ```
 
-GSI cập nhật bất đồng bộ nên DynamoDB từ chối. Cần đọc strong thì đọc bảng (hoặc LSI).
+GSI nhận thay đổi của bảng bất đồng bộ, trễ một chút sau lượt ghi, nên nó không bảo đảm được đọc nhất quán mạnh và DynamoDB từ chối cả request. Cần đọc nhất quán mạnh thì đọc bảng (hoặc một LSI); trên GSI chỉ đọc nhất quán cuối (eventually consistent).
 
 Chọn `ALL` cho mọi index "cho chắc":
 
@@ -125,7 +125,7 @@ Chọn `ALL` cho mọi index "cho chắc":
 "Projection": {"ProjectionType": "INCLUDE", "NonKeyAttributes": ["total"]}
 ```
 
-Với `ALL`, mỗi lần ghi đổi item phải ghi lại cả item vào index: lưu trữ và WCU của index tăng theo cỡ item, không theo câu hỏi.
+Với `ALL`, mỗi lần ghi đổi item phải ghi lại cả item vào index: lưu trữ và WCU (write capacity unit, đơn vị ghi, 1 WCU cho mỗi 1 KB) của index tăng theo cỡ item, không theo câu hỏi. Trang danh sách chỉ đọc `total`, nên `INCLUDE` chỉ chép thuộc tính đó.
 
 ## Tóm tắt
 
@@ -183,14 +183,14 @@ The LSI allows `ConsistentRead`; the item comes back whole because `byTotal` pro
 
 ## Common mistakes
 
-Asking for a strong read on a GSI:
+Asking for a strongly consistent read on a GSI:
 
 ```json
 // ERROR ValidationException
 {"op": "Query", "input": {"TableName": "Orders", "IndexName": "byStatus", "KeyConditionExpression": "#s = :s", "ExpressionAttributeNames": {"#s": "status"}, "ExpressionAttributeValues": {":s": {"S": "NEW"}}, "ConsistentRead": true}}
 ```
 
-A GSI is updated asynchronously, so DynamoDB refuses. If you need a strong read, read the table (or an LSI).
+A GSI receives the table's changes asynchronously, a moment after the write, so it cannot promise a strongly consistent read and DynamoDB refuses the whole request. If you need a strongly consistent read, read the table (or an LSI); a GSI only serves eventually consistent reads.
 
 Choosing `ALL` for every index "to be safe":
 
@@ -201,7 +201,7 @@ Choosing `ALL` for every index "to be safe":
 "Projection": {"ProjectionType": "INCLUDE", "NonKeyAttributes": ["total"]}
 ```
 
-With `ALL`, every write that changes the item writes the whole item into the index again: index storage and WCU grow with the item's size, not with the question.
+With `ALL`, every write that changes the item writes the whole item into the index again: index storage and WCU (write capacity units, 1 WCU per 1 KB) grow with the item's size, not with the question. The list page reads only `total`, so `INCLUDE` copies just that attribute.
 
 ## Recap
 
