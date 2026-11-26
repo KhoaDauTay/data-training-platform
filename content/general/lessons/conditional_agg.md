@@ -3,6 +3,7 @@ id: conditional_agg
 title: "Gộp có điều kiện: FILTER và SUM(CASE …)"
 title_en: "Conditional aggregates: FILTER and SUM(CASE …)"
 minutes: 25
+figures: [{ name: sql-case-buckets, at: idea, variant: filter }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Đếm hay cộng nhiều nhóm con trong cùng một dòng kết quả, như số đơn online và tại quầy.
@@ -139,6 +140,8 @@ Hàm gộp có điều kiện đếm hay cộng chỉ một phần dòng **bên 
 
 Nhiều người nghĩ **muốn đếm một loại thì lọc ở `WHERE`**. Làm vậy thì tổng số và các loại khác mất theo, và nhóm không có dòng nào thỏa sẽ biến mất thay vì hiện số 0. Điều kiện chỉ dành cho một cột thì đặt vào chính cột đó.
 
+Hình cuối mục này đếm ba hạng giá trong một dòng kết quả, mỗi hạng một `FILTER`.
+
 ## Cú pháp
 
 `FILTER` đứng ngay sau ngoặc đóng của hàm gộp.
@@ -154,6 +157,8 @@ The operations director wants a table: one row per store, with the number of ord
 A conditional aggregate counts or sums only part of the rows **inside** a group, while the other columns still see the whole group. Postgres has `FILTER (WHERE …)` after the aggregate; the spelling that runs everywhere is `sum(CASE WHEN … THEN 1 ELSE 0 END)`. That way one result row carries several different counts.
 
 Many people think **to count one kind of row you filter in `WHERE`**. Then the total and the other kinds disappear too, and a group with no matching row vanishes instead of showing 0. A condition meant for one column belongs in that column.
+
+The figure at the end of this section counts three price tiers in one result row, one `FILTER` each.
 
 ## Syntax
 

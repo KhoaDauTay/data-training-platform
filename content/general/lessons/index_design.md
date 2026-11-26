@@ -3,6 +3,7 @@ id: index_design
 title: "Chọn chỉ mục: cột nào, thứ tự nào"
 title_en: "Choosing an index: which columns, in which order"
 minutes: 25
+figures: [{ name: sql-index-column-order, at: idea }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Xem các chỉ mục đang có của một bảng và cột của chúng.
@@ -125,6 +126,8 @@ Chọn chỉ mục từ các câu hỏi thật sự hay chạy. Trong chỉ mụ
 
 Nhiều người nghĩ **chỉ mục `(user_id, ts)` giúp mọi câu có `ts`**. Thật ra nó chỉ giúp khi cột đầu `user_id` cũng được lọc: thiếu cột đầu, các giá trị `ts` nằm rải khắp chỉ mục. Và chỉ mục không miễn phí: mỗi câu thêm, sửa, xóa phải cập nhật nó.
 
+Hình từng bước ở cuối mục này mở một đoạn của chỉ mục `(user_id, ts)` trên `app_events`.
+
 ## Cú pháp
 
 Ở bài này bạn đọc kế hoạch của các chỉ mục có sẵn; tự tạo chỉ mục bằng `CREATE INDEX` rồi so kế hoạch trước và sau thì có ở khu Engine, phần PostgreSQL.
@@ -140,6 +143,8 @@ The app asks one question over and over: "user X's events in time range Y". The 
 Choose indexes from the queries that really run often. In a multi-column index the data is sorted by the first column, then by the second within each value of the first. So: equality (`=`) columns come first, range (`>=`, `<`) or sort (`ORDER BY`) columns come last.
 
 Many people think **an `(user_id, ts)` index helps every query on `ts`**. In fact it only helps when the first column `user_id` is filtered too: without it, the `ts` values are spread all over the index. And an index is not free: every insert, update and delete has to update it.
+
+The step-through figure at the end of this section opens a stretch of the index `(user_id, ts)` on `app_events`.
 
 ## Syntax
 

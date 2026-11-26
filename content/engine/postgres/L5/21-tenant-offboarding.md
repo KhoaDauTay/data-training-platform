@@ -8,6 +8,7 @@ title_en: "Offboarding a tenant: export, delete and prove it"
 kind: lab
 runtime: browser
 minutes: 22
+figures: [{ name: pg-tenant-offboard, at: idea }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-25" }
 objectives:
   - { vi: "Xuất dữ liệu của một khách ra CSV bằng `COPY (SELECT …) TO` kèm bảng đếm (manifest)", en: "Export one tenant's data to CSV with `COPY (SELECT …) TO` along with a count manifest" }
@@ -102,6 +103,8 @@ Một khách rời đi qua bốn bước: tạm khóa truy cập, xuất dữ li
 Xóa theo thứ tự ngược khóa ngoại, hoặc để khóa ngoại ghép `(tenant_id, …) ON DELETE CASCADE` làm việc đó. Khách lớn nằm riêng một phân vùng thì `DETACH` rồi `DROP` phân vùng đó, nhanh như nhau dù có bao nhiêu dòng (xem `e-pg-l4-20`).
 
 Nhiều người nghĩ CASCADE xóa "mọi thứ của khách này". Thật ra nó chỉ đi theo các khóa ngoại đã khai báo: bảng thêm sau mà thiếu khóa ngoại vẫn giữ nguyên dữ liệu. Chứng minh phải quét mọi bảng có cột `tenant_id`, lấy danh sách từ `information_schema.columns` và đếm động bằng `format('%I')`. Ngoài database còn bộ nhớ đệm, chỉ mục tìm kiếm, kho file và bản sao phân tích: mỗi nơi cần cách xóa riêng.
+
+Hình từng bước ở cuối mục này vẽ các khóa ngoại của lab và số dòng của người bán 7 trước và sau câu `DELETE`.
 
 ## Cú pháp
 
@@ -229,6 +232,8 @@ A tenant leaves in four steps: suspend access, export the data with a count mani
 Delete in reverse foreign key order, or let composite `(tenant_id, …) ON DELETE CASCADE` foreign keys do it. A big tenant in its own partition is removed with `DETACH` then `DROP` of that partition, equally fast however many rows it holds (see `e-pg-l4-20`).
 
 Many people think CASCADE deletes "everything of this tenant". In fact it only follows the foreign keys that were declared: a table added later without one keeps its data. The proof must scan every table with a `tenant_id` column, taking the list from `information_schema.columns` and counting dynamically with `format('%I')`. Outside the database there are caches, search indexes, file stores and analytics copies: each needs its own way to delete.
+
+The step-through figure at the end of this section draws the lab's foreign keys and seller 7's row counts before and after the `DELETE`.
 
 ## Syntax
 

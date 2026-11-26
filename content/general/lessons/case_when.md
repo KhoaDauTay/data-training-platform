@@ -3,6 +3,7 @@ id: case_when
 title: "CASE WHEN: chia dòng vào các nhóm theo điều kiện"
 title_en: "CASE WHEN: sort rows into buckets by condition"
 minutes: 25
+figures: [{ name: sql-case-buckets, at: idea }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Tạo một cột mới có giá trị theo từng điều kiện, như hạng giá 1/2/3.
@@ -122,6 +123,8 @@ Phòng mua hàng muốn chia sản phẩm thành ba hạng giá: rẻ, vừa, đ
 
 Nhiều người nghĩ **thứ tự các nhánh không quan trọng**, như một danh sách quy tắc. Thật ra với các mốc lồng nhau (`>= 30000` chứa cả `>= 100000`), nhánh rộng viết trước sẽ nuốt mọi dòng của nhánh hẹp.
 
+Hình từng bước ở cuối mục này đưa một món qua ba nhánh theo thứ tự, rồi đếm số món mỗi hạng.
+
 ## Cú pháp
 
 Mỗi `CASE` kết thúc bằng `END`; mọi nhánh nên trả cùng một kiểu.
@@ -137,6 +140,8 @@ Purchasing wants products split into three price tiers: cheap, middle, expensive
 `CASE` is SQL's "if … then …". For each row, Postgres tries the `WHEN` branches from the top down; the first true branch decides the value and the later ones are skipped. If no branch is true it takes the `ELSE`, and with no `ELSE` the result is NULL. The result is a new column you can use in `GROUP BY`, `ORDER BY` or an aggregate.
 
 Many people think **the order of the branches does not matter**, like a list of rules. In fact with nested thresholds (`>= 30000` includes `>= 100000`), a broad branch written first swallows every row of the narrow one.
+
+The step-through figure at the end of this section takes one item through the three branches in order, then counts the items per tier.
 
 ## Syntax
 

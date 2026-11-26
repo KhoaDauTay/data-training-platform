@@ -3,6 +3,7 @@ id: date_bucket
 title: "Gom theo tháng, tuần, thứ: date_trunc, extract, to_char"
 title_en: "Bucketing by month, week, weekday: date_trunc, extract, to_char"
 minutes: 25
+figures: [{ name: sql-half-open-range, at: idea, variant: month }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Đếm hay cộng theo tháng, tuần bằng `date_trunc` và `GROUP BY`.
@@ -132,6 +133,8 @@ Giám đốc muốn một biểu đồ: số đơn mỗi tháng trong năm nay. 
 
 Nhiều người nghĩ **`extract(month …)` là cách gom theo tháng**. Thật ra nó trả số 1–12 và quên năm: tháng 1/2025 và 1/2026 rơi vào một giỏ. Muốn từng tháng trên dòng thời gian, dùng `date_trunc`; chỉ dùng `extract` khi câu hỏi thật sự gom chung mọi năm (như "thứ nào đông nhất").
 
+Hình cuối mục này cho thấy một tháng là khoảng nửa mở từ đầu tháng tới đầu tháng sau, đúng giá trị `date_trunc` trả về.
+
 ## Cú pháp
 
 Đơn vị (`'month'`, `'week'`, `'day'`) là chữ trong nháy đơn.
@@ -147,6 +150,8 @@ The director wants a chart: the number of orders per month this year. The `order
 `date_trunc('month', order_date)` rolls a date back to the first day of its month, so every day of the same month gives the same value; grouping by that value gives one figure per month. `'week'` rolls back to Monday. `extract` takes one part on its own (weekday, hour, month) and drops everything else.
 
 Many people think **`extract(month …)` is the way to group by month**. In fact it returns 1–12 and forgets the year: January 2025 and January 2026 land in one bucket. For each month on a timeline, use `date_trunc`; use `extract` only when the question really merges every year (such as "which weekday is busiest").
+
+The figure at the end of this section shows that a month is the half-open range from its start to the next month's start, exactly what `date_trunc` returns.
 
 ## Syntax
 

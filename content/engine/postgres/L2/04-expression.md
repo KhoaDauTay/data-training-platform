@@ -8,6 +8,7 @@ title_en: Indexes on expressions
 kind: lab
 runtime: browser
 minutes: 12
+figures: [{ name: pg-expression-index, at: idea }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Tạo index trên `lower(email)` để tìm email không phân biệt hoa thường mà vẫn nhanh.
@@ -107,6 +108,8 @@ Nhiều người nghĩ cứ câu nào không phân biệt hoa thường là dùn
 Hàm trong index phải là `IMMUTABLE`: cùng đầu vào thì luôn ra cùng kết quả. Index lưu kết quả lúc ghi; nếu hàm có thể đổi kết quả theo giờ, theo cài đặt hay theo dữ liệu khác, lần tìm sau sẽ không thấy dòng. `lower` là `IMMUTABLE`; hàm bạn tự viết thì mặc định là `VOLATILE`.
 
 `CREATE UNIQUE INDEX` trên biểu thức là cách giữ luật "email không trùng, không phân biệt hoa thường" ngay trong database.
+
+Hình từng bước ở cuối mục này đặt hai index cạnh nhau: cùng một dòng, index trên `email` và index trên `lower(email)` giữ hai chuỗi khác nhau.
 
 ## Cú pháp
 
@@ -208,6 +211,8 @@ Many people think any case-insensitive query can use an index on `lower(email)`.
 A function in an index must be `IMMUTABLE`: same input, always the same output. The index stores the result at write time; if the function could change its result with the clock, a setting or other data, a later lookup would miss the row. `lower` is `IMMUTABLE`; a function you write yourself is `VOLATILE` by default.
 
 A `CREATE UNIQUE INDEX` on an expression keeps the rule "no duplicate email, ignoring case" inside the database.
+
+The step-through figure at the end of this section puts two indexes side by side: for the same row, the index on `email` and the index on `lower(email)` hold two different strings.
 
 ## Syntax
 

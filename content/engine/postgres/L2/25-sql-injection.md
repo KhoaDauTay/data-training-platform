@@ -8,6 +8,7 @@ title_en: SQL injection and safe dynamic SQL
 kind: lab
 runtime: browser
 minutes: 18
+figures: [{ name: pg-injection-bind, at: idea }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Chỉ ra vì sao nối chuỗi người dùng nhập vào câu SQL động cho phép họ viết lại câu lệnh.
@@ -106,6 +107,8 @@ SQL injection xảy ra khi chữ do người dùng gõ được ghép vào câu 
 Nhiều người nghĩ chỉ cần nhân đôi dấu nháy là xong. Thật ra cách đúng là không để giá trị chạm vào chữ SQL. Với giá trị: `EXECUTE '… $1' USING p`, hay `PREPARE … $1` và tham số của driver; giá trị đi riêng, Postgres không bao giờ phân tích nó như mã. Khi buộc phải đưa giá trị vào chữ, dùng `format('%L')` hoặc `quote_literal`.
 
 Tên bảng, tên cột không truyền bằng tham số được: `$1` chỉ thay một giá trị. Tên đi qua `format('%I')` hoặc `quote_ident`, các hàm này thêm nháy kép khi cần. `%s` chèn nguyên văn, nên với dữ liệu người dùng nó chẳng khác gì `||`. Tên do người dùng chọn còn cần danh sách cho phép, vì `%I` chặn được câu thứ hai nhưng không chặn việc đọc nhầm bảng.
+
+Hình từng bước ở cuối mục này đưa cùng một chuỗi qua hai đường: ghép bằng `||` thì nó thành mã, truyền bằng `$1` thì nó chỉ là một giá trị.
 
 ## Cú pháp
 
@@ -211,6 +214,8 @@ SQL injection happens when text typed by a user is glued into a statement and Po
 Many people think doubling the quotes is enough. In fact the right way is to never let the value touch the SQL text. For values: `EXECUTE '… $1' USING p`, or `PREPARE … $1` and the driver's parameters; the value travels apart and Postgres never parses it as code. When a value must go into the text, use `format('%L')` or `quote_literal`.
 
 Table and column names cannot be passed as parameters: `$1` only stands for a value. Names go through `format('%I')` or `quote_ident`, which add double quotes when needed. `%s` inserts text as is, so with user data it is no better than `||`. A name the user picks also needs an allow list, because `%I` stops a second statement but not a read of the wrong table.
+
+The step-through figure at the end of this section sends one string down two paths: glued with `||` it becomes code, passed as `$1` it stays a value.
 
 ## Syntax
 

@@ -8,6 +8,7 @@ title_en: "Indexes that lead with tenant_id"
 kind: lab
 runtime: browser
 minutes: 15
+figures: [{ name: sql-index-column-order, at: idea, variant: tenant }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-25" }
 objectives:
   - { vi: "Đặt `tenant_id` đứng đầu index nhiều cột, rồi tới cột lọc bằng, cuối cùng là cột khoảng hoặc sắp xếp", en: "Put `tenant_id` first in a multicolumn index, then the equality columns, last the range or sort column" }
@@ -82,6 +83,8 @@ Năm mươi chủ hàng dùng chung bảng `invoices` của cổng khách hàng 
 Nhiều người nghĩ index có đủ cột là được, thứ tự không quan trọng. Thật ra B-tree sắp theo cột đầu trước. Index chỉ có `created_at` (hoặc `created_at` đứng đầu) bắt câu của khách 7 lướt qua hóa đơn của cả 50 khách rồi lọc bỏ: dòng "Rows Removed by Filter" lớn là dấu hiệu, và một khách lớn làm chậm mọi khách khác.
 
 Điều kiện khách phải ở dạng index dùng được: `tenant_id = 7`, không phải `tenant_id + 0 = 7`. Khi bật RLS, policy thêm `tenant_id = …` vào mọi câu (xem `e-pg-l5-19`), nên chính index này giữ cho mọi câu dưới RLS vẫn rẻ.
+
+Hình cuối mục này cho thấy một đoạn của index `(tenant_id, created_at)`: tháng 3 của khách 7 là một đoạn liền.
 
 ## Cú pháp
 
@@ -199,6 +202,8 @@ In a multi-tenant table nearly every query has `tenant_id = …`. A multicolumn 
 Many people think an index only needs the right columns, in any order. In fact a B-tree sorts by its first column first. An index on `created_at` alone (or with `created_at` first) makes tenant 7's query skim the invoices of all 50 tenants and filter them out: a large "Rows Removed by Filter" is the sign, and one big tenant slows every other one.
 
 The tenant condition must be in a form the index can use: `tenant_id = 7`, not `tenant_id + 0 = 7`. With RLS on, the policy adds `tenant_id = …` to every query (see `e-pg-l5-19`), so this very index keeps every query under RLS cheap.
+
+The figure at the end of this section shows a stretch of the index `(tenant_id, created_at)`: tenant 7's March is one unbroken stretch.
 
 ## Syntax
 

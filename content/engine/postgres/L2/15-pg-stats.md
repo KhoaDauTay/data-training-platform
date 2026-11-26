@@ -8,6 +8,7 @@ title_en: "pg_stats: where the planner's row guesses come from"
 kind: predict
 runtime: browser
 minutes: 10
+figures: [{ name: pg-stats-estimate, at: idea }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Đọc `most_common_vals`, `most_common_freqs`, `null_frac` và `n_distinct` trong `pg_stats`.
@@ -101,6 +102,8 @@ Mỗi cột giữ tối đa `default_statistics_target` (mặc định 100) mụ
 
 Nhiều người nghĩ planner chia đều cho các giá trị nó biết. Thật ra với giá trị phổ biến, nó dùng đúng tần suất đo được, nên phân bố lệch vẫn được ước lượng chuẩn.
 
+Hình từng bước ở cuối mục này làm phép nhân đó trên bảng `tickets` của lab, rồi làm lại với `null_frac`.
+
 ## Ví dụ
 
 ```sql
@@ -141,6 +144,8 @@ For `col = x`, if `x` is in the MCV list the planner multiplies its frequency by
 Each column keeps at most `default_statistics_target` (100 by default) MCV entries and histogram buckets. If data changed a lot since the last `ANALYZE`, estimates drift and plans can go wrong. A freshly loaded table that never had an `ANALYZE` has nothing in `pg_stats`, and the planner falls back to default constants.
 
 Many people think the planner splits evenly over the values it knows. In fact for common values it uses the measured frequency, so a skewed distribution is still estimated well.
+
+The step-through figure at the end of this section does that multiplication on the lab's `tickets` table, then again with `null_frac`.
 
 ## Example
 
