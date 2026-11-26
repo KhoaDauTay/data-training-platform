@@ -12,7 +12,7 @@ import { h } from '../src/ui/dom';
 import { icon } from '../src/ui/icons';
 import { initEngine, inline, type EngineDeps } from '../src/ui/engineView';
 
-const RAW = /\be-(?:pg|mg|dy|ds|bp)-[a-z0-9]+-?\d/;
+const RAW = /\be-(?:pg|mg|dy|ds|ts|bp)-[a-z0-9]+-?\d/;
 const lang = { now: 'vi' as 'vi' | 'en' };
 const show = (text: string): HTMLElement => h('p', {}, ...inline(text));
 const titleOf = (id: string): string => {

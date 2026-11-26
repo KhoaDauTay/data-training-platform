@@ -1,0 +1,9 @@
+- id: basics
+  vi: Dữ liệu theo thời gian
+  en: Data over time
+- id: analysis
+  vi: Phân tích chuỗi thời gian
+  en: Time-series analysis
+- id: storage
+  vi: Lưu trữ và giữ dữ liệu
+  en: Storage and retention

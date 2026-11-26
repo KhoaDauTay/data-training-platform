@@ -24,7 +24,7 @@ export interface DemoBlock {
   mark?: 'error' | 'wrong' | 'fix';
 }
 
-export const RUN_LANG: Record<EngineId, readonly string[]> = { postgres: ['sql'], design: ['sql'], stack: ['sql'], mongodb: ['javascript', 'js'], dynamodb: ['json', 'partiql'] };
+export const RUN_LANG: Record<EngineId, readonly string[]> = { postgres: ['sql'], design: ['sql'], stack: ['sql'], timeseries: ['sql'], mongodb: ['javascript', 'js'], dynamodb: ['json', 'partiql'] };
 export const DEMO_SECS: readonly SectionId[] = ['example', 'pitfalls'];
 
 /** One block of section text, classified (`lang` = the fence's info string). */
