@@ -299,7 +299,7 @@ Lọc theo khách bằng `Scan`:
 {"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-02"}}}}
 ```
 
-`ScannedCount` của `Scan` là 120, của Query là 4. Engine đo `Scan` 1 RCU (read capacity unit, đơn vị đọc), Query 0.5 RCU. Luật của AWS: cộng cỡ các item đã đọc, làm tròn lên bội 4 KB, mỗi 4 KB là 1 RCU nhất quán mạnh, rồi chia đôi khi đọc nhất quán cuối. 120 item tổng chừng 7,8 KB, làm tròn lên 8 KB = 2, chia đôi = 1; 4 item của Query dưới 4 KB nên 1 ÷ 2 = 0.5. Bảng chỉ có 120 item nhỏ nên chênh lệch còn nhỏ, nhưng `Scan` lớn dần theo cỡ bảng, còn Query chỉ theo cỡ item collection.
+`ScannedCount` của `Scan` là 120, của Query là 4. Engine đo `Scan` 1 RCU (read capacity unit, đơn vị đọc), Query 0.5 RCU. Luật của AWS: cộng cỡ các item đã đọc, làm tròn lên bội 4 KB, mỗi 4 KB là 1 RCU nhất quán mạnh, rồi chia đôi khi đọc nhất quán cuối. 120 item tổng chừng 7.8 KB, làm tròn lên 8 KB = 2, chia đôi = 1; 4 item của Query dưới 4 KB nên 1 ÷ 2 = 0.5. Bảng chỉ có 120 item nhỏ nên chênh lệch còn nhỏ, nhưng `Scan` lớn dần theo cỡ bảng, còn Query chỉ theo cỡ item collection.
 
 ## Thực hành
 
