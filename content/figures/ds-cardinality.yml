@@ -1,32 +1,28 @@
-# DS-3 (tools/v39/diagram-plan.md): reading crow's foot. Lesson: e-ds-l2-01 (Ví dụ), the lesson's own lines:
-# CUSTOMER ||--o{ ORDER : places / ORDER ||--|{ ORDER_LINE : contains / EMPLOYEE |o--o{ EMPLOYEE : manages
-# Each end mark sits next to the entity it counts. The self-relationship is drawn as EMPLOYEE twice, one per role (as GA-10 does),
-# since the grammar has no self-loop. v40 R2 (E-03): the marks are drawn at the line ends (edge ends:), with a legend row of the four marks;
-# no tint. Notation: Mermaid erDiagram / crow's foot (not fetched).
+# DS-3 (tools/v39/diagram-plan.md), v42 ER mode (L690–L694): the shop model of e-ds-l2-01 (Ví dụ) drawn as entities with their
+# attribute rows; each relationship line leaves the key row and lands on the row that holds the foreign key, with a crow's-foot
+# mark at each end next to the entity it counts. EMPLOYEE manages EMPLOYEE is a loop on its own box (id → manager_id).
+# Legend row: the four marks with a minimum. Notation: crow's foot (Mermaid erDiagram's marks, drawn).
 title: { vi: "Đọc chân chim: mỗi đầu đếm một bên", en: "Reading crow's foot: each end counts one side" }
 caption:
   vi: "Dấu ở mỗi đầu đường nói phía thực thể bên cạnh nó có bao nhiêu dòng: dấu sát thực thể là tối đa (vạch: 1, chân chim: nhiều), dấu xa hơn là tối thiểu (vạch: 1, vòng: 0)."
   en: "The mark at each end says how many rows of the entity beside it take part: the mark touching the entity is the maximum (bar: 1, foot: many), the one further out the minimum (bar: 1, circle: 0)."
 alt:
-  vi: "Ba quan hệ, mỗi đầu đường có một dấu chân chim. CUSTOMER đặt ORDER: đầu phía CUSTOMER là hai vạch, đúng 1 khách; đầu phía ORDER là vòng và chân chim, 0 hoặc nhiều đơn. ORDER gồm ORDER_LINE: đầu phía ORDER là hai vạch, đúng 1; đầu phía ORDER_LINE là vạch và chân chim, 1 hoặc nhiều dòng. EMPLOYEE quản lý EMPLOYEE, cùng một bảng đóng hai vai: đầu phía người quản lý là vạch và vòng, 0 hoặc 1; đầu phía nhân viên là vòng và chân chim, 0 hoặc nhiều. Chú giải bên dưới vẽ bốn dấu: đúng 1, 0 hoặc 1, 1 hoặc nhiều, 0 hoặc nhiều."
-  en: "Three relationships, a crow's-foot mark at each line end. CUSTOMER places ORDER: the CUSTOMER end has two bars, exactly 1 customer; the ORDER end a circle and a foot, zero or more orders. ORDER contains ORDER_LINE: the ORDER end has two bars, exactly 1; the ORDER_LINE end a bar and a foot, one or more lines. EMPLOYEE manages EMPLOYEE, one table in two roles: the manager end has a bar and a circle, zero or one; the employee end a circle and a foot, zero or more. The legend below draws the four marks: exactly 1, zero or one, one or more, zero or more."
+  vi: "Mỗi đầu đường nói thực thể ngay cạnh nó có bao nhiêu dòng tham gia: dấu sát thực thể là tối đa (vạch là 1, chân chim là nhiều), dấu xa hơn là tối thiểu (vạch là 1, vòng là 0). Vì vậy một khách đặt 0..n đơn, một đơn gồm 1..n dòng, và một nhân viên có 0..1 người quản lý."
+  en: "Each line end says how many rows of the entity right beside it take part: the mark touching the entity is the maximum (bar = 1, foot = many), the one further out the minimum (bar = 1, circle = 0). So a customer places 0..n orders, an order contains 1..n lines, and an employee has 0..1 manager."
 nodes:
-  - { id: c, label: CUSTOMER }
-  - { id: o, label: ORDER }
-  - { id: o2, label: ORDER }
-  - { id: l, label: ORDER_LINE }
-  - { id: e1, label: EMPLOYEE, sub: { vi: "người quản lý", en: "manager" } }
-  - { id: e2, label: EMPLOYEE, sub: { vi: "nhân viên", en: "employee" } }
+  - { id: c, shape: entity, label: CUSTOMER, fields: [{ name: id, pk: true }, name] }
+  - { id: o, shape: entity, label: ORDER, fields: [{ name: id, pk: true }, { name: customer_id, fk: true }, ordered_at] }
+  - { id: l, shape: entity, label: ORDER_LINE, fields: [{ name: order_id, pk: true, fk: true }, { name: line_no, pk: true }, qty] }
+  - { id: e, shape: entity, label: EMPLOYEE, fields: [{ name: id, pk: true }, name, { name: manager_id, fk: true }] }
   - { id: k1, shape: key, card: one, label: { vi: "đúng 1", en: "exactly 1" } }
   - { id: k2, shape: key, card: zero-one, label: { vi: "0 hoặc 1", en: "zero or one" } }
-  - { id: k3, shape: key, card: many, label: { vi: "1 hoặc nhiều", en: "one or more" } }
+  - { id: k3, shape: key, card: one-many, label: { vi: "1 hoặc nhiều", en: "one or more" } }
   - { id: k4, shape: key, card: zero-many, label: { vi: "0 hoặc nhiều", en: "zero or more" } }
 rows:
-  - [c, o]
-  - [o2, l]
-  - [e1, e2]
+  - [c, o, l]
+  - [e]
   - [k1, k2, k3, k4]
 edges:
-  - { from: c, to: o, link: true, ends: [one, zero-many], label: { vi: "đặt", en: "places" } }
-  - { from: o2, to: l, link: true, ends: [one, many], label: { vi: "gồm", en: "contains" } }
-  - { from: e1, to: e2, link: true, ends: [zero-one, zero-many], label: { vi: "quản lý", en: "manages" } }
+  - { from: "c#0", to: "o#1", link: true, ends: [one, zero-many], label: { vi: "đặt", en: "places" } }
+  - { from: "o#0", to: "l#0", link: true, ends: [one, one-many], label: { vi: "gồm", en: "contains" } }
+  - { from: "e#0", to: "e#2", link: true, ends: [zero-one, zero-many], label: { vi: "quản lý", en: "manages" } }

@@ -69,6 +69,7 @@ const GROUPS = [
   ['pglab', /^pglabWorker-/, 150],
   ['pgext', /^(pageinspect|pg_visibility|amcheck|pg_walinspect|pg_buffercache|pg_freespacemap|bloom|btree_gin|btree_gist|pg_trgm|pg_stat_statements|ltree|cube|earthdistance)\.tar-.*\.gz$/, 160], // L248: + cube, earthdistance (L2 geo lesson)
   ['pgcrypto', /^pgcrypto\.tar-.*\.gz$/, 1160], // bundles OpenSSL: fetched only by a lab that names pgcrypto
+  ['postgis', /^postgis\.tar-.*\.gz$/, 20500], // L711: @electric-sql/pglite-postgis 0.2.16 (PostGIS + GEOS/PROJ/GDAL), ~20 MB; fetched only by a lab that names it, never precached
   ['why', /^(why|whyView)-/, 6], // V22-B (L206): "Vì sao?" under a result row: src/ui/whyView.ts (VI/EN inside) + src/viz/why.ts (worker, beside the steps chunk), lazy on the first click
   ['mapteach', /^mapTeach-/, 9], // L311 + L304: label placement (~0.6 KB) + beginner skill gate (~0.3 KB); V22-A (L203): src/ui/mapTeach.ts + src/viz/geo.ts + src/mapQueries.ts (result map: Map tab and Map page questions, VI/EN inside), lazy on the first Map page or Map tab
   ['engineVizNosql', /^engineVizNosql-/, 15], // ENG-VIZ (L236): MongoDB + DynamoDB diagrams (src/engine/viz/engineVizNosql.ts), lazy from engineViz's loadViz()
@@ -77,7 +78,7 @@ const GROUPS = [
   ['engineViz', /^engineViz(Core|PlanJson)?-/, 30],
   // v39 F1 (L601): the figure builder (src/engine/viz/figure.ts + the Nunito glyph table glyphs.ts; it shares engineVizCore with
   // engineViz), lazy on the first lesson with `figures:`; and one chunk per spec (content/figures/<name>.yml as JSON), per file.
-  ['engineFigure', /^figure-/, 11], // v41 R3 (L679): 10 → 11 for the stacked-layout routing (shared slots, lanes beside stacked rows, group edge ends, phone rows, lane labels); v41 (L669a): 9 → 10 after merging v40 R2 (cell anchors, crow's feet) with v41 row arrows; v40 (L643): 7 → 9 for groups, table/doc, side lanes, elbow labels, cell highlight, tip spreading
+  ['engineFigure', /^figure-/, 12], // v42 (L697): 11 → 12 for ER mode (entity, row-anchored relationship links, self loop, edge patches per step); v41 R3 (L679): 10 → 11 for the stacked-layout routing (shared slots, lanes beside stacked rows, group edge ends, phone rows, lane labels); v41 (L669a): 9 → 10 after merging v40 R2 (cell anchors, crow's feet) with v41 row arrows; v40 (L643): 7 → 9 for groups, table/doc, side lanes, elbow labels, cell highlight, tip spreading
   ['figureSpec', /^fig-[a-z0-9-]+-[\w-]{8}\.js$/, 2, 'each'], // ENG-VIZ (L235/L236): diagram engine (engineVizCore-*, shared with the NoSQL chunk; engineVizPlanJson-*, EXPLAIN JSON helpers shared with engineVizPgFlow, v23 L264) + Postgres diagrams (engineViz-*), lazy; built as a second entry until ENG-CORE imports it
   ['ics', /^ics-/, 2], // V22-C (L209): src/ics.ts, the weekly reminder file, lazy on "Thêm nhắc vào lịch": 0.7 KB gz
   // L248: the lab runtimes' main-thread side, lazy on the first lab of an engine: the three LabRunner adapters (runner-*),

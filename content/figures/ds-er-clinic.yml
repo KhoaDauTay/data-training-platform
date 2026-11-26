@@ -1,0 +1,24 @@
+# v42 ER mode (L694): the clinic model of e-ds-l2-04 (Ví dụ), the lab's own tables (specialties, doctors, patients,
+# appointments; the lab's columns). Each line leaves the key row and lands on the foreign-key row. Phones stack the four
+# entities so every relationship joins neighbouring rows (no lane): specialty, doctor, appointment, patient.
+title: { vi: "Sơ đồ ER phòng khám", en: "The clinic's ER diagram" }
+caption:
+  vi: "Lịch hẹn là một thực thể có khóa riêng, nối bác sĩ với bệnh nhân; mỗi đường đi từ khóa chính tới cột khóa ngoại trỏ về nó."
+  en: "An appointment is an entity with its own key, linking a doctor and a patient; each line runs from a primary key to the foreign-key column that points at it."
+alt:
+  vi: "Một bác sĩ khám nhiều bệnh nhân và ngược lại, nên lịch hẹn đứng giữa thành thực thể riêng: mỗi lịch hẹn có đúng một bác sĩ và một bệnh nhân, còn mỗi bên có 0..n lịch hẹn. Mỗi bác sĩ thuộc đúng một chuyên khoa, nên khóa ngoại specialty_id nằm ở DOCTOR, phía nhiều."
+  en: "A doctor sees many patients and a patient sees many doctors, so the appointment stands between them as its own entity: each appointment has exactly one doctor and one patient, and each side has 0..n appointments. Each doctor belongs to exactly one specialty, so the foreign key specialty_id sits in DOCTOR, the many side."
+nodes:
+  - { id: s, shape: entity, label: SPECIALTY, fields: [{ name: id, pk: true }, name] }
+  - { id: d, shape: entity, label: DOCTOR, fields: [{ name: id, pk: true }, full_name, { name: specialty_id, fk: true }] }
+  - { id: p, shape: entity, label: PATIENT, fields: [{ name: id, pk: true }, full_name, phone] }
+  - { id: a, shape: entity, label: APPOINTMENT, fields: [{ name: id, pk: true }, { name: patient_id, fk: true }, { name: doctor_id, fk: true }, starts_at] }
+rows:
+  - [s, d]
+  - [p, a]
+phone: { rows: [[s], [d], [a], [p]] }
+align: true
+edges:
+  - { from: "s#0", to: "d#2", link: true, ends: [one, zero-many], label: { vi: "có", en: "has" } }
+  - { from: "d#0", to: "a#2", link: true, ends: [one, zero-many], label: { vi: "khám", en: "sees" } }
+  - { from: "p#0", to: "a#1", link: true, ends: [one, zero-many], label: { vi: "đặt", en: "books" } }

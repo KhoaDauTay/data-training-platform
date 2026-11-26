@@ -14,6 +14,7 @@ import { pg_trgm } from '@electric-sql/pglite/contrib/pg_trgm';
 import { pg_visibility } from '@electric-sql/pglite/contrib/pg_visibility';
 import { pg_walinspect } from '@electric-sql/pglite/contrib/pg_walinspect';
 import { pgcrypto } from '@electric-sql/pglite/contrib/pgcrypto';
+import { postgis } from '@electric-sql/pglite-postgis';
 import { sqlErrorInfo } from '../../db/run';
 import type { ScriptResult, LabScript, PgExtension, StepResult } from './script';
 import { runCheck } from './check';
@@ -27,6 +28,9 @@ import { splitSql } from './split';
 export const EXTENSIONS: Record<PgExtension, Extension> = {
   pageinspect, pg_visibility, amcheck, pg_walinspect, pg_buffercache, pg_freespacemap,
   bloom, btree_gin, btree_gist, pg_trgm, pg_stat_statements, ltree, pgcrypto, cube, earthdistance,
+  // L711: PostGIS (@electric-sql/pglite-postgis 0.2.16, pinned to PGlite 0.5.16). Its ~20 MB tarball is fetched only by a
+  // lab that names it and is never precached.
+  postgis,
 };
 
 /** Rows kept per step; lab output is catalog-sized, the UI shows less. */
