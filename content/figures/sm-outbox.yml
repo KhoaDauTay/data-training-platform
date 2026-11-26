@@ -1,0 +1,27 @@
+# v47 SM: the outbox pattern, one transaction then a relay. Lesson: e-sm-l2-03 (Ý chính).
+# Data = the lab: shipments and outbox written by one WITH statement; the relay sends outbox rows keyed by aggregateid.
+# Source: https://debezium.io/documentation/reference/stable/transformations/outbox-event-router.html
+title: { vi: "Đường đi của outbox", en: "The outbox path" }
+caption:
+  vi: "Thay đổi và dòng outbox commit cùng nhau; relay đọc outbox theo thứ tự và gửi lên topic với khóa là aggregateid."
+  en: "The change and the outbox row commit together; the relay reads the outbox in order and sends to the topic keyed by aggregateid."
+alt:
+  vi: "Dịch vụ ghi thay đổi của lô hàng và sự kiện vào hai bảng trong cùng một transaction, nên không bao giờ có cái này mà thiếu cái kia. Một relay đọc bảng outbox rồi gửi sự kiện lên Kafka; nó có thể gửi lại sau khi sập, nên consumer vẫn phải bỏ trùng."
+  en: "The service writes the shipment change and the event into two tables in the same transaction, so one never exists without the other. A relay reads the outbox table and sends the events to Kafka; it may resend after a crash, so consumers still have to dedupe."
+groups:
+  - { id: tx, label: { vi: "một transaction", en: "one transaction" }, nodes: [ship, ob] }
+nodes:
+  - { id: svc, label: { vi: "dịch vụ giao vận", en: "operations service" } }
+  - { id: ship, shape: table, mono: true, label: shipments, sub: "SHP-102 delivered" }
+  - { id: ob, shape: table, mono: true, label: outbox, sub: "StatusChanged" }
+  - { id: relay, label: relay, sub: { vi: "hoặc Debezium", en: "or Debezium" }, tone: live }
+  - { id: topic, label: { vi: "topic Kafka", en: "Kafka topic" }, sub: "key = aggregateid", tone: new }
+rows:
+  - [svc]
+  - [ship, ob]
+  - [relay]
+  - [topic]
+edges:
+  - { from: svc, to: tx }
+  - { from: ob, to: relay }
+  - { from: relay, to: topic }

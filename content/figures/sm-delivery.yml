@@ -1,0 +1,25 @@
+# v47 SM: three delivery guarantees and what a crash leaves behind. Lesson: e-sm-l2-01 (Ý chính).
+# Data = the lab's deliveries: at_most_once lost offset 3; at_least_once ran offsets 2 and 3 twice.
+# Sources: https://kafka.apache.org/41/design/design/ (message delivery semantics) ; https://debezium.io/documentation/faq/
+title: { vi: "Lưu vị trí lúc nào?", en: "When is the position saved?" }
+caption:
+  vi: "Lưu trước khi xử lý thì có thể mất; lưu sau thì có thể trùng; lưu sau cộng một khóa bỏ trùng thì mỗi kết quả chỉ một lần."
+  en: "Saving before processing can lose events; saving after can repeat them; saving after plus a dedupe key gives each result once."
+alt:
+  vi: "Khi consumer sập giữa hai việc xử lý và lưu vị trí, thứ tự của hai việc quyết định sự kiện bị mất hay bị lặp. Kết quả: at-most-once mất offset 3, at-least-once xử lý offset 2 và 3 hai lần, còn at-least-once có consumer idempotent cho mỗi offset một kết quả."
+  en: "When a consumer crashes between processing and saving its position, the order of the two decides whether events are lost or repeated. Result: at-most-once loses offset 3, at-least-once processes offsets 2 and 3 twice, and at-least-once with an idempotent consumer gives one result per offset."
+nodes:
+  - { id: amo, mono: true, label: at-most-once, sub: { vi: "lưu trước", en: "save first" } }
+  - { id: alo, mono: true, label: at-least-once, sub: { vi: "lưu sau", en: "save after" } }
+  - { id: eo, mono: true, label: effectively-once, sub: { vi: "+ idempotent", en: "+ idempotence" }, tone: live }
+  - { id: r1, label: { vi: "offset 3 bị mất", en: "offset 3 lost" }, tone: warm }
+  - { id: r2, label: { vi: "2 và 3 hai lần", en: "2 and 3 twice" }, tone: warm }
+  - { id: r3, label: { vi: "mỗi offset một lần", en: "each offset once" }, tone: new }
+rows:
+  - [amo, r1]
+  - [alo, r2]
+  - [eo, r3]
+edges:
+  - { from: amo, to: r1 }
+  - { from: alo, to: r2 }
+  - { from: eo, to: r3 }

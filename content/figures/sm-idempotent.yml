@@ -1,0 +1,25 @@
+# v47 SM: a five-row batch passes a dedupe-key gate and becomes three fee rows. Lesson: e-sm-l2-02 (Ý chính).
+# Data = the lab's inbox_batch (ev-4 twice, ev-2 already processed, ev-3 and ev-5 new) and processed_events.
+# Source: https://www.postgresql.org/docs/18/sql-insert.html#SQL-ON-CONFLICT
+title: { vi: "Cửa chặn bỏ trùng", en: "The dedupe gate" }
+caption:
+  vi: "Chèn event_id vào processed_events với ON CONFLICT DO NOTHING trả về đúng các sự kiện mới; chỉ chúng được ghi phí."
+  en: "Inserting event_id into processed_events with ON CONFLICT DO NOTHING returns exactly the new events; only they get a fee."
+alt:
+  vi: "Lô có năm dòng nhưng chỉ ba sự kiện chưa từng được xử lý, vì ev-4 đến hai lần và ev-2 đã xử lý trước lần sập. Bảng khóa bỏ trùng để lọt đúng ba khóa mới, nên mỗi sự kiện chỉ bị tính phí một lần. Kết quả: charges thêm ba dòng, cho ev-3, ev-4 và ev-5."
+  en: "The batch has five rows but only three events never processed, because ev-4 arrives twice and ev-2 was processed before the crash. The dedupe-key table lets exactly the three new keys through, so each event is charged once. Result: charges gets three rows, for ev-3, ev-4 and ev-5."
+groups:
+  - { id: batch, label: "inbox_batch", nodes: [b1, b2, b3] }
+nodes:
+  - { id: b1, mono: true, label: ev-4, sub: { vi: "hai bản", en: "two copies" }, tone: warm }
+  - { id: b2, mono: true, label: ev-2, sub: { vi: "đã xử lý", en: "processed" }, tone: ghost }
+  - { id: b3, mono: true, label: "ev-3, ev-5", sub: { vi: "mới", en: "new" } }
+  - { id: gate, shape: table, mono: true, label: processed_events, sub: "ON CONFLICT", tone: live }
+  - { id: out, shape: table, mono: true, label: charges, sub: { vi: "thêm 3 dòng", en: "3 more rows" }, tone: new }
+rows:
+  - [b1, b2, b3]
+  - [gate]
+  - [out]
+edges:
+  - { from: batch, to: gate }
+  - { from: gate, to: out }

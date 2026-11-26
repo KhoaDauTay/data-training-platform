@@ -44,7 +44,14 @@ const NEED: Partial<Record<EngineLesson['kind'], SectionId[]>> = {
 const OFFICIAL = /^https:\/\/(kafka\.apache\.org|debezium\.io|www\.postgresql\.org)\//;
 /** One plausible wrong answer per lab step (the non-idempotent, naive or order-blind version): it must be refused. */
 const WRONG: Record<string, string[]> = {
-  'e-sm-l1-03#1': ["SELECT hashtext('SHP-105') % 3 AS partition_id"],
+  'e-sm-l2-01#1': ['SELECT consumer, msg_offset, count(*) AS times FROM deliveries GROUP BY consumer, msg_offset', 'SELECT min(consumer) AS consumer, msg_offset, count(*) AS times FROM deliveries GROUP BY msg_offset HAVING count(*) > 1'],
+  'e-sm-l2-01#2': ["SELECT e.msg_offset FROM events e LEFT JOIN deliveries d ON d.msg_offset = e.msg_offset WHERE d.consumer = 'at_most_once'"],
+  'e-sm-l2-02#1': ['SELECT b.event_id FROM inbox_batch b WHERE NOT EXISTS (SELECT 1 FROM processed_events p WHERE p.event_id = b.event_id)', 'SELECT DISTINCT event_id FROM inbox_batch'],
+  'e-sm-l2-02#2': ['INSERT INTO charges (event_id, shipment_id, fee_vnd) SELECT event_id, shipment_id, fee_vnd FROM inbox_batch RETURNING event_id'],
+  'e-sm-l2-02#3': ['INSERT INTO shipment_status AS s SELECT DISTINCT ON (shipment_id) shipment_id, status, version FROM inbox_batch ORDER BY shipment_id, version DESC ON CONFLICT (shipment_id) DO UPDATE SET status = EXCLUDED.status, version = EXCLUDED.version RETURNING shipment_id, status', 'INSERT INTO shipment_status AS s SELECT DISTINCT ON (shipment_id) shipment_id, status, version FROM inbox_batch ORDER BY shipment_id, seq DESC ON CONFLICT (shipment_id) DO UPDATE SET status = EXCLUDED.status, version = EXCLUDED.version RETURNING shipment_id, status'],
+  'e-sm-l2-03#1': ["UPDATE shipments SET status = 'delivered' WHERE shipment_id = 'SHP-102' RETURNING shipment_id, status"],
+  'e-sm-l2-03#2': ["SELECT id, aggregateid AS message_key, type, payload->>'status' AS status FROM outbox ORDER BY id"],
+  'e-sm-l2-03#3': ['UPDATE outbox SET published = true WHERE id = 3 RETURNING id'],  'e-sm-l1-03#1': ["SELECT hashtext('SHP-105') % 3 AS partition_id"],
   'e-sm-l1-03#2': ['SELECT shipment_id, count(partition_id) AS partitions FROM topic_log GROUP BY shipment_id'],
   'e-sm-l1-03#3': ["SELECT c.partition_id, (SELECT max(msg_offset) + 1 FROM topic_log) - c.next_offset AS lag FROM consumer_offsets c WHERE c.group_id = 'tracking'"],
   'e-sm-l1-04#1': ['SELECT DISTINCT ON (shipment_id) msg_offset, shipment_id, status FROM status_log ORDER BY shipment_id, msg_offset'],
