@@ -88,8 +88,9 @@ const cellText = (n: FigNode, v: Bi, lang: Lang): string => {
   const s = tr(v, lang);
   return [...s].length > MAX_CH ? fail(`${n.id}: ô "${s}" > 18 ký tự`) : s;
 };
-const titleLines = (n: FigNode, lang: Lang, k: 'label' | 'sub'): Line[] =>
-  n[k] === undefined ? [] : wrap(tr(n[k], lang)).map((s) => ({ s, size: k === 'label' ? LS : SS, b: k === 'label', mono: false }));
+/** A grid's or bars' title and sub lines (R1 E14: one line up to NOTE_CH on a wide figure, like a note). */
+const titleLines = (n: FigNode, lang: Lang, k: 'label' | 'sub', wide = false): Line[] =>
+  n[k] === undefined ? [] : wrap(tr(n[k], lang), wide ? NOTE_CH : MAX_CH).map((s) => ({ s, size: k === 'label' ? LS : SS, b: k === 'label', mono: false }));
 /** Column widths of a grid (head bold, cells regular or mono). */
 function gridCols(n: FigNode, lang: Lang): number[] {
   const rows = [...(n.head ? [n.head] : []), ...(n.cells ?? [])];
@@ -108,7 +109,8 @@ function barsDims(n: FigNode, lang: Lang, room: number): { lw: number; u: number
 function size(n: FigNode, lang: Lang, room: number): Sized {
   const shape = n.shape ?? 'box';
   if (shape === 'grid' || shape === 'bars') {
-    const t = titleLines(n, lang, 'label'), sb = titleLines(n, lang, 'sub');
+    const wide = room + 2 * MARGIN >= WIDE;
+    const t = titleLines(n, lang, 'label', wide), sb = titleLines(n, lang, 'sub', wide);
     let inner: Sized;
     if (shape === 'grid') {
       const cols = gridCols(n, lang);
@@ -227,7 +229,8 @@ export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): 
     const xs: number[] = [];
     if (sl) {
       let x = Math.round((W - sl.cols.reduce((a, b) => a + b, 0) - sl.gaps.reduce((a, b) => a + b, 0)) / 2);
-      r.forEach((id, c) => { xs.push(x + Math.round((sl.cols[c] - dims.get(id)!.w) / 2)); x += sl.cols[c] + (sl.gaps[c] ?? 0); });
+      // a node narrower than its column hugs the gap toward its neighbours (first column right, last left), so arrows stay short
+      r.forEach((id, c) => { const room = sl.cols[c] - dims.get(id)!.w; xs.push(x + (c === 0 ? room : c === r.length - 1 ? 0 : Math.round(room / 2))); x += sl.cols[c] + (sl.gaps[c] ?? 0); });
     } else {
       const g = r.map((id, j) => (j ? gapOf(r[j - 1], id) : 0));
       let spare = room - r.reduce((a, id, j) => a + dims.get(id)!.w + g[j], 0);
@@ -253,17 +256,20 @@ export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): 
 
   // routes: decided once from the geometry (the same for every frame)
   const lanes = new Map<number, number>();
-  // R1 E10: arrows entering one side of a box from the next row land spread over it (⅓ ⅔ …), sorted by where they come from
+  // R1 E10: ≥ 2 arrows entering one side of a box from the next row never land side by side: straight ones spread over it
+  // (⅓ ⅔ …, sorted by where they come from) when each lands above its own source, else they join one bus with one arrowhead
   const side = (e: FigEdge): string | undefined => {
     const ra = rowOf.get(base(e.from))!, rb = rowOf.get(base(e.to))!;
     return e.link || Math.abs(ra - rb) !== 1 ? undefined : `${base(e.to)}|${rb > ra}`;
   };
   const cx = (e: FigEdge): number => { const a = at.get(base(e.from))!; return a.x + a.w / 2; };
-  const land = (e: FigEdge): number | undefined => {
+  const spread = (e: FigEdge, g: FigEdge[]): number => { const b = at.get(base(e.to))!; return Math.round(b.x + (b.w * (g.indexOf(e) + 1)) / (g.length + 1)); };
+  const fits = (e: FigEdge, x: number): boolean => { const a = at.get(base(e.from))!; return x >= a.x + 12 && x <= a.x + a.w - 12; };
+  /** undefined = alone on its side; a number = its straight landing x; 'bus' = it joins the bus */
+  const land = (e: FigEdge): number | 'bus' | undefined => {
     const g = edges.filter((f) => side(f) !== undefined && side(f) === side(e)).sort((p, q) => cx(p) - cx(q));
     if (g.length < 2) return undefined;
-    const b = at.get(base(e.to))!;
-    return Math.round(b.x + (b.w * (g.indexOf(e) + 1)) / (g.length + 1));
+    return g.every((f) => fits(f, spread(f, g))) ? spread(e, g) : 'bus';
   };
   const routes = edges.map((e) => {
     const a = at.get(base(e.from)) ?? fail(`edge: không có node "${e.from}"`);
@@ -290,18 +296,18 @@ export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): 
     const y2 = (x: number, from: number): number => stopAt(x, from, x, b.y + b.h / 2, STROKE, b)[1];
     const lo = Math.max(a.x, b.x), hi = Math.min(a.x + a.w, b.x + b.w);
     const L = land(e);
-    if (L === undefined ? hi - lo >= 24 : L >= a.x + 12 && L <= a.x + a.w - 12) {
-      const x = L ?? Math.round((lo + hi) / 2);
+    if (L === undefined ? hi - lo >= 24 : L !== 'bus') {
+      const x = typeof L === 'number' ? L : Math.round((lo + hi) / 2);
       const ye = y2(x, y1);
       return { e, d: `M${x} ${y1} L${x} ${ye}`, lab: label ? { x: x + 6, y: (y1 + ye) / 2, a: undefined, s: label } : undefined };
     }
     if (label) fail(`${e.from}→${e.to}: nhãn trên đường gấp khúc chưa hỗ trợ`);
     const gap = Math.min(ra, rb);
-    const k = lanes.get(gap) ?? 0;
-    lanes.set(gap, k + 1);
+    const k = L === 'bus' ? 0 : lanes.get(gap) ?? 0; // a bus shares the gap's middle lane and its one arrowhead
+    lanes.set(gap, L === 'bus' ? Math.max(1, lanes.get(gap) ?? 0) : k + 1); // ponytail: a lone elbow placed before a bus in the same gap may share its lane
     const ym = Math.round((bands[gap][1] + bands[gap + 1][0]) / 2) + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * 8;
-    // the elbow lands on the part of b nearest the source, so two arrows into one box never share a tip
-    const ax = Math.round(a.x + a.w / 2), bx = L ?? Math.round(Math.min(b.x + b.w - 12, Math.max(b.x + 12, ax)));
+    // a lone elbow lands on the part of b nearest the source; a bus lands in b's middle
+    const ax = Math.round(a.x + a.w / 2), bx = L === 'bus' ? Math.round(b.x + b.w / 2) : Math.round(Math.min(b.x + b.w - 12, Math.max(b.x + 12, ax)));
     return { e, d: `M${ax} ${y1} L${ax} ${ym} L${bx} ${ym} L${bx} ${y2(bx, ym)}` };
   });
   /** A link end's y: a grid row's middle (`grid#2`), else the node's middle. */
@@ -309,7 +315,7 @@ export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): 
     const [id, row] = end.split('#');
     if (row === undefined) return Math.round(r.y + r.h / 2);
     const n = byId.get(id)!;
-    return Math.round(r.y + tall(titleLines(n, lang, 'label')) + (n.label === undefined ? 0 : 4) + ((n.head ? 1 : 0) + Number(row) + 0.5) * ROW_H);
+    return Math.round(r.y + tall(titleLines(n, lang, 'label', W >= WIDE)) + (n.label === undefined ? 0 : 4) + ((n.head ? 1 : 0) + Number(row) + 0.5) * ROW_H);
   }
 
   /** data-from/data-to name a box the checker can find: a box or key end (a grid or bars end has no single rect, the checker finds its nearest cell). */
@@ -354,7 +360,7 @@ function draw(n: FigNode, r: Rect, lang: Lang, wide = false): Shape[] {
   }
   if (shape === 'note') return lines(`${k}.t`, boxLines(n, lang, wide), r.x + r.w / 2, r.y, { ink: 'ink' });
   const out: Shape[] = [];
-  const t = titleLines(n, lang, 'label'), sb = titleLines(n, lang, 'sub');
+  const t = titleLines(n, lang, 'label', wide), sb = titleLines(n, lang, 'sub', wide);
   out.push(...lines(`${k}.h`, t, r.x + r.w / 2, r.y, { ink: 'ink' }));
   let y = r.y + tall(t) + (t.length ? 4 : 0);
   if (shape === 'grid') {
@@ -434,15 +440,17 @@ export function altText(spec: FigSpec, lang: Lang, variant?: string, generated =
   };
   const parts = (ns: FigNode[]): string => ns.map((n) => said(n, lang)).filter(Boolean).join('; ');
   const edges = (spec.edges ?? []).map((e) => `${end(e.from)} ${e.link ? w.link : w.arrow} ${end(e.to)}${e.label ? ` (${tr(e.label, lang)})` : ''}${e.dash ? ` (${w.dashed})` : ''}`);
-  const first = spec.alt && !generated ? tr(spec.alt, lang)
+  // the spec's own alt describes the plain figure (step 1); a variant that draws another step alone is generated
+  const first = spec.alt && !generated && v?.step === undefined ? tr(spec.alt, lang)
     : `${w.has}: ${parts(ps[0].nodes.filter((n) => ps[0].show.has(n.id)))}.${edges.length ? ` ${cap(edges.join('; '))}.` : ''}`;
-  if (ps.length < 2 && (v?.step === undefined || generated)) return [first];
-  const stepAlt = (i: number): string | undefined => (generated ? undefined : spec.steps?.[v?.step ?? i]?.alt && tr(spec.steps[v?.step ?? i].alt, lang));
-  return [first, ...ps.map((p, i) => {
-    const prev = ps[i - 1];
-    const changed = p.nodes.filter((n) => p.show.has(n.id) && (!prev || !prev.show.has(n.id) || JSON.stringify(n) !== JSON.stringify(prev.nodes.find((m) => m.id === n.id))));
-    const own = stepAlt(i);
-    return `${ps.length > 1 ? `${w.step} ${i + 1}: ` : ''}${p.say}${own ? ` ${own}` : changed.length && i ? ` ${w.now}: ${parts(changed)}.` : ''}`;
+  if (ps.length < 2) return [first];
+  const own1 = !generated && spec.steps?.[0]?.alt;
+  // every later step in words (its sentence is already in the step list above the alt): its own alt, else what changed
+  return [own1 ? `${first} ${w.step} 1: ${tr(own1, lang)}` : first, ...ps.slice(1).map((p, j) => {
+    const prev = ps[j];
+    const own = !generated && spec.steps?.[j + 1]?.alt;
+    const changed = p.nodes.filter((n) => p.show.has(n.id) && (!prev.show.has(n.id) || JSON.stringify(n) !== JSON.stringify(prev.nodes.find((m) => m.id === n.id))));
+    return `${w.step} ${j + 2}: ${own ? tr(own, lang) : `${w.now}: ${parts(changed)}.`}`;
   })];
 }
 // ── mounting ───────────────────────────────────────────────────────────────────────────────────────────────────

@@ -125,10 +125,11 @@ describe.each(Object.keys(specs))('v39 figure %s', (name) => {
           expect(analyze(model(f, d.w, d.h), W), at).toEqual([]);
           // builder promises beyond the checker's thresholds
           const notes = new Set(spec.nodes.filter((n) => n.shape === 'note').map((n) => n.id));
+          const titled = new Set(spec.nodes.filter((n) => n.shape === 'grid' || n.shape === 'bars').map((n) => n.id));
           for (const n of f.nodes) if (n.t === 't') {
             expect(n.size ?? 0, `${at}: "${n.s}"`).toBeGreaterThanOrEqual(13);
-            // R1 E14: a note keeps one line up to NOTE_CH characters on a wide figure
-            const note = W >= WIDE && notes.has(/^n:(.+)\.t\d+$/.exec(n.k)?.[1] ?? '');
+            // R1 E14: a note, and a table's or chart's title and sub, keep one line up to NOTE_CH characters on a wide figure
+            const note = W >= WIDE && (notes.has(/^n:(.+)\.t\d+$/.exec(n.k)?.[1] ?? '') || titled.has(/^n:(.+)\.[hs]\d+$/.exec(n.k)?.[1] ?? ''));
             expect([...n.s].length, `${at}: "${n.s}"`).toBeLessThanOrEqual(note ? NOTE_CH : 18);
           }
           const ex = [...extents(f).entries()];
@@ -154,10 +155,11 @@ describe.each(Object.keys(specs))('v39 figure %s', (name) => {
           }
           // tokens only: every tone and ink the builder writes maps to an --eng-* alias in the core
           for (const n of f.nodes) expect(JSON.stringify(n)).not.toMatch(/#[0-9a-f]{3,6}\b|rgb\(|var\(--(?!eng-)/i);
-          // R1 E10: two arrows into one box land ≥ 16 apart (never a double arrowhead)
+          // R1 E10: two arrows into one box land ≥ 16 apart or share one tip (a bus), never a double arrowhead
           for (let p = 0; p < m.arrows.length; p++) for (let q = p + 1; q < m.arrows.length; q++) {
             const [A, B] = [m.arrows[p], m.arrows[q]];
-            if (A.to && A.to === B.to) expect(Math.hypot(A.tip[0] - B.tip[0], A.tip[1] - B.tip[1]), `${at}: ${A.k} / ${B.k} tips`).toBeGreaterThanOrEqual(16);
+            const d = Math.hypot(A.tip[0] - B.tip[0], A.tip[1] - B.tip[1]);
+            if (A.to && A.to === B.to) expect(d < 0.5 || d >= 16, `${at}: ${A.k} / ${B.k} tips ${d}`).toBe(true);
           }
           // R1 E4/E5 (L626): linked tables side by side are linkGap(lines) apart, or the row already fills the room
           const xs = extents(f);
@@ -196,7 +198,8 @@ describe.each(Object.keys(specs))('v39 figure %s', (name) => {
           expect(gen, `${lang} ${n.id}`).toContain(`${tr(n.head[1], lang)}: ${tr(n.cells[0][1], lang)}`);
         const verbs = (gen.match(/trỏ tới|points to|nối với|is linked to/g) ?? []).length;
         if (!shown) expect(verbs).toBeGreaterThanOrEqual((spec.edges ?? []).length);
-        if (!variant && (spec.steps?.length ?? 0) > 1) spec.steps!.forEach((st) => expect(gen).toContain(tr(st.say, lang)));
+        // every later step is described (its sentence is in the step list beside the alt)
+        if (!variant && (spec.steps?.length ?? 0) > 1) spec.steps!.slice(1).forEach((_, i) => expect(gen).toContain(`${lang === 'vi' ? 'Bước' : 'Step'} ${i + 2}: `));
         const hand = altText(spec, lang, variant).join(' ');
         expect(hand.trim(), lang).not.toBe('');
         expect(hand).not.toMatch(/\((hộp|bảng|box|table)\)/);

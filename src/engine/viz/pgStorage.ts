@@ -225,7 +225,7 @@ define<VacuumModel>('pg-vacuum-flow', { pages: ['ldld', 'llln', 'ddll'] }, (m, t
   const draw = (s: St): Shape[] => {
     // v39 R1 E25 (L629): the map labels sit 4 units above their boxes; a legend spells out AV/AF and the dashed (off) state
     const out: Shape[] = [text('vmh', 10, 182, tr('Visibility map', 'Visibility map'), { size: SM, ink: 'muted' }), text('fsmh', 10, 232, tr('Free space map', 'Free space map'), { size: SM, ink: 'muted' }),
-      text('lg1', 10, 274, 'AV = all-visible · AF = all-frozen', { size: SM, ink: 'muted' }), text('lg2', 10, 292, tr('nét đứt = bit chưa bật', 'dashed = bit not set'), { size: SM, ink: 'muted' })];
+      text('lg1', 10, 274, 'AV = all-visible · AF = all-frozen', { size: SM, ink: 'muted' }), text('lg2', 10, 292, tr('AV/AF nét đứt = bit chưa bật', 'dashed AV/AF = bit not set'), { size: SM, ink: 'muted' })];
     pages.forEach((p, i) => {
       const x = px(i);
       out.push({ k: `pg${i}`, t: 'r', x, y: 28, w: PW, h: 136, tone: 'plain' }, text(`pgt${i}`, x + 6, 40, tr(`trang ${i}`, `page ${i}`), { size: SM, b: true }));
