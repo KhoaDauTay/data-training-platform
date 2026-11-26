@@ -106,7 +106,9 @@ lab:
       after: |
         SELECT count(*) AS hours,
           max(hour) AS newest,
-          sum(readings) AS readings
+          sum(readings) AS readings,
+          sum(sum_c) AS sum_c,
+          max(max_c) AS max_c
         FROM temp_hourly
       hint:
         vi: "`INSERT INTO temp_hourly SELECT ... WHERE ts >= '2026-10-31 00:00+00' GROUP BY 1, 2 ON CONFLICT (sensor_id, hour) DO UPDATE SET ...`."

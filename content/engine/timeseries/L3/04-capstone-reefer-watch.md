@@ -10,8 +10,8 @@ runtime: browser
 minutes: 35
 figures: [{ name: ts-reefer-watch, at: idea }]
 objectives:
-  - vi: Ghép các kỹ năng của khóa vào một ca trực thật trên 34.330 số đo nhiệt độ của 12 container lạnh.
-    en: Combine the course's skills in a real duty shift over 34,330 temperature readings from 12 reefers.
+  - vi: Ghép các kỹ năng của khóa vào một ca trực thật trên 28.570 số đo nhiệt độ của 10 container lạnh.
+    en: Combine the course's skills in a real duty shift over 28,570 temperature readings from 10 reefers.
   - vi: Tìm container im lặng, số phút vượt ngưỡng và từng đợt vượt ngưỡng, với câu vừa đúng vừa nhanh.
     en: Find silent containers, minutes above the threshold and each excursion episode, with queries both right and fast.
   - vi: Dựng bảng tổng hợp theo giờ để báo cáo khỏi đọc lại số đo thô.
@@ -31,7 +31,7 @@ lab:
     SELECT 'CQRU' || (2000 + n),
       CASE WHEN n % 3 = 0 THEN 2
         ELSE -18 END
-    FROM generate_series(1, 12) n;
+    FROM generate_series(1, 10) n;
     CREATE TABLE reefer_temps (
       container_id text NOT NULL,
       ts timestamptz NOT NULL,
@@ -46,7 +46,7 @@ lab:
         + CASE WHEN n = 4 AND (m BETWEEN 2280
             AND 2319 OR m BETWEEN 2400
             AND 2409) THEN 5 ELSE 0 END
-    FROM generate_series(1, 12) n
+    FROM generate_series(1, 10) n
     JOIN reefers r
       ON r.container_id = 'CQRU' || (2000 + n),
       generate_series(0, 2879) m
@@ -193,7 +193,7 @@ quiz:
 ---
 ## Mở bài
 
-Cảng Tiên Sa có 12 container lạnh trên bãi, mỗi cái gửi nhiệt độ mỗi phút: 34.330 số đo trong hai ngày. Ca trực của bạn bắt đầu lúc 00:00 (UTC) ngày 31/10, và trưởng ca cần năm câu trả lời trước khi bàn giao.
+Cảng Tiên Sa có 10 container lạnh trên bãi, mỗi cái gửi nhiệt độ mỗi phút: 28.570 số đo trong hai ngày. Ca trực của bạn bắt đầu lúc 00:00 (UTC) ngày 31/10, và trưởng ca cần năm câu trả lời trước khi bàn giao.
 
 ## Ý chính
 
@@ -201,7 +201,7 @@ Cảng Tiên Sa có 12 container lạnh trên bãi, mỗi cái gửi nhiệt đ�
 
 **Năm việc, năm kỹ năng.** Màn hình trực cần số mới nhất của từng container (`LATERAL` + index, bài `e-ts-l1-05`). Container im lặng là container có số mới nhất quá cũ. Phút vượt ngưỡng là một phép nối với `reefers` rồi đếm. Từng đợt dùng đảo và khoảng trống (bài `e-ts-l2-04`). Bảng theo giờ là một materialized view lưu tổng và số đếm (bài `e-ts-l3-01`).
 
-**Đúng và nhanh.** Bước đầu chấm cả tốc độ: `DISTINCT ON` cho đúng dòng nhưng phải đọc và sắp cả 34.330 dòng, còn `LATERAL` chỉ đọc 12 mục index.
+**Đúng và nhanh.** Bước đầu chấm cả tốc độ: `DISTINCT ON` cho đúng dòng nhưng phải đọc và sắp cả 28.570 dòng, còn `LATERAL` chỉ đọc 10 mục index.
 
 Hình cuối mục cho thấy ca trực đọc cùng một bảng số đo theo ba cách: màn hình, container im lặng và các đợt vượt ngưỡng.
 
@@ -309,7 +309,7 @@ Năm bước: màn hình trực vừa đúng vừa nhanh, container im lặng, s
 
 ## Opening
 
-Tien Sa port has 12 reefers in the yard, each sending its temperature every minute: 34,330 readings over two days. Your duty shift starts at 00:00 (UTC) on 31 Oct, and the shift lead needs five answers before the handover.
+Tien Sa port has 10 reefers in the yard, each sending its temperature every minute: 28,570 readings over two days. Your duty shift starts at 00:00 (UTC) on 31 Oct, and the shift lead needs five answers before the handover.
 
 ## Key idea
 
@@ -317,7 +317,7 @@ Tien Sa port has 12 reefers in the yard, each sending its temperature every minu
 
 **Five jobs, five skills.** The duty screen needs each container's newest reading (`LATERAL` + index, lesson `e-ts-l1-05`). A silent container is one whose newest reading is too old. Minutes above the limit are a join with `reefers` and a count. Episodes use gaps and islands (lesson `e-ts-l2-04`). The hourly table is a materialized view that stores sums and counts (lesson `e-ts-l3-01`).
 
-**Right and fast.** The first step grades speed too: `DISTINCT ON` gives the right rows but must read and sort all 34,330 rows, while `LATERAL` reads only 12 index entries.
+**Right and fast.** The first step grades speed too: `DISTINCT ON` gives the right rows but must read and sort all 28,570 rows, while `LATERAL` reads only 10 index entries.
 
 The figure at the end of this section shows the shift reading one readings table three ways: the screen, the silent container and the episodes above the limit.
 
