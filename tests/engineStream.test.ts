@@ -44,7 +44,12 @@ const NEED: Partial<Record<EngineLesson['kind'], SectionId[]>> = {
 const OFFICIAL = /^https:\/\/(kafka\.apache\.org|debezium\.io|www\.postgresql\.org)\//;
 /** One plausible wrong answer per lab step (the non-idempotent, naive or order-blind version): it must be refused. */
 const WRONG: Record<string, string[]> = {
-  'e-sm-l2-01#1': ['SELECT consumer, msg_offset, count(*) AS times FROM deliveries GROUP BY consumer, msg_offset', 'SELECT min(consumer) AS consumer, msg_offset, count(*) AS times FROM deliveries GROUP BY msg_offset HAVING count(*) > 1'],
+  'e-sm-l2-04#1': ["INSERT INTO change_log (op, row_key) VALUES ('c', 'SHP-104') RETURNING lsn"],
+  'e-sm-l2-04#2': ["UPDATE shipments SET status = 'delivered' RETURNING shipment_id, status"],
+  'e-sm-l2-04#3': ["UPDATE shipments SET status = 'cancelled' WHERE shipment_id = 'SHP-103' RETURNING shipment_id"],
+  'e-sm-l2-05#1': ["SELECT lsn, after->>'shipment_id' AS shipment_id FROM change_log WHERE op = 'd'"],
+  'e-sm-l2-05#2': ["SELECT lsn, after->>'shipment_id' AS shipment_id, before->>'status' AS old_status, after->>'status' AS new_status FROM change_log WHERE op = 'u'"],
+  'e-sm-l2-05#3': ["SELECT DISTINCT ON (coalesce(after, before)->>'shipment_id') coalesce(after, before)->>'shipment_id' AS shipment_id, after->>'status' AS status FROM change_log WHERE op <> 'd' ORDER BY coalesce(after, before)->>'shipment_id', lsn DESC"],  'e-sm-l2-01#1': ['SELECT consumer, msg_offset, count(*) AS times FROM deliveries GROUP BY consumer, msg_offset', 'SELECT min(consumer) AS consumer, msg_offset, count(*) AS times FROM deliveries GROUP BY msg_offset HAVING count(*) > 1'],
   'e-sm-l2-01#2': ["SELECT e.msg_offset FROM events e LEFT JOIN deliveries d ON d.msg_offset = e.msg_offset WHERE d.consumer = 'at_most_once'"],
   'e-sm-l2-02#1': ['SELECT b.event_id FROM inbox_batch b WHERE NOT EXISTS (SELECT 1 FROM processed_events p WHERE p.event_id = b.event_id)', 'SELECT DISTINCT event_id FROM inbox_batch'],
   'e-sm-l2-02#2': ['INSERT INTO charges (event_id, shipment_id, fee_vnd) SELECT event_id, shipment_id, fee_vnd FROM inbox_batch RETURNING event_id'],

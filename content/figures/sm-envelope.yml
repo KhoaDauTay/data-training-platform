@@ -1,0 +1,21 @@
+# v47 SM: one Debezium update envelope (the lab's lsn 3: SHP-101 booked -> picked_up). Lesson: e-sm-l2-05 (Ý chính).
+# Source: https://debezium.io/documentation/reference/stable/connectors/postgresql.html (change event values: before, after, source, op, ts_ms)
+title: { vi: "Một phong bì sửa", en: "One update envelope" }
+caption:
+  vi: "Sự kiện u mang dòng trước và dòng sau; source cho biết vị trí trong nhật ký của database và thời điểm đổi."
+  en: "A u event carries the row before and the row after; source tells the position in the database's log and when the change happened."
+alt:
+  vi: "Một sự kiện sửa của Debezium mang cả dòng trước và dòng sau, nên consumer biết trạng thái cũ, trạng thái mới và vị trí của thay đổi trong nhật ký. Kết quả: SHP-101 đổi từ booked sang picked_up ở lsn 3."
+  en: "A Debezium update event carries both the row before and the row after, so the consumer knows the old status, the new status and the change's position in the log. Result: SHP-101 changes from booked to picked_up at lsn 3."
+groups:
+  - { id: env, label: { vi: "phong bì lsn 3", en: "envelope lsn 3" }, nodes: [before, after, op, src] }
+nodes:
+  - { id: before, mono: true, label: before, sub: "status: booked", tone: ghost }
+  - { id: after, mono: true, label: after, sub: "status: picked_up", tone: new }
+  - { id: op, mono: true, label: "op: u", sub: { vi: "sửa", en: "update" }, tone: warm }
+  - { id: src, mono: true, label: source, sub: "lsn, ts_ms" }
+rows:
+  - [before, after]
+  - [op, src]
+edges:
+  - { from: before, to: after }

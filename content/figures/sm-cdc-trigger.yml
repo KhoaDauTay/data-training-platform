@@ -1,0 +1,29 @@
+# v47 SM: real CDC (WAL, slot, output plugin, Debezium) beside the lab's trigger and change table. Lesson: e-sm-l2-04 (Ý chính).
+# PGlite runs wal_level = replica and refuses pg_create_logical_replication_slot (SQLSTATE 55000, observed on PGlite 0.5.16).
+# Sources: https://www.postgresql.org/docs/18/logicaldecoding-explanation.html ;
+# https://debezium.io/documentation/reference/stable/connectors/postgresql.html (pgoutput)
+title: { vi: "Hai đường lấy thay đổi", en: "Two ways to capture changes" }
+caption:
+  vi: "Trên server thật, logical decoding đọc WAL qua một replication slot; trong PGlite, lab dùng một trigger ghi change_log ngay trong transaction."
+  en: "On a real server, logical decoding reads the WAL through a replication slot; in PGlite, the lab uses a trigger that writes change_log inside the transaction."
+alt:
+  vi: "Cả hai đường đều đưa ra các thay đổi đã commit của bảng shipments theo thứ tự. Đường thật đọc WAL sau khi ghi, qua replication slot và plugin pgoutput tới Debezium; đường của lab là một trigger ghi change_log trong cùng transaction, vì PGlite không tạo được logical slot."
+  en: "Both paths deliver the committed changes of the shipments table in order. The real path reads the WAL through a replication slot and the pgoutput plugin to Debezium; the lab's path is a trigger that writes change_log in the same transaction, because PGlite cannot create a logical slot."
+nodes:
+  - { id: ship, shape: table, mono: true, label: shipments }
+  - { id: wal, label: WAL, sub: { vi: "server thật", en: "real server" } }
+  - { id: trg, mono: true, label: "capture()", sub: { vi: "trigger trong lab", en: "trigger in the lab" }, tone: live }
+  - { id: slot, label: { vi: "slot + pgoutput", en: "slot + pgoutput" }, sub: { vi: "logical decoding", en: "logical decoding" } }
+  - { id: cl, shape: table, mono: true, label: change_log, sub: "c / u / d", tone: new }
+  - { id: dbz, label: Debezium, sub: { vi: "đọc slot", en: "reads the slot" } }
+rows:
+  - [ship]
+  - [wal, trg]
+  - [slot, cl]
+  - [dbz]
+edges:
+  - { from: ship, to: wal }
+  - { from: ship, to: trg }
+  - { from: wal, to: slot }
+  - { from: trg, to: cl }
+  - { from: slot, to: dbz }
