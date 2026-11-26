@@ -5,6 +5,7 @@ level: L3
 module: indexes
 title: "Multikey, partial và TTL: index nào cho dữ liệu nào"
 title_en: "Multikey, partial and TTL: which index for which data"
+figures: [{ name: mg-multikey-partial, at: idea }]
 kind: concept
 minutes: 14
 runtime: docs
@@ -61,6 +62,8 @@ Index TTL: một tác vụ nền xóa tài liệu hết hạn, chạy mỗi 60 g
 Nhiều người nghĩ truy vấn trên trường mảng phải viết cả mảng. Thật ra `{ tags: "sale" }` khớp mọi tài liệu có `"sale"` trong mảng; viết `{ tags: ["sale"] }` là so bằng cả mảng.
 
 Ví dụ chạy bằng mingo trên bộ dữ liệu `shop`; mingo không có index nên `createIndex` chỉ trả danh sách index, không đo gì.
+
+Hình dưới vẽ hai khóa của một sản phẩm trỏ về cùng tài liệu, và khoảng năm mà index partial thiếu.
 
 ## Cú pháp
 
@@ -151,6 +154,8 @@ TTL index: a background task removes expired documents and runs every 60 seconds
 Many people think a query on an array field must spell out the whole array. In fact `{ tags: "sale" }` matches every document with `"sale"` in the array; `{ tags: ["sale"] }` is equality on the whole array.
 
 The examples run on mingo over the `shop` dataset; mingo has no indexes, so `createIndex` only returns the index list and measures nothing.
+
+The figure below draws two keys of one product pointing at the same document, and the range of years the partial index lacks.
 
 ## Syntax
 

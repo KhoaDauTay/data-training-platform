@@ -1,0 +1,43 @@
+# MG-B6-3 (v46 Batch 6, L850–L859): $push appends, $addToSet adds only if missing, $pull removes every equal element.
+# Lesson: e-mg-l1-06 (Ý chính). Data (lab.setup, run on mingo): c1 tags [vip, newsletter]; updateOne({ _id: "c1" }, …):
+# { $push: { tags: "vip" } } → [vip, newsletter, vip]; { $addToSet: { tags: "vip" } } → [vip, newsletter]; { $pull: { tags: "vip" } } → [newsletter].
+# The column heads are array positions. Sources: https://www.mongodb.com/docs/manual/reference/operator/update/push/, …/addtoset/, …/pull/
+title: { vi: "$push, $addToSet, $pull trên cùng một mảng", en: "$push, $addToSet, $pull on one array" }
+caption:
+  vi: "Khách c1 có tags [vip, newsletter]; mỗi bước chạy một lệnh updateOne từ dữ liệu gốc với giá trị \"vip\". Số trên đầu cột là vị trí trong mảng. Mỗi lệnh sửa mảng ngay trong máy chủ và nguyên tử, không cần đọc mảng ra rồi ghi đè."
+  en: "Customer c1 has tags [vip, newsletter]; each step runs one updateOne from the original data with the value \"vip\". The number over each column is the position in the array. Each command changes the array inside the server, atomically, with no read-then-overwrite."
+alt:
+  vi: "Ba toán tử sửa mảng ngay trong tài liệu: $push luôn thêm vào cuối, kể cả giá trị đã có; $addToSet chỉ thêm giá trị chưa có; $pull bỏ mọi phần tử bằng giá trị đã cho."
+  en: "Three operators change the array inside the document: $push always appends, even a value already there; $addToSet adds only a missing value; $pull removes every element equal to the given value."
+nodes:
+  - id: before
+    shape: grid
+    label: { vi: "c1.tags trước", en: "c1.tags before" }
+    head: ["0", "1"]
+    cells: [[vip, newsletter]]
+  - { id: op, shape: key, mono: true, label: "$push: \"vip\"", tone: new }
+  - id: after
+    shape: grid
+    label: { vi: "c1.tags sau", en: "c1.tags after" }
+    head: ["0", "1", "2"]
+    cells: [[vip, newsletter, vip]]
+    cellTone: { "0:2": warm }
+    sub: { vi: "vip có hai lần", en: "vip is there twice" }
+rows:
+  - [before, op, after]
+edges:
+  - { from: before, to: op }
+  - { from: op, to: after }
+steps:
+  - say: { vi: "$push thêm vào cuối, kể cả giá trị đã có.", en: "$push appends, even a value already there." }
+    alt: { vi: "$push không kiểm tra trùng, nên vip được thêm lần nữa ở vị trí 2 và mảng có ba phần tử.", en: "$push does not check for duplicates, so vip is added again at position 2 and the array has three elements." }
+  - say: { vi: "$addToSet chỉ thêm giá trị chưa có.", en: "$addToSet adds only a value that is missing." }
+    alt: { vi: "vip đã có trong mảng nên $addToSet không đổi gì, hợp với mảng kiểu tập hợp như nhãn.", en: "vip is already in the array, so $addToSet changes nothing, which suits set-like arrays such as tags." }
+    set:
+      op: { label: "$addToSet: \"vip\"", tone: live }
+      after: { head: ["0", "1"], cells: [[vip, newsletter]], cellTone: {}, sub: { vi: "đã có: giữ nguyên", en: "already there: unchanged" } }
+  - say: { vi: "$pull bỏ mọi phần tử bằng giá trị đã cho.", en: "$pull removes every element equal to the value." }
+    alt: { vi: "$pull bỏ vip khỏi mảng, newsletter dồn lên vị trí 0 và mảng còn một phần tử.", en: "$pull removes vip from the array, newsletter moves up to position 0 and one element is left." }
+    set:
+      op: { label: "$pull: \"vip\"", tone: dead }
+      after: { head: ["0"], cells: [[newsletter]], cellTone: {}, sub: { vi: "vip đã bị bỏ", en: "vip removed" } }

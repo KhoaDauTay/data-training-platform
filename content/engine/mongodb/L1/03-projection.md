@@ -8,6 +8,7 @@ title_en: Returning only the fields you need (projection)
 kind: lab
 runtime: browser
 minutes: 8
+figures: [{ name: mg-projection, at: idea }]
 objectives:
   - vi: Viết projection kiểu chọn (`1`) hoặc kiểu bỏ (`0`) và biết không được trộn hai kiểu.
     en: Write an include (`1`) or exclude (`0`) projection and know the two styles cannot be mixed.
@@ -109,6 +110,8 @@ Projection không lọc tài liệu: số tài liệu trả về do bộ lọc (
 
 Làm được: lấy đúng những trường một màn hình cần, bỏ `_id` khi không dùng.
 
+Hình từng bước ở cuối mục này cho tài liệu `p1` đi qua ba projection: kiểu chọn, kiểu chọn kèm `_id: 0`, rồi kiểu bỏ.
+
 ## Cú pháp
 
 ```text
@@ -202,6 +205,8 @@ For an embedded field, `"address.city": 1` returns `address` with only `city` in
 A projection does not filter documents: the filter (the first argument) decides how many documents come back, the projection only trims the fields of each one. If a document lacks a field you selected, it is still in the result, just without that field. Because a collection does not enforce one shared schema, two documents in the same result can carry different numbers of fields.
 
 You can now: return exactly the fields a screen needs and drop `_id` when you do not use it.
+
+The step-through figure at the end of this section sends document `p1` through three projections: include, include with `_id: 0`, then exclude.
 
 ## Syntax
 

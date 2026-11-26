@@ -10,6 +10,7 @@ title_en: "Tables, items, attributes: DynamoDB thinks differently from SQL"
 kind: concept
 runtime: docs
 minutes: 6
+figures: [{ name: dy-item-attributes, at: idea }]
 objectives:
   - vi: Gọi đúng tên ba khối cơ bản của DynamoDB là bảng, item và thuộc tính.
     en: Name the three building blocks of DynamoDB, which are tables, items and attributes.
@@ -74,6 +75,8 @@ Câu hỏi cũng đổi. Với SQL bạn hỏi "mọi dòng thỏa điều kiệ
 Nhiều người nghĩ "không schema" nghĩa là không cần thiết kế. Thật ra schema chuyển sang code của bạn: ứng dụng quyết định item nào mang thuộc tính gì, kiểu gì, và DynamoDB không kiểm hộ ngoài thuộc tính khóa. Hai đoạn code ghi `price` với hai nhãn kiểu khác nhau đều thành công; lỗi chỉ lộ ra khi đọc hay so sánh. Vì vậy các đội thường giữ một mô tả item duy nhất trong code và kiểm dữ liệu ở đó trước khi ghi.
 
 Trong các lab, dữ liệu mẫu được ghi bằng JSON thường cho dễ đọc. Request bạn viết vẫn là DynamoDB JSON có nhãn kiểu, đúng như SDK cấp thấp gửi đi, bọc trong `{"op": …, "input": …}`.
+
+Hình ở cuối mục này đặt ba cuốn sách của bảng `Books` cạnh nhau: cùng khóa `isbn`, mỗi cuốn một bộ thuộc tính.
 
 ## Cú pháp
 
@@ -162,6 +165,8 @@ The question changes too. In SQL you ask "every row that matches X". In DynamoDB
 Many people think "schemaless" means no design is needed. In fact the schema moves into your code: the application decides which item carries which attributes and of what type, and DynamoDB checks nothing beyond the key attributes. Two pieces of code that write `price` with two different type tags both succeed; the mistake shows only when you read or compare. That is why teams usually keep one description of each item in their code and check the data there before writing.
 
 In the labs the sample data is written as plain JSON so it is easy to read. The requests you write are still DynamoDB JSON with type tags, exactly what a low-level SDK sends, wrapped in `{"op": …, "input": …}`.
+
+The figure at the end of this section puts three books of table `Books` side by side: the same key `isbn`, a different set of attributes each.
 
 ## Syntax
 

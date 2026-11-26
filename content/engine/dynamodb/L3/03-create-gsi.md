@@ -5,6 +5,7 @@ level: L3
 module: secondary
 title: "Tạo bảng có GSI cho mẫu truy cập mới"
 title_en: "Create a table with a GSI for a new access pattern"
+figures: [{ name: dy-gsi-copy, at: idea }]
 kind: lab
 runtime: browser
 minutes: 10
@@ -128,6 +129,8 @@ Nhiều người nghĩ `AttributeDefinitions` là schema của item, như danh s
 
 Lab chạy bằng dynoxide trong trình duyệt và được chấm bằng mô tả bảng: khóa, khóa index và loại projection phải khớp; thứ tự trong mảng không quan trọng.
 
+Hình dưới vẽ những thuộc tính được chép sang GSI byStatus và những thuộc tính ở lại bảng.
+
 ## Cú pháp
 
 ```text
@@ -214,6 +217,8 @@ A GSI is declared in the `GlobalSecondaryIndexes` of `CreateTable`, or added lat
 Many people think `AttributeDefinitions` is the item schema, like a column list in SQL. In fact items stay free-form; this list only tells DynamoDB the types of the keys. An item without a GSI's key attributes does not enter that GSI: the sparse index lesson relies on exactly that.
 
 The lab runs on dynoxide in the browser and is graded on the table description: keys, index keys and projection type must match; array order does not matter.
+
+The figure below draws which attributes are copied into the GSI byStatus and which stay in the table.
 
 ## Syntax
 

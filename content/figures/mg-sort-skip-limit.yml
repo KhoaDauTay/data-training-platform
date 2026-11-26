@@ -1,0 +1,40 @@
+# MG-B6-4 (v46 Batch 6, L850–L859): sort first, then skip, then limit. Lesson: e-mg-l1-10 (Ý chính).
+# Data (lab.setup, run on mingo): stored order p1 Green tea, p2 Coffee beans, p3 Rice cracker, p4 Dried mango, p5 Tea set,
+# p6 Lotus tea; sort({ name: 1 }) → p2, p4, p1, p6, p3, p5; .sort({ name: 1 }).skip(2).limit(2) → Green tea, Lotus tea (the same
+# written as .limit(2).skip(2).sort(…)); .skip(2).limit(2) with no sort → Rice cracker, Dried mango.
+# The page column numbers pages of 2 over each list; every node shows from step 1 (steps only tint rows).
+# Sources: https://www.mongodb.com/docs/manual/reference/method/cursor.sort/, …/cursor.skip/
+title: { vi: "sort trước, rồi skip, rồi limit", en: "sort first, then skip, then limit" }
+caption:
+  vi: "Bên trái là thứ tự lưu, bên phải là cùng sáu sản phẩm sau sort({ name: 1 }). Trang 2 với cỡ trang 2 là skip(2).limit(2): MongoDB luôn áp sort, rồi skip, rồi limit, dù bạn viết theo thứ tự nào. Dòng gạch là dòng bị skip."
+  en: "On the left the stored order, on the right the same six products after sort({ name: 1 }). Page 2 with a page size of 2 is skip(2).limit(2): MongoDB always applies sort, then skip, then limit, whatever order you write them in. A struck row is a skipped one."
+alt:
+  vi: "Phân trang chỉ có nghĩa trên một thứ tự cố định: MongoDB xếp bằng sort trước, rồi mới bỏ bằng skip và cắt bằng limit. Không có sort, trang 2 lấy theo thứ tự lưu, thứ tự mà máy chủ không hứa giữ."
+  en: "Paging only means something on a fixed order: MongoDB sorts first, and only then drops with skip and cuts with limit. Without a sort, page 2 follows the stored order, which the server does not promise to keep."
+nodes:
+  - id: st
+    shape: grid
+    label: { vi: "không sort: thứ tự lưu", en: "no sort: stored order" }
+    head: [_id, name, { vi: "trang", en: "page" }]
+    cells: [[p1, Green tea, "1"], [p2, Coffee beans, "1"], [p3, Rice cracker, "2"], [p4, Dried mango, "2"], [p5, Tea set, "3"], [p6, Lotus tea, "3"]]
+  - id: so
+    shape: grid
+    label: "sort({ name: 1 })"
+    head: [_id, name, { vi: "trang", en: "page" }]
+    cells: [[p2, Coffee beans, "1"], [p4, Dried mango, "1"], [p1, Green tea, "2"], [p6, Lotus tea, "2"], [p3, Rice cracker, "3"], [p5, Tea set, "3"]]
+rows:
+  - [st, so]
+edges:
+  - { from: st, to: so, label: { vi: "sort chạy trước", en: "sort runs first" } }
+steps:
+  - say: { vi: "sort xếp lại cả sáu tài liệu theo name trước.", en: "sort reorders all six documents by name first." }
+    alt: { vi: "Dù sort được viết ở đâu trong chuỗi, MongoDB xếp trước tiên: Coffee beans lên đầu, Tea set xuống cuối.", en: "Wherever sort is written in the chain, MongoDB sorts first: Coffee beans moves to the top, Tea set to the bottom." }
+  - say: { vi: "skip(2) bỏ hai tài liệu đầu, limit(2) giữ hai tài liệu kế tiếp.", en: "skip(2) drops the first two documents, limit(2) keeps the next two." }
+    alt: { vi: "Trang 2 với cỡ trang 2 là skip(2).limit(2) trên danh sách đã xếp, nên kết quả là Green tea và Lotus tea.", en: "Page 2 with a page size of 2 is skip(2).limit(2) on the sorted list, so the result is Green tea and Lotus tea." }
+    set:
+      so: { strike: [0, 1], rowTone: [ghost, ghost, new, new, null, null], sub: { vi: "trang 2: Green tea, Lotus tea", en: "page 2: Green tea, Lotus tea" } }
+  - say: { vi: "Không sort, trang 2 theo thứ tự lưu, không được hứa.", en: "Without sort, page 2 follows the stored order, with no promise." }
+    alt: { vi: "Bỏ sort đi thì skip(2).limit(2) chạy trên thứ tự lưu và trả Rice cracker, Dried mango, và máy chủ thật có thể đổi thứ tự đó sau một lần cập nhật.", en: "Drop the sort and skip(2).limit(2) runs on the stored order and returns Rice cracker and Dried mango, and a real server may change that order after an update." }
+    set:
+      so: { strike: [0, 1], rowTone: [ghost, ghost, new, new, null, null], sub: { vi: "trang 2: Green tea, Lotus tea", en: "page 2: Green tea, Lotus tea" } }
+      st: { strike: [0, 1], rowTone: [ghost, ghost, warm, warm, null, null], sub: { vi: "trang 2 khác hẳn", en: "a different page 2" } }

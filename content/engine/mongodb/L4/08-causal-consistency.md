@@ -5,6 +5,7 @@ level: L4
 module: consistency
 title: "Nhất quán nhân quả và session"
 title_en: "Causal consistency and sessions"
+figures: [{ name: mg-causal-session, at: idea }]
 kind: concept
 minutes: 12
 runtime: docs
@@ -57,6 +58,8 @@ Cơ chế: mỗi thao tác trả về operation time và cluster time; session g
 Nhiều người nghĩ mở session là đủ. Thật ra bảo đảm chỉ có cho đọc read concern `majority` và ghi write concern `majority`; với `w: 1` hay đọc `local`, một rollback có thể xóa mất mắt xích. Session cũng không cô lập khỏi thao tác ngoài session, và mỗi lúc chỉ một luồng nên dùng nó. Từ 8.0, `w: "majority"` xác nhận khi đa số đã ghi bền mục oplog, trước khi áp vào dữ liệu, nên đọc secondary ngay sau đó ngoài session càng dễ chưa thấy lần ghi.
 
 Bài này cần replica set thật; các lệnh dưới đây lấy theo docs, không chạy trong trình duyệt.
+
+Hình dưới đặt lần ghi và lần đọc lại cạnh nhau, ngoài session rồi trong session.
 
 ## Cú pháp
 
@@ -143,6 +146,8 @@ The mechanism: each operation returns an operation time and a cluster time; the 
 Many people think opening a session is enough. In fact the guarantees hold only for reads with read concern `majority` and writes with write concern `majority`; with `w: 1` or `local` reads, a rollback can remove a link of the chain. A session is also not isolated from operations outside it, and only one thread at a time should use it. From 8.0, `w: "majority"` acknowledges once a majority has durably written the oplog entry, before applying it to the data, so a secondary read right after, outside a session, is even more likely to miss the write.
 
 This lesson needs a real replica set; the commands below follow the docs and do not run in the browser.
+
+The figure below sets the write and the read-back side by side, outside a session and then inside one.
 
 ## Syntax
 

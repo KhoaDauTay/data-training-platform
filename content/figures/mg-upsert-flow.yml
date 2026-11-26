@@ -1,0 +1,40 @@
+# MG-B6-2 (v46 Batch 6, L850–L859): no match does nothing; upsert builds the document from the filter. Lesson: e-mg-l1-05 (Ý chính).
+# Data (lab.setup, run on mingo): updateOne({ _id: "p10" }, { $set: { name: "Sesame candy", category: "snack", price: 20000 },
+# $inc: { stock: 5 } }) → the six products unchanged (no p10); with { upsert: true } → p10 added with name Sesame candy,
+# category snack, price 20000, stock 5 (the $inc on a missing field sets it to 5).
+# Sources: https://www.mongodb.com/docs/manual/reference/method/db.collection.updateone/, …/tutorial/update-documents/
+title: { vi: "Không khớp thì không làm gì, upsert thì tạo mới", en: "No match does nothing, upsert creates one" }
+caption:
+  vi: "Lệnh updateOne({ _id: \"p10\" }, { $set: …, $inc: { stock: 5 } }) khi chưa có p10. Không có upsert, lệnh không sửa gì và không báo lỗi (matchedCount 0). Với { upsert: true }, MongoDB lấy các điều kiện bằng của filter làm tài liệu mới rồi áp toán tử lên nó."
+  en: "The command updateOne({ _id: \"p10\" }, { $set: …, $inc: { stock: 5 } }) while p10 does not exist. Without upsert it changes nothing and raises no error (matchedCount 0). With { upsert: true }, MongoDB builds a new document from the filter's equality conditions and applies the operators to it."
+alt:
+  vi: "Một update chỉ sửa tài liệu khớp filter; không khớp gì thì không có gì xảy ra, kể cả lỗi. upsert: true biến trường hợp đó thành thêm mới, _id lấy từ filter, các trường khác từ toán tử."
+  en: "An update only changes documents that match the filter; with no match, nothing happens, not even an error. upsert: true turns that case into an insert, _id from the filter, other fields from the operators."
+nodes:
+  - { id: f, shape: key, mono: true, label: "_id: \"p10\"", sub: { vi: "không khớp gì", en: "matches nothing" } }
+  - { id: no, label: { vi: "không upsert", en: "no upsert" }, sub: { vi: "không làm gì", en: "nothing happens" }, tone: warm }
+  - { id: up, label: "upsert: true", sub: { vi: "tạo tài liệu mới", en: "insert a new one" }, tone: ghost }
+  - id: doc
+    shape: grid
+    label: { vi: "tài liệu p10", en: "document p10" }
+    head: [{ vi: "trường", en: field }, { vi: "giá trị", en: value }, { vi: "lấy từ", en: from }]
+    cells: [[_id, p10, filter], [name, Sesame candy, $set], [category, snack, $set], [price, "20000", $set], [stock, "5", $inc]]
+    rowTone: [ghost, ghost, ghost, ghost, ghost]
+    sub: { vi: "chưa được tạo", en: "not created" }
+rows:
+  - [f]
+  - [no, up]
+  - [doc]
+edges:
+  - { from: f, to: no }
+  - { from: f, to: up }
+  - { from: up, to: doc }
+steps:
+  - say: { vi: "Không upsert: không khớp thì không làm gì, không lỗi.", en: "No upsert: no match means nothing happens, and no error." }
+    alt: { vi: "Chưa có sản phẩm p10 nên updateOne không khớp gì: collection giữ nguyên sáu tài liệu, matchedCount là 0 và không có lỗi nào.", en: "There is no product p10 yet, so updateOne matches nothing: the collection keeps its six documents, matchedCount is 0 and no error is raised." }
+  - say: { vi: "upsert: true tạo tài liệu từ filter rồi áp toán tử.", en: "upsert: true builds the document from the filter, then applies the operators." }
+    alt: { vi: "Với { upsert: true }, MongoDB tạo p10 với _id lấy từ filter, ba trường từ $set, và stock 5 vì $inc trên trường chưa có đặt nó bằng số cộng thêm.", en: "With { upsert: true }, MongoDB creates p10 with _id from the filter, three fields from $set, and stock 5 because $inc on a missing field sets it to the increment." }
+    set:
+      no: { tone: ghost }
+      up: { tone: new }
+      doc: { rowTone: [ptr, null, null, null, new], sub: { vi: "vừa được thêm", en: "just inserted" } }
