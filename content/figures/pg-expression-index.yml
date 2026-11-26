@@ -13,7 +13,7 @@ alt:
   vi: "Index trên biểu thức lưu kết quả của biểu thức cho mỗi dòng, và chỉ câu dùng đúng biểu thức đó mới tra được nó. Hàm trong index phải IMMUTABLE."
   en: "An expression index stores the expression's result per row, and only a query using that exact expression can use it. The function must be IMMUTABLE."
 nodes:
-  - { id: col, shape: grid, label: index (email), sub: { vi: "như đã ghi: không khớp", en: "as written: no match" }, cells: [["User1236@…"]] }
+  - { id: col, shape: grid, label: index (email), sub: { vi: "giữ chữ hoa: không khớp", en: "keeps capitals: no match" }, cells: [["User1236@…"]] }
   - { id: expr, shape: grid, label: index (lower(email)), sub: { vi: "đã viết thường", en: "lower-cased" }, cells: [["user1236@…"]], tone: new }
   - { id: q, shape: key, mono: true, label: "WHERE lower(email) = …" }
   - { id: plan, label: Seq Scan, sub: { vi: "lower mỗi dòng", en: "lower on every row" }, tone: dead }

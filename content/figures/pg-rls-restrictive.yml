@@ -45,9 +45,9 @@ steps:
     alt: { vi: "Policy tenant_rows chỉ cho dòng của khách 2.", en: "The tenant_rows policy lets through only tenant 2's rows." }
   - say: { vi: "Thêm một policy permissive rộng: OR mở hết.", en: "Add a wide permissive policy: OR opens everything." }
     show: [t, p1, p2, or, and, out]
-    alt: { vi: "Policy permissive gộp bằng OR, nên một dòng chỉ cần qua một policy là thấy.", en: "Permissive policies combine with OR, so a row needs to pass only one." }
+    alt: { vi: "Policy permissive gộp bằng OR, nên một dòng chỉ cần qua một policy, và USING (true) cho qua cả 30 vé của ba khách.", en: "Permissive policies combine with OR, so a row needs to pass only one, and USING (true) lets through all 30 tickets of the three tenants." }
     set:
-      out: { label: { vi: "30 dòng: mở toang", en: "30 rows: wide open" }, tone: dead }
+      out: { label: { vi: "30 dòng: vé của mọi khách", en: "30 rows: every tenant's" }, tone: dead }
   - say: { vi: "Luật bắt buộc: AS RESTRICTIVE.", en: "A must-hold rule: AS RESTRICTIVE." }
     show: [t, p1, or, r, and, out, force]
     alt: { vi: "Policy restrictive gộp bằng AND lên kết quả, nên vé lưu trữ luôn bị ẩn với app dù thêm policy permissive nào.", en: "Restrictive policies AND onto the result, so archived tickets stay hidden from app whatever permissive policy is added." }

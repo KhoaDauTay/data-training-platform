@@ -31,7 +31,7 @@ rows:
   - [ok, no]
 steps:
   - say: { vi: "Index chỉ chứa 600 dòng đang mở.", en: "The index holds only the 600 open rows." }
-    show: [rows, b]
+    show: [rows, b, ok]
     alt: { vi: "Điều kiện WHERE của index loại 98% bảng, nên index nhỏ hơn 13 lần.", en: "The index's WHERE drops 98% of the table, so it is 13 times smaller." }
   - say: { vi: "Planner phải chứng minh được điều kiện.", en: "The planner must prove the condition." }
     show: [rows, b, ok, no]

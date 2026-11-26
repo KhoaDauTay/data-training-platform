@@ -62,7 +62,7 @@ variants:
       q2: { label: { vi: "thiếu tenant_id", en: "no tenant_id" }, sub: { vi: "rải khắp 50 khách", en: "spread over 50" } }
       ix:
         label: index (tenant_id, created_at)
-        sub: { vi: "trích: 2 trong 45 dòng tháng 3", en: "excerpt: 2 of March's 45 rows" }
+        sub: { vi: "trích: 2/45 dòng T3 của khách 7", en: "2 of tenant 7's 45 in March" }
         head: [tenant_id, created_at]
         cells:
           - ["6", "10-05 17:00"]
