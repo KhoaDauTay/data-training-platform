@@ -244,6 +244,37 @@ describe('v39 R1: checker and builder regressions', () => {
   });
 });
 
+// v41 R3 (r3-eye E1/E2): the phone-stacking tangles the a–e rules missed, as the builder drew them at 280 before the fix
+describe('v41 R3: rules h, i, j and the stacked-layout routing', () => {
+  const arrow = (k: string, d: string) => { const pts = samplePath(d); const [p, q] = [pts[pts.length - 2], pts[pts.length - 1]]; const l = Math.hypot(q[0] - p[0], q[1] - p[1]); return { k, pts, tip: [q[0] + ((q[0] - p[0]) / l) * 1.125, q[1] + ((q[1] - p[1]) / l) * 1.125] as [number, number] }; };
+  const frame = (arrows: ReturnType<typeof arrow>[], texts: OverlapFrame['texts'] = []): OverlapFrame => ({ vb: [0, 0, 280, 400], texts, boxes: [], arrows, fig: true });
+  it('h + j: E1, the read and checkpoint lanes 8 apart and their last legs crossing on one line', () => {
+    const got = analyze(frame([arrow('e:1', 'M124 142 L124 152 L248 152 L248 221 L125 221 L125 234.875'), arrow('e:2', 'M124 316 L124 295 L264 295 L264 229 L125 229 L125 207.125')]), 320);
+    expect(got.some((x) => x.t === 'h')).toBe(true);
+    expect(got.some((x) => x.t === 'j')).toBe(true);
+  });
+  it('j: two tips 10 apart pointing at each other; not two arrows into one box side by side', () => {
+    expect(analyze(frame([arrow('a', 'M50 10 V45'), arrow('b', 'M50 90 V55')]), 320).some((x) => x.t === 'j')).toBe(true);
+    expect(analyze(frame([arrow('a', 'M50 10 V45'), arrow('b', 'M80 10 V45')]), 320)).toEqual([]);
+  });
+  it('i: E2, an arrowhead stopping 4 above the wrapped title "C-01 (khóa"; 9 clear passes', () => {
+    const title = { k: 'n:c1.h0', s: 'C-01 (khóa', x: 85, y: 184.95, w: 80, h: 19.1, size: 14, px: 14 };
+    expect(analyze(frame([arrow('e:0', 'M102 62 L102 179.875')], [title]), 320).some((x) => x.t === 'i')).toBe(true);
+    expect(analyze(frame([arrow('e:0', 'M102 62 L102 174.875')], [title]), 320).filter((x) => x.t === 'i')).toEqual([]);
+  });
+  it('h: a bus (shared lane, one tip) is not two parallel arrows', () => {
+    expect(analyze(frame([arrow('a', 'M20 10 V40 H100 V80'), arrow('b', 'M180 10 V40 H100 V80')]), 320).filter((x) => x.t === 'h')).toEqual([]);
+  });
+  for (const lang of LANGS) it(`${lang} · W 280: hidden alternates share a slot, lanes stay beside the stacked rows (no side lane)`, () => {
+    const q = layout(specs['dy-query-vs-scan'], lang, 280);
+    const rect = (f: { nodes: Shape[] }, k: string) => f.nodes.find((n) => n.k === k) as Extract<Shape, { t: 'r' }>;
+    expect(rect(q.frames[0], 'n:q').y, 'Query and Scan in one slot').toBe(rect(q.frames[1], 'n:s').y);
+    const m = layout(specs['pg-memory-two-kinds'], lang, 280);
+    const g = rect(m.frames[0], 'g:sh');
+    for (const a of m.frames[0].nodes.filter((n) => n.t === 'p' && n.arrow)) for (const [x] of samplePath((a as { d: string }).d)) expect(x, `${a.k} inside the frame's width`).toBeLessThan(g.x + g.w);
+  });
+});
+
 /** v40 groups: members ≥ 10 inside the frame (below its 20-unit label band), every other node ≥ 12 outside it. */
 function checkGroups(f: { nodes: Shape[] }, at: string, spec?: FigSpec): void {
   const m = model(f, 0, 0);

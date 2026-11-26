@@ -189,15 +189,20 @@ export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): 
   const gridLink = (e: FigEdge): boolean => !!e.link && rowEnd(e);
   // v40 (L634): a side lane (16 units at the right) for every edge between rows that are not neighbours; reserving them can
   // change the wrapping, so lay out again until the count is stable
+  // v41 R3: frames that show both ends (a group end shows when one of its nodes does)
+  const gnodes = new Map((spec.groups ?? []).map((g) => [g.id, g.nodes]));
+  const vis = (s: Set<string>, x: string): boolean => gnodes.get(base(x))?.some((n) => s.has(n)) ?? s.has(base(x));
+  const co = (...xs: string[]): boolean => ps.some((p) => xs.every((x) => vis(p.show, x)));
   let reserve = 0;
-  let pl = placeRows(spec, lang, W, new Map(dims), reserve, heads);
+  let pl = placeRows(spec, lang, W, new Map(dims), reserve, heads, co);
   for (let i = 0; i < 3; i++) {
-    const need = edges.filter((e) => !gridLink(e) && !e.near && Math.abs(pl.rowOf.get(base(e.from))! - pl.rowOf.get(base(e.to))!) > 1).length;
+    const p = pl;
+    const need = edges.filter((e) => !gridLink(e) && !e.near && Math.abs(p.rowE(e)[0] - p.rowE(e)[1]) > 1 && localLane(spec, p, e, 0) === undefined).length;
     if (need <= reserve) break;
     reserve = need;
-    pl = placeRows(spec, lang, W, new Map(dims), reserve, heads);
+    pl = placeRows(spec, lang, W, new Map(dims), reserve, heads, co);
   }
-  const { vrows, rowOf, at, bands, H, CW } = pl;
+  const { vrows, rowE, at, bands, H, CW } = pl;
 
   // routes: decided once from the geometry (the same for every frame)
   const lanes = new Map<number, number>();
@@ -210,12 +215,12 @@ export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): 
   // R1 E10: ≥ 2 arrows entering one side of a box from another row never land side by side: straight ones spread over it
   // (⅓ ⅔ …, sorted by where they come from) when each lands above its own source, else they join one bus with one arrowhead.
   // v40: arrows on a side lane share the spread (they can land anywhere on the box), never the bus.
-  const far = (e: FigEdge): boolean => Math.abs(rowOf.get(base(e.from))! - rowOf.get(base(e.to))!) > 1;
+  const far = (e: FigEdge): boolean => Math.abs(rowE(e)[0] - rowE(e)[1]) > 1;
   const dropped = (e: FigEdge): boolean => !!e.near && far(e); // v40 R2: a `near` edge is not drawn on a side lane
   /** v40 R2 (E-01): an arrow leaves a node whose text sits on its edge (a table's sub or title) 8 units clear of it */
   const out = (id: string): number => (['grid', 'bars'].includes(byId.get(base(id))?.shape ?? '') ? 8 : 2);
   const side = (e: FigEdge): string | undefined => {
-    const ra = rowOf.get(base(e.from))!, rb = rowOf.get(base(e.to))!;
+    const [ra, rb] = rowE(e);
     return e.link || ra === rb || dropped(e) ? undefined : `${base(e.to)}|${rb > ra}`;
   };
   const cx = (e: FigEdge): number => { const a = at.get(base(e.from))!; return a.x + a.w / 2; };
@@ -223,23 +228,24 @@ export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): 
   const fits = (e: FigEdge, x: number): boolean => { const a = at.get(base(e.from))!; return x >= a.x + 12 && x <= a.x + a.w - 12; };
   /** undefined = alone on its side; a number = its landing x; 'bus' = it joins the bus */
   const land = (e: FigEdge): number | 'bus' | undefined => {
-    const g = edges.filter((f) => side(f) !== undefined && side(f) === side(e)).sort((p, q) => cx(p) - cx(q));
+    const g = edges.filter((f) => side(f) !== undefined && side(f) === side(e) && co(e.from, e.to, f.from, f.to)).sort((p, q) => cx(p) - cx(q));
     if (g.length < 2) return undefined;
     return far(e) || g.every((f) => far(f) || fits(f, spread(f, g))) ? spread(e, g) : 'bus';
   };
   /** v40 R2 (E-08): ≥ 2 arrows leaving one side of a box toward neighbouring rows leave it at ⅓, ⅔ … (sorted by where they go),
    * so an elbow's first leg never runs beside a straight arrow and through its label; undefined = alone (it leaves the middle). */
   const leave = (e: FigEdge): number | undefined => {
-    const dir = (f: FigEdge): number => Math.sign(rowOf.get(base(f.to))! - rowOf.get(base(f.from))!);
-    const g = edges.filter((f) => !f.link && !far(f) && base(f.from) === base(e.from) && dir(f) && dir(f) === dir(e)).sort((p, q) => at.get(base(p.to))!.x - at.get(base(q.to))!.x);
+    const dir = (f: FigEdge): number => Math.sign(rowE(f)[1] - rowE(f)[0]);
+    const g = edges.filter((f) => !f.link && !far(f) && base(f.from) === base(e.from) && dir(f) && dir(f) === dir(e) && co(e.from, e.to, f.from, f.to)).sort((p, q) => at.get(base(p.to))!.x - at.get(base(q.to))!.x);
     const a = at.get(base(e.from))!;
     return g.length < 2 ? undefined : Math.round(a.x + (a.w * (g.indexOf(e) + 1)) / (g.length + 1));
   };
   let laneNo = 0;
+  const near2 = new Map<string, number>(); // local lanes already beside the same rows
   const routes = edges.map((e) => {
     const a = at.get(base(e.from)) ?? fail(`edge: không có node "${e.from}"`);
     const b = at.get(base(e.to)) ?? fail(`edge: không có node "${e.to}"`);
-    const ra = rowOf.get(base(e.from))!, rb = rowOf.get(base(e.to))!;
+    const [ra, rb] = rowE(e);
     const label = tr(e.label, lang);
     const plain = !!e.link; // a link has no head and ends on the box edge
     if (dropped(e)) return undefined;
@@ -261,11 +267,16 @@ export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): 
     }
     const down = rb > ra;
     const y1 = plain ? (down ? a.y + a.h : a.y) : down ? a.y + a.h + out(e.from) : a.y - out(e.from);
-    const end = (x: number, from: number): number => (plain ? (down ? b.y : b.y + b.h) : stopAt(x, from, x, b.y + b.h / 2, STROKE, b)[1]);
+    const end = (x: number, from: number): number => (plain ? (down ? b.y : b.y + b.h) : stopAt(x, from, x, b.y + b.h / 2, STROKE, b)[1] + (down ? 2 : -2) - (down ? 1 : -1) * out(e.to)); // v41 R3 (E2): 8 clear of a table's title or sub
     const L = land(e);
     if (far(e)) {
       if (label) fail(`${e.from}→${e.to}: nhãn trên làn bên chưa hỗ trợ`);
-      return { e, d: laneRoute(a, y1, b, ra, rb, CW + 8 + 16 * laneNo++, nextLane, end, typeof L === 'number' ? L : undefined) };
+      // v41 R3 (E1/E2): a lane beside the rows in between when it fits (up on the left, down on the right), leaving and landing on that third; else the side lane at the right
+      const key = [ra, rb].sort().join();
+      const lx = localLane(spec, pl, e, near2.get(key) ?? 0);
+      if (lx !== undefined) near2.set(key, (near2.get(key) ?? 0) + 1);
+      const third = (r: Rect): number => Math.round(r.x + (r.w * (lx === undefined ? 1.5 : lx > r.x + r.w / 2 ? 2 : 1)) / 3);
+      return { e, d: laneRoute(third(a), y1, typeof L === 'number' ? L : third(b), ra, rb, lx ?? CW + 8 + 16 * laneNo++, nextLane, end) };
     }
     const lo = Math.max(a.x, b.x), hi = Math.min(a.x + a.w, b.x + b.w);
     const D = leave(e);
@@ -320,13 +331,14 @@ export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): 
 
   /** data-from/data-to name a box the checker can find: a box, key, table or doc end (a grid or bars end has no single rect, the checker finds its nearest cell). */
   const boxy = (end: string): boolean => ['box', 'key', 'table', 'doc'].includes(byId.get(base(end))?.shape ?? 'box');
-  const ends = (e: FigEdge): Record<string, string> => ({ ...(boxy(e.from) ? { 'data-from': `n:${base(e.from)}` } : {}), ...(boxy(e.to) ? { 'data-to': `n:${base(e.to)}` } : {}) });
+  const key = (x: string): string | undefined => (gnodes.has(base(x)) ? `g:${base(x)}` : boxy(x) ? `n:${base(x)}` : undefined); // v41 R3: a group end names its frame
+  const ends = (e: FigEdge): Record<string, string> => Object.fromEntries([['data-from', key(e.from)], ['data-to', key(e.to)]].filter(([, v]) => v));
   const parentOf = groupOf(spec);
-  const groupBg = groupShapes(spec, lang, at, CW, routes.flatMap((r) => (r ? [r.d] : [])));
+  const groupBg = groupShapes(spec, lang, at, routes.flatMap((r) => (r ? [r.d] : [])));
   const frames: Frame[] = ps.map((p) => {
     const shapes: Shape[] = [...groupBg]; // under everything: frame order is paint order
     routes.forEach((r, i) => {
-      if (!r || !p.show.has(base(r.e.from)) || !p.show.has(base(r.e.to))) return;
+      if (!r || !vis(p.show, r.e.from) || !vis(p.show, r.e.to)) return;
       const k = `e:${i}`;
       shapes.push(r.e.link
         ? { k, t: 'p', d: r.d, ink: r.e.ends ? 'edge' : 'new', w: STROKE, dash: r.e.dash }
@@ -349,6 +361,7 @@ function groupOf(spec: FigSpec): Map<string, string> {
     const rs = spec.rows.map((r, i) => [r, i] as const).filter(([r]) => r.some((id) => g.nodes.includes(id)));
     if (rs.some(([r]) => !r.every((id) => g.nodes.includes(id))) || rs.flatMap(([r]) => r).length !== g.nodes.length
       || rs.some(([, i], j) => j > 0 && i !== rs[j - 1][1] + 1)) fail(`nhóm ${g.id}: phải gồm trọn các hàng liền nhau`);
+    if (spec.nodes.some((n) => n.id === g.id)) fail(`nhóm ${g.id}: trùng tên node`);
     for (const id of g.nodes) m.set(id, `g:${g.id}`);
   }
   return m;
@@ -358,7 +371,7 @@ function groupOf(spec: FigSpec): Map<string, string> {
  * row of tables is top-aligned and, v40, lines up their first rows; notes as headings), leaving room for group bands and
  * `reserve` side lanes at the right (CW = where boxes must end). `dims` is a copy: `align` stretches boxes in it.
  */
-function placeRows(spec: FigSpec, lang: Lang, W: number, dims: Map<string, Sized>, reserve: number, heads: Map<string, number>) {
+function placeRows(spec: FigSpec, lang: Lang, W: number, dims: Map<string, Sized>, reserve: number, heads: Map<string, number>, co: (a: string, b: string) => boolean) {
   const CW = W - MARGIN - 16 * reserve;
   const byId = new Map(spec.nodes.map((n) => [n.id, n]));
   const edges = spec.edges ?? [];
@@ -391,9 +404,10 @@ function placeRows(spec: FigSpec, lang: Lang, W: number, dims: Map<string, Sized
     }
     i = j;
   }
-  // rows wrap, in order, when they do not fit
+  // rows wrap, in order, when they do not fit; v41 R3 (E2): a node never shown with the one it would wrap under shares its slot
   const vrows: string[][] = [];
   const vslot: ({ cols: number[]; gaps: number[] } | undefined)[] = [];
+  const over = new Map<string, string>();
   spec.rows.forEach((row, ri) => {
     if (slot.has(ri) || stack.has(ri)) {
       for (const r of slot.has(ri) ? [row] : row.map((id) => [id])) { vrows.push(r); vslot.push(slot.get(ri)); }
@@ -406,7 +420,8 @@ function placeRows(spec: FigSpec, lang: Lang, W: number, dims: Map<string, Sized
       const d = dims.get(id) ?? fail(`rows: không có node "${id}"`);
       if (d.w > room) fail(`${id} rộng ${d.w} > ${room} (W ${W})`);
       const add = (cur.length ? gapOf(cur[cur.length - 1], id) : 0) + d.w;
-      if (cur.length && used + add > room) {
+      if (cur.length === 1 && used + add > room && !co(cur[0], id) && [...over].every(([o, b]) => b !== cur[0] || !co(o, id))) over.set(id, cur[0]);
+      else if (cur.length && used + add > room) {
         vrows.push(cur);
         vslot.push(undefined);
         cur = [id];
@@ -420,12 +435,20 @@ function placeRows(spec: FigSpec, lang: Lang, W: number, dims: Map<string, Sized
   });
   const rowOf = new Map<string, number>();
   vrows.forEach((r, i) => r.forEach((id) => rowOf.set(id, i)));
+  for (const [o, b] of over) rowOf.set(o, rowOf.get(b)!);
   for (const n of spec.nodes) if (!rowOf.has(n.id)) fail(`node "${n.id}" không nằm trong rows`);
-  const near = (e: FigEdge): boolean => Math.abs(rowOf.get(base(e.from))! - rowOf.get(base(e.to))!) === 1;
+  // v41 R3 (E2/E6): an edge end may be a group: its first row toward an end above it, its last row toward one below
+  const gr = new Map((spec.groups ?? []).map((g) => [g.id, g.nodes]));
+  const rowIn = (x: string, y: string): number => {
+    const rs = gr.get(base(x))?.map((n) => rowOf.get(n)!);
+    return !rs ? rowOf.get(base(x)) ?? fail(`edge: không có node "${x}"`) : (rowOf.get(base(y)) ?? 0) > Math.max(...rs) ? Math.max(...rs) : Math.min(...rs);
+  };
+  const rowE = (e: FigEdge): [number, number] => [rowIn(e.from, e.to), rowIn(e.to, e.from)];
+  const near = (e: FigEdge): boolean => Math.abs(rowE(e)[0] - rowE(e)[1]) === 1;
   // a labelled edge between neighbouring rows widens its gap (v40: 64, room for a label beside a straight arrow or above an elbow)
-  const labelled = new Set(edges.filter((e) => (e.label || e.ends) && near(e)).map((e) => Math.min(rowOf.get(base(e.from))!, rowOf.get(base(e.to))!)));
+  const labelled = new Set(edges.filter((e) => (e.label || e.ends) && near(e)).map((e) => Math.min(...rowE(e))));
   const isNote = (id: string): boolean => byId.get(id)?.shape === 'note';
-  const linked = (i: number): boolean => edges.some((e) => Math.min(rowOf.get(base(e.from))!, rowOf.get(base(e.to))!) === i && near(e));
+  const linked = (i: number): boolean => edges.some((e) => Math.min(...rowE(e)) === i && near(e));
   const group = (i: number): string | undefined => parentOf.get(vrows[i]?.[0]);
   const at = new Map<string, Rect>();
   let y = MARGIN;
@@ -436,7 +459,8 @@ function placeRows(spec: FigSpec, lang: Lang, W: number, dims: Map<string, Sized
     const top = r.every((id) => ['grid', 'bars'].includes(byId.get(id)?.shape ?? 'box'));
     const lift = Math.max(0, ...r.map((id) => heads.get(id) ?? 0));
     const off = (id: string): number => (top ? lift - (heads.get(id) ?? 0) : 0);
-    const hh = Math.max(...r.map((id) => dims.get(id)!.h + off(id)));
+    const ov = [...over].filter(([, b]) => r.includes(b));
+    const hh = Math.max(...[...r, ...ov.map(([o]) => o)].map((id) => dims.get(id)!.h + off(id)));
     const room = roomOf(r[0]);
     const sl = vslot[i];
     const xs: number[] = [];
@@ -461,30 +485,34 @@ function placeRows(spec: FigSpec, lang: Lang, W: number, dims: Map<string, Sized
       const d = dims.get(id)!;
       at.set(id, { x: xs[j], y: top ? y + off(id) : y + Math.round((hh - d.h) / 2), w: d.w, h: d.h });
     });
+    for (const [o, b] of ov) { const d = dims.get(o)!, p = at.get(b)!; at.set(o, { x: p.x + Math.round((p.w - d.w) / 2), y: y + Math.round((hh - d.h) / 2), w: d.w, h: d.h }); }
     bands.push([y, y + hh]);
     y += hh;
     if (group(i) && group(i) !== group(i + 1)) y += GPAD;
     // R1 E14: a row of notes is a heading for the row below: GAP_NOTE when no edge crosses the gap
     if (i < vrows.length - 1) y += labelled.has(i) ? GAP_ELBOW : r.every(isNote) && !linked(i) && !group(i) && !group(i + 1) ? GAP_NOTE : GAP_Y;
   });
-  return { vrows, rowOf, at, bands, H: y + MARGIN, CW };
+  // a group's frame is a rect in `at` too (an edge end since v41 R3)
+  for (const [id, ns] of gr) {
+    const rs = ns.map((n) => at.get(n)!), y0 = Math.min(...rs.map((r) => r.y)) - GBAND - GPAD;
+    at.set(id, { x: MARGIN, y: y0, w: CW - MARGIN, h: Math.max(...rs.map((r) => r.y + r.h)) + GPAD - y0 });
+  }
+  return { vrows, rowOf, rowE, at, bands, H: y + MARGIN, CW };
 }
 /** The dashed group frames and their labels, keys `g:<id>` (the checker's parent of every member box). */
-function groupShapes(spec: FigSpec, lang: Lang, at: Map<string, Rect>, CW: number, paths: string[]): Shape[] {
+function groupShapes(spec: FigSpec, lang: Lang, at: Map<string, Rect>, paths: string[]): Shape[] {
   return (spec.groups ?? []).flatMap((g) => {
-    const rs = g.nodes.map((id) => at.get(id)!);
-    const y0 = Math.min(...rs.map((r) => r.y)), y1 = Math.max(...rs.map((r) => r.y + r.h));
+    const { x, y: top, w: gw, h } = at.get(g.id)!;
     const [s, more] = wrap(tr(g.label, lang));
     if (more !== undefined) fail(`nhóm ${g.id}: nhãn > 18 ký tự`);
     const k = `g:${g.id}`;
-    const top = y0 - GBAND - GPAD;
-    // the label sits in the band, as far left as no arrow crossing the band allows
+    // the label sits in the band, as far left as no arrow crossing the band (or ending on the frame, v41 R3) allows
     const w = textWidth(s, SS, true);
-    const xs = paths.flatMap((d) => vertXs(d, top, top + GBAND));
+    const xs = paths.flatMap((d) => { const p = d.split(/[ ML]+/).filter(Boolean).map(Number), y = p[p.length - 1]; return [...vertXs(d, top, top + GBAND), ...(y >= top - 12 && y <= top ? [p[p.length - 2]] : [])]; });
     const free = (x0: number): boolean => xs.every((x) => x < x0 - 6 || x > x0 + w + 6);
     let lx = MARGIN + 10;
-    while (!free(lx)) if ((lx += 4) > CW - 10 - w) fail(`nhóm ${g.id}: mũi tên chắn mọi chỗ đặt nhãn`);
-    return [{ k, t: 'r', x: MARGIN, y: top, w: CW - MARGIN, h: y1 + GPAD - top, tone: 'ghost', rx: 12 } as Shape,
+    while (!free(lx)) if ((lx += 4) > x + gw - 10 - w) fail(`nhóm ${g.id}: mũi tên chắn mọi chỗ đặt nhãn`);
+    return [{ k, t: 'r', x, y: top, w: gw, h, tone: 'ghost', rx: 12 } as Shape,
       { k: `${k}.t`, t: 't', x: lx, y: top + GBAND / 2 + 2, s, size: SS, b: true, ink: 'muted', attrs: { 'data-owner': k } } as Shape];
   });
 }
@@ -497,11 +525,23 @@ function vertXs(d: string, y0: number, y1: number): number[] {
 }
 /** A side lane: out into the gap next to the source row, across to the lane at the right, along it, then back through the
  * gap next to the target row and into the target (never across a row's neighbours). */
-function laneRoute(a: Rect, y1: number, b: Rect, ra: number, rb: number, lx: number, lane: (gap: number) => number, end: (x: number, from: number) => number, land?: number): string {
+function laneRoute(ax: number, y1: number, bx: number, ra: number, rb: number, lx: number, lane: (gap: number) => number, end: (x: number, from: number) => number): string {
   const down = rb > ra;
-  const ax = Math.round(a.x + a.w / 2), bx = land ?? Math.round(b.x + b.w / 2);
   const ys = lane(down ? ra : ra - 1), yt = lane(down ? rb - 1 : rb);
   return `M${ax} ${y1} L${ax} ${ys} L${lx} ${ys} L${lx} ${yt} L${bx} ${yt} L${bx} ${end(bx, yt)}`;
+}
+/** v41 R3 (E1/E2): the x of a lane beside the rows between an edge's ends (their nodes 14 away, the `k`-th lane 12 further), up
+ * edges on the left and down edges on the right first; undefined when neither side fits inside the room (and its group frame). */
+function localLane(spec: FigSpec, pl: { rowOf: Map<string, number>; rowE: (e: FigEdge) => [number, number]; at: Map<string, Rect>; CW: number }, e: FigEdge, k: number): number | undefined {
+  const [ra, rb] = pl.rowE(e);
+  const mids = [...pl.rowOf].filter(([, r]) => r > Math.min(ra, rb) && r < Math.max(ra, rb)).map(([id]) => id);
+  const par = groupOf(spec), inG = (x: string, g: string): boolean => par.get(base(x)) === g || `g:${base(x)}` === g;
+  // never through a group neither end belongs to (it would cross the frame twice)
+  if (e.link || !mids.length || mids.some((id) => par.has(id) && !inG(e.from, par.get(id)!) && !inG(e.to, par.get(id)!))) return undefined;
+  const pad = par.has(mids[0]) ? GPAD + 6 : 6;
+  const rs = mids.map((id) => pl.at.get(id)!), L = Math.min(...rs.map((r) => r.x)), R = Math.max(...rs.map((r) => r.x + r.w));
+  const xs = [L - 14 - 12 * k, R + 14 + 12 * k];
+  return (rb > ra ? xs.reverse() : xs).find((x) => x >= MARGIN + pad && x <= pl.CW - pad);
 }
 /** An elbow's label sits above its run, between the two legs; a run too short for it is a content error. */
 function elbowLabel(s: string, ax: number, bx: number, ym: number, e: FigEdge): { x: number; y: number; a: 'm'; s: string } {
@@ -657,7 +697,7 @@ export function altText(spec: FigSpec, lang: Lang, variant?: string, generated =
   const byId = new Map(ps[0].nodes.map((n) => [n.id, n]));
   const end = (x: string): string => {
     const [id, row] = cellOf(x);
-    const n = byId.get(id)!;
+    const n = byId.get(id) ?? { id, label: spec.groups?.find((g) => g.id === id)?.label }; // v41 R3: a group end reads as its label
     return row === undefined ? tr(n.label, lang) || id : `${tr(n.label, lang) || w.table} (${(n.cells?.[row] ?? []).map((c) => tr(c, lang)).filter(Boolean).join(', ')})`;
   };
   const parts = (ns: FigNode[]): string => ns.map((n) => said(n, lang)).filter(Boolean).join('; ');

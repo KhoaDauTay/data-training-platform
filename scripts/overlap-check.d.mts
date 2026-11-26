@@ -7,6 +7,7 @@ export interface OverlapFrame {
   page?: { overflow: string[] }; fig?: boolean;
 }
 export interface Finding { t: string; sev: string; what: string }
-export const RULES: { textGap: number; boxGap: number; tipMin: number; minPx: Record<number, number>; figPx: number; inkShrink: number; seeGap: number; clear: number };
+export const RULES: { textGap: number; boxGap: number; tipMin: number; minPx: Record<number, number>; figPx: number; inkShrink: number; seeGap: number; clear: number; parGap: number; parRun: number; headLen: number; headText: number; headGap: number };
+export function axisRuns(pts: [number, number][]): { o: 'h' | 'v'; c: number; a: number; b: number }[];
 export function samplePath(d: string, step?: number): [number, number][];
 export function analyze(f: OverlapFrame, width: number): Finding[];

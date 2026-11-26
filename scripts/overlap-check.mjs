@@ -15,7 +15,8 @@
 // the same rules in Vitest on a model built from shapes (see svg-system.md §7).
 //
 // Checks: a text/text, b text vs its container or the viewBox, c box/box (not parent), d arrow through text/box,
-// e arrow tip < 2 units from its target, f font px under the floor, g horizontal overflow, m figure never mounted.
+// e arrow tip < 2 units from its target, f font px under the floor, g horizontal overflow, m figure never mounted,
+// h two arrows running in parallel ≤ 8 apart for > 12, i an arrowhead ≤ 5 from a text, j two arrowheads head to head (v41 R3).
 import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -36,7 +37,22 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 // cells) nor clearly apart must show ≥ seeGap units of background between their strokes (else the strokes merge); a text's ink
 // stays inside its own box's stroke (clearance ≥ clear). getBBox() ignores strokes, so a 1-unit gap between 1.2-wide strokes and
 // ink sitting on the stroke used to pass (pg-tenancy-models, the E9 false negative).
-export const RULES = { textGap: 1, boxGap: 1, tipMin: 2, minPx: { 375: 12, 320: 11 }, figPx: 13, inkShrink: 0.15, seeGap: 0.5, clear: 0 };
+export const RULES = { textGap: 1, boxGap: 1, tipMin: 2, minPx: { 375: 12, 320: 11 }, figPx: 13, inkShrink: 0.15, seeGap: 0.5, clear: 0,
+  parGap: 8, parRun: 12, headLen: 10, headText: 5, headGap: 12 };
+/** v41 R3: the straight axis-aligned runs of a sampled path, { o: 'h' | 'v', c: the fixed coordinate, a–b: the span }. */
+export function axisRuns(pts) {
+  const out = [];
+  for (let i = 1; i < pts.length; i++) {
+    const [p, q] = [pts[i - 1], pts[i]];
+    const o = Math.abs(p[1] - q[1]) < 0.01 ? 'h' : Math.abs(p[0] - q[0]) < 0.01 ? 'v' : undefined;
+    if (!o) continue;
+    const c = o === 'h' ? p[1] : p[0], [u, v] = o === 'h' ? [p[0], q[0]] : [p[1], q[1]];
+    const last = out.at(-1);
+    if (last && last.o === o && Math.abs(last.c - c) < 0.01 && last.end === i - 1) { last.a = Math.min(last.a, u, v); last.b = Math.max(last.b, u, v); last.end = i; }
+    else out.push({ o, c, a: Math.min(u, v), b: Math.max(u, v), end: i });
+  }
+  return out.filter((r) => r.b - r.a > 0.5);
+}
 /** Points along an absolute SVG path (M L H V Q C Z), one per `step` units: the Node twin of getPointAtLength sampling. */
 export function samplePath(d, step = 1) {
   const tok = d.match(/[MLHVQCZ]|-?\d*\.?\d+(?:e-?\d+)?/gi) ?? [];
@@ -150,6 +166,37 @@ export function analyze(f, width) {
     if (dst) {
       const g = dist(a.tip, dst);
       if (g < RULES.tipMin) add('e', g < 0 ? 'P2' : 'P3', `${a.k ?? 'arrow'} tip ${r1(g)} from ${dst.k ?? dst.kind}`, { depth: r1(g) });
+    }
+  }
+  // h, i, j (v41 R3, E1/E2): the phone-stacking tangles the a–e rules never saw
+  const runs = arrows.map((a) => axisRuns(a.pts));
+  const dir = (a) => { const [p, q] = [a.pts.at(-2), a.pts.at(-1)]; const l = Math.hypot(q[0] - p[0], q[1] - p[1]) || 1; return [(q[0] - p[0]) / l, (q[1] - p[1]) / l]; };
+  for (let i = 0; i < arrows.length; i++) for (let j = i + 1; j < arrows.length; j++) {
+    const [A, B] = [arrows[i], arrows[j]];
+    if (A.pts.length < 2 || B.pts.length < 2) continue;
+    const bus = Math.hypot(A.tip[0] - B.tip[0], A.tip[1] - B.tip[1]) < 0.5; // one bus: shared lane and one arrowhead, by design
+    // h: parallel runs ≤ 8 apart over > 12 (the builder's lanes are exactly 8 apart, the E1 pair: "< 8" would miss it)
+    if (!bus) for (const p of runs[i]) for (const q of runs[j]) {
+      if (p.o !== q.o) continue;
+      const d = Math.abs(p.c - q.c), run = Math.min(p.b, q.b) - Math.max(p.a, q.a);
+      if (d <= RULES.parGap && run > RULES.parRun) add('h', d < 4 ? 'P1' : 'P2', `${A.k ?? 'arrow'} / ${B.k ?? 'arrow'} run ${r1(d)} apart for ${r1(run)}`, { depth: r1(d) });
+    }
+    // j: arrowheads head to head: tips ≤ 12 apart pointing at each other, or last legs on one line in opposite directions that
+    // overlap or end ≤ 12 apart (E1: the read and checkpoint legs crossed on one line, tips pointing away)
+    const [da, db] = [dir(A), dir(B)];
+    if (da[0] * db[0] + da[1] * db[1] > -0.7) continue;
+    const near = Math.hypot(A.tip[0] - B.tip[0], A.tip[1] - B.tip[1]) <= RULES.headGap && (B.tip[0] - A.tip[0]) * da[0] + (B.tip[1] - A.tip[1]) * da[1] > 0;
+    const [la, lb] = [runs[i].at(-1), runs[j].at(-1)];
+    const line = la && lb && la.o === lb.o && Math.abs(la.c - lb.c) < 1 && Math.max(la.a, lb.a) - Math.min(la.b, lb.b) <= RULES.headGap;
+    if (near || line) add('j', 'P1', `${A.k ?? 'arrow'} / ${B.k ?? 'arrow'} arrowheads head to head`);
+  }
+  for (const a of arrows) {
+    if (a.pts.length < 2) continue;
+    // i: the arrowhead (last 10 units, tip included) ≤ 5 from any label: on the target's title (E2) or another node's text
+    const L = a.pts.length, head = [...a.pts.filter((p, n) => Math.hypot(p[0] - a.pts[L - 1][0], p[1] - a.pts[L - 1][1]) <= RULES.headLen && n > 0), a.tip];
+    for (const t of texts) {
+      const g = Math.min(...head.map((p) => dist(p, t)));
+      if (g < RULES.headText) add('i', g < 2 ? 'P1' : 'P2', `${a.k ?? 'arrow'} arrowhead ${r1(g)} from text "${t.s}"`, { depth: r1(g) });
     }
   }
   // f: rendered size (v39: a content figure, `figure[data-fig]`, keeps 13 px at every width)
@@ -325,7 +372,7 @@ async function shoot(b, base, rows, out, tag, max) {
 // ── reporting ───────────────────────────────────────────────────────────────────────────────────────────────────
 function summary(all) {
   const lines = ['| type | P1 | P2 | P3 | W (waiver) | I (info) | raw total | distinct (diagram, step, width, finding) |', '|---|---|---|---|---|---|---|---|'];
-  const NAMES = { a: 'a text/text', b: 'b text vs box/viewBox', c: 'c box/box', d: 'd arrow through', e: 'e arrow tip < 2', f: 'f font px', g: 'g overflow', m: 'm not mounted' };
+  const NAMES = { a: 'a text/text', b: 'b text vs box/viewBox', c: 'c box/box', d: 'd arrow through', e: 'e arrow tip < 2', f: 'f font px', g: 'g overflow', h: 'h parallel runs', i: 'i head on text', j: 'j head to head', m: 'm not mounted' };
   for (const t of Object.keys(NAMES)) {
     const fs = all.flatMap((r) => r.figures.flatMap((f) => f.steps.flatMap((s) => s.findings.filter((x) => x.t === t).map((x) => ({ ...x, key: `${f.name}|${s.step}|${r.cfg.split('-')[0]}|${x.what}` })))));
     const c = (sev) => fs.filter((x) => x.sev === sev).length;
@@ -348,7 +395,11 @@ const SELF = `<!doctype html><meta name=viewport content="width=device-width"><s
 <path d="M231 70 H270" fill="none" stroke="#000" stroke-width="1.4" marker-end="url(#m2)"/><text x="296" y="110" style="font-size:9px">outside</text></svg></figure>
 <figure data-fig="tight" style="margin:0"><svg viewBox="0 0 300 60" width="300"><!-- E9: the old pool strips (15 high on a 16 pitch, 1.2 strokes, 12.5-unit Nunito labels), rescaled for the fallback sans-serif: 12 on 13 -->
 <rect data-k="ps0" x="10" y="10" width="92" height="12" rx="2" style="fill:#def;stroke:#048;stroke-width:1.2"/><text data-k="pt0" x="14" y="16" dominant-baseline="middle" style="font-size:12.5px">tenant_id A</text>
-<rect data-k="ps1" x="10" y="23" width="92" height="12" rx="2" style="fill:#fed;stroke:#840;stroke-width:1.2"/><text data-k="pt1" x="14" y="29" dominant-baseline="middle" style="font-size:12.5px">tenant_id B</text></svg></figure></main>`;
+<rect data-k="ps1" x="10" y="23" width="92" height="12" rx="2" style="fill:#fed;stroke:#840;stroke-width:1.2"/><text data-k="pt1" x="14" y="29" dominant-baseline="middle" style="font-size:12.5px">tenant_id B</text></svg></figure>
+<figure data-fig="tangle" style="margin:0"><svg viewBox="0 0 300 160" width="300"><defs><marker id="m3" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L8 4L0 8z"/></marker></defs><!-- v41 R3 E1/E2: parallel lanes 8 apart, two legs crossing on one line, a head on a title -->
+<path data-k="h1" d="M20 20 H120 V40" fill="none" stroke="#000" stroke-width="1.5" marker-end="url(#m3)"/><path data-k="h2" d="M20 28 H110 V60" fill="none" stroke="#000" stroke-width="1.5" marker-end="url(#m3)"/>
+<path data-k="j1" d="M200 60 V100" fill="none" stroke="#000" stroke-width="1.5" marker-end="url(#m3)"/><path data-k="j2" d="M200 92 V50" fill="none" stroke="#000" stroke-width="1.5" marker-end="url(#m3)"/>
+<text x="60" y="140" text-anchor="middle" dominant-baseline="middle" style="font-size:14px">C-01 title</text><path data-k="i1" d="M60 100 V128" fill="none" stroke="#000" stroke-width="1.5" marker-end="url(#m3)"/></svg></figure></main>`;
 async function selftest() {
   const b = await openBrowser('self');
   try {
@@ -358,6 +409,9 @@ async function selftest() {
     const bad = analyze((await b.ev(STEP_ALL(1))).steps[0], 320);
     const tight = analyze((await b.ev(STEP_ALL(2))).steps[0], 320); // E9 false negative: both rules must see it
     const tightMiss = ['b', 'c'].filter((t) => !tight.some((x) => x.t === t && /hugs|nearly/.test(x.what)));
+    const tangle = analyze((await b.ev(STEP_ALL(3))).steps[0], 320); // v41 R3: h, i, j each seeded once
+    tightMiss.push(...['h', 'i', 'j'].filter((t) => !tangle.some((x) => x.t === t)));
+    console.log('tangle:', tangle.map((x) => `${x.t} ${x.sev} ${x.what}`).join('\n        '));
     const want = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
     const miss = want.filter((t) => !bad.some((x) => x.t === t));
     console.log('clean:', clean.length ? clean : 'no findings'); console.log('bad:', bad.map((x) => `${x.t} ${x.sev} ${x.what}`).join('\n     '));
