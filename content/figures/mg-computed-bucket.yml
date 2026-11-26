@@ -39,12 +39,14 @@ variants:
   computed:
     step: 0
     title: { vi: "Computed Values: lưu sẵn tổng của đơn", en: "Computed Values: store the order's total" }
+    caption: { vi: "Đơn 101 lưu sẵn itemCount và total khi ghi, nên lần đọc không phải cộng các dòng.", en: "Order 101 stores itemCount and total on write, so a read does not add up the lines." }
     alt:
       vi: "Tổng của đơn được tính một lần khi ghi và lưu vào chính tài liệu, nên mọi lần đọc lấy ngay itemCount và total. Đổi lại, lệnh nào sửa dòng hàng cũng phải sửa luôn hai trường đó."
       en: "The order's total is computed once on write and stored in the document itself, so every read gets itemCount and total at once. In return, any write that changes a line must also change those two fields."
   bucket:
     step: 1
     title: { vi: "Bucket: gom các lần đo theo giờ", en: "Bucket: group readings by hour" }
+    caption: { vi: "Ba lần đo của s1 trong giờ 08:00 thành một tài liệu bucket, mảng temps giữ từng giá trị theo thời gian.", en: "The three readings of s1 in hour 08:00 become one bucket document; the temps array keeps each value in time order." }
     alt:
       vi: "Các lần đo cùng giờ của một cảm biến gom vào một tài liệu, nên ít tài liệu và ít khóa index hơn. Mỗi bucket cần giới hạn số phần tử để tài liệu không phình mãi."
       en: "One sensor's readings of the same hour go into one document, so there are fewer documents and index keys. Each bucket needs a cap on its entries so the document does not grow forever."

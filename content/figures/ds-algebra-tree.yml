@@ -44,6 +44,7 @@ variants:
   pushed:
     step: 1
     title: { vi: "Sau khi đẩy σ xuống", en: "After pushing σ down" }
+    caption: { vi: "Phép chọn chạy ngay trên emp, phép nối chỉ nhận 3 bộ; kết quả vẫn là 3 bộ như cây viết ra.", en: "The selection runs right on emp and the join takes only 3 tuples; the result is still the written tree's 3 tuples." }
     alt:
       vi: "Phép chọn σ city = 'Hue' chạy ngay trên emp, nên phép nối chỉ ghép 3 bộ thay vì 5. Cây mới tương đương cây viết ra: cùng 3 bộ kết quả."
       en: "The selection σ city = 'Hue' runs right on emp, so the join pairs 3 tuples instead of 5. The new tree is equivalent to the written one: the same 3 result tuples."

@@ -39,6 +39,7 @@ variants:
   pss:
     step: 1
     title: { vi: "P-S-S: mất một thành viên vẫn ghi được", en: "P-S-S: losing one member still allows writes" }
+    caption: { vi: "Ba thành viên mang dữ liệu: một secondary hỏng vẫn còn hai bản, đủ đa số cho write concern majority.", en: "Three data-bearing members: one secondary down still leaves two copies, a majority for write concern majority." }
     alt:
       vi: "Với ba thành viên mang dữ liệu, một secondary hỏng vẫn còn hai bản, đủ đa số để write concern majority xác nhận. Một arbiter ở chỗ secondary thứ hai thì không đếm được."
       en: "With three data-bearing members, one secondary down still leaves two copies, a majority for write concern majority. An arbiter in the second secondary's place would not count."
