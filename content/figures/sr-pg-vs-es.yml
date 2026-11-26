@@ -1,0 +1,23 @@
+# v47 R1 (L1019): which need points to PostgreSQL full-text and which to Elasticsearch. Lesson: e-sr-l3-04 (Ý chính).
+# Data = the lesson's own criteria (PostgreSQL docs: textsearch; Elastic docs: near real-time search, shards and replicas).
+title: { vi: "Nhu cầu nào hợp công cụ nào", en: "Which need fits which tool" }
+caption:
+  vi: "PostgreSQL đủ khi dữ liệu đã ở đó và vừa phải; Elasticsearch đáng khi tìm là sản phẩm chính, dữ liệu rất lớn hay cần chấm điểm tốt."
+  en: "PostgreSQL is enough when the data already lives there and is moderate; Elasticsearch pays off when search is the main product, data is very large or scoring must be good."
+alt:
+  vi: "Không có công cụ thắng mọi trường hợp: PostgreSQL giữ dữ liệu ở một chỗ và thấy ngay sau COMMIT, Elasticsearch chấm điểm và mở rộng tốt hơn nhưng là một bản sao phải đồng bộ. Kết quả: một shop vài chục nghìn sản phẩm nên bắt đầu bằng PostgreSQL."
+  en: "No tool wins every case: PostgreSQL keeps the data in one place and sees it right after COMMIT, Elasticsearch scores and scales better but is a copy to keep in sync. Result: a shop with tens of thousands of products should start with PostgreSQL."
+nodes:
+  - id: g
+    shape: grid
+    label: { vi: "Chọn công cụ", en: "Picking a tool" }
+    head: [{ vi: "nhu cầu", en: "need" }, { vi: "hợp hơn", en: "fits better" }]
+    cells:
+      - [{ vi: "dữ liệu sẵn ở PG", en: "data already in PG" }, PostgreSQL]
+      - [{ vi: "thấy ngay sau ghi", en: "visible at commit" }, PostgreSQL]
+      - [{ vi: "BM25, n-gram", en: "BM25, n-grams" }, Elasticsearch]
+      - [{ vi: "rất nhiều tài liệu", en: "huge volumes" }, Elasticsearch]
+      - [{ vi: "log, nhiều máy", en: "logs, many nodes" }, Elasticsearch]
+    rowTone: [good, good, warm, warm, warm]
+rows:
+  - [g]

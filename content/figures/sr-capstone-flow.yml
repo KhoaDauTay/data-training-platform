@@ -1,0 +1,36 @@
+# v47 R1 (L1019): one customer request through the capstone's search box. Lesson: e-sr-l3-05 (Ý chính).
+# Data = lab steps 2 and 4 on the simulator: "lua" with price ≤ 400 → documents 1 and 7; facets SilkHouse 3, HoiAnLight 1.
+# Sources: https://www.elastic.co/docs/reference/query-languages/query-dsl/query-dsl-bool-query
+title: { vi: "Một câu tìm, ba phần", en: "One search, three parts" }
+caption:
+  vi: "Chữ gõ đi qua vi_fold và được chấm điểm; giá chỉ lọc; aggregation đếm thương hiệu trên các kết quả khớp chữ gõ."
+  en: "The typed text goes through vi_fold and is scored; the price only filters; the aggregation counts brands over the hits of the typed text."
+alt:
+  vi: "Mỗi điều kiện của ô tìm có một chỗ riêng: chữ gõ quyết định thứ hạng, bộ lọc chỉ quyết định có hay không, và bộ lọc bên đếm trên đúng tập khớp. Kết quả: lua với giá tới 400 còn tài liệu 1 và 7."
+  en: "Each condition of the search box has its own place: the typed text decides the ranking, the filter only decides yes or no, and the facets count over exactly the matching set. Result: the search with prices up to 400 keeps documents 1 and 7."
+nodes:
+  - { id: q, shape: note, mono: true, label: { vi: "khách gõ: lua", en: "typed: lua" } }
+  - { id: m, label: must, sub: { vi: "match, có điểm", en: "match, scored" }, tone: warm }
+  - { id: f, label: filter, sub: "price ≤ 400" }
+  - id: hits
+    shape: grid
+    mono: true
+    label: hits
+    head: [_id, name]
+    cells: [["1", Đèn lồng lụa đỏ], ["7", Khăn lụa tơ tằm đỏ]]
+  - id: agg
+    shape: bars
+    label: { vi: "by_brand (không lọc giá)", en: "by_brand (no price filter)" }
+    items:
+      - { label: SilkHouse, value: 3 }
+      - { label: HoiAnLight, value: 1 }
+rows:
+  - [q]
+  - [m, f]
+  - [hits]
+  - [agg]
+edges:
+  - { from: q, to: m }
+  - { from: m, to: hits }
+  - { from: f, to: hits }
+  - { from: m, to: agg }
