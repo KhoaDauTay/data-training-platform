@@ -32,8 +32,8 @@ rows:
   - [t, g]
   - [rm, set]
 edges:
+  - { from: "t#0", to: "g#0" }
   - { from: "t#1", to: "g#1" }
-  - { from: "t#2", to: "g#2" }
   - { from: set, to: g }
   - { from: g, to: rm, dash: true }
 steps:

@@ -3,7 +3,7 @@
 # Data: mingo on `shop` (tools/v42/b4check.log): { tags: "sale" } matches 4 products, P04 "toy 1" has tags [sale, gift]; the
 # partial index { year: 1 } with year > 2000 against year > 1990 → COLLSCAN is quoted from the lesson's // WRONG block (docs rule).
 # Deviation: the plan's illustrative p1 [sale, tea] is the real P04 [sale, gift]; the index rows point at the document (a key
-# points back to its document), so the arrows run from each index row to P04; the variants are `show` frames (each draws only its
+# points back to its document), one labelled arrow from the index to P04 (two row arrows would converge 6 apart, rule h); the variants are `show` frames (each draws only its
 # own half), not `step: i`, because step 2 keeps the multikey half on screen.
 # Source: https://www.mongodb.com/docs/manual/core/index-partial/
 title: { vi: "Index multikey và index partial", en: "Multikey and partial indexes" }
@@ -37,8 +37,7 @@ rows:
   - [pf]
   - [q, gap, plan]
 edges:
-  - { from: "ix#1", to: doc }
-  - { from: "ix#2", to: doc }
+  - { from: ix, to: doc, label: { vi: "trỏ về", en: points to } }
   - { from: q, to: gap }
   - { from: pf, to: gap, dash: true }
   - { from: gap, to: plan }

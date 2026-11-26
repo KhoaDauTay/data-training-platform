@@ -4,7 +4,7 @@
 # to SHIP#…#SH-<id>, the full key is 23 characters). RCU by tenant: dynoxide on e-dy-l5-09's two runnable Queries
 # (tools/v42/b4check.log): C02 eventually consistent 0.5 RCU, C01 strongly consistent 1.0 RCU (the plan's r-101 / r-102).
 # Deviation: Scan sits beside the table (a dashed arrow, labelled) and the Query comes from above, so the two arrows never share a
-# side; the variant's GSI1PK values are cut to TENANT#C0n#… (22 characters), the grid's sub names the rest.
+# side; the variant's GSI1PK values are cut to TENANT#C0n#… (22 characters), the grid's sub names the rest (all three are open shipments in the lab); no row links (side by side the rows already line up).
 # Source: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/specifying-conditions.html
 title: { vi: "Một bảng chung, mỗi khách một tiền tố khóa", en: "One shared table, one key prefix per tenant" }
 caption:
@@ -25,7 +25,7 @@ nodes:
   - id: gk
     shape: grid
     label: GSI byTenantStatus
-    sub: { vi: "… = STATUS#<trạng thái>", en: "… = STATUS#<status>" }
+    sub: "… = STATUS#open"
     head: [GSI1PK]
     cells: [["TENANT#C01#…"], ["TENANT#C02#…"], ["TENANT#C02#…"]]
     rowTone: [ghost, live, live]
@@ -45,9 +45,6 @@ edges:
   - { from: iam, to: q }
   - { from: q, to: t, label: { vi: "chỉ C02", en: C02 only } }
   - { from: s, to: t, dash: true }
-  - { from: "t#1", to: "gk#1", link: true }
-  - { from: "t#2", to: "gk#2", link: true }
-  - { from: "t#3", to: "gk#3", link: true }
 steps:
   - say: { vi: "Mọi khóa mở đầu bằng mã khách.", en: "Every key starts with the tenant id." }
     show: [iam, q, t]

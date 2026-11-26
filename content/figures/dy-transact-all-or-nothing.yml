@@ -2,7 +2,8 @@
 # `cancel` in e-dy-l4-13 and `partiql` in e-dy-l4-15 (Ý chính).
 # Data: e-dy-l4-11 (docs-only: TransactWriteItems is not in dynoxide 1.5.0) quotes 2 items × 1 WCU × 2 = 4 WCU, success or cancel.
 # dynoxide on e-dy-l4-15's lab (tools/v42/b4check.log): ExecuteTransaction w3 -50000 → w2 +50000 succeeds with 4 WCU measured;
-# w2 (balance 50000) -100000 → w3 +100000 is cancelled with reasons [ConditionalCheckFailed, None].
+# w2 (balance 50000) -100000 → w3 +100000 is cancelled with reasons [ConditionalCheckFailed, None]; e-dy-l4-13's predict moves
+# 100000 from w2 to w1 (w1 300000, w2 50000, its setup) and is cancelled the same way, so cancel draws w2 → w1.
 # Deviation: the group is labelled "one transaction" (not TransactWriteItems), because the `cancel` and `partiql` lessons run
 # ExecuteTransaction and a group label cannot change per variant; the caption names the API. The "still 4 WCU" key is the
 # reasons grid's sub. The sub "if amount ≥ 100000" is "nếu số dư ≥ 100000" in VI (the field name made it 19 characters).
@@ -48,11 +49,11 @@ variants:
     step: 1
     set:
       u1: { label: UPDATE w2 -100000, sub: { vi: "số dư 50000", en: balance 50000 } }
-      u2: { label: UPDATE w3 +100000 }
+      u2: { label: UPDATE w1 +100000 }
     title: { vi: "Một điều kiện sai hủy cả transaction", en: "One failed condition cancels the whole transaction" }
     caption:
-      vi: "ExecuteTransaction chuyển 100000 từ w2 sang w3, nhưng w2 chỉ có 50000. Câu 1 có điều kiện sai nên cả hai câu bị hủy; CancellationReasons là ConditionalCheckFailed, rồi None."
-      en: "ExecuteTransaction moves 100000 from w2 to w3, but w2 holds only 50000. Statement 1's condition fails, so both statements are cancelled; CancellationReasons is ConditionalCheckFailed, then None."
+      vi: "ExecuteTransaction chuyển 100000 từ w2 sang w1, nhưng w2 chỉ có 50000. Câu 1 có điều kiện sai nên cả hai câu bị hủy; CancellationReasons là ConditionalCheckFailed, rồi None."
+      en: "ExecuteTransaction moves 100000 from w2 to w1, but w2 holds only 50000. Statement 1's condition fails, so both statements are cancelled; CancellationReasons is ConditionalCheckFailed, then None."
     alt:
       vi: "Chỉ một câu có điều kiện sai là không câu nào được ghi, nên không có trạng thái trừ xong mà chưa cộng. Lý do hủy được liệt kê theo đúng thứ tự câu lệnh."
       en: "One statement with a failed condition means no statement is written, so there is no state where the debit happened without the credit. The cancellation reasons are listed in statement order."
