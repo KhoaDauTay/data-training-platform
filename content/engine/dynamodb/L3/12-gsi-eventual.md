@@ -164,7 +164,7 @@ Danh sách "đơn đang chờ" đọc từ GSI là đủ: chậm một chút kh�
 
 - GSI chỉ đọc nhất quán cuối; `ConsistentRead: true` bị từ chối.
 - Ngay sau khi ghi, GSI có thể chưa thấy item mới.
-- Cần bản mới nhất: lấy khóa từ GSI, `GetItem` bảng chính đọc mạnh.
+- Cần bản mới nhất: lấy khóa từ GSI, `GetItem` bảng chính đọc nhất quán mạnh.
 - Đổi khóa GSI tốn 2 WCU ở index; đổi thuộc tính không project thì không tốn gì ở index.
 
 # EN

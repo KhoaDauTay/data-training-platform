@@ -24,7 +24,7 @@ export interface DemoBlock {
   mark?: 'error' | 'wrong' | 'fix';
 }
 
-export const RUN_LANG: Record<EngineId, readonly string[]> = { postgres: ['sql'], design: ['sql'], stack: ['sql'], telemetry: ['sql'], mongodb: ['javascript', 'js'], dynamodb: ['json', 'partiql'] };
+export const RUN_LANG: Record<EngineId, readonly string[]> = { postgres: ['sql'], design: ['sql'], stack: ['sql'], olap: ['sql'], telemetry: ['sql'], mongodb: ['javascript', 'js'], dynamodb: ['json', 'partiql'], redis: ['redis'] };
 export const DEMO_SECS: readonly SectionId[] = ['example', 'pitfalls'];
 
 /** One block of section text, classified (`lang` = the fence's info string). */
@@ -37,8 +37,9 @@ export function demoBlock(engine: EngineId, sec: SectionId, lang: string, code: 
   }
   const lines = code.split('\n');
   let n = 0;
-  while (n < lines.length && /^\s*(\/\/|--)/.test(lines[n])) n++;
-  const marks = lines.slice(0, n).map((x) => x.replace(/^\s*(\/\/|--)\s*/, ''));
+  // v47 (L953): Redis blocks (```redis, several redis-cli lines) mark with a leading `# ERROR <code>` / `# WRONG` / `# FIX`
+  while (n < lines.length && /^\s*(\/\/|--|#)/.test(lines[n])) n++;
+  const marks = lines.slice(0, n).map((x) => x.replace(/^\s*(\/\/|--|#)\s*/, ''));
   const markOf = (m: string): string | undefined => marks.map((x) => new RegExp(`^${m}\\b\\s*:?\\s*([A-Za-z_0-9]*)`).exec(x)).find(Boolean)?.[1];
   const error = markOf('ERROR');
   const mark = error !== undefined ? 'error' : markOf('WRONG') !== undefined ? 'wrong' : markOf('FIX') !== undefined ? 'fix' : undefined;

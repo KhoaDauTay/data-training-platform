@@ -1,0 +1,16 @@
+# OL-13 (v47 R1, L990): which job goes where, per the ClickHouse best-practice pages. Lesson: e-ol-l3-06.
+# Sources: https://clickhouse.com/docs/best-practices/avoid-mutations, https://clickhouse.com/docs/best-practices/selecting-an-insert-strategy
+title: { vi: "Việc nào để ở đâu", en: "Which job goes where" }
+caption:
+  vi: "Giao dịch và ràng buộc ở PostgreSQL; báo cáo trên bản chép ở kho lưu theo cột."
+  en: "Transactions and constraints in PostgreSQL; reports on a copy in a column store."
+alt:
+  vi: "Sửa từng dòng, chèn từng đơn và khóa ngoại thuộc về PostgreSQL, nơi chúng được kiểm trong một giao dịch. Dữ liệu được chép theo lô sang ClickHouse, nơi các câu gộp trên nhiều dòng chạy."
+  en: "Single-row updates, one-order inserts and foreign keys belong in PostgreSQL, where they are checked inside a transaction. Data is copied in batches to ClickHouse, where aggregates over many rows run."
+nodes:
+  - { id: pg, label: PostgreSQL, sub: { vi: "UPDATE 1 dòng, FK", en: "1-row UPDATE, FK" }, tone: new }
+  - { id: ch, label: ClickHouse, sub: { vi: "gộp nhiều dòng", en: "big aggregates" }, tone: warm }
+rows:
+  - [pg, ch]
+edges:
+  - { from: pg, to: ch, label: { vi: "chép theo lô", en: "batch copy" } }

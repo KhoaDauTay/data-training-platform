@@ -217,7 +217,7 @@ read:  {"op": "Query", "input": {"TableName": "<t>", "IndexName": "<gsi>", "KeyC
 
 - Thuộc tính khóa của GSI phải khai trong `AttributeDefinitions` của bảng.
 - `REMOVE` thuộc tính = rời GSI; `SET` lại = vào lại.
-- Query trên GSI chỉ đọc nhất quán cuối cùng.
+- Query trên GSI chỉ đọc nhất quán cuối.
 
 ## Ví dụ
 

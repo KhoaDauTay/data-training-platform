@@ -1,0 +1,29 @@
+# OL-07 (v47 R1, L990): the same port column in insert order vs sorted; sorted, repeats become 3 runs. Lesson: e-ol-l2-04.
+# Source: https://clickhouse.com/docs/concepts/why-clickhouse-is-so-fast (column stores suit compression).
+title: { vi: "Sắp xếp làm cột dễ nén", en: "Sorting makes a column easy to compress" }
+caption:
+  vi: "Cùng sáu giá trị cảng: theo thứ tự chèn có sáu đoạn, sắp theo cảng còn ba đoạn."
+  en: "The same six port values: in insert order there are six runs, sorted by port three."
+alt:
+  vi: "Ghi theo thứ tự chèn, các cảng xen kẽ nên mỗi giá trị là một đoạn riêng. Sắp theo cảng, các giá trị lặp nằm liền nhau và ghi được một lần cùng số lần lặp."
+  en: "Written in insert order, the ports alternate, so each value is a run of its own. Sorted by port, the repeats sit together and can be written once with their repeat count."
+nodes:
+  - id: raw
+    shape: grid
+    mono: true
+    label: { vi: "thứ tự chèn", en: "insert order" }
+    sub: { vi: "6 đoạn", en: "6 runs" }
+    head: [port]
+    cells: [["VNSGN"], ["VNHPH"], ["VNDAD"], ["VNSGN"], ["VNHPH"], ["VNDAD"]]
+  - id: sorted
+    shape: grid
+    mono: true
+    label: { vi: "sắp theo port", en: "sorted by port" }
+    sub: { vi: "3 đoạn", en: "3 runs" }
+    head: [port, { vi: "lặp", en: "repeats" }]
+    cells: [["VNDAD", "× 2"], ["VNHPH", "× 2"], ["VNSGN", "× 2"]]
+    rowTone: [new, new, new]
+rows:
+  - [raw, sorted]
+edges:
+  - { from: raw, to: sorted, label: ORDER BY }
