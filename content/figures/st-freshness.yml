@@ -1,0 +1,19 @@
+# ST-10 (tools/v43/de-tools-plan.md §4): source freshness, three tables on one clock with warn and error thresholds.
+# Lesson: e-st-l2-05 (Ý chính). Data = the lab: now 2026-10-31 08:00; orders 07:40 (0.3 h), payments 22:10 (9.8 h), spend
+# 29 Oct 06:00 (50 h); warn_after 6 h, error_after 24 h. Source: https://docs.getdbt.com/reference/resource-properties/freshness
+title: { vi: "Ba bảng nguồn, một đồng hồ", en: "Three source tables, one clock" }
+caption:
+  vi: "Mỗi bảng được đo từ _fivetran_synced mới nhất tới 08:00 ngày 31/10, rồi so với hai ngưỡng 6 giờ và 24 giờ."
+  en: "Each table is measured from its newest _fivetran_synced to 08:00 on 31 Oct, then compared with the 6-hour and 24-hour thresholds."
+alt:
+  vi: "Freshness đo từng bảng nguồn từ lần nạp cuối tới bây giờ, nên một bảng mới không che được bảng trễ. Kết quả: đơn hàng qua, thanh toán cảnh báo, chi phí quảng cáo lỗi."
+  en: "Freshness measures each source table from its last load to now, so a fresh table cannot hide a late one. Result: orders pass, payments warn, ad spend errors."
+nodes:
+  - { id: now, label: { vi: "bây giờ", en: "now" }, sub: "31/10 08:00", tone: warm }
+  - { id: orders, shape: table, mono: true, label: raw_shop.orders, sub: { vi: "0,3 giờ: qua", en: "0.3 h: pass" }, tone: new }
+  - { id: pay, shape: table, mono: true, label: raw_pay.payments, sub: { vi: "9,8 giờ: cảnh báo", en: "9.8 h: warn" }, tone: warm }
+  - { id: ads, shape: table, mono: true, label: raw_ads.spend, sub: { vi: "50 giờ: lỗi", en: "50 h: error" }, tone: dead }
+  - { id: rule, shape: note, label: { vi: "cảnh báo > 6 giờ, lỗi > 24 giờ", en: "warn > 6 h, error > 24 h" } }
+rows:
+  - [now, rule]
+  - [orders, pay, ads]
