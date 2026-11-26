@@ -1,0 +1,21 @@
+# TS-1 (v47 L972): a time-series table grows at the end and loses its oldest rows. Lesson: e-ts-l1-01 (Ý chính).
+# Data = the lab's readings: 60 rows from 28 Sep to 3 Oct; the retention from 1 Oct 00:00+07 keeps 36.
+title: { vi: "Thêm ở cuối, xóa ở đầu", en: "Added at the end, dropped at the start" }
+caption:
+  vi: "Số đo mới luôn vào cuối bảng; việc giữ dữ liệu có hạn xóa các ngày trước 01/10, nên 60 dòng còn 36."
+  en: "New readings always join the end of the table; the retention drops the days before 1 Oct, so 60 rows become 36."
+alt:
+  vi: "Bảng chuỗi thời gian chỉ nhận dòng mới ở cuối và gần như không sửa dòng đã ghi. Dữ liệu cũ bị xóa theo cả khoảng thời gian, không xóa lẻ từng dòng."
+  en: "A time-series table only receives new rows at the end and almost never edits rows already written. Old data is removed as a whole time range, not row by row."
+nodes:
+  - { id: old, label: { vi: "28/09 – 30/09", en: "28 Sep – 30 Sep" }, sub: { vi: "24 dòng", en: "24 rows" }, tone: ghost }
+  - { id: kept, label: { vi: "01/10 – 03/10", en: "1 Oct – 3 Oct" }, sub: { vi: "36 dòng", en: "36 rows" }, tone: live }
+  - { id: new, label: { vi: "số đo mới", en: "new readings" }, sub: { vi: "mỗi 6 giờ", en: "every 6 hours" }, tone: new }
+  - { id: drop, label: { vi: "xóa khi quá hạn", en: "dropped" }, sub: { vi: "trước 01/10", en: "before 1 Oct" }, tone: warm }
+rows:
+  - [new]
+  - [old, kept]
+  - [drop]
+edges:
+  - { from: new, to: kept }
+  - { from: old, to: drop }

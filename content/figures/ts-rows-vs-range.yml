@@ -1,0 +1,25 @@
+# TS-6 (v47 L972): on the 11:00 row, a 3-row frame reaches back to 07:00 across two empty hours; a 2-hour RANGE frame holds 11:00 only.
+# Lesson: e-ts-l2-01 (Ý chính). Data = the lab's CQRU1001 readings 07:00 -17.5, 08:00 -15.0, (09:00, 10:00 missing), 11:00 -18.0.
+title: { vi: "Khung lúc 11:00", en: "The frame at 11:00" }
+caption:
+  vi: "ROWS 2 PRECEDING lấy 07:00, 08:00 và 11:00, trung bình -16.83; RANGE 2 giờ chỉ có 11:00, trung bình -18.00."
+  en: "ROWS 2 PRECEDING takes 07:00, 08:00 and 11:00, average -16.83; a 2-hour RANGE holds only 11:00, average -18.00."
+alt:
+  vi: "Khung ROWS đếm dòng có thật, nên sau hai giờ mất số đo nó với ngược về số đo cũ 4 giờ. Khung RANGE đo bằng thời gian, nên nó chỉ gồm số đo trong 3 giờ thật."
+  en: "A ROWS frame counts real rows, so after two hours without readings it reaches back to a reading 4 hours old. A RANGE frame is measured in time, so it holds only readings from the last 3 real hours."
+nodes:
+  - id: rows
+    shape: grid
+    label: "ROWS 2 PRECEDING"
+    sub: { vi: "trung bình -16.83", en: "average -16.83" }
+    cells: [["07:00", "08:00", "11:00"], ["-17.5", "-15.0", "-18.0"]]
+    colTone: [warm, warm, live]
+  - id: range
+    shape: grid
+    label: "RANGE 2 hours"
+    sub: { vi: "trung bình -18.00", en: "average -18.00" }
+    cells: [["07:00", "08:00", "11:00"], ["-17.5", "-15.0", "-18.0"]]
+    colTone: [ghost, ghost, live]
+rows:
+  - [rows]
+  - [range]

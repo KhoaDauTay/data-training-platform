@@ -1,0 +1,18 @@
+# TS-11 (v47 L972): monthly partitions of metrics; August is detached and dropped, November is created ahead.
+# Lesson: e-ts-l3-02 (Ý chính). Data = the lab: Aug 744 rows, Sep 720, Oct 720, Nov 0 (created in step 2).
+title: { vi: "Một tháng ra, một tháng vào", en: "One month out, one month in" }
+caption:
+  vi: "metrics chia theo tháng: tháng 8 (744 dòng) được tách rồi xóa cả bảng; tháng 11 được tạo sẵn trước khi có dữ liệu."
+  en: "metrics is split by month: August (744 rows) is detached, then dropped as a whole table; November is created before any data arrives."
+alt:
+  vi: "Mỗi tháng là một bảng con, nên giữ dữ liệu có hạn chỉ là bỏ bảng con cũ nhất và thêm một bảng con mới. Không dòng nào phải xóa lẻ."
+  en: "Each month is a child table, so retention is just dropping the oldest child and adding a new one. No row has to be deleted one by one."
+groups:
+  - { id: m, label: metrics, nodes: [aug, sep, oct, nov] }
+nodes:
+  - { id: aug, mono: true, label: "2026_08", sub: { vi: "tách, xóa", en: "detach, drop" }, tone: ghost }
+  - { id: sep, mono: true, label: "2026_09", sub: { vi: "720 dòng", en: "720 rows" } }
+  - { id: oct, mono: true, label: "2026_10", sub: { vi: "720 dòng", en: "720 rows" }, tone: live }
+  - { id: nov, mono: true, label: "2026_11", sub: { vi: "tạo sẵn", en: "created ahead" }, tone: new }
+rows:
+  - [aug, sep, oct, nov]

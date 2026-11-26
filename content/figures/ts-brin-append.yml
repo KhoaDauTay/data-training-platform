@@ -1,0 +1,22 @@
+# TS-12 (v47 L972): a table appended in time order; each 8-page range covers about 18 hours, so one day meets three ranges.
+# Lesson: e-ts-l3-03 (Ý chính). Data = the lab's gps: 25,000 rows, 184 pages, 23 ranges of 8 pages; 10 Oct meets ranges 12–14
+# (1-based, read from ctid); the plan's Bitmap Index Scan estimates about 2,170 candidate rows for 1,440 real ones.
+title: { vi: "BRIN bỏ qua gần hết bảng", en: "BRIN skips most of the table" }
+caption:
+  vi: "Mỗi khối 8 trang giữ khoảng 18 giờ dữ liệu; câu lọc ngày 10/10 chỉ đọc ba khối có khoảng min–max giao ngày đó, rồi kiểm lại từng dòng."
+  en: "Each 8-page range holds about 18 hours of data; a filter on 10 Oct reads only the three ranges whose min–max meets that day, then rechecks each row."
+alt:
+  vi: "Vì bảng được ghi theo thời gian, mỗi khối trang chứa một khoảng giờ hẹp, và BRIN chỉ cần nhớ min và max của khối. Câu lọc một ngày bỏ qua mọi khối không giao ngày đó."
+  en: "Because the table is written in time order, each block range holds a narrow span of hours, and BRIN only needs to remember the range's min and max. A one-day filter skips every range that does not meet that day."
+groups:
+  - { id: t, label: { vi: "gps, 23 khối", en: "gps, 23 ranges" }, nodes: [a, b, d] }
+nodes:
+  - { id: a, label: { vi: "khối 1–11", en: "ranges 1–11" }, sub: { vi: "bỏ qua", en: "skipped" }, tone: ghost }
+  - { id: b, label: { vi: "khối 12–14", en: "ranges 12–14" }, sub: { vi: "đọc", en: "read" }, tone: live }
+  - { id: d, label: { vi: "khối 15–23", en: "ranges 15–23" }, sub: { vi: "bỏ qua", en: "skipped" }, tone: ghost }
+  - { id: q, label: { vi: "ngày 10/10", en: "10 Oct" }, sub: { vi: "1.440 dòng", en: "1,440 rows" }, tone: new }
+rows:
+  - [a, b, d]
+  - [q]
+edges:
+  - { from: t, to: q, label: "Recheck Cond" }

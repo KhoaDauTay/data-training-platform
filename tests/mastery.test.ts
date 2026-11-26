@@ -79,15 +79,16 @@ describe('engine levels and badges', () => {
     engines: {}, domains: [{ id: 'logistics', done: false }, { id: 'ecommerce', done: false }, { id: 'finance', done: true }],
   });
 
-  it('51 badges: 11 Parts, fast, foundation, 4 engines × 5 levels + the data stack, OLAP, search and Streaming & CDC × 3 (v45 L745, v47 L990, L1018, L1063) + Redis × 2 (v47 L956), the NoSQL path, 3 domains', () => {
+  it('54 badges: 11 Parts, fast, foundation, 4 engines × 5 levels + the data stack, OLAP, search, time-series and Streaming & CDC × 3 (v45 L745, v47 L990, L1018, L974, L1063) + Redis × 2 (v47 L956), the NoSQL path, 3 domains', () => {
     const b = badges(input(save, '2026-11-20'));
     expect(parts).toHaveLength(11);
-    expect(b).toHaveLength(51);
-    expect(b.filter((x) => x.kind === 'engine')).toHaveLength((BADGE_ENGINES.length - 5) * 5 + 3 * 4 + 2);
+    expect(b).toHaveLength(54);
+    expect(b.filter((x) => x.kind === 'engine')).toHaveLength((BADGE_ENGINES.length - 6) * 5 + 3 * 5 + 2);
     expect(b.filter((x) => x.kind === 'engine' && x.engine === 'stack').map((x) => x.id)).toEqual(['stack-L1', 'stack-L2', 'stack-L3']);
     expect(b.filter((x) => x.kind === 'engine' && x.engine === 'redis').map((x) => x.id)).toEqual(['redis-L1', 'redis-L2']);
     expect(b.filter((x) => x.kind === 'engine' && x.engine === 'olap').map((x) => x.id)).toEqual(['olap-L1', 'olap-L2', 'olap-L3']);
-    expect(new Set(b.map((x) => x.id)).size).toBe(51);
+    expect(b.filter((x) => x.kind === 'engine' && x.engine === 'timeseries').map((x) => x.id)).toEqual(['timeseries-L1', 'timeseries-L2', 'timeseries-L3']);
+    expect(new Set(b.map((x) => x.id)).size).toBe(54);
   });
 
   it('same Save → same badges; an empty set never earns one (no perf drill, no design engine, no path list)', () => {

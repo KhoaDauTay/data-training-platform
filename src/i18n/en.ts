@@ -758,6 +758,7 @@ export const en: Record<Key, Msg> = {
   'welcome.checkSkip': 'Skip',
   'welcome.eng.design': 'Database design',
   'welcome.eng.stack': 'Data stack',
+  'welcome.eng.timeseries': 'Time-series',
   'teach.scene': 'Boon teaching Lily, your study buddy, at the board',
   'teach.lily': 'Lily, your study buddy: press to make her cheer',
   'teach.boon': 'Boon, your guide: press to point at the next line',

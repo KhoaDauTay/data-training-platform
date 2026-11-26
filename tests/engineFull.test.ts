@@ -128,7 +128,7 @@ describe('Engine full-lesson layout (F01)', () => {
     const ex = await runAndWait(l, x);
     expect(ex.querySelector('table')).not.toBeNull();
     // v38 (R2 E17): each engine names its own unit (documents, items, rows), in the line and the table caption
-    const unit = { mongodb: 'tài liệu', dynamodb: 'item', postgres: 'dòng', design: 'dòng', stack: 'dòng', redis: 'dòng', olap: 'dòng', search: 'dòng', stream: 'dòng' }[l.engine];
+    const unit = { mongodb: 'tài liệu', dynamodb: 'item', postgres: 'dòng', design: 'dòng', stack: 'dòng', redis: 'dòng', olap: 'dòng', search: 'dòng', timeseries: 'dòng', stream: 'dòng' }[l.engine];
     expect(ex.querySelector('[role=status]')!.textContent).toMatch(new RegExp(`^\\d+ ${unit} trong`));
     expect(ex.querySelector('caption')!.textContent).toMatch(new RegExp(`^Kết quả: \\d+ ${unit}$`));
     const e = bs.findIndex((b) => b.mark === 'error');

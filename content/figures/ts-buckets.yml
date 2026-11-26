@@ -1,0 +1,20 @@
+# TS-3 (v47 L972): date_bin puts each reading in exactly one bucket; the start is inside, the end is not. Lesson: e-ts-l1-03.
+# Data = two gate times either side of 08:15:00 with 15-minute buckets from midnight (the lab's step 2).
+title: { vi: "Hai xe, hai khung", en: "Two trucks, two buckets" }
+caption:
+  vi: "date_bin('15 minutes', ts, nửa đêm): 08:14:59 vào khung 08:00, còn 08:15:00 vào khung 08:15."
+  en: "date_bin('15 minutes', ts, midnight): 08:14:59 goes to the 08:00 bucket, while 08:15:00 goes to the 08:15 bucket."
+alt:
+  vi: "Mỗi khung gồm điểm đầu và không gồm điểm cuối, nên một số đo đúng ở ranh giới thuộc khung bắt đầu từ đó. Nhờ vậy mỗi số đo nằm trong đúng một khung và tổng các khung bằng tổng số đo."
+  en: "Each bucket includes its start and excludes its end, so a reading exactly on a boundary belongs to the bucket that starts there. That way each reading lands in exactly one bucket and the buckets add up to the total."
+nodes:
+  - { id: a, label: { vi: "xe lúc 08:14:59", en: "truck at 08:14:59" } }
+  - { id: b, label: { vi: "xe lúc 08:15:00", en: "truck at 08:15:00" } }
+  - { id: k1, label: { vi: "khung 08:00", en: "08:00 bucket" }, sub: { vi: "tới trước 08:15", en: "until 08:15" }, tone: live }
+  - { id: k2, label: { vi: "khung 08:15", en: "08:15 bucket" }, sub: { vi: "tới trước 08:30", en: "until 08:30" }, tone: new }
+rows:
+  - [a, b]
+  - [k1, k2]
+edges:
+  - { from: a, to: k1 }
+  - { from: b, to: k2 }

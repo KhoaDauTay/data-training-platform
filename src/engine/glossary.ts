@@ -20,7 +20,7 @@ const DOC_SITE: Record<string, RegExp> = {
  * engine's site, else none (a Postgres learner never lands on MongoDB's or DynamoDB's docs). Design lessons read Postgres.
  */
 export function docFor(t: Term, engine: EngineId): string | undefined {
-  const e = engine === 'design' || engine === 'stack' || engine === 'olap' || engine === 'search' || engine === 'stream' ? 'postgres' : engine;
+  const e = engine === 'design' || engine === 'stack' || engine === 'olap' || engine === 'search' || engine === 'timeseries' || engine === 'stream' ? 'postgres' : engine;
   return t.docs?.[e] ?? (DOC_SITE[e]?.test(t.doc) ? t.doc : undefined);
 }
 

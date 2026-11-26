@@ -71,13 +71,13 @@ let lessons: EngineLesson[] = [];
 const trees = {} as Record<EngineId, Tree>;
 /** modules.yml names per engine (the Extensions shelf groups its lessons by these, v43 L720). */
 const modNames = {} as Record<EngineId, ModuleName[]>;
-const NAME: Record<Exclude<EngineId, 'design' | 'stack' | 'search'>, string> = { postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB', redis: 'Redis', olap: 'OLAP & ClickHouse', stream: 'Streaming & CDC' }; // v47 (L1062): Streaming & CDC is a proper name in VI and EN
+const NAME: Record<Exclude<EngineId, 'design' | 'stack' | 'search' | 'timeseries'>, string> = { postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB', redis: 'Redis', olap: 'OLAP & ClickHouse', stream: 'Streaming & CDC' }; // v47 (L1062): Streaming & CDC is a proper name in VI and EN
 /** v28 R4 (L420): product names stay as they are; the design track's name is translated. */
 /** v46 (L839a): a lab whose learner types Jinja (a model step, or a ref()/source() Solution: dbt.ts isDbtLab, inlined) shows the dbt notice. */
 const dbtLab = (l: EngineLesson): boolean => !!l.lab?.steps.some((s) => s.model || /\{\{\s*(ref|source)\s*\(/.test(s.solution));
-const nameOf = (e: EngineId): string => (e === 'design' || e === 'stack' || e === 'search' ? et(`name.${e}`) : NAME[e]);
+const nameOf = (e: EngineId): string => (e === 'design' || e === 'stack' || e === 'search' || e === 'timeseries' ? et(`name.${e}`) : NAME[e]);
 /** L280: one generic picture per engine (no logos): a table grid, a JSON document, a key and its values. */
-const ENGINE_ICON = { postgres: 'engRelational', mongodb: 'engDocument', dynamodb: 'engKeyValue', redis: 'engRedis', design: 'engDesign', stack: 'engStack', olap: 'engOlap', search: 'engSearch', stream: 'engStream' } as const satisfies Record<EngineId, Icons.IconName>;
+const ENGINE_ICON = { postgres: 'engRelational', mongodb: 'engDocument', dynamodb: 'engKeyValue', redis: 'engRedis', design: 'engDesign', stack: 'engStack', olap: 'engOlap', search: 'engSearch', timeseries: 'engTimeseries', stream: 'engStream' } as const satisfies Record<EngineId, Icons.IconName>;
 const KIND_ICON = { concept: 'kindConcept', lab: 'kindLab', predict: 'kindPredict', quiz: 'kindQuiz', capstone: 'kindCapstone' } as const satisfies Record<Kind, Icons.IconName>;
 const et = (key: EngineKey, params?: I18n.Params): string => engineText(d.getLang(), d.locale(), key, params);
 
@@ -145,16 +145,16 @@ export function inline(text: string, marked = false): (Node | string)[] {
  * learner never reads `e-pg-l4-03`. The word before stays prose ("bài Thống kê nhiều cột ↗"); without a title (never for
  * shipped content: tests/engineBpLink.test.ts) the link says "bài liên quan" and swallows that word, so no "bài bài".
  */
-const ID = String.raw`e-(?:(?:pg|mg|dy|rd|ds|st|ol|sr|sm)-(?:l[1-5]|ext)-|bp-[a-z])\d\d`; // v43: + the Extensions shelf (e-pg-ext-NN)
+const ID = String.raw`e-(?:(?:pg|mg|dy|rd|ds|st|ol|sr|ts|sm)-(?:l[1-5]|ext)-|bp-[a-z])\d\d`; // v43: + the Extensions shelf (e-pg-ext-NN)
 const PRE = String.raw`(?:(?<=^|[\s(])(?:bài|thẻ|lab|lesson|card) )?`;
 const CODE = new RegExp(`(${PRE}\x60${ID}\x60|\x60[^\x60\n]+\x60)`);
 const BARE = new RegExp(String.raw`(${PRE}\b${ID}(?![\w-]))`);
-const SHORT = { pg: 'postgres', mg: 'mongodb', dy: 'dynamodb', rd: 'redis', ds: 'design', st: 'stack', ol: 'olap', sr: 'search', sm: 'stream' } as const;
+const SHORT = { pg: 'postgres', mg: 'mongodb', dy: 'dynamodb', rd: 'redis', ds: 'design', st: 'stack', ol: 'olap', sr: 'search', ts: 'timeseries', sm: 'stream' } as const;
 let bpTitles: Record<string, { vi: string; en: string }> = {};
 function idRef(seg: string): (Node | string)[] {
   const word = /^\S+ /.exec(seg)?.[0] ?? '';
   const id = seg.slice(word.length).replace(/`/g, '');
-  const m = /^e-(pg|mg|dy|rd|ds|st|ol|sr|sm)-(l[1-5]|ext)-/.exec(id);
+  const m = /^e-(pg|mg|dy|rd|ds|st|ol|sr|ts|sm)-(l[1-5]|ext)-/.exec(id);
   const title = m ? lessons.find((x) => x.id === id)?.title : bpTitles[id];
   const href = m ? d.engineHash(SHORT[m[1] as keyof typeof SHORT], (m[2] === 'ext' ? 'EXT' : m[2].toUpperCase()) as Level, id) : bpHashOf(id);
   if (!href) return [seg]; // an e-bp code with no track letter: content tests keep this from shipping
@@ -800,7 +800,7 @@ function vizSlot(slot: string, name: string | undefined, engine: EngineId, model
   }, () => { vizHosts.delete(slot); }); // a failed chunk leaves the slot empty; the next visit tries again
   return entry.host;
 }
-const SHORT_OF: Record<EngineId, 'pg' | 'mg' | 'dy'> = { postgres: 'pg', mongodb: 'mg', dynamodb: 'dy', redis: 'dy', design: 'pg', stack: 'pg', olap: 'pg', search: 'pg', stream: 'pg' }; // design diagrams are Postgres ones; Redis has no live-model diagram (its figures are specs)
+const SHORT_OF: Record<EngineId, 'pg' | 'mg' | 'dy'> = { postgres: 'pg', mongodb: 'mg', dynamodb: 'dy', redis: 'dy', design: 'pg', stack: 'pg', olap: 'pg', search: 'pg', timeseries: 'pg', stream: 'pg' }; // design diagrams are Postgres ones; Redis has no live-model diagram (its figures are specs)
 
 const HONEST_CLS: Record<Honest, string> = {
   pg: 'bg-good-soft text-ink', mingo: 'bg-good-soft text-ink', dynoxide: 'bg-good-soft text-ink', redis: 'bg-good-soft text-ink', search: 'bg-good-soft text-ink', diagram: 'bg-surface-2 text-muted', docs: 'bg-info-soft text-ink',
