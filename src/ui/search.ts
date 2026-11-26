@@ -1,6 +1,6 @@
 import { getLang, isMac } from '../i18n';
 import { ROUTE_SKILLS } from '../progress';
-import { engineHash, engineTermsHash, hashOf } from '../route';
+import { engineHash, engineTermsHash, hashOf, interviewTabHash } from '../route';
 import { BTN_GHOST } from '../theme';
 import { h } from './dom';
 import { icon } from './icons';
@@ -12,7 +12,7 @@ import { icon } from './icons';
 export function openSearch(): void {
   void import('./palette').then((m) => m.openPalette({
     h, icon, lang: getLang, skills: ROUTE_SKILLS, cls: { BTN_GHOST },
-    hashes: { skill: (id) => `${hashOf('learn')}/skill/${id}`, lesson: (e, lv, id) => engineHash(e, lv, id), term: (id) => engineTermsHash(id) },
+    hashes: { skill: (id) => `${hashOf('learn')}/skill/${id}`, lesson: (e, lv, id) => engineHash(e, lv, id), term: (id) => engineTermsHash(id), interview: interviewTabHash },
   }));
 }
 

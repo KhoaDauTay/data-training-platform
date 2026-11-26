@@ -8,12 +8,14 @@ import type { StepResult } from '../engine/pglab/script';
 import type * as I18n from '../i18n';
 import { ivText, type IvKey } from '../i18n/engineInterview';
 import type { EngineDeps } from './engineView';
-import type { PageSub } from './homeView';
+import type { IvTab } from '../route';
+import { ivTabs } from './ivTabs';
 
 /**
- * v27 (L411, design-v27 §2): the Database Engine interview room, #/engine/interview (engine → bands → 3 sets of 5 + the
- * take-homes), a set run #/engine/interview/<set> (write first, then the model answer beside yours and a rubric you tick),
- * the review run #/engine/interview/again and a take-home #/engine/interview/<id>. A reading page, not a workspace: nothing
+ * v27 (L411, design-v27 §2): the Database Engine interview banks; since v47 S4 (L980) three tabs of the one room under Học,
+ * #/learn/interview?e=pg|mg|dy (bands → 3 sets of 5 + the take-homes), a set run #/learn/interview/<set> (write first, then
+ * the model answer beside yours and a rubric you tick), the review run …/again and a take-home …/<id> (the old
+ * #/engine/interview… hashes are aliases, route.ts canonicalHash). Loaded by main's ui/engine.ts without engineView. A reading page, not a workspace: nothing
  * is graded by a machine, 0 XP, nothing in the Save; results, the run in progress and drafts live in the device pref
  * `cargo-query/engine-interview` (src/engine/engineInterviewPrefs.ts). Timer off by default; it only counts time on the page.
  * Lazy chunk `engineInterview` (budget `engineInterviewUi`), each engine's bank its own chunk (`iv-<engine>`, budget
@@ -75,42 +77,41 @@ const loading = (): HTMLElement => d.h('p', { class: 'm-0 flex min-h-40 items-st
 const failed = (e: EngineId): HTMLElement => d.h('div', { role: 'alert', class: 'flex flex-col gap-2' }, d.h('p', { class: 'm-0' }, d.t('engine.failed')),
   d.h('button', { type: 'button', onclick: () => { banks.delete(e); d.rerender(); } }, d.t('data.retry')));
 
-export function subOf(r: { set?: string; th?: string }): PageSub {
-  const top = { href: d.hashOf('engine'), text: d.t('nav.engine') };
-  if (!r.set && !r.th) return { title: it('title'), trail: [top] };
-  const room = { href: d.engineInterviewHash(), text: it('title') };
-  if (r.set) return { title: setName(r.set), trail: [top, room] };
+/**
+ * v47 S4 (L980–L983): the banks are three tabs of the one room under Học (#/learn/interview?e=pg|mg|dy); a set run or a
+ * take-home is #/learn/interview/<id>. Its h1 and the step above it (homeView learnStep: Học › Phòng phỏng vấn).
+ */
+export function subOf(r: { set?: string; th?: string }): { title: string; up: { href: string; text: string } } {
+  const up = { href: roomOf(r.set ?? r.th!), text: d.t('prac.interview') };
+  if (r.set) return { title: setName(r.set), up };
   const e = engineOfId(r.th!)!;
   const b = banks.get(e);
   const th = typeof b === 'object' ? b.takeHomes.find((x) => x.id === r.th) : undefined;
-  return { title: th ? th.title[lang()].replace(/`/g, '') : it('th'), trail: [top, room] }; // F02: the h1 and tab title are plain text
+  return { title: th ? th.title[lang()].replace(/`/g, '') : it('th'), up }; // F02: the h1 and tab title are plain text
 }
+const TAB: Record<EngineId, Exclude<IvTab, 'sql'>> = { postgres: 'pg', mongodb: 'mg', dynamodb: 'dy' };
+/** The room's tab a set or take-home came from (the review run `again` mixes engines: PostgreSQL's tab). */
+const roomOf = (id: string): string => d.interviewTabHash(TAB[setOf(id)?.engine ?? engineOfId(id) ?? 'postgres']);
 
-export function ivPage(r: { set?: string; th?: string }): HTMLElement {
+export function ivPage(r: { set?: string; th?: string }, tab: IvTab): HTMLElement {
   if (r.th) return takeHomePage(r.th);
   if (r.set) return setPage(r.set);
-  return room();
+  return room(ENGINES.find((e) => TAB[e] === tab) ?? 'postgres');
 }
 
-// ---- the room
+// ---- the room's engine tab
 
-let picked: EngineId = 'postgres';
-function room(): HTMLElement {
+function room(e: EngineId): HTMLElement {
   const { h, cls } = d;
   const p = prefs();
   const due = dueAgain(p, today());
-  const b = bankOf(picked);
+  const b = bankOf(e);
   return h('div', { class: 'flex flex-col gap-8' },
+    ivTabs(h, TAB[e], d.interviewTabHash, lang()),
     h('p', { class: 'm-0 text-muted' }, it('intro')),
-    h('p', { class: 'm-0 -mt-6 text-body-sm text-muted' }, it('other'), ' ', h('a', { href: `${d.hashOf('learn')}/interview` }, it('otherGo'))), // F27: the other room
     due.length ? card(h('h2', { class: 'm-0 text-title font-bold' }, it('again.card', { n: due.length })), h('p', { class: 'm-0 text-body-sm text-muted' }, it('again.line')),
       h('div', {}, h('a', { href: d.engineInterviewHash('again'), class: cls.cx(cls.BTN_GO, 'inline-flex px-4 py-2 no-underline') }, it('again.go')))) : null,
-    h('div', { role: 'group', 'aria-label': it('pick'), class: 'flex flex-wrap gap-2' }, ...ENGINES.map((e) => h('button', {
-      type: 'button', 'aria-pressed': String(e === picked), 'data-ek': `iv-pick-${e}`,
-      class: cls.cx(e === picked ? cls.BTN_SECONDARY : cls.BTN_GHOST, 'px-4 py-1.5 aria-[pressed=true]:ring-2 aria-[pressed=true]:ring-accent'),
-      onclick: () => { picked = e; d.rerender(); },
-    }, NAME[e]))),
-    b === 'loading' ? loading() : b === 'failed' ? failed(picked) : h('div', { class: 'flex flex-col gap-8' }, ...BANDS.map((band) => bandSection(b, picked, band, p))));
+    b === 'loading' ? loading() : b === 'failed' ? failed(e) : h('div', { class: 'flex flex-col gap-8' }, ...BANDS.map((band) => bandSection(b, e, band, p))));
 }
 
 function bandSection(b: Bank, e: EngineId, band: Band, p: IvPrefs): HTMLElement {
@@ -198,7 +199,7 @@ function setPage(set: string): HTMLElement {
     return runView(set, live, p);
   }
   stopClock();
-  const back = h('a', { href: d.engineInterviewHash(), class: cls.cx(cls.BTN_GHOST, 'inline-flex px-4 py-2 no-underline') }, it('back'));
+  const back = h('a', { href: roomOf(set), class: cls.cx(cls.BTN_GHOST, 'inline-flex px-4 py-2 no-underline') }, it('back'));
   if (lastDone?.set === set) {
     const x = lastDone;
     return h('div', { class: 'flex flex-col gap-6' }, card(
@@ -396,7 +397,7 @@ function takeHomePage(id: string): HTMLElement {
   if (b === 'failed') return failed(e);
   stopClock();
   const th = b.takeHomes.find((x) => x.id === id);
-  const back = h('a', { href: d.engineInterviewHash(), class: cls.cx(cls.BTN_GHOST, 'inline-flex px-4 py-2 no-underline') }, it('back'));
+  const back = h('a', { href: roomOf(id), class: cls.cx(cls.BTN_GHOST, 'inline-flex px-4 py-2 no-underline') }, it('back'));
   if (!th) return h('div', { class: 'flex flex-col items-start gap-4' }, h('p', { class: 'm-0' }, it('th.missing')), back);
   const p = prefs();
   const mine = p.th[id] ?? { drafts: [] };

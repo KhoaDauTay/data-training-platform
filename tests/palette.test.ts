@@ -4,7 +4,7 @@ import { meta } from '../src/engineSources';
 import { glossary } from '../src/engineTermsSources';
 import { fold, paletteItems, search, type PaletteSources } from '../src/palette';
 import { ROUTE_SKILLS } from '../src/progress';
-import { engineHash, engineRouteOf, engineTermsHash, engineTermsOf, learnSkillOf } from '../src/route';
+import { engineHash, engineRouteOf, engineTermsHash, engineTermsOf, interviewTabHash, interviewTabOf, isInterviewPage, learnSkillOf } from '../src/route';
 import { opensSearch } from '../src/ui/search';
 
 const hashes = { skill: (id: string) => `#/learn/skill/${id}`, lesson: engineHash, term: (id: string) => engineTermsHash(id) };
@@ -34,6 +34,14 @@ describe('search palette (F12)', () => {
     expect(search(all, 'a').length).toBeLessThanOrEqual(30);
     const hits = search(all, 'mvcc');
     expect(fold(hits[0].title).startsWith('mvcc')).toBe(true);
+  });
+
+  it('v47 S4 (L984): the one interview room, one result per tab, found as "phong van" or "interview"', () => {
+    const all = paletteItems(src, 'vi', { ...hashes, interview: interviewTabHash }, 'Design', 'Data stack', 'Phòng phỏng vấn');
+    expect(all.filter((x) => x.kind === 'page').map((x) => x.href)).toEqual(['#/learn/interview', '#/learn/interview?e=pg', '#/learn/interview?e=mg', '#/learn/interview?e=dy']);
+    expect(all.filter((x) => x.kind === 'page').map((x) => x.title)).toEqual(['Phòng phỏng vấn · SQL', 'Phòng phỏng vấn · PostgreSQL', 'Phòng phỏng vấn · MongoDB', 'Phòng phỏng vấn · DynamoDB']);
+    for (const q of ['phong van', 'interview', 'phỏng vấn mongo']) expect(search(all, q).some((x) => x.kind === 'page')).toBe(true);
+    for (const x of all.filter((y) => y.kind === 'page')) expect(isInterviewPage(x.href) && interviewTabHash(interviewTabOf(x.href))).toBe(x.href);
   });
 
   it('{mod}+K opens it: Ctrl on Windows/Linux, ⌘ on macOS; never with Shift/Alt or a handled event', () => {

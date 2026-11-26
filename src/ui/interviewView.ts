@@ -13,6 +13,7 @@ import type * as State from '../state';
 import type * as Storage from '../storage';
 import type * as Dom from './dom';
 import type * as PaneTabs from './paneTabs';
+import { ivTabs } from './ivTabs';
 
 /**
  * Interview room UI (v17 I5, L144, docs/team/interview-room.md): the list page (#/learn/interview) and the left pane of a
@@ -27,7 +28,7 @@ export interface InterviewDeps {
   app: typeof State.app; actions: typeof State.actions;
   session: typeof Session.session; ivItemId: typeof Session.ivItemId; ivHooks: typeof Session.ivHooks; readDraft: typeof Session.readDraft; today: typeof Session.today;
   readJson: typeof Storage.readJson; writeJson: typeof Storage.writeJson;
-  hashOf: typeof Route.hashOf; drillHash: typeof Route.drillHash; showPane: typeof PaneTabs.showPane;
+  hashOf: typeof Route.hashOf; drillHash: typeof Route.drillHash; interviewTabHash: typeof Route.interviewTabHash; showPane: typeof PaneTabs.showPane;
   /** src/interviewPrefs.ts by value through main: the v16 portfolio may import it from main, so this chunk never does (Plan 6 U3). */
   prefs: { key: typeof Prefs.INTERVIEW_KEY; parse: typeof Prefs.parseInterviewPrefs; textMax: number; elapsed: typeof Prefs.elapsed; setPresence: typeof Prefs.setPresence };
   SKILLS: typeof Progress.SKILLS; knownSkills: typeof Home.knownSkills; loadTickets: typeof Content.loadTickets;
@@ -491,9 +492,9 @@ export function listPage(): HTMLElement {
     },
   });
   return h('div', { class: 'flex flex-col gap-6' },
-    // v21 U18: the breadcrumb and the h1 "Phòng phỏng vấn" are drawn above by homeView
+    // v21 U18: the breadcrumb and the h1 "Phòng phỏng vấn" are drawn above by homeView; v47 S4 (L982): the room's tabs, SQL open
+    ivTabs(h, 'sql', d$.interviewTabHash, d$.getLang()),
     h('p', { class: 'm-0 text-[15px]' }, it('iv.intro')),
-    h('p', { class: 'm-0 text-body-sm text-muted' }, it('iv.other'), ' ', h('a', { href: `${d$.hashOf('engine')}/interview` }, it('iv.otherGo'))), // F27: the other room
     h('section', { class: 'flex flex-col gap-3', 'aria-labelledby': 'iv-sets' },
       h('h2', { id: 'iv-sets', class: 'm-0 text-title font-bold' }, it('iv.sets')),
       h('p', { class: 'm-0 text-body-sm text-muted' }, it('iv.setsIntro')),

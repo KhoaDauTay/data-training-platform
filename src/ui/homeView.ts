@@ -631,8 +631,10 @@ function learnStep(): { title: string; up?: { href: string; text: string } } | u
     const node = generalNow()?.nodes.find((x) => x.id === adv); // the General chunk draws the page; until it is in, the id alone
     return { title: node ? `${adv.toUpperCase()} · ${node.title[lang]}` : adv.toUpperCase() };
   }
-  return isInterviewPage(hash) ? { title: t('prac.interview') } : undefined;
+  return isInterviewPage(hash) ? ivSub.of?.() ?? { title: t('prac.interview') } : undefined;
 }
+/** v47 S4 (L981): an engine bank's set or take-home inside the one room: its title and the room's tab (ui/engine.ts fills it). */
+export const ivSub: { of?: () => { title: string; up: { href: string; text: string } } | undefined } = {};
 
 /** Redrawn by rerender() (language switch, progress). Pure DOM from homeModel(); keeps no state of its own. */
 export function renderHome(host: HTMLElement): void {
