@@ -1,0 +1,36 @@
+# PG-7 (tools/v39/diagram-plan.md): BEFORE/AFTER × ROW/STATEMENT. Lesson: e-pg-l2-23 (Ý chính).
+# Data (lesson setup): products pen 10.00, book 50.00, bag 120.00; the lab's UPDATE products SET price = price + 1.00 touches
+# all 3 rows; audit table price_audit, statement log bulk_log reads the transition table.
+# The three AFTER ROW calls are drawn after the last row (the docs: row-level AFTER triggers fire at the end of the statement,
+# before statement-level AFTER triggers). Source: https://www.postgresql.org/docs/current/trigger-definition.html
+title: { vi: "Trigger nào chạy lúc nào, mấy lần", en: "Which trigger fires when, and how often" }
+caption:
+  vi: "Một câu UPDATE trên 3 dòng: BEFORE STATEMENT một lần, BEFORE ROW trước mỗi dòng (sửa được NEW, hoặc RETURN NULL để bỏ dòng), rồi AFTER ROW ba lần sau dòng cuối (giá trị trả về bị bỏ qua), cuối cùng AFTER STATEMENT một lần."
+  en: "One UPDATE on 3 rows: BEFORE STATEMENT once, BEFORE ROW before each row (it can change NEW, or RETURN NULL to skip the row), then AFTER ROW three times after the last row (its return value is ignored), and AFTER STATEMENT once at the end."
+alt:
+  vi: "Từ trên xuống, cho câu UPDATE products SET price = price + 1.00 trên 3 dòng: BEFORE STATEMENT chạy 1 lần. BEFORE ROW chạy cho từng dòng ngay trước khi ghi: pen 10.00 thành 11.00, book 50.00 thành 51.00, bag 120.00 thành 121.00; đây là lúc còn sửa được NEW. Sau dòng cuối, AFTER ROW chạy 3 lần và ghi price_audit. Cuối cùng AFTER STATEMENT chạy 1 lần và đọc NEW TABLE. OLD là giá cũ, NEW là giá mới."
+  en: "From top to bottom, for UPDATE products SET price = price + 1.00 on 3 rows: BEFORE STATEMENT fires once. BEFORE ROW fires for each row just before it is written: pen 10.00 becomes 11.00, book 50.00 becomes 51.00, bag 120.00 becomes 121.00; this is when NEW can still be changed. After the last row, AFTER ROW fires 3 times and writes price_audit. Finally AFTER STATEMENT fires once and reads NEW TABLE. OLD is the old price, NEW the new one."
+groups:
+  - { id: br, label: BEFORE ROW, nodes: [r1, r2, r3] }
+nodes:
+  - { id: st, mono: true, label: UPDATE products, sub: { vi: "3 dòng", en: "3 rows" } }
+  - { id: bs, label: BEFORE STATEMENT, sub: { vi: "×1", en: "×1" } }
+  - { id: r1, label: pen, sub: "10.00 → 11.00", tone: new }
+  - { id: r2, label: book, sub: "50.00 → 51.00", tone: new }
+  - { id: r3, label: bag, sub: "120.00 → 121.00", tone: new }
+  - { id: ar, label: AFTER ROW ×3, sub: { vi: "ghi price_audit", en: "writes price_audit" }, tone: live }
+  - { id: as, label: AFTER STATEMENT, sub: "×1 · NEW TABLE", tone: live }
+  - { id: old, shape: key, label: { vi: "OLD = giá cũ", en: "OLD = old price" } }
+  - { id: new, shape: key, label: { vi: "NEW = giá mới", en: "NEW = new price" } }
+  - { id: n, shape: note, label: { vi: "BEFORE ROW: sửa được NEW", en: "BEFORE ROW: can change NEW" } }
+rows:
+  - [st]
+  - [bs]
+  - [n]
+  - [r1, r2, r3]
+  - [ar]
+  - [as]
+  - [old, new]
+edges:
+  - { from: st, to: bs }
+  - { from: ar, to: as }

@@ -1,3 +1,4 @@
+figures: [{ name: pg-toast-pointer, at: idea, variant: out }]
 ---
 id: e-ds-l4-07
 engine: design
@@ -112,6 +113,8 @@ Postgres đọc bảng theo trang 8 KB. Dòng càng rộng thì một trang ch�
 Bảng phụ là quan hệ 1:1: cột khóa vừa là khóa chính vừa là khóa ngoại tới bảng chính. Khóa chính chặn hai hồ sơ cho một khách; khóa ngoại chặn hồ sơ của khách không tồn tại. Tách 1:1 không lưu lặp gì, nên không phải phi chuẩn hóa; cái giá là một phép nối mỗi khi đọc đủ hồ sơ, và hai bảng phải ghi trong cùng transaction.
 
 Nhiều người nghĩ TOAST đã làm việc này. Thật ra TOAST chỉ ra tay khi một dòng vượt khoảng 2 KB: nó nén rồi dời giá trị lớn sang bảng TOAST. Giá trị cỡ vài trăm byte vẫn nằm trong trang chính. TOAST tự động cho cột rất dài; tách bảng là việc của người thiết kế cho cột cỡ vừa, và cho dữ liệu cần quyền hay vòng đời riêng.
+
+Hình cuối mục này cho thấy TOAST trên bảng `doc` của bài `e-pg-l3-03`: giá trị nén vừa thì ở lại trang, giá trị không nén được thì ra bảng TOAST, trang chỉ giữ con trỏ 18 byte.
 
 ## Cú pháp
 
@@ -229,6 +232,8 @@ Postgres reads a table in 8 KB pages. The wider the row, the fewer rows fit on a
 The side table is a 1:1 relationship: its key column is both the primary key and a foreign key to the main table. The primary key blocks two profiles for one customer; the foreign key blocks a profile for a customer who does not exist. A 1:1 split stores nothing twice, so it is not denormalisation; the cost is a join whenever the full profile is read, and both tables must be written in the same transaction.
 
 Many people think TOAST already does this. In fact TOAST only acts when a row passes about 2 KB: it compresses and moves large values to the TOAST table. A value of a few hundred bytes stays in the main page. TOAST is automatic for very long columns; a split is the designer's job for medium-sized columns, and for data that needs its own privileges or lifecycle.
+
+The figure at the end of this section shows TOAST on the table `doc` from lesson `e-pg-l3-03`: a value that compresses enough stays on the page, one that does not moves to the TOAST table and the page keeps an 18-byte pointer.
 
 ## Syntax
 

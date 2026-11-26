@@ -9,6 +9,7 @@ kind: lab
 runtime: browser
 minutes: 14
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
+figures: [{ name: pg-index-only-scan, at: idea }]
 objectives:
   - vi: Thiết kế một index (cột lọc, cột sắp xếp) để câu "5 đơn mới nhất của một khách" không cần Sort.
     en: Design an index (filter column, sort column) so "a customer's 5 newest orders" needs no Sort.
@@ -122,6 +123,8 @@ Index-only scan trả kết quả chỉ từ index, không về bảng. Nó cầ
 
 Nhiều người nghĩ thêm `INCLUDE` là có ngay index-only scan. Thật ra bảng vừa nạp chưa có trang all-visible nào, nên planner vẫn chọn đọc qua heap cho tới khi VACUUM chạy.
 
+Hình từng bước ở cuối mục này đặt hai điều kiện đó lên lá của index và visibility map: chỉ trang có bit all-visible mới được trả thẳng từ index.
+
 ## Cú pháp
 
 ```sql
@@ -208,6 +211,8 @@ A range only narrows the scan when it compares the column itself with constants.
 An index-only scan answers from the index alone, without visiting the table. It needs two things. First, every column the query uses is in the index; `INCLUDE (amount)` adds a column to the B-tree leaves without making it a key, so it is not sorted and not searchable. Second, Postgres must know the row is visible without opening the heap page. It asks the visibility map, and VACUUM sets each page's all-visible bit.
 
 Many people think adding `INCLUDE` gives an index-only scan right away. In fact a freshly loaded table has no all-visible page yet, so the planner keeps reading through the heap until VACUUM runs.
+
+The step-through figure at the end of this section puts both conditions on the index leaf and the visibility map: only pages with the all-visible bit are answered straight from the index.
 
 ## Syntax
 

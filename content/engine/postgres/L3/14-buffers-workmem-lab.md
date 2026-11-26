@@ -9,6 +9,7 @@ kind: lab
 runtime: browser
 minutes: 20
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
+figures: [{ name: pg-memory-two-kinds, at: idea }]
 objectives:
   - vi: Đếm trang của một bảng đang nằm trong shared buffers và trang nào bẩn
     en: Count a table's pages in shared buffers and which of them are dirty
@@ -123,6 +124,8 @@ Một trang bị sửa trong shared buffers thành trang bẩn (dirty page): đ�
 Bộ nhớ riêng của một câu thì khác: mỗi nút sort hay hash được dùng tới `work_mem` (mặc định 4 MB). Vượt quá thì nó tràn ra file tạm trên đĩa: kế hoạch ghi `Sort Method: external merge  Disk: …` thay vì `quicksort  Memory: …`, và chạy chậm hẳn.
 
 Nhiều người nghĩ sort tràn đĩa là do shared buffers nhỏ. Thật ra sort không dùng shared buffers; chỉ `work_mem` quyết định. Và `work_mem` nhân lên theo mỗi nút sort/hash của mỗi câu ở mỗi kết nối, nên hãy tăng nó cho đúng câu cần, bằng `SET LOCAL` trong transaction của câu đó, không tăng bừa cho cả máy chủ.
+
+Hình từng bước ở cuối mục này tách hai loại bộ nhớ: shared buffers dùng chung (đọc, trang bẩn, checkpoint) và `work_mem` riêng của từng kết nối, nơi sort tràn ra file tạm.
 
 ## Cú pháp
 
@@ -248,6 +251,8 @@ A page changed in shared buffers becomes a dirty page: changed in memory, not ye
 A query's private memory is different: each sort or hash node may use up to `work_mem` (4 MB by default). Beyond that it spills to temporary files on disk: the plan says `Sort Method: external merge  Disk: …` instead of `quicksort  Memory: …`, and it gets much slower.
 
 Many people think a sort spills to disk because shared buffers are too small. In fact a sort does not use shared buffers; `work_mem` alone decides. And `work_mem` multiplies by every sort/hash node of every query on every connection, so raise it for the query that needs it, with `SET LOCAL` inside that query's transaction, not blindly for the whole server.
+
+The step-through figure at the end of this section separates the two kinds of memory: the shared buffers (reads, dirty pages, checkpoint) and each connection's private `work_mem`, where a sort spills to temp files.
 
 ## Syntax
 

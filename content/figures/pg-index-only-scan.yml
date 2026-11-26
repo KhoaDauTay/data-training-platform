@@ -1,0 +1,58 @@
+# PG-5 (tools/v39/diagram-plan.md): two conditions to skip the heap. Lessons: e-pg-l2-02 (Ý chính), e-pg-l3-17 variant `vm`.
+# Data (PGlite, lesson setup + the step's index (customer_id, created_at) INCLUDE (amount)): customer 42's 5 newest orders =
+# 09-27 09:07 139.50, 09-22 20:47 539.50, 09-18 08:27 39.50, 09-13 20:07 439.50, 09-09 07:47 839.50 (60 orders; 371 heap pages).
+# The visibility-map bits are an illustration on 4 pages (labelled so); step 3's cleared bit is a page written after VACUUM.
+# Source: https://www.postgresql.org/docs/current/indexes-index-only-scans.html
+title: { vi: "Index-only scan cần hai điều", en: "An index-only scan needs two things" }
+caption:
+  vi: "Một: mọi cột câu cần đều có trong index (INCLUDE thêm amount vào lá, không làm nó thành khóa). Hai: trang heap phải được đánh dấu all-visible trong visibility map, việc VACUUM làm. Trang chưa đánh dấu vẫn phải mở heap."
+  en: "One: every column the query needs is in the index (INCLUDE adds amount to the leaves without making it a key). Two: the heap page must be marked all-visible in the visibility map, which VACUUM does. A page without the mark still opens the heap."
+alt:
+  vi: "Lá của index (customer_id, created_at) INCLUDE (amount) có 5 đơn mới nhất của khách 42, mỗi mục có customer_id, created_at và amount; amount là cột INCLUDE, không phải khóa. Bảng vừa nạp: visibility map của 4 trang (minh họa, trên 371 trang) toàn bit 0, nên Index Scan vẫn mở cả 4 trang heap."
+  en: "The leaf of index (customer_id, created_at) INCLUDE (amount) holds customer 42's 5 newest orders, each entry with customer_id, created_at and amount; amount is an INCLUDE column, not a key. The table is freshly loaded: the visibility map of 4 pages (an illustration, of 371) is all 0 bits, so the Index Scan still opens all 4 heap pages."
+nodes:
+  - { id: c1, shape: key, label: { vi: "1. mọi cột có trong index", en: "1. every column in index" }, tone: live }
+  - { id: c2, shape: key, label: { vi: "2. trang all-visible", en: "2. page all-visible" }, tone: warm }
+  - { id: plan, label: Index Scan, sub: { vi: "mở heap mỗi dòng", en: "opens the heap" }, tone: warm }
+  - id: idx
+    shape: grid
+    label: { vi: "lá của index", en: "index leaf" }
+    sub: { vi: "INCLUDE: không là khóa", en: "INCLUDE: not a key" }
+    head: [customer_id, created_at, amount]
+    cells: [["42", "09-27 09:07", "139.50"], ["42", "09-22 20:47", "539.50"], ["42", "09-18 08:27", "39.50"], ["42", "09-13 20:07", "439.50"], ["42", "09-09 07:47", "839.50"]]
+    colTone: [null, null, ghost]
+  - { id: vm, shape: grid, label: visibility map, sub: { vi: "4 / 371 trang, minh họa", en: "4 of 371 pages, sample" }, head: [p0, p1, p2, p3], cells: [["0", "0", "0", "0"]], toneOf: { "0": warm, "1": live } }
+  - { id: heap, shape: grid, label: heap, head: [p0, p1, p2, p3], cells: [[{ vi: "mở", en: "open" }, { vi: "mở", en: "open" }, { vi: "mở", en: "open" }, { vi: "mở", en: "open" }]], tone: warm }
+rows:
+  - [c1, c2]
+  - [plan]
+  - [idx]
+  - [vm]
+  - [heap]
+edges:
+  - { from: idx, to: plan }
+  - { from: idx, to: vm, label: { vi: "hỏi bit", en: "asks the bit" } }
+  - { from: vm, to: heap, label: { vi: "bit 0: mở", en: "bit 0: open" } }
+steps:
+  - say: { vi: "Bảng vừa nạp: chưa trang nào all-visible, vẫn phải mở heap.", en: "Freshly loaded: no page is all-visible, the heap is still opened." }
+  - say: { vi: "VACUUM bật bit all-visible.", en: "VACUUM sets the all-visible bits." }
+    alt: { vi: "VACUUM chạy: cả 4 bit trong visibility map thành 1.", en: "VACUUM runs: all 4 bits in the visibility map become 1." }
+    set:
+      vm: { cells: [["1", "1", "1", "1"]] }
+  - say: { vi: "Bit = 1: trả ngay từ index. Bit = 0: vẫn ghé heap.", en: "Bit = 1: answer from the index. Bit = 0: visit the heap anyway." }
+    alt: { vi: "Index Only Scan: trang p2 bị ghi sau VACUUM nên bit của nó về 0. Ba trang bit 1 được trả thẳng từ index, bỏ qua heap; chỉ p2 vẫn phải mở.", en: "Index Only Scan: page p2 was written after VACUUM, so its bit is back to 0. The three pages with bit 1 are answered straight from the index and the heap is skipped; only p2 is still opened." }
+    set:
+      plan: { label: Index Only Scan, sub: { vi: "chỉ mở trang bit 0", en: "opens bit-0 pages" }, tone: live }
+      c2: { tone: live }
+      vm: { cells: [["1", "1", "0", "1"]] }
+      heap: { tone: plain, cells: [[{ vi: "bỏ qua", en: "skip" }, { vi: "bỏ qua", en: "skip" }, { vi: "mở", en: "open" }, { vi: "bỏ qua", en: "skip" }]], cellTone: { "0:2": warm } }
+variants:
+  vm:
+    step: 2
+    title: { vi: "Visibility map quyết định có mở heap", en: "The visibility map decides whether the heap opens" }
+    caption:
+      vi: "Index-only scan và count(*) chỉ bỏ qua heap ở trang có bit all-visible; VACUUM bật bit đó, một lần ghi tắt nó."
+      en: "An index-only scan, and count(*), skip the heap only on pages with the all-visible bit; VACUUM sets the bit and a write clears it."
+    alt:
+      vi: "Visibility map của 4 trang (minh họa): p0, p1, p3 bit 1, p2 bit 0 vì bị ghi sau VACUUM. Index Only Scan trả thẳng từ index cho ba trang bit 1 và chỉ mở trang p2 trong heap."
+      en: "The visibility map of 4 pages (an illustration): p0, p1, p3 have bit 1, p2 has bit 0 because it was written after VACUUM. The Index Only Scan answers the three bit-1 pages from the index and opens only page p2 in the heap."

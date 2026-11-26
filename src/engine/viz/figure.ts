@@ -222,6 +222,7 @@ export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): 
       const y1 = anchorY(l, L), y2 = anchorY(r, R);
       return { e, d: `M${L.x + L.w} ${y1} L${R.x} ${y2}`, lab: label && y1 === y2 ? { x: (L.x + L.w + R.x) / 2, y: y1 - 6 - lineH(SS) / 2, a: 'm' as const, s: label } : undefined };
     }
+    if (ra === rb && (e.from.includes('#') || e.to.includes('#'))) return rowArrow(e, a, b, label);
     if (ra === rb) {
       if (Math.abs(vrows[ra].indexOf(base(e.from)) - vrows[ra].indexOf(base(e.to))) !== 1) fail(`${e.from}→${e.to}: cùng hàng nhưng không cạnh nhau`);
       const cy = Math.round((Math.max(a.y, b.y) + Math.min(a.y + a.h, b.y + b.h)) / 2);
@@ -255,6 +256,32 @@ export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): 
     if (label && L === 'bus') fail(`${e.from}→${e.to}: nhãn trên đường bus chưa hỗ trợ`);
     return { e, d: `M${ax} ${y1} L${ax} ${ym} L${bx} ${ym} L${bx} ${end(bx, ym)}`, lab: label ? elbowLabel(label, ax, bx, ym, e) : undefined };
   });
+  /** v41 (R2 lesson 2): an arrow that names a grid row (`page#2`) leaves from that row's cell edge when the two nodes sit side
+   * by side: straight when the target spans the row's height, else an orthogonal step in the middle of the gap (no label
+   * there, the step would cross it). Stacked on a phone it is routed like any arrow, from the node. */
+  function rowArrow(e: FigEdge, a: Rect, b: Rect, label: string) {
+    if (Math.abs(vrows[rowOf.get(base(e.from))!].indexOf(base(e.from)) - vrows[rowOf.get(base(e.to))!].indexOf(base(e.to))) !== 1) fail(`${e.from}→${e.to}: cùng hàng nhưng không cạnh nhau`);
+    const right = a.x < b.x;
+    const edge = (end: string, r: Rect, out: boolean): number => {
+      const n = byId.get(base(end))!;
+      const gw = n.shape === 'grid' ? gridCols(n, lang).reduce((p, q) => p + q, 0) : r.w;
+      const x0 = r.x + Math.round((r.w - gw) / 2);
+      return out === right ? x0 + gw : x0;
+    };
+    const y1 = e.from.includes('#') ? anchorY(e.from, a) : Math.round(a.y + a.h / 2);
+    const yb = e.to.includes('#') ? anchorY(e.to, b) : Math.min(b.y + b.h - 8, Math.max(b.y + 8, y1));
+    const x1 = edge(e.from, a, true) + (right ? 2 : -2);
+    const tx = edge(e.to, b, false);
+    const box = { x: right ? tx : b.x, y: b.y, w: right ? b.x + b.w - tx : tx - b.x, h: b.h };
+    if (y1 === yb) {
+      const [x2] = stopAt(x1, y1, right ? tx + 4 : tx - 4, y1, STROKE, box);
+      return { e, d: `M${x1} ${y1} L${x2} ${y1}`, lab: label ? { x: (x1 + x2) / 2, y: y1 - 6 - lineH(SS) / 2, a: 'm' as const, s: label } : undefined };
+    }
+    if (label) fail(`${e.from}→${e.to}: nhãn trên mũi tên gấp khúc từ dòng bảng chưa hỗ trợ`);
+    const xm = Math.round((x1 + tx) / 2);
+    const [x2] = stopAt(xm, yb, right ? tx + 4 : tx - 4, yb, STROKE, box);
+    return { e, d: `M${x1} ${y1} L${xm} ${y1} L${xm} ${yb} L${x2} ${yb}`, lab: undefined };
+  }
   /** A link end's y: a grid row's middle (`grid#2`), else the node's middle. */
   function anchorY(end: string, r: Rect): number {
     const [id, row] = end.split('#');
@@ -311,7 +338,7 @@ function placeRows(spec: FigSpec, lang: Lang, W: number, dims: Map<string, Sized
   const between = (a: string, b: string): FigEdge | undefined => edges.find((e) => (base(e.from) === a && base(e.to) === b) || (base(e.from) === b && base(e.to) === a));
   const gapOf = (a: string, b: string): number => {
     const e = between(a, b);
-    return !e ? GAP_X : e.link ? Math.max(32, e.label ? Math.ceil(textWidth(tr(e.label, lang), SS)) + 12 : 0) : Math.max(24, e.label ? Math.ceil(textWidth(tr(e.label, lang), SS)) + 12 : 0);
+    return !e ? GAP_X : e.link ? Math.max(32, e.label ? Math.ceil(textWidth(tr(e.label, lang), SS)) + 12 : 0) : Math.max(e.from.includes('#') || e.to.includes('#') ? 40 : 24, e.label ? Math.ceil(textWidth(tr(e.label, lang), SS)) + 12 : 0); // v41: a row arrow may step in the gap
   };
   const links = (a: string, b: string): number => edges.filter((e) => e.link && [base(e.from), base(e.to)].sort().join() === [a, b].sort().join()).length;
   // R1 E16: `align` lines up runs of equal-length rows as columns (boxes stretched to the column); a run that does not fit stacks

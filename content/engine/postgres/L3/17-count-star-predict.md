@@ -8,7 +8,7 @@ title_en: "Predict: does count(*) read the primary key to be fast?"
 kind: predict
 runtime: browser
 minutes: 10
-figures: [{ name: pg-vacuum-flow, at: idea }]
+figures: [{ name: pg-vacuum-flow, at: idea }, { name: pg-index-only-scan, at: idea, variant: vm }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Đoán kế hoạch của `count(*)` trên bảng vừa nạp và trên bảng đã VACUUM
@@ -126,6 +126,8 @@ Vì vậy trên bảng vừa nạp mà chưa VACUUM, Index Only Scan đọc inde
 
 Hình từng bước ở cuối mục này cho thấy VACUUM đánh dấu trang "mọi dòng đều thấy được" trong visibility map; chỉ trang có dấu đó mới cho đếm mà không đọc heap.
 
+Hình thứ hai cho thấy cùng luật đó trên một index-only scan: trang có bit thì bỏ qua heap, trang không có bit vẫn phải mở.
+
 ## Ví dụ
 
 Ép dùng index trên bảng chưa VACUUM và chỉ giữ dòng `Heap Fetches`:
@@ -160,6 +162,8 @@ An Index Only Scan can skip the heap for a page only when that page has the all-
 So on a freshly loaded table that was never vacuumed, an Index Only Scan reads the index and then still reads almost the whole heap: worse than a Seq Scan. The planner knows this through `relallvisible` in `pg_class` and picks a Seq Scan. The fix for a slow `count(*)` is autovacuum keeping up (or a VACUUM after a big load), not another index. If an approximate number is enough, `reltuples` in `pg_class` is a free estimate.
 
 The step-through figure at the end of this section shows VACUUM marking pages "all visible" in the visibility map; only a marked page can be counted without reading the heap.
+
+The second figure shows the same rule in an index-only scan: a page with the bit skips the heap, a page without it is still opened.
 
 ## Example
 

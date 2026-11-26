@@ -9,6 +9,7 @@ kind: lab
 runtime: browser
 minutes: 15
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
+figures: [{ name: pg-memory-two-kinds, at: idea, variant: hit }]
 objectives:
   - vi: Nối `shared hit` của một nút quét với số trang bảng và index
     en: Link the `shared hit` of a scan node to the page count of the table and index
@@ -120,6 +121,8 @@ Mỗi nút có một dòng `Buffers:` với hai phần khác nhau:
 Nhiều người nghĩ phải cộng số của mọi dòng `Buffers:` để có tổng. Thật ra số của nút cha đã gồm số của các nút con, nên tổng của cả câu là dòng của nút trên cùng.
 
 Đọc dòng này để chọn cách chữa. `shared` lớn (gần bằng số trang của bảng) khi chỉ cần vài dòng: thiếu index hay điều kiện lọc không dùng được index. Có `temp`: sort hay hash tràn đĩa, cần `work_mem` lớn hơn cho đúng câu đó.
+
+Hình cuối mục này vẽ nơi hai con số đó sinh ra: `shared hit` / `shared read` ở shared buffers dùng chung, `temp` ở `work_mem` riêng của câu.
 
 ## Cú pháp
 
@@ -238,6 +241,8 @@ Each node gets a `Buffers:` line with two different parts:
 Many people think you must add up every `Buffers:` line to get the total. In fact a parent node's numbers already include its children's, so the whole query's total is the line of the top node.
 
 Read this line to choose the fix. A large `shared` (close to the table's page count) when only a few rows are needed: a missing index, or a filter that cannot use one. Any `temp`: a sort or hash spilling to disk, which needs more `work_mem` for that query.
+
+The figure at the end of this section draws where those numbers come from: `shared hit` / `shared read` in the shared buffers, `temp` in the query's private `work_mem`.
 
 ## Syntax
 

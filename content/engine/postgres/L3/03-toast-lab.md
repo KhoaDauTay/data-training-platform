@@ -9,6 +9,7 @@ kind: lab
 runtime: browser
 minutes: 15
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
+figures: [{ name: pg-toast-pointer, at: idea }]
 objectives:
   - vi: So độ dài logic với số byte lưu thật bằng `pg_column_size()`
     en: Compare logical length with stored bytes using `pg_column_size()`
@@ -125,6 +126,8 @@ Nhiều người nghĩ cứ giá trị lớn là ra TOAST. Thật ra nén đến
 Mỗi cột có một chiến lược lưu (`attstorage`): `p` (PLAIN, không nén, không ra ngoài, dành cho kiểu độ dài cố định như `int`), `x` (EXTENDED, mặc định của `text`: nén rồi mới ra ngoài), `e` (EXTERNAL: ra ngoài nhưng không nén) và `m` (MAIN: nén, chỉ ra ngoài khi không còn cách nào).
 
 Hai hàm giúp bạn đo: `length()` đếm ký tự, còn `pg_column_size()` đếm số byte thật sự lưu, sau khi nén. `pg_column_compression()` cho biết giá trị được nén bằng gì (`pglz` là mặc định), hoặc `NULL` nếu không nén.
+
+Hình từng bước ở cuối mục này đi qua ba dòng của bảng `doc` trong lab: dòng nhỏ ở lại, dòng lặp lại được nén và ở lại, dòng gần ngẫu nhiên ra bảng TOAST.
 
 ## Cú pháp
 
@@ -246,6 +249,8 @@ Many people think any large value goes to TOAST. In fact compression comes first
 Each column has a storage strategy (`attstorage`): `p` (PLAIN, no compression, never moved out, for fixed-length types such as `int`), `x` (EXTENDED, the default for `text`: compress, then move out), `e` (EXTERNAL: move out but never compress) and `m` (MAIN: compress, move out only as a last resort).
 
 Two functions let you measure: `length()` counts characters, while `pg_column_size()` counts the bytes really stored, after compression. `pg_column_compression()` tells how the value is compressed (`pglz` is the default), or `NULL` when it is not compressed.
+
+The step-through figure at the end of this section goes through the three rows of the lab's table `doc`: the small one stays, the repetitive one is compressed and stays, the near-random one moves to the TOAST table.
 
 ## Syntax
 

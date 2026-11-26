@@ -9,6 +9,7 @@ kind: predict
 runtime: browser
 minutes: 9
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
+figures: [{ name: pg-index-order-limit, at: idea }]
 objectives:
   - vi: Nhận ra một index B-tree đã có sẵn thứ tự, nên "N dòng mới nhất" không cần sắp xếp cả bảng.
     en: Recognise that a B-tree index is already sorted, so "the N newest rows" needs no full-table sort.
@@ -99,6 +100,8 @@ Nhiều người nghĩ cần một index `DESC` riêng cho câu "mới nhất tr
 
 Index chỉ giúp khi `ORDER BY` dùng đúng thứ tự mà index giữ. Sắp theo một biểu thức trên cột, như `created_at::date` hay `extract(epoch FROM created_at)`, là một thứ tự khác mà index không lưu, nên planner quay về đọc cả bảng rồi sắp xếp. Đây cũng là lý do các trang "mới nhất trước" (feed, lịch sử đơn) luôn cần index trên cột thời gian và câu sắp theo chính cột đó.
 
+Hình từng bước ở cuối mục này cho thấy `Index Scan Backward` đọc ngược đúng 5 mục cuối của `orders_created_idx` rồi `Limit` dừng, so với cách đọc hết 20 000 dòng rồi sắp xếp.
+
 ## Ví dụ
 
 Sắp theo một cột không có index:
@@ -165,6 +168,8 @@ A B-tree index stores keys in order. So besides finding values fast, it returns 
 Many people think "newest first" needs its own `DESC` index. In fact, for one column Postgres reads the ascending index backwards at no extra cost.
 
 The index only helps when `ORDER BY` uses exactly the order the index keeps. Sorting by an expression on the column, such as `created_at::date` or `extract(epoch FROM created_at)`, is a different order the index does not store, so the planner goes back to reading the whole table and sorting. This is also why "newest first" pages (feeds, order history) always need an index on the time column and a query that sorts by that column itself.
+
+The step-through figure at the end of this section shows `Index Scan Backward` reading exactly the last 5 entries of `orders_created_idx` before `Limit` stops, next to reading all 20,000 rows and sorting.
 
 ## Example
 

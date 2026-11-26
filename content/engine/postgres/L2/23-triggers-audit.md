@@ -9,6 +9,7 @@ kind: lab
 runtime: browser
 minutes: 18
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
+figures: [{ name: pg-trigger-timing, at: idea }]
 objectives:
   - vi: Gắn một hàm PL/pgSQL `RETURNS trigger` vào bảng, chọn đúng BEFORE hay AFTER, ROW hay STATEMENT.
     en: Attach a PL/pgSQL `RETURNS trigger` function to a table, choosing BEFORE or AFTER, ROW or STATEMENT correctly.
@@ -157,6 +158,8 @@ Trigger `BEFORE ... FOR EACH ROW` chạy trước khi dòng được ghi: nó c�
 `FOR EACH STATEMENT` chạy một lần cho cả câu lệnh, kể cả khi câu đó không đụng dòng nào. Với `REFERENCING NEW TABLE AS ...` (chỉ cho trigger `AFTER`), hàm đọc được mọi dòng câu lệnh vừa đổi như một bảng. `WHEN` (điều kiện) lọc trước khi gọi hàm, nên rẻ hơn kiểm trong hàm.
 
 Trigger cùng thời điểm và sự kiện chạy theo thứ tự tên. Trigger ROW chạy một lần mỗi dòng: một UPDATE trên một triệu dòng gọi hàm một triệu lần, nên với ghi hàng loạt hãy cân nhắc trigger STATEMENT có bảng chuyển tiếp.
+
+Hình cuối mục này xếp các trigger theo thời gian cho một câu `UPDATE` trên 3 dòng của lab: mỗi loại chạy lúc nào, mấy lần, và loại nào còn sửa được `NEW`.
 
 ## Cú pháp
 
@@ -328,6 +331,8 @@ A `BEFORE ... FOR EACH ROW` trigger runs before the row is stored: it can change
 `FOR EACH STATEMENT` fires once for the whole statement, even when the statement touches no row. With `REFERENCING NEW TABLE AS ...` (only for `AFTER` triggers), the function can read every row the statement changed as a table. `WHEN` (condition) filters before the function is called, which is cheaper than testing inside the function.
 
 Triggers with the same timing and event fire in name order. A ROW trigger fires once per row: an UPDATE of a million rows calls the function a million times, so for bulk writes consider a STATEMENT trigger with a transition table.
+
+The figure at the end of this section lines the triggers up in time for one `UPDATE` on the lab's 3 rows: when each kind fires, how many times, and which one can still change `NEW`.
 
 ## Syntax
 

@@ -1,0 +1,44 @@
+# PG-2 (tools/v39/diagram-plan.md): ROLLBACK TO undoes only after the marker. Lesson: e-pg-l1-07 (Ý chính), beside its viz
+# pg-mvcc-timeline (F2: both stay). Data: the lab (accounts 1 = 100, 2 = 50; BEGIN, move 30, SAVEPOINT before_fee) and the
+# lesson's own failing fee of 500 (23514, then 25P02); ROLLBACK TO before_fee, COMMIT → 70 and 80 (lesson Example, PGlite).
+# Deviation: the plan's fee "✗" and minus sign are words and "-" (glyph table). Sources: https://www.postgresql.org/docs/current/sql-savepoint.html,
+# https://www.postgresql.org/docs/current/sql-rollback-to.html, https://www.postgresql.org/docs/current/errcodes-appendix.html
+title: { vi: "SAVEPOINT chia đôi một transaction", en: "A SAVEPOINT splits a transaction in two" }
+caption:
+  vi: "Phần trước mốc được giữ; ROLLBACK TO SAVEPOINT chỉ bỏ phần sau mốc và đưa transaction đang hỏng (25P02) về trạng thái dùng được."
+  en: "The part before the marker is kept; ROLLBACK TO SAVEPOINT undoes only the part after it and makes a broken transaction (25P02) usable again."
+alt:
+  vi: "Dòng thời gian của một transaction: BEGIN, UPDATE tài khoản 1 từ 100 xuống 70, UPDATE tài khoản 2 từ 50 lên 80, rồi SAVEPOINT before_fee."
+  en: "The timeline of one transaction: BEGIN, UPDATE account 1 from 100 down to 70, UPDATE account 2 from 50 up to 80, then SAVEPOINT before_fee."
+nodes:
+  - { id: b, shape: key, label: BEGIN }
+  - { id: u1, label: UPDATE, sub: "id 1: 100 → 70", tone: new }
+  - { id: u2, label: UPDATE, sub: "id 2: 50 → 80", tone: new }
+  - { id: sp, label: SAVEPOINT, sub: before_fee, tone: warm }
+  - { id: fee, label: { vi: "phí 500", en: "fee 500" }, sub: { vi: "lỗi 23514", en: "fails: 23514" }, tone: dead }
+  - { id: st, shape: key, label: { vi: "hỏng: 25P02", en: "broken: 25P02" }, tone: dead }
+  - { id: rb, label: ROLLBACK TO, sub: before_fee, tone: live }
+  - { id: cm, label: COMMIT, sub: "1: 70 · 2: 80", tone: live }
+rows:
+  - [b, u1, u2, sp]
+  - [fee, st]
+  - [rb, cm]
+edges:
+  - { from: b, to: u1 }
+  - { from: u1, to: u2 }
+  - { from: u2, to: sp }
+  - { from: sp, to: fee }
+  - { from: fee, to: st, link: true, dash: true }
+  - { from: fee, to: rb }
+  - { from: rb, to: cm }
+steps:
+  - say: { vi: "Chuyển tiền xong, đặt mốc before_fee.", en: "Money moved, marker before_fee set." }
+    show: [b, u1, u2, sp]
+  - say: { vi: "Một lệnh lỗi: mọi lệnh sau bị từ chối (25P02).", en: "One statement fails: every later one is refused (25P02)." }
+    show: [b, u1, u2, sp, fee, st]
+    alt: { vi: "Sau mốc, lệnh thu phí 500 vi phạm CHECK và lỗi 23514. Transaction hỏng: mọi lệnh sau, kể cả SELECT, bị từ chối với mã 25P02.", en: "After the marker, the fee of 500 breaks the CHECK and fails with 23514. The transaction is broken: every later statement, even a SELECT, is refused with code 25P02." }
+  - say: { vi: "Chỉ phần sau mốc bị bỏ; COMMIT giữ việc chuyển tiền.", en: "Only the part after the marker is undone; COMMIT keeps the transfer." }
+    alt: { vi: "ROLLBACK TO before_fee bỏ lệnh phí, transaction dùng lại được. COMMIT giữ hai lệnh UPDATE trước mốc: tài khoản 1 còn 70, tài khoản 2 có 80.", en: "ROLLBACK TO before_fee drops the fee statement and the transaction is usable again. COMMIT keeps the two UPDATEs before the marker: account 1 has 70, account 2 has 80." }
+    set:
+      fee: { sub: { vi: "đã bỏ", en: "undone" }, tone: ghost }
+      st: { label: { vi: "dùng lại được", en: "usable again" }, tone: live }

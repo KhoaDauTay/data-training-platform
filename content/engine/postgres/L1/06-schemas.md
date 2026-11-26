@@ -9,6 +9,7 @@ kind: lab
 runtime: browser
 minutes: 14
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
+figures: [{ name: pg-namespace-tree, at: idea }]
 objectives:
   - vi: Phân biệt cụm (cluster), database và schema, và biết một kết nối chỉ thấy đúng một database.
     en: Tell a cluster, a database and a schema apart, and know that a connection sees exactly one database.
@@ -104,6 +105,8 @@ Nhiều người nghĩ một câu SQL có thể đọc bảng ở database khác
 Schema là "thư mục" bên trong database: hai schema có thể có bảng trùng tên mà không đụng nhau. `CREATE SCHEMA name AUTHORIZATION role` tạo schema và giao quyền sở hữu cho một vai trò. Từ Postgres 15, vai trò thường không còn được tạo bảng trong `public`, nên mỗi ứng dụng hay nhóm thường có schema riêng. `DROP SCHEMA` từ chối schema còn đồ bên trong; `CASCADE` xóa luôn mọi thứ trong đó, nên dùng cẩn thận.
 
 Tên đầy đủ là `schema.table`, ví dụ `archive.notes`. Khi chỉ viết `notes`, Postgres dò lần lượt các schema trong `search_path` và lấy bảng đầu tiên tìm thấy; `CREATE TABLE` không ghi schema cũng tạo bảng ở schema đầu tiên đó. Trên server thường, mặc định là `"$user", public`; lab này đặt sẵn `public`, xem bằng `SHOW search_path`. Code ứng dụng an toàn nhất khi ghi tên đầy đủ.
+
+Hình từng bước ở cuối mục này vẽ cụm, database và schema lồng nhau, rồi cho thấy Postgres dò `search_path` để hiểu tên trơn `notes`.
 
 ## Cú pháp
 
@@ -244,6 +247,8 @@ Many people think a query can read a table in another database on the same serve
 A schema is a "folder" inside a database: two schemas can hold tables with the same name without clashing. `CREATE SCHEMA name AUTHORIZATION role` creates a schema and makes a role its owner. Since Postgres 15 ordinary roles can no longer create tables in `public`, so each application or team usually gets its own schema. `DROP SCHEMA` refuses a schema that still holds objects; `CASCADE` drops everything inside, so use it with care.
 
 The full name is `schema.table`, for example `archive.notes`. When you write only `notes`, Postgres walks the schemas in `search_path` in order and takes the first table it finds; a `CREATE TABLE` without a schema also creates the table in that first schema. On a normal server the default is `"$user", public`; this lab sets `public`, check it with `SHOW search_path`. Application code is safest when it writes full names.
+
+The step-through figure at the end of this section draws the cluster, databases and schemas nested inside each other, then shows Postgres walking `search_path` to resolve the plain name `notes`.
 
 ## Syntax
 

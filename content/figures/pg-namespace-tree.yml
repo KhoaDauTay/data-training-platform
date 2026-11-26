@@ -1,0 +1,45 @@
+# PG-1 (tools/v39/diagram-plan.md): cluster → database → schema → table, and search_path. Lesson: e-pg-l1-06 (Ý chính).
+# Data (PGlite, lesson setup + steps): pg_database = postgres, template0, template1; schemas public and archive each hold notes;
+# SHOW search_path in the lab = public; a normal server's default is "$user", public (lesson text), drawn in step 2.
+# Deviation: the plan nests three boxes; groups are one level, so the cluster is the group and the database is a table of
+# schema → table rows. Source: https://www.postgresql.org/docs/current/ddl-schemas.html
+title: { vi: "Cụm, database, schema và search_path", en: "Cluster, database, schema and search_path" }
+caption:
+  vi: "Cụm chứa database, database chứa schema, schema chứa bảng. Tên trơn như notes được dò theo search_path, schema đầu tiên có bảng đó thắng. Lab này đặt search_path = public."
+  en: "A cluster holds databases, a database holds schemas, a schema holds tables. A plain name such as notes is looked up along search_path, and the first schema that has the table wins. This lab sets search_path = public."
+alt:
+  vi: "Một cụm (một server) chứa ba database: postgres, nơi bạn đang kết nối, và hai database mẫu template0, template1. Vai trò thuộc về cả cụm, không thuộc database nào. Database postgres có hai schema: public và archive, mỗi schema có một bảng notes."
+  en: "One cluster (one server) holds three databases: postgres, where you are connected, and the two templates template0 and template1. Roles belong to the whole cluster, not to a database. Database postgres has two schemas, public and archive, and each holds a table notes."
+groups:
+  - { id: cl, label: { vi: "Cụm (1 server)", en: "Cluster (1 server)" }, nodes: [db, t0, t1, roles] }
+nodes:
+  - id: db
+    shape: grid
+    label: postgres
+    sub: { vi: "bạn đang ở đây", en: "you are here" }
+    head: [schema, { vi: "bảng", en: "table" }]
+    cells: [[public, notes], [archive, notes]]
+    tone: new
+  - { id: t0, label: template0, sub: { vi: "mẫu", en: "template" }, tone: ghost }
+  - { id: t1, label: template1, sub: { vi: "mẫu", en: "template" }, tone: ghost }
+  - { id: roles, shape: key, label: { vi: "vai trò: cả cụm", en: "roles: whole cluster" } }
+  - { id: sp, shape: note, label: 'search_path = "$user", public' }
+  - { id: su, mono: true, label: '"$user"', sub: { vi: "không có, bỏ qua", en: "none, skipped" }, tone: ghost }
+  - { id: sb, mono: true, label: public, sub: { vi: "có notes", en: "has notes" }, tone: plain }
+  - { id: hit, mono: true, label: public.notes, sub: { vi: "khớp trước thắng", en: "first match wins" }, tone: plain }
+rows:
+  - [db, t0, t1]
+  - [roles]
+  - [sp]
+  - [su, sb, hit]
+edges:
+  - { from: su, to: sb, dash: true }
+  - { from: sb, to: hit }
+steps:
+  - say: { vi: "Một kết nối gắn với đúng một database.", en: "A connection is bound to exactly one database." }
+  - say: { vi: "Viết notes trơn: Postgres dò search_path theo thứ tự.", en: "Write plain notes: Postgres walks search_path in order." }
+    alt: { vi: "Với search_path mặc định \"$user\", public, Postgres tìm notes trong schema mang tên người dùng trước: không có, nên bỏ qua. Rồi tới public: có notes, nên notes nghĩa là public.notes. Khớp đầu tiên thắng.", en: "With the default search_path \"$user\", public, Postgres first looks for notes in the schema named after the user: there is none, so it is skipped. Then public: it has notes, so notes means public.notes. The first match wins." }
+    set:
+      db: { cellTone: { "0:1": live } }
+      sb: { tone: live }
+      hit: { tone: live }

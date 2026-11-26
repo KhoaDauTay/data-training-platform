@@ -1,0 +1,32 @@
+# PG-3 (tools/v39/diagram-plan.md): a stored query vs stored rows. Lesson: e-pg-l1-08 (Ý chính).
+# Data (PGlite, lesson setup): orders 2000 rows, 1800 paid (id % 10 <> 0); the lesson's Example materialized view paid_count
+# = 1800 (1801 after one INSERT, frozen until REFRESH). The view side is the Example big_orders (amount >= 900).
+# Deviation: the plan's two columns are two groups (stacked rows read on a phone); "có thể có index" is the grid's sub.
+# Sources: https://www.postgresql.org/docs/current/rules-materializedviews.html, https://www.postgresql.org/docs/current/sql-refreshmaterializedview.html
+title: { vi: "View lưu câu lệnh, materialized view lưu dòng", en: "A view stores a query, a materialized view stores rows" }
+caption:
+  vi: "View không chứa dòng nào: mỗi lần đọc là chạy lại câu gốc, nên luôn mới. Materialized view chứa kết quả của lần chạy gần nhất: đọc nhanh, nhưng đứng yên tới REFRESH. REFRESH … CONCURRENTLY cần một UNIQUE index."
+  en: "A view holds no rows: every read runs its query again, so it is always fresh. A materialized view holds the result of its last run: fast to read, but frozen until REFRESH. REFRESH … CONCURRENTLY needs a UNIQUE index."
+alt:
+  vi: "Hai nhóm. VIEW big_orders chỉ lưu câu SELECT trên orders; mỗi lần đọc, câu đó chạy lại trên 2000 dòng của orders, nên view luôn mới, và giá đọc bằng giá chạy câu. MATERIALIZED VIEW paid_count lưu sẵn một dòng kết quả, n = 1800; REFRESH chạy lại câu trên orders để làm mới dòng đó; đọc rất nhanh, có thể tạo index, nhưng đứng yên tới lần REFRESH sau."
+  en: "Two groups. VIEW big_orders stores only the SELECT on orders; on every read that query runs again over the 2000 rows of orders, so the view is always fresh and a read costs as much as the query. MATERIALIZED VIEW paid_count stores one result row, n = 1800; REFRESH runs the query on orders again to renew that row; reads are very fast and it can be indexed, but it stays frozen until the next REFRESH."
+groups:
+  - { id: v, label: VIEW, nodes: [vq, o1, b1, b2] }
+  - { id: m, label: MATERIALIZED VIEW, nodes: [mv, o2, b3, b4] }
+nodes:
+  - { id: vq, mono: true, label: big_orders, sub: { vi: "chỉ là câu SELECT", en: "only a SELECT" } }
+  - { id: o1, shape: table, label: orders, sub: { vi: "2000 dòng", en: "2000 rows" } }
+  - { id: b1, shape: key, label: { vi: "luôn mới", en: "always fresh" }, tone: live }
+  - { id: b2, shape: key, label: { vi: "giá = chạy câu lệnh", en: "cost = the query" } }
+  - { id: mv, shape: grid, label: paid_count, head: [n], cells: [["1800"]], tone: new, sub: { vi: "có thể có index", en: "can be indexed" } }
+  - { id: o2, shape: table, label: orders, sub: { vi: "2000 dòng", en: "2000 rows" } }
+  - { id: b3, shape: key, label: { vi: "đọc rất nhanh", en: "very fast reads" }, tone: live }
+  - { id: b4, shape: key, label: { vi: "đứng yên tới REFRESH", en: "frozen until REFRESH" }, tone: warm }
+rows:
+  - [vq, o1]
+  - [b1, b2]
+  - [mv, o2]
+  - [b3, b4]
+edges:
+  - { from: vq, to: o1, label: { vi: "mỗi lần đọc", en: "every read" } }
+  - { from: o2, to: mv, label: REFRESH }

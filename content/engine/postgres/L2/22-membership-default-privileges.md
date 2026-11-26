@@ -9,6 +9,7 @@ kind: lab
 runtime: browser
 minutes: 18
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
+figures: [{ name: pg-privilege-gates, at: idea }]
 objectives:
   - vi: Gom quyền vào một vai trò nhóm, cho người dùng làm thành viên và đọc tùy chọn INHERIT, SET của từng lần cấp.
     en: Collect privileges in a group role, make users its members and read the INHERIT and SET options of each grant.
@@ -144,6 +145,8 @@ Nhiều người nghĩ cấp `SELECT` trên bảng là đủ để đọc. Thậ
 
 Khi một người nghỉ, `ALTER ROLE` khóa đăng nhập (`NOLOGIN`, `VALID UNTIL`). Muốn xóa hẳn, chuyển đối tượng của họ bằng `REASSIGN OWNED BY`, gỡ phần còn lại bằng `DROP OWNED BY`, rồi `DROP ROLE`.
 
+Hình từng bước ở cuối mục này vẽ ba cửa mà `linh` phải qua để đọc `sales.orders`: `CONNECT`, `USAGE` trên schema, `SELECT` trên bảng.
+
 ## Cú pháp
 
 ```sql
@@ -278,6 +281,8 @@ Many people think a `SELECT` grant on a table is enough to read it. In fact ever
 `ALTER DEFAULT PRIVILEGES` sets privileges for objects created later. It does not touch existing tables, and it only covers objects created by one specific role: the role named after `FOR ROLE`, or else the role running the command. Limiting access to single rows needs row-level security, taught in lesson e-pg-l5-10.
 
 When someone leaves, `ALTER ROLE` locks their login (`NOLOGIN`, `VALID UNTIL`). To remove them for good, move their objects with `REASSIGN OWNED BY`, clear what is left with `DROP OWNED BY`, then `DROP ROLE`.
+
+The step-through figure at the end of this section draws the three doors `linh` must pass to read `sales.orders`: `CONNECT`, `USAGE` on the schema, `SELECT` on the table.
 
 ## Syntax
 

@@ -9,6 +9,7 @@ kind: lab
 runtime: browser
 minutes: 14
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
+figures: [{ name: pg-view-vs-matview, at: idea }]
 objectives:
   - vi: Lưu một câu hỏi hay dùng thành view để cả nhóm gọi lại bằng một tên.
     en: Save a frequent query as a view so the whole team can call it by name.
@@ -109,6 +110,8 @@ Nhiều người nghĩ view chạy nhanh hơn câu gốc vì "đã có sẵn". T
 Materialized view thì khác: nó chạy câu gốc một lần và lưu kết quả xuống đĩa như một bảng. Đọc rất nhanh, có thể tạo index trên nó, nhưng kết quả đứng yên cho tới khi bạn gõ `REFRESH MATERIALIZED VIEW`. Nó hợp với báo cáo tổng hợp nặng, nơi dữ liệu cũ vài phút hay vài giờ vẫn chấp nhận được.
 
 `REFRESH` thường khóa materialized view trong lúc làm mới. Bản `CONCURRENTLY` để người khác vẫn đọc bản cũ, nhưng cần một unique index trên materialized view để so từng dòng.
+
+Hình cuối mục này đặt hai thứ cạnh nhau: view `big_orders` chỉ lưu câu lệnh, materialized view `paid_count` lưu dòng kết quả và chỉ đổi khi `REFRESH`.
 
 ## Cú pháp
 
@@ -229,6 +232,8 @@ Many people think a view runs faster than its query because it is "already prepa
 A materialized view is different: it runs its query once and stores the result on disk like a table. Reads are very fast and you can index it, but the result stays frozen until you run `REFRESH MATERIALIZED VIEW`. It suits heavy summary reports where data a few minutes or hours old is acceptable.
 
 A plain `REFRESH` locks the materialized view while it works. The `CONCURRENTLY` form lets others keep reading the old version, but it needs a unique index on the materialized view to match rows.
+
+The figure at the end of this section puts the two side by side: the view `big_orders` stores only its query, while the materialized view `paid_count` stores result rows that change only on `REFRESH`.
 
 ## Syntax
 

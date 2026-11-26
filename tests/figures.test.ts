@@ -184,7 +184,7 @@ describe.each(Object.keys(specs))('v39 figure %s', (name) => {
             const g = Math.max(t.x - a.tip[0], a.tip[0] - (t.x + t.w), t.y - a.tip[1], a.tip[1] - (t.y + t.h));
             expect(g, `${at}: ${a.k} mũi tên cách đích`).toBeGreaterThanOrEqual(2.99);
           }
-          checkGroups(f, at);
+          checkGroups(f, at, spec);
         });
       });
     }
@@ -240,10 +240,11 @@ describe('v39 R1: checker and builder regressions', () => {
 });
 
 /** v40 groups: members ≥ 10 inside the frame (below its 20-unit label band), every other node ≥ 12 outside it. */
-function checkGroups(f: { nodes: Shape[] }, at: string): void {
+function checkGroups(f: { nodes: Shape[] }, at: string, spec?: FigSpec): void {
   const m = model(f, 0, 0);
   for (const g of m.boxes.filter((b) => /^g:[^.]+$/.test(b.k ?? ''))) for (const [id, e] of extents(f)) {
-    const member = m.boxes.some((b) => b.k === `n:${id}` && b.parent === g.k);
+    // v41: a grid has no box of its own (only cells), so the spec's group list also says who is a member
+    const member = m.boxes.some((b) => b.k === `n:${id}` && b.parent === g.k) || !!spec?.groups?.some((x) => `g:${x.id}` === g.k && x.nodes.includes(id));
     if (member) expect(Math.min(e.x0 - g.x, g.x + g.w - e.x1, e.y0 - g.y - 20, g.y + g.h - e.y1), `${at}: ${id} sát mép nhóm ${g.k}`).toBeGreaterThanOrEqual(9.5);
     else expect(Math.max(g.x - e.x1, e.x0 - (g.x + g.w), g.y - e.y1, e.y0 - (g.y + g.h)), `${at}: ${id} sát nhóm ${g.k}`).toBeGreaterThanOrEqual(12);
   }

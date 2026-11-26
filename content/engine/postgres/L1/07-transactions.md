@@ -9,6 +9,7 @@ kind: concept
 runtime: browser
 minutes: 12
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
+figures: [{ name: pg-savepoint-timeline, at: idea }]
 viz: pg-mvcc-timeline
 objectives:
   - vi: Gói nhiều câu ghi trong `BEGIN ... COMMIT` để chúng cùng thành công hoặc cùng bị hủy.
@@ -114,6 +115,8 @@ Mức cô lập mặc định là Read Committed: mỗi câu lệnh lấy một 
 Khi một câu trong `BEGIN` bị lỗi, cả transaction hỏng. Mọi câu sau, kể cả `SELECT`, bị từ chối với mã 25P02 cho tới khi transaction kết thúc. Gõ `COMMIT` lúc này không lưu gì: Postgres kết thúc transaction như một `ROLLBACK`.
 
 `SAVEPOINT` đặt một mốc bên trong transaction. `ROLLBACK TO SAVEPOINT` chỉ hủy phần sau mốc đó, giữ phần trước, và đưa một transaction đang hỏng về trạng thái dùng được. Nhờ vậy một bước phụ thất bại (thu phí, ghi log) không kéo theo cả việc chính.
+
+Hình từng bước ở cuối mục này đi lại đúng lần chuyển tiền của lab: đặt mốc `before_fee`, khoản phí lỗi làm hỏng transaction, rồi `ROLLBACK TO SAVEPOINT` chỉ bỏ phần sau mốc.
 
 ## Cú pháp
 
@@ -248,6 +251,8 @@ The default isolation level is Read Committed: each statement takes a fresh snap
 When a statement inside `BEGIN` fails, the whole transaction is broken. Every later statement, even a `SELECT`, is refused with code 25P02 until the transaction ends. Typing `COMMIT` at that point saves nothing: Postgres ends the transaction like a `ROLLBACK`.
 
 `SAVEPOINT` sets a marker inside a transaction. `ROLLBACK TO SAVEPOINT` undoes only what came after the marker, keeps what came before, and makes a broken transaction usable again. So a failed side step (a fee, a log line) does not drag the main work down with it.
+
+The step-through figure at the end of this section walks through the lab's own transfer: the marker `before_fee` is set, the failing fee breaks the transaction, then `ROLLBACK TO SAVEPOINT` undoes only the part after the marker.
 
 ## Syntax
 
