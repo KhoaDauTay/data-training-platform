@@ -15,7 +15,7 @@ nodes:
     label: { vi: "tài liệu 3", en: "document 3" }
     head: [token, position]
     cells: [[lồng, "0"], [đèn, "1"], [giấy, "2"]]
-    rowTone: [good, good, null]
+    rowTone: [live, live, null]
   - id: d1
     shape: grid
     mono: true

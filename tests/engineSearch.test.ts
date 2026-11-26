@@ -22,6 +22,7 @@ const all = Object.entries(files).map(([p, raw]) => {
   return { l: parseEngineLesson(raw, p, parse), fm, raw };
 }).sort((a, b) => a.l.id.localeCompare(b.l.id));
 const ids = new Set(all.map((x) => x.l.id));
+const figRaw = import.meta.glob<string>('../content/figures/sr-*.yml', { query: '?raw', import: 'default', eager: true });
 
 /** content-gaps §5 E4 + E10, cut to R1: L1 the index and analyzers, L2 queries and relevance, L3 aggregations, PostgreSQL, choice, capstone. */
 const PLAN: Record<string, EngineLesson['kind'][]> = {
@@ -58,6 +59,10 @@ describe('Engine Tìm kiếm (v47 R1): bài, mô-đun, luật nội dung', () =>
     expect(honestOf(l)).toBe('search');
     for (const s of l.lab?.steps ?? []) expect(gradable(l, s)).toBe(true);
     expect((l.figures ?? []).filter((f) => f.name.startsWith('sr-')).length).toBe(1);
+  });
+  it('hình sr-: chỉ dùng tông có trong engineVizCore (tông lạ làm hình không vẽ được trong trình duyệt)', () => {
+    const TONES = ['cell', 'live', 'dead', 'new', 'ptr', 'warm', 'free', 'ghost', 'plain'];
+    for (const [p, raw] of Object.entries(figRaw)) for (const m of raw.matchAll(/(?:tone|rowTone|colTone|cellTone)\s*:\s*(\[[^\]]*\]|\{[^}]*\}|\w+)/g)) for (const t of m[1].match(/[a-z]+/g) ?? []) expect(t === 'null' || TONES.includes(t) || /^\d/.test(t), `C:\Users\khoa.huynh\Documents\study\bd-wt\v47-search\tests\engineSearch.test.ts: `).toBe(true);
   });
   it.each(all.map((x) => [x.l.id, x.raw] as const))('%s: mọi dòng code ≤ 40 ký tự (L542)', (_, raw) => {
     const body = raw.replace(/\r\n/g, '\n').split(/\n---\n/).slice(1).join('\n---\n');

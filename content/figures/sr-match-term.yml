@@ -12,8 +12,8 @@ nodes:
   - { id: in, shape: note, mono: true, label: "\"Nón lá\"" }
   - { id: m, label: match, sub: { vi: "qua analyzer", en: "via the analyzer" }, tone: warm }
   - { id: t, label: term, sub: { vi: "nguyên văn", en: "literal" } }
-  - { id: mr, mono: true, label: nón + lá, sub: { vi: "2 kết quả", en: "2 hits" }, tone: good }
-  - { id: tr, mono: true, label: Nón lá, sub: { vi: "0 kết quả", en: "0 hits" }, tone: bad }
+  - { id: mr, mono: true, label: nón + lá, sub: { vi: "2 kết quả", en: "2 hits" }, tone: live }
+  - { id: tr, mono: true, label: Nón lá, sub: { vi: "0 kết quả", en: "0 hits" }, tone: dead }
 rows:
   - [in]
   - [m, t]

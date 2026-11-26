@@ -17,7 +17,7 @@ nodes:
     label: { vi: "Từ lưu ở name.ac", en: "Words in name.ac" }
     head: [token, position]
     cells: [[de, "0"], [den, "0"], [lo, "1"], [lon, "1"], [long, "1"]]
-    rowTone: [null, null, null, good, null]
+    rowTone: [null, null, null, live, null]
   - { id: q, shape: note, mono: true, label: { vi: "khách gõ: lon", en: "typed: lon" } }
 rows:
   - [w]

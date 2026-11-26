@@ -18,6 +18,6 @@ nodes:
       - [{ vi: "BM25, n-gram", en: "BM25, n-grams" }, Elasticsearch]
       - [{ vi: "rất nhiều tài liệu", en: "huge volumes" }, Elasticsearch]
       - [{ vi: "log, nhiều máy", en: "logs, many nodes" }, Elasticsearch]
-    rowTone: [good, good, warm, warm, warm]
+    rowTone: [live, live, warm, warm, warm]
 rows:
   - [g]

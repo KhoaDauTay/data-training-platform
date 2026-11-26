@@ -15,7 +15,7 @@ nodes:
     label: trigram
     head: [trigram, sen, sem]
     cells: [[__s, "✓", "✓"], [_se, "✓", "✓"], [sen, "✓", "-"], [en_, "✓", "-"], [sem, "-", "✓"], [em_, "-", "✓"]]
-    rowTone: [good, good, null, null, null, null]
+    rowTone: [live, live, null, null, null, null]
   - { id: n, shape: note, label: "similarity = 2 / 6 = 0.33" }
 rows:
   - [g]
