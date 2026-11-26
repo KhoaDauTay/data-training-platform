@@ -8,6 +8,7 @@ title_en: Multi-tenant - three layers of protection and the topic map
 kind: concept
 runtime: browser
 minutes: 12
+figures: [{ name: ds-tenant-layers, at: idea }]
 objectives:
   - vi: Kể ba lớp giữ dữ liệu các khách hàng tách nhau trong pool - câu lọc, khóa, chính sách - và lớp nào chặn lỗi nào.
     en: Name the three layers that keep tenants apart in a pool - query filters, keys, policies - and which mistake each one stops.

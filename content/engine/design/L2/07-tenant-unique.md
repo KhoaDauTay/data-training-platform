@@ -8,7 +8,7 @@ title_en: Unique per tenant - UNIQUE (tenant_id, email)
 kind: lab
 runtime: browser
 minutes: 16
-figures: [{ name: pg-tenancy-models, at: idea, step: 3 }]
+figures: [{ name: pg-tenancy-models, at: idea, step: 3 }, { name: ds-tenant-composite-fk, at: idea, variant: unique }]
 objectives:
   - vi: Viết luật duy nhất trong phạm vi một khách hàng thay vì cho cả hệ thống.
     en: Write a uniqueness rule scoped to one tenant instead of the whole system.

@@ -8,6 +8,7 @@ title_en: Tuple and domain relational calculus
 kind: concept
 runtime: browser
 minutes: 15
+figures: [{ name: ds-division, at: idea, variant: forall }]
 objectives:
   - vi: Đọc một biểu thức phép tính bộ {t | P(t)} và phép tính miền, rồi viết câu SQL tương ứng.
     en: Read a tuple calculus expression {t | P(t)} and a domain calculus one, then write the matching SQL.

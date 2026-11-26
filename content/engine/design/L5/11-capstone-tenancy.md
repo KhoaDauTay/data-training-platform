@@ -8,6 +8,7 @@ title_en: Capstone - Lantern Market from pool to hybrid
 kind: capstone
 runtime: browser
 minutes: 30
+figures: [{ name: ds-pool-to-hybrid, at: practice }]
 objectives:
   - vi: Tìm shard quá tải và người bán làm nó quá tải từ dữ liệu đơn hàng.
     en: Find the overloaded shard, and the seller overloading it, from the order data.

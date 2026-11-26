@@ -8,7 +8,7 @@ title_en: Weak entities, generalisation and the EER model
 kind: concept
 runtime: browser
 minutes: 15
-figures: [{ name: ds-er-to-tables, at: example, variant: weak }]
+figures: [{ name: ds-er-weak-isa, at: idea }, { name: ds-er-to-tables, at: example, variant: weak }, { name: ds-er-weak-isa, at: example, variant: isa }]
 objectives:
   - vi: Nhận ra thực thể yếu và đưa nó lên bảng với khóa gồm khóa của chủ cộng khóa bộ phận.
     en: Spot a weak entity and map it to a table keyed by its owner's key plus a partial key.

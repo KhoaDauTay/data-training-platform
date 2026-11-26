@@ -8,6 +8,7 @@ title_en: BCNF and the price of keeping dependencies
 kind: lab
 runtime: browser
 minutes: 25
+figures: [{ name: ds-bcnf-split, at: idea }]
 objectives:
   - vi: Nhận ra một bảng ở 3NF mà chưa ở BCNF, vì có một vế trái không phải siêu khóa.
     en: Spot a table that is in 3NF but not in BCNF, because a left side is not a superkey.

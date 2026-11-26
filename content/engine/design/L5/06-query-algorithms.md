@@ -8,6 +8,7 @@ title_en: Query processing algorithms - external sort, selection, joins
 kind: concept
 runtime: browser
 minutes: 15
+figures: [{ name: ds-external-sort, at: idea }]
 objectives:
   - vi: Kể các bước xử lý một câu truy vấn và chỗ mỗi thuật toán xuất hiện trong EXPLAIN.
     en: List the steps of processing a query and where each algorithm shows up in EXPLAIN.

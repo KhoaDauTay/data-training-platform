@@ -8,6 +8,7 @@ title_en: When to denormalise - grain, star schemas, controlled copies
 kind: concept
 runtime: browser
 minutes: 15
+figures: [{ name: ds-star-schema, at: idea }]
 objectives:
   - vi: Nói được vì sao bảng báo cáo hay bảng tài liệu cố ý lưu lặp, và cái giá phải trả khi ghi.
     en: Say why reporting tables and document tables repeat data on purpose, and what it costs on writes.

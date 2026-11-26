@@ -1,0 +1,40 @@
+# B2-1 (tools/v42/diagram-plan-v42.md): five kinds of attribute, and where each one goes on tables. Lesson: e-ds-l2-01 (Ý chính;
+# ds-cardinality stays in Ví dụ). Data: the lesson's lab, run on PGlite (tools/v42/b2check.log): customers (id, first_name,
+# last_name), order_lines (id, customer_id, qty, unit_price); the lab's steps add the generated line_total and the child table
+# customer_phones (customer_id, phone, PRIMARY KEY (customer_id, phone)). Fields are flat, so the composite full name is its two
+# rows. Phones stack ORDER_LINE, CUSTOMER, CUSTOMER_PHONES so both lines join neighbouring rows.
+# Source: https://www.postgresql.org/docs/18/ddl-generated-columns.html
+title: { vi: "Bốn loại thuộc tính và chỗ của chúng trên bảng", en: "Four kinds of attribute and where they go on tables" }
+caption:
+  vi: "Khóa phân biệt thực thể; phức hợp thành nhiều cột; đa trị (phones {…}) thành bảng con; dẫn xuất (/line_total) thành cột sinh."
+  en: "A key tells entities apart; a composite becomes several columns; a multivalued one (phones {…}) a child table; a derived one (/line_total) a generated column."
+alt:
+  vi: "Loại thuộc tính quyết định chỗ của nó trên bảng: phức hợp thành nhiều cột, đa trị thành bảng con có khóa ghép, dẫn xuất thành cột sinh."
+  en: "An attribute's kind decides where it goes on tables: a composite becomes several columns, a multivalued one a child table with a composite key, a derived one a generated column."
+nodes:
+  - { id: l, shape: entity, label: ORDER_LINE, fields: [{ name: id, pk: true }, { name: customer_id, fk: true }, qty, unit_price, /line_total] }
+  - { id: c, shape: entity, label: CUSTOMER, fields: [{ name: id, pk: true }, first_name, last_name, "phones {…}"] }
+  - { id: ph, shape: entity, label: CUSTOMER_PHONES, fields: [{ name: customer_id, pk: true, fk: true }, { name: phone, pk: true }] }
+  - { id: k1, shape: key, label: { vi: "khóa: id", en: "key: id" } }
+  - { id: k2, shape: key, label: { vi: "phức hợp: họ + tên", en: "composite: names" } }
+  - { id: k3, shape: key, label: { vi: "đa trị: phones", en: "multivalued: phones" } }
+  - { id: k4, shape: key, label: { vi: "dẫn xuất: /line_total", en: "derived: /line_total" } }
+  - { id: gen, shape: key, mono: true, label: "GENERATED … STORED", tone: new }
+rows:
+  - [l, c, ph]
+  - [k1, k2]
+  - [k3, k4]
+  - [gen]
+phone: { rows: [[l], [c], [ph], [k1, k2], [k3, k4], [gen]] }
+edges:
+  - { from: "c#0", to: "l#1", link: true, ends: [one, zero-many], label: { vi: "mua", en: "buys" } }
+  - { from: "c#0", to: "ph#0", link: true, ends: [one, zero-many], label: { vi: "có", en: "has" } }
+steps:
+  - say: { vi: "Bốn loại thuộc tính trên sơ đồ.", en: "Four kinds of attribute on the diagram." }
+    alt: { vi: "Khóa phân biệt thực thể, phức hợp có nhiều phần, đa trị có nhiều giá trị, dẫn xuất tính được từ cột khác.", en: "A key tells entities apart, a composite has parts, a multivalued attribute has several values, a derived one is computed from others." }
+    show: [l, c, k1, k2, k3, k4]
+  - say: { vi: "Lên bảng: đa trị thành bảng con, dẫn xuất thành cột sinh.", en: "On tables: multivalued becomes a child table, derived becomes a generated column." }
+    alt: { vi: "Số điện thoại không có trần nên mỗi số là một dòng của bảng con, còn thành tiền do database tính để không bao giờ lệch.", en: "Phone numbers have no ceiling so each is a child-table row, while the line total is computed by the database so it never drifts." }
+    set:
+      c: { fields: [{ name: id, pk: true }, first_name, last_name] }
+      l: { fields: [{ name: id, pk: true }, { name: customer_id, fk: true }, qty, unit_price, line_total] }

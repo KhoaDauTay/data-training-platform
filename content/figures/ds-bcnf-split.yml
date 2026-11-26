@@ -1,0 +1,37 @@
+# B2-5 (tools/v42/diagram-plan-v42.md): split on teacher → subject, and lose one rule. Lesson: e-ds-l4-03 (Ý chính). Data: the
+# lab's tutoring (PRIMARY KEY (student, subject)), run on PGlite (tools/v42/b2check.log): 5 rows; the (teacher, subject) pairs
+# Hoa–math and Lan–physics each appear twice; DISTINCT teacher, subject = 3 rows; student, teacher = 5 rows.
+# Source: https://www.bkent.net/Doc/simple5.htm
+title: { vi: "Tách để đạt BCNF, và một luật bị mất", en: "A BCNF split, and the rule it loses" }
+caption:
+  vi: "teacher → subject mà teacher không phải khóa: tách theo nó thì hết lặp, nhưng (student, subject) → teacher không còn khóa nào giữ."
+  en: "teacher → subject while teacher is not a key: splitting on it ends the repeats, but no key keeps (student, subject) → teacher any more."
+alt:
+  vi: "BCNF đòi mọi vế trái là siêu khóa, nên tutoring phải tách theo teacher → subject. Cái giá là một phụ thuộc không còn được khóa nào giữ: 3NF giữ được nó, BCNF thì không."
+  en: "BCNF needs every left side to be a superkey, so tutoring splits on teacher → subject. The price is one dependency no key keeps any more: 3NF keeps it, BCNF does not."
+nodes:
+  - { id: fd, shape: key, mono: true, label: "teacher → subject", tone: warm }
+  - id: t
+    shape: grid
+    label: tutoring
+    head: [student, subject, teacher]
+    cells: [[An, math, Hoa], [An, physics, Lan], [Binh, math, Minh], [Binh, physics, Lan], [Chi, math, Hoa]]
+    cellTone: { "0:1": warm, "0:2": warm, "4:1": warm, "4:2": warm, "1:1": warm, "1:2": warm, "3:1": warm, "3:2": warm }
+    sub: "PK (student, subject)"
+  - { id: ts, shape: grid, label: teacher_subject, head: [teacher, subject], cells: [[Hoa, math], [Lan, physics], [Minh, math]], colTone: [new, null], sub: "PK (teacher)" }
+  - { id: st, shape: grid, label: student_teacher, head: [student, teacher], cells: [[An, Hoa], [An, Lan], [Binh, Lan], [Binh, Minh], [Chi, Hoa]] }
+  - { id: lost, shape: note, label: { vi: "luật môn–giáo viên mất khóa", en: "rule left with no key" } }
+rows:
+  - [fd]
+  - [t]
+  - [ts, st]
+  - [lost]
+edges:
+  - { from: t, to: ts, label: { vi: "tách", en: "split" } }
+  - { from: t, to: st }
+steps:
+  - say: { vi: "Vế trái teacher không phải khóa.", en: "teacher is not a key." }
+    alt: { vi: "teacher quyết định subject nên môn của mỗi giáo viên lặp theo số học viên.", en: "teacher determines subject, so each teacher's subject repeats once per student." }
+    show: [fd, t]
+  - say: { vi: "Tách: hết lặp, nhưng mất một luật.", en: "Split: no repeats, but one rule is lost." }
+    alt: { vi: "Phụ thuộc (student, subject) → teacher giờ trải trên hai bảng, nên không khóa nào chặn học viên có hai giáo viên cùng môn.", en: "The dependency (student, subject) → teacher now spans two tables, so no key stops a student having two teachers for one subject." }

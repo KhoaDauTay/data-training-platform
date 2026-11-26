@@ -8,6 +8,7 @@ title_en: Tenant and shard catalog - placing tenants by tier
 kind: lab
 runtime: browser
 minutes: 18
+figures: [{ name: ds-shard-catalog, at: idea }]
 objectives:
   - vi: Dựng danh mục bằng bảng thường - shard (gói, trạng thái, sức chứa) và nơi ở của từng khách theo thời gian.
     en: Build the catalog from plain tables - shards (tier, state, capacity) and where each tenant lives over time.

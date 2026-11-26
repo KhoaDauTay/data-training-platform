@@ -193,9 +193,22 @@ function plans(spec: FigSpec, lang: Lang, variant?: string): Plan[] {
   return steps.map((st) => ({ say: tr(st.say, lang), show: new Set(st.show ?? v?.show ?? all), nodes: merge(nodes, st.set), edges: patchE(es, st.set) }));
 }
 
+/** v44 (L773): a figure drawn with only some of its nodes (a variant's `show` or one step) drops the nodes none of its frames
+ * shows, with their edges, emptied rows and groups, so it keeps no empty slot or band; undefined when every node shows. */
+function unshownRows(spec: FigSpec, ps: Plan[]): FigSpec | undefined {
+  const ids = new Set(spec.nodes.map((n) => n.id).filter((id) => ps.some((p) => p.show.has(id))));
+  if (ids.size === spec.nodes.length) return undefined;
+  const keep = (rows: string[][]): string[][] => rows.map((r) => r.filter((id) => ids.has(id))).filter((r) => r.length);
+  const groups = spec.groups?.map((g) => ({ ...g, nodes: g.nodes.filter((n) => ids.has(n)) })).filter((g) => g.nodes.length);
+  const kept = (x: string): boolean => ids.has(base(x)) || !!groups?.some((g) => g.id === base(x));
+  return { ...spec, rows: keep(spec.rows), nodes: spec.nodes.filter((n) => ids.has(n.id)), groups,
+    edges: spec.edges?.filter((e) => kept(e.from) && kept(e.to)), phone: spec.phone && { rows: keep(spec.phone.rows) } };
+}
 /** Lays the spec out `W` units wide (W = the svg's own width in px, 280–640) and returns the renderer's Diagram. */
 export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): Diagram {
   const ps = plans(spec, lang, variant);
+  const cut = unshownRows(spec, ps);
+  if (cut) return layout(cut, lang, W, variant);
   const byId = new Map(spec.nodes.map((n) => [n.id, n]));
   const wide = W >= WIDE;
   // every frame's version of a node gets the same box: the largest; a table's title height too, so tables in one row line up

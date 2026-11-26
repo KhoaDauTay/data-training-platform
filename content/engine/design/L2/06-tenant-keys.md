@@ -8,7 +8,7 @@ title_en: Keys for many tenants - tenant_id in the primary and foreign keys
 kind: lab
 runtime: browser
 minutes: 18
-figures: [{ name: pg-tenancy-models, at: idea, step: 3 }]
+figures: [{ name: pg-tenancy-models, at: idea, step: 3 }, { name: ds-tenant-composite-fk, at: idea }]
 objectives:
   - vi: Đặt `tenant_id` đầu khóa chính của mọi bảng thuộc về một khách hàng.
     en: Put `tenant_id` first in the primary key of every table a tenant owns.

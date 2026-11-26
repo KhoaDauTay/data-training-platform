@@ -8,6 +8,7 @@ title_en: Division - the "for all" question
 kind: lab
 runtime: browser
 minutes: 20
+figures: [{ name: ds-division, at: idea }]
 objectives:
   - vi: Nhận ra câu hỏi cần phép chia ÷ (ai làm đủ mọi thứ trong một danh sách).
     en: Spot a question that needs division ÷ (who did every item on a list).

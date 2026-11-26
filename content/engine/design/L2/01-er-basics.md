@@ -8,7 +8,7 @@ title_en: Entities, attributes, relationships and degree
 kind: concept
 runtime: browser
 minutes: 15
-figures: [{ name: ds-cardinality, at: example }]
+figures: [{ name: ds-er-attribute-kinds, at: idea }, { name: ds-cardinality, at: example }]
 objectives:
   - vi: Phân loại thuộc tính đơn, phức hợp, đa trị, dẫn xuất và thuộc tính khóa.
     en: Classify simple, composite, multivalued, derived and key attributes.

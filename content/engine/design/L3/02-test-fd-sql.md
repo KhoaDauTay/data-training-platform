@@ -8,6 +8,7 @@ title_en: Testing a functional dependency on data with SQL
 kind: lab
 runtime: browser
 minutes: 20
+figures: [{ name: ds-fd-group-test, at: idea }]
 objectives:
   - vi: Tìm phản ví dụ của một phụ thuộc, kể cả khi vế trái có nhiều cột.
     en: Find counter-examples to a dependency, including one with a multi-column left side.

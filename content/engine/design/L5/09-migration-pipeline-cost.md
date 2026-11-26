@@ -8,6 +8,7 @@ title_en: Per-shard migrations and cost tags
 kind: lab
 runtime: browser
 minutes: 20
+figures: [{ name: ds-shard-migration, at: idea }]
 objectives:
   - vi: Tìm shard chậm phiên bản và đưa chúng lên, từng shard một, ghi phiên bản chỉ khi thay đổi đã thật sự có.
     en: Find shards behind on version and bring them up one at a time, recording the version only once the change really exists.
