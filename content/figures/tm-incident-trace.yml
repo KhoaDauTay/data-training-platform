@@ -1,0 +1,25 @@
+# TM-13 (v47 Telemetry R1, L1042): the investigation path of the capstone. Lesson: e-tm-l3-04 (Ý chính).
+# Data = the lab: /track p95 130 → 910 ms from 10:05, error ratio 0.1, 6 of 7 error logs "carrier API timeout",
+# trace x2 1,900 ms, leaf http POST carrier/track 1,720 ms.
+# Sources: https://opentelemetry.io/docs/concepts/signals/ ; https://opentelemetry.io/docs/concepts/signals/logs/
+title: { vi: "Từ metrics tới bước chậm", en: "From metrics to the slow step" }
+caption:
+  vi: "Mỗi tín hiệu thu hẹp tín hiệu sau: metrics chỉ ra /track từ 10:05, log nói hãng tàu trả lời chậm, trace chỉ ra lời gọi tốn 1.720 ms."
+  en: "Each signal narrows the next: metrics point at /track from 10:05, logs say the carrier answers slowly, the trace shows the call costing 1,720 ms."
+alt:
+  vi: "Cuộc điều tra đi từ metrics để biết ở đâu và từ khi nào, sang log để biết vì sao, rồi tới trace để biết bước nào chậm. Kết quả: lời gọi http POST carrier/track chiếm 1.720 trong 1.900 ms của trace x2."
+  en: "The investigation goes from metrics to learn where and since when, to logs to learn why, then to a trace to learn which step is slow. Result: the http POST carrier/track call takes 1,720 of trace x2's 1,900 ms."
+nodes:
+  - { id: met, shape: table, label: { vi: "metrics /track", en: "/track metrics" }, sub: "p95 130 → 910 ms" }
+  - { id: log, shape: doc, label: { vi: "log lỗi /track", en: "/track error logs" }, sub: "6/7 timeout" }
+  - { id: tr, label: "trace x2", sub: "1900 ms" }
+  - { id: leaf, label: "POST carrier/track", sub: "1720 ms", tone: warm }
+rows:
+  - [met]
+  - [log]
+  - [tr]
+  - [leaf]
+edges:
+  - { from: met, to: log, label: { vi: "route, 10:05", en: "route, 10:05" } }
+  - { from: log, to: tr, label: trace_id }
+  - { from: tr, to: leaf, label: { vi: "span lá", en: "leaf span" } }
