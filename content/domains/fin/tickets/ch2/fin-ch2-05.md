@@ -65,7 +65,7 @@ ORDER BY r.method
 ```
 
 ## Hints
-1. Bước 1 giữ mọi kỳ đến hạn, cả kỳ chưa trả, như bài phải thu và đã thu. Bước 2 và 3 chỉ cần kỳ đã trả, lọc theo ngày trả và tính số ngày trễ bằng phép trừ hai ngày.
+1. Bước 1 giữ mọi kỳ đến hạn, cả kỳ chưa trả, như việc "Phải thu và đã thu, kể cả kỳ chưa trả". Bước 2 và 3 chỉ cần kỳ đã trả, lọc theo ngày trả và tính số ngày trễ bằng phép trừ hai ngày.
 2. Bước 1: `LEFT JOIN repayments r`, `sum(COALESCE(r.amount, 0))`. Bước 2: `r.paid_on - s.due_on`, `ORDER BY 3 DESC, 1, 2 LIMIT 10`. Bước 3: `GROUP BY r.method`, `round(avg(r.paid_on - s.due_on), 2)`.
 3. `SELECT r.method, count(*), round(avg(r.paid_on - s.due_on), 2) FROM schedules s JOIN repayments r ON ... WHERE ... GROUP BY r.method ORDER BY r.method`
 
@@ -82,6 +82,6 @@ Among the payments made in October 2026 (payment date in October), the ten paid 
 Only the late payments with a payment date in October 2026, per payment method: the method, the number of late payments and the average days late, rounded to 2 decimals. Sort by method name in alphabetical order.
 
 ## Hints
-1. Step 1 keeps every instalment due, unpaid ones included, like the due-and-collected task. Steps 2 and 3 only need paid instalments, filtered on the payment date, with the days late computed by subtracting two dates.
+1. Step 1 keeps every instalment due, unpaid ones included, like the task "Due and collected, unpaid instalments included". Steps 2 and 3 only need paid instalments, filtered on the payment date, with the days late computed by subtracting two dates.
 2. Step 1: `LEFT JOIN repayments r`, `sum(COALESCE(r.amount, 0))`. Step 2: `r.paid_on - s.due_on`, `ORDER BY 3 DESC, 1, 2 LIMIT 10`. Step 3: `GROUP BY r.method`, `round(avg(r.paid_on - s.due_on), 2)`.
 3. `SELECT r.method, count(*), round(avg(r.paid_on - s.due_on), 2) FROM schedules s JOIN repayments r ON ... WHERE ... GROUP BY r.method ORDER BY r.method`

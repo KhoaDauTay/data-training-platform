@@ -81,7 +81,7 @@ ORDER BY s.dpd DESC, l.code
 ```
 
 ## Hints
-1. Bước 1: một bước có tên tính tỷ lệ theo chi nhánh và tháng (tính cả cuối tháng 6), bước thứ hai lấy tháng trước của cùng chi nhánh, rồi mới bỏ tháng 6. Bước 2 xếp hạng trong từng vùng. Bước 3 là bài tìm khoản chưa ai gọi, thêm điều kiện về kênh và tháng giải ngân.
+1. Bước 1: một bước có tên tính tỷ lệ theo chi nhánh và tháng (tính cả cuối tháng 6), bước thứ hai lấy tháng trước của cùng chi nhánh, rồi mới bỏ tháng 6. Bước 2 xếp hạng trong từng vùng. Bước 3 là việc "Khoản quá hạn chưa ai gọi", thêm điều kiện về kênh và tháng giải ngân.
 2. Bước 1: `COALESCE(sum(s.outstanding) FILTER (WHERE s.dpd > 30), 0)`, `ratio - LAG(ratio) OVER (PARTITION BY name ORDER BY month_end)`. Bước 2: `RANK() OVER (PARTITION BY region ORDER BY ratio DESC)`. Bước 3: nối `applications a` lấy `a.channel = 'partner'`, `LEFT JOIN collection_calls c ON ... AND c.called_on >= '2026-10-01' AND c.called_on < '2026-11-01'`, `c.id IS NULL`.
 3. `WITH r AS (...), d AS (SELECT name, month_end, ratio, ratio - LAG(ratio) OVER (PARTITION BY name ORDER BY month_end) AS change FROM r) SELECT name, month_end, ratio, change FROM d WHERE ... ORDER BY name, month_end`
 
@@ -98,6 +98,6 @@ At the end of October 2026, each branch's rank within its region by the share fr
 The Quang Ngai branch (branch number 7): the loans paid out from March to the end of May 2026 on applications made through the partner channel, over 30 days past due in the end-of-October 2026 snapshot, with no collection call at all during October: loan code and days past due. Longest past due first; on a tie, by loan code.
 
 ## Hints
-1. Step 1: one named step computes the share per branch and month (including the end of June), a second step takes the same branch's previous month, and only then June is dropped. Step 2 ranks within each region. Step 3 is the find-loans-nobody-called task, with extra conditions on the channel and the disbursement month.
+1. Step 1: one named step computes the share per branch and month (including the end of June), a second step takes the same branch's previous month, and only then June is dropped. Step 2 ranks within each region. Step 3 is the task "Overdue loans nobody called", with extra conditions on the channel and the disbursement month.
 2. Step 1: `COALESCE(sum(s.outstanding) FILTER (WHERE s.dpd > 30), 0)`, `ratio - LAG(ratio) OVER (PARTITION BY name ORDER BY month_end)`. Step 2: `RANK() OVER (PARTITION BY region ORDER BY ratio DESC)`. Step 3: join `applications a` for `a.channel = 'partner'`, `LEFT JOIN collection_calls c ON ... AND c.called_on >= '2026-10-01' AND c.called_on < '2026-11-01'`, `c.id IS NULL`.
 3. `WITH r AS (...), d AS (SELECT name, month_end, ratio, ratio - LAG(ratio) OVER (PARTITION BY name ORDER BY month_end) AS change FROM r) SELECT name, month_end, ratio, change FROM d WHERE ... ORDER BY name, month_end`

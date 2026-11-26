@@ -98,7 +98,7 @@ ORDER BY month
 ```
 
 ## Hints
-1. Bước 1 và 3 đặt ngân sách cạnh thực chi, giữ dòng của cả hai phía như bài ngân sách cạnh thực chi. Bước 2 so mỗi chi nhánh với một con số tính từ cả bảng. Bước 3 thêm hai cột cộng dồn theo tháng.
+1. Bước 1 và 3 đặt ngân sách cạnh thực chi, giữ dòng của cả hai phía như việc "Ngân sách cạnh thực chi của một chi nhánh". Bước 2 so mỗi chi nhánh với một con số tính từ cả bảng. Bước 3 thêm hai cột cộng dồn theo tháng.
 2. Bước 1: `FULL JOIN ac ON ac.account_id = bu.account_id`, chênh lệch `COALESCE(ac.amount, 0) - COALESCE(bu.amount, 0)`. Bước 2: `a.name = 'Marketing'`, truy vấn con `sum(g2.amount) / count(DISTINCT g2.branch_id)`. Bước 3: thực chi gom theo `date_trunc('month', g.posted_on)::date`, rồi `sum(actual) OVER (ORDER BY month)`.
 3. `WITH bu AS (...), ac AS (...), j AS (SELECT COALESCE(bu.month, ac.month) AS month, ... FROM bu FULL JOIN ac ON ...) SELECT month, sum(actual) OVER (ORDER BY month), sum(budget) OVER (ORDER BY month) FROM j ORDER BY month`
 
@@ -115,6 +115,6 @@ The branches whose Q3 2026 marketing spending is above the company's average mar
 The Hoi An branch (branch number 3), every month of 2026, including months with no spending yet: the month (first day), spending year to date and budget year to date, cost lines only. Earliest month first.
 
 ## Hints
-1. Steps 1 and 3 put the budget next to the spending and keep the rows of both sides, like the budget-next-to-spending task. Step 2 compares each branch with a figure computed from the whole table. Step 3 adds two running-total columns by month.
+1. Steps 1 and 3 put the budget next to the spending and keep the rows of both sides, like the task "One branch's budget next to its spending". Step 2 compares each branch with a figure computed from the whole table. Step 3 adds two running-total columns by month.
 2. Step 1: `FULL JOIN ac ON ac.account_id = bu.account_id`, variance `COALESCE(ac.amount, 0) - COALESCE(bu.amount, 0)`. Step 2: `a.name = 'Marketing'`, sub-query `sum(g2.amount) / count(DISTINCT g2.branch_id)`. Step 3: spending grouped by `date_trunc('month', g.posted_on)::date`, then `sum(actual) OVER (ORDER BY month)`.
 3. `WITH bu AS (...), ac AS (...), j AS (SELECT COALESCE(bu.month, ac.month) AS month, ... FROM bu FULL JOIN ac ON ...) SELECT month, sum(actual) OVER (ORDER BY month), sum(budget) OVER (ORDER BY month) FROM j ORDER BY month`

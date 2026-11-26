@@ -28,8 +28,8 @@ reflect:
   why: { vi: "Cắt thêm một chiều là cách kiểm tra chéo một giả thuyết: nguyên nhân thật phải hiện ra ở mọi lát cắt.", en: "Cutting along one more dimension cross-checks a hypothesis: the real cause shows up in every slice." }
 wrong:
   - sql: "WITH sold AS (SELECT d.courier, count(*) FILTER (WHERE s.name = 'Highland Gadget Hub') AS mine, count(*) FILTER (WHERE s.name <> 'Highland Gadget Hub') AS other FROM order_items i JOIN orders o ON o.id = i.order_id JOIN products p ON p.id = i.product_id JOIN sellers s ON s.id = p.seller_id JOIN deliveries d ON d.order_id = o.id WHERE o.status = 'delivered' AND o.ordered_at >= '{{from}}' AND o.ordered_at < '{{to}}' GROUP BY d.courier), broken AS (SELECT d.courier, count(*) FILTER (WHERE s.name = 'Highland Gadget Hub') AS mine, count(*) FILTER (WHERE s.name <> 'Highland Gadget Hub') AS other FROM returns r JOIN products p ON p.id = r.product_id JOIN sellers s ON s.id = p.seller_id JOIN deliveries d ON d.order_id = r.order_id WHERE r.reason = 'damaged' AND r.requested_on >= '{{from}}' AND r.requested_on < '{{to}}' GROUP BY d.courier) SELECT sold.courier, ROUND(100.0 * broken.mine / (sold.mine + sold.other), 1), ROUND(100.0 * broken.other / (sold.mine + sold.other), 1) FROM sold JOIN broken ON broken.courier = sold.courier ORDER BY sold.courier"
-    vi: "Bạn chia cả hai cột cho mọi hàng đơn vị đó đã giao. Mỗi tỷ lệ phải chia cho số hàng của chính nhóm đó."
-    en: "You divide both columns by everything the courier delivered. Each rate must divide by that group's own items."
+    vi: "Bạn chia cả hai tỷ lệ cho mọi dòng hàng đơn vị đó đã giao, của shop này lẫn các shop khác. Mỗi tỷ lệ phải chia cho số dòng hàng của chính nhóm đó."
+    en: "You divide both rates by everything the courier delivered, this shop and the others together. Each rate must divide by that group's own items."
 ---
 Bên vận hành không đồng ý: "Hàng vỡ là do khâu giao, nhất là Kite Logistics đang trễ ở miền Trung." Trước khi đổ lỗi, mình muốn đặt hai giả thuyết cạnh nhau trên cùng một bảng.
 
