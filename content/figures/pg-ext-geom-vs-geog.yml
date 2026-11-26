@@ -1,0 +1,31 @@
+# v43 EXT-02 (tools/v43/extensions-plan.md): geometry vs geography on the same pair. Lesson: e-pg-ext-02 (Ý chính).
+# Data (PGlite 0.5.16 + PostGIS 3.6.2, lesson setup): VNDAD POINT(108.22 16.12), VNSGN POINT(106.79 10.76);
+# ST_Distance on ::geometry = 5.55 (degrees), on geography = 613 km (rounded).
+# Sources: https://postgis.net/docs/using_postgis_dbmanagement.html#PostGIS_Geography, https://postgis.net/docs/ST_Distance.html
+title: { vi: "Cùng hai cảng, hai cách đo", en: "Same two ports, two measures" }
+caption:
+  vi: "geometry 4326 đo thẳng trên mặt phẳng kinh–vĩ và trả về độ. geography đo theo mặt cầu và trả về mét."
+  en: "geometry 4326 measures straight across the lon–lat plane and returns degrees. geography measures along the sphere and returns metres."
+alt:
+  vi: "Cùng hai cảng, kiểu geometry đo trên mặt phẳng bằng độ còn kiểu geography đo trên mặt cầu bằng mét. Kết quả: chỉ geography cho số km dùng được."
+  en: "For the same two ports, geometry measures on a flat plane in degrees while geography measures on the sphere in metres. Result: only geography gives a usable number of km."
+nodes:
+  - { id: pair, label: "VNDAD, VNSGN", sub: { vi: "hai điểm 4326", en: "two 4326 points" } }
+  - { id: geom, label: geometry 4326, sub: { vi: "5,55 độ", en: "5.55 degrees" }, tone: ghost }
+  - { id: geog, label: geography, sub: { vi: "613 km", en: "613 km" }, tone: ghost }
+rows:
+  - [pair]
+  - [geom, geog]
+edges:
+  - { from: pair, to: geom }
+  - { from: pair, to: geog }
+steps:
+  - say: { vi: "Mặt phẳng: khoảng cách tính bằng độ.", en: "Flat plane: the distance is in degrees." }
+    alt: { vi: "Trên mặt phẳng, khoảng cách là một con số theo độ, không phải đơn vị trên mặt đất.", en: "On a flat plane, the distance is a number of degrees, not a unit on the ground." }
+    set:
+      geom: { tone: warm }
+  - say: { vi: "Mặt cầu: khoảng cách tính bằng mét.", en: "Sphere: the distance is in metres." }
+    alt: { vi: "Trên mặt cầu, cùng hai cảng cách nhau theo một cung, tính bằng mét.", en: "On the sphere, the same two ports are an arc apart, measured in metres." }
+    set:
+      geom: { tone: warm }
+      geog: { tone: live }

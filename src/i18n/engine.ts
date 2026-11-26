@@ -188,6 +188,7 @@ const vi = {
   'ext.noxp': 'Phần tham khảo: không tính XP, không có huy hiệu. Bài xong vẫn được đánh dấu.',
   'ext.done': '{k}/{n} bài đã xong',
   'complete.noxp': 'Xong bài.',
+  'lab.postgisOnce': 'Lần chạy đầu tải PostGIS (khoảng 20 MB, một lần) và mất vài chục giây; các lần sau chỉ vài giây. Cần mạng cho lần tải đó.',
   'runtime.docs.ext': 'Phần chính không chạy ở đây: extension này chưa có bản cho trình duyệt (nó cần một tiến trình server, một máy khác hoặc bản build riêng). Khối có nút Chạy là cách làm tương đương bằng PostgreSQL thuần, chạy thật ở đây.',
 };
 export type EngineKey = keyof typeof vi;
@@ -372,6 +373,7 @@ const en: Record<EngineKey, string> = {
   'ext.noxp': 'Reference shelf: no XP, no badges. Finished lessons are still marked.',
   'ext.done': '{k} of {n} lessons done',
   'complete.noxp': 'Lesson done.',
+  'lab.postgisOnce': 'The first Run downloads PostGIS (about 20 MB, once) and takes some tens of seconds; later runs take a few seconds. That download needs the network.',
   'runtime.docs.ext': 'The main part does not run here: this extension has no browser build (it needs a server process, another machine or its own build). Blocks with a Run button show the plain PostgreSQL equivalent and do run here.',
 };
 
