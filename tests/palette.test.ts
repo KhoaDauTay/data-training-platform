@@ -19,7 +19,7 @@ describe('search palette (F12)', () => {
       expect(by('lesson')).toHaveLength(Object.keys(meta).length);
       expect(by('term')).toHaveLength((glossary as unknown[]).length);
       for (const x of by('skill')) expect(ROUTE_SKILLS.some((s) => s.id === learnSkillOf(x.href))).toBe(true);
-      for (const x of by('lesson')) expect(engineRouteOf(x.href).lesson).toMatch(/^e-(pg|mg|dy|rd|ds|st|ol)-(l\d|ext)-\d\d$/); // v43: the Extensions shelf (e-pg-ext-NN)
+      for (const x of by('lesson')) expect(engineRouteOf(x.href).lesson).toMatch(/^e-[a-z]{2}-(l\d|ext)-\d\d$/); // v43: the Extensions shelf (e-pg-ext-NN)
       for (const x of by('term')) expect(engineTermsOf(x.href)).toMatch(/^[a-z0-9-]+$/);
       expect(all.every((x) => x.title && !x.title.includes('`'))).toBe(true);
     }

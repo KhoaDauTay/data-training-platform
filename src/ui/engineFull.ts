@@ -1,4 +1,4 @@
-import { blocksOf, onPg, SECTIONS, type EngineId, type EngineLesson, type SectionId } from '../engine/content';
+import { blocksOf, isEsLesson, onPg, SECTIONS, type EngineId, type EngineLesson, type SectionId } from '../engine/content';
 import { figureSlot } from '../engine/figureSlot';
 import { DEMO_SECS, demoBlocks, demoSetup, errCode, pairOf, pgDemoOut, pgDemoScript, type DemoBlock, type DemoOut } from '../engine/demo';
 import type { LabEnv, LabOutput, LabRunner } from '../engine/labs';
@@ -36,7 +36,7 @@ const unitOf = (e: EngineId, n: number): string => { const u = ft(`unit.${e}`); 
 const SEC_ICON: Record<SectionId, IconName> = {
   open: 'secOpen', idea: 'kindConcept', syntax: 'secSyntax', example: 'secRun', pitfalls: 'secPitfall', practice: 'secPractice', recap: 'secRecap',
 };
-const RT: Record<EngineId, string> = { postgres: 'PostgreSQL (PGlite)', design: 'PostgreSQL (PGlite)', stack: 'PostgreSQL (PGlite)', olap: 'PostgreSQL (PGlite)', mongodb: 'mingo', dynamodb: 'dynoxide', redis: 'BoonData Redis' };
+const RT: Record<EngineId, string> = { postgres: 'PostgreSQL (PGlite)', design: 'PostgreSQL (PGlite)', stack: 'PostgreSQL (PGlite)', olap: 'PostgreSQL (PGlite)', search: 'PostgreSQL (PGlite) / BoonData ES', mongodb: 'mingo', dynamodb: 'dynoxide', redis: 'BoonData Redis' };
 const TOC_ROW = 'flex min-h-11 w-full items-center gap-2 border-0 border-l-4 px-3 py-1.5 text-left text-body-sm hover:bg-accent-soft';
 const TOC_IDLE = 'border-transparent bg-transparent text-ink';
 const TOC_NOW = 'border-accent bg-accent-soft font-bold text-accent-ink';
@@ -68,7 +68,7 @@ async function run(x: FullCtx, bs: DemoBlock[], i: number): Promise<void> {
       r.catch(() => runners.delete(l.engine)); // the next click retries
     }
     const rn = await r;
-    if (onPg(l.engine)) {
+    if (onPg(l.engine) && !isEsLesson(l)) { // v47: an Elasticsearch-style lesson runs its blocks one by one
       const { steps, span } = pgDemoScript(bs, idx[idx.length - 1]);
       const res = await rn.demo!(setup, steps);
       idx.forEach((j, n) => outs.set(keys[n], pgDemoOut(res, span[j])));
@@ -158,7 +158,7 @@ export function sections(x: FullCtx, keep: (id: SectionId) => boolean): HTMLElem
       ...(l.figures ?? []).filter((f) => f.at === s.id).map((f) => figureSlot(`${l.id}|${f.name}|${f.at}`, f, c.d.viz, FIG_ENGINE[l.engine])));
   });
 }
-const FIG_ENGINE: Record<EngineId, string> = { postgres: 'pg', mongodb: 'mg', dynamodb: 'dy', redis: 'rd', design: 'ds', stack: 'st', olap: 'ol' };
+const FIG_ENGINE: Record<EngineId, string> = { postgres: 'pg', mongodb: 'mg', dynamodb: 'dy', redis: 'rd', design: 'ds', stack: 'st', olap: 'ol', search: 'sr' };
 
 interface Item { key: string; icon: IconName; name: string; target: string; count?: string }
 function itemsOf(): Item[] {
