@@ -1,0 +1,44 @@
+# v43 R2 (extensions-plan §b, lesson e-pg-ext-09): an ltree value is a path of labels from the root; `<@` selects a whole subtree.
+# Data (lesson setup, checked in PGlite 0.5.16): categories den_long.{hoi_an.{lua,giay}, hue.tre, trung_thu}; products 1–3 sit
+# under den_long.hoi_an. Source: https://www.postgresql.org/docs/18/ltree.html
+title: { vi: "Danh mục là một đường đi", en: "A category is a path" }
+caption:
+  vi: "Mỗi giá trị ltree là chuỗi nhãn từ gốc tới lá. <@ chọn mọi thứ nằm dưới một nút."
+  en: "Each ltree value is a chain of labels from root to leaf. <@ selects everything under one node."
+alt:
+  vi: "Cột ltree lưu cả đường đi từ gốc tới danh mục, nên hỏi một nhánh không cần câu đệ quy: điều kiện <@ 'den_long.hoi_an' chọn mọi danh mục bắt đầu bằng đường đó. Kết quả: 3 món đèn Hội An."
+  en: "An ltree column stores the whole path from the root to the category, so asking for a branch needs no recursive query: the condition <@ 'den_long.hoi_an' selects every category that starts with that path. Result: 3 Hoi An lanterns."
+nodes:
+  - { id: root, label: den_long }
+  - { id: hoi, label: hoi_an }
+  - { id: hue, label: hue }
+  - { id: tt, label: trung_thu }
+  - { id: lua, label: lua }
+  - { id: giay, label: giay }
+  - { id: path, shape: grid, label: category, sub: nlevel = 3, head: ["1", "2", "3"], cells: [[den_long, hoi_an, lua]] }
+  - { id: cond, shape: key, label: "<@ 'den_long.hoi_an'", sub: { vi: "3 món", en: "3 products" }, tone: ghost }
+rows:
+  - [root]
+  - [hoi, hue, tt]
+  - [lua, giay]
+  - [path, cond]
+edges:
+  - { from: root, to: hoi }
+  - { from: root, to: hue }
+  - { from: root, to: tt }
+  - { from: hoi, to: lua }
+  - { from: hoi, to: giay }
+steps:
+  - say: { vi: "Một giá trị: đường từ gốc tới lá.", en: "One value: the path from root to leaf." }
+    alt: { vi: "Giá trị den_long.hoi_an.lua đi qua ba nhãn, nên nlevel của nó là 3.", en: "The value den_long.hoi_an.lua passes three labels, so its nlevel is 3." }
+    set:
+      root: { tone: new }
+      hoi: { tone: new }
+      lua: { tone: new }
+  - say: { vi: "<@ 'den_long.hoi_an': cả nhánh.", en: "<@ 'den_long.hoi_an': the whole branch." }
+    alt: { vi: "Điều kiện <@ 'den_long.hoi_an' chọn chính nút hoi_an và mọi nút dưới nó, gồm lua và giay.", en: "The condition <@ 'den_long.hoi_an' selects the hoi_an node itself and every node under it, lua and giay included." }
+    set:
+      hoi: { tone: live }
+      lua: { tone: live }
+      giay: { tone: live }
+      cond: { tone: live }
