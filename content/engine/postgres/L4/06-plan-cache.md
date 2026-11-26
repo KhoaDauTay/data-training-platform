@@ -61,7 +61,7 @@ quiz:
       - { vi: "Báo lỗi vì kế hoạch hết hạn", en: "Raises an error because the plan expired" }
     answer: 1
     trap: 0
-    why: { vi: "Nghe hợp lý vì đó đúng là việc Postgres làm ở 5 lần đầu, nhưng sau đó nó thử kế hoạch chung. Theo trang PREPARE của tài liệu: 5 lần đầu dùng kế hoạch riêng, rồi so chi phí kế hoạch chung với trung bình của chúng. Kế hoạch riêng cho 'lost' rất rẻ nên kế hoạch chung thường bị loại; nhưng nếu 5 lần đầu là giá trị đắt, kế hoạch chung thắng và được dùng cho mọi giá trị về sau.", en: "It sounds right because that is what Postgres does for the first 5 runs, but after that it tries a generic plan. Per the PREPARE page of the documentation: the first 5 runs use custom plans, then the generic plan's cost is compared with their average. A custom plan for 'lost' is very cheap, so the generic plan usually loses here; but if the first 5 runs use an expensive value, the generic plan wins and is used for every later value." }
+    why: { vi: "\"Luôn lập lại\" đúng với 5 lần đầu, nhưng không phải mãi mãi: với `plan_cache_mode = auto` (mặc định), lần thứ 6 Postgres lập thêm một kế hoạch chung (generic plan) với `$1` chưa biết, rồi so chi phí của nó với chi phí trung bình của 5 kế hoạch riêng (custom plan). Ở đây 5 kế hoạch riêng cho 'lost' (200 dòng, qua index) rất rẻ, nên kế hoạch chung thường thua và Postgres tiếp tục lập riêng. Nếu 5 lần đầu là giá trị đắt như 'delivered', trung bình cao, kế hoạch chung thắng và được dùng cho mọi giá trị về sau. Không có chuyện kế hoạch hết hạn rồi báo lỗi.", en: "\"Always re-plans\" holds for the first 5 runs, not forever: with `plan_cache_mode = auto` (the default), on the 6th run Postgres also builds a generic plan with `$1` unknown and compares its cost with the average cost of the 5 custom plans. Here the 5 custom plans for 'lost' (200 rows, through the index) are very cheap, so the generic plan usually loses and Postgres keeps planning per value. If the first 5 runs use an expensive value like 'delivered', the average is high, the generic plan wins and serves every later value. Plans do not expire and raise an error." }
   - q: { vi: "Một câu đã chuẩn bị chạy chậm thất thường tùy giá trị tham số. Bước chẩn đoán đầu tiên tốt nhất?", en: "A prepared query is erratically slow depending on the parameter. Best first diagnostic step?" }
     options:
       - { vi: "So `EXPLAIN (GENERIC_PLAN)` với `EXPLAIN` có giá trị cụ thể, và xem `generic_plans`/`custom_plans` trong `pg_prepared_statements`", en: "Compare `EXPLAIN (GENERIC_PLAN)` with `EXPLAIN` on a concrete value, and check `generic_plans`/`custom_plans` in `pg_prepared_statements`" }
@@ -69,7 +69,7 @@ quiz:
       - { vi: "Xóa index trên cột trạng thái", en: "Drop the index on the status column" }
     answer: 0
     trap: 1
-    why: { vi: "Nghe hợp lý vì thêm bộ nhớ đệm có vẻ chữa được mọi chỗ chậm, nhưng nó không giải thích vì sao chỉ vài giá trị tham số mới chậm. Phải thấy kế hoạch chung khác kế hoạch riêng thế nào trước khi sửa. Sửa phổ biến: `plan_cache_mode = force_custom_plan` cho phiên hoặc hàm đó, hoặc tách câu cho giá trị phổ biến.", en: "It sounds right because more cache memory seems to cure any slowness, but it does not explain why only some parameter values are slow. You must see how the generic plan differs from the custom one before fixing anything. A common fix: `plan_cache_mode = force_custom_plan` for that session or function, or a separate query for the common values." }
+    why: { vi: "Tăng `shared_buffers` (vùng đệm trang dùng chung) nghe như chữa được mọi chỗ chậm, nhưng nó không giải thích vì sao chỉ vài giá trị tham số mới chậm. Triệu chứng \"chậm tùy giá trị\" gợi ý Postgres đã chuyển sang một kế hoạch chung không hợp với giá trị phổ biến. Nên trước hết so kế hoạch chung với kế hoạch cho một giá trị cụ thể, và xem `generic_plans` đã tăng chưa. Xóa index thì làm chậm luôn các giá trị hiếm. Khi đã xác nhận, sửa bằng `plan_cache_mode = force_custom_plan` cho phiên hoặc hàm đó, hoặc tách câu cho giá trị phổ biến.", en: "Raising `shared_buffers` (the shared page cache) sounds like a cure for any slowness, but it does not explain why only some parameter values are slow. \"Slow depending on the value\" suggests Postgres switched to a generic plan that does not suit the common values. So first compare the generic plan with the plan for a concrete value, and check whether `generic_plans` has grown. Dropping the index would slow the rare values too. Once confirmed, fix it with `plan_cache_mode = force_custom_plan` for that session or function, or a separate query for the common values." }
 ---
 ## Mở bài
 
@@ -77,7 +77,7 @@ Một câu đã chuẩn bị chạy nhanh suốt buổi sáng, rồi buổi chi�
 
 ## Ý chính
 
-`PREPARE` (và driver dùng giao thức mở rộng) tách việc lập kế hoạch khỏi việc chạy, để một câu chạy nhiều lần với tham số khác nhau. Có hai loại kế hoạch. Kế hoạch riêng (custom) được lập lại cho đúng giá trị tham số, dùng MCV và histogram của giá trị đó. Kế hoạch chung (generic) dùng cho mọi giá trị, tham số giữ nguyên là `$1`, ước lượng theo độ chọn lọc trung bình của cột.
+`PREPARE` (và driver dùng giao thức mở rộng) tách việc lập kế hoạch khỏi việc chạy, để một câu chạy nhiều lần với tham số khác nhau. Có hai loại kế hoạch. Kế hoạch riêng (custom) được lập lại cho đúng giá trị tham số, dùng tần suất của đúng giá trị đó trong danh sách giá trị phổ biến (MCV) và histogram. Kế hoạch chung (generic) dùng cho mọi giá trị, tham số giữ nguyên là `$1`, ước lượng theo độ chọn lọc trung bình của cột.
 
 Luật mặc định, `plan_cache_mode = auto`: 5 lần chạy đầu luôn dùng kế hoạch riêng. Từ lần thứ 6, Postgres lập kế hoạch chung và so chi phí của nó với chi phí trung bình của các kế hoạch riêng (cộng thêm giá lập kế hoạch). Nếu kế hoạch chung không đắt hơn đáng kể, nó được dùng từ đó, khỏi lập lại.
 
@@ -179,7 +179,7 @@ A prepared query runs fast all morning, then in the afternoon the same query is 
 
 ## Key idea
 
-`PREPARE` (and drivers using the extended protocol) separates planning from running, so one query can run many times with different parameters. There are two kinds of plan. A custom plan is rebuilt for the exact parameter value, using the MCV list and histogram for that value. A generic plan serves every value, keeps the parameter as `$1`, and is estimated from the column's average selectivity.
+`PREPARE` (and drivers using the extended protocol) separates planning from running, so one query can run many times with different parameters. There are two kinds of plan. A custom plan is rebuilt for the exact parameter value, using that value's frequency in the most-common-values (MCV) list and the histogram. A generic plan serves every value, keeps the parameter as `$1`, and is estimated from the column's average selectivity.
 
 The default rule, `plan_cache_mode = auto`: the first 5 runs always use custom plans. From the 6th run, Postgres builds a generic plan and compares its cost with the average cost of the custom plans (plus the price of planning). If the generic plan is not clearly more expensive, it is used from then on, with no more planning.
 

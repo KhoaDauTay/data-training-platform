@@ -62,7 +62,7 @@ lab:
       solution: "WITH u AS (UPDATE orders SET status = 'open' WHERE id = 1 RETURNING id) SELECT c.relname, l.mode FROM u, pg_locks l JOIN pg_class c ON c.oid = l.relation WHERE c.relname LIKE 'orders%' ORDER BY 1, 2"
       check: rows
       ordered: true
-      hint: { vi: "Như bài e-pg-l4-09: nối `pg_locks.relation` với `pg_class.oid`.", en: "As in lesson e-pg-l4-09: join `pg_locks.relation` to `pg_class.oid`." }
+      hint: { vi: "Như bài lock mode trên bảng: nối `pg_locks.relation` với `pg_class.oid`, trong cùng câu với UPDATE vì lock nhả khi câu xong.", en: "As in the table lock modes lesson: join `pg_locks.relation` to `pg_class.oid`, in the same statement as the UPDATE because the locks are released when it ends." }
     - task: { vi: "Bước 5, trang khách hàng. Mã và số tiền các đơn của khách số 77, sắp theo mã đơn. Bài chấm cả tốc độ: câu trả đúng dòng mà không đọc `orders` qua index vẫn chưa đạt.", en: "Step 5, the customer page. Id and amount of customer 77's orders, sorted by order id. Speed is graded too: a query that returns the right rows without reading `orders` through an index does not pass yet." }
       solution: "SELECT id, amount FROM orders WHERE customer_id = 77 ORDER BY id"
       check: rows
@@ -79,7 +79,7 @@ predict:
     - { vi: "Index Only Scan", en: "An Index Only Scan" }
   answer: 1
   trap: 0
-  why: { vi: "Seq Scan nghe hợp lý vì 400 dòng vẫn là khá nhiều, nhưng 2 % là đủ hiếm để index thắng. Tần suất MCV 0,02 × 20.000 = 400 dòng: đủ hiếm để đi qua index, đủ nhiều để gom theo trang bằng bitmap. Câu cần mọi cột nên không thể Index Only Scan.", en: "A Seq Scan sounds right because 400 rows is still quite a few, but 2% is rare enough for the index to win. MCV frequency 0.02 × 20,000 = 400 rows: rare enough for the index, enough rows to group by page with a bitmap. The query needs every column, so an Index Only Scan is impossible." }
+  why: { vi: "Seq Scan nghe hợp lý vì 400 dòng vẫn là khá nhiều, nhưng ước lượng số dòng là tần suất của 'lost' trong danh sách giá trị phổ biến (MCV) × số dòng = 0,02 × 20.000 = 400, đủ hiếm để đi qua index rẻ hơn đọc cả bảng. Vì 400 dòng rải trên nhiều trang, Postgres dùng bitmap: gom vị trí các dòng theo trang trước, rồi đọc mỗi trang một lần (Bitmap Heap Scan). Câu cần mọi cột mà index chỉ chứa `status`, nên không thể Index Only Scan.", en: "A Seq Scan sounds right because 400 rows is still quite a few, but the row estimate is the frequency of 'lost' in the most-common-values (MCV) list × the row count = 0.02 × 20,000 = 400, rare enough that the index is cheaper than reading the whole table. Since the 400 rows are spread over many pages, Postgres uses a bitmap: it first groups the row positions by page, then reads each page once (Bitmap Heap Scan). The query needs every column and the index only holds `status`, so an Index Only Scan is impossible." }
   expect: { node: Bitmap Index Scan, index: orders_status_idx }
 quiz:
   - q: { vi: "Kết luận 1. Bước 2 ước lượng 20, thật 100. Khi bảng này là phía ngoài của một phép nối lớn, hậu quả và cách sửa?", en: "Conclusion 1. Step 2 estimated 20 against 100 real rows. When this table is the outer side of a big join, what follows and what is the fix?" }
@@ -89,7 +89,7 @@ quiz:
       - { vi: "Tắt `enable_nestloop` cho cả server", en: "Turn `enable_nestloop` off for the whole server" }
     answer: 0
     trap: 2
-    why: { vi: "Tắt `enable_nestloop` nghe nhanh gọn vì nó gỡ ngay kế hoạch chậm, nhưng nó tác động lên mọi câu khác trên server. Ước lượng thấp ở phía ngoài nhân lên số lần lặp phía trong. Sửa ước lượng, không tắt tính năng của planner.", en: "Turning off `enable_nestloop` sounds quick because it removes the slow plan at once, but it hits every other query on the server. A low estimate on the outer side multiplies the inner loops. Fix the estimate; do not switch planner features off." }
+    why: { vi: "Ước lượng 20 đến từ việc planner coi vùng và quốc gia là độc lập: 500 khách × 1/5 × 1/5 = 20; thật ra quốc gia do vùng quyết định, nên có 500 ÷ 5 = 100 khách. \"Không ảnh hưởng\" sai: ở phía ngoài của Nested Loop, mỗi dòng phía ngoài là một lần lặp phía trong, nên planner tưởng 20 lần lặp mà thật ra chạy 100 lần, và với số liệu lệch hơn thì một cách nối khác đã rẻ hơn. Tắt `enable_nestloop` cho cả server chỉ che triệu chứng và làm hỏng các câu mà Nested Loop là cách tốt nhất, như câu tra một khách ở bước 3. Sửa gốc là thống kê mở rộng (extended statistics) loại `dependencies`.", en: "The estimate of 20 comes from treating region and country as independent: 500 customers × 1/5 × 1/5 = 20; in fact the country is fixed by the region, so there are 500 ÷ 5 = 100 customers. \"No effect\" is wrong: on the outer side of a Nested Loop each outer row is one inner loop, so the planner expects 20 loops that really run 100 times, and with more skewed data another join method would have been cheaper. Turning off `enable_nestloop` server-wide only hides the symptom and hurts queries where a Nested Loop is best, like the one-customer lookup in step 3. The root fix is extended statistics of kind `dependencies`." }
   - q: { vi: "Kết luận 2. Cần chạy `ALTER TABLE orders ADD COLUMN note text` giữa giờ làm việc, khi một báo cáo dài đang đọc `orders`. Cách an toàn?", en: "Conclusion 2. You must run `ALTER TABLE orders ADD COLUMN note text` during business hours while a long report is reading `orders`. The safe way?" }
     options:
       - { vi: "`SET lock_timeout = '2s'` rồi chạy ALTER, thất bại thì thử lại sau; vì ALTER cần ACCESS EXCLUSIVE và lệnh đang chờ sẽ chặn mọi lệnh đến sau", en: "`SET lock_timeout = '2s'`, then run the ALTER and retry on failure; the ALTER needs ACCESS EXCLUSIVE, and a waiting command blocks every command behind it" }
@@ -97,7 +97,7 @@ quiz:
       - { vi: "Đặt `deadlock_timeout = 0`", en: "Set `deadlock_timeout = 0`" }
     answer: 0
     trap: 1
-    why: { vi: "Chạy thẳng nghe ổn vì thêm một cột có thể chỉ sửa catalog, nhưng nó vẫn cần lock ACCESS EXCLUSIVE. Hàng đợi lock là FIFO: ALTER đang chờ báo cáo sẽ chặn cả các SELECT ngắn phía sau. `lock_timeout` để migration tự bỏ cuộc thay vì làm treo ứng dụng.", en: "Running it directly sounds fine because adding a column can be a catalog-only change, but it still needs an ACCESS EXCLUSIVE lock. The lock queue is FIFO: an ALTER waiting for the report blocks even short SELECTs behind it. `lock_timeout` makes the migration give up instead of freezing the app." }
+    why: { vi: "Chạy thẳng nghe ổn vì thêm một cột không giá trị mặc định chỉ sửa danh mục hệ thống (system catalog), xong trong tích tắc, nhưng nó vẫn cần lock ACCESS EXCLUSIVE, mà báo cáo dài đang giữ ACCESS SHARE. Lock được cấp theo thứ tự đến: ALTER đang chờ báo cáo, và mọi SELECT ngắn đến sau phải xếp hàng sau ALTER, nên ứng dụng treo cho tới khi báo cáo xong. `deadlock_timeout` không giúp vì không có vòng chờ nào, chỉ có một hàng chờ dài. `SET lock_timeout = '2s'` làm ALTER tự bỏ cuộc sau 2 giây, giải phóng hàng đợi, rồi thử lại lúc vắng.", en: "Running it directly sounds fine because adding a column with no default only changes the system catalog and finishes in an instant, but it still needs an ACCESS EXCLUSIVE lock, and the long report holds ACCESS SHARE. Locks are granted in arrival order: the ALTER waits for the report, and every short SELECT arriving later queues behind the ALTER, so the app hangs until the report ends. `deadlock_timeout` does not help because there is no wait cycle, only a long queue. `SET lock_timeout = '2s'` makes the ALTER give up after 2 seconds, which frees the queue, and you retry at a quiet time." }
   - q: { vi: "Kết luận 3. Báo cáo gồm ba câu (tổng đơn, tổng tiền, theo vùng) phải khớp nhau trong khi đơn mới vẫn được ghi. Mức cô lập nào?", en: "Conclusion 3. The report runs three statements (order count, total amount, by region) that must agree while new orders keep arriving. Which isolation level?" }
     options:
       - { vi: "Read Committed (mặc định)", en: "Read Committed (the default)" }
@@ -105,7 +105,7 @@ quiz:
       - { vi: "Read Uncommitted", en: "Read Uncommitted" }
     answer: 1
     trap: 0
-    why: { vi: "Read Committed hấp dẫn vì nó là mặc định và không bao giờ thấy dữ liệu chưa commit, nhưng nhất quán từng câu chưa đủ. Read Committed lấy snapshot mỗi câu, nên ba con số có thể lệch nhau. Transaction chỉ đọc không gặp lỗi xung đột ghi.", en: "Read Committed is tempting because it is the default and never sees uncommitted data, but per-query consistency is not enough. Read Committed takes a snapshot per statement, so the three figures can disagree. A read-only transaction never hits a write conflict." }
+    why: { vi: "Read Committed hấp dẫn vì nó là mặc định và không bao giờ thấy dữ liệu chưa commit, nhưng nó lấy một snapshot mới cho mỗi câu: một đơn được commit giữa câu 1 và câu 2 sẽ có trong tổng tiền mà không có trong tổng đơn, nên ba con số lệch nhau. Read Uncommitted ở Postgres chạy như Read Committed, nên cũng lệch. Repeatable Read cho cả transaction một snapshot, nên ba câu thấy cùng một tập đơn; transaction chỉ đọc thì không bao giờ gặp lỗi xung đột ghi 40001.", en: "Read Committed is tempting because it is the default and never sees uncommitted data, but it takes a new snapshot for each statement: an order committed between statement 1 and statement 2 lands in the total amount but not in the order count, so the three figures disagree. Read Uncommitted behaves like Read Committed in Postgres, so it disagrees too. Repeatable Read gives the whole transaction one snapshot, so all three statements see the same set of orders; a read-only transaction never hits the 40001 write-conflict error." }
 ---
 
 ## Mở bài
@@ -142,7 +142,7 @@ Năm bước có chấm, một câu đoán kế hoạch, ba câu kết luận. T
 
 - Ước lượng sai bắt đầu từ thống kê: đọc `pg_stats`, và dùng `CREATE STATISTICS` khi hai cột phụ thuộc nhau.
 - Ước lượng thấp ở phía ngoài làm planner chọn sai thuật toán nối; sửa ước lượng, đừng tắt tính năng của planner.
-- DDL cần ACCESS EXCLUSIVE và hàng đợi lock là FIFO: đặt `lock_timeout` trước migration.
+- DDL cần ACCESS EXCLUSIVE và lock được cấp theo thứ tự đến (FIFO): đặt `lock_timeout` trước migration.
 - So sánh cột trực tiếp với giá trị; phép tính trên cột làm planner bỏ index.
 
 # EN
@@ -181,5 +181,5 @@ Five graded steps, one plan prediction, three conclusion questions. Split a "slo
 
 - A wrong estimate starts in the statistics: read `pg_stats`, and use `CREATE STATISTICS` when two columns depend on each other.
 - A low estimate on the outer side makes the planner pick the wrong join algorithm; fix the estimate, do not switch planner features off.
-- DDL needs ACCESS EXCLUSIVE and the lock queue is FIFO: set `lock_timeout` before a migration.
+- DDL needs ACCESS EXCLUSIVE and locks are granted in arrival order (FIFO): set `lock_timeout` before a migration.
 - Compare the column directly with the value; arithmetic on the column makes the planner drop the index.
