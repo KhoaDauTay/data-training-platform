@@ -3,7 +3,8 @@ id: distinct
 title: "DISTINCT: mỗi giá trị một lần"
 title_en: "DISTINCT: each value once"
 minutes: 20
-verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
+verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
+figures: [{ name: sql-distinct-rows, at: idea }]
 objectives:
   - vi: Liệt kê các giá trị khác nhau của một cột hay một tổ hợp cột.
     en: List the different values of one column or of a combination of columns.

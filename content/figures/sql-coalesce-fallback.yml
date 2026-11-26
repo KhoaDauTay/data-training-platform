@@ -1,0 +1,33 @@
+# v46 (L863): COALESCE fills an empty cell in the result, never in the table. Lessons: coalesce (Ý chính) + its quick lesson.
+# Data (lab, checked in PGlite 2026-11-26): SELECT id, COALESCE(city, 'Unknown') FROM customers WHERE id BETWEEN 15 AND 18
+# → 15 Hanoi, 16 Can Tho, 17 (NULL) Unknown, 18 Da Nang. Order 1419 (ONLINE, 31 Oct): delivered_on and shipped_on NULL,
+# so COALESCE(delivered_on, shipped_on, order_date) = 2026-10-31 (the lesson's third example).
+# Source: https://www.postgresql.org/docs/current/functions-conditional.html#FUNCTIONS-COALESCE-NVL-IFNULL
+title: { vi: "COALESCE lấy giá trị thật đầu tiên", en: "COALESCE takes the first real value" }
+caption:
+  vi: "Khách 15 đến 18: khách 17 chưa có thành phố, nên kết quả hiện chữ dự phòng Unknown. Bảng customers không đổi."
+  en: "Customers 15 to 18: customer 17 has no city, so the result shows the fallback Unknown. The customers table is unchanged."
+alt:
+  vi: "COALESCE đọc các đối số từ trái sang phải và trả giá trị đầu tiên không phải NULL. Ô có thành phố giữ nguyên; ô trống của khách 17 nhận chữ dự phòng, và chỉ kết quả thay đổi, bảng gốc thì không."
+  en: "COALESCE reads its arguments left to right and returns the first one that is not NULL. Cells with a city stay as they are; customer 17's empty cell gets the fallback, and only the result changes, never the table."
+nodes:
+  - id: cust
+    shape: grid
+    label: customers
+    head: [id, city]
+    cells: [["15", Hanoi], ["16", Can Tho], ["17", "NULL"], ["18", Da Nang]]
+    cellTone: { "2:1": warm }
+  - id: res
+    shape: grid
+    label: { vi: "Kết quả", en: "Result" }
+    head: [id, city]
+    cells: [["15", Hanoi], ["16", Can Tho], ["17", Unknown], ["18", Da Nang]]
+    cellTone: { "2:1": new }
+  - { id: fn, shape: key, mono: true, label: COALESCE, sub: "(city, 'Unknown')" }
+  - { id: n, shape: note, label: { vi: "NULL → giá trị kế tiếp", en: "NULL → the next value" } }
+rows:
+  - [fn]
+  - [cust, res]
+  - [n]
+edges:
+  - { from: cust, to: res, label: { vi: "thay NULL", en: "fill NULL" } }

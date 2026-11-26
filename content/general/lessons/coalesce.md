@@ -3,7 +3,8 @@ id: coalesce
 title: "COALESCE: thay ô trống bằng một giá trị dự phòng"
 title_en: "COALESCE: replace an empty cell with a fallback"
 minutes: 20
-verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
+verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
+figures: [{ name: sql-coalesce-fallback, at: idea }]
 objectives:
   - vi: Thay NULL bằng một giá trị mặc định để báo cáo dễ đọc.
     en: Replace NULL with a default value so a report reads well.

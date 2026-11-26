@@ -16,6 +16,8 @@ import { altTables, altText, type FigRef, type FigSpec, layout, linkGap, MARGIN,
 import { GLYPHS } from '../src/engine/viz/glyphs';
 import { parseFullLesson } from '../src/fullLesson';
 import { fullLessons, lessonIdOf } from '../src/generalLessonSources';
+import { lessonSource } from '../src/lessonSources';
+import { parseLessons } from '../src/lessons';
 import { VI_DIACRITIC } from './generalRules';
 
 const specs = Object.fromEntries(Object.entries(import.meta.glob<FigSpec>('../content/figures/*.yml', { import: 'default', eager: true }))
@@ -23,6 +25,8 @@ const specs = Object.fromEntries(Object.entries(import.meta.glob<FigSpec>('../co
 const engineFiles = import.meta.glob<string>('../content/engine/*/{L*,ext}/*.md', { query: '?raw', import: 'default', eager: true });
 const engine: EngineLesson[] = Object.entries(engineFiles).map(([p, s]) => parseEngineLesson(s, p, parse));
 const general = await Promise.all(Object.entries(fullLessons).map(async ([p, load]) => parseFullLesson(await load(), lessonIdOf(p))));
+/** v46 (L860): quick lessons (content/lessons.yml) carry one `figure:` each, drawn with the General (`sql`) prefix. */
+const quick = parseLessons(lessonSource);
 const SHORT = { postgres: 'pg', mongodb: 'mg', dynamodb: 'dy', design: 'ds', stack: 'st' } as const;
 // v44 B4 (P1, L812): Best Practice cards host figures too (engineBest's FIG_TRACK)
 const best = Object.entries(import.meta.glob<string>('../content/engine/best/*/*.md', { query: '?raw', import: 'default', eager: true })).map(([p, t]) => {
@@ -35,6 +39,7 @@ const refs: { id: string; eng: string; f: FigRef }[] = [
   ...engine.flatMap((l) => (l.figures ?? []).map((f) => ({ id: l.id, eng: SHORT[l.engine], f }))),
   ...general.flatMap((l) => (l.figures ?? []).map((f) => ({ id: l.id, eng: 'sql', f }))),
   ...best.flatMap((c) => (c.figures ?? []).map((f) => ({ id: c.id, eng: BP_SHORT[c.track], f }))),
+  ...quick.flatMap((l) => (l.figure ? [{ id: `quick:${l.id}`, eng: 'sql', f: l.figure }] : [])),
 ];
 const specName = (r: { eng: string; f: FigRef }): string | undefined => [r.f.name, `${r.eng}-${r.f.name}`].find((n) => specs[n]);
 const WIDTHS = [640, 335, 280];
@@ -101,6 +106,13 @@ describe('v39 figures: content links', () => {
       ];
     });
     expect(bad).toEqual([]);
+  });
+  it('v46 (L860): bài học nhanh có hình là một spec thật (không sơ đồ registry); ≥ 35 bài có hình; cùng hình với bài đầy đủ khi bài đó có', () => {
+    const withFig = quick.filter((l) => l.figure);
+    expect(withFig.length).toBeGreaterThanOrEqual(35);
+    expect(withFig.filter((l) => !specs[l.figure!.name]).map((l) => `${l.id}: ${l.figure!.name}`)).toEqual([]);
+    const full = new Map(general.map((l) => [l.id, (l.figures ?? []).map((f) => f.name)]));
+    expect(withFig.filter((l) => full.has(l.id) && (full.get(l.id) ?? []).length > 0 && !full.get(l.id)!.includes(l.figure!.name)).map((l) => l.id)).toEqual([]);
   });
   it('v42 (L696): không bài hay hình nào viết sơ đồ ER bằng ký tự (||--o{ …): vẽ bằng thực thể và chân chim', () => {
     const raw = import.meta.glob<string>(['../content/engine/**/*.md', '../content/general/**/*.md', '../content/figures/*.yml'], { query: '?raw', import: 'default', eager: true });

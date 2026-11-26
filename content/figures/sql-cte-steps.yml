@@ -1,0 +1,39 @@
+# v46 (L865; v42 plan Appendix B candidate `sql-cte-steps`): a CTE is a named step the main query reads like a table. Lessons: cte (Ý chính) + its quick lesson.
+# Data (lab, checked in PGlite 2026-11-26): 217 orders from 2026-10-01; WITH oct AS (SELECT store_id, count(*) AS orders … GROUP BY store_id)
+# SELECT s.name, oct.orders FROM oct JOIN stores s ON s.id = oct.store_id ORDER BY oct.orders DESC
+# → 3 Ben Thanh 76, 1 Hai Chau 51, 5 Hoan Kiem 37, 4 Thao Dien 31, 2 Son Tra 22.
+# Source: https://www.postgresql.org/docs/current/queries-with.html
+title: { vi: "CTE: một bước trung gian có tên", en: "A CTE: a named intermediate step" }
+caption:
+  vi: "WITH oct AS (…) đếm đơn từ 1/10 theo cửa hàng; câu chính đọc oct như một bảng 5 dòng rồi nối tên cửa hàng."
+  en: "WITH oct AS (…) counts orders since 1 Oct per store; the main query reads oct like a 5-row table, then joins the store names."
+alt:
+  vi: "WITH đặt tên cho kết quả của một câu đọc, và câu chính dùng tên đó như một bảng. Ở đây bước oct gộp các đơn tháng 10 thành một dòng mỗi cửa hàng, nên phép nối với stores sau đó gọn và không nhân dòng."
+  en: "WITH names the result of a query, and the main query uses that name like a table. Here the oct step folds October's orders into one row per store, so the join with stores afterwards is tidy and multiplies nothing."
+nodes:
+  - { id: orders, shape: table, label: orders, sub: { vi: "217 đơn tháng 10", en: "217 Oct orders" } }
+  - id: oct
+    shape: grid
+    label: WITH oct
+    head: [store_id, orders]
+    cells: [["3", "76"], ["1", "51"], ["5", "37"], ["4", "31"], ["2", "22"]]
+  - { id: stores, shape: table, label: stores, sub: { vi: "tên cửa hàng", en: "store names" } }
+  - id: res
+    shape: grid
+    label: { vi: "Câu chính", en: "Main query" }
+    head: [name, orders]
+    cells: [[Ben Thanh, "76"], [Hai Chau, "51"], [Hoan Kiem, "37"], [Thao Dien, "31"], [Son Tra, "22"]]
+rows:
+  - [orders]
+  - [oct, stores]
+  - [res]
+edges:
+  - { from: orders, to: oct, label: { vi: "gộp theo cửa hàng", en: "group per store" } }
+  - { from: oct, to: res }
+  - { from: stores, to: res }
+steps:
+  - say: { vi: "Bước oct chạy trước: 217 đơn thành 5 dòng.", en: "The oct step runs first: 217 orders become 5 rows." }
+    show: [orders, oct]
+    alt: { vi: "Câu trong WITH đếm các đơn từ 1/10 theo cửa hàng và đặt tên kết quả là oct, một bảng tạm chỉ sống trong câu này.", en: "The query inside WITH counts the orders since 1 Oct per store and names the result oct, a temporary table that lives only in this query." }
+  - say: { vi: "Câu chính đọc oct như một bảng và nối tên cửa hàng.", en: "The main query reads oct like a table and joins the store names." }
+    alt: { vi: "Câu chính nối 5 dòng của oct với stores để lấy tên, nên mỗi cửa hàng vẫn đúng một dòng.", en: "The main query joins oct's 5 rows with stores to get the names, so each store is still exactly one row." }

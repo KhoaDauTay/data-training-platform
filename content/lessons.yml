@@ -10,6 +10,7 @@
 # Code span VI = EN; EN không dấu.
 
 - id: select
+  figure: { name: sql-rows-columns, variant: cols }
   cues:
     vi: ["gửi mình …", "với mỗi … mình cần …", "theo thứ tự: …", "danh sách mọi …"]
     en: ["send me …", "for each … I need …", "in this order: …", "a list of every …"]
@@ -33,6 +34,7 @@
   docs: https://www.postgresql.org/docs/current/queries-select-lists.html
 
 - id: where
+  figure: { name: sql-rows-columns, variant: rows }
   cues:
     vi: ["chỉ …", "bỏ …", "không tính …", "thuộc …", "từ ngày … đến …", "trước ngày …"]
     en: ["only …", "leave out …", "not counting …", "in the … region", "from … to …", "before …"]
@@ -65,6 +67,7 @@
   docs: https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-WHERE
 
 - id: order_by
+  figure: { name: sql-clause-order, variant: tail }
   cues:
     vi: ["… lên đầu", "xếp theo …", "bằng nhau thì …", "trùng … thì …"]
     en: ["… first", "sorted by …", "on a tie …", "if two … the same"]
@@ -98,6 +101,7 @@
   docs: https://www.postgresql.org/docs/current/queries-order.html
 
 - id: limit
+  figure: { name: sql-clause-order, variant: tail }
   cues:
     vi: ["… nặng nhất", "… mới nhất", "… đầu tiên", "… lớn nhất"]
     en: ["the … heaviest", "the … latest", "the first …", "the … largest"]
@@ -136,6 +140,7 @@
   docs: https://www.postgresql.org/docs/current/queries-limit.html
 
 - id: aggregate
+  figure: { name: sql-count-variants }
   cues:
     vi: ["bao nhiêu …", "tổng …", "trung bình …", "một con số", "một dòng duy nhất"]
     en: ["how many …", "total …", "average …", "a single number", "a single row"]
@@ -165,6 +170,7 @@
   docs: https://www.postgresql.org/docs/current/functions-aggregate.html
 
 - id: group_by
+  figure: { name: sql-group-fold }
   cues:
     vi: ["mỗi … một dòng", "với mỗi …", "từng …", "theo từng …"]
     en: ["one row per …", "for each …", "each …", "per …"]
@@ -188,6 +194,7 @@
   docs: https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-GROUP
 
 - id: having
+  figure: { name: sql-where-vs-having }
   cues:
     vi: ["những … có hơn …", "đạt tiêu chí", "chỉ giữ nhóm …", "… có từ … trở lên"]
     en: ["the … with more than …", "meets the rule", "keep only the groups …", "with at least …"]
@@ -223,6 +230,7 @@
   docs: https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-GROUP
 
 - id: join
+  figure: { name: sql-inner-join-pairs }
   cues:
     vi: ["tên … nằm ở hồ sơ …", "kèm tên …", "… và tên khách", "gọi … bằng tên"]
     en: ["the … name is on the … record", "with the … name", "… and the customer name", "named by …"]
@@ -258,6 +266,7 @@
   docs: https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-JOIN
 
 - id: multi_join
+  figure: { name: sql-join-chain }
   cues:
     vi: ["gọi … bằng tên", "từ … lên …", "… nằm ở ba chỗ"]
     en: ["named by …", "from … up to …", "… live in three places"]
@@ -302,6 +311,7 @@
   docs: https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-JOIN
 
 - id: left_join
+  figure: { name: sql-left-join-on-vs-where }
   cues:
     vi: ["kể cả … chưa từng …", "tính cả … chưa …", "giữ mọi …", "mọi … dù …"]
     en: ["including … that never …", "include … who have never …", "keep every …", "every … even …"]
@@ -335,6 +345,7 @@
   docs: https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-JOIN
 
 - id: anti_join
+  figure: { name: sql-left-join-on-vs-where, variant: anti }
   cues:
     vi: ["không có … nào", "chưa từng …", "… lâu không …"]
     en: ["with no … at all", "never …", "went quiet"]
@@ -370,6 +381,7 @@
   docs: https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-JOIN
 
 - id: date_math
+  figure: { name: sql-half-open-range }
   cues:
     vi: ["trễ hơn … ngày", "số ngày …", "… ngày sau …"]
     en: ["more than … days after", "the number of days …", "… days late"]
@@ -417,6 +429,7 @@
   docs: https://www.postgresql.org/docs/current/functions-datetime.html
 
 - id: date_bucket
+  figure: { name: sql-half-open-range, variant: month }
   cues:
     vi: ["từng tháng", "mỗi tháng …", "mỗi tuần …"]
     en: ["per month", "for each month …", "each week …"]
@@ -455,6 +468,7 @@
   docs: https://www.postgresql.org/docs/current/functions-datetime.html#FUNCTIONS-DATETIME-TRUNC
 
 - id: null_logic
+  figure: { name: sql-null-truth }
   cues:
     vi: ["vẫn chưa ghi nhận …", "chưa có …", "còn trống"]
     en: ["still … no …", "not recorded yet", "is still empty"]
@@ -487,6 +501,7 @@
   docs: https://www.postgresql.org/docs/current/functions-comparison.html
 
 - id: case_when
+  figure: { name: sql-case-buckets }
   cues:
     vi: ["chia … nhóm", "ghi nhóm bằng số", "xếp mỗi … vào …"]
     en: ["fall into … groups", "write the group as a number", "put each … into …"]
@@ -529,6 +544,7 @@
   docs: https://www.postgresql.org/docs/current/functions-conditional.html#FUNCTIONS-CASE
 
 - id: conditional_agg
+  figure: { name: sql-case-buckets, variant: filter }
   cues:
     vi: ["mỗi … một cột", "đặt cạnh nhau", "bao nhiêu … và bao nhiêu …"]
     en: ["one column per …", "side by side", "how many … and how many …"]
@@ -569,6 +585,7 @@
   docs: https://www.postgresql.org/docs/current/sql-expressions.html#SYNTAX-AGGREGATES
 
 - id: coalesce
+  figure: { name: sql-coalesce-fallback }
   cues:
     vi: ["chưa có … thì tính …", "… tạm tính 0", "trống thì ghi …"]
     en: ["no … counted as …", "count those as 0", "if empty, use …"]
@@ -604,6 +621,7 @@
   docs: https://www.postgresql.org/docs/current/functions-conditional.html#FUNCTIONS-COALESCE-NVL-IFNULL
 
 - id: self_join
+  figure: { name: sql-self-join-tree }
   cues:
     vi: ["… mà nó thay thế", "ghi số … cũ", "người quản lý của …"]
     en: ["the one it replaces", "records the number of …", "the manager of …"]
@@ -683,6 +701,7 @@
   docs: https://www.postgresql.org/docs/current/functions-string.html
 
 - id: pattern_match
+  figure: { name: sql-like-patterns }
   cues:
     vi: ["có chữ … ở bất kỳ đâu", "viết hoa hay thường đều tính", "bắt đầu bằng …"]
     en: ["anywhere in the …", "in capitals or lower case", "starts with …"]
@@ -706,6 +725,7 @@
   docs: https://www.postgresql.org/docs/current/functions-matching.html#FUNCTIONS-LIKE
 
 - id: distinct
+  figure: { name: sql-distinct-rows }
   cues:
     vi: ["… khác nhau", "mỗi … một lần", "không trùng"]
     en: ["different …", "each … once", "no duplicates"]
@@ -788,6 +808,7 @@
   docs: https://www.postgresql.org/docs/current/sql-expressions.html#SQL-SYNTAX-TYPE-CASTS
 
 - id: scalar_subquery
+  figure: { name: sql-scalar-subquery }
   cues:
     vi: ["hơn mức trung bình …", "so … với một con số …", "cao hơn mức …"]
     en: ["more than the average …", "compare each … with one number", "above the …"]
@@ -829,6 +850,7 @@
   docs: https://www.postgresql.org/docs/current/sql-expressions.html#SQL-SYNTAX-SCALAR-SUBQUERIES
 
 - id: in_subquery
+  figure: { name: sql-not-in-null }
   cues:
     vi: ["những khách gửi hơn …", "khách chủ lực", "thuộc danh sách …"]
     en: ["the customers with more than …", "key account", "on the list of …"]
@@ -873,6 +895,7 @@
   docs: https://www.postgresql.org/docs/current/functions-subquery.html#FUNCTIONS-SUBQUERY-IN
 
 - id: exists
+  figure: { name: sql-not-in-null }
   cues:
     vi: ["chưa có booking nào", "chưa … nào", "có ít nhất một …"]
     en: ["no booking at all", "have not … anything", "at least one …"]
@@ -920,6 +943,7 @@
   docs: https://www.postgresql.org/docs/current/functions-subquery.html#FUNCTIONS-SUBQUERY-EXISTS
 
 - id: correlated_value
+  figure: { name: sql-correlated-loop }
   cues:
     vi: ["còn hiệu lực vào …", "… của chính …", "… vào đúng ngày …"]
     en: ["in force on …", "of its own …", "on the … date"]
@@ -963,6 +987,7 @@
   docs: https://www.postgresql.org/docs/current/sql-expressions.html#SQL-SYNTAX-SCALAR-SUBQUERIES
 
 - id: cte
+  figure: { name: sql-cte-steps }
   cues:
     vi: ["bước có tên", "tổng … trừ tổng …", "trước hết tính …"]
     en: ["named steps", "minus the total …", "first work out …"]
@@ -1019,6 +1044,7 @@
   docs: https://www.postgresql.org/docs/current/queries-with.html
 
 - id: multi_cte
+  figure: { name: sql-cte-chain }
   cues:
     vi: ["các bước có tên", "cao hơn mức trung bình của …", "từ kết quả bước …"]
     en: ["named steps", "than the average of …", "from the result of …"]
@@ -1082,6 +1108,7 @@
   docs: https://www.postgresql.org/docs/current/queries-with.html
 
 - id: distinct_on
+  figure: { name: sql-distinct-on }
   cues:
     vi: ["… gần nhất trước đó", "mới nhất của mỗi …", "một dòng cho mỗi …"]
     en: ["the latest earlier …", "the newest … per …", "latest … before …"]
@@ -1114,6 +1141,7 @@
   docs: https://www.postgresql.org/docs/current/sql-select.html#SQL-DISTINCT
 
 - id: union
+  figure: { name: sql-set-ops, variant: union }
   cues:
     vi: ["chung một danh sách", "gom … vào một danh sách", "hai sổ …"]
     en: ["in one list", "into one list", "two different books"]
@@ -1161,6 +1189,7 @@
   docs: https://www.postgresql.org/docs/current/queries-union.html
 
 - id: except
+  figure: { name: sql-set-ops, variant: except }
   cues:
     vi: ["mà đến nay chưa có …", "có trong … mà không có trong …", "… mà chưa …"]
     en: ["still have no …", "in … but not in …", "but never …"]
@@ -1208,6 +1237,7 @@
   docs: https://www.postgresql.org/docs/current/queries-union.html
 
 - id: full_join
+  figure: { name: sql-join-family }
   cues:
     vi: ["chỉ có ở một bên", "đối chiếu …", "… khớp nhau"]
     en: ["on one side only", "reconcile …", "… agree …"]
@@ -1267,6 +1297,7 @@
   docs: https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-JOIN
 
 - id: window_rank
+  figure: { name: sql-rank-ties }
   cues:
     vi: ["cùng hạng", "… nhảy hạng", "… hạng đầu"]
     en: ["share a rank", "skips ranks", "top … ranks"]
@@ -1301,6 +1332,7 @@
   docs: https://www.postgresql.org/docs/current/tutorial-window.html
 
 - id: window_lag
+  figure: { name: sql-lag-prev-row }
   cues:
     vi: ["so với tháng liền trước", "tăng giảm so với …", "… liền trước"]
     en: ["on the month just before", "the change on …", "… just before"]
@@ -1361,6 +1393,7 @@
   docs: https://www.postgresql.org/docs/current/functions-window.html
 
 - id: window_agg
+  figure: { name: sql-window-vs-group }
   cues:
     vi: ["cộng dồn", "… tới đâu rồi", "tính đến … này"]
     en: ["running total", "so far", "up to that …"]
@@ -1458,6 +1491,7 @@
   docs: https://www.postgresql.org/docs/current/using-explain.html
 
 - id: sargable
+  figure: { name: sql-sargable-index }
   cues:
     vi: ["chỉ mục không dùng được", "không đọc cả bảng", "cắt ngày … rồi mới so"]
     en: ["the index cannot be used", "not the whole table", "trims each date …"]
@@ -1494,6 +1528,7 @@
   docs: https://www.postgresql.org/docs/current/indexes-types.html
 
 - id: index_design
+  figure: { name: sql-index-column-order }
   cues:
     vi: ["đề xuất một chỉ mục", "… không phải đọc toàn bộ …", "chưa có chỉ mục nào theo …"]
     en: ["propose one index", "does not have to read the whole …", "no index by …"]
@@ -1531,6 +1566,7 @@
 # v25 R1: General-only skills (content/general/skills-general.yml); no domain ticket grants them, so their cues are not
 # checked against a ticket (tests/lessons.test.ts).
 - id: cross_join
+  figure: { name: sql-cross-grid }
   cues:
     vi: ["mọi … với mọi …", "kể cả ngày không …", "đủ mọi tổ hợp …"]
     en: ["every … with every …", "including days with no …", "every combination of …"]
@@ -1566,6 +1602,7 @@
   docs: https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-JOIN
 
 - id: any_all
+  figure: { name: sql-any-all }
   cues:
     vi: ["hơn mọi …", "hơn ít nhất một …", "bằng một trong …"]
     en: ["more than every …", "more than at least one …", "equal to one of …"]
@@ -1602,6 +1639,7 @@
 # v26 R2 (L390): Part 9, writing data (General-only skills). Every SQL here runs inside BEGIN … ROLLBACK, so nothing persists;
 # RETURNING makes the written rows the result, which is what "Thử ngay" grades.
 - id: insert_select
+  figure: { name: sql-insert-select }
   cues:
     vi: ["thêm … vào …", "ghi thành các dòng mới …", "tạo một bảng mới …"]
     en: ["add … to …", "write it as new rows …", "create a new table …"]
@@ -1636,6 +1674,7 @@
   docs: https://www.postgresql.org/docs/current/sql-insert.html
 
 - id: update_join
+  figure: { name: sql-update-join }
   cues:
     vi: ["tăng thêm …", "xóa bản thừa …", "bỏ mọi … của …"]
     en: ["goes up by …", "delete the extra copy …", "drop every … for …"]
@@ -1676,6 +1715,7 @@
   docs: https://www.postgresql.org/docs/current/sql-update.html
 
 - id: upsert
+  figure: { name: sql-upsert-flow }
   cues:
     vi: ["đã có thì …", "chưa có thì thêm …", "giữ nguyên số cũ …"]
     en: ["already has … gets …", "without one gets a new row …", "keeps its old number …"]

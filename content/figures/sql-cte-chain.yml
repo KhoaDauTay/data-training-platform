@@ -1,0 +1,48 @@
+# v46 (L865): several CTEs in one WITH, a later step reading an earlier one. Lessons: multi_cte (Ý chính) + its quick lesson.
+# Data (lab, checked in PGlite 2026-11-26): sales = PAID orders from 2026-10-01, sum(qty * unit_price_vnd) per store:
+# 1 22312600, 2 10106800, 3 30483200, 4 15850600, 5 18409300; avg_sales = round(avg(total)) = 19432500;
+# SELECT … FROM sales, avg_sales WHERE sales.total > avg_sales.a → stores 1 and 3 (the lesson's first example).
+# Source: https://www.postgresql.org/docs/current/queries-with.html
+title: { vi: "Nhiều CTE nối thành chuỗi", en: "Several CTEs in a chain" }
+caption:
+  vi: "sales tính doanh số tháng 10 mỗi cửa hàng; avg_sales đọc sales và ra một dòng; câu chính giữ cửa hàng trên mức đó."
+  en: "sales sums each store's October sales; avg_sales reads sales and gives one row; the main query keeps the stores above it."
+alt:
+  vi: "Trong một WITH, CTE đứng sau đọc được CTE đứng trước, nên một phép tính dài tách thành các bước có tên. Mức trung bình chỉ có một dòng, nên câu chính ghép mỗi cửa hàng với dòng đó để so. Kết quả: cửa hàng 1 và 3."
+  en: "Inside one WITH, a later CTE can read an earlier one, so a long calculation splits into named steps. The average is a single row, so the main query pairs each store with that row to compare. Result: stores 1 and 3."
+nodes:
+  - id: sales
+    shape: grid
+    label: sales
+    head: [store_id, total]
+    cells: [["1", "22312600"], ["2", "10106800"], ["3", "30483200"], ["4", "15850600"], ["5", "18409300"]]
+  - id: avg
+    shape: grid
+    label: avg_sales
+    sub: "avg(total)"
+    head: [a]
+    cells: [["19432500"]]
+  - id: res
+    shape: grid
+    label: { vi: "Câu chính", en: "Main query" }
+    sub: "total > a"
+    head: [store_id, total]
+    cells: [["1", "22312600"], ["3", "30483200"]]
+rows:
+  - [sales, avg]
+  - [res]
+edges:
+  - { from: sales, to: avg }
+  - { from: sales, to: res }
+  - { from: avg, to: res }
+steps:
+  - say: { vi: "sales gộp doanh số; avg_sales đọc sales và ra một dòng.", en: "sales sums the sales; avg_sales reads sales and gives one row." }
+    show: [sales, avg]
+    set:
+      sales: { rowTone: [new, new, new, new, new] }
+      avg: { rowTone: [new] }
+    alt: { vi: "Bước avg_sales đứng sau trong cùng WITH, nên nó đọc được 5 dòng của sales và tính mức trung bình thành đúng một dòng.", en: "The avg_sales step comes later in the same WITH, so it can read sales' 5 rows and compute the average as exactly one row." }
+  - say: { vi: "Câu chính so mỗi cửa hàng với mức trung bình.", en: "The main query compares each store with the average." }
+    set:
+      sales: { rowTone: [new, ghost, new, ghost, ghost] }
+    alt: { vi: "Câu chính ghép mỗi dòng của sales với dòng duy nhất của avg_sales và chỉ giữ các cửa hàng có total lớn hơn a.", en: "The main query pairs each sales row with avg_sales' single row and keeps only the stores whose total is greater than a." }
