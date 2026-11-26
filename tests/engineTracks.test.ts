@@ -82,7 +82,7 @@ describe('liên kết chéo (I8)', () => {
   it('Đào sâu: chỉ từ Thiết kế CSDL / Công cụ dữ liệu tới bài PostgreSQL có thật', () => {
     for (const [from, to] of Object.entries(DIVE)) {
       expect(ids).toContain(from);
-      expect(from).toMatch(/^e-(ds|st)-/);
+      expect(from).toMatch(/^e-(ds|st|sm)-/);
       for (const id of to) { expect(ids).toContain(id); expect(id).toMatch(/^e-pg-l[1-5]-/); }
     }
   });

@@ -11,6 +11,7 @@
     "nosqlPath": ["signpost", "Engine: the NoSQL path (MongoDB skills, like the SQL learning path)"],
     "engDesign": ["compass-tool", "Engine: database design (a drafting compass, no logo; v24 L322)"],
     "engStack": ["flow-arrow", "Engine: the data stack (data flowing through a pipeline of stages, no logo; v45 L741)"],
+    "engStream": ["waveform", "Engine: Streaming & CDC (a continuous signal of events, no logo; v47 L1062)"],
     "skillMap": ["grid-four", "#/me skill map card (a grid of skill cells; v24 L323)"],
     "badgePart": ["seal-check", "badge: a learning-path Part held at Solid (a checked seal)"],
     "badgeFast": ["timer", "badge: right and fast (a stopwatch)"],
