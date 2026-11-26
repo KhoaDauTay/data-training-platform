@@ -57,7 +57,7 @@ steps:
   - say: { vi: "Một khóa, một partition: vượt trần.", en: "One key, one partition: over the ceiling." }
     show: [hot, b, hb]
     alt: { vi: "1500 lần ghi mỗi giây trên một khóa vượt trần 1000 WCU của partition.", en: "1500 writes per second on one key exceeds a partition's 1000 WCU ceiling." }
-  - say: { vi: "Thêm hậu tố 0–7: mỗi shard khoảng 190.", en: "Suffix 0–7: about 190 each." }
+  - say: { vi: "Thêm hậu tố 0–7: mỗi shard khoảng 188.", en: "Suffix 0–7: about 188 each." }
     show: [hot, b, rd, hb, br]
     alt: { vi: "Tám giá trị khóa rải tải qua nhiều partition, nhưng đọc cả ngày phải hỏi đủ tám shard rồi gộp.", en: "Eight key values spread the load over partitions, but reading the day must ask all eight and merge." }
     set:
