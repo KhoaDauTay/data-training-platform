@@ -132,9 +132,9 @@ Màn hình điều độ ở Đà Nẵng hiện 20 xe tải, mỗi xe gửi vị
 
 ## Ý chính
 
-**`DISTINCT ON (truck_id)` giữ dòng đầu của mỗi nhóm** theo thứ tự `ORDER BY`. Với `ORDER BY truck_id, ts DESC`, dòng đầu của mỗi xe là dòng mới nhất. Biểu thức trong `DISTINCT ON` phải đứng đầu `ORDER BY`. Câu ngắn và rõ, nhưng nó đi qua mọi dòng của bảng.
+`DISTINCT ON (truck_id)` giữ dòng đầu của mỗi nhóm theo thứ tự `ORDER BY`. Với `ORDER BY truck_id, ts DESC`, dòng đầu của mỗi xe là dòng mới nhất. Biểu thức trong `DISTINCT ON` phải đứng đầu `ORDER BY`. Câu ngắn và rõ, nhưng nó đi qua mọi dòng của bảng.
 
-**`CROSS JOIN LATERAL` hỏi từng thiết bị một.** Đi từ bảng `trucks`, và với mỗi xe chạy một câu con được nhìn thấy cột của xe đó: `WHERE x.truck_id = t.truck_id ORDER BY x.ts DESC LIMIT 1`. Với index `(truck_id, ts)`, PostgreSQL nhảy tới cuối phần của xe trong index và đọc đúng một mục. 20 xe là 20 lần đọc, dù bảng có bao nhiêu triệu dòng.
+`CROSS JOIN LATERAL` hỏi từng thiết bị một. Đi từ bảng `trucks`, và với mỗi xe chạy một câu con được nhìn thấy cột của xe đó: `WHERE x.truck_id = t.truck_id ORDER BY x.ts DESC LIMIT 1`. Với index `(truck_id, ts)`, PostgreSQL nhảy tới cuối phần của xe trong index và đọc đúng một mục. 20 xe là 20 lần đọc, dù bảng có bao nhiêu triệu dòng.
 
 **Thiết bị im lặng.** Dòng mới nhất cũng trả lời câu "xe nào mất tín hiệu": lọc giờ mới nhất cũ hơn một ngưỡng. Đi từ `trucks` (không phải từ `positions`) còn giữ được xe chưa từng gửi gì, nếu dùng `LEFT JOIN LATERAL ... ON true`.
 
@@ -238,9 +238,9 @@ The dispatch screen in Da Nang shows 20 trucks, each sending its position every 
 
 ## Key idea
 
-**`DISTINCT ON (truck_id)` keeps the first row of each group** in the `ORDER BY` order. With `ORDER BY truck_id, ts DESC`, each truck's first row is its newest. The expressions in `DISTINCT ON` must lead the `ORDER BY`. The query is short and clear, but it walks every row of the table.
+`DISTINCT ON (truck_id)` keeps the first row of each group in the `ORDER BY` order. With `ORDER BY truck_id, ts DESC`, each truck's first row is its newest. The expressions in `DISTINCT ON` must lead the `ORDER BY`. The query is short and clear, but it walks every row of the table.
 
-**`CROSS JOIN LATERAL` asks one device at a time.** Start from the table `trucks`, and for each truck run a subquery that can see that truck's columns: `WHERE x.truck_id = t.truck_id ORDER BY x.ts DESC LIMIT 1`. With an index on `(truck_id, ts)`, PostgreSQL jumps to the end of that truck's part of the index and reads exactly one entry. 20 trucks are 20 reads, however many millions of rows the table holds.
+`CROSS JOIN LATERAL` asks one device at a time. Start from the table `trucks`, and for each truck run a subquery that can see that truck's columns: `WHERE x.truck_id = t.truck_id ORDER BY x.ts DESC LIMIT 1`. With an index on `(truck_id, ts)`, PostgreSQL jumps to the end of that truck's part of the index and reads exactly one entry. 20 trucks are 20 reads, however many millions of rows the table holds.
 
 **Silent devices.** The newest row also answers "which truck lost its signal": filter the newest time older than a threshold. Starting from `trucks` (not from `positions`) can even keep a truck that never sent anything, with `LEFT JOIN LATERAL ... ON true`.
 

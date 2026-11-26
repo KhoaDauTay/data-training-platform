@@ -106,8 +106,8 @@ quiz:
     answer: 2
     trap: 1
     why:
-      vi: "BRIN không sắp lại dòng, nên \"không đổi gì\" là sai: nó chỉ tóm tắt bảng như đang nằm trên đĩa. Khi dòng của tuần trước được ghi vào cuối bảng, khối cuối chứa cả thời điểm mới lẫn cũ, nên khoảng min–max của nó phủ cả tuần, và mọi câu lọc trong tuần đó đều phải đọc khối này. Không có lỗi nào; index chỉ kém dần. `pg_stats.correlation` tụt khỏi 1 là dấu hiệu; opclass `minmax-multi` chịu được vài giá trị lạc chỗ (bài `e-pg-l5-05`)."
-      en: "BRIN never re-sorts rows, so \"nothing changes\" is wrong: it only summarises the table as it lies on disk. When last week's rows are written at the end of the table, the last range holds both new and old times, so its min–max spans the whole week, and every query filtering within that week must read this range. There is no error; the index just gets worse. A `pg_stats.correlation` dropping below 1 is the sign; the `minmax-multi` opclass tolerates a few stray values (lesson `e-pg-l5-05`)."
+      vi: "BRIN không sắp lại dòng, nên \"không đổi gì\" là sai: nó chỉ tóm tắt bảng như đang nằm trên đĩa. Khi dòng của tuần trước được ghi vào cuối bảng, khối cuối chứa cả thời điểm mới lẫn cũ, nên khoảng min–max của nó phủ cả tuần, và mọi câu lọc trong tuần đó đều phải đọc khối này. Không có lỗi nào; index chỉ kém dần. `pg_stats.correlation` tụt khỏi 1 là dấu hiệu; opclass `minmax-multi` chịu được vài giá trị lạc chỗ (bài \"Bên trong BRIN: khoảng khối và tóm tắt\")."
+      en: "BRIN never re-sorts rows, so \"nothing changes\" is wrong: it only summarises the table as it lies on disk. When last week's rows are written at the end of the table, the last range holds both new and old times, so its min–max spans the whole week, and every query filtering within that week must read this range. There is no error; the index just gets worse. A `pg_stats.correlation` dropping below 1 is the sign; the `minmax-multi` opclass tolerates a few stray values (lesson \"BRIN internals: block ranges and summarization\")."
 ---
 ## Mở bài
 

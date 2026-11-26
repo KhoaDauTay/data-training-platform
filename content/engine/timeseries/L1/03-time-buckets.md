@@ -113,9 +113,9 @@ Cổng cảng Tiên Sa ghi giờ từng xe ra vào, nhưng người điều đ�
 
 ## Ý chính
 
-**`date_trunc(unit, ts)` cắt về đầu một đơn vị lịch:** giây, phút, giờ, ngày, tuần, tháng, năm. `date_trunc('hour', ts)` biến 08:37:12 thành 08:00:00. Nhóm theo kết quả đó là có số mỗi giờ.
+`date_trunc(unit, ts)` cắt về đầu một đơn vị lịch: giây, phút, giờ, ngày, tuần, tháng, năm. `date_trunc('hour', ts)` biến 08:37:12 thành 08:00:00. Nhóm theo kết quả đó là có số mỗi giờ.
 
-**`date_bin(stride, ts, origin)` gom theo khung tùy ý.** Khung xếp liên tiếp từ mốc gốc (origin), mỗi khung dài đúng cỡ đã cho, và `date_bin` trả về điểm đầu của khung chứa `ts`. Nó làm được những thứ `date_trunc` không làm được: khung 15 phút, ca 8 giờ bắt đầu 06:00. `date_bin` không nhận cỡ khung tính bằng tháng hay năm, vì tháng dài ngắn khác nhau.
+`date_bin(stride, ts, origin)` gom theo khung tùy ý. Khung xếp liên tiếp từ mốc gốc (origin), mỗi khung dài đúng cỡ đã cho, và `date_bin` trả về điểm đầu của khung chứa `ts`. Nó làm được những thứ `date_trunc` không làm được: khung 15 phút, ca 8 giờ bắt đầu 06:00. `date_bin` không nhận cỡ khung tính bằng tháng hay năm, vì tháng dài ngắn khác nhau.
 
 **Ranh giới.** Mỗi khung gồm điểm đầu, không gồm điểm cuối. Xe qua lúc 08:15:00 thuộc khung 08:15, không thuộc khung 08:00, nên mỗi số đo nằm đúng một khung.
 
@@ -214,9 +214,9 @@ The Tien Sa port gate logs the time of every truck, but the dispatcher needs tru
 
 ## Key idea
 
-**`date_trunc(unit, ts)` cuts back to the start of a calendar unit:** second, minute, hour, day, week, month, year. `date_trunc('hour', ts)` turns 08:37:12 into 08:00:00. Grouping by that result gives per-hour figures.
+`date_trunc(unit, ts)` cuts back to the start of a calendar unit: second, minute, hour, day, week, month, year. `date_trunc('hour', ts)` turns 08:37:12 into 08:00:00. Grouping by that result gives per-hour figures.
 
-**`date_bin(stride, ts, origin)` groups into buckets of any size.** Buckets are laid end to end from the origin, each exactly the given size, and `date_bin` returns the start of the bucket holding `ts`. It does what `date_trunc` cannot: 15-minute buckets, 8-hour shifts starting at 06:00. `date_bin` does not take sizes in months or years, because months differ in length.
+`date_bin(stride, ts, origin)` groups into buckets of any size. Buckets are laid end to end from the origin, each exactly the given size, and `date_bin` returns the start of the bucket holding `ts`. It does what `date_trunc` cannot: 15-minute buckets, 8-hour shifts starting at 06:00. `date_bin` does not take sizes in months or years, because months differ in length.
 
 **Boundaries.** Each bucket includes its start and excludes its end. A truck at 08:15:00 belongs to the 08:15 bucket, not the 08:00 one, so each reading lands in exactly one bucket.
 

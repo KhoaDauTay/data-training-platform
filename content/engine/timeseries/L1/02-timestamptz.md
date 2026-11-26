@@ -140,9 +140,9 @@ Cảm biến trong kho lạnh ở cảng Tiên Sa gửi một số đo mỗi ph�
 
 ## Ý chính
 
-**`timestamptz` lưu một thời điểm.** Giá trị `'2026-10-30 08:10+07'` được đổi thành một thời điểm thật (lưu theo UTC). Kiểu này không giữ nhãn `+07`: khi in ra, PostgreSQL đổi thời điểm đó sang múi giờ của phiên. Lab ở đây chạy với múi giờ phiên UTC, và bảng kết quả in giá trị đúng như PostgreSQL in, không tự đổi theo múi giờ máy bạn.
+`timestamptz` lưu một thời điểm. Giá trị `'2026-10-30 08:10+07'` được đổi thành một thời điểm thật (lưu theo UTC). Kiểu này không giữ nhãn `+07`: khi in ra, PostgreSQL đổi thời điểm đó sang múi giờ của phiên. Lab ở đây chạy với múi giờ phiên UTC, và bảng kết quả in giá trị đúng như PostgreSQL in, không tự đổi theo múi giờ máy bạn.
 
-**`timestamp` (không múi) chỉ là giờ trên đồng hồ treo tường.** `08:10` ở Đà Nẵng và `08:10` ở Singapore là hai thời điểm khác nhau một giờ, nhưng kiểu `timestamp` coi chúng bằng nhau. Với số đo từ thiết bị, hãy lưu `timestamptz`.
+`timestamp` (không múi) chỉ là giờ trên đồng hồ treo tường. `08:10` ở Đà Nẵng và `08:10` ở Singapore là hai thời điểm khác nhau một giờ, nhưng kiểu `timestamp` coi chúng bằng nhau. Với số đo từ thiết bị, hãy lưu `timestamptz`.
 
 **Đổi múi khi đọc, không khi lọc.** `ts AT TIME ZONE 'Asia/Ho_Chi_Minh'` trả giờ đồng hồ ở Việt Nam, dùng để gom theo ngày Việt Nam. Còn điều kiện lọc thì so thẳng `ts` với hai mốc có `+07`, để index trên `ts` vẫn dùng được.
 
@@ -256,9 +256,9 @@ The cold-store sensors at Tien Sa port send one reading a minute, while the peop
 
 ## Key idea
 
-**`timestamptz` stores an instant.** The value `'2026-10-30 08:10+07'` becomes one real instant (stored as UTC). The type keeps no `+07` label: when printing, PostgreSQL converts the instant to the session time zone. The labs here run with session time zone UTC, and the result table prints values exactly as PostgreSQL prints them, never shifted to your computer's zone.
+`timestamptz` stores an instant. The value `'2026-10-30 08:10+07'` becomes one real instant (stored as UTC). The type keeps no `+07` label: when printing, PostgreSQL converts the instant to the session time zone. The labs here run with session time zone UTC, and the result table prints values exactly as PostgreSQL prints them, never shifted to your computer's zone.
 
-**`timestamp` (no zone) is only a wall-clock reading.** `08:10` in Da Nang and `08:10` in Singapore are one hour apart, but the `timestamp` type treats them as equal. Store device measurements as `timestamptz`.
+`timestamp` (no zone) is only a wall-clock reading. `08:10` in Da Nang and `08:10` in Singapore are one hour apart, but the `timestamp` type treats them as equal. Store device measurements as `timestamptz`.
 
 **Convert when reading, not when filtering.** `ts AT TIME ZONE 'Asia/Ho_Chi_Minh'` returns the wall clock in Vietnam, for grouping by Vietnam day. The filter itself compares `ts` with two bounds that carry `+07`, so the index on `ts` can still be used.
 

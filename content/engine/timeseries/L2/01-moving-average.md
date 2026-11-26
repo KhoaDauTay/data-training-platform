@@ -130,11 +130,11 @@ Nhiệt độ container lạnh dao động từng giờ, và người trực ca 
 
 **Hàm cửa sổ (window function) với khung.** `avg(temp_c) OVER (ORDER BY ts ...)` tính trung bình trên một khung (frame) quanh mỗi dòng, và vẫn giữ mọi dòng, khác `GROUP BY`.
 
-**`ROWS` đếm dòng.** `ROWS BETWEEN 2 PRECEDING AND CURRENT ROW` là "dòng này và hai dòng có thật liền trước". Khi thiết bị gửi đều, nó đúng là 3 giờ; khi mất số đo, khung kéo dài ra và kéo theo số đo cũ.
+`ROWS` đếm dòng. `ROWS BETWEEN 2 PRECEDING AND CURRENT ROW` là "dòng này và hai dòng có thật liền trước". Khi thiết bị gửi đều, nó đúng là 3 giờ; khi mất số đo, khung kéo dài ra và kéo theo số đo cũ.
 
-**`RANGE` đo bằng thời gian.** `RANGE BETWEEN interval '2 hours' PRECEDING AND CURRENT ROW` là "mọi dòng có `ts` từ 2 giờ trước tới dòng này". Giờ trống chỉ làm khung có ít số đo hơn, không kéo số cũ vào. Khung `RANGE` với khoảng cách cần đúng một cột trong `ORDER BY`.
+`RANGE` đo bằng thời gian. `RANGE BETWEEN interval '2 hours' PRECEDING AND CURRENT ROW` là "mọi dòng có `ts` từ 2 giờ trước tới dòng này". Giờ trống chỉ làm khung có ít số đo hơn, không kéo số cũ vào. Khung `RANGE` với khoảng cách cần đúng một cột trong `ORDER BY`.
 
-**`PARTITION BY` tách thiết bị.** Không có nó, cả bảng là một cửa sổ và số của các container trộn vào nhau. Lưu ý thêm: `WHERE` chạy trước hàm cửa sổ, nên dòng đầu của khoảng lọc không thấy số đo trước khoảng đó.
+`PARTITION BY` tách thiết bị. Không có nó, cả bảng là một cửa sổ và số của các container trộn vào nhau. Lưu ý thêm: `WHERE` chạy trước hàm cửa sổ, nên dòng đầu của khoảng lọc không thấy số đo trước khoảng đó.
 
 Hình cuối mục so hai khung ở dòng 11:00, ngay sau hai giờ mất số đo.
 
@@ -273,11 +273,11 @@ A reefer's temperature moves from hour to hour, and the duty officer wants the t
 
 **A window function with a frame.** `avg(temp_c) OVER (ORDER BY ts ...)` averages over a frame around each row, and keeps every row, unlike `GROUP BY`.
 
-**`ROWS` counts rows.** `ROWS BETWEEN 2 PRECEDING AND CURRENT ROW` is "this row and the two real rows just before it". When the device reports steadily it really is 3 hours; when readings go missing, the frame stretches and drags in old readings.
+`ROWS` counts rows. `ROWS BETWEEN 2 PRECEDING AND CURRENT ROW` is "this row and the two real rows just before it". When the device reports steadily it really is 3 hours; when readings go missing, the frame stretches and drags in old readings.
 
-**`RANGE` measures in time.** `RANGE BETWEEN interval '2 hours' PRECEDING AND CURRENT ROW` is "every row whose `ts` is from 2 hours before this row up to it". An empty hour only leaves fewer readings in the frame; it does not pull old ones in. A `RANGE` frame with an offset needs exactly one column in `ORDER BY`.
+`RANGE` measures in time. `RANGE BETWEEN interval '2 hours' PRECEDING AND CURRENT ROW` is "every row whose `ts` is from 2 hours before this row up to it". An empty hour only leaves fewer readings in the frame; it does not pull old ones in. A `RANGE` frame with an offset needs exactly one column in `ORDER BY`.
 
-**`PARTITION BY` separates devices.** Without it the whole table is one window and the containers' readings mix. One more note: `WHERE` runs before the window function, so the first rows of the filtered range cannot see readings from before it.
+`PARTITION BY` separates devices. Without it the whole table is one window and the containers' readings mix. One more note: `WHERE` runs before the window function, so the first rows of the filtered range cannot see readings from before it.
 
 The figure at the end of this section compares the two frames on the 11:00 row, right after two hours without readings.
 
