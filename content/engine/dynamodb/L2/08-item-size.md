@@ -8,6 +8,7 @@ title_en: "Work out an item's size by hand"
 kind: quiz
 runtime: docs
 minutes: 10
+figures: [{ name: dy-item-size, at: idea }]
 objectives:
   - vi: Tính cỡ chuỗi, số, boolean, danh sách theo luật của AWS.
     en: Compute the size of strings, numbers, booleans and lists with the AWS rules.
@@ -110,6 +111,8 @@ Cỡ item = tổng cỡ các thuộc tính. Luật của AWS:
 
 Ngoài ra mỗi item có **100 byte phụ phí lưu trữ**, chỉ dùng để tính tiền lưu trữ.
 
+Hình từng bước ở cuối mục này cộng cỡ item `978-0-04` theo từng thuộc tính, rồi tách cỡ tính capacity khỏi cỡ tính tiền lưu trữ.
+
 ## Ví dụ
 
 ```text
@@ -148,6 +151,8 @@ Item size = the sum of its attribute sizes. The AWS rules:
 - **Set**: name + the size of the elements, no overhead.
 
 On top of that every item has **100 bytes of storage overhead**, used only for storage billing.
+
+The step-through figure at the end of this section adds up the size of item `978-0-04` attribute by attribute, then separates the size used for capacity from the size billed for storage.
 
 ## Example
 
