@@ -141,7 +141,9 @@ describe('the marker on the real Engine lessons (objectives + sections, code spa
   const lessons = Object.entries(files).map(([p, s]) => parseEngineLesson(s, p));
   it('≤ 15 buttons per lesson, most lessons get at least one, no term in a code span', () => {
     let some = 0;
+    let counted = 0; // v47: tracks with no glossary terms yet (redis, olap, search, …) cannot get a button; the ratio counts the others
     for (const l of lessons) {
+      if (terms.some((t) => t.engines.includes(l.engine))) counted++;
       for (const lang of ['vi', 'en'] as const) {
         const m = marker(terms, l.engine, l.level);
         const texts = [...l.objectives.map((o) => o[lang]), ...l.sections.map((s) => s.text[lang])];
@@ -151,7 +153,7 @@ describe('the marker on the real Engine lessons (objectives + sections, code spa
         if (lang === 'vi' && n) some++;
       }
     }
-    expect(some / lessons.length).toBeGreaterThan(0.6);
+    expect(some / counted).toBeGreaterThan(0.6);
   });
 });
 
