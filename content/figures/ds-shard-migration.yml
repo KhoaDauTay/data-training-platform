@@ -1,0 +1,42 @@
+# B2-12 (tools/v42/diagram-plan-v42.md): one canary, then one shard at a time, stop at the first error. Lesson: e-ds-l5-09
+# (Ý chính). Data follows the lab (tools/v42/b2check.log), not the plan's quoted five-shard grid (s4 = 2, s5 = 2, "2/5" does not
+# exist there): the runner takes the serving shards s1, s2, s3 from the catalog (job_runs expect 3), target version 3; it ends
+# with s1 3, s2 3, s3 2, exactly the lab's state (s4, s5 are still creating, so not in the list). The base grid is that end
+# state (the data table shows it); steps 1–2 patch it. Source: https://www.postgresql.org/docs/18/plpgsql-transactions.html
+title: { vi: "Đổi schema từng shard, dừng ở lỗi đầu tiên", en: "Change the schema shard by shard, stop at the first error" }
+caption:
+  vi: "Bộ chạy lấy các shard đang phục vụ từ danh mục, đưa lên phiên bản 3 từng cái một, và chỉ ghi phiên bản sau khi đã áp dụng."
+  en: "The runner takes the serving shards from the catalog, brings them to version 3 one at a time, and records a version only once applied."
+alt:
+  vi: "Đổi schema trên nhiều shard là nhiều lần chạy, nên bộ chạy đi từng shard, dừng ở lỗi đầu tiên và ghi phiên bản chỉ khi đã áp dụng. Bước chuyển đổi phải chạy lại được an toàn."
+  en: "A schema change on many shards is many runs, so the runner goes shard by shard, stops at the first error and records a version only once applied. Each step must be safe to re-run."
+nodes:
+  - { id: cat, shape: table, label: { vi: "danh mục", en: catalog }, sub: shards.version }
+  - { id: run, label: { vi: "bộ chạy", en: runner }, sub: { vi: "đích: phiên bản 3", en: "target: version 3" } }
+  - id: v
+    shape: grid
+    label: { vi: "shard đang phục vụ", en: "serving shards" }
+    head: [shard, { vi: phiên bản, en: version }, { vi: kết quả, en: result }]
+    cells: [[s1, "3", { vi: xong, en: done }], [s2, "3", { vi: xong, en: done }], [s3, "2", { vi: lỗi, en: failed }]]
+    cellTone: { "2:2": dead }
+  - { id: rep, shape: key, label: { vi: "đã áp dụng 2/3, dừng", en: "applied 2/3, stopped" }, tone: dead }
+rows:
+  - [cat]
+  - [run]
+  - [v, rep]
+edges:
+  - { from: cat, to: run, label: { vi: "danh sách shard", en: "shard list" } }
+  - { from: run, to: v }
+steps:
+  - say: { vi: "Bộ chạy lấy danh sách từ danh mục.", en: "The runner takes the list from the catalog." }
+    alt: { vi: "Danh sách shard luôn đến từ danh mục, không từ tên máy viết tay, nên không shard nào bị sót.", en: "The shard list always comes from the catalog, never a hand-written host name, so no shard is missed." }
+    show: [cat, run, v]
+    set:
+      v: { cells: [[s1, "2", { vi: chờ, en: waiting }], [s2, "2", { vi: chờ, en: waiting }], [s3, "2", { vi: chờ, en: waiting }]], cellTone: {} }
+  - say: { vi: "Thử trước trên s1, rồi s2.", en: "Canary on s1, then s2." }
+    alt: { vi: "Phiên bản chỉ được ghi sau khi thay đổi đã thật sự có trên shard đó.", en: "The version is written only after the change really exists on that shard." }
+    show: [cat, run, v]
+    set:
+      v: { cells: [[s1, "3", { vi: xong, en: done }], [s2, "3", { vi: xong, en: done }], [s3, "2", { vi: chờ, en: waiting }]], cellTone: { "0:1": live, "1:1": live } }
+  - say: { vi: "s3 hỏng: dừng và báo rõ.", en: "s3 fails: stop and say so." }
+    alt: { vi: "Dừng ở lỗi đầu tiên với dòng “đã áp dụng 2/3” để danh mục không bao giờ nói một shard đã lên khi nó chưa lên.", en: "Stopping at the first error with “applied 2/3” keeps the catalog from claiming a shard is upgraded when it is not." }

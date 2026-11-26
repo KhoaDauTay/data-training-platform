@@ -8,7 +8,7 @@ title_en: Unique per tenant - UNIQUE (tenant_id, email)
 kind: lab
 runtime: browser
 minutes: 16
-figures: [{ name: pg-tenancy-models, at: idea, step: 3 }]
+figures: [{ name: pg-tenancy-models, at: idea, step: 3 }, { name: ds-tenant-composite-fk, at: idea, variant: unique }]
 objectives:
   - vi: Viết luật duy nhất trong phạm vi một khách hàng thay vì cho cả hệ thống.
     en: Write a uniqueness rule scoped to one tenant instead of the whole system.
@@ -110,7 +110,7 @@ Hai biến thể hay gặp. Email không phân biệt hoa thường: index duy n
 
 **Thêm luật vào bảng đang chạy**: `CREATE UNIQUE INDEX CONCURRENTLY` dựng index mà không chặn ghi. Nếu dữ liệu cũ đã có hai dòng trùng trong cùng một tenant, lệnh dừng với lỗi 23505 và để lại một index ở trạng thái INVALID, phải xóa đi rồi dựng lại. Vì vậy tìm và gộp các dòng trùng trước, bằng `GROUP BY tenant_id, lower(email) HAVING count(*) > 1`. Index trên cột trần còn có thể thành ràng buộc nhờ `ADD CONSTRAINT … UNIQUE USING INDEX`; index biểu thức thì giữ là index.
 
-Hình từng bước ở cuối mục này so ba cách chia khách và mở ở bước Pool; khi nhiều khách dùng chung bảng, mỗi ràng buộc duy nhất phải bắt đầu bằng `tenant_id`.
+Hình từng bước thứ nhất ở cuối mục này so ba cách chia khách và mở ở bước Pool; khi nhiều khách dùng chung bảng, mỗi ràng buộc duy nhất phải bắt đầu bằng `tenant_id`. Hình thứ hai vẽ luật `UNIQUE (tenant_id, email)` trên bảng `shoppers`: người bán 1 và 2 cùng có `an@mail.vn`.
 
 ## Cú pháp
 
@@ -246,7 +246,7 @@ Two common variants. Case-insensitive email: a unique index on the expression `(
 
 **Adding the rule to a live table**: `CREATE UNIQUE INDEX CONCURRENTLY` builds the index without blocking writes. If the old data already holds two duplicate rows inside one tenant, the command stops with error 23505 and leaves an INVALID index behind, which must be dropped and built again. So find and merge the duplicates first, with `GROUP BY tenant_id, lower(email) HAVING count(*) > 1`. An index on plain columns can then become a constraint through `ADD CONSTRAINT … UNIQUE USING INDEX`; an expression index stays an index.
 
-The step-through figure at the end of this section compares the three ways to split tenants and opens on the Pool step; when tenants share tables, every unique constraint must start with `tenant_id`.
+The first step-through figure at the end of this section compares the three ways to split tenants and opens on the Pool step; when tenants share tables, every unique constraint must start with `tenant_id`. The second draws the rule `UNIQUE (tenant_id, email)` on the table `shoppers`: sellers 1 and 2 both have `an@mail.vn`.
 
 ## Syntax
 

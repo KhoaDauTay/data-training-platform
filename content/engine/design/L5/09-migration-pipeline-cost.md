@@ -8,6 +8,7 @@ title_en: Per-shard migrations and cost tags
 kind: lab
 runtime: browser
 minutes: 20
+figures: [{ name: ds-shard-migration, at: idea }]
 objectives:
   - vi: Tìm shard chậm phiên bản và đưa chúng lên, từng shard một, ghi phiên bản chỉ khi thay đổi đã thật sự có.
     en: Find shards behind on version and bring them up one at a time, recording the version only once the change really exists.
@@ -158,6 +159,8 @@ Chi phí: gắn thẻ chi phí (tag của nhà cung cấp đám mây) cho mọi 
 
 **Chạy lại phải an toàn**: lần chạy sau bắt đầu lại từ shard còn ở phiên bản cũ, nên mỗi bước chuyển đổi phải chạy lại được mà không hỏng: `ADD COLUMN IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`. Thay đổi phá vỡ (đổi tên hay xóa cột) chia làm hai đợt: đợt một thêm cái mới và ứng dụng đọc được cả hai; đợt hai, khi mọi shard đã lên, mới bỏ cái cũ. Nhờ vậy trong lúc các shard lệch phiên bản, ứng dụng vẫn chạy trên cả hai.
 
+Hình từng bước cuối mục này cho bộ chạy đi qua ba shard đang phục vụ của lab và dừng ở shard đầu tiên báo lỗi.
+
 ## Cú pháp
 
 ```sql
@@ -306,6 +309,8 @@ Many people think exit code 0 means done. In fact a run is judged by an explicit
 Cost: tag every resource with `shard_id`, tier (`tier`), environment and owner. A shard's cost is the sum of the resources carrying its tag; split it across tenants by their share of the load (requests) to see who has outgrown their tier. Fix untagged resources; do not split them at random.
 
 **Re-runs must be safe**: the next run starts again from the shard still on the old version, so every migration step must run twice without harm: `ADD COLUMN IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`. A breaking change (renaming or dropping a column) goes in two waves: the first adds the new thing and the app reads both; the second, once every shard is up, removes the old one. That way the app keeps working on both while the shards are on different versions.
+
+The step-through figure at the end of this section walks the runner through the lab's three serving shards and stops at the first one that fails.
 
 ## Syntax
 

@@ -8,6 +8,7 @@ title_en: Tenant and shard catalog - placing tenants by tier
 kind: lab
 runtime: browser
 minutes: 18
+figures: [{ name: ds-shard-catalog, at: idea }]
 objectives:
   - vi: Dựng danh mục bằng bảng thường - shard (gói, trạng thái, sức chứa) và nơi ở của từng khách theo thời gian.
     en: Build the catalog from plain tables - shards (tier, state, capacity) and where each tenant lives over time.
@@ -134,6 +135,8 @@ Luật đặt khách: khách mới vào shard ít tải nhất đúng gói, ch�
 **Tra cứu phải rẻ**: mọi yêu cầu đều hỏi danh mục, nên câu "khách này ở đâu hôm nay" phải đọc qua index. Ràng buộc loại trừ đã dựng sẵn một index GiST trên `(tenant_id, during)`, và câu `WHERE tenant_id = 't-04' AND during @> DATE '2026-10-31'` dùng được nó. Bộ định tuyến thường giữ kết quả trong bộ nhớ vài giây; bài `e-ds-l5-10` nói cách giữ để bản nhớ tạm không đưa khách tới nơi ở cũ.
 
 **Sức chứa đo bằng gì**: bài này đếm số khách cho dễ thấy. Hệ thống thật đo bằng tải (số yêu cầu, dung lượng, thời gian CPU), vì một người bán bận có thể nặng bằng mười người bán nhỏ.
+
+Hình từng bước cuối mục này vẽ ba bảng của danh mục, rồi tải hôm nay của từng shard.
 
 ## Cú pháp
 
@@ -277,6 +280,8 @@ The placement rule: a new tenant goes to the least-loaded shard of its tier, onl
 **The lookup must be cheap**: every request asks the catalog, so "where does this tenant live today" must read through an index. The exclusion constraint already built a GiST index on `(tenant_id, during)`, and `WHERE tenant_id = 't-04' AND during @> DATE '2026-10-31'` can use it. Routers usually keep the answer in memory for a few seconds; lesson `e-ds-l5-10` shows how to keep that cached copy from sending a tenant to its old home.
 
 **What capacity measures**: this lesson counts tenants to keep it visible. Real systems measure load (requests, storage, CPU time), because one busy seller can weigh as much as ten small ones.
+
+The step-through figure at the end of this section draws the catalog's three tables, then today's load on each shard.
 
 ## Syntax
 

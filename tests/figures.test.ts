@@ -252,12 +252,14 @@ describe.each(Object.keys(specs))('v39 figure %s', (name) => {
         const tables = altTables(spec, lang, variant);
         const v = variant === undefined ? undefined : spec.variants?.[variant];
         const shown = new Set(v?.step !== undefined ? spec.steps?.[v.step].show ?? spec.nodes.map((n) => n.id) : v?.show ?? spec.nodes.map((n) => n.id));
-        // v44 (L784): a variant may patch a grid's rows or bars (another lesson's data), so count the patched node
-        const grids = spec.nodes.map((n) => ({ ...n, ...v?.set?.[n.id] }))
-          .filter((n) => (n.shape === 'grid' || n.shape === 'bars') && (v?.step !== undefined || v?.show ? shown.has(n.id) : true));
+        // v44 (L784, L802 eye E2): a variant may patch a grid's rows or bars (another lesson's data), and its tables are the grids its
+        // own frame draws, as the variant's and that step's set patch them (never the base's)
+        const patch = (n: FigSpec['nodes'][number]): FigSpec['nodes'][number] => ({ ...n, ...v?.set?.[n.id], ...(v?.step !== undefined ? spec.steps?.[v.step].set?.[n.id] : {}) }) as FigSpec['nodes'][number];
+        const grids = spec.nodes.filter((n) => (n.shape === 'grid' || n.shape === 'bars') && (v?.step !== undefined || v?.show ? shown.has(n.id) : true)).map(patch);
         expect(tables.length, `${lang} bảng dữ liệu`).toBe(grids.length);
         for (const [i, t] of tables.entries()) {
           expect(t.caption, lang).not.toBe('');
+          if (variant && grids[i].label) expect(t.caption, `${lang}: bảng của variant phải là bảng nó vẽ`).toBe(tr(grids[i].label, lang));
           expect(t.rows.length, `${lang} ${t.caption}`).toBe(grids[i].cells?.length ?? grids[i].items?.length ?? 0);
           expect(t.rows.flat().some(Boolean), `${lang} ${t.caption}: ô nào cũng trống`).toBe(true);
           expect(t.head.every(Boolean), `${lang} ${t.caption}: tiêu đề cột trống`).toBe(true); // an empty th is an axe finding

@@ -17,7 +17,7 @@ nodes:
     label: { vi: "orders của khách 5", en: "customer 5's orders" }
     head: [customer_id, id, order_date]
     cells: [["5", "1416", "2026-10-31"], ["5", "474", "2026-02-26"], ["5", "263", "2025-10-18"], ["5", "96", "2025-06-03"]]
-    rowTone: [new, ghost, ghost, ghost]
+    rowTone: [new, null, null, null]
   - id: r
     shape: grid
     label: { vi: "kết quả", en: result }
@@ -35,4 +35,6 @@ steps:
     alt: { vi: "ORDER BY mở đầu bằng cột của DISTINCT ON để các dòng cùng nhóm nằm liền nhau.", en: "ORDER BY starts with the DISTINCT ON column so each group's rows sit together." }
   - say: { vi: "Giữ dòng đầu của mỗi nhóm.", en: "Keep the first row of each group." }
     show: [ob, g, r]
+    set:
+      g: { rowTone: [new, ghost, ghost, ghost] }
     alt: { vi: "Phần còn lại của ORDER BY quyết định dòng nào thắng, nên thiếu nó thì dòng giữ lại là bất kỳ.", en: "The rest of ORDER BY decides which row wins; without it the kept row is arbitrary." }

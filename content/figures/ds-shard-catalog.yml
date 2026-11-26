@@ -1,0 +1,41 @@
+# B2-11 (tools/v42/diagram-plan-v42.md): where each seller lives, and since when. Lesson: e-ds-l5-08 (Ý chính). Data: the lab's
+# shards / tenants / placements on 2026-10-31, run on PGlite (tools/v42/b2check.log): s1 3 tenants (pool, serving, capacity 4),
+# s2 2, s3 1 (dedicated, capacity 1), s4 1 (draining), s5 0 (creating); t-04 moved s2 → s3 on 2026-09-01.
+# Source: https://www.postgresql.org/docs/18/ddl-constraints.html#DDL-CONSTRAINTS-EXCLUSION
+title: { vi: "Danh mục shard: khách ở đâu, từ bao giờ", en: "The shard catalog: where each tenant lives, and since when" }
+caption:
+  vi: "placements nối khách với shard theo khoảng ngày during; ràng buộc loại trừ trên (tenant_id, during) chặn hai nơi ở chồng nhau."
+  en: "placements links a tenant to a shard over the date range during; an exclusion constraint on (tenant_id, during) forbids two overlapping homes."
+alt:
+  vi: "Danh mục là hai bảng: shards và placements theo thời gian, với ràng buộc loại trừ chặn hai nơi ở chồng nhau. Đặt khách theo danh mục cho phép chuyển từng khách một mình."
+  en: "The catalog is two tables: shards, and placements over time, with an exclusion constraint against overlapping homes. Placing tenants by catalog lets each one move alone."
+nodes:
+  - { id: t, shape: entity, label: TENANTS, fields: [{ name: tenant_id, pk: true }, name, tier] }
+  - { id: p, shape: entity, label: PLACEMENTS, fields: [{ name: tenant_id, pk: true, fk: true }, { name: during, pk: true }, { name: shard_id, fk: true }] }
+  - { id: s, shape: entity, label: SHARDS, fields: [{ name: shard_id, pk: true }, tier, state, capacity] }
+  - { id: ex, shape: key, label: { vi: "EXCLUDE: không chồng thời gian", en: "EXCLUDE: no overlap" }, tone: warm }
+  - id: load
+    shape: bars
+    label: { vi: "khách / sức chứa, gói", en: "tenants / capacity, tier" }
+    sub: { vi: "hôm nay 2026-10-31", en: "today, 2026-10-31" }
+    head: [shard, { vi: "khách / sức chứa, gói", en: "tenants / capacity, tier" }]
+    items:
+      - { label: s1, value: 3, note: "3/4 pool" }
+      - { label: s2, value: 2, note: "2/4 pool" }
+      - { label: s3, value: 1, note: { vi: "1/1 riêng", en: "1/1 dedicated" } }
+      - { label: s4, value: 1, note: { vi: "1/4 rút tải", en: "1/4 draining" }, tone: warm }
+      - { label: s5, value: 0, note: { vi: "0/4 đang tạo", en: "0/4 creating" } }
+rows:
+  - [t, p, s]
+  - [ex]
+  - [load]
+phone: { rows: [[t], [p], [s], [ex], [load]] }
+edges:
+  - { from: "t#0", to: "p#0", link: true, ends: [one, zero-many], label: { vi: "ở", en: "lives" } }
+  - { from: "s#0", to: "p#2", link: true, ends: [one, zero-many], label: { vi: "giữ", en: "holds" } }
+steps:
+  - say: { vi: "Khách ở shard nào, từ ngày nào tới ngày nào.", en: "Which shard a tenant is on, from when to when." }
+    alt: { vi: "placements giữ lịch sử theo daterange, nên chuyển khách là đóng một khoảng và mở khoảng mới.", en: "placements keeps history as date ranges, so moving a tenant closes one range and opens another." }
+    show: [t, p, s, ex]
+  - say: { vi: "Tải hôm nay theo shard.", en: "Today's load per shard." }
+    alt: { vi: "Khách mới chỉ vào shard đang phục vụ đúng gói và còn dưới sức chứa, nên s4 và s5 không nhận ai.", en: "New tenants go only to a serving shard of the right tier under capacity, so s4 and s5 take no one." }

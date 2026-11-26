@@ -8,7 +8,7 @@ title_en: Weak entities, generalisation and the EER model
 kind: concept
 runtime: browser
 minutes: 15
-figures: [{ name: ds-er-to-tables, at: example, variant: weak }]
+figures: [{ name: ds-er-weak-isa, at: idea }, { name: ds-er-to-tables, at: example, variant: weak }]
 objectives:
   - vi: Nhận ra thực thể yếu và đưa nó lên bảng với khóa gồm khóa của chủ cộng khóa bộ phận.
     en: Spot a weak entity and map it to a table keyed by its owner's key plus a partial key.
@@ -95,6 +95,8 @@ Một dòng hóa đơn không tự đứng được: "dòng số 2" chỉ có ng
 
 Đưa cây cha - con lên bảng có ba cách. Một bảng với cột loại và `CHECK`: đơn giản, nhưng nhiều cột NULL. Mỗi con một bảng đủ cột: không NULL, nhưng truy vấn "mọi tài khoản" phải `UNION`. Bảng cha chung cộng bảng con có khóa chính đồng thời là khóa ngoại tới cha: chuẩn nhất, phải JOIN khi đọc. Postgres có `INHERITS`, nhưng `UNIQUE`, khóa chính và khóa ngoại không lan qua cây, nên ít dùng cho mô hình dữ liệu.
 
+Hình từng bước cuối mục này vẽ cả hai: dòng hóa đơn mượn khóa của hóa đơn, rồi cây xe đưa lên bảng bằng bảng cha chung và hai bảng con.
+
 ## Ví dụ
 
 Thực thể yếu: dòng hóa đơn, khóa gồm hóa đơn và số dòng.
@@ -133,7 +135,7 @@ INSERT INTO ex_vehicle VALUES (1, 'car', 5, NULL), (2, 'truck', NULL, 3000), (3,
 SELECT kind, count(*) AS vehicles FROM ex_vehicle GROUP BY kind ORDER BY kind;
 ```
 
-Hình cuối mục này vẽ `ex_invoice_line` thành bảng có khóa ghép `(invoice_id, line_no)`.
+Hình cuối mục này vẽ `ex_invoice_line` thành bảng có khóa ghép `(invoice_id, line_no)`. Cây xe theo cách bảng cha chung cộng bảng con (khóa chính của bảng con cũng là khóa ngoại tới cha) có ở hình của mục Ý chính.
 
 ## Lỗi hay gặp
 
@@ -191,6 +193,8 @@ A **weak entity** has no key strong enough to tell it apart by itself; it is ide
 
 There are three ways to put the hierarchy into tables. One table with a type column and a `CHECK`: simple, but many NULL columns. One full table per child: no NULLs, but "every account" needs a `UNION`. A shared parent table plus child tables whose primary key is also a foreign key to the parent: the cleanest, at the price of a JOIN on read. Postgres has `INHERITS`, but `UNIQUE`, primary keys and foreign keys do not spread across the tree, so it is rarely used for data models.
 
+The step-through figure at the end of this section draws both: an invoice line borrowing its invoice's key, then the vehicle tree on tables as a shared parent plus two subtype tables.
+
 ## Example
 
 A weak entity: invoice lines, keyed by invoice and line number.
@@ -229,7 +233,7 @@ INSERT INTO ex_vehicle VALUES (1, 'car', 5, NULL), (2, 'truck', NULL, 3000), (3,
 SELECT kind, count(*) AS vehicles FROM ex_vehicle GROUP BY kind ORDER BY kind;
 ```
 
-The figure at the end of this section draws `ex_invoice_line` as a table with the composite key `(invoice_id, line_no)`.
+The figure at the end of this section draws `ex_invoice_line` as a table with the composite key `(invoice_id, line_no)`. The vehicle tree the shared-parent way (each subtype table's primary key is also a foreign key to the parent) is in the Key idea figure.
 
 ## Common mistakes
 

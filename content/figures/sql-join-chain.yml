@@ -3,6 +3,7 @@
 # orders.customer_id → customers.id, orders.store_id → stores.id (lab columns; order_items' key is (order_id, line_no));
 # order 1416 = 3 lines (Dish soap, Laundry powder 3kg, Trash bags), store Hoan Kiem, customer Pham Nam;
 # Ben Thanh, October 2026: orders ⋈ order_items ⋈ stores = 228 rows, count(DISTINCT o.id) = 76. Bars to scale (3 = 228, 1 = 76).
+# Eye JC-1: step 1 tints the path order_items → orders → stores (JOIN 1, JOIN 2) and dashes the two links the question does not use.
 # Source: https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-JOIN
 title: { vi: "Nối theo chuỗi khóa ngoại", en: "Joining along the foreign keys" }
 caption:
@@ -17,26 +18,34 @@ nodes:
   - { id: o, shape: entity, label: ORDERS, fields: [{ name: id, pk: true }, { name: customer_id, fk: true }, { name: store_id, fk: true }, order_date] }
   - { id: c, shape: entity, label: CUSTOMERS, fields: [{ name: id, pk: true }, name] }
   - { id: s, shape: entity, label: STORES, fields: [{ name: id, pk: true }, name] }
-  - { id: fan, shape: note, label: { vi: "1 đơn × 3 dòng hàng = 3 dòng", en: "1 order × 3 lines = 3 rows" } }
+  - { id: fan, shape: note, label: { vi: "1 đơn = 3 dòng nối", en: "1 order = 3 rows" } }
   - id: cnt
     shape: bars
     label: { vi: "Ben Thanh, tháng 10", en: "Ben Thanh, October" }
     items:
       - { label: count(*), value: 3, note: "228" }
-      - { label: count(DISTINCT), value: 1, note: "76", tone: live }
+      - { label: DISTINCT o.id, value: 1, note: "76", tone: live }
 rows:
   - [p, oi]
   - [c, o, s]
   - [fan, cnt]
 phone: { rows: [[p], [oi], [o], [c, s], [fan], [cnt]] }
 edges:
-  - { from: "p#0", to: "oi#2", link: true, ends: [one, zero-many] }
-  - { from: "o#0", to: "oi#0", link: true, ends: [one, one-many] }
-  - { from: "c#0", to: "o#1", link: true, ends: [one, zero-many] }
-  - { from: "s#0", to: "o#2", link: true, ends: [one, zero-many] }
+  - { id: ep, from: "p#0", to: "oi#2", link: true, ends: [one, zero-many] }
+  - { from: "o#0", to: "oi#0", link: true, ends: [one, one-many], label: JOIN 1 }
+  - { id: ec, from: "c#0", to: "o#1", link: true, ends: [one, zero-many] }
+  - { from: "s#0", to: "o#2", link: true, ends: [one, zero-many], label: JOIN 2 }
 steps:
   - say: { vi: "Mỗi JOIN đi một khóa ngoại.", en: "Each JOIN follows one foreign key." }
     show: [p, oi, o, c, s]
+    set:
+      oi: { tone: new }
+      o: { tone: new }
+      s: { tone: new }
+      p: { tone: ghost }
+      c: { tone: ghost }
+      ep: { dash: true }
+      ec: { dash: true }
     alt: { vi: "stores không nối thẳng vào order_items, nên đường đi phải qua orders, nơi có store_id.", en: "stores does not join order_items directly, so the path goes through orders, which has store_id." }
   - say: { vi: "Nối xuống bảng chi tiết nhân số dòng.", en: "Joining down to the detail table multiplies rows." }
     show: [p, oi, o, c, s, fan, cnt]

@@ -8,6 +8,7 @@ title_en: BCNF and the price of keeping dependencies
 kind: lab
 runtime: browser
 minutes: 25
+figures: [{ name: ds-bcnf-split, at: idea }]
 objectives:
   - vi: Nhận ra một bảng ở 3NF mà chưa ở BCNF, vì có một vế trái không phải siêu khóa.
     en: Spot a table that is in 3NF but not in BCNF, because a left side is not a superkey.
@@ -111,6 +112,8 @@ Một trung tâm dạy kèm: mỗi học viên học một môn với đúng m�
 Bảng `tutoring` có khóa `(student, subject)` và hai phụ thuộc: `(student, subject)` → `teacher` và `teacher` → `subject`. Phụ thuộc thứ hai có vế trái `teacher` không phải siêu khóa, nhưng vế phải `subject` nằm trong khóa, nên bảng ở 3NF mà không ở BCNF. Hệ quả: môn của mỗi giáo viên lặp theo số học viên, và sửa sót một dòng là một giáo viên dạy hai môn.
 
 Tách theo phụ thuộc vi phạm: `teacher_subject(teacher, subject)` với khóa `teacher`, và `student_teacher(student, teacher)`. Nối lại theo `teacher` ra đúng bảng cũ. Nhưng phụ thuộc `(student, subject)` → `teacher` giờ trải trên hai bảng, không khóa nào giữ nó: học viên có thể có hai giáo viên cùng môn mà database không kêu. Đây là đánh đổi thật: 3NF luôn tách được mà giữ mọi phụ thuộc, BCNF thì không phải lúc nào cũng được. Chọn BCNF khi lặp là vấn đề lớn hơn; giữ 3NF (hoặc thêm trigger) khi luật đó quan trọng hơn.
+
+Hình từng bước cuối mục này cho thấy các cặp giáo viên – môn lặp lại trong `tutoring`, rồi phép tách và luật bị mất.
 
 ## Cú pháp
 
@@ -216,6 +219,8 @@ A tutoring centre: each student takes a subject with exactly one teacher, and ea
 Table `tutoring` has key `(student, subject)` and two dependencies: `(student, subject)` → `teacher` and `teacher` → `subject`. The second one has a left side `teacher` that is not a superkey, but its right side `subject` is in the key, so the table is in 3NF and not in BCNF. As a result each teacher's subject is repeated once per student, and missing one row on an update gives a teacher two subjects.
 
 Split on the violating dependency: `teacher_subject(teacher, subject)` keyed by `teacher`, and `student_teacher(student, teacher)`. Joining back on `teacher` gives exactly the old table. But the dependency `(student, subject)` → `teacher` now spans two tables, and no key enforces it: a student can get two teachers for one subject without the database noticing. This is a real trade-off: a 3NF split that keeps every dependency always exists, a BCNF one not always. Choose BCNF when repetition is the bigger problem; keep 3NF (or add a trigger) when that rule matters more.
+
+The step-through figure at the end of this section shows the teacher – subject pairs repeated in `tutoring`, then the split and the rule it loses.
 
 ## Syntax
 
