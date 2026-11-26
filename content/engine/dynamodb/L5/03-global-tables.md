@@ -22,14 +22,14 @@ quiz:
       - { vi: "Một bảng một vùng và PITR", en: "A single-Region table with PITR" }
     answer: 1
     trap: 0
-    why: { vi: "MRSC đồng bộ mỗi lần ghi sang ít nhất một vùng khác trước khi trả về, cho RPO 0. Nó phải triển khai đúng ba vùng; hai bản sao cộng một witness là cách cho ứng dụng hai vùng.", en: "MRSC replicates each write to at least one other Region before returning, giving an RPO of zero. It must span exactly three Regions; two replicas plus a witness is the way for a two-Region app." }
+    why: { vi: "MREC (multi-Region eventual consistency, nhất quán cuối đa vùng) là mặc định, nhưng nó sao chép bất đồng bộ: một vùng sập có thể mất các lần ghi chưa kịp sang vùng kia, và đọc nhất quán mạnh ở vùng kia có thể thấy bản cũ. Bảng một vùng với PITR (point-in-time recovery, khôi phục về một thời điểm) không chạy được khi chính vùng đó sập. MRSC (multi-Region strong consistency, nhất quán mạnh đa vùng) đồng bộ mỗi lần ghi sang ít nhất một vùng khác trước khi trả về, nên RPO (recovery point objective, lượng dữ liệu tối đa có thể mất) bằng 0. Nó cần đúng ba vùng; hai bản sao cộng một witness là cách cho ứng dụng hai vùng.", en: "MREC (multi-Region eventual consistency) is the default, but it replicates asynchronously: a Region going down can lose writes that had not reached the other Region yet, and a strongly consistent read there may see an old version. A single-Region table with PITR (point-in-time recovery) cannot serve anything while that very Region is down. MRSC (multi-Region strong consistency) replicates each write to at least one other Region before returning, so the RPO (recovery point objective, the most data you can lose) is zero. It needs exactly three Regions; two replicas plus a witness is the way for a two-Region app." }
   - q: { vi: "Bảng MREC: cùng một item bị sửa ở Singapore và Tokyo gần như cùng lúc. Kết quả cuối?", en: "An MREC table: the same item is changed in Singapore and Tokyo almost at once. The final result?" }
     options:
       - { vi: "Cả hai lần ghi bị từ chối", en: "Both writes are rejected" }
       - { vi: "Mọi bản sao hội tụ về lần ghi có dấu thời gian nội bộ muộn nhất (last writer wins)", en: "Every replica converges to the write with the latest internal timestamp (last writer wins)" }
       - { vi: "Hai phiên bản được giữ song song", en: "Both versions are kept side by side" }
     answer: 1
-    why: { vi: "MREC giải xung đột theo từng item bằng last writer wins. MRSC thì khác: lần ghi va chạm bị từ chối với `ReplicatedWriteConflictException` và có thể thử lại.", en: "MREC resolves conflicts per item with last writer wins. MRSC differs: a colliding write is refused with `ReplicatedWriteConflictException` and can be retried." }
+    why: { vi: "MREC (nhất quán cuối đa vùng) nhận cả hai lần ghi ngay tại vùng của nó, nên không lần nào bị từ chối; sau khi sao chép, mọi bản sao giữ lần ghi có dấu thời gian nội bộ muộn nhất (last writer wins), lần kia mất. DynamoDB không giữ hai phiên bản song song: mỗi khóa chính chỉ có một item. Từ chối lần ghi va chạm là hành vi của MRSC (nhất quán mạnh đa vùng), với `ReplicatedWriteConflictException`, và có thể thử lại.", en: "MREC (multi-Region eventual consistency) accepts both writes locally in each Region, so neither is rejected; after replication every replica keeps the write with the latest internal timestamp (last writer wins), and the other is lost. DynamoDB never keeps two versions side by side: one primary key holds one item. Refusing a colliding write is what MRSC (multi-Region strong consistency) does, with `ReplicatedWriteConflictException`, and it can be retried." }
 ---
 
 ## Mở bài
@@ -92,6 +92,8 @@ Singapore: SET stock = 4      Tokyo: SET stock = 4      -> final 4, two items so
 // FIX: send writes for one item to one Region, or use an atomic counter there
 Singapore only: SET stock = stock - 1 (twice)            -> final 3
 ```
+
+Cả hai vùng đọc 5 trước khi lần ghi của vùng kia kịp sang, nên cùng ghi 4; last writer wins giữ một lần, và kho chỉ trừ 1 cho 2 món đã bán.
 
 Tin rằng có thể đổi chế độ sau:
 
@@ -174,6 +176,8 @@ Singapore: SET stock = 4      Tokyo: SET stock = 4      -> final 4, two items so
 // FIX: send writes for one item to one Region, or use an atomic counter there
 Singapore only: SET stock = stock - 1 (twice)            -> final 3
 ```
+
+Both Regions read 5 before the other Region's write arrives, so both write 4; last writer wins keeps one of them, and stock drops by 1 for 2 items sold.
 
 Believing the mode can be switched later:
 

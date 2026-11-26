@@ -136,8 +136,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì shard rải tải. Nhưng khách nhỏ chưa chạm trần của một partition, nên hậu tố chỉ biến một Query thành ba và thêm một bước gộp. Bảng `Tenants` giữ số shard theo từng khách: chỉ khách lớn trả cái giá đọc nhiều shard."
-      en: "It sounds right because shards spread load. But small tenants are nowhere near the ceiling of one partition, so a suffix only turns one Query into three plus a merge. Table `Tenants` keeps the shard count per tenant: only the big tenant pays for reading several shards."
+      vi: "Nghe hợp lý vì shard rải tải ghi. Nhưng shard không làm trang đọc rẻ hơn: 3 sự kiện của `C01` rải ra 3 shard vẫn là 3 sự kiện, chỉ phải gửi 3 Query thay vì một rồi gộp lại. Khách nhỏ chưa chạm trần 1000 WCU (write capacity unit, đơn vị ghi) của một partition, nên hậu tố không cứu gì cho họ. DynamoDB thì không cấm một khách có nhiều partition key: `C09` đang có ba. Bảng `Tenants` giữ số shard theo từng khách: chỉ khách lớn trả cái giá đọc nhiều shard."
+      en: "It sounds right because shards spread the write load. But shards do not make a page cheaper to read: the 3 events of `C01` spread over 3 shards are still 3 events, only now they need 3 Queries instead of one, plus a merge. Small tenants are nowhere near the 1000 WCU (write capacity unit) ceiling of one partition, so a suffix saves them nothing. And DynamoDB does not forbid one tenant several partition keys: `C09` already has three. Table `Tenants` keeps the shard count per tenant: only the big tenant pays for reading several shards."
   - q:
       vi: "Giờ cao điểm, `C09` ghi 2400 sự kiện mỗi giây, mỗi item dưới 1 KB. Với trần 1000 WCU mỗi partition, cần ít nhất bao nhiêu shard?"
       en: "At peak, `C09` writes 2400 events per second, each item under 1 KB. With a ceiling of 1000 WCU per partition, how many shards are needed at least?"
@@ -148,8 +148,8 @@ quiz:
     answer: 2
     trap: 0
     why:
-      vi: "Hai shard nghe đủ vì 2400 / 1000 = 2,4 gần 2, nhưng 1200 WCU vẫn vượt trần 1000. Làm tròn lên: 3 shard, 800 WCU mỗi shard. 24 shard cũng chạy được, nhưng trang \"Mọi sự kiện\" sẽ phải gửi 24 Query."
-      en: "Two shards sound enough because 2400 / 1000 = 2.4 is close to 2, but 1200 WCU is still over the 1000 ceiling. Round up: 3 shards, 800 WCU each. 24 shards would also work, but the \"All events\" page would have to send 24 Queries."
+      vi: "Mỗi item dưới 1 KB nên mỗi lần ghi tốn 1 WCU (write capacity unit, đơn vị ghi): 2400 lần = 2400 WCU mỗi giây. Hai shard nghe đủ vì 2400 / 1000 = 2,4 gần 2, nhưng 2400 / 2 = 1200 WCU mỗi shard vẫn vượt trần 1000, nên phần dư bị throttle. Làm tròn lên: 3 shard, 2400 / 3 = 800 WCU mỗi shard. 24 shard cũng chạy được, nhưng trang \"Mọi sự kiện\" sẽ phải gửi 24 Query thay vì 3."
+      en: "Each item is under 1 KB, so each write costs 1 WCU (write capacity unit): 2400 writes = 2400 WCU per second. Two shards sound enough because 2400 / 1000 = 2.4 is close to 2, but 2400 / 2 = 1200 WCU per shard is still over the 1000 ceiling, so the excess is throttled. Round up: 3 shards, 2400 / 3 = 800 WCU each. 24 shards would also work, but the \"All events\" page would have to send 24 Queries instead of 3."
 ---
 ## Mở bài
 
@@ -240,6 +240,8 @@ Quên hậu tố của khách lớn. Câu sai không tìm thấy gì và không 
     "SK": {"S": "EV#E-2009"}}}}
 ```
 
+Không có item nào mang khóa `TENANT#C09`: mọi sự kiện của `C09` đều có hậu tố, và `E-2009` nằm ở shard 2 vì 2009 chia 3 dư 2. GetItem không tìm thấy khóa thì trả rỗng chứ không báo lỗi, nên lỗi này dễ lọt.
+
 Thêm hậu tố cho mọi khách. Khách `C04` không có shard nào, nên câu sai trả rỗng:
 
 ```json
@@ -262,7 +264,7 @@ Thêm hậu tố cho mọi khách. Khách `C04` không có shard nào, nên câu
     ":p": {"S": "TENANT#C04"}}}}
 ```
 
-Đọc hạng khách trong bảng `Tenants` trước, rồi mới dựng khóa.
+`C04` là khách hạng `standard` với `shards` = 1, nên sự kiện của nó nằm ở `TENANT#C04`, không có `#0`. Đọc hạng khách trong bảng `Tenants` trước, rồi mới dựng khóa.
 
 ## Thực hành
 
@@ -367,6 +369,8 @@ Forgetting the big tenant's suffix. The wrong one finds nothing and raises no er
     "SK": {"S": "EV#E-2009"}}}}
 ```
 
+No item carries the key `TENANT#C09`: every event of `C09` has a suffix, and `E-2009` sits in shard 2 because 2009 modulo 3 is 2. A GetItem that finds no key returns nothing rather than an error, so this mistake slips through easily.
+
 Adding a suffix for every tenant. Tenant `C04` has no shards, so the wrong one returns nothing:
 
 ```json
@@ -389,7 +393,7 @@ Adding a suffix for every tenant. Tenant `C04` has no shards, so the wrong one r
     ":p": {"S": "TENANT#C04"}}}}
 ```
 
-Read the tenant's tier in table `Tenants` first, then build the key.
+`C04` is a `standard` tenant with `shards` = 1, so its events live at `TENANT#C04`, without `#0`. Read the tenant's tier in table `Tenants` first, then build the key.
 
 ## Practice
 

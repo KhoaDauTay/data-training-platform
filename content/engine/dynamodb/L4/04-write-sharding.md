@@ -153,7 +153,7 @@ predict:
 
 ## Ý chính
 
-Khi một partition key nhận quá 1000 WCU mỗi giây, cách AWS khuyên là mở rộng không gian khóa: thêm một hậu tố ngẫu nhiên, ví dụ từ 0 tới N−1, vào sau giá trị khóa. `VOTE#2026-11-20` thành `VOTE#2026-11-20#0` … `VOTE#2026-11-20#7`, và tải ghi trong ngày rải đều qua nhiều partition. Chọn N từ phép tính ở bài 3: tổng WCU của khóa chia cho 1000, cộng thêm phần dư.
+Khi một partition key nhận quá 1000 WCU mỗi giây, cách AWS khuyên là mở rộng không gian khóa: thêm một hậu tố ngẫu nhiên, ví dụ từ 0 tới N−1, vào sau giá trị khóa. `VOTE#2026-11-20` thành `VOTE#2026-11-20#0` … `VOTE#2026-11-20#7`, và tải ghi trong ngày rải đều qua nhiều partition. Chọn N từ phép tính ở bài "Tính xem partition nào sẽ nóng": tổng WCU của khóa chia cho 1000, cộng thêm phần dư.
 
 Giá phải trả nằm ở phía đọc: muốn đọc cả ngày, ứng dụng phải đọc mọi shard (một Query mỗi shard, hoặc một câu PartiQL `WHERE pk IN [...]`) rồi tự gộp kết quả. Hậu tố ngẫu nhiên còn một nhược điểm: muốn đọc một item cụ thể, bạn không biết nó nằm ở shard nào. Bài sau sửa chuyện đó bằng hậu tố tính được.
 
@@ -213,7 +213,7 @@ SELECT * FROM "Votes" WHERE pk IN ['VOTE#2026-11-19#0', 'VOTE#2026-11-19#1']
 {"op": "Query", "input": {"TableName": "Votes", "KeyConditionExpression": "pk = :p", "ExpressionAttributeValues": {":p": {"S": "VOTE#2026-11-20#3"}}}}
 ```
 
-Cùng 6 phiếu, nhưng câu sai có `ScannedCount` 80, câu sửa 6.
+Cùng 6 phiếu, nhưng câu sai có `ScannedCount` 80, câu sửa 6: Scan đọc hết 80 item của bảng rồi mới lọc, còn Query đi thẳng tới partition key `VOTE#2026-11-20#3`. Capacity tính trên số item đã đọc, nên câu sai trả cho 80 item.
 
 Mong `begins_with` gom mọi shard của một ngày trong một Query:
 
@@ -222,7 +222,7 @@ Mong `begins_with` gom mọi shard của một ngày trong một Query:
 {"op": "Query", "input": {"TableName": "Votes", "KeyConditionExpression": "begins_with(pk, :d)", "ExpressionAttributeValues": {":d": {"S": "VOTE#2026-11-20#"}}}}
 ```
 
-Partition key được băm, nên chỉ so bằng được. Liệt kê từng shard bằng `IN`, hoặc gửi N Query.
+DynamoDB băm (hash) giá trị partition key để chọn partition, nên `VOTE#2026-11-20#0` và `VOTE#2026-11-20#1` nằm ở hai chỗ không liền nhau; vì vậy điều kiện trên partition key chỉ nhận `=`, không nhận tiền tố. Liệt kê từng shard bằng `IN`, hoặc gửi N Query.
 
 ## Thực hành
 
@@ -243,7 +243,7 @@ On the final night, one voting day gets 5,000 votes a second, and every vote has
 
 ## Key idea
 
-When one partition key gets more than 1000 WCU per second, the AWS advice is to expand the key space: append a random suffix, for example 0 to N−1, to the key value. `VOTE#2026-11-20` becomes `VOTE#2026-11-20#0` … `VOTE#2026-11-20#7`, and the day's writes spread evenly over many partitions. Pick N with the arithmetic from lesson 3: the key's total WCU divided by 1000, plus headroom.
+When one partition key gets more than 1000 WCU per second, the AWS advice is to expand the key space: append a random suffix, for example 0 to N−1, to the key value. `VOTE#2026-11-20` becomes `VOTE#2026-11-20#0` … `VOTE#2026-11-20#7`, and the day's writes spread evenly over many partitions. Pick N with the arithmetic from the lesson "Work out which partition will run hot": the key's total WCU divided by 1000, plus headroom.
 
 The price is paid on reads: to read the whole day, the application must read every shard (one Query per shard, or one PartiQL statement with `WHERE pk IN [...]`) and merge the results itself. A random suffix has a second drawback: to read one specific item you do not know which shard holds it. The next lesson fixes that with a calculated suffix.
 
@@ -303,7 +303,7 @@ Reading one shard with a filtered Scan:
 {"op": "Query", "input": {"TableName": "Votes", "KeyConditionExpression": "pk = :p", "ExpressionAttributeValues": {":p": {"S": "VOTE#2026-11-20#3"}}}}
 ```
 
-Same 6 votes, but the wrong one has a `ScannedCount` of 80, the fix 6.
+Same 6 votes, but the wrong one has a `ScannedCount` of 80, the fix 6: the Scan reads all 80 items of the table and filters afterwards, while the Query goes straight to the partition key `VOTE#2026-11-20#3`. Capacity is charged on the items read, so the wrong one pays for 80.
 
 Hoping `begins_with` gathers every shard of a day in one Query:
 
@@ -312,7 +312,7 @@ Hoping `begins_with` gathers every shard of a day in one Query:
 {"op": "Query", "input": {"TableName": "Votes", "KeyConditionExpression": "begins_with(pk, :d)", "ExpressionAttributeValues": {":d": {"S": "VOTE#2026-11-20#"}}}}
 ```
 
-The partition key is hashed, so it only supports equality. List each shard with `IN`, or send N Queries.
+DynamoDB hashes the partition key value to pick a partition, so `VOTE#2026-11-20#0` and `VOTE#2026-11-20#1` sit in places that are not next to each other; that is why a partition key condition accepts only `=`, not a prefix. List each shard with `IN`, or send N Queries.
 
 ## Practice
 

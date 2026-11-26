@@ -332,7 +332,7 @@
   solution: 'db.orders.aggregate([{ $match: { store_id: 1, channel: "STORE", status: "PAID" } }, { $lookup: { from: "customers", localField: "customer_id", foreignField: "_id", as: "customer" } }, { $unwind: { path: "$customer", preserveNullAndEmptyArrays: true } }, { $project: { "customer.city": 1 } }])'
   hint: { vi: "Đơn vãng lai có mảng `customer` rỗng; tách mảng mà vẫn giữ chúng.", en: "Walk-in orders have an empty `customer` array; unwind while keeping them." }
   wrong:
-    - { query: 'db.orders.aggregate([{ $match: { store_id: 1, channel: "STORE", status: "PAID" } }, { $lookup: { from: "customers", localField: "customer_id", foreignField: "_id", as: "customer" } }, { $unwind: "$customer" }, { $project: { "customer.city": 1 } }])', vi: "`$unwind` thường bỏ tài liệu có mảng rỗng. Đơn vãng lai không có `customer_id`, nên mảng `customer` rỗng và các đơn đó biến mất.", en: "A plain `$unwind` drops documents with an empty array. Walk-in orders have no `customer_id`, so `customer` is empty and those orders vanish." }
+    - { query: 'db.orders.aggregate([{ $match: { store_id: 1, channel: "STORE", status: "PAID" } }, { $lookup: { from: "customers", localField: "customer_id", foreignField: "_id", as: "customer" } }, { $unwind: "$customer" }, { $project: { "customer.city": 1 } }])', vi: "`$unwind` thường bỏ tài liệu có mảng rỗng. Đơn vãng lai không có `customer_id`, nên mảng `customer` rỗng và các đơn đó biến mất. Cần dạng `$unwind` giữ cả mảng rỗng.", en: "A plain `$unwind` drops documents with an empty array. Walk-in orders have no `customer_id`, so `customer` is empty and those orders vanish. Use the `$unwind` form that keeps empty arrays." }
 - id: e-mg-d-lookup-keep-4
   skill: mg.lookup_keep
   kind: review
@@ -390,7 +390,7 @@
   solution: 'db.orders.aggregate([{ $match: { store_id: 2, channel: "ONLINE", delivered_on: { $ne: null } } }, { $project: { days: { $dateDiff: { startDate: "$order_date", endDate: "$delivered_on", unit: "day" } } } }])'
   hint: { vi: "Có một toán tử đếm khoảng cách hai ngày theo đơn vị bạn chọn.", en: "One operator counts the gap between two dates in the unit you choose." }
   wrong:
-    - { query: 'db.orders.aggregate([{ $match: { store_id: 2, channel: "ONLINE", delivered_on: { $ne: null } } }, { $project: { days: { $subtract: ["$delivered_on", "$order_date"] } } }])', vi: "Trừ hai ngày cho ra mili giây (một ngày là 86400000), nên đơn giao sau 2 ngày có `days` là 172800000 thay vì 2.", en: "Subtracting two dates gives milliseconds (one day is 86400000), so an order delivered after 2 days gets `days` = 172800000 instead of 2." }
+    - { query: 'db.orders.aggregate([{ $match: { store_id: 2, channel: "ONLINE", delivered_on: { $ne: null } } }, { $project: { days: { $subtract: ["$delivered_on", "$order_date"] } } }])', vi: "Trừ hai ngày cho ra mili giây (một ngày là 86400000), nên đơn giao sau 2 ngày có `days` là 172800000 thay vì 2. Cần phép tính khoảng cách theo đơn vị `day`.", en: "Subtracting two dates gives milliseconds (one day is 86400000), so an order delivered after 2 days gets `days` = 172800000 instead of 2. Use a date difference in `day` units." }
 - id: e-mg-d-date-math-4
   skill: mg.date_math
   kind: review
@@ -422,7 +422,7 @@
   ordered: true
   hint: { vi: "Cắt thời điểm về đầu tháng trước khi gộp.", en: "Cut each timestamp to the start of its month before grouping." }
   wrong:
-    - { query: 'db.reviews.aggregate([{ $match: { product_id: 4 } }, { $group: { _id: "$created_at", n: { $sum: 1 } } }, { $sort: { _id: 1 } }])', vi: "Gộp theo chính `created_at`: mỗi thời điểm là một nhóm, nên bạn có một tài liệu cho mỗi đánh giá và mọi `n` bằng 1.", en: "Grouping on `created_at` itself: each timestamp is a group, so you get one document per review and every `n` is 1." }
+    - { query: 'db.reviews.aggregate([{ $match: { product_id: 4 } }, { $group: { _id: "$created_at", n: { $sum: 1 } } }, { $sort: { _id: 1 } }])', vi: "Gộp theo chính `created_at`: mỗi thời điểm là một nhóm, nên bạn có một tài liệu cho mỗi đánh giá và mọi `n` bằng 1. Cắt về đầu tháng rồi mới gộp.", en: "Grouping on `created_at` itself: each timestamp is a group, so you get one document per review and every `n` is 1. Cut to the month start, then group." }
 - id: e-mg-d-date-bucket-4
   skill: mg.date_bucket
   kind: review
@@ -684,7 +684,7 @@
   solution: 'db.reviews.aggregate([{ $match: { source: "import", $expr: { $gte: [{ $toInt: "$legacy.stars" }, 4] } } }, { $project: { legacy: 1 } }])'
   hint: { vi: "Đổi chuỗi sang số trước khi so. So bằng biểu thức trong `$match` cần `$expr`.", en: "Convert the string to a number before comparing. Comparing with an expression inside `$match` needs `$expr`." }
   wrong:
-    - { query: 'db.reviews.aggregate([{ $match: { source: "import", "legacy.stars": { $gte: 4 } } }, { $project: { legacy: 1 } }])', vi: "`legacy.stars` là chuỗi, còn 4 là số. MongoDB không so chuỗi với số, nên không đánh giá nào khớp và kết quả rỗng.", en: "`legacy.stars` is a string while 4 is a number. MongoDB does not compare strings with numbers, so no review matches and the result is empty." }
+    - { query: 'db.reviews.aggregate([{ $match: { source: "import", "legacy.stars": { $gte: 4 } } }, { $project: { legacy: 1 } }])', vi: "`legacy.stars` là chuỗi, còn 4 là số. MongoDB không so chuỗi với số, nên không đánh giá nào khớp và kết quả rỗng. Đổi sang số trước, rồi so trong một biểu thức.", en: "`legacy.stars` is a string while 4 is a number. MongoDB does not compare strings with numbers, so no review matches and the result is empty. Convert to a number first, then compare in an expression." }
 - id: e-mg-d-convert-4
   skill: mg.convert
   kind: review

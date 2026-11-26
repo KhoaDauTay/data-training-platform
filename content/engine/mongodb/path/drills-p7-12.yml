@@ -57,8 +57,8 @@
   hint: { vi: "Phép nối chỉ theo khóa thì không lọc được trạng thái; đưa điều kiện `status` vào pipeline của `$lookup`.", en: "A key-only join cannot filter the status; put the `status` condition into the `$lookup` pipeline." }
   wrong:
     - query: "db.stores.aggregate([{ $lookup: { from: 'orders', localField: '_id', foreignField: 'store_id', as: 'paid' } }, { $project: { _id: 0, name: 1, paid_orders: { $size: '$paid' } } }])"
-      vi: "`localField`/`foreignField` chỉ so khóa, nên gắn mọi đơn của cửa hàng, kể cả đơn hủy và hoàn tiền: `paid_orders` thành tổng số đơn."
-      en: "`localField`/`foreignField` only compares keys, so it attaches every order of the store, cancelled and refunded ones included: `paid_orders` becomes the total order count."
+      vi: "`localField`/`foreignField` chỉ so khóa, nên gắn mọi đơn của cửa hàng, kể cả đơn hủy và hoàn tiền: `paid_orders` thành tổng số đơn. Lọc `status` bên trong pipeline của `$lookup`."
+      en: "`localField`/`foreignField` only compares keys, so it attaches every order of the store, cancelled and refunded ones included: `paid_orders` becomes the total order count. Filter `status` inside the `$lookup` pipeline."
 - id: e-mg-d-lookup-pipeline-4
   skill: mg.lookup_pipeline
   kind: review
@@ -129,8 +129,8 @@
   hint: { vi: "Chỉ cần biết có hay không: giữ khách có `hit` không rỗng, đừng trải mảng ra.", en: "You only need to know whether a match exists: keep customers whose `hit` is not empty, do not spread the array." }
   wrong:
     - query: "db.customers.aggregate([{ $lookup: { from: 'orders', localField: '_id', foreignField: 'customer_id', as: 'o' } }, { $unwind: '$o' }, { $match: { 'o.items.product_id': 21 } }, { $project: { name: 1 } }])"
-      vi: "`$unwind` tạo một tài liệu cho mỗi đơn của khách, rồi `$match` giữ mọi đơn có sản phẩm 21, nên khách mua `Sunscreen` trong hai đơn hiện hai lần."
-      en: "`$unwind` makes one document per order of the customer, then `$match` keeps every order with product 21, so a customer who bought `Sunscreen` in two orders shows up twice."
+      vi: "`$unwind` tạo một tài liệu cho mỗi đơn của khách, rồi `$match` giữ mọi đơn có sản phẩm 21, nên khách mua `Sunscreen` trong hai đơn hiện hai lần. Chỉ cần xem mảng nối có rỗng không."
+      en: "`$unwind` makes one document per order of the customer, then `$match` keeps every order with product 21, so a customer who bought `Sunscreen` in two orders shows up twice. Just check whether the joined array is empty."
 - id: e-mg-d-in-other-4
   skill: mg.in_other
   kind: review
@@ -195,8 +195,8 @@
   hint: { vi: "Hai phép tính phải cùng thấy các đơn đã lọc, nên chạy song song chứ không nối tiếp.", en: "Both computations must see the filtered orders, so they run side by side, not one after the other." }
   wrong:
     - query: "db.orders.aggregate([{ $match: { order_date: { $gte: ISODate('2026-10-01'), $lt: ISODate('2026-11-01') } } }, { $group: { _id: '$status', n: { $sum: 1 } } }, { $sort: { _id: 1 } }, { $group: { _id: null, by_status: { $push: '$$ROOT' }, total: { $sum: 1 } } }])"
-      vi: "`$group` thứ hai chỉ thấy đầu ra của `$group` đầu: mỗi trạng thái một tài liệu. Vì thế `total` đếm số trạng thái chứ không phải số đơn."
-      en: "The second `$group` only sees the output of the first `$group`: one document per status. So `total` counts statuses, not orders."
+      vi: "`$group` thứ hai chỉ thấy đầu ra của `$group` đầu: mỗi trạng thái một tài liệu. Vì thế `total` đếm số trạng thái chứ không phải số đơn. Hai phép tính phải chạy song song trên cùng tập đơn."
+      en: "The second `$group` only sees the output of the first `$group`: one document per status. So `total` counts statuses, not orders. Run both computations side by side on the same orders."
 - id: e-mg-d-facet-4
   skill: mg.facet
   kind: review
@@ -307,8 +307,8 @@
   hint: { vi: "Hai trường phải đến từ cùng một đơn: sắp trước, rồi lấy cả hai từ tài liệu đầu.", en: "Both fields must come from the same order: sort first, then take both from the leading document." }
   wrong:
     - query: "db.orders.aggregate([{ $group: { _id: '$store_id', order_date: { $max: '$order_date' }, order_id: { $max: '$_id' } } }])"
-      vi: "`$max` tính riêng từng trường: ngày lớn nhất và mã lớn nhất có thể thuộc hai đơn khác nhau, nên `order_id` không chắc là mã của đơn ngày `order_date`."
-      en: "`$max` works on each field separately: the latest date and the largest id can belong to two different orders, so `order_id` is not sure to be the id of the order dated `order_date`."
+      vi: "`$max` tính riêng từng trường: ngày lớn nhất và mã lớn nhất có thể thuộc hai đơn khác nhau, nên `order_id` không chắc là mã của đơn ngày `order_date`. Sắp mới nhất trước, rồi lấy cả hai trường từ tài liệu đầu nhóm."
+      en: "`$max` works on each field separately: the latest date and the largest id can belong to two different orders, so `order_id` is not sure to be the id of the order dated `order_date`. Sort newest first, then take both fields from each group's first document."
 - id: e-mg-d-first-per-group-4
   skill: mg.first_per_group
   kind: review
@@ -419,8 +419,8 @@
   hint: { vi: "Ghép hai nguồn giữ cả bản trùng; gộp theo `city` để mỗi thành phố còn một tài liệu.", en: "Stacking two sources keeps duplicates; group on `city` so each city is one document." }
   wrong:
     - query: "db.stores.aggregate([{ $project: { _id: '$city' } }, { $unionWith: { coll: 'customers', pipeline: [{ $match: { city: { $ne: null } } }, { $project: { _id: '$city' } }] } }])"
-      vi: "Ghép thẳng giống UNION ALL: mỗi cửa hàng và mỗi khách góp một tài liệu, nên mỗi khách ở `Da Nang` thêm một tài liệu `Da Nang` nữa và thành phố lặp lại nhiều lần."
-      en: "Stacking alone works like UNION ALL: every store and every customer adds a document, so each customer in `Da Nang` adds one more `Da Nang` document and the city repeats many times."
+      vi: "Ghép thẳng giống UNION ALL: mỗi cửa hàng và mỗi khách góp một tài liệu, nên mỗi khách ở `Da Nang` thêm một tài liệu `Da Nang` nữa và thành phố lặp lại nhiều lần. Gộp theo thành phố sau khi ghép."
+      en: "Stacking alone works like UNION ALL: every store and every customer adds a document, so each customer in `Da Nang` adds one more `Da Nang` document and the city repeats many times. Group by city after stacking."
 - id: e-mg-d-union-with-4
   skill: mg.union_with
   kind: review
@@ -569,8 +569,8 @@
   hint: { vi: "Đừng bắt đầu từ một tháng rồi nối sang tháng kia; ghép hai tháng lại rồi gộp theo sản phẩm.", en: "Do not start from one month and join to the other; stack both months, then group by product." }
   wrong:
     - query: "db.orders.aggregate([{ $match: { store_id: 4, order_date: { $gte: ISODate('2026-09-01'), $lt: ISODate('2026-10-01') } } }, { $unwind: '$items' }, { $group: { _id: '$items.product_id', sep: { $sum: '$items.qty' } } }, { $lookup: { from: 'orders', let: { pid: '$_id' }, pipeline: [{ $match: { store_id: 4, order_date: { $gte: ISODate('2026-10-01'), $lt: ISODate('2026-11-01') } } }, { $unwind: '$items' }, { $match: { $expr: { $eq: ['$items.product_id', '$$pid'] } } }], as: 'o' } }, { $project: { sep: 1, oct: { $sum: '$o.items.qty' } } }])"
-      vi: "Đi từ tháng 9 rồi `$lookup` sang tháng 10 là left join: chỉ sản phẩm có bán trong tháng 9 mới có tài liệu, nên sản phẩm chỉ bán trong tháng 10 biến mất."
-      en: "Starting from September and `$lookup` into October is a left join: only products sold in September get a document, so products sold only in October disappear."
+      vi: "Đi từ tháng 9 rồi `$lookup` sang tháng 10 là left join: chỉ sản phẩm có bán trong tháng 9 mới có tài liệu, nên sản phẩm chỉ bán trong tháng 10 biến mất. Ghép hai tháng rồi gộp theo sản phẩm."
+      en: "Starting from September and `$lookup` into October is a left join: only products sold in September get a document, so products sold only in October disappear. Stack both months, then group by product."
 - id: e-mg-d-full-like-4
   skill: mg.full_like
   kind: review
@@ -1087,8 +1087,8 @@
   hint: { vi: "Khóa tháng phải giữ cả năm: cắt ngày về đầu tháng.", en: "The month key must keep the year: truncate the date to the month start." }
   wrong:
     - query: "db.orders.aggregate([{ $match: { order_date: { $gte: ISODate('2025-10-01'), $lt: ISODate('2026-11-01') } } }, { $group: { _id: { store: '$store_id', month: { $month: '$order_date' } }, count: { $sum: 1 } } }])"
-      vi: "`$month` chỉ trả số 1–12, không có năm: `month` ra 10 chứ không phải ngày đầu tháng, và đơn tháng 10/2025 với tháng 10/2026 sẽ rơi vào cùng một bucket."
-      en: "`$month` only returns a number 1–12, with no year: `month` comes out as 10 instead of the month's first day, and October 2025 and October 2026 orders would land in the same bucket."
+      vi: "`$month` chỉ trả số 1–12, không có năm: `month` ra 10 chứ không phải ngày đầu tháng, và đơn tháng 10/2025 với tháng 10/2026 sẽ rơi vào cùng một bucket. Cắt ngày về đầu tháng để giữ cả năm."
+      en: "`$month` only returns a number 1–12, with no year: `month` comes out as 10 instead of the month's first day, and October 2025 and October 2026 orders would land in the same bucket. Truncate to the month start to keep the year."
 - id: e-mg-d-bucket-pattern-4
   skill: mg.bucket_pattern
   kind: review
