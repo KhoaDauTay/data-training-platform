@@ -5,7 +5,7 @@ import { drillTicket, type Drill, type General } from '../general';
 import type * as Home from '../home';
 import type * as I18n from '../i18n';
 import { learnText, type LearnKey } from '../i18n/learn';
-import { learnPage as drawLearn } from './learnView';
+import { learnPage as drawLearn, placementOf } from './learnView';
 import { initGuides, type GuideDeps } from './guide';
 import { initGuideList, replayBtn } from './guideList';
 import { drillXp } from '../learn';
@@ -278,3 +278,5 @@ export function learnPage(): HTMLElement | undefined {
   const g = d$.generalNow();
   return g && drawLearn(d$, g);
 }
+/** v47 S3 (L911): the entry check's items (learnView placementOf). */
+export const placementList = (g: General): ReturnType<typeof placementOf> => placementOf(d$, g);

@@ -107,6 +107,16 @@ export function startPlacement(items: PracticeItem[]): void {
     ctx?.rerender();
   });
 }
+/**
+ * v47 S3 (L911): the welcome's "I know SQL" starts the entry check from #/learn (its card stays there for a later try). No
+ * items (every Part learned) leaves the player on #/learn; a failed load shows the same banner as the card.
+ */
+export function startEntryCheck(): void {
+  void loadDrillUi().then(async (m) => m.placementList(await m.prepareLab())).then((items) => void (items.length && startPractice(items, false, true)), () => {
+    app.notice = { key: 'learn.failed' };
+    ctx?.rerender();
+  });
+}
 
 export const startSandbox = (): void => enter({ kind: 'sandbox' });
 /**

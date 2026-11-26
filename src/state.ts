@@ -70,7 +70,7 @@ export const actions = {
   complete(_ticket: Ticket): void {},
   retryDb(): void {},
   /** v12.0 P2: the welcome picker's first-visit choice; main.ts seeds only that data. False = the domain did not load (D10-6). */
-  startWith(_c: BootPick): Promise<boolean> { return Promise.resolve(true); },
+  startWith(_c: BootPick, _to?: string): Promise<boolean> { return Promise.resolve(true); },
   copyDiagnostics(): void {},
   /** Replaces the editor text ("Use this example" on a worked ticket). */
   useSql(_sql: string): void {},

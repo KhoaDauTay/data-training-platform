@@ -19,6 +19,7 @@ it('welcome "SQL only" on #/engine keeps the Engine page', async () => {
   await settle();
   expect(openModal()?.id).toBe('welcome-dialog');
   document.querySelector<HTMLElement>('#welcome-dialog [data-w=next]')!.click(); // language step first
+  document.querySelector<HTMLElement>('#welcome-dialog [data-w=next]')!.click(); // v47 S3: the goal step, skipped (analyst)
   document.querySelector<HTMLElement>('#welcome-dialog [data-w="pick-general"]')!.click();
   await settle();
   expect(location.hash).toBe('#/engine');
