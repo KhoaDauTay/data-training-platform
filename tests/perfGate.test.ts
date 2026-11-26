@@ -55,7 +55,10 @@ async function solutions(): Promise<Item[]> {
     add(`${l.id}.try`, `${l.id}.try`, 'lab', l.try.solution);
   }
   const iv = await loadInterview();
-  for (const q of [...iv.sets.flatMap((s) => s.questions), ...iv.takeHomes.flatMap((th) => th.steps)]) add(q.id, q.id, 'lab', q.solution);
+  // v47 (L930): case studies (`cs-lg|ec|fn-…`) ride the take-home list but run on their domain's schema
+  const CASE: Record<string, SchemaId> = { lg: 'game', ec: 'ecom', fn: 'fin' };
+  for (const q of [...iv.sets.flatMap((s) => s.questions), ...iv.takeHomes.flatMap((th) => th.steps)])
+    add(q.id, q.id, CASE[/^cs-(lg|ec|fn)-/.exec(q.id)?.[1] ?? ''] ?? 'lab', q.solution);
   for (const l of engine) if (l.lab && !l.lab.setup) l.lab.steps.forEach((s, i) => add(`${l.id}.s${i + 1}`, `${l.id}.s${i + 1}`, 'lab', s.solution));
   return out;
 }
