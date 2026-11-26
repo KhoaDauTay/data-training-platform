@@ -117,13 +117,16 @@ export function compile(src: string, ctx: Ctx): Compiled {
 /** A model file → the statements that build it (view, table, or an incremental run: create, or insert with delete by key). */
 export function buildModel(src: string, ctx: Ctx & { self: ModelSpec }): string[] {
   const c = compile(src, ctx);
+  // the step's declared materialization wins: a config() that contradicts it is an error (an incremental step stays incremental)
+  if (ctx.self.materialized && c.config.materialized && c.config.materialized !== ctx.self.materialized)
+    throw new DbtError('config-invalid', `config-invalid: ${ctx.self.name} is ${ctx.self.materialized}, not ${c.config.materialized}`);
   const rel = `${ctx.self.layer}.${ctx.self.name}`;
   const mat = c.config.materialized ?? ctx.self.materialized ?? 'view';
   const schema = `CREATE SCHEMA IF NOT EXISTS ${ctx.self.layer}`;
   if (mat === 'view') return [schema, `CREATE OR REPLACE VIEW ${rel} AS\n${c.sql}`];
   if (mat === 'table' || !ctx.exists) return [schema, ...(ctx.exists ? [`DROP TABLE IF EXISTS ${rel}`] : []), `CREATE TABLE ${rel} AS\n${c.sql}`];
   const key = c.config.unique_key;
-  // ponytail: delete+insert by unique_key in one statement (dbt's Postgres adapter does it in two)
+  // ponytail: delete then insert by unique_key, in one statement (data-modifying CTE)
   return key
     ? [`WITH s AS (\n${c.sql}\n), d AS (DELETE FROM ${rel} t USING s WHERE t.${key} = s.${key})\nINSERT INTO ${rel} SELECT * FROM s`]
     : [`INSERT INTO ${rel}\n${c.sql}`];

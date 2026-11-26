@@ -20,6 +20,7 @@ requires: [e-st-l1-01]
 sources:
   - { url: "https://fivetran.com/docs/core-concepts/system-columns-and-tables", title: "Fivetran docs: System columns and tables" }
   - { url: "https://docs.airbyte.com/platform/understanding-airbyte/airbyte-metadata-fields", title: "Airbyte docs: Airbyte metadata fields" }
+  - { url: "https://fivetran.com/docs/core-concepts/sync-modes/history-mode", title: "Fivetran docs: History mode" }
   - https://www.postgresql.org/docs/18/sql-select.html#SQL-DISTINCT
 lab:
   setup: |

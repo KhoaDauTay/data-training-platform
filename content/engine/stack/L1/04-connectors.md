@@ -18,6 +18,7 @@ requires: [e-st-l1-03]
 sources:
   - { url: "https://fivetran.com/docs/core-concepts/system-columns-and-tables", title: "Fivetran docs: System columns and tables" }
   - { url: "https://docs.airbyte.com/platform/using-airbyte/core-concepts/sync-modes", title: "Airbyte docs: Sync modes" }
+  - { url: "https://docs.airbyte.com/platform/using-airbyte/core-concepts/sync-modes/incremental-append", title: "Airbyte docs: Incremental Sync - Append" }
   - https://www.postgresql.org/docs/18/logical-replication.html
 demo_setup: |
   CREATE SCHEMA app;

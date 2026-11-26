@@ -106,6 +106,9 @@ where _fivetran_synced > (select max(_fivetran_synced) from {{ this }})
     // without unique_key the second build appends: order 2 twice, so the check fails
     expect(await runner.check(lab, lab.steps[2], inc.replace(", unique_key='order_id'", ''))).toMatchObject({ ok: false });
     expect(await runner.check(lab, lab.steps[2], 'SELECT 1')).toMatchObject({ ok: false });
+    // the step declares incremental: a config() saying table is refused (a full rebuild would also give the right rows)
+    expect(code(() => buildModel("{{ config(materialized='table') }}\nselect 1", { models, self: model }))).toBe('config-invalid');
+    expect(await runner.check(lab, lab.steps[2], inc.replace("materialized='incremental', unique_key='order_id'", "materialized='table'"))).toMatchObject({ ok: false });
   }, 60_000);
   it('a compile error reaches the player as a coded error', async () => {
     await expect(runner.run(lab, "select * from {{ ref('nope') }}", 0)).rejects.toMatchObject({ code: 'ref-missing' });

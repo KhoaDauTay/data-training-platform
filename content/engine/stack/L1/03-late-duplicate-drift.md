@@ -20,6 +20,7 @@ requires: [e-st-l1-02]
 sources:
   - { url: "https://fivetran.com/docs/core-concepts/system-columns-and-tables", title: "Fivetran docs: System columns and tables" }
   - { url: "https://docs.airbyte.com/platform/understanding-airbyte/airbyte-metadata-fields", title: "Airbyte docs: Airbyte metadata fields" }
+  - { url: "https://docs.airbyte.com/platform/using-airbyte/core-concepts/sync-modes/incremental-append", title: "Airbyte docs: Incremental Sync - Append" }
   - https://www.postgresql.org/docs/18/sql-insert.html
 lab:
   setup: |
