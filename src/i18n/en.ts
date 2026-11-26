@@ -422,7 +422,7 @@ export const en: Record<Key, Msg> = {
   'res.runFirst': 'Run a query ({mod}+Enter) to see the result.',
   'res.stale': 'The SQL has changed — press {mod}+Enter to update.',
   'res.noTable': 'The statement ran and was rolled back (ROLLBACK). No data changed and there is no table to show.',
-  'res.empty': 'The query ran but returned 0 rows — check your WHERE / JOIN conditions.',
+  'res.empty': 'The query ran but returned 0 rows: check your WHERE / JOIN conditions.',
   'res.rows': (p) => `Result: ${count('row', 'rows')(p)}`,
   'res.more': (p) => `+${count('more row', 'more rows')(p)}`,
   'res.shown': (p) => `Result: ${num(p.n)} rows (showing the first ${num(p.max)})`,

@@ -14,7 +14,7 @@ objectives:
     en: Group numbers by business date, not sync date, and find rows that arrived late.
   - vi: Phát hiện bản giao trùng và cộng tiền không bị đếm hai lần.
     en: Spot duplicate deliveries and add up money without counting it twice.
-  - vi: Viết câu không gãy khi nguồn thêm một cột mới.
+  - vi: Viết câu không bị lỗi khi nguồn thêm một cột mới.
     en: Write queries that do not break when the source adds a new column.
 requires: [e-st-l1-02]
 sources:
@@ -133,7 +133,7 @@ quiz:
       vi: "Cộng vào ngày về kho nghe tiện, nhưng làm sai cả hai ngày. Số nghiệp vụ gom theo ngày đặt hàng; dòng trễ nghĩa là ngày cũ phải được tính lại, và báo cáo nên ghi rõ giờ chốt."
       en: "Adding it to the arrival day sounds convenient, but it makes both days wrong. Business numbers group by order date; a late row means the old day must be recomputed, and the report should state its cut-off time."
   - q:
-      vi: "Nguồn thêm cột `voucher_code`. Câu nào trong model dễ gãy nhất?"
+      vi: "Nguồn thêm cột `voucher_code`. Câu nào trong model dễ bị lỗi nhất?"
       en: "The source adds a column `voucher_code`. Which statement in a model breaks most easily?"
     options:
       - { vi: "`INSERT INTO t SELECT * FROM raw`", en: "`INSERT INTO t SELECT * FROM raw`" }
@@ -155,7 +155,7 @@ quiz:
 
 **Trùng.** Nhiều công cụ hứa giao **ít nhất một lần**: khi lỗi mạng, cùng một bản ghi có thể được giao lại với `_airbyte_raw_id` mới. Bỏ trùng theo khóa nghiệp vụ (`payment_id`), không theo id của công cụ.
 
-**Lệch schema.** Khi nguồn thêm cột, công cụ nạp thường thêm cột đó vào bảng raw, và các dòng cũ mang NULL. Câu gọi tên cột vẫn chạy; câu dùng `SELECT *` để đổ vào bảng khác thì gãy. Dùng `coalesce` khi cột mới còn trống ở dữ liệu cũ.
+**Lệch schema.** Khi nguồn thêm cột, công cụ nạp thường thêm cột đó vào bảng raw, và các dòng cũ mang NULL. Câu gọi tên cột vẫn chạy; câu dùng `SELECT *` để đổ vào bảng khác thì bị lỗi. Dùng `coalesce` khi cột mới còn trống ở dữ liệu cũ.
 
 Hình cuối mục cho thấy một ngày nhận thêm đơn sau khi báo cáo đã gửi.
 
@@ -240,7 +240,7 @@ FROM (SELECT DISTINCT ON (payment_id)
   ORDER BY payment_id) p;
 ```
 
-Bảng đích có số cột cũ, nguồn đã thêm một cột: `SELECT *` gãy.
+Bảng đích có số cột cũ, nguồn đã thêm một cột: `SELECT *` bị lỗi.
 
 ```sql
 CREATE TABLE report_orders (
@@ -262,7 +262,7 @@ Năm câu hỏi: doanh thu theo ngày đặt hàng, đơn về trễ, thanh toá
 - Gom số theo ngày nghiệp vụ; ghi giờ chốt và tính lại ngày cũ khi dòng trễ về.
 - "Ít nhất một lần" nghĩa là có thể trùng: bỏ trùng theo khóa nghiệp vụ.
 - Cột mới mang NULL ở dòng cũ: `coalesce` khi cần.
-- Gọi tên cột; `SELECT *` vào một bảng khác sẽ gãy khi nguồn đổi hình dạng.
+- Gọi tên cột; `SELECT *` vào một bảng khác sẽ bị lỗi khi nguồn đổi hình dạng.
 
 # EN
 

@@ -47,8 +47,8 @@ lab:
       ('2026-10-31', 'Facebook', '950,000');
   steps:
     - task:
-        vi: "Viết model `stg_orders` (tầng staging, view) từ nguồn `shop`, bảng `orders`. Trả theo thứ tự: `order_id` (cột `id`), `customer_id` (cột `customer`), `status` viết thường, `amount_vnd`, `order_date` (ngày của `created_at`). Bỏ dòng đã xóa ở nguồn."
-        en: "Write model `stg_orders` (staging layer, a view) from source `shop`, table `orders`. Return in this order: `order_id` (column `id`), `customer_id` (column `customer`), `status` in lower case, `amount_vnd`, `order_date` (the date of `created_at`). Leave out rows deleted at the source."
+        vi: "Viết model `stg_orders` (tầng staging, view) từ nguồn `shop`, bảng `orders`. Trả theo thứ tự: `order_id` (cột `id`), `customer_id` (cột `customer`), `status` viết thường, `amount_vnd`, `order_date` (ngày của `created_at`). Bỏ dòng đã xóa ở nguồn. Lab chấm bằng cách đọc lại `staging.stg_orders` sau khi dựng."
+        en: "Write model `stg_orders` (staging layer, a view) from source `shop`, table `orders`. Return in this order: `order_id` (column `id`), `customer_id` (column `customer`), `status` in lower case, `amount_vnd`, `order_date` (the date of `created_at`). Leave out rows deleted at the source. The lab grades it by reading `staging.stg_orders` back after the build."
       model: { name: stg_orders, layer: staging, materialized: view }
       solution: |
         select
@@ -66,8 +66,8 @@ lab:
         vi: "`from {{ source('shop', 'orders') }}`; đổi tên bằng `as`, `lower(status)`, `created_at::date`, và `where not _fivetran_deleted`."
         en: "`from {{ source('shop', 'orders') }}`; rename with `as`, `lower(status)`, `created_at::date`, and `where not _fivetran_deleted`."
     - task:
-        vi: "Viết model `stg_spend` (staging, view) từ nguồn `mkt`, bảng `spend` (một bảng tính, mọi cột là chữ). Trả: `spend_date` (ngày), `channel` viết thường, `cost_vnd` (số nguyên, bỏ dấu phẩy)."
-        en: "Write model `stg_spend` (staging, a view) from source `mkt`, table `spend` (a spreadsheet, every column is text). Return: `spend_date` (a date), `channel` in lower case, `cost_vnd` (an integer, commas removed)."
+        vi: "Viết model `stg_spend` (staging, view) từ nguồn `mkt`, bảng `spend` (một bảng tính, mọi cột là chữ). Trả: `spend_date` (ngày), `channel` viết thường, `cost_vnd` (số nguyên, bỏ dấu phẩy). Lab chấm bằng cách đọc lại `staging.stg_spend` sau khi dựng."
+        en: "Write model `stg_spend` (staging, a view) from source `mkt`, table `spend` (a spreadsheet, every column is text). Return: `spend_date` (a date), `channel` in lower case, `cost_vnd` (an integer, commas removed). The lab grades it by reading `staging.stg_spend` back after the build."
       model: { name: stg_spend, layer: staging, materialized: view }
       solution: |
         select

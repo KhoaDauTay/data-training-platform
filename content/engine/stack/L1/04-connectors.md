@@ -82,7 +82,7 @@ Một **connector** biết cách đọc một loại nguồn (Postgres, một AP
 
 Có ba cách chép chính. **Chép lại cả bảng** (full refresh) đọc toàn bộ mỗi lần: đơn giản, đúng, nhưng tốn với bảng lớn. **Tăng dần theo con trỏ** (cursor) chỉ lấy dòng có `updated_at` mới hơn lần trước: rẻ, nhưng không thấy dòng bị xóa hẳn. **CDC** (change data capture) đọc nhật ký thay đổi của database, như logical replication của Postgres: thấy cả thêm, sửa và xóa, nên công cụ có thể đánh dấu xóa mềm.
 
-Người phân tích không cần dựng connector, nhưng cần hỏi: bảng này nạp theo cách nào, bao lâu một lần, dòng xóa ở nguồn có hiện trong kho không, và ai nhận báo khi connector hỏng. Hình cuối mục đặt hai cách chép cạnh nhau.
+Người phân tích không cần dựng connector, nhưng cần hỏi: bảng này nạp theo cách nào, bao lâu một lần, dòng xóa ở nguồn có hiện trong kho không, và ai nhận báo khi connector hỏng. Hình cuối mục đi qua ba cách chép, theo dòng 303 đã bị xóa ở nguồn.
 
 ## Ví dụ
 
@@ -170,7 +170,7 @@ A **connector** knows how to read one kind of source (Postgres, a payment API, a
 
 There are three main ways to copy. **Full refresh** reads everything every time: simple and correct, but costly for big tables. **Cursor-based incremental** takes only rows whose `updated_at` is newer than last time: cheap, but blind to hard-deleted rows. **CDC** (change data capture) reads the database's change log, such as Postgres logical replication: it sees inserts, updates and deletes, so the tool can flag soft deletes.
 
-An analyst does not need to build connectors, but should ask: how is this table loaded, how often, do rows deleted at the source show in the warehouse, and who gets the alert when the connector breaks. The figure at the end of this section puts two ways of copying side by side.
+An analyst does not need to build connectors, but should ask: how is this table loaded, how often, do rows deleted at the source show in the warehouse, and who gets the alert when the connector breaks. The figure at the end of this section walks through the three ways of copying, following row 303, deleted at the source.
 
 ## Example
 

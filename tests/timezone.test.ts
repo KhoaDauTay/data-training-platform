@@ -1,10 +1,12 @@
 // v45 S-00 (stack-eye): result cells print as Postgres prints them, whatever the viewer's time zone. PGlite parses `timestamp`
 // as local wall-clock time, so a UTC-based formatter showed 22:00 as 15:00 in Vietnam. This file runs in Asia/Ho_Chi_Minh.
-process.env.TZ = 'Asia/Ho_Chi_Minh';
 import { describe, expect, it } from 'vitest';
 import { runLabScript } from '../src/engine/pglab/session';
 import { grade } from '../src/grader';
 import { formatCell } from '../src/ui/resultTable';
+
+// Node reads TZ on every Date call, so setting it here (imports are hoisted) still moves this file to UTC+7, also on a UTC CI runner.
+(globalThis as unknown as { process: { env: Record<string, string> } }).process.env.TZ = 'Asia/Ho_Chi_Minh';
 
 const SQL = `SELECT timestamp '2026-10-30 22:00' AS ts, timestamp '2026-03-01' AS midnight,
   timestamp '2026-08-31 23:59:59.999' AS frac, date '2026-03-01' AS d,

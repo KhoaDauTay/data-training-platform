@@ -17,7 +17,7 @@ nodes:
   - { id: el, label: { vi: "công cụ nạp", en: "ingestion tool" }, sub: "Fivetran, Airbyte" }
   - { id: raw, mono: true, label: raw_shop, sub: { vi: "bản chép nguyên", en: "plain copy" } }
   - { id: stg, mono: true, label: staging, sub: { vi: "làm sạch nguồn", en: "cleans a source" } }
-  - { id: mart, mono: true, label: marts, sub: { vi: "fact và dimension", en: "facts, dimensions" } }
+  - { id: mart, mono: true, label: marts, sub: { vi: "sự kiện và chiều", en: "facts, dimensions" } }
   - { id: bi, label: dashboard, sub: { vi: "người phân tích", en: "the analyst" } }
 rows:
   - [app, pay, sheet]

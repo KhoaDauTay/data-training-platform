@@ -61,6 +61,8 @@ export interface ResultOpts {
   types?: boolean;
   /** V22-B (L206): a control in each row's number cell (`whyCell`, src/ui/whyButton.ts); `span` = cells in a row. */
   why?: (row: unknown[], span: number) => Node;
+  /** v45 S-05: false = no "0 rows, check WHERE/JOIN" line (a dbt-style test lesson, where 0 rows means the test passes). */
+  empty?: false;
 }
 
 /**
@@ -99,7 +101,7 @@ export function renderResult(r: QueryResult, mark?: unknown[], limit = MAX_ROWS,
       h('span', { class: 'text-display tabular-nums' }, formatCell(r.rows[0][0], r.types[0])))
     : null;
   return h('div', { class: cx('result', fill && 'flex min-h-0 flex-1 flex-col') },
-    r.rows.length === 0 ? h('p', { class: 'muted' }, t('res.empty')) : null,
+    r.rows.length === 0 && opts.empty !== false ? h('p', { class: 'muted' }, t('res.empty')) : null,
     one,
     // V20-C: keyboard-scrollable (axe). v21 U9: the frame hugs the table (no empty boxed half); in the Result tab it takes the rows'
     // height and shrinks to the panel (flex 0 1 auto), so it scrolls only when the rows do not fit.

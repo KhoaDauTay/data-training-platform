@@ -37,8 +37,8 @@ lab:
       (4, 'pending', 300000, '2026-10-31', '2026-10-31 01:00');
   steps:
     - task:
-        vi: "Model `fct_orders` (marts) dạng incremental với khóa `order_id`: trả `order_id`, `status`, `amount_vnd`, `order_date`, `_fivetran_synced` từ nguồn `shop`, bảng `orders`. Khi chạy lại, chỉ lấy dòng có `_fivetran_synced` mới hơn mức lớn nhất đã có trong chính model."
-        en: "Model `fct_orders` (marts) as incremental with key `order_id`: return `order_id`, `status`, `amount_vnd`, `order_date`, `_fivetran_synced` from source `shop`, table `orders`. On later runs, take only rows whose `_fivetran_synced` is newer than the largest one already in the model itself."
+        vi: "Model `fct_orders` (marts) dạng incremental với khóa `order_id`: trả `order_id`, `status`, `amount_vnd`, `order_date`, `_fivetran_synced` từ nguồn `shop`, bảng `orders`. Khi chạy lại, chỉ lấy dòng có `_fivetran_synced` mới hơn mức lớn nhất đã có trong chính model. Lab chấm bằng cách đọc lại `marts.fct_orders` sau khi dựng."
+        en: "Model `fct_orders` (marts) as incremental with key `order_id`: return `order_id`, `status`, `amount_vnd`, `order_date`, `_fivetran_synced` from source `shop`, table `orders`. On later runs, take only rows whose `_fivetran_synced` is newer than the largest one already in the model itself. The lab grades it by reading `marts.fct_orders` back after the build."
       model: { name: fct_orders, layer: marts, materialized: incremental }
       solution: |
         {{ config(materialized='incremental', unique_key='order_id') }}
@@ -57,8 +57,8 @@ lab:
         vi: "Dòng đầu: `{{ config(materialized='incremental', unique_key='order_id') }}`. Bộ lọc nằm giữa `{% if is_incremental() %}` và `{% endif %}`, đọc mức lớn nhất từ `{{ this }}`. Lần chạy đầu, khối đó bị bỏ qua."
         en: "First line: `{{ config(materialized='incremental', unique_key='order_id') }}`. The filter sits between `{% if is_incremental() %}` and `{% endif %}`, reading the largest value from `{{ this }}`. On the first run that block is skipped."
     - task:
-        vi: "Lần đồng bộ 06:00 ngày 31 mang về: đơn 2 đổi sang `refunded`, và đơn 5 mới (`paid`, 70000, ngày đặt 2026-10-29, về trễ). Ghi vào `raw_shop.orders` như connector làm: thêm mới, hoặc cập nhật `status` và `_fivetran_synced` nếu `order_id` đã có. Thời điểm đồng bộ là `2026-10-31 06:00`."
-        en: "The 06:00 sync on 31 Oct brings: order 2 changes to `refunded`, and a new order 5 (`paid`, 70000, ordered 2026-10-29, arriving late). Write it into `raw_shop.orders` as the connector does: insert, or update `status` and `_fivetran_synced` when the `order_id` exists. The sync time is `2026-10-31 06:00`."
+        vi: "Lần đồng bộ 06:00 ngày 31 mang về: đơn 2 đổi sang `refunded`, và đơn 5 mới (`paid`, 70000, ngày đặt 2026-10-29, về trễ). Ghi vào `raw_shop.orders` như connector làm: thêm mới, hoặc cập nhật `status` và `_fivetran_synced` nếu `order_id` đã có. Thời điểm đồng bộ là `2026-10-31 06:00`. Kết quả hiện `raw_shop.orders` đọc lại sau câu của bạn; mỗi lần chạy bắt đầu từ dữ liệu chuẩn bị, và các bước sau chạy lại câu này trước."
+        en: "The 06:00 sync on 31 Oct brings: order 2 changes to `refunded`, and a new order 5 (`paid`, 70000, ordered 2026-10-29, arriving late). Write it into `raw_shop.orders` as the connector does: insert, or update `status` and `_fivetran_synced` when the `order_id` exists. The sync time is `2026-10-31 06:00`. The result shows `raw_shop.orders` read back after your statement; every run starts from the prepared data, and later steps replay this statement first."
       solution: |
         INSERT INTO raw_shop.orders VALUES
           (2, 'refunded', 120000,
@@ -76,8 +76,8 @@ lab:
         vi: "`INSERT … ON CONFLICT (order_id) DO UPDATE SET status = EXCLUDED.status, _fivetran_synced = EXCLUDED._fivetran_synced`."
         en: "`INSERT … ON CONFLICT (order_id) DO UPDATE SET status = EXCLUDED.status, _fivetran_synced = EXCLUDED._fivetran_synced`."
     - task:
-        vi: "Chạy lại đúng model `fct_orders` của bước 1. Lần này model đã tồn tại, nên chỉ hai dòng mới được lấy và đơn 2 được thay chứ không bị nhân đôi."
-        en: "Run the same `fct_orders` model from step 1 again. This time the model exists, so only the two new rows are taken and order 2 is replaced, not doubled."
+        vi: "Chạy lại đúng model `fct_orders` của bước 1. Lần này model đã tồn tại, nên chỉ hai dòng mới được lấy và đơn 2 được thay chứ không bị nhân đôi. Lab chấm bằng cách đọc lại `marts.fct_orders` sau khi dựng."
+        en: "Run the same `fct_orders` model from step 1 again. This time the model exists, so only the two new rows are taken and order 2 is replaced, not doubled. The lab grades it by reading `marts.fct_orders` back after the build."
       model: { name: fct_orders, layer: marts, materialized: incremental }
       solution: |
         {{ config(materialized='incremental', unique_key='order_id') }}

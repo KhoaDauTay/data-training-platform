@@ -113,6 +113,34 @@ where _fivetran_synced > (select max(_fivetran_synced) from {{ this }})
   it('a compile error reaches the player as a coded error', async () => {
     await expect(runner.run(lab, "select * from {{ ref('nope') }}", 0)).rejects.toMatchObject({ code: 'ref-missing' });
   }, 60_000);
+
+  // v45 stack-eye fixes (S-01–S-04), on the same lab and a two-step staging lab
+  const vi = pgScriptRunner({ grade, verdict: (x) => JSON.stringify(x).slice(0, 300), lang: () => 'vi' }, { run: runLabScript, reset: () => undefined });
+  const stg: Lab = {
+    setup,
+    steps: [
+      { task: { vi: 'a', en: 'a' }, hint: { vi: 'a', en: 'a' }, check: 'rows', ordered: true, solution: "select order_id, amount from {{ source('shop', 'orders') }}", model: { name: 'stg_orders', layer: 'staging' }, after: 'SELECT order_id, amount FROM staging.stg_orders ORDER BY order_id' },
+      { task: { vi: 'b', en: 'b' }, hint: { vi: 'b', en: 'b' }, check: 'rows', ordered: false, solution: "select sum(amount) as total from {{ ref('stg_orders') }}" },
+    ],
+  };
+  it('S-01: hard-coded names and a missing incremental filter are refused, with the reason', async () => {
+    expect(await vi.check(stg, stg.steps[0], 'select order_id, amount from raw_shop.orders')).toMatchObject({ ok: false, reason: 'wrong', message: expect.stringContaining("source('shop', 'orders')") });
+    expect(await vi.check(stg, stg.steps[1], 'select sum(amount) as total from staging.stg_orders')).toMatchObject({ ok: false, message: expect.stringContaining("ref('stg_orders')") });
+    const noFilter = inc.replace(/\{% if is_incremental\(\) %\}[\s\S]*\{% endif %\}/, '');
+    expect(await vi.check(lab, lab.steps[0], noFilter)).toMatchObject({ ok: false, message: expect.stringContaining('is_incremental') });
+    expect(await vi.check(lab, lab.steps[2], noFilter)).toMatchObject({ ok: false });
+    expect(await vi.check(stg, stg.steps[1], stg.steps[1].solution)).toMatchObject({ ok: true });
+  }, 60_000);
+  it('S-04: a source() typo is source-missing, explained in VI with line and column', async () => {
+    await expect(vi.run(stg, "select * from {{ source('shopp', 'orders') }}", 0)).rejects.toMatchObject({ code: 'source-missing', message: expect.stringMatching(/^dòng 1, cột 15: Không có nguồn "shopp\.orders"\. Các nguồn của lab: shop\.orders\.$/) });
+    await expect(vi.run(stg, "select {{ var('x') }}", 0)).rejects.toMatchObject({ code: 'jinja-unsupported', message: expect.stringContaining('BoonData chỉ hiểu') });
+  }, 60_000);
+  it('S-03: a model missing a column names the check and the model\'s own columns', async () => {
+    await expect(vi.run(stg, "select order_id from {{ source('shop', 'orders') }}", 0)).rejects.toMatchObject({ code: '42703', message: expect.stringMatching(/staging\.stg_orders.*có các cột: order_id\..*SELECT order_id, amount FROM staging\.stg_orders/) });
+  }, 60_000);
+  it('S-02: Run on a sync step (a write with after:) shows the read-back rows', async () => {
+    expect(await vi.run(lab, lab.steps[1].solution, 1)).toMatchObject({ rows: [[4]] });
+  }, 60_000);
 });
 
 describe('wiring: routes, Save ids, XP, badges', () => {

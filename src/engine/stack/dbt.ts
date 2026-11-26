@@ -10,10 +10,11 @@ export type Layer = (typeof LAYERS)[number];
 export const MATERIALIZED = ['view', 'table', 'incremental'] as const;
 export type Materialized = (typeof MATERIALIZED)[number];
 export interface ModelSpec { name: string; layer: Layer; materialized?: Materialized }
-export type DbtCode = 'jinja-unsupported' | 'ref-missing' | 'ref-cycle' | 'config-invalid' | 'this-outside-model';
+export type DbtCode = 'jinja-unsupported' | 'ref-missing' | 'source-missing' | 'ref-cycle' | 'config-invalid' | 'this-outside-model';
 
 export class DbtError extends Error {
-  constructor(readonly code: DbtCode, message: string, readonly line = 1, readonly col = 1, readonly position?: number) {
+  /** `params`: what the VI/EN explanation names (src/engine/stack/text.ts): `what`, `name`, `list`, `want`. */
+  constructor(readonly code: DbtCode, message: string, readonly line = 1, readonly col = 1, readonly position?: number, readonly params: Record<string, string> = {}) {
     super(message);
     this.name = 'DbtError';
   }
@@ -40,10 +41,10 @@ function tagsOf(src: string): Tag[] {
   return out;
 }
 
-function err(src: string, at: number, code: DbtCode, what: string): DbtError {
+function err(src: string, at: number, code: DbtCode, what: string, params: Record<string, string> = { what }): DbtError {
   const before = src.slice(0, at).split('\n');
   const line = before.length, col = before[before.length - 1].length + 1;
-  return new DbtError(code, `${code} at ${line}:${col}: ${what}`, line, col, at + 1);
+  return new DbtError(code, `${code} at ${line}:${col}: ${what}`, line, col, at + 1, params);
 }
 
 export interface Config { materialized?: Materialized; unique_key?: string }
@@ -67,6 +68,8 @@ export interface Ctx {
   self?: ModelSpec;
   /** the model already exists (an earlier step built it): `is_incremental()` is true for an incremental model. */
   exists?: boolean;
+  /** v45 S-04: the raw tables the lab has (`s.t`); when given, a `source()` outside it is `source-missing`. */
+  sources?: ReadonlySet<string>;
 }
 export interface Compiled { sql: string; refs: string[]; sources: [string, string][]; config: Config }
 
@@ -97,11 +100,12 @@ export function compile(src: string, ctx: Ctx): Compiled {
       const name = r[1] ?? r[2];
       if (ctx.self && name === ctx.self.name) throw err(src, t.at, 'ref-cycle', `${name} refs itself (use {{ this }})`);
       const layer = ctx.models[name];
-      if (!layer) throw err(src, t.at, 'ref-missing', `no model ${name}`);
+      if (!layer) throw err(src, t.at, 'ref-missing', `no model ${name}`, { name, list: Object.keys(ctx.models).filter((m) => m !== ctx.self?.name).join(', ') || '-' });
       refs.push(name);
       sql += `${layer}.${name}`;
     } else if (s) {
       const [sn, tn] = [s[1] ?? s[2], s[3] ?? s[4]];
+      if (ctx.sources && !ctx.sources.has(`${sn}.${tn}`)) throw err(src, t.at, 'source-missing', `no source ${sn}.${tn}`, { name: `${sn}.${tn}`, list: [...ctx.sources].join(', ') });
       sources.push([sn, tn]);
       sql += `raw_${sn}.${tn}`;
     } else if (t.body === 'this') {
@@ -119,7 +123,7 @@ export function buildModel(src: string, ctx: Ctx & { self: ModelSpec }): string[
   const c = compile(src, ctx);
   // the step's declared materialization wins: a config() that contradicts it is an error (an incremental step stays incremental)
   if (ctx.self.materialized && c.config.materialized && c.config.materialized !== ctx.self.materialized)
-    throw new DbtError('config-invalid', `config-invalid: ${ctx.self.name} is ${ctx.self.materialized}, not ${c.config.materialized}`);
+    throw new DbtError('config-invalid', `config-invalid: ${ctx.self.name} is ${ctx.self.materialized}, not ${c.config.materialized}`, 1, 1, undefined, { what: `materialized='${c.config.materialized}'`, want: ctx.self.materialized });
   const rel = `${ctx.self.layer}.${ctx.self.name}`;
   const mat = c.config.materialized ?? ctx.self.materialized ?? 'view';
   const schema = `CREATE SCHEMA IF NOT EXISTS ${ctx.self.layer}`;
@@ -138,6 +142,30 @@ export function modelsOf(setup?: string): Record<string, Layer> {
   for (const m of (setup ?? '').matchAll(/\bCREATE\s+(?:OR\s+REPLACE\s+)?(?:VIEW|TABLE)\s+(staging|intermediate|marts)\.([a-z_][a-z0-9_]*)/gi))
     out[m[2].toLowerCase()] = m[1].toLowerCase() as Layer;
   return out;
+}
+
+/** Raw tables a setup created (`CREATE TABLE raw_<s>.<t>`), as `s.t`: what `source()` may name. */
+export const sourcesOf = (setup?: string): Set<string> =>
+  new Set([...(setup ?? '').matchAll(/\bCREATE\s+TABLE\s+raw_([a-z_][a-z0-9_]*)\.([a-z_][a-z0-9_]*)/gi)].map((m) => `${m[1].toLowerCase()}.${m[2].toLowerCase()}`));
+
+/**
+ * v45 S-01: what a file calls, without resolving anything: its `ref()` and `source()` names and whether it has an
+ * `{% if is_incremental() %}` block that reads `{{ this }}` (the incremental filter). Undefined when the Jinja does not parse.
+ */
+export function callsOf(src: string): { refs: string[]; sources: string[]; filter: boolean } | undefined {
+  let tags: Tag[];
+  try { tags = tagsOf(src); } catch { return undefined; }
+  const refs: string[] = [], sources: string[] = [];
+  let open = false, filter = false;
+  for (const t of tags) {
+    const r = REF.exec(t.body), s = SOURCE.exec(t.body);
+    if (r) refs.push(r[1] ?? r[2]);
+    else if (s) sources.push(`${s[1] ?? s[2]}.${s[3] ?? s[4]}`);
+    else if (t.kind === '{%' && /^if\s+is_incremental\(\s*\)$/.test(t.body)) open = true;
+    else if (t.kind === '{%' && t.body === 'endif') open = false;
+    else if (open && t.body === 'this') filter = true;
+  }
+  return { refs, sources, filter };
 }
 
 /** The refs of a model file (no resolution). */
@@ -192,9 +220,11 @@ export const isDbtLab = (steps: readonly StepLike[]): boolean =>
  */
 export function compileStep(setup: string | undefined, steps: readonly StepLike[], i: number, code: string): string[] {
   const models = modelsOf(setup);
+  const raw = sourcesOf(setup);
+  const sources = raw.size ? raw : undefined;
   const exists = new Set(Object.keys(models));
   for (const s of steps.slice(0, i)) if (s.model) { models[s.model.name] = s.model.layer; exists.add(s.model.name); }
   const self = steps[i]?.model;
-  if (!self) return [compile(code, { models }).sql];
-  return buildModel(code, { models: { ...models, [self.name]: self.layer }, self, exists: exists.has(self.name) });
+  if (!self) return [compile(code, { models, sources }).sql];
+  return buildModel(code, { models: { ...models, [self.name]: self.layer }, self, exists: exists.has(self.name), sources });
 }

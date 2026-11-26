@@ -19,16 +19,18 @@ rows:
   - [rep]
 edges:
   - { from: s1, to: day }
-  - { from: s2, to: day }
+  - { id: late, from: s2, to: day }
   - { from: day, to: rep }
 steps:
   - say: { vi: "06:00: báo cáo chốt với một đơn của ngày 30.", en: "06:00: the report closes with one order for 30 Oct." }
     alt: { vi: "Lúc báo cáo chốt, kho mới có đơn 203 của ngày 30, vì lần đồng bộ kế tiếp chưa chạy.", en: "When the report closes the warehouse holds only order 203 for 30 Oct, because the next sync has not run yet." }
+    show: [s1, s2, day, rep]
     set:
       s1: { tone: live }
       rep: { tone: live }
   - say: { vi: "11:00: đơn 204 về, ngày 30 đổi số.", en: "11:00: order 204 arrives and 30 Oct changes." }
     alt: { vi: "Lần đồng bộ 11:00 mang đơn 204 thuộc ngày 30, nên tổng ngày 30 đổi và báo cáo đã gửi không còn đúng.", en: "The 11:00 sync brings order 204, which belongs to 30 Oct, so that day's total changes and the report already sent is no longer right." }
+    show: [s1, s2, day, rep, late]
     set:
       s2: { tone: new }
       day: { sub: { vi: "2 đơn", en: "2 orders" }, tone: new }

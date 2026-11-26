@@ -88,8 +88,8 @@ lab:
         vi: "`left join` sang `{{ ref('stg_customers') }}` rồi giữ dòng có `c.customer_id is null`."
         en: "`left join` to `{{ ref('stg_customers') }}`, then keep rows where `c.customer_id is null`."
     - task:
-        vi: "Sửa model `stg_orders` (staging, bảng) từ nguồn `shop`, bảng `orders`: mỗi `order_id` giữ bản mới nhất theo `_airbyte_extracted_at`, và `status` được cắt khoảng trắng rồi viết thường. Giữ cột: `order_id`, `customer_id`, `status`, `amount_vnd`, `_airbyte_extracted_at`. Lab chấm bằng cách chạy lại hai test đầu (phải ra 0) và đếm đơn."
-        en: "Fix model `stg_orders` (staging, a table) from source `shop`, table `orders`: keep the newest version of each `order_id` by `_airbyte_extracted_at`, with `status` trimmed and lower-cased. Keep the columns `order_id`, `customer_id`, `status`, `amount_vnd`, `_airbyte_extracted_at`. The lab grades it by rerunning the first two tests (they must give 0) and counting orders."
+        vi: "Sửa model `stg_orders` (staging, bảng) từ nguồn `shop`, bảng `orders`: mỗi `order_id` giữ bản mới nhất theo `_airbyte_extracted_at`, và `status` được cắt khoảng trắng rồi viết thường. Giữ cột: `order_id`, `customer_id`, `status`, `amount_vnd`, `_airbyte_extracted_at`. Lab chấm bằng một bảng ba cột: `dupes` và `bad_status` (số dòng hỏng của hai test đầu) phải là 0, `order_count` là số đơn."
+        en: "Fix model `stg_orders` (staging, a table) from source `shop`, table `orders`: keep the newest version of each `order_id` by `_airbyte_extracted_at`, with `status` trimmed and lower-cased. Keep the columns `order_id`, `customer_id`, `status`, `amount_vnd`, `_airbyte_extracted_at`. The lab grades it with a three-column table: `dupes` and `bad_status` (the failing rows of the first two tests) must be 0, `order_count` is the number of orders."
       model: { name: stg_orders, layer: staging, materialized: table }
       solution: |
         {{ config(materialized='table') }}
@@ -160,7 +160,8 @@ models:
         data_tests:
           - accepted_values:
               arguments:
-                values: [paid, pending]
+                values: [paid, pending,
+                  shipped, cancelled]
 ```
 
 ```sql
@@ -227,12 +228,13 @@ FROM staging.stg_orders;
 ```
 
 ```sql
--- FIX: one row per order, then sum
+-- FIX: newest row per order, then sum
 SELECT sum(amount_vnd) AS revenue_vnd
 FROM (SELECT DISTINCT ON (order_id)
     order_id, amount_vnd
   FROM staging.stg_orders
-  ORDER BY order_id) o;
+  ORDER BY order_id,
+    _airbyte_extracted_at DESC) o;
 ```
 
 ## Thực hành
@@ -273,7 +275,8 @@ models:
         data_tests:
           - accepted_values:
               arguments:
-                values: [paid, pending]
+                values: [paid, pending,
+                  shipped, cancelled]
 ```
 
 ```sql
@@ -340,12 +343,13 @@ FROM staging.stg_orders;
 ```
 
 ```sql
--- FIX: one row per order, then sum
+-- FIX: newest row per order, then sum
 SELECT sum(amount_vnd) AS revenue_vnd
 FROM (SELECT DISTINCT ON (order_id)
     order_id, amount_vnd
   FROM staging.stg_orders
-  ORDER BY order_id) o;
+  ORDER BY order_id,
+    _airbyte_extracted_at DESC) o;
 ```
 
 ## Practice

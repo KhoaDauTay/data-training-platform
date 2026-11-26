@@ -36,8 +36,8 @@ lab:
       (5, 14, 'pending', 60000, '2026-10-31 01:05', false);
   steps:
     - task:
-        vi: "Doanh thu các đơn đã trả tiền còn ở nguồn, đọc thẳng bảng raw: trả một cột `revenue_vnd`. Trạng thái viết lẫn chữ hoa, chữ thường."
-        en: "Revenue of paid orders still at the source, read straight from the raw table: return one column `revenue_vnd`. The status mixes upper and lower case."
+        vi: "Doanh thu các đơn đã trả tiền còn ở nguồn, đọc thẳng bảng raw (ở đây bạn tự làm hai việc của staging): trả một cột `revenue_vnd`. Trạng thái viết lẫn chữ hoa, chữ thường."
+        en: "Revenue of paid orders still at the source, read straight from the raw table (here you do the two staging jobs yourself): return one column `revenue_vnd`. The status mixes upper and lower case."
       solution: |
         SELECT sum(amount_vnd) AS revenue_vnd
         FROM raw_shop.orders

@@ -47,8 +47,8 @@ lab:
       (14, 'An Wood', 'basic', false);
   steps:
     - task:
-        vi: "Model `stg_orders` (staging, view) từ nguồn `shop`, bảng `orders`: trả `order_id`, `customer_id`, `status`, `amount_vnd`, `order_date` (ngày của `created_at`), bỏ dòng đã xóa ở nguồn."
-        en: "Model `stg_orders` (staging, a view) from source `shop`, table `orders`: return `order_id`, `customer_id`, `status`, `amount_vnd`, `order_date` (the date of `created_at`), leaving out rows deleted at the source."
+        vi: "Model `stg_orders` (staging, view) từ nguồn `shop`, bảng `orders`: trả `order_id`, `customer_id`, `status`, `amount_vnd`, `order_date` (ngày của `created_at`), bỏ dòng đã xóa ở nguồn. Lab chấm bằng cách đọc lại `staging.stg_orders` sau khi dựng."
+        en: "Model `stg_orders` (staging, a view) from source `shop`, table `orders`: return `order_id`, `customer_id`, `status`, `amount_vnd`, `order_date` (the date of `created_at`), leaving out rows deleted at the source. The lab grades it by reading `staging.stg_orders` back after the build."
       model: { name: stg_orders, layer: staging }
       solution: |
         select id as order_id,
@@ -64,8 +64,8 @@ lab:
         vi: "Như bài trước: `from {{ source('shop', 'orders') }}` và `where not _fivetran_deleted`."
         en: "As in the previous lesson: `from {{ source('shop', 'orders') }}` and `where not _fivetran_deleted`."
     - task:
-        vi: "Model `stg_customers` (staging, view) từ nguồn `shop`, bảng `customers`: trả `customer_id` (cột `id`), `name`, `tier` viết thường, bỏ dòng đã xóa."
-        en: "Model `stg_customers` (staging, a view) from source `shop`, table `customers`: return `customer_id` (column `id`), `name`, `tier` in lower case, leaving out deleted rows."
+        vi: "Model `stg_customers` (staging, view) từ nguồn `shop`, bảng `customers`: trả `customer_id` (cột `id`), `name`, `tier` viết thường, bỏ dòng đã xóa. Lab chấm bằng cách đọc lại `staging.stg_customers` sau khi dựng."
+        en: "Model `stg_customers` (staging, a view) from source `shop`, table `customers`: return `customer_id` (column `id`), `name`, `tier` in lower case, leaving out deleted rows. The lab grades it by reading `staging.stg_customers` back after the build."
       model: { name: stg_customers, layer: staging }
       solution: |
         select id as customer_id, name,
@@ -79,8 +79,8 @@ lab:
         vi: "`lower(tier) as tier` vì nguồn viết lẫn `GOLD` và `Gold`."
         en: "`lower(tier) as tier` because the source mixes `GOLD` and `Gold`."
     - task:
-        vi: "Model `fct_orders` (marts, bảng) ghép hai model staging bằng `ref()`: mỗi đơn một dòng, trả `order_id`, `order_date`, `customer_id`, `tier`, `status`, `amount_vnd`."
-        en: "Model `fct_orders` (marts, a table) joins the two staging models with `ref()`: one row per order, returning `order_id`, `order_date`, `customer_id`, `tier`, `status`, `amount_vnd`."
+        vi: "Model `fct_orders` (marts, bảng) ghép hai model staging bằng `ref()`: mỗi đơn một dòng, trả `order_id`, `order_date`, `customer_id`, `tier`, `status`, `amount_vnd`. Lab chấm bằng cách đọc lại `marts.fct_orders` sau khi dựng."
+        en: "Model `fct_orders` (marts, a table) joins the two staging models with `ref()`: one row per order, returning `order_id`, `order_date`, `customer_id`, `tier`, `status`, `amount_vnd`. The lab grades it by reading `marts.fct_orders` back after the build."
       model: { name: fct_orders, layer: marts, materialized: table }
       solution: |
         {{ config(materialized='table') }}
@@ -143,7 +143,7 @@ Mart doanh thu theo hạng khách ở Chợ Lồng Đèn cần hai model staging
 
 ## Ý chính
 
-Mỗi `{{ ref('m') }}` trong một model là một **cạnh** của đồ thị: model `m` phải được dựng trước model đang viết. Gom mọi cạnh lại, ta có một **DAG** (đồ thị có hướng, không vòng). Công cụ sắp xếp tô pô DAG đó để ra thứ tự chạy: model không phụ thuộc ai chạy trước, mart chạy sau cùng. Model không phụ thuộc nhau có thể chạy song song.
+Mỗi `{{ ref('m') }}` trong một model là một **cạnh** của đồ thị: model `m` phải được dựng trước model đang viết. Gom mọi cạnh lại, ta có một **DAG** (đồ thị có hướng, không vòng). Công cụ sắp các model theo phụ thuộc trong DAG đó để ra thứ tự chạy: model không phụ thuộc ai chạy trước, mart chạy sau cùng. Model không phụ thuộc nhau có thể chạy song song.
 
 DAG có hai lỗi. **Ref tới model không có** (gõ sai tên, hay model chưa được viết): ở đây là `ref-missing`. **Vòng lặp** (A cần B, B cần A, hay một model `ref` chính nó): ở đây là `ref-cycle`; model muốn đọc chính nó thì dùng `{{ this }}`. Cả hai bị bắt khi dịch, trước khi một câu SQL nào chạy.
 
@@ -231,7 +231,7 @@ Ba model theo đúng thứ tự (hai staging, một mart là bảng), rồi mộ
 ## Tóm tắt
 
 - Mỗi `ref()` là một cạnh; các cạnh tạo thành một DAG.
-- Thứ tự chạy = sắp xếp tô pô của DAG; model độc lập chạy song song được.
+- Thứ tự chạy = sắp theo phụ thuộc trong DAG; model độc lập chạy song song được.
 - `ref-missing` và `ref-cycle` bị bắt khi dịch, trước khi chạy.
 - Đọc chính mình thì dùng `{{ this }}`, không `ref()`.
 

@@ -797,7 +797,7 @@ function labView(l: EngineLesson, v: Visit): HTMLElement {
         h('details', {}, h('summary', { class: 'cursor-pointer text-body-sm font-semibold text-accent-ink' }, et('lab.hint')), h('p', { class: 'mt-2 mb-0 text-body-sm' }, ...inline(s.hint[lang()]))),
         h('p', { role: 'status', 'data-ek': `${key}-status`, class: cls.cx('m-0 text-body-sm', msg ? (msg.ok ? 'good' : 'bad') : '') }, ...inline(msg?.text ?? '')),
         s.fact && passed ? h('p', { class: 'm-0 rounded-(--r-inset) bg-good-soft p-3 text-body-sm ring-1 ring-good-line' }, h('b', {}, `${et('lab.fact')}: `), ...inline(s.fact[lang()])) : null,
-        out ? h('div', { class: 'overflow-x-auto', tabindex: '0' }, shown ? d.renderResult(shown, undefined, undefined, onPg(l.engine) ? undefined : et(l.engine === 'mongodb' ? 'res.docs' : 'res.items', { n: shown.rows.length })) : d.errorView((out as { error: unknown }).error, false)) : null,
+        out ? h('div', { class: 'overflow-x-auto', tabindex: '0' }, shown ? d.renderResult(shown, undefined, undefined, onPg(l.engine) ? undefined : et(l.engine === 'mongodb' ? 'res.docs' : 'res.items', { n: shown.rows.length }), l.engine === 'stack' ? { empty: false } : undefined) : d.errorView((out as { error: unknown }).error, false)) : null,
         shown ? R().metaView(d, shown) : null,
         shown ? N()?.stepEnd(d, s, shown, passed, key) : null,
         shown ? R().insideView(d, vizSlot, shown, `${key}-inside`) : null,

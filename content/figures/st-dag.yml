@@ -3,8 +3,8 @@
 # Source: https://docs.getdbt.com/reference/dbt-jinja-functions/ref
 title: { vi: "Đồ thị phụ thuộc của lab", en: "The lab's dependency graph" }
 caption:
-  vi: "Mỗi ref() là một mũi tên: model ở đầu mũi tên chạy sau. Hai model staging không phụ thuộc nhau nên chạy song song được."
-  en: "Each ref() is an arrow: the model at the arrowhead runs later. The two staging models do not depend on each other, so they can run in parallel."
+  vi: "Mỗi ref() hay source() là một mũi tên; model ở mũi nhọn chạy sau. Hai model staging không phụ thuộc nhau nên chạy song song được."
+  en: "Each ref() or source() is an arrow; the model at the arrowhead runs later. The two staging models do not depend on each other, so they can run in parallel."
 alt:
   vi: "Mỗi ref() trong một model là một cạnh, và các cạnh xếp thành đồ thị không vòng từ bảng raw tới mart. Vì fct_orders đọc cả hai model staging, nó chỉ chạy được khi cả hai đã xong."
   en: "Each ref() in a model is an edge, and the edges form a graph with no cycle from the raw tables to the mart. Because fct_orders reads both staging models, it can only run once both are done."
