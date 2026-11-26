@@ -62,6 +62,22 @@ describe('axe-core (v15 Q10)', () => {
     expect(await problems()).toEqual([]);
   });
 
+  it('v42 (L700–L703): a figure\'s "Giải thích sơ đồ" opened: point, data table with caption and column headers', async () => {
+    await visit('#/learn/skill/select');
+    const block = (): HTMLDetailsElement | null => document.querySelector('figure[data-fig] details[data-fig-alt]');
+    await vi.waitFor(() => expect(block()?.querySelector('table caption')).not.toBeNull(), { timeout: 20_000 });
+    const d = block()!;
+    d.open = true;
+    d.querySelectorAll('details').forEach((x) => (x.open = true));
+    expect(d.querySelector('summary')?.textContent).toBe('Giải thích sơ đồ');
+    const svg = d.closest('figure')!.querySelector('svg')!;
+    const point = document.getElementById(svg.getAttribute('aria-labelledby')!.split(' ')[1])!;
+    expect(point.textContent).toMatch(/SELECT name, city/);
+    expect(point.querySelector('table')).toBeNull(); // the svg's name is the point, never the data
+    expect(d.querySelectorAll('table th[scope=col]').length).toBe(4);
+    expect(await problems()).toEqual([]);
+  });
+
   it('dialog: the full lesson contents sheet (v24 R0)', async () => {
     await visit('#/learn/skill/select');
     await vi.waitFor(() => expect(document.querySelector('[data-fl-bar] button[aria-haspopup=dialog]')).not.toBeNull(), { timeout: 20_000 });

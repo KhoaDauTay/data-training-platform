@@ -689,9 +689,10 @@ export function altText(spec: FigSpec, lang: Lang, variant?: string): string[] {
  * figure before its first step; only grids some frame shows. */
 export function altTables(spec: FigSpec, lang: Lang, variant?: string): FigTable[] {
   const ps = plans(spec, lang, variant);
-  const ns = (ps.length === 1 ? ps[0].nodes : merge(spec.nodes, variantOf(spec, variant)?.set)).filter((n) => n.shape === 'grid' && ps.some((p) => p.show.has(n.id)));
+  const ns = (ps.length === 1 ? ps[0].nodes : merge(spec.nodes, variantOf(spec, variant)?.set)).filter((n) => (n.shape === 'grid' || n.shape === 'bars') && ps.some((p) => p.show.has(n.id)));
   return ns.map((n, i) => ({ caption: tr(n.label, lang) || tr(n.sub, lang) || `${WORDS[lang].table}${ns.length > 1 ? ` ${i + 1}` : ''}`,
-    head: (n.head ?? []).map((c) => tr(c, lang)), rows: (n.cells ?? []).map((r) => r.map((c) => tr(c, lang))) }));
+    head: (n.head ?? []).map((c) => tr(c, lang)),
+    rows: n.cells?.map((r) => r.map((c) => tr(c, lang))) ?? (n.items ?? []).map((it) => [tr(it.label, lang), tr(it.note, lang) || String(it.value)]) })); // bars: label, value
 }
 // ── mounting ───────────────────────────────────────────────────────────────────────────────────────────────────
 const SPECS = import.meta.glob<FigSpec>('../../../content/figures/*.yml', { import: 'default' });

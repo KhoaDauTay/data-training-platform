@@ -10,8 +10,8 @@ caption:
   vi: "$lookup là left outer join: mọi khách còn lại, mảng orders có thể rỗng. Thêm $unwind mà không để ý thì thành inner join: khách không có đơn biến mất, không báo lỗi. Mỗi dòng của bảng bên phải là một tài liệu đầu ra."
   en: "$lookup is a left outer join: every customer stays and the orders array may be empty. Add $unwind without care and it becomes an inner join: a customer with no order vanishes, with no error. Each row of the right-hand table is one output document."
 alt:
-  vi: "Bốn khách An, Binh, Chi, Dung và các đơn của họ, qua ba cách viết pipeline: $lookup, $lookup rồi $unwind, và $unwind có preserveNullAndEmptyArrays."
-  en: "Four customers, An, Binh, Chi and Dung, and their orders, through three pipelines: $lookup, $lookup then $unwind, and $unwind with preserveNullAndEmptyArrays."
+  vi: "$lookup là left outer join: khách không có đơn vẫn còn, chỉ có mảng orders rỗng. $unwind không tạo tài liệu cho mảng rỗng, nên nó lặng lẽ biến phép nối thành inner join, trừ khi bật preserveNullAndEmptyArrays."
+  en: "$lookup is a left outer join: a customer with no order stays, just with an empty orders array. $unwind makes no document for an empty array, so it quietly turns the join into an inner join, unless preserveNullAndEmptyArrays is on."
 nodes:
   - id: lk
     shape: grid
@@ -33,11 +33,11 @@ edges:
   - { from: lk, to: uw, label: $unwind }
 steps:
   - say: { vi: "$lookup là left outer join: ai cũng còn, mảng có thể rỗng.", en: "$lookup is a left outer join: everyone stays, the array may be empty." }
-    alt: { vi: "Sau $lookup, bốn khách đều còn, mỗi người có mảng orders: An có đơn 1 và 2, Binh có đơn 3, Chi có đơn 4, Dung có mảng rỗng.", en: "After $lookup all four customers remain, each with an orders array: An has orders 1 and 2, Binh has order 3, Chi has order 4, Dung has an empty array." }
+    alt: { vi: "Sau $lookup cả 4 khách đều còn, mỗi người kèm mảng orders của mình; Dung chưa mua gì nên mảng rỗng.", en: "After $lookup all 4 customers remain, each with their own orders array; Dung has bought nothing, so the array is empty." }
     show: [lk]
   - say: { vi: "$unwind không tạo tài liệu cho mảng rỗng: Dung biến mất, không báo lỗi.", en: "$unwind makes no document for an empty array: Dung vanishes without an error." }
-    alt: { vi: "$unwind: \"$orders\" tách mỗi phần tử thành một tài liệu: An đơn 1, An đơn 2, Binh đơn 3, Chi đơn 4, tổng 4 tài liệu. Mảng của Dung rỗng nên không ra tài liệu nào: Dung không ra tài liệu nào, không có lỗi.", en: "$unwind: \"$orders\" turns each element into a document: An order 1, An order 2, Binh order 3, Chi order 4, 4 documents in all. Dung's array is empty, so no document comes out: Dung has no document, with no error." }
+    alt: { vi: "$unwind tách mỗi đơn thành một tài liệu (4 tài liệu), còn mảng rỗng của Dung không cho ra tài liệu nào, nên Dung biến mất mà không báo lỗi.", en: "$unwind turns each order into its own document (4 documents), and Dung's empty array gives none, so Dung vanishes without an error." }
   - say: { vi: "Giữ lại bằng preserveNullAndEmptyArrays.", en: "Keep it with preserveNullAndEmptyArrays." }
-    alt: { vi: "Với preserveNullAndEmptyArrays: true, Dung quay lại thành tài liệu thứ năm, không có trường orders. Kết quả giống LEFT JOIN: 5 tài liệu.", en: "With preserveNullAndEmptyArrays: true, Dung comes back as a fifth document with no orders field. The result is like a LEFT JOIN: 5 documents." }
+    alt: { vi: "Bật preserveNullAndEmptyArrays: true thì Dung quay lại thành tài liệu thứ 5 không có trường orders, giống LEFT JOIN trong SQL.", en: "Turn on preserveNullAndEmptyArrays: true and Dung comes back as a 5th document with no orders field, like a LEFT JOIN in SQL." }
     set:
       uw: { label: { vi: "$unwind + preserve", en: "$unwind + preserve" }, sub: { vi: "5 tài liệu, có Dung", en: "5 documents, Dung kept" }, cells: [[An, "1"], [An, "2"], [Binh, "3"], [Chi, "4"], [Dung, { vi: "(không có trường)", en: "(no field)" }]], cellTone: { "4:1": live } }

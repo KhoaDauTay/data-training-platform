@@ -9,8 +9,8 @@ caption:
   vi: "Bạn trả tiền theo ScannedCount, số item đã đọc, không theo Count, số item trả về. Query đi thẳng tới item collection của C-01 theo thứ tự sort key; Scan đọc cả 120 item rồi mới lọc."
   en: "You pay for ScannedCount, the items read, not for Count, the items returned. Query goes straight to C-01's item collection in sort-key order; Scan reads all 120 items, then filters."
 alt:
-  vi: "Bảng Orders có 120 item. Item collection của C-01 có 4 đơn theo thứ tự sort key orderId: 2026-07-28#O-101, 2026-08-28#O-102, 2026-09-17#O-103, 2026-10-19#O-104; 116 item còn lại thuộc khách khác."
-  en: "Table Orders has 120 items. C-01's item collection holds 4 orders in sort-key order of orderId: 2026-07-28#O-101, 2026-08-28#O-102, 2026-09-17#O-103, 2026-10-19#O-104; the other 116 items belong to other customers."
+  vi: "Bạn trả tiền theo số item đã đọc (ScannedCount), không theo số item trả về (Count). Query đi thẳng tới item collection của một partition key, còn Scan đọc cả bảng rồi mới lọc, nên cùng 4 đơn mà tốn gấp 30 lần."
+  en: "You pay for the items read (ScannedCount), not the items returned (Count). Query goes straight to one partition key's item collection, while Scan reads the whole table and filters afterwards, so the same 4 orders cost 30 times as much."
 nodes:
   - { id: q, label: Query, sub: "customerId = C-01", tone: new }
   - { id: s, label: Scan + Filter, sub: "customerId = C-01", tone: warm }
@@ -28,11 +28,11 @@ edges:
   - { from: s, to: tb }
 steps:
   - say: { vi: "Query đi thẳng tới một item collection, theo thứ tự sort key.", en: "Query goes straight to one item collection, in sort-key order." }
-    alt: { vi: "Query với customerId = C-01 chỉ đọc 4 item của C-01: ScannedCount 4, Count 4.", en: "A Query with customerId = C-01 reads only C-01's 4 items: ScannedCount 4, Count 4." }
+    alt: { vi: "Query với customerId = C-01 chỉ mở item collection của C-01 và đọc 4 item theo thứ tự sort key: ScannedCount 4, Count 4.", en: "A Query with customerId = C-01 opens only C-01's item collection and reads its 4 items in sort-key order: ScannedCount 4, Count 4." }
     show: [q, c1, rest, cnt]
   - say: { vi: "Scan đọc mọi item rồi mới lọc; bạn trả tiền cho 120.", en: "Scan reads every item, then filters; you pay for 120." }
     show: [s, c1, rest, cnt]
-    alt: { vi: "Scan với bộ lọc customerId = C-01 đọc cả 120 item, gồm 116 item của khách khác, rồi bỏ chúng sau khi đọc. Kết quả vẫn là 4 đơn của C-01: ScannedCount 120, Count 4.", en: "A Scan with the filter customerId = C-01 reads all 120 items, including the 116 of other customers, and drops them after reading. The result is still C-01's 4 orders: ScannedCount 120, Count 4." }
+    alt: { vi: "Scan với bộ lọc customerId = C-01 phải đọc cả 120 item rồi mới bỏ 116 item của khách khác, nên vẫn trả 4 đơn nhưng tính tiền cho 120: ScannedCount 120, Count 4.", en: "A Scan with the filter customerId = C-01 must read all 120 items before dropping the 116 of other customers, so it still returns 4 orders but bills for 120: ScannedCount 120, Count 4." }
     set:
       rest: { sub: { vi: "116: đọc rồi bỏ", en: "116: read, dropped" }, tone: warm }
       cnt: { label: ScannedCount 120, tone: warm }
@@ -44,5 +44,5 @@ variants:
       vi: "Query chỉ đọc item có cùng partition key, theo thứ tự sort key; ScannedCount bằng số item của collection đó."
       en: "Query reads only the items with one partition key, in sort-key order; ScannedCount equals the size of that collection."
     alt:
-      vi: "Bảng Orders có 120 item. Query với customerId = C-01 đi thẳng tới item collection của C-01 và đọc 4 đơn theo thứ tự orderId: 2026-07-28#O-101, 2026-08-28#O-102, 2026-09-17#O-103, 2026-10-19#O-104. 116 item của khách khác không bị đọc: ScannedCount 4, Count 4."
-      en: "Table Orders has 120 items. A Query with customerId = C-01 goes straight to C-01's item collection and reads 4 orders in orderId order: 2026-07-28#O-101, 2026-08-28#O-102, 2026-09-17#O-103, 2026-10-19#O-104. The 116 items of other customers are not read: ScannedCount 4, Count 4."
+      vi: "Query với customerId = C-01 đi thẳng tới item collection của C-01 và đọc 4 đơn theo thứ tự sort key orderId. 116 item của khách khác không bị đọc, nên ScannedCount cũng chỉ là 4."
+      en: "A Query with customerId = C-01 goes straight to C-01's item collection and reads its 4 orders in orderId sort-key order. The 116 items of other customers are never read, so ScannedCount is only 4 as well."

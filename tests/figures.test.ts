@@ -202,11 +202,11 @@ describe.each(Object.keys(specs))('v39 figure %s', (name) => {
         const tables = altTables(spec, lang, variant);
         const v = variant === undefined ? undefined : spec.variants?.[variant];
         const shown = new Set(v?.step !== undefined ? spec.steps?.[v.step].show ?? spec.nodes.map((n) => n.id) : v?.show ?? spec.nodes.map((n) => n.id));
-        const grids = spec.nodes.filter((n) => n.shape === 'grid' && (v?.step !== undefined || v?.show ? shown.has(n.id) : true));
+        const grids = spec.nodes.filter((n) => (n.shape === 'grid' || n.shape === 'bars') && (v?.step !== undefined || v?.show ? shown.has(n.id) : true));
         expect(tables.length, `${lang} bảng dữ liệu`).toBe(grids.length);
         for (const [i, t] of tables.entries()) {
           expect(t.caption, lang).not.toBe('');
-          expect(t.rows.length, `${lang} ${t.caption}`).toBe(grids[i].cells?.length ?? 0);
+          expect(t.rows.length, `${lang} ${t.caption}`).toBe(grids[i].cells?.length ?? grids[i].items?.length ?? 0);
         }
         if (PENDING.has(name)) continue; // rewritten by the v42 ER branch (coordinator passes the new alts on)
         for (const s of steps) expect(sentences(s), `${lang}: ${s}`).toHaveLength(1);
@@ -431,7 +431,7 @@ const PENDING = new Set(['ds-er-to-tables', 'ds-cardinality']);
 const MAX_SENTENCE = 220;
 /** Sentences: a stop (. ! ? …) then a space and a capital or digit, so `o.order_date` and `IS NULL` never split one. */
 function sentences(s: string): string[] {
-  return s.trim().split(/(?<=[.!?…])\s+(?=[\p{Lu}\d"“(])/u).filter(Boolean);
+  return s.trim().split(/(?<=[.!?…])\s+(?=[\p{Lu}\d"“($])/u).filter(Boolean); // `$unwind …` starts a sentence too
 }
 /** Every grid row the spec can draw (base, step and variant patches), as its identifying cell texts: a value found in ≥ 3
  * rows of its grid (TRUE, NULL, a status) is a category, not a row's identity, and is left out. */

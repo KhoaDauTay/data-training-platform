@@ -7,8 +7,8 @@ caption:
   vi: "x NOT IN (danh sách) là một chuỗi phép <> nối bằng AND. Một phép so với NULL ra NULL, nên cả chuỗi không bao giờ TRUE."
   en: "x NOT IN (list) is a chain of <> joined by AND. A comparison with NULL gives NULL, so the whole chain is never TRUE."
 alt:
-  vi: "Danh sách mã khách có đơn từ 20/10 gồm 87 dòng: 2, 4, 5, 6, … và 5 dòng NULL. Thử khách 3, người không có trong danh sách: 3 <> 2 là TRUE, 3 <> 4 là TRUE, nhưng 3 <> NULL là NULL. Nối bằng AND, TRUE AND NULL ra NULL chứ không ra TRUE, nên khách 3 bị bỏ. Mọi khách đều gặp cùng chuyện: NOT IN trả 0 dòng, còn NOT EXISTS, vốn xét từng cặp, trả 235 dòng."
-  en: "The list of customer ids with an order since 20 Oct has 87 rows: 2, 4, 5, 6, … and 5 NULL rows. Try customer 3, who is not in the list: 3 <> 2 is TRUE, 3 <> 4 is TRUE, but 3 <> NULL is NULL. Joined with AND, TRUE AND NULL gives NULL, not TRUE, so customer 3 is dropped. Every customer meets the same fate: NOT IN returns 0 rows, while NOT EXISTS, which checks pairs, returns 235 rows."
+  vi: "x NOT IN (danh sách) là một chuỗi phép <> nối bằng AND, và chỉ cần danh sách có một NULL thì phép x <> NULL ra NULL, kéo cả chuỗi thành NULL chứ không bao giờ TRUE. Vì vậy NOT IN trả 0 dòng, kể cả cho khách 3 không có trong danh sách; NOT EXISTS xét từng cặp nên không bị NULL ảnh hưởng và trả 235 dòng."
+  en: "x NOT IN (list) is a chain of <> joined by AND, and one NULL in the list is enough: x <> NULL gives NULL, which makes the whole chain NULL, never TRUE. So NOT IN returns 0 rows, even for customer 3 who is not in the list; NOT EXISTS checks pairs, is not affected by the NULL, and returns 235 rows."
 nodes:
   - id: list
     shape: grid

@@ -9,8 +9,8 @@ caption:
   vi: "Mỗi dòng đề xuất được so với khóa duy nhất: chưa có thì thêm, đã có thì sửa (hoặc bỏ qua, nếu viết DO NOTHING). EXCLUDED là dòng đề xuất."
   en: "Each proposed row is checked against the unique key: missing means insert, present means update (or skip, with DO NOTHING). EXCLUDED is the proposed row."
 alt:
-  vi: "Hai dòng đề xuất cho cửa hàng 5: tháng 06/2026 với 8 triệu, tháng 12/2026 với 9,5 triệu. Mỗi dòng đi qua câu hỏi: khóa (store_id, month) đã có chưa? Tháng 6 chưa có, nên INSERT thêm dòng mới. Tháng 12 đã có 9 triệu, nên DO UPDATE sửa thành 9,5 triệu, lấy số từ EXCLUDED, tức dòng đề xuất. Nếu câu viết DO NOTHING thay cho DO UPDATE, dòng tháng 12 bị bỏ qua. RETURNING trả 2 dòng."
-  en: "Two proposed rows for store 5: June 2026 with 8 million, December 2026 with 9.5 million. Each row meets one question: does the key (store_id, month) exist? June does not, so INSERT adds a new row. December already holds 9 million, so DO UPDATE changes it to 9.5 million, taking the number from EXCLUDED, the proposed row. Had the statement said DO NOTHING instead of DO UPDATE, the December row would be skipped. RETURNING gives 2 rows."
+  vi: "ON CONFLICT quyết định riêng cho từng dòng đề xuất, dựa vào khóa duy nhất (store_id, month): khóa chưa có thì thêm dòng mới, đã có thì DO UPDATE sửa dòng cũ bằng số lấy từ EXCLUDED, tức dòng đề xuất. Viết DO NOTHING thay cho DO UPDATE thì dòng trùng khóa chỉ bị bỏ qua, không báo lỗi."
+  en: "ON CONFLICT decides separately for each proposed row, by the unique key (store_id, month): a missing key means a new row, an existing one means DO UPDATE sets the old row to the number from EXCLUDED, the proposed row. Write DO NOTHING instead of DO UPDATE and a row with a clashing key is simply skipped, with no error."
 nodes:
   - { id: p1, label: { vi: "5 · 06/2026", en: "5 · Jun 2026" }, sub: { vi: "8 triệu", en: "8M" } }
   - { id: p2, label: { vi: "5 · 12/2026", en: "5 · Dec 2026" }, sub: { vi: "9,5 triệu", en: "9.5M" } }

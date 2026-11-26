@@ -6,8 +6,8 @@ caption:
   vi: "Hàm cửa sổ thêm một cột tính trên một tập dòng mà không bỏ dòng nào."
   en: "A window function adds a column computed over a set of rows without removing any row."
 alt:
-  vi: "Bảng số đơn mỗi ngày của Ben Thanh, 6 dòng: 25/10 có 4, 27/10 có 2, 28/10 có 6, 29/10 có 4, 30/10 có 4, 31/10 có 2."
-  en: "Ben Thanh's orders per day, 6 rows: 25 Oct 4, 27 Oct 2, 28 Oct 6, 29 Oct 4, 30 Oct 4, 31 Oct 2."
+  vi: "GROUP BY và hàm cửa sổ cùng tính tổng, nhưng GROUP BY gộp các dòng thành một, còn OVER đặt kết quả cạnh từng dòng nên không mất chi tiết nào. Thêm ORDER BY vào OVER thì cửa sổ chỉ tới dòng hiện tại, cho tổng lũy kế."
+  en: "GROUP BY and a window function both compute a sum, but GROUP BY folds the rows into one, while OVER puts the result next to each row, so no detail is lost. Add ORDER BY inside OVER and the window stops at the current row, giving a running total."
 nodes:
   - id: t
     shape: grid
@@ -31,12 +31,13 @@ rows:
   - [t, x]
 steps:
   - say: { vi: "GROUP BY gộp 6 dòng thành 1: mất chi tiết từng ngày.", en: "GROUP BY folds 6 rows into 1: the per-day detail is gone." }
+    alt: { vi: "sum(n) với GROUP BY gộp 6 ngày thành một dòng tổng 22, nên không còn biết từng ngày bán bao nhiêu.", en: "sum(n) with GROUP BY folds the 6 days into one row with the total 22, so you can no longer see what each day sold." }
   - say: { vi: "OVER () tính trên cả bảng nhưng đặt kết quả cạnh từng dòng.", en: "OVER () computes over all rows but puts the result next to each row." }
-    alt: { vi: "SUM(n) OVER () đặt tổng 22 cạnh từng dòng; vẫn đủ 6 dòng.", en: "SUM(n) OVER () puts the total 22 next to every row; still 6 rows." }
+    alt: { vi: "SUM(n) OVER () vẫn tính tổng trên cả bảng nhưng đặt số 22 cạnh từng dòng, nên vẫn đủ 6 dòng.", en: "SUM(n) OVER () still sums over all rows but puts 22 next to each row, so all 6 rows remain." }
     set:
       x: { label: "OVER ()", cells: [["22"], ["22"], ["22"], ["22"], ["22"], ["22"]], sub: { vi: "cả bảng, mỗi dòng", en: "all rows, each row" } }
   - say: { vi: "Có ORDER BY, cửa sổ chỉ tới dòng hiện tại: tổng lũy kế.", en: "With ORDER BY, the window stops at the current row: a running total." }
-    alt: { vi: "SUM(n) OVER (ORDER BY order_date) cho tổng lũy kế 4, 6, 12, 16, 20, 22. Với dòng 28/10, cửa sổ gồm ba dòng từ 25/10 tới 28/10, nên ra 12.", en: "SUM(n) OVER (ORDER BY order_date) gives the running total 4, 6, 12, 16, 20, 22. For the 28 Oct row the window holds the three rows from 25 Oct to 28 Oct, so it shows 12." }
+    alt: { vi: "Với OVER (ORDER BY order_date), cửa sổ của mỗi dòng chỉ gồm các dòng tới nó, nên dòng 28/10 cộng ba ngày đầu thành 12: tổng lũy kế.", en: "With OVER (ORDER BY order_date) each row's window holds only the rows up to it, so the 28 Oct row adds the first three days to 12: a running total." }
     set:
       t: { rowTone: [new, new, new] }
       x:
