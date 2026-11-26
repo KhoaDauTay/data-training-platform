@@ -1,0 +1,41 @@
+# TM-2 (v47 Telemetry R1, L1042): counter, gauge, histogram from the same worker. Lesson: e-tm-l1-02 (Ý chính).
+# Data = the lab: jobs_done_total 100/130/150/190, queue_depth 5/12/3/8, job_seconds buckets 120/170/185/190 (per bucket 120/50/15/5).
+# Source: https://prometheus.io/docs/concepts/metric_types/
+title: { vi: "Ba loại metric của một worker", en: "Three metric types from one worker" }
+caption:
+  vi: "Counter chỉ tăng, gauge lên xuống, histogram chia job theo thời gian chạy; số trong ngăn là ngăn này trừ ngăn trước."
+  en: "The counter only rises, the gauge goes up and down, the histogram splits jobs by duration; each bucket's count is this bucket minus the previous one."
+alt:
+  vi: "Ba loại metric đọc theo ba cách: counter lấy hiệu hai lần đọc, gauge lấy lần đọc mới nhất, histogram trừ ngăn trước để ra số trong từng ngăn. Kết quả: 90 job xong, hàng đợi đang là 8, 120 job chạy không quá 0,5 giây."
+  en: "The three metric types are read three ways: a counter by the difference of two readings, a gauge by its newest reading, a histogram by subtracting the previous bucket. Result: 90 jobs done, the queue is 8 now, 120 jobs took at most 0.5 seconds."
+nodes:
+  - id: counter
+    shape: bars
+    label: jobs_done_total
+    sub: counter
+    items:
+      - { label: "10:00", value: 5, note: "100" }
+      - { label: "10:01", value: 6.5, note: "130" }
+      - { label: "10:02", value: 7.5, note: "150" }
+      - { label: "10:03", value: 9.5, note: "190", tone: new }
+  - id: gauge
+    shape: bars
+    label: queue_depth
+    sub: gauge
+    items:
+      - { label: "10:00", value: 5, note: "5" }
+      - { label: "10:01", value: 12, note: "12" }
+      - { label: "10:02", value: 3, note: "3" }
+      - { label: "10:03", value: 8, note: "8", tone: new }
+  - id: hist
+    shape: bars
+    label: job_seconds
+    sub: { vi: "histogram, mỗi ngăn", en: "histogram, per bucket" }
+    items:
+      - { label: "≤ 0.5 s", value: 6, note: "120" }
+      - { label: "≤ 1 s", value: 2.5, note: "50" }
+      - { label: "≤ 2 s", value: 0.75, note: "15" }
+      - { label: "+Inf", value: 0.25, note: "5" }
+rows:
+  - [counter, gauge]
+  - [hist]

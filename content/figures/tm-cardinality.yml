@@ -1,0 +1,29 @@
+# TM-3 (v47 Telemetry R1, L1042): series = the product of the labels' value counts. Lesson: e-tm-l1-03 (Ý chính).
+# Data = the lab: http_requests_total (route 3, method 2, code 3 = 18), http_requests_by_user_total (route 3, user_id 500 = 1,500).
+# Source: https://prometheus.io/docs/practices/naming/
+title: { vi: "Số series là một phép nhân", en: "Series count is a multiplication" }
+caption:
+  vi: "Mỗi tổ hợp nhãn là một series; một nhãn 500 giá trị nhân số series lên 500 lần."
+  en: "Each label combination is a series; one label with 500 values multiplies the series by 500."
+alt:
+  vi: "Số series tối đa của một metric là tích số giá trị của từng nhãn, nên một nhãn có nhiều giá trị như mã người dùng làm số series bùng nổ. Kết quả: 18 series cho ba nhãn nhỏ, 1.500 series khi có user_id."
+  en: "A metric's most series is the product of each label's value count, so one label with many values such as a user id makes the series explode. Result: 18 series for three small labels, 1,500 series with user_id."
+nodes:
+  - id: small
+    shape: grid
+    mono: true
+    label: { vi: "request", en: "requests" }
+    head: [label, values]
+    cells: [[route, "3"], [method, "2"], [code, "3"]]
+  - id: big
+    shape: grid
+    mono: true
+    label: { vi: "request theo user", en: "requests by user" }
+    head: [label, values]
+    cells: [[route, "3"], [user_id, "500"]]
+    rowTone: [null, warm]
+  - { id: n1, shape: note, label: { vi: "3 × 2 × 3 = 18 series", en: "3 × 2 × 3 = 18 series" } }
+  - { id: n2, shape: note, label: { vi: "3 × 500 = 1.500 series", en: "3 × 500 = 1,500 series" } }
+rows:
+  - [small, big]
+  - [n1, n2]

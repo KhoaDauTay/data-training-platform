@@ -1,0 +1,31 @@
+# TM-4 (v47 Telemetry R1, L1042): the same readings as a narrow and a wide table. Lesson: e-tm-l1-04 (Ý chính).
+# Data = the lab: h1 at 10:01 (cpu 60, mem_mb 950, gpu 30), h2 at 10:01 (cpu 30, mem_mb 420).
+# Sources: https://www.postgresql.org/docs/current/sql-expressions.html#SYNTAX-AGGREGATES ; https://prometheus.io/docs/concepts/data_model/
+title: { vi: "Cùng số đo, hai hình dạng bảng", en: "Same readings, two table shapes" }
+caption:
+  vi: "Bảng hẹp có một dòng mỗi điểm đo, kể cả gpu mới; bảng rộng có một cột mỗi metric và chưa có cột gpu."
+  en: "The narrow table has one row per data point, the new gpu included; the wide table has one column per metric and no gpu column yet."
+alt:
+  vi: "Bảng hẹp nhận metric mới như dòng mới, còn bảng rộng cần thêm cột; FILTER xoay dòng hẹp thành cột rộng. Kết quả: năm dòng hẹp lúc 10:01 thành hai dòng rộng, và gpu không có chỗ trong bảng rộng."
+  en: "A narrow table takes a new metric as new rows, while a wide table needs a new column; FILTER pivots narrow rows into wide columns. Result: five narrow rows at 10:01 become two wide rows, and gpu has no place in the wide table."
+nodes:
+  - id: narrow
+    shape: grid
+    mono: true
+    label: { vi: "hẹp, 10:01", en: "narrow, 10:01" }
+    head: [host, name, value]
+    cells: [[h1, cpu, "60"], [h1, mem_mb, "950"], [h1, gpu, "30"], [h2, cpu, "30"], [h2, mem_mb, "420"]]
+    rowTone: [null, null, new, null, null]
+  - id: wide
+    shape: grid
+    mono: true
+    label: { vi: "rộng, 10:01", en: "wide, 10:01" }
+    head: [host, cpu, mem_mb]
+    cells: [[h1, "60", "950"], [h2, "30", "420"]]
+  - { id: lost, shape: note, label: { vi: "gpu cần ALTER TABLE", en: "gpu needs ALTER TABLE" } }
+rows:
+  - [narrow]
+  - [wide]
+  - [lost]
+edges:
+  - { from: narrow, to: wide, label: FILTER }
