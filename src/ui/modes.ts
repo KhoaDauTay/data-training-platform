@@ -109,10 +109,13 @@ export function startPlacement(items: PracticeItem[]): void {
 }
 /**
  * v47 S3 (L911): the welcome's "I know SQL" starts the entry check from #/learn (its card stays there for a later try). No
- * items (every Part learned) leaves the player on #/learn; a failed load shows the same banner as the card.
+ * items (every Part learned) leaves the player on #/learn; a failed load shows the same banner as the card. Like startDrill's
+ * `still`, the run starts only while the player is still on #/learn: one who moved on (or started the card's run) during
+ * the first seed is never pulled back.
  */
 export function startEntryCheck(): void {
-  void loadDrillUi().then(async (m) => m.placementList(await m.prepareLab())).then((items) => void (items.length && startPractice(items, false, true)), () => {
+  const still = (): boolean => location.hash === hashOf('learn');
+  void loadDrillUi().then(async (m) => m.placementList(await m.prepareLab())).then((items) => void (items.length && still() && startPractice(items, false, true)), () => {
     app.notice = { key: 'learn.failed' };
     ctx?.rerender();
   });

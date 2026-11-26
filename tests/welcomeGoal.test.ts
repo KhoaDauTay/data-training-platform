@@ -75,6 +75,20 @@ describe('welcome goal step (S3)', () => {
     expect(resume.querySelector('a[data-resume="design"]')!.getAttribute('href')).toBe('#/engine/design');
   });
 
+  it('"knows SQL" then Skip: "I know SQL" is the main button; Esc keeps the player un-gated (knows)', async () => {
+    const { openWelcome } = await import('../src/ui/welcome');
+    openWelcome(false); // the domain is known now: lang → goal → check → start
+    w('next')!.click();
+    w('goal-sql')!.click();
+    w('skip')!.click();
+    expect(w('knows')!.parentElement!.lastElementChild).toBe(w('knows')); // the main (last) button
+    expect(localStorage.getItem('cargo-query/tour')).toBeNull();
+    openModal()!.dispatchEvent(new Event('cancel', { cancelable: true }));
+    openModal()!.close();
+    expect(JSON.parse(localStorage.getItem('cargo-query/tour')!)).toMatchObject({ knows: true });
+    localStorage.removeItem('cargo-query/tour');
+  });
+
   it('"Take the entry check" lands on the learning path as "knows SQL" and starts the check run there', async () => {
     (await import('../src/ui/welcome')).openWelcome(false); // the same first-run steps (the domain is known now)
     w('next')!.click();

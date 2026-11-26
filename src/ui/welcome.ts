@@ -186,11 +186,15 @@ function draw(): void {
         main({ 'data-w': 'check', onclick: takeCheck }, t('welcome.checkStart')))
       : !last ? main({ 'data-w': 'next', onclick: () => go(panel + 1) }, t('welcome.next'))
         : replay ? main({ 'data-w': 'close', onclick: () => d.close() }, t('app.close'))
-          : h('span', { class: 'flex flex-wrap justify-end gap-2 max-sm:basis-full max-sm:flex-col-reverse' },
-            h('button', { type: 'button', 'data-w': 'knows', class: 'rounded-full px-4 py-2', disabled: entering, onclick: () => choose(true) }, t('welcome.knows')),
-            // V22 BOOT (L247): open as soon as the domain is entered; the seed goes on behind ticket 1 (its "preparing"
-            // banner, the top bar dot, Run queued with work.queued), so reading the task never waits for the data.
-            main({ 'data-w': 'begin', disabled: entering, onclick: () => choose(false) }, t('welcome.begin'))));
+          : readIntent() === 'sql' // L911: "knows SQL" skipped the check: its answer is the main button here
+            ? h('span', { class: 'flex flex-wrap justify-end gap-2 max-sm:basis-full max-sm:flex-col-reverse' },
+              h('button', { type: 'button', 'data-w': 'begin', class: 'rounded-full px-4 py-2', disabled: entering, onclick: () => choose(false) }, t('welcome.begin')),
+              main({ 'data-w': 'knows', disabled: entering, onclick: () => choose(true) }, t('welcome.knows')))
+            : h('span', { class: 'flex flex-wrap justify-end gap-2 max-sm:basis-full max-sm:flex-col-reverse' },
+              h('button', { type: 'button', 'data-w': 'knows', class: 'rounded-full px-4 py-2', disabled: entering, onclick: () => choose(true) }, t('welcome.knows')),
+              // V22 BOOT (L247): open as soon as the domain is entered; the seed goes on behind ticket 1 (its "preparing"
+              // banner, the top bar dot, Run queued with work.queued), so reading the task never waits for the data.
+              main({ 'data-w': 'begin', disabled: entering, onclick: () => choose(false) }, t('welcome.begin'))));
   if (keep === 'title') byId('welcome-title').focus();
   else if (keep) d.querySelector<HTMLElement>(`[data-w="${keep}"]`)?.focus();
 }
