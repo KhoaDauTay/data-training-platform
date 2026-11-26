@@ -42,7 +42,7 @@ export interface EngineDeps {
   enginePathOf: typeof Route.enginePathOf; enginePathHash: typeof Route.enginePathHash; hashOf: typeof Route.hashOf; rerender: () => void;
   /** v27 (L410–L411): the glossary and interview room routes. */
   engineTermsOf: typeof Route.engineTermsOf; engineTermsHash: typeof Route.engineTermsHash;
-  engineInterviewOf: typeof Route.engineInterviewOf; engineInterviewHash: typeof Route.engineInterviewHash;
+  engineInterviewOf: typeof Route.engineInterviewOf; engineInterviewHash: typeof Route.engineInterviewHash; interviewTabHash: typeof Route.interviewTabHash;
   /** v28 (L430): the "Which engine?" page. */
   engineCompareOf: typeof Route.engineCompareOf; engineCompareHash: typeof Route.engineCompareHash;
   cls: { CARD: string; BTN_GO: string; BTN_SECONDARY: string; BTN_GHOST: string; PILL: string; DONE_PILL: string; cx: (...c: (string | false | null | undefined)[]) => string };
@@ -941,12 +941,10 @@ function pathPage(slug: string): HTMLElement {
   return pathMod.pathPage(ctx, slug);
 }
 
-// ---- v27 (L410–L411): the glossary (#/engine/terms) and the interview room (#/engine/interview), each its own lazy chunk
+// ---- v27 (L410–L411): the glossary (#/engine/terms), its own lazy chunk (the interview banks: the one room under Học, v47 S4 L980)
 
 type TermsView = typeof import('./engineTerms');
-type IvView = typeof import('./engineInterview');
 let termsMod: TermsView | 'loading' | 'failed' | undefined;
-let ivMod: IvView | 'loading' | 'failed' | undefined;
 function termsView(): TermsView | 'loading' | 'failed' {
   if (termsMod === undefined) {
     termsMod = 'loading';
@@ -954,13 +952,6 @@ function termsView(): TermsView | 'loading' | 'failed' {
       .then(([m, src]) => { m.initTerms(d, src.glossary); termsMod = m; }).catch(() => { termsMod = 'failed'; }).finally(() => d.rerender()); // a parse throw too
   }
   return termsMod;
-}
-function ivView(): IvView | 'loading' | 'failed' {
-  if (ivMod === undefined) {
-    ivMod = 'loading';
-    import('./engineInterview').then((m) => { m.initIv(d); ivMod = m; }).catch(() => { ivMod = 'failed'; }).finally(() => d.rerender());
-  }
-  return ivMod;
 }
 // v28 (L430): "Which engine?" (#/engine/compare), its own lazy chunk; lesson links come from this chunk's index
 type CmpView = typeof import('./engineCompare');
@@ -985,17 +976,16 @@ function cmpPage(): HTMLElement | undefined {
   return page;
 }
 
-const v27Here = (): boolean => d.engineTermsOf(location.hash) !== undefined || !!d.engineInterviewOf(location.hash) || d.engineCompareOf(location.hash);
+const v27Here = (): boolean => d.engineTermsOf(location.hash) !== undefined || d.engineCompareOf(location.hash);
 function v27Page(): HTMLElement | undefined {
   const cmp = cmpPage();
   if (cmp) return cmp;
   const terms = d.engineTermsOf(location.hash);
-  const iv = d.engineInterviewOf(location.hash);
-  if (terms === undefined && !iv) return undefined;
-  const m = terms !== undefined ? termsView() : ivView();
+  if (terms === undefined) return undefined;
+  const m = termsView();
   if (m === 'loading') return loadingLine();
-  if (m === 'failed') return failedBox(() => { if (terms !== undefined) termsMod = undefined; else ivMod = undefined; d.rerender(); });
-  const page = terms !== undefined ? (m as TermsView).termsPage(terms) : (m as IvView).ivPage(iv!);
+  if (m === 'failed') return failedBox(() => { termsMod = undefined; d.rerender(); });
+  const page = m.termsPage(terms);
   page.id = 'engine-page';
   return page;
 }
@@ -1003,7 +993,5 @@ function v27Sub(): HomeView.PageSub | undefined {
   const top = [{ href: d.hashOf('engine'), text: d.t('nav.engine') }];
   if (d.engineCompareOf(location.hash)) return typeof cmpMod === 'object' ? cmpMod.subOf() : { title: et('v28.compare'), trail: top };
   if (d.engineTermsOf(location.hash) !== undefined) return typeof termsMod === 'object' ? termsMod.subOf() : { title: et('v27.terms'), trail: top };
-  const iv = d.engineInterviewOf(location.hash);
-  if (iv) return typeof ivMod === 'object' ? ivMod.subOf(iv) : { title: et('v27.interview'), trail: top };
   return undefined;
 }

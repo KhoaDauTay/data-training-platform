@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import glossary from '../content/engine/glossary.yml';
 import { aliasesOf, docFor, fold, marker, MAX_BUTTONS, parseGlossary, searchTerms, termSlug, type Term } from '../src/engine/glossary';
 import { ENGINES, LEVELS, parseEngineLesson, type LessonSource } from '../src/engine/content';
-import { engineInterviewHash, engineInterviewOf, engineRouteOf, engineTermsHash, engineTermsOf, parseRoute } from '../src/route';
+import { canonicalHash, engineInterviewHash, engineInterviewOf, engineRouteOf, engineTermsHash, engineTermsOf, interviewTabHash, interviewTabOf, parseRoute } from '../src/route';
 import { parseUse } from '../src/ui/engineTerms';
 import { TERMS_DICT } from '../src/i18n/engineTerms';
 
@@ -54,21 +54,37 @@ describe('routes #/engine/terms and #/engine/interview (route.ts)', () => {
     expect(engineTermsHash('mvcc')).toBe('#/engine/terms/mvcc');
     for (const t of terms) expect(engineTermsOf(engineTermsHash(t.id))).toBe(t.id);
   });
-  it('engineInterviewOf: the room, a set, the review run, a take-home; an unknown tail opens the room', () => {
-    expect(engineInterviewOf('#/engine/interview')).toEqual({});
-    expect(engineInterviewOf('#/engine/interview/pg-mid-2')).toEqual({ set: 'pg-mid-2' });
-    expect(engineInterviewOf('#/engine/interview/again')).toEqual({ set: 'again' });
-    expect(engineInterviewOf('#/engine/interview/e-iv-dy-th-4')).toEqual({ th: 'e-iv-dy-th-4' });
-    expect(engineInterviewOf('#/engine/interview/xx-mid-2')).toEqual({});
-    expect(engineInterviewOf('#/engine/interview/pg-mid-9')).toEqual({}); // 3 sets per band
-    expect(engineInterviewOf('#/engine/interview/mg-senior-4')).toEqual({ set: 'mg-senior-4' }); // v36: one extra senior set for MongoDB/DynamoDB
-    expect(engineInterviewOf('#/engine/interview/pg-senior-4')).toEqual({});
-    expect(engineInterviewOf('#/engine/interviews')).toBeUndefined();
-    expect(engineInterviewOf('#/learn/interview')).toBeUndefined();
-    expect(engineInterviewHash('mg-staff-3')).toBe('#/engine/interview/mg-staff-3');
+  it('v47 S4 (L980–L981): engineInterviewOf reads a set, the review run or a take-home inside the one room; the room itself is a tab', () => {
+    expect(engineInterviewOf('#/learn/interview/pg-mid-2')).toEqual({ set: 'pg-mid-2' });
+    expect(engineInterviewOf('#/learn/interview/again')).toEqual({ set: 'again' });
+    expect(engineInterviewOf('#/learn/interview/e-iv-dy-th-4')).toEqual({ th: 'e-iv-dy-th-4' });
+    expect(engineInterviewOf('#/learn/interview/mg-senior-4')).toEqual({ set: 'mg-senior-4' }); // v36: one extra senior set for MongoDB/DynamoDB
+    for (const h of ['#/learn/interview', '#/learn/interview?e=mg', '#/learn/interview/xx-mid-2', '#/learn/interview/pg-mid-9', '#/learn/interview/pg-senior-4', '#/learn/interviews/pg-mid-2', '#/engine/interview/pg-mid-2']) {
+      expect(engineInterviewOf(h)).toBeUndefined();
+    }
+    expect(engineInterviewHash('mg-staff-3')).toBe('#/learn/interview/mg-staff-3');
+    expect(engineInterviewHash()).toBe('#/learn/interview?e=pg'); // the Databases hub and sidebar open the PostgreSQL tab
+    expect(['#/learn/interview', '#/learn/interview?e=pg', '#/learn/interview?e=mg', '#/learn/interview?e=dy', '#/learn/interview?e=zz', '#/learn/interview/pg-mid-2?e=mg'].map(interviewTabOf))
+      .toEqual(['sql', 'pg', 'mg', 'dy', 'sql', 'sql']);
+    for (const tab of ['sql', 'pg', 'mg', 'dy'] as const) expect(interviewTabOf(interviewTabHash(tab))).toBe(tab);
   });
-  it('both are engine pages, never an engine/level/lesson', () => {
-    for (const h of ['#/engine/terms', '#/engine/terms/acid', '#/engine/interview', '#/engine/interview/pg-junior-1']) {
+  it('the old #/engine/interview hashes are aliases kept forever (canonicalHash), all on the Học route', () => {
+    const ALIAS: [string, string][] = [
+      ['#/engine/interview', '#/learn/interview?e=pg'],
+      ['#/engine/interview/', '#/learn/interview?e=pg'],
+      ['#/engine/interview/pg-mid-2', '#/learn/interview/pg-mid-2'],
+      ['#/engine/interview/mg-senior-4', '#/learn/interview/mg-senior-4'],
+      ['#/engine/interview/again', '#/learn/interview/again'],
+      ['#/engine/interview/e-iv-dy-th-4', '#/learn/interview/e-iv-dy-th-4'],
+      ['#/engine/interview/xx-mid-2', '#/learn/interview?e=pg'], // an unknown tail opened the room
+      ['engine/interview/pg-junior-1', 'engine/interview/pg-junior-1'], // not a hash
+    ];
+    for (const [old, now] of ALIAS) expect(canonicalHash(old)).toBe(now);
+    expect(canonicalHash('#/engine/interviews')).toBe('#/engine/interviews');
+    for (const [old] of ALIAS.slice(0, 7)) expect(parseRoute(old)).toBe('learn');
+  });
+  it('the glossary is an engine page, never an engine/level/lesson', () => {
+    for (const h of ['#/engine/terms', '#/engine/terms/acid']) {
       expect(parseRoute(h)).toBe('engine');
       expect(engineRouteOf(h)).toEqual({ engine: undefined, level: undefined, lesson: undefined });
     }
@@ -154,9 +170,10 @@ describe('pref cargo-query/engine-terms and the chunk rule', () => {
       expect([k, spans(v)]).toEqual([k, spans(e)]);
     }
   });
-  const files = import.meta.glob<string>(['../src/ui/engineTerms.ts', '../src/ui/engineInterview.ts', '../src/i18n/engineTerms.ts', '../src/i18n/engineInterview.ts', '../src/engineTermsSources.ts'], { query: '?raw', import: 'default', eager: true });
+  const files = import.meta.glob<string>(['../src/ui/engineTerms.ts', '../src/ui/engineInterview.ts', '../src/i18n/engineTerms.ts', '../src/i18n/engineInterview.ts', '../src/engineTermsSources.ts', '../src/ui/ivTabs.ts'], { query: '?raw', import: 'default', eager: true });
   it.each(Object.keys(files))('lazy chunk %s imports no value from a main module (Plan 6 U3)', (f) => {
     const values = [...files[f].matchAll(/^import (?!type )[^;]*? from '([^']+)';/gm)].map((m) => m[1]);
-    for (const v of values) expect([f, v]).toEqual([f, expect.stringMatching(/^(\.\.\/engine\/\w+|\.\.\/i18n\/engine\w*)$/)]);
+    // v47 S4 (L982): ./ivTabs is the room's tab bar, shared by the two lazy interview chunks (itself type-only imports)
+    for (const v of values) expect([f, v]).toEqual([f, expect.stringMatching(/^(\.\.\/engine\/\w+|\.\.\/i18n\/engine\w*|\.\/ivTabs)$/)]);
   });
 });
