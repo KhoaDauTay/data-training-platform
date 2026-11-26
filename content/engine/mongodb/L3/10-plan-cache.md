@@ -7,6 +7,7 @@ title: "Query planner và plan cache"
 title_en: "The query planner and the plan cache"
 kind: concept
 minutes: 12
+figures: [{ name: mg-plan-cache, at: idea }]
 runtime: docs
 objectives:
   - vi: "Mô tả cách multi-planner chọn kế hoạch thắng"
@@ -64,6 +65,8 @@ Kế hoạch thắng được cất trong plan cache theo hình dạng truy vấ
 Nhiều người nghĩ explain cho thấy kế hoạch server đang dùng. Thật ra explain bỏ qua plan cache và chọn lại từ đầu, nên một kế hoạch cache cũ, chọn với giá trị khác, có thể khác hẳn. Plan cache mất khi `mongod` khởi động lại, bị xóa khi có DDL trên collection, và mục ít dùng nhất bị đẩy ra. Từ 8.0, index filter bị deprecated, thay bằng `setQuerySettings`.
 
 Bài này đọc theo docs chính thức; trình duyệt không có `mongod` nên các khối dưới đây là văn bản, không chạy.
+
+Hình từng bước ở cuối mục này theo một mục cache qua ba trạng thái, rồi đặt `explain()` và `$planCacheStats` cạnh cache.
 
 ## Cú pháp
 
@@ -159,6 +162,8 @@ The winning plan is stored in the plan cache by query shape: the same filter, so
 Many people think explain shows the plan the server is using. In fact explain ignores the plan cache and plans from scratch, so an old cached plan, chosen for other values, can be quite different. The plan cache is lost when `mongod` restarts, cleared by DDL on the collection, and the least used entry is evicted. From 8.0, index filters are deprecated in favour of `setQuerySettings`.
 
 This lesson follows the official docs; the browser has no `mongod`, so the blocks below are text, not run.
+
+The step-through figure at the end of this section follows one cache entry through the three states, then sets `explain()` and `$planCacheStats` beside the cache.
 
 ## Syntax
 

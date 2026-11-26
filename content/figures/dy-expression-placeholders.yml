@@ -1,0 +1,47 @@
+# DY-B6-3 (v46 Batch 6, L850–L859): names go through #, values through :, nothing is written inline. Lesson: e-dy-l2-01 (Ý chính).
+# Data (demo_setup, run on dynoxide): Query customerId = :c (C-02), FilterExpression #t > :x, #t = total, :x = 500000 →
+# Count 3 (O-105, O-106, O-108), ScannedCount 4; FilterExpression "total > 500000" → ValidationException (syntax error at the
+# number); "total > :x" → ValidationException (reserved keyword total). Not dy-read-pipeline (which steps): this one is the substitution.
+# Sources: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.ExpressionAttributeNames.html, …/Expressions.ExpressionAttributeValues.html
+title: { vi: "Tên qua #, giá trị qua :", en: "Names through #, values through :" }
+caption:
+  vi: "Biểu thức chỉ chứa chỗ giữ chỗ. ExpressionAttributeNames thay #t bằng tên thuộc tính total (một từ dành riêng), ExpressionAttributeValues thay :x bằng giá trị có nhãn kiểu. Viết thẳng total > 500000 là ValidationException."
+  en: "The expression holds only placeholders. ExpressionAttributeNames swaps #t for the attribute name total (a reserved word), ExpressionAttributeValues swaps :x for a typed value. Writing total > 500000 inline is a ValidationException."
+alt:
+  vi: "Biểu thức DynamoDB không nhận giá trị viết thẳng: mọi giá trị đi qua một chỗ giữ chỗ :x, và tên trùng từ dành riêng phải đi qua một tên #x. DynamoDB ghép hai bảng thay thế vào biểu thức trước khi chạy."
+  en: "DynamoDB expressions take no inline values: every value goes through a :x placeholder, and a name that is a reserved word must go through a #x name. DynamoDB fills both tables into the expression before it runs."
+nodes:
+  - id: nm
+    shape: grid
+    label: { vi: "tên thay thế", en: "name placeholders" }
+    head: [{ vi: "chỗ giữ", en: placeholder }, { vi: "thuộc tính", en: attribute }]
+    cells: [["#t", total]]
+  - id: vl
+    shape: grid
+    label: { vi: "giá trị thay thế", en: "value placeholders" }
+    head: [{ vi: "chỗ giữ", en: placeholder }, { vi: "giá trị", en: value }]
+    cells: [[":c", "S: C-02"], [":x", "N: 500000"]]
+  - { id: ex, shape: key, mono: true, label: "#t > :x", sub: FilterExpression, tone: new }
+  - { id: rd, mono: true, label: "total > 500000", sub: { vi: "DynamoDB đọc là", en: "DynamoDB reads" }, tone: live }
+  - { id: res, shape: key, label: Count 3, sub: ScannedCount 4, tone: live }
+rows:
+  - [nm, vl]
+  - [ex]
+  - [rd]
+  - [res]
+edges:
+  - { from: nm, to: ex }
+  - { from: vl, to: ex }
+  - { from: ex, to: rd }
+  - { from: rd, to: res }
+steps:
+  - say: { vi: "Biểu thức dùng #t và :x; DynamoDB thay vào trước khi chạy.", en: "The expression uses #t and :x; DynamoDB fills them in before it runs." }
+    alt: { vi: "Bộ lọc #t > :x trên các đơn của C-02 được đọc thành total > 500000, giữ 3 đơn trong 4 đơn đã đọc.", en: "The filter #t > :x on C-02's orders is read as total > 500000 and keeps 3 of the 4 orders read." }
+  - say: { vi: "Viết thẳng tên và số: request bị từ chối.", en: "Write the name and number inline: the request is refused." }
+    alt: { vi: "Viết total > 500000 thẳng vào biểu thức thì DynamoDB từ chối cả request bằng ValidationException, vì số phải đi qua :x và total là từ dành riêng.", en: "Writing total > 500000 straight into the expression makes DynamoDB refuse the whole request with a ValidationException, since the number must go through :x and total is a reserved word." }
+    set:
+      nm: { rowTone: [ghost] }
+      vl: { rowTone: [ghost, ghost] }
+      ex: { label: "total > 500000", sub: { vi: "viết thẳng", en: "written inline" }, tone: dead }
+      rd: { label: { vi: "bị từ chối", en: "refused" }, sub: { vi: "không có # và :", en: "no # and no :" }, tone: dead }
+      res: { label: { vi: "không đọc", en: "nothing read" }, sub: { vi: "không item nào", en: "no items" }, tone: ghost }

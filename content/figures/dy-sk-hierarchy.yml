@@ -1,0 +1,45 @@
+# DY-B6-7 (v46 Batch 6, L850–L859): each level of a joined sort key is a prefix one Query can read. Lesson: e-dy-l3-09 (Ý chính).
+# Data (lab.setup, run on dynoxide): PK = STORE, SK in byte order VN#DA-NANG#HAI-CHAU#S-01, …#S-02, VN#DA-NANG#LIEN-CHIEU#S-06,
+# VN#DA-NANG#SON-TRA#S-03, VN#HUE#PHU-HOI#S-04, VN#QUANG-NAM#HOI-AN#S-05; begins_with VN#DA-NANG# → Count 4, ScannedCount 4;
+# VN#DA-NANG#HAI-CHAU# → 2 / 2; Scan contains(SK, #HAI-CHAU#) → 2 items, ScannedCount 38 (the whole table).
+# Deviation: the full keys are longer than a cell (18), so the grid splits SK into its levels, one column each (VN# rides in the
+# first head); the step text and caption name the real prefixes. Source: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-sort-keys.html
+title: { vi: "Sort key phân cấp: mỗi cấp là một tiền tố", en: "Hierarchical sort key: each level is a prefix" }
+caption:
+  vi: "Mỗi cửa hàng nằm dưới PK = STORE với SK ghép từ rộng tới hẹp, ví dụ VN#DA-NANG#HAI-CHAU#S-01; mỗi cột là một cấp, và các dòng theo thứ tự byte của SK. begins_with(SK, \"VN#DA-NANG#\") đọc một tỉnh, thêm HAI-CHAU# đọc một quận. Quận mà không có tỉnh thì không còn là tiền tố."
+  en: "Every store sits under PK = STORE with an SK joined from broad to narrow, for example VN#DA-NANG#HAI-CHAU#S-01; each column is one level, and the rows are in the SK's byte order. begins_with(SK, \"VN#DA-NANG#\") reads one city, adding HAI-CHAU# reads one district. A district without its city is no longer a prefix."
+alt:
+  vi: "Ghép các cấp vào sort key từ rộng tới hẹp làm cho mỗi cấp thành một tiền tố, nên một Query với begins_with đọc đúng một tỉnh hay một quận. Câu hỏi không bắt đầu từ cấp đầu thì không phải tiền tố và phải quét cả bảng hoặc dùng một GSI khác."
+  en: "Joining the levels into the sort key from broad to narrow makes each level a prefix, so one Query with begins_with reads exactly one city or one district. A question that does not start at the first level is not a prefix, and needs a full scan or another GSI."
+nodes:
+  - { id: q, shape: key, mono: true, label: "VN#DA-NANG#", sub: begins_with, tone: new }
+  - id: st
+    shape: grid
+    label: "PK = STORE"
+    sub: { vi: "SK ghép các cấp bằng #", en: "the SK joins levels with #" }
+    head: [{ vi: "VN#tỉnh#", en: "VN#city#" }, { vi: "quận#", en: "district#" }, { vi: "cửa hàng", en: store }]
+    cells: [[DA-NANG, HAI-CHAU, S-01], [DA-NANG, HAI-CHAU, S-02], [DA-NANG, LIEN-CHIEU, S-06], [DA-NANG, SON-TRA, S-03], [HUE, PHU-HOI, S-04], [QUANG-NAM, HOI-AN, S-05]]
+    rowTone: [new, new, new, new, null, null]
+  - { id: res, shape: key, label: Count 4, sub: ScannedCount 4, tone: live }
+rows:
+  - [q]
+  - [st]
+  - [res]
+edges:
+  - { from: q, to: st }
+  - { from: st, to: res }
+steps:
+  - say: { vi: "Tiền tố một tỉnh: một Query đọc đúng các cửa hàng ở đó.", en: "A city prefix: one Query reads exactly the stores there." }
+    alt: { vi: "begins_with(SK, \"VN#DA-NANG#\") đọc bốn cửa hàng Đà Nẵng nằm liền nhau trong thứ tự sort key, và không đọc thêm item nào.", en: "begins_with(SK, \"VN#DA-NANG#\") reads the four Da Nang stores, which lie next to each other in sort-key order, and reads no other item." }
+  - say: { vi: "Thêm một cấp vào tiền tố: đọc một quận.", en: "Add one level to the prefix: read one district." }
+    alt: { vi: "Tiền tố VN#DA-NANG#HAI-CHAU# thu về hai cửa hàng của quận Hải Châu, kết thúc bằng # để không khớp nhầm một mã dài hơn.", en: "The prefix VN#DA-NANG#HAI-CHAU# narrows it to the two stores of Hai Chau district, ending in # so it never matches a longer code by mistake." }
+    set:
+      q: { sub: "+ HAI-CHAU#" }
+      st: { rowTone: [new, new, null, null, null, null] }
+      res: { label: Count 2, sub: ScannedCount 2 }
+  - say: { vi: "Quận mà bỏ tỉnh: không còn tiền tố, phải quét cả bảng.", en: "A district without its city: no prefix left, so a full scan." }
+    alt: { vi: "Tìm Hải Châu bất kể tỉnh bằng Scan và contains vẫn ra hai cửa hàng, nhưng đọc cả 38 item của bảng vì contains không dùng được trong điều kiện khóa.", en: "Looking for Hai Chau in any city with a Scan and contains still finds the two stores, but reads all 38 items of the table, since contains cannot be used in a key condition." }
+    set:
+      q: { label: "contains", sub: { vi: "Scan cả bảng", en: "Scan, whole table" }, tone: dead }
+      st: { rowTone: [warm, warm, ghost, ghost, ghost, ghost], cellTone: { "0:1": warm, "1:1": warm } }
+      res: { label: Count 2, sub: ScannedCount 38, tone: dead }

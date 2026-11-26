@@ -1,0 +1,56 @@
+# MG-B6-5 (v46 Batch 6, L850–L859): $bucket puts each value in a range [a, b); outside every range needs default.
+# Lesson: e-mg-l2-09 (Ý chính). Data (lab.setup, run on mingo): totals 6: 25000, 8: 60000, 1: 95000, 2: 120000, 4: 150000,
+# 5: 210000, 7: 285000, 3: 450000; boundaries [0, 100000, 300000, 1000000] → _id 0: 3, 100000: 4, 300000: 1;
+# [0, 100000, 300000] + default "big" → 0: 3, 100000: 4, big: 1; [0, 100000, 300000] without default → refused (mingo:
+# "$bucket require a default for out of range values"). Bars to scale (one unit per order).
+# Source: https://www.mongodb.com/docs/manual/reference/operator/aggregation/bucket/
+title: { vi: "$bucket chia đơn theo khoảng total", en: "$bucket splits orders by total range" }
+caption:
+  vi: "Tám đơn xếp theo total, cột nhóm là _id của khoảng mà đơn rơi vào. Mỗi khoảng [a, b) gồm cận dưới, không gồm cận trên, nên _id của nhóm là cận dưới. Giá trị ngoài mọi khoảng cần default, nếu không lệnh bị từ chối."
+  en: "Eight orders sorted by total; the bucket column is the _id of the range each order falls in. Each range [a, b) includes its lower bound and excludes its upper bound, so a bucket's _id is its lower bound. A value outside every range needs default, or the command is refused."
+alt:
+  vi: "$bucket đặt mỗi tài liệu vào khoảng chứa giá trị của nó và đếm theo từng khoảng, như $group trên các khoảng giá trị. Một giá trị không thuộc khoảng nào phải có nhóm default để đi vào."
+  en: "$bucket puts each document in the range that holds its value and counts per range, like a $group over value ranges. A value that fits no range needs a default bucket to go to."
+nodes:
+  - id: ord
+    shape: grid
+    label: { vi: "8 đơn theo total", en: "8 orders by total" }
+    head: [{ vi: "đơn", en: order }, total, { vi: "nhóm", en: bucket }]
+    cells: [["6", "25000", "0"], ["8", "60000", "0"], ["1", "95000", "0"], ["2", "120000", "100000"], ["4", "150000", "100000"], ["5", "210000", "100000"], ["7", "285000", "100000"], ["3", "450000", "300000"]]
+    rowTone: [new, new, new, ptr, ptr, ptr, ptr, warm]
+  - { id: bk, mono: true, label: "[0, 100000, 300000, 1000000]", tone: new }
+  - id: out
+    shape: bars
+    label: { vi: "số đơn mỗi nhóm", en: "orders per bucket" }
+    items:
+      - { label: "_id 0", value: 3, note: "3", tone: new }
+      - { label: "_id 100000", value: 4, note: "4", tone: ptr }
+      - { label: "_id 300000", value: 1, note: "1", tone: warm }
+rows:
+  - [ord, bk, out]
+edges:
+  - { from: ord, to: bk }
+  - { from: bk, to: out }
+steps:
+  - say: { vi: "Mỗi khoảng gồm cận dưới, không gồm cận trên.", en: "Each range includes its lower bound, not its upper one." }
+    alt: { vi: "Với các cận 0, 100000, 300000, 1000000, ba đơn dưới 100000 vào nhóm 0, bốn đơn tiếp theo vào nhóm 100000 và đơn 450000 vào nhóm 300000.", en: "With the bounds 0, 100000, 300000, 1000000, three orders under 100000 go to bucket 0, the next four to bucket 100000 and the 450000 order to bucket 300000." }
+  - say: { vi: "Bỏ cận trên cùng: giá trị ngoài khoảng vào nhóm default.", en: "Drop the top bound: values outside go to the default bucket." }
+    alt: { vi: "Với các cận chỉ tới 300000 và default \"big\", đơn 450000 không thuộc khoảng nào nên vào nhóm big; hai nhóm đầu giữ nguyên.", en: "With bounds only up to 300000 and default \"big\", the 450000 order fits no range, so it goes to bucket big; the first two buckets stay the same." }
+    set:
+      bk: { label: "[0, 100000, 300000] + default", tone: live }
+      ord: { cells: [["6", "25000", "0"], ["8", "60000", "0"], ["1", "95000", "0"], ["2", "120000", "100000"], ["4", "150000", "100000"], ["5", "210000", "100000"], ["7", "285000", "100000"], ["3", "450000", "big"]] }
+      out:
+        items:
+          - { label: "_id 0", value: 3, note: "3", tone: new }
+          - { label: "_id 100000", value: 4, note: "4", tone: ptr }
+          - { label: "_id big", value: 1, note: "1", tone: warm }
+  - say: { vi: "Thiếu default mà có giá trị ngoài khoảng: lệnh bị từ chối.", en: "No default and a value outside: the command is refused." }
+    alt: { vi: "Cùng các cận mà không có default, đơn 450000 không có chỗ nào để vào nên MongoDB từ chối cả lệnh thay vì lặng lẽ bỏ đơn đó.", en: "With the same bounds and no default, the 450000 order has nowhere to go, so MongoDB refuses the whole command rather than silently dropping that order." }
+    set:
+      bk: { label: "[0, 100000, 300000]", tone: dead }
+      ord: { cells: [["6", "25000", "0"], ["8", "60000", "0"], ["1", "95000", "0"], ["2", "120000", "100000"], ["4", "150000", "100000"], ["5", "210000", "100000"], ["7", "285000", "100000"], ["3", "450000", { vi: "không có", en: "none" }]], rowTone: [ghost, ghost, ghost, ghost, ghost, ghost, ghost, dead] }
+      out:
+        items:
+          - { label: "_id 0", value: 3, note: "3", tone: ghost }
+          - { label: "_id 100000", value: 4, note: "4", tone: ghost }
+          - { label: { vi: "ngoài khoảng", en: "out of range" }, value: 1, note: "1", tone: dead }
