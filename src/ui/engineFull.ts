@@ -36,7 +36,7 @@ const unitOf = (e: EngineId, n: number): string => { const u = ft(`unit.${e}`); 
 const SEC_ICON: Record<SectionId, IconName> = {
   open: 'secOpen', idea: 'kindConcept', syntax: 'secSyntax', example: 'secRun', pitfalls: 'secPitfall', practice: 'secPractice', recap: 'secRecap',
 };
-const RT: Record<EngineId, string> = { postgres: 'PostgreSQL (PGlite)', design: 'PostgreSQL (PGlite)', stack: 'PostgreSQL (PGlite)', mongodb: 'mingo', dynamodb: 'dynoxide' };
+const RT: Record<EngineId, string> = { postgres: 'PostgreSQL (PGlite)', design: 'PostgreSQL (PGlite)', stack: 'PostgreSQL (PGlite)', mongodb: 'mingo', dynamodb: 'dynoxide', redis: 'BoonData Redis' };
 const TOC_ROW = 'flex min-h-11 w-full items-center gap-2 border-0 border-l-4 px-3 py-1.5 text-left text-body-sm hover:bg-accent-soft';
 const TOC_IDLE = 'border-transparent bg-transparent text-ink';
 const TOC_NOW = 'border-accent bg-accent-soft font-bold text-accent-ink';
@@ -105,7 +105,7 @@ function outView(b: DemoBlock, o: DemoOut | 'busy' | undefined): (Node | null)[]
     // R2 E07 (L578d): a WRONG block that runs is still the wrong way: no green check, the line says so (every engine)
     const rows = { n: r.rows.length, ms: Math.round(r.ms ?? 0), u: unitOf(c.l.engine, r.rows.length) };
     return [b.error ? line(false, ft('run.unexpected', { code: b.error })) : b.mark === 'wrong' ? line(false, ft('run.rowsWrong', rows)) : line(true, ft('run.rows', rows)),
-      h('div', { class: 'overflow-x-auto', tabindex: '0' }, d.renderResult(r, undefined, 5, ft('run.caption', rows), c.l.engine === 'stack' ? { empty: false } : undefined)), c.meta(r)];
+      h('div', { class: 'overflow-x-auto', tabindex: '0' }, d.renderResult(r, undefined, c.l.engine === 'redis' ? 40 : 5, ft('run.caption', rows), c.l.engine === 'stack' ? { empty: false } : undefined)), c.meta(r)];
   }
   const got = errCode(o.error);
   return [b.error && got === b.error ? line(true, ft('run.expected', { code: got, rt: RT[c.l.engine] })) : null,
@@ -149,7 +149,7 @@ export function sections(x: FullCtx, keep: (id: SectionId) => boolean): HTMLElem
     return h('section', { id: `ek-${s.id}`, 'data-sec': s.id, class: 'flex scroll-mt-4 flex-col gap-3', 'aria-labelledby': `ek-${s.id}-h` },
       head(`ek-${s.id}-h`, SEC_ICON[s.id], SECTIONS[s.id][c.lang === 'vi' ? 0 : 1],
         s.id === 'example' && n && c.make ? h('span', { class: 'text-body-sm text-muted tabular-nums' }, ft('run.ran', { k: ran, n })) : null),
-      s.id === 'example' && n && c.make ? h('p', { class: 'm-0 text-body-sm text-muted' }, ft('run.note', { rt: RT[l.engine] })) : null,
+      s.id === 'example' && n && c.make ? h('p', { class: 'm-0 text-body-sm text-muted' }, ft(l.engine === 'redis' ? 'run.noteSim' : 'run.note', { rt: RT[l.engine] })) : null,
       ...blocksOf(s.text[c.lang]).map((b) => b.kind === 'p' ? h('p', { class: 'm-0' }, ...c.inline(b.text, true))
         : b.kind === 'ul' ? h('ul', { class: 'm-0 list-disc space-y-1 pl-5' }, ...b.items.map((t) => h('li', {}, ...c.inline(t, true))))
           // v38 (R2 E10): a marked block that cannot run here (```text) still gets its Sai/Sửa card, without Run
@@ -158,7 +158,7 @@ export function sections(x: FullCtx, keep: (id: SectionId) => boolean): HTMLElem
       ...(l.figures ?? []).filter((f) => f.at === s.id).map((f) => figureSlot(`${l.id}|${f.name}|${f.at}`, f, c.d.viz, FIG_ENGINE[l.engine])));
   });
 }
-const FIG_ENGINE: Record<EngineId, string> = { postgres: 'pg', mongodb: 'mg', dynamodb: 'dy', design: 'ds', stack: 'st' };
+const FIG_ENGINE: Record<EngineId, string> = { postgres: 'pg', mongodb: 'mg', dynamodb: 'dy', redis: 'rd', design: 'ds', stack: 'st' };
 
 interface Item { key: string; icon: IconName; name: string; target: string; count?: string }
 function itemsOf(): Item[] {

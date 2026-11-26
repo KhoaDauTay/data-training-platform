@@ -92,6 +92,9 @@ const GROUPS = [
   // the Mongo engine (mingo + shell parser, engineMongo-*, loaded in its worker), its shop data and the NoSQL path dataset
   // (content/engine/mongodb/path/dataset.json, dataset-*): 75 KB gz at integration.
   ['engineLab', /^(runner|engineMongo|mongoSeed\w*|dataset)-[\w-]{8}\.js$/, 90],
+  // v47 R1 (L955): the Redis lab runner + BoonData's interpreter and parser (src/engine/redis/), lazy from LAB_RUNNERS.redis on
+  // the first Redis lab or example; main thread, no worker, no dependency. Spike measured 6.0 KB gz for the interpreter alone.
+  ['redis', /^redisLab-/, 10],
   // L248: the MongoDB path ("Lộ trình NoSQL"): 12 parts of skills, lessons and 168 drills (content/engine/mongodb/path/*.yml as
   // JSON) + the shell parser for its ESR/covered rules, lazy on the first path page: 72 KB gz at integration.
   ['enginePath', /^engineMongoPath-/, 80],
