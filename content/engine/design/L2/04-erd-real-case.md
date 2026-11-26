@@ -129,8 +129,6 @@ CREATE TABLE appointments (
 
 ## Ví dụ
 
-Hình cuối mục vẽ sơ đồ phòng khám theo lối chân chim: mỗi chuyên khoa có 0..n bác sĩ, mỗi bác sĩ thuộc đúng 1 chuyên khoa; mỗi bác sĩ khám 0..n lịch hẹn và mỗi bệnh nhân đặt 0..n lịch hẹn; mỗi lịch hẹn có đúng 1 bác sĩ và 1 bệnh nhân.
-
 Cùng mẫu đó cho phòng họp: phòng là "bác sĩ", lượt đặt là "lịch hẹn".
 
 ```sql
@@ -154,6 +152,8 @@ FROM pg_constraint
 WHERE conrelid = 'ex_booking'::regclass
 ORDER BY conname;
 ```
+
+Hình dưới đây vẽ sơ đồ phòng khám của bài theo lối chân chim: mỗi chuyên khoa có 0..n bác sĩ, mỗi bác sĩ thuộc đúng 1 chuyên khoa; mỗi bác sĩ khám 0..n lịch hẹn và mỗi bệnh nhân đặt 0..n lịch hẹn; mỗi lịch hẹn có đúng 1 bác sĩ và 1 bệnh nhân.
 
 ## Lỗi hay gặp
 
@@ -216,8 +216,6 @@ CREATE TABLE appointments (
 
 ## Example
 
-The figure at the end of this section draws the clinic diagram in crow's foot style: each specialty has 0..n doctors, each doctor belongs to exactly 1 specialty; each doctor sees 0..n appointments and each patient books 0..n appointments; each appointment has exactly 1 doctor and 1 patient.
-
 The same pattern for meeting rooms: the room plays the doctor, the booking the appointment.
 
 ```sql
@@ -241,6 +239,8 @@ FROM pg_constraint
 WHERE conrelid = 'ex_booking'::regclass
 ORDER BY conname;
 ```
+
+The figure below draws this lesson's clinic diagram in crow's foot style: each specialty has 0..n doctors, each doctor belongs to exactly 1 specialty; each doctor sees 0..n appointments and each patient books 0..n appointments; each appointment has exactly 1 doctor and 1 patient.
 
 ## Common mistakes
 

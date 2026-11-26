@@ -41,7 +41,7 @@ steps:
     alt: { vi: "Đơn và sản phẩm gặp nhau 0..n lần mỗi phía, nên không bên nào giữ được khóa ngoại: một bảng nối order_items mới lấy cặp (order_id, product_id) làm khóa và giữ qty của chính quan hệ.", en: "Orders and products meet 0..n times on each side, so neither can hold the foreign key: a new junction table order_items is keyed by the pair (order_id, product_id) and holds the relationship's own qty." }
     set:
       rule: { label: { vi: "M:N → bảng nối", en: "M:N → junction table" } }
-      ea: { label: orders, fields: [{ name: id, pk: true }, ordered_at] }
+      ea: { label: orders, fields: [{ name: id, pk: true }, { name: customer_id, fk: true }] }
       eb: { label: products, fields: [{ name: id, pk: true }, name] }
       rel: { ends: [zero-many, zero-many], label: { vi: "chứa", en: "contains" } }
       tbl: { label: order_items, head: [order_id, product_id, qty], cells: [["1", "10", "2"], ["1", "11", "1"], ["2", "10", "5"]], colTone: [new, new, null], sub: "PK (order_id, product_id)" }

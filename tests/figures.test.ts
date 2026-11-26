@@ -510,6 +510,25 @@ describe('v42 ER mode', () => {
       d.frames.forEach((f, i) => { const at = `${name} ${lang} W${W} ${i}`; expect(linkFindings(f, d.w, d.h), at).toEqual([]); marksClear(f, at); });
       expect(d.frames.flatMap((f) => f.nodes).filter((n) => n.t === 't' && /\|\||o\{|\|\{|\}o/.test(n.s))).toEqual([]);
     });
+  // hosts are any width 280–640 (390–430 px phones, tablets): partial wraps must route as cleanly as the three test widths
+  const sweep: [string, FigSpec, string | undefined][] = [...CARDS.map((c): [string, FigSpec, undefined] => [`er ${c}`, ER(c), undefined]),
+    ...['ds-cardinality', 'ds-er-clinic', 'ds-er-to-tables'].flatMap((n) => [undefined, ...Object.keys(specs[n].variants ?? {})].map((v): [string, FigSpec, string | undefined] => [n, specs[n], v]))];
+  for (const [name, spec, v] of sweep) for (const lang of LANGS) it(`${name} ${v ?? ''} · ${lang} · mọi bề rộng 280–640 (bước 4): không lỗi dựng, analyze, đường quan hệ và dấu sạch`, () => {
+    for (let W = 280; W <= 640; W += 4) {
+      const d = layout(spec, lang, W, v);
+      d.frames.forEach((f, i) => {
+        const at = `${name} ${v ?? ''} ${lang} W${W} ${i}`;
+        expect(analyze(model(f, d.w, d.h), W), at).toEqual([]);
+        expect(linkFindings(f, d.w, d.h), at).toEqual([]);
+        marksClear(f, at);
+      });
+    }
+  }, 120000);
+  it('năm dấu chân chim khác nhau', () => {
+    // the loop sits in the same place for every kind, so its first mark's shapes compare directly
+    const marks = CARDS.map((c) => JSON.stringify(layout(ER(c), 'vi', 640).frames[0].nodes.filter((n) => n.k.startsWith('e:2.m0'))));
+    expect(new Set(marks).size).toBe(5);
+  });
   it('lỗi nội dung: vòng tự nối trên cùng một dòng', () => {
     const s = ER('one');
     expect(() => layout({ ...s, edges: [{ from: 'e#1', to: 'e#1', link: true, ends: ['one', 'many'] }] }, 'vi', 640)).toThrow(/vòng/);
