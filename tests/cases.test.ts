@@ -11,6 +11,7 @@ import { takeHomeTicket } from '../src/interview';
 import { parseInterviewPrefs, passedTakeHomes } from '../src/interviewPrefs';
 import { chapterTablesOf, SKILLS } from '../src/progress';
 import { DRILL_ID, isWorkId } from '../src/save';
+import { whyOpen } from '../src/ui/whyButton';
 import { ecomRunner, finRunner, runner } from './helpers';
 
 await Promise.all([loadDomain('ecommerce'), loadDomain('finance')]);
@@ -82,6 +83,7 @@ describe('cấu trúc', () => {
     });
     expect(p.live['cs-lg-1']).toMatchObject({ solved: ['cs-lg-1-1'], drafts: { 'cs-lg-1-2': 'SELECT 1' }, hints: ['cs-lg-a1-pick'] });
     expect(passedTakeHomes(p)).toEqual([]);
+    expect(whyOpen('cs-lg-1#0', [], { completed: [], bossStep: {} })).toBe(false); // D-V22-6: no "Vì sao?" while it is graded
     const iv = await loadInterview();
     expect(iv.ticketsOf('cs-fn-1')?.[0].steps).toHaveLength(5);
     expect(iv.takeHomes.filter((x) => !x.domain).every((x) => x.id.startsWith('g-iv-th-'))).toBe(true);
