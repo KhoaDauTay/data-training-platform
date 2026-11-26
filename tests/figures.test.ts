@@ -112,7 +112,7 @@ describe.each(Object.keys(specs))('v39 figure %s', (name) => {
     expect(new Set(spec.nodes.map((n) => n.id)).size).toBe(spec.nodes.length);
   });
   it('mọi ký tự vẽ ra có trong bảng độ rộng Nunito (ký tự lạ ước 0,62 em: đo lại bảng trước)', () => {
-    const fold = (s: string): string => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D');
+    const fold = (s: string): string => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').replace(/\u00a0/g, ' '); // v40 R2: a no-break space measures as a space
     // drawn text only: title, caption, sentences and alt texts are HTML (any character)
     const drawn = { ...spec, steps: (spec.steps ?? []).map((s) => ({ ...s, say: '', alt: '' })), caption: '', title: '', alt: '',
       variants: Object.fromEntries(Object.entries(spec.variants ?? {}).map(([k, v]) => [k, { ...v, title: '', caption: '', alt: '' }])) };
@@ -206,8 +206,13 @@ describe.each(Object.keys(specs))('v39 figure %s', (name) => {
           expect(gen, `${lang} ${n.id}`).toContain(`${tr(n.head[1], lang)}: ${tr(n.cells[0][1], lang)}`);
         const verbs = (gen.match(/trỏ tới|points to|nối với|is linked to/g) ?? []).length;
         if (!shown) expect(verbs).toBeGreaterThanOrEqual((spec.edges ?? []).length);
-        // every later step is described (its sentence is in the step list beside the alt)
-        if (!variant && (spec.steps?.length ?? 0) > 1) spec.steps!.slice(1).forEach((_, i) => expect(gen).toContain(`${lang === 'vi' ? 'Bước' : 'Step'} ${i + 2}: `));
+        // v40 R2 (E-16): a stepped figure = the figure, then each step once (the core's numbered list replaces the sentences):
+        // no "Bước n" label written into the text, no entry repeated
+        if (!variant && (spec.steps?.length ?? 0) > 1) for (const a of [altText(spec, lang, variant, true), altText(spec, lang, variant)]) {
+          expect(a, lang).toHaveLength(spec.steps!.length + 1);
+          for (const s of a) expect(s, s).not.toMatch(/(Bước|Step) \d/);
+          expect(new Set(a).size, lang).toBe(a.length);
+        }
         const hand = altText(spec, lang, variant).join(' ');
         expect(hand.trim(), lang).not.toBe('');
         expect(hand).not.toMatch(/\((hộp|bảng|box|table)\)/);
@@ -243,7 +248,7 @@ describe('v39 R1: checker and builder regressions', () => {
 function checkGroups(f: { nodes: Shape[] }, at: string): void {
   const m = model(f, 0, 0);
   for (const g of m.boxes.filter((b) => /^g:[^.]+$/.test(b.k ?? ''))) for (const [id, e] of extents(f)) {
-    const member = m.boxes.some((b) => b.k === `n:${id}` && b.parent === g.k);
+    const member = m.boxes.some((b) => (b.k === `n:${id}` || b.k?.startsWith(`n:${id}:`)) && b.parent === g.k); // v40 R2: a grid's cells
     if (member) expect(Math.min(e.x0 - g.x, g.x + g.w - e.x1, e.y0 - g.y - 20, g.y + g.h - e.y1), `${at}: ${id} sát mép nhóm ${g.k}`).toBeGreaterThanOrEqual(9.5);
     else expect(Math.max(g.x - e.x1, e.x0 - (g.x + g.w), g.y - e.y1, e.y0 - (g.y + g.h)), `${at}: ${id} sát nhóm ${g.k}`).toBeGreaterThanOrEqual(12);
   }
@@ -298,6 +303,57 @@ describe('v40 builder shapes', () => {
   it('lỗi nội dung: nhóm không trọn hàng, nhãn trên làn bên', () => {
     expect(() => layout({ ...SHAPES, groups: [{ id: 'g', label: 'x', nodes: ['t'] }] }, 'vi', 640)).toThrow(/nhóm/);
     expect(() => layout({ ...SHAPES, edges: [{ from: 'pool', to: 'far', label: 'x' }] }, 'vi', 640)).toThrow(/làn bên/);
+  });
+});
+
+// v40 R2 (r2-eye E-01–E-03): edge kinds, cell anchors and crow's-foot end marks, on the specs that use them
+describe('v40 R2: edge kinds, cell anchors, crow\'s foot', () => {
+  const pts = (n: Shape): number[][] => (n.t === 'p' ? samplePath(n.d) : []);
+  for (const lang of LANGS) it.each(WIDTHS)(`${lang} · W %i`, (W) => {
+    // E-01: the split (solid, into the frame) and the foreign key (dashed, labelled) look different; no side lane on a phone
+    const s = layout(specs['ds-2nf-split'], lang, W).frames[0].nodes;
+    const arrows = s.filter((n) => n.t === 'p' && n.arrow);
+    const fk = s.find((n) => n.k === 'e:2');
+    expect(fk && fk.t === 'p' && fk.dash, 'FK dashed').toBe(true);
+    expect(s.find((n) => n.k === 'e:2.l' && n.t === 't')?.t === 't' && (s.find((n) => n.k === 'e:2.l') as { s: string }).s).toBe(lang === 'vi' ? 'khóa ngoại' : 'foreign key');
+    for (const a of arrows.filter((n) => n.k !== 'e:2')) expect(a.t === 'p' && !a.dash, `${a.k} solid`).toBe(true);
+    for (const a of arrows) for (const [x] of pts(a)) expect(x, `${a.k} side lane`).toBeLessThan(W - 24);
+    // E-02: the links leave the dept_id cells (the last column) and end on the departments' first cells; two into one row spread
+    const r = layout(specs['ds-relation-anatomy'], lang, W).frames[0].nodes;
+    const links = r.filter((n) => /^e:\d$/.test(n.k));
+    if (links.length) { // side by side only (stacked on a phone: the text alternative keeps them)
+      const cell = (k: string) => r.find((n) => n.k === k) as Extract<Shape, { t: 'r' }>;
+      [0, 1, 2, 4].forEach((row, i) => {
+        const [p0, p1] = [pts(links[i])[0], pts(links[i]).at(-1)!];
+        const from = cell(`n:staff:${row + 1}:3`), to = cell(`n:dept:${[0, 1, 2, 0][i] + 1}:0`);
+        expect(Math.abs(p0[0] - (from.x + from.w)), `link ${i} start`).toBeLessThan(0.5);
+        expect(Math.abs(p1[0] - to.x), `link ${i} end`).toBeLessThan(0.5);
+      });
+      expect(Math.abs(pts(links[0]).at(-1)![1] - pts(links[3]).at(-1)![1]), 'shared end spread').toBe(8);
+    }
+    // E-03: every relationship line carries a real mark at both ends (no ASCII pills); zero kinds add a hollow circle; the legend draws all four
+    const c = layout(specs['ds-cardinality'], lang, W).frames[0].nodes;
+    expect(c.filter((n) => n.t === 't' && /^(\|\||o\{|\|\{|\|o)$/.test(n.s))).toEqual([]);
+    (specs['ds-cardinality'].edges ?? []).forEach((e, i) => {
+      const line = pts(c.find((n) => n.k === `e:${i}`)!);
+      for (const [j, end] of [[0, line[0]], [1, line.at(-1)!]] as const) {
+        const m = c.find((n) => n.k === `e:${i}.m${j}`);
+        expect(m, `e:${i} mark ${j}`).toBeTruthy();
+        for (const [x, y] of pts(m!)) expect(Math.hypot(x - end[0], y - end[1]), `e:${i} mark ${j} near its end`).toBeLessThan(16);
+      }
+      const zeros = (e.ends ?? []).filter((k) => k?.startsWith('zero')).length;
+      expect(c.filter((n) => n.t === 'c' && n.k.startsWith(`e:${i}.m`)).length, `e:${i} circles`).toBe(zeros);
+    });
+    for (const k of ['k1', 'k2', 'k3', 'k4']) expect(c.some((n) => n.k === `n:${k}.m`), `legend ${k}`).toBe(true);
+  });
+  it('lỗi nội dung: neo vào ô không ở mép', () => {
+    const bad = { ...specs['ds-relation-anatomy'], edges: [{ from: 'staff#0.1', to: 'dept#0.0', link: true }] };
+    expect(() => layout(bad, 'vi', 640)).toThrow(/mép/);
+  });
+  it('E-16: chữ thay hình từng bước không lặp, không nhãn "Bước n"', () => {
+    const a = altText(specs['ds-closure-rounds'], 'vi');
+    expect(a).toHaveLength(specs['ds-closure-rounds'].steps!.length + 1);
+    expect(a.join(' ')).not.toMatch(/Bước \d/);
   });
 });
 

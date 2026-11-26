@@ -1,38 +1,32 @@
 # DS-3 (tools/v39/diagram-plan.md): reading crow's foot. Lesson: e-ds-l2-01 (Ví dụ), the lesson's own lines:
 # CUSTOMER ||--o{ ORDER : places / ORDER ||--|{ ORDER_LINE : contains / EMPLOYEE |o--o{ EMPLOYEE : manages
 # Each end mark sits next to the entity it counts. The self-relationship is drawn as EMPLOYEE twice, one per role (as GA-10 does),
-# since the grammar has no self-loop; the legend is folded into the marks' own words. Notation: Mermaid erDiagram (not fetched).
+# since the grammar has no self-loop. v40 R2 (E-03): the marks are drawn at the line ends (edge ends:), with a legend row of the four marks;
+# no tint. Notation: Mermaid erDiagram / crow's foot (not fetched).
 title: { vi: "Đọc chân chim: mỗi đầu đếm một bên", en: "Reading crow's foot: each end counts one side" }
 caption:
-  vi: "Ký hiệu ở mỗi đầu đường nói phía thực thể bên cạnh nó có bao nhiêu dòng: dấu trong (o hay |) là tối thiểu, dấu ngoài là tối đa."
-  en: "The mark at each end says how many rows of the entity beside it take part: the inner mark (o or |) is the minimum, the outer one the maximum."
+  vi: "Dấu ở mỗi đầu đường nói phía thực thể bên cạnh nó có bao nhiêu dòng: dấu sát thực thể là tối đa (vạch: 1, chân chim: nhiều), dấu xa hơn là tối thiểu (vạch: 1, vòng: 0)."
+  en: "The mark at each end says how many rows of the entity beside it take part: the mark touching the entity is the maximum (bar: 1, foot: many), the one further out the minimum (bar: 1, circle: 0)."
 alt:
-  vi: "Ba quan hệ. CUSTOMER đặt ORDER: đầu phía CUSTOMER là ||, đúng 1 khách; đầu phía ORDER là o{, 0 hoặc nhiều đơn. ORDER gồm ORDER_LINE: đầu phía ORDER là ||, đúng 1; đầu phía ORDER_LINE là |{, 1 hoặc nhiều dòng. EMPLOYEE quản lý EMPLOYEE, cùng một bảng đóng hai vai: đầu phía người quản lý là |o, 0 hoặc 1; đầu phía nhân viên là o{, 0 hoặc nhiều."
-  en: "Three relationships. CUSTOMER places ORDER: the CUSTOMER end is ||, exactly 1 customer; the ORDER end is o{, zero or more orders. ORDER contains ORDER_LINE: the ORDER end is ||, exactly 1; the ORDER_LINE end is |{, one or more lines. EMPLOYEE manages EMPLOYEE, one table in two roles: the manager end is |o, zero or one; the employee end is o{, zero or more."
+  vi: "Ba quan hệ, mỗi đầu đường có một dấu chân chim. CUSTOMER đặt ORDER: đầu phía CUSTOMER là hai vạch, đúng 1 khách; đầu phía ORDER là vòng và chân chim, 0 hoặc nhiều đơn. ORDER gồm ORDER_LINE: đầu phía ORDER là hai vạch, đúng 1; đầu phía ORDER_LINE là vạch và chân chim, 1 hoặc nhiều dòng. EMPLOYEE quản lý EMPLOYEE, cùng một bảng đóng hai vai: đầu phía người quản lý là vạch và vòng, 0 hoặc 1; đầu phía nhân viên là vòng và chân chim, 0 hoặc nhiều. Chú giải bên dưới vẽ bốn dấu: đúng 1, 0 hoặc 1, 1 hoặc nhiều, 0 hoặc nhiều."
+  en: "Three relationships, a crow's-foot mark at each line end. CUSTOMER places ORDER: the CUSTOMER end has two bars, exactly 1 customer; the ORDER end a circle and a foot, zero or more orders. ORDER contains ORDER_LINE: the ORDER end has two bars, exactly 1; the ORDER_LINE end a bar and a foot, one or more lines. EMPLOYEE manages EMPLOYEE, one table in two roles: the manager end has a bar and a circle, zero or one; the employee end a circle and a foot, zero or more. The legend below draws the four marks: exactly 1, zero or one, one or more, zero or more."
 nodes:
   - { id: c, label: CUSTOMER }
-  - { id: m11, shape: key, mono: true, label: "||", sub: { vi: "đúng 1", en: "exactly 1" } }
-  - { id: m12, shape: key, mono: true, label: "o{", sub: { vi: "0 hoặc nhiều", en: "zero or more" } }
   - { id: o, label: ORDER }
   - { id: o2, label: ORDER }
-  - { id: m21, shape: key, mono: true, label: "||", sub: { vi: "đúng 1", en: "exactly 1" } }
-  - { id: m22, shape: key, mono: true, label: "|{", sub: { vi: "1 hoặc nhiều", en: "one or more" }, tone: new }
   - { id: l, label: ORDER_LINE }
   - { id: e1, label: EMPLOYEE, sub: { vi: "người quản lý", en: "manager" } }
-  - { id: m31, shape: key, mono: true, label: "|o", sub: { vi: "0 hoặc 1", en: "zero or one" }, tone: new }
-  - { id: m32, shape: key, mono: true, label: "o{", sub: { vi: "0 hoặc nhiều", en: "zero or more" } }
   - { id: e2, label: EMPLOYEE, sub: { vi: "nhân viên", en: "employee" } }
+  - { id: k1, shape: key, card: one, label: { vi: "đúng 1", en: "exactly 1" } }
+  - { id: k2, shape: key, card: zero-one, label: { vi: "0 hoặc 1", en: "zero or one" } }
+  - { id: k3, shape: key, card: many, label: { vi: "1 hoặc nhiều", en: "one or more" } }
+  - { id: k4, shape: key, card: zero-many, label: { vi: "0 hoặc nhiều", en: "zero or more" } }
 rows:
-  - [c, m11, m12, o]
-  - [o2, m21, m22, l]
-  - [e1, m31, m32, e2]
+  - [c, o]
+  - [o2, l]
+  - [e1, e2]
+  - [k1, k2, k3, k4]
 edges:
-  - { from: c, to: m11, link: true }
-  - { from: m11, to: m12, link: true, label: { vi: "đặt", en: "places" } }
-  - { from: m12, to: o, link: true }
-  - { from: o2, to: m21, link: true }
-  - { from: m21, to: m22, link: true, label: { vi: "gồm", en: "contains" } }
-  - { from: m22, to: l, link: true }
-  - { from: e1, to: m31, link: true }
-  - { from: m31, to: m32, link: true, label: { vi: "quản lý", en: "manages" } }
-  - { from: m32, to: e2, link: true }
+  - { from: c, to: o, link: true, ends: [one, zero-many], label: { vi: "đặt", en: "places" } }
+  - { from: o2, to: l, link: true, ends: [one, many], label: { vi: "gồm", en: "contains" } }
+  - { from: e1, to: e2, link: true, ends: [zero-one, zero-many], label: { vi: "quản lý", en: "manages" } }

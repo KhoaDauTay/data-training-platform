@@ -1,7 +1,10 @@
 # DS-8 (tools/v39/diagram-plan.md): a lossless split. Lessons: e-ds-l4-02 (Ví dụ), e-ds-l4-06 (Thực hành).
 # Data: the Example ex_enrol (student_id, course_id, course_title; PK (student_id, course_id)): (1, 10, SQL), (2, 10, SQL), (3, 10, SQL),
 # (1, 20, Stats); ex_course AS SELECT DISTINCT course_id, course_title (10 SQL, 20 Stats) + PRIMARY KEY (course_id); the join back on
-# course_id gives the 4 rows again. Source: https://www.postgresql.org/docs/current/sql-createtableas.html
+# course_id gives the 4 rows again. v40 R2 (E-01): the two arrow kinds differ: solid arrows from the old table into the frame
+# "tách thành 2 bảng" (the one to ex_course is 
+ear: on a phone, where the tables stack, it is left to the text alternative), and
+# a dashed arrow labelled "khóa ngoại" for the foreign key. Source: https://www.postgresql.org/docs/current/sql-createtableas.html
 title: { vi: "Tách bảng không mất gì", en: "A split that loses nothing" }
 caption:
   vi: "Chuyển cột phụ thuộc sang một bảng có khóa là cột quyết định nó: sự thật lưu một lần, nối lại vẫn đủ dòng."
@@ -19,9 +22,11 @@ nodes:
     cells: [["1", "10", SQL], ["2", "10", SQL], ["3", "10", SQL], ["1", "20", Stats]]
     cellTone: { "0:2": warm, "1:2": warm, "2:2": warm }
     sub: { vi: "SQL lặp 3 lần", en: "SQL repeated 3 times" }
-  - { id: enrol, shape: grid, label: { vi: "ex_enrol (sau)", en: "ex_enrol (after)" }, head: [student_id, course_id], cells: [["1", "10"], ["2", "10"], ["3", "10"], ["1", "20"]], colTone: [null, ptr], sub: { vi: "course_id là khóa ngoại", en: "course_id is a foreign key" } }
+  - { id: enrol, shape: grid, label: { vi: "ex_enrol (sau)", en: "ex_enrol (after)" }, head: [student_id, course_id], cells: [["1", "10"], ["2", "10"], ["3", "10"], ["1", "20"]], colTone: [null, ptr], sub: "PK (student_id, course_id)" }
   - { id: course, shape: grid, label: ex_course, head: [course_id, course_title], cells: [["10", SQL], ["20", Stats]], colTone: [ptr, live], sub: "PK (course_id)" }
   - { id: back, shape: key, label: { vi: "nối lại: đúng 4 dòng", en: "join back: exactly 4 rows" }, tone: live }
+groups:
+  - { id: after, label: { vi: "tách thành 2 bảng", en: "split: 2 tables" }, nodes: [enrol, course] }
 rows:
   - [dep, part]
   - [wide]
@@ -29,5 +34,5 @@ rows:
   - [back]
 edges:
   - { from: wide, to: enrol }
-  - { from: wide, to: course }
-  - { from: enrol, to: course }
+  - { from: wide, to: course, near: true }
+  - { from: enrol, to: course, dash: true, label: { vi: "khóa ngoại", en: "foreign key" } }

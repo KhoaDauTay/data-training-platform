@@ -128,7 +128,8 @@ export function analyze(f, width) {
   // d + e: arrows
   for (const a of arrows) {
     if (a.pts.length < 2) continue;
-    const near = (pt) => boxes.map((b) => ({ b, d: dist(pt, b) })).filter((x) => x.d < 8 && !contains(x.b, { x: Math.min(a.pts[0][0], a.tip[0]), y: Math.min(a.pts[0][1], a.tip[1]), w: Math.abs(a.tip[0] - a.pts[0][0]), h: Math.abs(a.tip[1] - a.pts[0][1]) }))
+    // v40 R2: a figure's group frame (`g:<id>`) is never an arrow's end; an arrow into a table inside one ends at the table
+    const near = (pt) => boxes.filter((b) => !/^g:/.test(b.k ?? '')).map((b) => ({ b, d: dist(pt, b) })).filter((x) => x.d < 8 && !contains(x.b, { x: Math.min(a.pts[0][0], a.tip[0]), y: Math.min(a.pts[0][1], a.tip[1]), w: Math.abs(a.tip[0] - a.pts[0][0]), h: Math.abs(a.tip[1] - a.pts[0][1]) }))
       .sort((p, q) => Math.abs(p.d) - Math.abs(q.d) || area(p.b) - area(q.b))[0]?.b;
     const src = a.from ? byK.get(a.from) : near(a.pts[0]);
     const dst = a.to ? byK.get(a.to) : near(a.tip);
