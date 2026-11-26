@@ -122,7 +122,7 @@ Nhiều người nghĩ phải cộng số của mọi dòng `Buffers:` để có
 
 Đọc dòng này để chọn cách chữa. `shared` lớn (gần bằng số trang của bảng) khi chỉ cần vài dòng: thiếu index hay điều kiện lọc không dùng được index. Có `temp`: sort hay hash tràn đĩa, cần `work_mem` lớn hơn cho đúng câu đó.
 
-Hình cuối mục này vẽ nơi hai con số đó sinh ra: `shared hit` / `shared read` ở shared buffers dùng chung, `temp` ở `work_mem` riêng của câu.
+Hình cuối mục này vẽ nơi `shared hit` / `shared read` sinh ra: trang có sẵn trong shared buffers dùng chung là hit, trang phải nạp từ đĩa là read. Còn `temp` thuộc `work_mem` riêng của câu, không đi qua shared buffers.
 
 ## Cú pháp
 
@@ -242,7 +242,7 @@ Many people think you must add up every `Buffers:` line to get the total. In fac
 
 Read this line to choose the fix. A large `shared` (close to the table's page count) when only a few rows are needed: a missing index, or a filter that cannot use one. Any `temp`: a sort or hash spilling to disk, which needs more `work_mem` for that query.
 
-The figure at the end of this section draws where those numbers come from: `shared hit` / `shared read` in the shared buffers, `temp` in the query's private `work_mem`.
+The figure at the end of this section draws where `shared hit` / `shared read` come from: a page already in the shared buffers is a hit, a page loaded from disk is a read. `temp` belongs to the query's private `work_mem` and never goes through the shared buffers.
 
 ## Syntax
 

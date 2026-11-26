@@ -126,7 +126,7 @@ Vì vậy trên bảng vừa nạp mà chưa VACUUM, Index Only Scan đọc inde
 
 Hình từng bước ở cuối mục này cho thấy VACUUM đánh dấu trang "mọi dòng đều thấy được" trong visibility map; chỉ trang có dấu đó mới cho đếm mà không đọc heap.
 
-Hình thứ hai cho thấy cùng luật đó trên một index-only scan: trang có bit thì bỏ qua heap, trang không có bit vẫn phải mở.
+
 
 ## Ví dụ
 
@@ -163,7 +163,7 @@ So on a freshly loaded table that was never vacuumed, an Index Only Scan reads t
 
 The step-through figure at the end of this section shows VACUUM marking pages "all visible" in the visibility map; only a marked page can be counted without reading the heap.
 
-The second figure shows the same rule in an index-only scan: a page with the bit skips the heap, a page without it is still opened.
+
 
 ## Example
 

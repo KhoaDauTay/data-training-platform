@@ -12,7 +12,7 @@ Decisions: L670–L679 (`decision-log.md`). Overlap report: `tools/v39/overlap-v
 | # | Sev | Figure | What changed |
 |---|---|---|---|
 | E1 | P1 | `pg-memory-two-kinds` at 320 | Stacked, read and checkpoint now take lanes beside the stacked pills, inside the "bộ nhớ chung" frame. Read goes up the left, checkpoint down the right. The lanes leave and land 16 in from that side of each box, so they never meet head to head and never run in parallel. The figure is centred again, because no side lane is reserved. |
-| E2 | P1 | `dy-query-vs-scan` at 320 | Query and Scan are never shown together, so they share one slot. That removes the empty band and lets C-01 and C-02…C-30 sit side by side at 280. Scan has one arrow into the table's frame "Orders: 120 item" (the bracket), instead of two edges. Arrows stop 8 clear of a table's title. |
+| E2 | P1 | `dy-query-vs-scan` at 320 | Query and Scan are never shown together, so they share one slot. That removes the empty band; inside the frame C-02…C-30 sits under the C-01 table at 320. Scan has one arrow into the table's frame "Orders: 120 item" (the bracket), instead of two edges. Arrows stop 8 clear of a table's title. |
 | E3 | P2 | `pg-index-only-scan` step 2 | The plan reads Index Only Scan · Heap Fetches: 0, and every heap page reads "bỏ qua". The edge label is "bit quyết định". |
 | E4 | P2 | `pg-namespace-tree` | The caption and the drawing both show the default search_path "$user", public. Step 1 lights the postgres database. |
 | E5 | P2 | `pg-index-order-limit` step 3 | Seq Scan + Sort sits in its own frame, "Kế hoạch khác", under the index. The frame is hidden in steps 1–2. |
