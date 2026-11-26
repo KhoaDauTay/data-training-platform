@@ -3,7 +3,7 @@ id: cast
 title: "Kiểu dữ liệu và ép kiểu: CAST và ::"
 title_en: "Data types and casting: CAST and ::"
 minutes: 25
-figures: [{ name: sql-sargable-index, at: pitfalls }]
+figures: [{ name: sql-int-division, at: idea }, { name: sql-sargable-index, at: pitfalls }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Đổi một giá trị sang kiểu khác bằng `CAST(x AS kiểu)` hoặc `x::kiểu`.

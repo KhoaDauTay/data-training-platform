@@ -3,6 +3,7 @@ id: string_fn
 title: "Hàm chuỗi: làm sạch và cắt ghép chữ"
 title_en: "String functions: clean, cut and join text"
 minutes: 25
+figures: [{ name: sql-text-functions, at: idea }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Làm sạch chữ nhập tay bằng `trim`, `lower`, `upper`, `replace`.

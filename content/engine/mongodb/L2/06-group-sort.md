@@ -99,7 +99,7 @@ quiz:
 ---
 ## Mở bài
 
-Cuối tháng, mỗi cửa hàng muốn biết doanh thu và số đơn của mình. Bạn có 8 đơn rời rạc. Làm sao gộp chúng thành một dòng cho mỗi cửa hàng?
+Cuối tháng, mỗi cửa hàng muốn biết doanh thu và số đơn của mình. Bạn có 8 đơn rời rạc. Làm sao gộp chúng thành một tài liệu cho mỗi cửa hàng?
 
 ## Ý chính
 
@@ -195,7 +195,7 @@ Bốn bước trên `orders`. Hai bước giữa chấm cả thứ tự. Bước
 
 ## Opening
 
-At the end of the month, each store wants its revenue and its number of orders. You have 8 separate orders. How do you merge them into one row per store?
+At the end of the month, each store wants its revenue and its number of orders. You have 8 separate orders. How do you merge them into one document per store?
 
 ## Key idea
 

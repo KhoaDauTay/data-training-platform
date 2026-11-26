@@ -118,7 +118,7 @@ function resume(id: string): void {
 export const resumeNow = (): Resume | undefined => resumeTarget(app.save.completed, nextTicket(app.tickets, done()), sqlOnly(), ROUTE_SKILLS.map((s) => s.id), readIntent()); // v25 R1: a last drill of a General-only skill resumes on its page; v47 S3: the welcome's goal
 /** v47 S3: product names are never translated; the two tracks are. */
 const engineName = (e: string): string =>
-  e === 'design' ? t('welcome.eng.design') : e === 'stack' ? t('welcome.eng.stack') : ({ postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB', redis: 'Redis' } as Record<string, string>)[e] ?? e;
+  e === 'design' ? t('welcome.eng.design') : e === 'stack' ? t('welcome.eng.stack') : ({ postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB', redis: 'Redis', olap: 'OLAP & ClickHouse' } as Record<string, string>)[e] ?? e;
 /** Its name: the task title, the skill, the Engine track (and level), or the learning path. */
 export const resumeName = (r: Resume): string =>
   r.kind === 'ticket' ? textOf(r.ticket, getLang()).title : r.kind === 'skill' ? SKILLS.find((s) => s.id === r.skill)!.label[getLang()]

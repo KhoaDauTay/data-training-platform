@@ -15,8 +15,8 @@ nodes:
   - id: s
     shape: grid
     label: stores s
-    head: [id, city]
-    cells: [["1", Da Nang], ["2", Da Nang], ["3", Ho Chi Minh City], ["4", Ho Chi Minh City], ["5", Hanoi]]
+    head: [city, id]
+    cells: [[Da Nang, "1"], [Da Nang, "2"], [Ho Chi Minh City, "3"], [Ho Chi Minh City, "4"], [Hanoi, "5"]]
     rowTone: [null, null, null, null, new]
   - id: t
     shape: grid

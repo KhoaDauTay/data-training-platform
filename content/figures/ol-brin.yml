@@ -1,0 +1,23 @@
+# OL-06 (v47 R1, L990): a BRIN keeps one min/max per block range; a time filter skips ranges outside it. Lesson: e-ol-l2-03.
+# Source: https://www.postgresql.org/docs/18/brin.html (default pages_per_range 128). Times are the lab's (2-minute steps).
+title: { vi: "BRIN: một min, max cho mỗi khối trang", en: "BRIN: one min, max per page range" }
+caption:
+  vi: "Lọc ngày 10/10 chỉ đọc khối có khoảng chứa ngày đó; các khối khác bị bỏ qua."
+  en: "Filtering 10 Oct reads only the range whose span holds that day; the other ranges are skipped."
+alt:
+  vi: "Chỉ mục BRIN ghi khoảng thời gian nhỏ nhất và lớn nhất của mỗi khối 128 trang. Vì ts tăng theo thứ ghi, mỗi khối có một khoảng hẹp, nên câu lọc một ngày chỉ đọc khối có khoảng chứa ngày đó."
+  en: "The BRIN index records the smallest and largest time of each 128-page range. Since ts grows in insert order, each range covers a narrow span, so a one-day filter reads only the range whose span holds that day."
+nodes:
+  - id: b
+    shape: grid
+    mono: true
+    label: events_ts_brin
+    head: [{ vi: "khối", en: "range" }, min, max]
+    cells: [["1", "01/10", "06/10"], ["2", "06/10", "12/10"], ["3", "12/10", "18/10"]]
+    rowTone: [dead, warm, dead]
+  - { id: q, mono: true, label: "ts = 10/10", sub: { vi: "đọc khối 2", en: "reads range 2" }, tone: new }
+rows:
+  - [q]
+  - [b]
+edges:
+  - { from: q, to: b }

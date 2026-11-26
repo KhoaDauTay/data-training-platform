@@ -11,7 +11,7 @@ minutes: 8
 objectives:
   - { vi: "Đọc hai item trong một `TransactGetItems` để không thấy trạng thái nửa vời của một transaction ghi", en: "Read two items in one `TransactGetItems` so you never see half of a write transaction" }
   - { vi: "Đối chiếu `ConsumedCapacity`: đọc trong transaction tốn 2 RCU mỗi item tới 4 KB", en: "Check `ConsumedCapacity`: a transactional read costs 2 RCU per item up to 4 KB" }
-  - { vi: "So giá của `TransactGetItems` với `GetItem` đọc mạnh để biết khi nào đáng dùng", en: "Compare the price of `TransactGetItems` with a strong `GetItem` to know when it is worth it" }
+  - { vi: "So giá của `TransactGetItems` với `GetItem` đọc nhất quán mạnh để biết khi nào đáng dùng", en: "Compare the price of `TransactGetItems` with a strong `GetItem` to know when it is worth it" }
 requires: [e-dy-l4-11]
 sources:
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/transaction-apis.html
@@ -51,7 +51,7 @@ lab:
 quiz:
   - q: { vi: "Ứng dụng đọc ví `w1` bằng `GetItem` rồi ví `w2` bằng `GetItem` thứ hai, cả hai đều nhất quán mạnh. Có thể thấy tổng tiền sai không?", en: "The application reads wallet `w1` with `GetItem`, then wallet `w2` with a second `GetItem`, both strongly consistent. Can it see a wrong total?" }
     options:
-      - { vi: "Không, đọc mạnh luôn trả số mới nhất", en: "No, a strong read always returns the latest value" }
+      - { vi: "Không, đọc nhất quán mạnh luôn trả số mới nhất", en: "No, a strong read always returns the latest value" }
       - { vi: "Có: một transaction chuyển tiền có thể commit giữa hai lần đọc, nên thấy `w1` đã trừ mà `w2` chưa cộng", en: "Yes: a transfer transaction can commit between the two reads, so you see `w1` debited but `w2` not yet credited" }
       - { vi: "Chỉ khi bảng có GSI", en: "Only when the table has a GSI" }
     answer: 1
@@ -73,9 +73,9 @@ Màn hình đối soát đọc số dư hai ví ngay lúc một giao dịch chuy
 
 Hai `GetItem` riêng lẻ có thể rơi vào hai phía của một transaction ghi. `TransactGetItems` gom tối đa 100 `Get` thành một lần đọc tất-cả-hoặc-không, serializable với `TransactWriteItems`: bạn thấy toàn bộ một transaction ghi, hoặc không thấy gì của nó. Kết quả `Responses` theo đúng thứ tự các `Get`; item không tồn tại thì phần tử đó rỗng. Nó bị hủy (`TransactionCanceledException`) nếu va vào một transaction ghi đang chạy trên cùng item.
 
-Giá: đọc trong transaction tốn 2 RCU cho mỗi item tới 4 KB, so với 1 RCU khi đọc mạnh và 0,5 RCU khi đọc nhất quán cuối cùng.
+Giá: đọc trong transaction tốn 2 RCU cho mỗi item tới 4 KB, so với 1 RCU khi đọc nhất quán mạnh và 0,5 RCU khi đọc nhất quán cuối.
 
-Nhiều người nghĩ đọc mạnh từng item là đủ để thấy dữ liệu khớp nhau. Thật ra đọc mạnh chỉ đúng tại thời điểm của từng lần đọc. Dùng `TransactGetItems` khi cần một ảnh chụp nhất quán của vài item; một item thì `GetItem` đọc mạnh rẻ bằng nửa.
+Nhiều người nghĩ đọc nhất quán mạnh từng item là đủ để thấy dữ liệu khớp nhau. Thật ra đọc nhất quán mạnh chỉ đúng tại thời điểm của từng lần đọc. Dùng `TransactGetItems` khi cần một ảnh chụp nhất quán của vài item; một item thì `GetItem` đọc nhất quán mạnh rẻ bằng nửa.
 
 Lab chạy bằng dynoxide trong trình duyệt; `ConsumedCapacity` là số engine tính theo đúng quy tắc trên.
 
@@ -110,7 +110,7 @@ Cùng hai ví bằng `BatchGetItem`:
 {"op": "BatchGetItem", "input": {"RequestItems": {"Wallets": {"Keys": [{"pk": {"S": "WALLET#w3"}, "sk": {"S": "BALANCE"}}, {"pk": {"S": "WALLET#w1"}, "sk": {"S": "BALANCE"}}]}}}}
 ```
 
-Rẻ hơn (đọc nhất quán cuối cùng, 0,5 RCU mỗi item) nhưng không phải ảnh chụp: mỗi item được đọc riêng, thứ tự không cam kết.
+Rẻ hơn (đọc nhất quán cuối, 0,5 RCU mỗi item) nhưng không phải ảnh chụp: mỗi item được đọc riêng, thứ tự không cam kết.
 
 ```text
 GetItem w1 (eventual)        0.5 RCU
@@ -150,13 +150,13 @@ Item không tồn tại không gây lỗi: phần tử của nó trong `Response
 
 ## Thực hành
 
-Bảng `Wallets` có ba ví. Đọc hai ví trong một ảnh chụp và xem `ConsumedCapacity`, đọc theo thứ tự khác, rồi đọc một ví bằng `GetItem` đọc mạnh để so giá.
+Bảng `Wallets` có ba ví. Đọc hai ví trong một ảnh chụp và xem `ConsumedCapacity`, đọc theo thứ tự khác, rồi đọc một ví bằng `GetItem` đọc nhất quán mạnh để so giá.
 
 ## Tóm tắt
 
 - `TransactGetItems`: tối đa 100 `Get`, một ảnh chụp tất-cả-hoặc-không.
 - `Responses` theo đúng thứ tự các `Get`.
-- 2 RCU mỗi item tới 4 KB, gấp đôi đọc mạnh.
+- 2 RCU mỗi item tới 4 KB, gấp đôi đọc nhất quán mạnh.
 - Một item thì `GetItem` với `ConsistentRead: true` là đủ và rẻ hơn.
 
 # EN

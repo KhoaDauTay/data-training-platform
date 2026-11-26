@@ -1,0 +1,29 @@
+# OL-02 (v47 R1, L990): the same three rows laid out by row and by column; sum(teu) reads a page of whole rows vs one column.
+# Lesson: e-ol-l1-02 (Ý chính). Source: https://clickhouse.com/docs/intro (row-oriented vs column-oriented storage).
+title: { vi: "Cùng dữ liệu, hai cách xếp", en: "Same data, two layouts" }
+caption:
+  vi: "Theo dòng, một trang giữ trọn các dòng; theo cột, mỗi cột là một khối riêng."
+  en: "By row, a page holds whole rows; by column, each column is its own block."
+alt:
+  vi: "Kho lưu theo dòng xếp các cột của một dòng liền nhau, nên tính tổng teu phải đọc cả cột notes nằm cạnh. Kho lưu theo cột xếp mỗi cột thành một khối, nên câu đó chỉ đọc khối teu."
+  en: "A row store keeps a row's columns side by side, so summing teu also reads the notes column next to it. A column store keeps each column as one block, so that query reads only the teu block."
+nodes:
+  - id: rows
+    shape: grid
+    mono: true
+    label: { vi: "theo dòng", en: "by row" }
+    sub: { vi: "trang đọc trọn", en: "whole page read" }
+    head: [id, port, teu, notes]
+    cells: [["1", "VNSGN", "2", "nnnn…"], ["2", "VNHPH", "3", "nnnn…"], ["3", "VNDAD", "4", "nnnn…"]]
+    rowTone: [warm, warm, warm]
+  - id: cols
+    shape: grid
+    mono: true
+    label: { vi: "theo cột", en: "by column" }
+    sub: { vi: "chỉ đọc teu", en: "only teu read" }
+    head: [id, port, teu, notes]
+    cells: [["1 2 3", "VNSGN…", "2 3 4", "nnnn…"]]
+    cellTone: { "0:2": new }
+rows:
+  - [rows]
+  - [cols]

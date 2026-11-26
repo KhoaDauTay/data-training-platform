@@ -18,7 +18,7 @@ export interface PaletteSources {
 export interface PaletteHashes { skill: (id: string) => string; lesson: (engine: string, level: string, id: string) => string; term: (id: string) => string; interview?: (tab: 'sql' | 'pg' | 'mg' | 'dy') => string }
 
 const str = (x: unknown): string => (typeof x === 'string' ? x : '');
-const ENGINE_NAME: Record<string, string> = { postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB', redis: 'Redis' };
+const ENGINE_NAME: Record<string, string> = { postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB', redis: 'Redis', olap: 'OLAP & ClickHouse' };
 
 /** [VI title, EN title, hash, extra search words]: a page result each (v47, L1092). */
 const PAGES: readonly (readonly [string, string, string, string])[] = [
