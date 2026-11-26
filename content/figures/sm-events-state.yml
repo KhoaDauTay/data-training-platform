@@ -1,0 +1,25 @@
+# v47 SM: three events of one shipment fold into one state row. Lesson: e-sm-l1-01 (Ý chính).
+# Data = the lab's shipment_events for SHP-101 (08:00 booked, 09:10 picked_up, 11:30 in_transit) and its shipments row.
+# Source: https://kafka.apache.org/41/getting-started/introduction/#main-concepts-and-terminology (an event: key, value, timestamp)
+title: { vi: "Ba sự kiện, một trạng thái", en: "Three events, one state" }
+caption:
+  vi: "Sự kiện của SHP-101 không bị sửa; giữ sự kiện mới nhất của khóa là ra trạng thái hiện tại, nhưng đi ngược lại thì không được."
+  en: "SHP-101's events are never changed; keeping the key's newest event gives the current state, but you cannot go back the other way."
+alt:
+  vi: "Bảng sự kiện giữ mọi lần đổi của một lô hàng, còn bảng trạng thái chỉ giữ lần đổi cuối. Giữ sự kiện mới nhất của mỗi khóa là dựng lại được trạng thái. Kết quả: SHP-101 là in_transit."
+  en: "The events table keeps every change of a shipment, while the state table keeps only the last one. Keeping the newest event per key rebuilds the state. Result: SHP-101 is in_transit."
+groups:
+  - { id: ev, label: { vi: "shipment_events", en: "shipment_events" }, nodes: [e1, e2, e3] }
+nodes:
+  - { id: e1, mono: true, label: booked, sub: "08:00", tone: ghost }
+  - { id: e2, mono: true, label: picked_up, sub: "09:10", tone: ghost }
+  - { id: e3, mono: true, label: in_transit, sub: "11:30", tone: new }
+  - { id: fold, label: { vi: "mới nhất mỗi khóa", en: "newest per key" }, sub: "DISTINCT ON", tone: warm }
+  - { id: state, shape: table, mono: true, label: shipments, sub: "SHP-101 in_transit", tone: live }
+rows:
+  - [e1, e2, e3]
+  - [fold]
+  - [state]
+edges:
+  - { from: ev, to: fold }
+  - { from: fold, to: state }

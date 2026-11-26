@@ -1,0 +1,25 @@
+# v47 SM: before and after one compaction pass, offsets kept. Lesson: e-sm-l1-04 (Ý chính).
+# Data = the lab's status_log for SHP-101 and SHP-102 (offsets 3-6; 6 is SHP-102's tombstone).
+# Source: https://kafka.apache.org/41/design/design/ (log compaction, tombstones, offsets never change)
+title: { vi: "Một lần nén", en: "One compaction pass" }
+caption:
+  vi: "Nén giữ bản mới nhất của mỗi khóa với offset cũ của nó; tombstone ở offset 6 còn lại để báo SHP-102 đã bị xóa."
+  en: "Compaction keeps each key's latest record at its old offset; the tombstone at offset 6 stays to tell consumers that SHP-102 was deleted."
+alt:
+  vi: "Nén bỏ các bản ghi đã có bản mới hơn cùng khóa nhưng không đánh số lại, nên những gì còn lại vẫn giữ offset cũ. Kết quả: còn offset 5 (SHP-101 in_transit) và offset 6 (tombstone của SHP-102)."
+  en: "Compaction drops records that have a newer one with the same key but never renumbers, so what remains keeps its old offsets. Result: offset 5 (SHP-101 in_transit) and offset 6 (SHP-102's tombstone) remain."
+groups:
+  - { id: before, label: { vi: "trước khi nén", en: "before compaction" }, nodes: [o3, o4, o5, o6] }
+  - { id: after, label: { vi: "sau khi nén", en: "after compaction" }, nodes: [k5, k6] }
+nodes:
+  - { id: o3, mono: true, label: "3 SHP-101", sub: picked_up, tone: ghost }
+  - { id: o4, mono: true, label: "4 SHP-102", sub: picked_up, tone: ghost }
+  - { id: o5, mono: true, label: "5 SHP-101", sub: in_transit }
+  - { id: o6, mono: true, label: "6 SHP-102", sub: "NULL" }
+  - { id: k5, mono: true, label: "5 SHP-101", sub: in_transit, tone: live }
+  - { id: k6, mono: true, label: "6 SHP-102", sub: { vi: "tombstone", en: "tombstone" }, tone: warm }
+rows:
+  - [o3, o4, o5, o6]
+  - [k5, k6]
+edges:
+  - { from: before, to: after }

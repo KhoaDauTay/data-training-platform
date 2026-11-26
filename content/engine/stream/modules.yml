@@ -1,0 +1,12 @@
+- id: log
+  vi: Sự kiện và nhật ký
+  en: Events and the log
+- id: delivery
+  vi: Giao nhận và consumer idempotent
+  en: Delivery and idempotent consumers
+- id: cdc
+  vi: CDC từ PostgreSQL
+  en: CDC from PostgreSQL
+- id: process
+  vi: Xử lý luồng
+  en: Stream processing

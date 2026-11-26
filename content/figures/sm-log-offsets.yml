@@ -1,0 +1,24 @@
+# v47 SM (Streaming & CDC): one log, two consumer groups at two positions. Lesson: e-sm-l1-02 (Ý chính).
+# Data = the lab's events (offsets 0-7) and consumer_offsets (billing 3, tracking 6).
+# Source: https://kafka.apache.org/41/design/design/ (a consumer's position is the offset of the next message to consume)
+title: { vi: "Một nhật ký, hai vị trí", en: "One log, two positions" }
+caption:
+  vi: "Nhóm billing lưu next_offset 3, nhóm tracking lưu 6; mỗi nhóm đọc tiếp từ đúng offset đã lưu, và nhật ký không đổi."
+  en: "Group billing saved next_offset 3, group tracking saved 6; each group reads on from exactly the offset it saved, and the log does not change."
+alt:
+  vi: "Hai nhóm consumer đọc cùng một nhật ký chỉ ghi thêm nhưng mỗi nhóm giữ vị trí riêng, là offset của sự kiện kế tiếp cần đọc. Kết quả: billing còn 5 sự kiện chưa đọc (offset 3 tới 7), tracking còn 2 (offset 6 và 7)."
+  en: "Two consumer groups read the same append-only log, but each keeps its own position, the offset of the next event to read. Result: billing has 5 unread events (offsets 3 to 7), tracking has 2 (offsets 6 and 7)."
+groups:
+  - { id: log, label: { vi: "events (nhật ký)", en: "events (the log)" }, nodes: [old, mid, end] }
+nodes:
+  - { id: old, label: "offset 0-2", sub: { vi: "đã đọc", en: "already read" }, tone: ghost }
+  - { id: mid, label: "offset 3-5", sub: { vi: "lô kế của billing", en: "next for billing" }, tone: live }
+  - { id: end, label: "offset 6-7", sub: { vi: "mới nhất", en: "newest" }, tone: new }
+  - { id: bill, mono: true, label: billing, sub: "next_offset 3" }
+  - { id: track, mono: true, label: tracking, sub: "next_offset 6" }
+rows:
+  - [old, mid, end]
+  - [bill, track]
+edges:
+  - { from: bill, to: mid }
+  - { from: track, to: end }

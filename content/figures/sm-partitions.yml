@@ -1,0 +1,30 @@
+# v47 SM: three keys, one hash, three partitions. Lesson: e-sm-l1-03 (Ý chính).
+# Data = the lab's topic_log: SHP-101 and SHP-104 in partition 0, SHP-108 in 1, SHP-103 in 2 (abs(hashtext(key)) % 3).
+# Sources: https://kafka.apache.org/41/getting-started/introduction/#main-concepts-and-terminology ;
+# https://kafka.apache.org/41/configuration/producer-configs/ (partitioner: a hash of the key)
+title: { vi: "Khóa quyết định partition", en: "The key picks the partition" }
+caption:
+  vi: "Mỗi khóa qua cùng một hàm băm nên luôn vào cùng một partition; thứ tự đúng trong từng partition, không đúng giữa các partition."
+  en: "Each key goes through the same hash, so it always lands in the same partition; order holds within each partition, not across them."
+alt:
+  vi: "Producer băm khóa của sự kiện rồi chia lấy dư cho số partition, nên mọi sự kiện của một lô hàng nằm chung một partition và được đọc đúng thứ tự ghi. Kết quả: SHP-101 vào partition 0, SHP-108 vào partition 1, SHP-103 vào partition 2."
+  en: "The producer hashes the event's key and takes the remainder by the number of partitions, so every event of one shipment shares a partition and is read in write order. Result: SHP-101 goes to partition 0, SHP-108 to partition 1, SHP-103 to partition 2."
+nodes:
+  - { id: k1, mono: true, label: SHP-101 }
+  - { id: k2, mono: true, label: SHP-108 }
+  - { id: k3, mono: true, label: SHP-103 }
+  - { id: hash, mono: true, label: "hash(key) % 3", tone: warm }
+  - { id: p0, label: "partition 0", sub: { vi: "offset 0-4", en: "offsets 0-4" } }
+  - { id: p1, label: "partition 1", sub: { vi: "offset 0-1", en: "offsets 0-1" } }
+  - { id: p2, label: "partition 2", sub: { vi: "offset 0-3", en: "offsets 0-3" } }
+rows:
+  - [k1, k2, k3]
+  - [hash]
+  - [p0, p1, p2]
+edges:
+  - { from: k1, to: hash }
+  - { from: k2, to: hash }
+  - { from: k3, to: hash }
+  - { from: hash, to: p0 }
+  - { from: hash, to: p1 }
+  - { from: hash, to: p2 }
