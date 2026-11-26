@@ -763,6 +763,8 @@ function labView(l: EngineLesson, v: Visit): HTMLElement {
       h('p', { class: 'm-0' }, !live ? et('lab.noRunner') : l.engine === 'mongodb' ? et('lab.dataMongo') : l.engine === 'dynamodb' ? et('lab.dataDynamo') : l.lab!.setup ? et('lab.dataPg') : et('lab.data')),
       // v43 (L726): the PostGIS tarball (~20 MB) is not precached; say so before the first Run
       live && onPg(l.engine) && /\bpostgis\b/i.test(l.lab!.setup ?? '') ? h('p', { class: 'm-0 text-muted', 'data-postgis-note': '' }, et('lab.postgisOnce')) : null,
+      // v46 S-13 (L835): the dbt notice again where the Jinja is typed
+      l.lab?.steps.some((s) => s.model) ? h('p', { class: 'm-0 text-muted', 'data-stack-sim-lab': '' }, et('stack.sim')) : null,
       live && l.runtime !== 'docs' ? tablesPanel(l, v) : null),
     cap && cc ? cap.capChecks(cc) : null,
     h('ol', { class: 'm-0 list-none space-y-4 p-0' }, ...steps.map((s, i) => {
@@ -777,7 +779,8 @@ function labView(l: EngineLesson, v: Visit): HTMLElement {
       const ed = live && v.opened.has(i);
       // v23 CAP (L257): a capstone's current step (the first not passed) gets the accent ring and says so in words.
       return h('li', { class: cls.cx(cls.CARD, 'flex flex-col gap-3 p-4 max-sm:p-3', i === cur && 'ring-2 ring-accent'), 'data-step': key, 'aria-current': i === cur ? 'step' : false },
-        h('div', { class: 'flex items-start gap-3' },
+        // v46 S-18 (L835): at 320 the task text goes under the disc at full width
+        h('div', { class: 'flex items-start gap-3 max-[400px]:flex-col max-[400px]:gap-2' },
           leadDisc(passed ? 'done' : i === cur ? 'current' : 'todo', String(i + 1)),
           h('div', { class: 'min-w-0 flex-1 flex flex-col gap-1' },
             h('h3', { class: 'm-0 text-caption font-bold tracking-wider text-muted uppercase' }, et('lab.step', { i: i + 1, n: steps.length }),
