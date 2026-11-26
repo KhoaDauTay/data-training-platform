@@ -13,6 +13,7 @@ export const PREREQS: Partial<Record<EngineId, Prereq[]>> = {
   postgres: [{ sql: [1, 2] }],
   mongodb: [],
   dynamodb: [],
+  redis: [], // v47 R1 (L965): no SQL needed; its L2 compares with PostgreSQL in words only
   design: [{ sql: [1, 3] }],
   stack: [{ sql: [1, 7] }, { engine: 'postgres', to: 'L1' }],
 };
