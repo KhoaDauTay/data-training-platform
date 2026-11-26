@@ -1,5 +1,5 @@
 # B3-14 (tools/v42/diagram-plan-v42.md): CASE stops at the first branch that is true. Lessons: case_when (Ý chính),
-# conditional_agg (Ý chính, variant `filter`). Data (lab, PGlite; tools/v42/b3check.log): CASE WHEN price_vnd >= 100000 THEN 3
+# conditional_agg (Ý chính, variant `filter` = step 2 with the bars titled count(*) FILTER; showing the bars alone left the hidden nodes' rows blank). Data (lab, PGlite; tools/v42/b3check.log): CASE WHEN price_vnd >= 100000 THEN 3
 # WHEN price_vnd >= 30000 THEN 2 ELSE 1 END; Household = Laundry powder 3kg 129000 → 3; Floor cleaner 56000, Paper towels 41000,
 # Light bulb 38000, Dish soap 32000 → 2; Trash bags 27000 → 1; all products: tier 1 15, tier 2 11, tier 3 4 (count(*) FILTER
 # gives the same three numbers on one row). Bars to scale (7.5 = 15), the note is the real count.
@@ -54,11 +54,11 @@ steps:
     alt: { vi: "Mỗi món nhận đúng một hạng, nên gom theo hạng ra 15, 11 và 4.", en: "Each item gets exactly one tier, so grouping by tier gives 15, 11 and 4." }
 variants:
   filter:
-    show: [cnt]
+    step: 1
     title: { vi: "Ba hạng giá trong một dòng", en: "Three price tiers on one row" }
     caption:
-      vi: "count(*) FILTER (WHERE price_vnd >= 100000) và hai cột tương tự cho hạng 2 và hạng 1, trên products của lab."
-      en: "count(*) FILTER (WHERE price_vnd >= 100000) and two similar columns for tiers 2 and 1, on the lab's products."
+      vi: "Ba hạng giá trên products của lab, chia bằng CASE; count(*) FILTER (WHERE price_vnd >= 100000) và hai cột tương tự đếm cả ba trên một dòng."
+      en: "Three price tiers on the lab's products, split by CASE; count(*) FILTER (WHERE price_vnd >= 100000) and two similar columns count all three on one row."
     alt:
       vi: "FILTER đếm từng hạng trong cùng một dòng kết quả thay vì một dòng mỗi nhóm. Kết quả: 15, 11 và 4 món, như GROUP BY theo hạng."
       en: "FILTER counts each tier in one result row instead of one row per group. Result: 15, 11 and 4 items, as with GROUP BY on the tier."

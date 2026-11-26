@@ -554,7 +554,7 @@ describe('v42 ER mode', () => {
     expect((k('e:2.l') as { x: number }).x).toBeGreaterThan(Math.max(...loop.map(([x]) => x)));
   });
   // the content's ER figures: links clear of boxes, texts and each other at every width, step and variant
-  // v44 (L787): every spec that draws an entity, not a hand-kept list
+  // v44 (L785): every spec that draws an entity, not a hand-kept list
   const ER_SPECS = Object.keys(specs).filter((n) => specs[n].nodes.some((x) => x.shape === 'entity'));
   for (const name of ER_SPECS) for (const variant of [undefined, ...Object.keys(specs[name]?.variants ?? {})]) for (const lang of LANGS)
     it.each(WIDTHS)(`${name} ${variant ?? ''} · ${lang} · W %i: đường quan hệ không cắt hộp, chữ; dấu không chạm chữ`, (W) => {

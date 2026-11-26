@@ -26,7 +26,7 @@ rows:
   - [glue, bind]
   - [sql, r2]
   - [r1]
-phone: { rows: [[in], [bind, r2], [glue], [sql], [r1]] }
+phone: { rows: [[bind, r2], [in], [glue], [sql], [r1]] }
 edges:
   - { from: in, to: glue }
   - { from: glue, to: sql }

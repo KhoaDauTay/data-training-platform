@@ -49,7 +49,7 @@ steps:
       ix: { rowTone: [null, null, warm, warm, warm, warm, warm, null, null, warm] }
 variants:
   tenant:
-    show: [q1, ix]
+    show: [q1, q2, ix]
     title: { vi: "tenant_id đứng đầu chỉ mục", en: "tenant_id leads the index" }
     caption:
       vi: "Một đoạn của index (tenant_id, created_at) trên invoices của lab: hóa đơn của một khách nằm liền nhau, đã xếp theo thời gian."
@@ -59,6 +59,7 @@ variants:
       en: "Leading with tenant_id keeps one tenant's rows together, so every query with tenant_id reads one stretch."
     set:
       q1: { label: "tenant_id = 7", sub: { vi: "tháng 3: 1 đoạn", en: "March: one stretch" } }
+      q2: { label: { vi: "thiếu tenant_id", en: "no tenant_id" }, sub: { vi: "rải khắp 50 khách", en: "spread over 50" } }
       ix:
         label: index (tenant_id, created_at)
         sub: { vi: "trích: 2 trong 45 dòng tháng 3", en: "excerpt: 2 of March's 45 rows" }

@@ -1,8 +1,8 @@
 # B3-1 (tools/v42/diagram-plan-v42.md): some ALTERs only touch the catalog, some rewrite the file. Lesson: e-pg-l1-13 (Ý chính),
 # the three commands of its Example. Data (PGlite, lesson setup; tools/v42/b3check.log): pg_relation_filenode('orders') is the same
 # after ADD COLUMN channel text NOT NULL DEFAULT 'web' (true), new after ALTER COLUMN customer_ref TYPE bigint USING (false), the
-# same after note varchar(40) → varchar(80) (true). Deviation: no es note; the command's arrow into file A says "left as is"
-# or "reads every row", and file A's sub says whether it stays. "file A" / "file B" stand for the two filenodes (no fake number).
+# same after note varchar(40) → varchar(80) (true). Deviation: no res note; file A's sub says whether the table stays in it,
+# and the command has no arrow to the files (the plan's sketch). "file A" / "file B" stand for the two filenodes (no fake number).
 # Source: https://www.postgresql.org/docs/18/sql-altertable.html
 title: { vi: "ALTER chỉ sửa catalog hay ghi lại bảng", en: "Does an ALTER touch only the catalog or rewrite the table" }
 caption:
@@ -22,8 +22,7 @@ rows:
 phone: { rows: [[cat], [cmd], [f1, f2]] }
 edges:
   - { from: cmd, to: cat, label: { vi: "chỉ catalog", en: "catalog only" } }
-  - { id: e1, from: cmd, to: f1, label: { vi: "giữ nguyên", en: "left as is" } }
-  - { from: f1, to: f2, label: { vi: "ghi sang", en: "writes to" } }
+  - { from: f1, to: f2, label: { vi: "ghi mọi dòng", en: "every row" } }
 steps:
   - say: { vi: "DEFAULT hằng: lưu một lần trong catalog.", en: "Constant DEFAULT: stored once in the catalog." }
     show: [cmd, cat, f1]
@@ -34,7 +33,6 @@ steps:
     set:
       cmd: { label: "TYPE bigint" }
       f1: { sub: { vi: "file cũ, bỏ đi", en: "old file, dropped" }, tone: dead }
-      e1: { label: { vi: "đọc mọi dòng", en: "reads every row" } }
   - say: { vi: "Nới varchar: không ghi lại.", en: "Widen a varchar: no rewrite." }
     show: [cmd, cat, f1]
     alt: { vi: "Nới giới hạn độ dài không đổi byte nào trên đĩa.", en: "Raising a length limit changes no byte on disk." }

@@ -1,5 +1,5 @@
 # B3-11 (tools/v42/diagram-plan-v42.md): a day on a timestamp column is a range, not a point. Lessons: date_math (Ý chính),
-# date_bucket (Ý chính, variant `month`, static). Data (lab, PGlite; tools/v42/b3check.log): payments.paid_at BETWEEN '2026-10-01'
+# date_bucket (Ý chính, variant `month` = step 2 with date_trunc's count; a variant showing only two nodes left the others' rows blank). Data (lab, PGlite; tools/v42/b3check.log): payments.paid_at BETWEEN '2026-10-01'
 # AND '2026-10-31' = 218; >= '2026-10-01' AND < '2026-11-01' = 223; date_trunc('month', paid_at) = '2026-10-01' = 223 (variant);
 # the 5 payments on 31 Oct are at 08:15, 12:25, 14:00, 14:37, 16:33. Bars to scale (10 = 223), the note is the real count.
 # Source: https://www.postgresql.org/docs/current/functions-datetime.html
@@ -39,7 +39,7 @@ steps:
       axis: { colTone: [live, live, live, live, live] }
 variants:
   month:
-    show: [ho, n]
+    step: 1
     title: { vi: "Một tháng là khoảng nửa mở", en: "A month is a half-open range" }
     caption:
       vi: "Khoản thanh toán tháng 10 trong payments của lab: date_trunc('month') đếm đúng như khoảng >= '10-01' AND < '11-01'."
