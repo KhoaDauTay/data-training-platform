@@ -1,0 +1,62 @@
+# B1-3 (tools/v42/diagram-plan-v42.md): a hot partition borrows, a hot item cannot. Lesson: e-dy-l4-02 (Ví dụ), replaces its two
+# text blocks. Data: the AWS docs example quoted in the lesson (400 WCU table, 4 partitions × 100; load 50, 50, 50, 150; then one
+# item at 1500 writes/s: 1000 accepted, 500 throttled). Deviation: bar values are drawn in units (WCU ÷ 10 for partitions, ÷ 100
+# for the item: a bar unit is ≥ 8 px) with the real number as each bar's note; the dashed mark's meaning is the chart's sub (bars
+# have no mark note); the item chart shows sent vs accepted, a third bar shows the 500 throttled.
+# Source: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/burst-adaptive-capacity.html
+title: { vi: "Partition nóng mượn được, item nóng thì không", en: "A hot partition borrows, a hot item cannot" }
+caption:
+  vi: "Bảng 400 WCU chia đều cho 4 partition, mỗi partition 100. Adaptive capacity dời phần bảng còn dư sang partition nóng; một khóa chính vẫn có trần 1000 WCU mỗi giây."
+  en: "A 400 WCU table split evenly over 4 partitions, 100 each. Adaptive capacity moves the table's spare throughput to a hot partition; one primary key still has a ceiling of 1000 WCU per second."
+alt:
+  vi: "Adaptive capacity dời phần thừa của bảng sang partition nóng, miễn tổng bảng còn dư. Nó không vượt được trần 1000 WCU của một khóa chính, nên một khóa nóng phải được rải ra."
+  en: "Adaptive capacity moves the table's spare throughput to a hot partition while the table total has room. It cannot pass one primary key's 1000 WCU ceiling, so a single hot key must be spread."
+nodes:
+  - id: p
+    shape: bars
+    label: { vi: "WCU mỗi giây", en: "WCU per second" }
+    sub: { vi: "vạch: phần chia đều 100", en: "line: even share of 100" }
+    mark: 10
+    items:
+      - { label: P1, value: 5, note: "50", tone: cell }
+      - { label: P2, value: 5, note: "50", tone: cell }
+      - { label: P3, value: 5, note: "50", tone: cell }
+      - { label: P4, value: 15, note: { vi: "150, dùng burst", en: "150, on burst" }, tone: warm }
+  - { id: tot, shape: key, label: { vi: "bảng: 300 / 400", en: "table: 300 / 400" } }
+  - id: item
+    shape: bars
+    label: "LIKES#post-1"
+    sub: { vi: "vạch: trần 1000 WCU", en: "line: 1000 WCU ceiling" }
+    mark: 10
+    items:
+      - { label: { vi: "gửi tới", en: sent }, value: 15, note: "1500", tone: warm }
+      - { label: { vi: "nhận", en: accepted }, value: 10, note: "1000", tone: live }
+      - { label: { vi: "bị throttle", en: throttled }, value: 5, note: "500", tone: dead }
+rows:
+  - [p]
+  - [tot]
+  - [item]
+steps:
+  - say: { vi: "P4 nhận 150 trên phần 100.", en: "P4 takes 150 against a share of 100." }
+    alt: { vi: "Vượt phần chia đều, P4 dùng burst capacity, tối đa 300 giây capacity chưa dùng, để đỡ trong lúc chờ.", en: "Over its even share, P4 spends burst capacity, at most 300 seconds of unused capacity, while it waits." }
+    show: [p]
+  - say: { vi: "Adaptive capacity nâng P4 lên 150.", en: "Adaptive capacity raises P4 to 150." }
+    alt: { vi: "Tổng của bảng là 300, vẫn dưới 400, nên DynamoDB cho P4 thêm phần mà không partition nào thiếu.", en: "The table's total is 300, still under 400, so DynamoDB gives P4 more without starving any other partition." }
+    show: [p, tot]
+    set:
+      p:
+        items:
+          - { label: P1, value: 5, note: "50", tone: cell }
+          - { label: P2, value: 5, note: "50", tone: cell }
+          - { label: P3, value: 5, note: "50", tone: cell }
+          - { label: P4, value: 15, note: "150 / 150", tone: live }
+  - say: { vi: "Một item 1500 ghi/giây: 500 bị throttle.", en: "One item at 1500 writes/s: 500 throttled." }
+    alt: { vi: "Cô lập được tới mức một item một partition, nhưng một khóa chính vẫn có trần 1000 WCU mỗi giây.", en: "Isolation goes down to one item per partition, and one primary key still has a 1000 WCU per second ceiling." }
+    show: [p, tot, item]
+    set:
+      p:
+        items:
+          - { label: P1, value: 5, note: "50", tone: cell }
+          - { label: P2, value: 5, note: "50", tone: cell }
+          - { label: P3, value: 5, note: "50", tone: cell }
+          - { label: P4, value: 15, note: "150 / 150", tone: live }

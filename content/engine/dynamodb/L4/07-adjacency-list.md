@@ -17,6 +17,7 @@ sources:
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-adjacency-graphs.html
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GSI.html
 viz: dy-single-table
+figures: [{ name: dy-adjacency-list, at: example, variant: school }]
 lab:
   setup: |
     {"tables": [
@@ -134,14 +135,7 @@ Học viên của `CRS#c4`, đi qua GSI:
 
 Ba học viên: `s02`, `s05`, `s06`.
 
-Hình dạng các item:
-
-```text
-pk        sk        attrs
-STU#s02   STU#s02   name = Binh          (node)
-STU#s02   CRS#c1    enrolled = ...       (edge s02 -> c1)
-CRS#c3    CRS#c3    title = ...          (node)
-```
+Hình dưới vẽ hình dạng các item: item có `pk` bằng `sk` là nút (hồ sơ), item có `sk` là một khóa học là cạnh, và cùng cạnh đó trong GSI `ByTarget`.
 
 ## Lỗi hay gặp
 
@@ -227,14 +221,7 @@ The students of `CRS#c4`, through the GSI:
 
 Three students: `s02`, `s05`, `s06`.
 
-The shape of the items:
-
-```text
-pk        sk        attrs
-STU#s02   STU#s02   name = Binh          (node)
-STU#s02   CRS#c1    enrolled = ...       (edge s02 -> c1)
-CRS#c3    CRS#c3    title = ...          (node)
-```
+The figure below draws the shape of the items: an item whose `pk` equals its `sk` is a node (the profile), an item whose `sk` is a course is an edge, and the same edge sits in GSI `ByTarget`.
 
 ## Common mistakes
 

@@ -8,6 +8,7 @@ title_en: "A GSI only has eventually consistent reads"
 kind: predict
 runtime: browser
 minutes: 12
+figures: [{ name: dy-eventual-read, at: idea, variant: gsi }]
 objectives:
   - vi: Thấy DynamoDB từ chối `ConsistentRead` trên GSI (global secondary index) bằng `ValidationException`.
     en: See DynamoDB refuse `ConsistentRead` on a GSI (global secondary index) with a `ValidationException`.
