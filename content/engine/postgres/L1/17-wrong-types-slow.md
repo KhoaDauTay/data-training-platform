@@ -17,6 +17,7 @@ objectives:
   - vi: Lọc một ngày trên cột `timestamptz` bằng khoảng nửa mở thay vì ép cột về `date`.
     en: Filter one day on a `timestamptz` column with a half-open range instead of casting the column to `date`.
 requires: [e-pg-l1-09]
+figures: [{ name: pg-text-compare, at: idea }]
 sources:
   - https://www.postgresql.org/docs/18/datatype.html
   - https://www.postgresql.org/docs/18/datatype-datetime.html
@@ -126,6 +127,8 @@ Index B-tree chỉ dùng được khi điều kiện so chính cột đó với 
 
 Lưu ý: ép `timestamptz` về `date` dùng múi giờ của phiên, nên cùng một câu có thể ra ngày khác nhau ở hai máy. Lab này chạy ở UTC.
 
+Hình từng bước ở cuối mục này so cùng dữ liệu lưu bằng kiểu đúng và bằng `text`: cả số dòng trả về cũng khác.
+
 ## Cú pháp
 
 ```sql
@@ -231,6 +234,8 @@ A B-tree index only helps when the condition compares the column itself with a v
 Casting the column in `WHERE` does the same: `read_at::date = …`, `sensor_id::int = 42` on a text column. The fix: pick the right type from the start, write constants of the column's type, filter a day with a half-open range on the bare column. If you cannot fix the table yet, an index on the expression is a fallback.
 
 Note: casting `timestamptz` to `date` uses the session time zone, so the same query can give different days on two machines. This lab runs in UTC.
+
+The step-through figure at the end of this section compares the same data stored with the right types and as `text`: even the row counts differ.
 
 ## Syntax
 

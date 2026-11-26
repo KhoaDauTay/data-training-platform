@@ -1,0 +1,46 @@
+# B5-1 (v46 Batch 5, L840): an identity number handed out is never given back. Lesson: e-pg-l1-03 (Ý chính).
+# Data: the lesson's own Example (PGlite, tools/v46-b5/l103.mjs): events gets 'signup' (id 1), an INSERT of 'cancelled' inside
+# BEGIN … ROLLBACK took 2 (RETURNING id = 2), then 'login' gets 3; the table holds ids 1 and 3, max(id) = 3, count(*) = 2,
+# events_id_seq.last_value = 3. Row 2 is drawn in the table at step 1 (written, not yet rolled back) and faded at step 2 (gone).
+# Sources: https://www.postgresql.org/docs/18/ddl-identity-columns.html, https://www.postgresql.org/docs/18/functions-sequence.html
+title: { vi: "Số identity đã phát không quay lại", en: "An identity number never comes back" }
+caption:
+  vi: "Ba lệnh INSERT của ví dụ events. Mỗi lệnh lấy số bằng nextval(); ROLLBACK bỏ dòng thứ hai nhưng không trả số 2 cho sequence."
+  en: "The three INSERTs of the events example. Each takes its number with nextval(); ROLLBACK drops the second row but does not give number 2 back to the sequence."
+alt:
+  vi: "Sequence phát số ngoài transaction, nên số đã phát không quay lại kể cả khi ROLLBACK, và bảng có lỗ. Kết quả: events giữ id 1 và 3, nên max(id) là 3 nhưng count(*) là 2."
+  en: "A sequence hands out numbers outside the transaction, so a number given out never returns, even on ROLLBACK, and the table has a gap. Result: events keeps ids 1 and 3, so max(id) is 3 but count(*) is 2."
+nodes:
+  - { id: i1, label: INSERT signup, sub: "nextval() → 1", tone: new }
+  - { id: i2, label: INSERT cancelled, sub: "nextval() → 2", tone: new }
+  - { id: i3, label: INSERT login, sub: "nextval() → 3", tone: new }
+  - id: t
+    shape: grid
+    label: events
+    sub: { vi: "sau hai lệnh đầu", en: "after the first two" }
+    head: [id, name]
+    cells: [["1", signup], ["2", cancelled], ["", ""]]
+rows:
+  - [i1, i2, i3]
+  - [t]
+phone:
+  rows: [[i1], [i2], [i3], [t]]
+edges:
+  - { from: i1, to: t }
+  - { from: i2, to: t }
+  - { from: i3, to: t }
+steps:
+  - say: { vi: "Mỗi INSERT gọi nextval(): số 1, rồi số 2.", en: "Each INSERT calls nextval(): number 1, then number 2." }
+    alt: { vi: "signup lấy số 1, rồi trong một transaction mở bằng BEGIN, dòng cancelled lấy số 2 và đã nằm trong bảng.", en: "signup takes number 1, then inside a transaction opened with BEGIN, the cancelled row takes number 2 and is already in the table." }
+    show: [i1, i2, t]
+  - say: { vi: "ROLLBACK bỏ dòng, nhưng số 2 không về sequence.", en: "ROLLBACK drops the row, but number 2 does not go back." }
+    alt: { vi: "ROLLBACK xóa dòng cancelled khỏi bảng, còn sequence vẫn đứng ở 2 vì nextval() không bao giờ được hoàn lại.", en: "ROLLBACK removes the cancelled row from the table, while the sequence stays at 2 because nextval() is never given back." }
+    show: [i1, i2, t]
+    set:
+      i2: { sub: { vi: "2, rồi ROLLBACK", en: "2, then ROLLBACK" }, tone: dead }
+      t: { sub: { vi: "dòng 2 đã bỏ", en: "row 2 dropped" }, rowTone: [null, ghost, null], cells: [["1", signup], ["2", { vi: "(đã bỏ)", en: "(dropped)" }], ["", ""]] }
+  - say: { vi: "login nhận số 3: bảng có lỗ ở số 2.", en: "login gets number 3: the table has a gap at 2." }
+    alt: { vi: "login lấy số kế tiếp là 3, nên bảng còn hai dòng id 1 và 3, max(id) là 3 trong khi count(*) là 2.", en: "login takes the next number, 3, so the table keeps two rows with ids 1 and 3, and max(id) is 3 while count(*) is 2." }
+    set:
+      i2: { sub: { vi: "2, rồi ROLLBACK", en: "2, then ROLLBACK" }, tone: dead }
+      t: { sub: "max(id) = 3, count(*) = 2", rowTone: [null, ghost, null], cells: [["1", signup], ["2", { vi: "(đã bỏ)", en: "(dropped)" }], ["3", login]] }

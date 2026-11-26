@@ -1,0 +1,42 @@
+# B5-10 (v46 Batch 5, L844; plan v42 Appendix B candidate `pg-xid-wraparound`): the age ladder of the oldest unfrozen XID and what
+# holds it up. Lesson: e-pg-l3-11 (Ý chính; a docs quiz, no lab). Data: the documentation, not a lab: autovacuum_freeze_max_age
+# default 200 million, vacuum_failsafe_age default 1.6 billion, the wraparound point 2^31 ≈ 2147 million XIDs back; a WARNING
+# once 40 million XIDs are LEFT before that point (age ≈ 2107 million) and new XIDs refused once 3 million are left (age ≈ 2144
+# million). Bars are in millions of XIDs of age; the dashed mark is the wraparound point (the chart's sub says so). The last two
+# bars are almost as long as the mark on purpose: there is little room left. Sources:
+# https://www.postgresql.org/docs/18/routine-vacuuming.html#VACUUM-FOR-WRAPAROUND,
+# https://www.postgresql.org/docs/18/runtime-config-vacuum.html
+title: { vi: "Tuổi XID: các mốc trước khi quay vòng", en: "XID age: the marks before wraparound" }
+caption:
+  vi: "Tuổi của XID cũ nhất chưa freeze, tính bằng triệu transaction, theo mặc định trong tài liệu Postgres 18. Vạch đứt là điểm quay vòng, khoảng 2147 triệu."
+  en: "The age of the oldest unfrozen XID in millions of transactions, with the defaults from the Postgres 18 documentation. The dashed line is the wraparound point, about 2147 million."
+alt:
+  vi: "Tuổi XID cũ nhất càng gần điểm quay vòng thì Postgres càng làm mạnh: ép VACUUM, rồi VACUUM hết tốc lực, rồi cảnh báo và cuối cùng từ chối mọi lệnh ghi. Một phiên giữ transaction mở chặn mọi lần freeze, nên phải kết thúc nó trước."
+  en: "The closer the oldest XID's age gets to the wraparound point, the harder Postgres acts: it forces a VACUUM, then a full-speed VACUUM, then warns and finally refuses every write. A session holding a transaction open blocks every freeze, so it must be ended first."
+nodes:
+  - id: b
+    shape: bars
+    label: { vi: "tuổi XID cũ nhất", en: "oldest XID age" }
+    sub: { vi: "vạch: quay vòng, ≈ 2,15 tỉ", en: "line: wraparound, ≈ 2.15 billion" }
+    mark: 10.7
+    items:
+      - { label: { vi: "ép VACUUM", en: "forced VACUUM" }, value: 1, note: { vi: "200 triệu", en: "200 million" }, tone: cell }
+      - { label: failsafe, value: 8, note: { vi: "1,6 tỉ", en: "1.6 billion" }, tone: warm }
+      - { label: { vi: "cảnh báo", en: "warning" }, value: 10.5, note: { vi: "còn 40 triệu", en: "40 million left" }, tone: warm }
+      - { label: { vi: "từ chối ghi", en: "writes refused" }, value: 10.7, note: { vi: "còn 3 triệu", en: "3 million left" }, tone: dead }
+  - { id: s, label: idle in transaction, tone: dead }
+  - { id: v, label: VACUUM, sub: { vi: "không freeze được", en: "cannot freeze" }, tone: ghost }
+rows:
+  - [b]
+  - [s, v]
+edges:
+  - { from: s, to: v, label: { vi: "giữ xmin", en: "holds xmin" } }
+steps:
+  - say: { vi: "Càng gần điểm quay vòng, Postgres càng làm mạnh.", en: "The closer to wraparound, the harder Postgres acts." }
+    alt: { vi: "Qua 200 triệu autovacuum ép một lần VACUUM chống wraparound, qua 1,6 tỉ VACUUM bỏ việc phụ để freeze thật nhanh, còn 40 triệu thì log cảnh báo, còn 3 triệu thì từ chối cấp XID mới.", en: "Past 200 million autovacuum forces an anti-wraparound VACUUM, past 1.6 billion VACUUM drops extra work to freeze fast, with 40 million left the log warns, and with 3 million left no new XID is handed out." }
+    set:
+      s: { tone: ghost }
+  - say: { vi: "Một phiên mở cả ngày chặn mọi lần freeze.", en: "A session open all day blocks every freeze." }
+    alt: { vi: "Phiên idle in transaction giữ mốc xmin đứng yên, nên VACUUM chạy bao nhiêu lần cũng không freeze được tuple mới hơn mốc đó và tuổi cứ tăng.", en: "A session idle in transaction holds the xmin horizon still, so however often VACUUM runs it cannot freeze tuples newer than that horizon, and the age keeps rising." }
+    set:
+      v: { tone: dead }

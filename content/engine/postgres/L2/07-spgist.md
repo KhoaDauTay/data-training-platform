@@ -15,6 +15,7 @@ objectives:
   - vi: Viết câu "trong ô vuông" và "N điểm gần nhất" bằng toán tử mà index hiểu (`<@`, `<->`).
     en: Write "inside a box" and "N nearest points" queries with operators the index understands (`<@`, `<->`).
 requires: [e-pg-l2-06]
+figures: [{ name: pg-spgist-quadtree, at: idea }]
 sources:
   - https://www.postgresql.org/docs/18/indexes-types.html
   - https://www.postgresql.org/docs/18/spgist.html
@@ -92,6 +93,8 @@ Nhiều người nghĩ SP-GiST chỉ là một biến thể của GiST nên cũn
 
 Index chỉ giúp khi câu dùng toán tử nó hiểu. Với `point`, đó là `<@ box` (nằm trong hộp), `~=` (trùng điểm) và các toán tử trái, phải, trên, dưới. Opclass này còn có toán tử thứ tự `<->` (khoảng cách), nên `ORDER BY loc <-> point LIMIT n` đọc các điểm gần nhất thẳng từ index, không cần Sort. Một công thức khoảng cách tự viết cho cùng kết quả nhưng index không nhận ra, nên phải tính cho cả 30.000 dòng rồi sắp xếp.
 
+Hình từng bước ở cuối mục này chia ô 1000 x 1000 của lab thành bốn phần, rồi lại bốn, và đếm số cửa hàng trong mỗi phần.
+
 ## Ví dụ
 
 Đếm cửa hàng trong một ô 20 x 20:
@@ -152,6 +155,8 @@ SP-GiST ("space-partitioned GiST") builds unbalanced trees that split space into
 Many people think SP-GiST is just a variant of GiST and so works like it. In fact GiST groups data into bounding boxes that may overlap, while in SP-GiST each point belongs to exactly one branch. For evenly spread data such as points on a map, the tree stays shallow and searches are fast.
 
 An index only helps when the query uses an operator it understands. For `point` that is `<@ box` (inside a box), `~=` (same point) and the left, right, above and below operators. This opclass also has the ordering operator `<->` (distance), so `ORDER BY loc <-> point LIMIT n` reads the nearest points straight from the index, with no Sort. A hand-written distance formula gives the same result, but the index does not recognise it, so all 30,000 rows must be computed and sorted.
+
+The step-through figure at the end of this section splits the lab's 1000 x 1000 square into four parts, then four again, counting the shops in each.
 
 ## Example
 

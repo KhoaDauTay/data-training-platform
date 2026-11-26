@@ -17,6 +17,7 @@ objectives:
   - vi: Xóa bảng có view phụ thuộc bằng `CASCADE` khi biết nó sẽ xóa thêm gì.
     en: Drop a table that has a dependent view with `CASCADE`, knowing what else it removes.
 requires: [e-pg-l1-13]
+figures: [{ name: pg-delete-truncate-drop, at: idea }]
 sources:
   - https://www.postgresql.org/docs/18/sql-droptable.html
   - https://www.postgresql.org/docs/18/sql-truncate.html
@@ -137,6 +138,8 @@ Nhiều người nghĩ làm rỗng bảng là reset luôn số thứ tự. Thậ
 `DROP TABLE` xóa cả bảng lẫn định nghĩa. Mặc định `RESTRICT` từ chối khi còn view hay khóa ngoại phụ thuộc; `CASCADE` xóa view phụ thuộc và gỡ khóa ngoại ở bảng khác. `IF EXISTS` biến lỗi "không có bảng" thành một thông báo.
 
 Sao chép có hai cách. `CREATE TABLE … AS SELECT` chép cột và dòng, không chép khóa chính, NOT NULL, CHECK hay index. `CREATE TABLE … (LIKE table INCLUDING ALL)` chép cấu trúc gồm mặc định, CHECK, khóa chính và index, nhưng không chép dòng và không chép khóa ngoại. `CREATE TEMP TABLE` tạo bảng chỉ sống trong phiên hiện tại.
+
+Hình ở cuối mục này đặt ba lệnh cạnh nhau trên ba bảng của lab, trước và sau, để thấy mỗi lệnh để lại gì.
 
 ## Cú pháp
 
@@ -261,6 +264,8 @@ Many people think emptying a table also resets its numbering. In fact `TRUNCATE`
 `DROP TABLE` removes the table and its definition. The default `RESTRICT` refuses while views or foreign keys depend on it; `CASCADE` drops the dependent views and removes the foreign keys on other tables. `IF EXISTS` turns the "no such table" error into a notice.
 
 There are two ways to copy. `CREATE TABLE … AS SELECT` copies columns and rows, not the primary key, NOT NULL, CHECK or indexes. `CREATE TABLE … (LIKE table INCLUDING ALL)` copies the structure with defaults, CHECK, primary key and indexes, but no rows and no foreign keys. `CREATE TEMP TABLE` makes a table that lives only in the current session.
+
+The figure at the end of this section puts the three commands side by side on three of the lab's tables, before and after, to show what each one leaves.
 
 ## Syntax
 

@@ -17,6 +17,7 @@ objectives:
   - vi: Đọc `Rows Removed by Index Recheck` để thấy dương tính giả trong kế hoạch thật.
     en: Read `Rows Removed by Index Recheck` to see the false positives in a real plan.
 requires: [e-pg-l2-08]
+figures: [{ name: pg-bloom-signature, at: idea }]
 sources:
   - https://www.postgresql.org/docs/18/bloom.html
   - https://www.postgresql.org/docs/18/indexes-types.html
@@ -100,6 +101,8 @@ Index bloom (extension `bloom`) lưu cho mỗi dòng một "chữ ký" bit. Mỗ
 Vì nhiều giá trị khác nhau có thể bật trùng bit, bloom là index "thô": vài dòng không khớp vẫn lọt qua (dương tính giả), nên kế hoạch luôn có `Recheck Cond` và Bitmap Heap Scan kiểm lại từng dòng ứng viên. Bloom không bao giờ bỏ sót dòng khớp thật.
 
 Nhiều người nghĩ bloom phục vụ mọi kiểu lọc trên mọi cột. Thật ra nó chỉ hiểu `=`: không khoảng, không `IN`, không `IS NULL`, không unique. Opclass có sẵn chỉ cho `int4` và `text`. Một index bloom cỡ chừng một B-tree hai cột, nhưng thay được cả chục cái.
+
+Hình từng bước ở cuối mục này minh họa chữ ký bằng 8 bit và dùng số ứng viên thật của lab.
 
 ## Cú pháp
 
@@ -196,6 +199,8 @@ A bloom index (extension `bloom`) stores a bit "signature" per row. Each column 
 Because different values can turn on the same bits, bloom is lossy: a few non-matching rows slip through (false positives), so the plan always has a `Recheck Cond` and the Bitmap Heap Scan checks each candidate row again. Bloom never misses a row that truly matches.
 
 Many people think bloom serves any kind of filter on any column. In fact it only understands `=`: no ranges, no `IN`, no `IS NULL`, no uniqueness. Built-in opclasses exist only for `int4` and `text`. One bloom index is about the size of one two-column B-tree, but replaces a dozen of them.
+
+The step-through figure at the end of this section shows the signature with 8 bits and uses the lab's real candidate count.
 
 ## Syntax
 

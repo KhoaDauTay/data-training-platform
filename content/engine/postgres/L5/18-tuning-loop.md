@@ -14,6 +14,7 @@ objectives:
   - { vi: "Đọc `n_distinct` trong `pg_stats` và biết đặt đè nó chỉ có hiệu lực sau `ANALYZE` kế tiếp", en: "Read `n_distinct` in `pg_stats` and know that an override only takes effect at the next `ANALYZE`" }
   - { vi: "Thấy một thay đổi `work_mem` đổi hẳn kế hoạch, và chứng minh bằng kế hoạch chứ không bằng cảm giác", en: "See a `work_mem` change switch the whole plan, and prove it with the plan, not a feeling" }
 requires: [e-pg-l5-12]
+figures: [{ name: pg-tuning-loop, at: idea }]
 sources:
   - https://www.postgresql.org/docs/18/performance-tips.html
   - https://www.postgresql.org/docs/18/using-explain.html
@@ -78,6 +79,8 @@ Tinh chỉnh là một vòng lặp, không phải một danh sách mẹo: đo, s
 Thứ tự sửa theo giá rẻ. Một: câu viết sao cho dùng được index (so sánh thẳng cột) và có index hợp với câu hay chạy. Hai: thống kê. Planner chọn kế hoạch từ `pg_stats`; bảng vừa nạp hay vừa đổi nhiều mà chưa `ANALYZE` thì planner đoán bằng số mặc định. `n_distinct` là số giá trị khác nhau ước lượng (số âm nghĩa là tỉ lệ theo số dòng); khi mẫu đoán sai, `ALTER TABLE … ALTER COLUMN … SET (n_distinct = …)` đặt đè và `SET STATISTICS` lấy mẫu lớn hơn, cả hai chỉ có hiệu lực ở `ANALYZE` sau.
 
 Ba: cấu hình, và ở phạm vi hẹp nhất. Nhiều người nghĩ cấu hình là chỗ chỉnh đầu tiên. Thật ra nó đứng cuối: nâng `work_mem` cho phiên hay vai trò cần nó, rồi đo lại. Trong lab, cùng một câu gom đổi từ `GroupAggregate` đọc 25.000 lần qua index sang `HashAggregate` đọc 161 trang chỉ vì `work_mem`.
+
+Hình từng bước ở cuối mục này đi hết vòng đó trên bảng `orders` của lab, mỗi lần sửa nằm giữa hai lần đo.
 
 ## Cú pháp
 
@@ -192,6 +195,8 @@ Tuning is a loop, not a list of tips: measure, fix the cheapest cause, measure a
 Fix in order of cost. One: the query is written so it can use an index (compare the column directly) and there is an index that fits the frequent query. Two: statistics. The planner picks a plan from `pg_stats`; a freshly loaded or heavily changed table that has not been through `ANALYZE` makes the planner guess with default numbers. `n_distinct` is the estimated number of distinct values (a negative number means a ratio of the row count); when the sample guesses wrong, `ALTER TABLE … ALTER COLUMN … SET (n_distinct = …)` overrides it and `SET STATISTICS` takes a bigger sample, both only at the next `ANALYZE`.
 
 Three: configuration, at the narrowest scope. Many people think configuration is the first thing to tune. In fact it comes last: raise `work_mem` for the session or role that needs it, then measure again. In the lab the same grouping switches from a `GroupAggregate` reading 25,000 times through the index to a `HashAggregate` reading 161 pages, only because of `work_mem`.
+
+The step-through figure at the end of this section walks that loop on the lab's `orders` table, each fix sitting between two measurements.
 
 ## Syntax
 

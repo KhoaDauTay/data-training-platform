@@ -1,0 +1,38 @@
+# B5-4 (v46 Batch 5, L841): a column stored as text compares character by character, so results change, not only speed.
+# Lesson: e-pg-l1-17 (Ý chính). Data: the lab setup, PGlite (tools/v46-b5/check1.log): ORDER BY over '42', '99', '500' as text
+# gives '42', '500', '99'; readings sensor_id > 99 → 16040 rows, readings_text sensor_id > '99' → 0 rows; read_on (text,
+# DD/MM/YYYY) BETWEEN '01/03/2026' AND '31/03/2026' → 19700 rows from 7 months (01–07/2026) against 3100 March rows on the
+# timestamptz column (half-open range). Sample dates are real read_on values that fall inside the text range.
+# Not sql-sargable-index (that one is about the index; this one is about the answer). Source:
+# https://www.postgresql.org/docs/18/datatype.html
+title: { vi: "Lưu số và ngày bằng text: so sai", en: "Numbers and dates as text compare wrong" }
+caption:
+  vi: "Hai bảng của lab có cùng dữ liệu: readings dùng int và timestamptz, readings_text lưu mọi cột bằng text."
+  en: "The lab's two tables hold the same data: readings uses int and timestamptz, readings_text stores every column as text."
+alt:
+  vi: "Text được so từng ký tự từ trái sang, nên '500' đứng trước '99' và một khoảng ngày DD/MM/YYYY gom cả các tháng khác. Kiểu sai không chỉ làm chậm mà còn cho kết quả sai."
+  en: "Text compares character by character from the left, so '500' sorts before '99' and a DD/MM/YYYY date range picks up other months. A wrong type does not just slow a query down, it gives a wrong answer."
+nodes:
+  - { id: a, shape: grid, label: { vi: "sensor_id kiểu int", en: "sensor_id as int" }, sub: { vi: "sắp theo giá trị", en: "sorted by value" }, cells: [["42"], ["99"], ["500"]] }
+  - { id: b, shape: grid, label: { vi: "sensor_id kiểu text", en: "sensor_id as text" }, sub: { vi: "sắp theo ký tự", en: "sorted by character" }, cells: [["'42'"], ["'500'"], ["'99'"]] }
+  - { id: ra, label: sensor_id > 99, sub: { vi: "16040 dòng", en: "16040 rows" }, tone: live }
+  - { id: rb, label: sensor_id > '99', sub: { vi: "0 dòng", en: "0 rows" }, tone: dead }
+rows:
+  - [a, b]
+  - [ra, rb]
+align: true
+phone:
+  rows: [[a], [ra], [b], [rb]]
+edges:
+  - { from: a, to: ra }
+  - { from: b, to: rb }
+steps:
+  - say: { vi: "Số dạng text: '500' đứng trước '99'.", en: "Numbers as text: '500' comes before '99'." }
+    alt: { vi: "Ký tự đầu '5' nhỏ hơn '9', nên với text '99' lớn hơn mọi mã cảm biến 1 tới 500 và điều kiện > '99' trả 0 dòng thay vì 16040.", en: "The first character '5' is smaller than '9', so as text '99' is larger than every sensor id from 1 to 500 and the condition > '99' returns 0 rows instead of 16040." }
+  - say: { vi: "Ngày dạng DD/MM: khoảng tháng 3 gom 7 tháng.", en: "Dates as DD/MM: the March range takes 7 months." }
+    alt: { vi: "Chuỗi bắt đầu bằng ngày trong tháng, nên '02/01/2026' và '01/04/2026' cũng nằm giữa '01/03/2026' và '31/03/2026', và khoảng đó trả 19700 dòng thay vì 3100.", en: "The string starts with the day of the month, so '02/01/2026' and '01/04/2026' also fall between '01/03/2026' and '31/03/2026', and the range returns 19700 rows instead of 3100." }
+    set:
+      a: { label: { vi: "read_at timestamptz", en: "read_at timestamptz" }, sub: { vi: "tháng 3, nửa mở", en: "March, half-open" }, cells: [["2026-03-01"], ["2026-03-15"], ["2026-03-31"]] }
+      b: { label: { vi: "read_on kiểu text", en: "read_on as text" }, sub: { vi: "giữa hai chuỗi", en: "between two strings" }, cells: [["'01/03/2026'"], ["'01/04/2026'"], ["'02/01/2026'"]], toneOf: { "'01/04/2026'": dead, "'02/01/2026'": dead } }
+      ra: { label: { vi: "đúng tháng 3", en: "March only" }, sub: { vi: "3100 dòng", en: "3100 rows" } }
+      rb: { label: { vi: "BETWEEN: 7 tháng", en: "BETWEEN: 7 months" }, sub: { vi: "19700 dòng", en: "19700 rows" } }

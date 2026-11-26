@@ -14,6 +14,7 @@ objectives:
   - { vi: "Đặt hạn mức số dòng theo hạng dịch vụ bằng trigger báo lỗi `P0001`", en: "Enforce a row quota per plan tier with a trigger that raises `P0001`" }
   - { vi: "Biết giới hạn nào đặt được theo vai trò (`statement_timeout`, `CONNECTION LIMIT`) và giới hạn nào phải nằm ở tầng trên database", en: "Know which limits can be set per role (`statement_timeout`, `CONNECTION LIMIT`) and which must live above the database" }
 requires: [e-pg-l5-21]
+figures: [{ name: pg-noisy-neighbour, at: idea }]
 sources:
   - url: https://www.postgresql.org/docs/18/sql-alterrole.html
     title: "ALTER ROLE"
@@ -100,6 +101,8 @@ Khi nhiều khách dùng chung bảng và server, một khách nặng làm chậ
 Trong Postgres có ba loại rào. Hạn mức dữ liệu kiểm lúc ghi: một trigger đếm dòng của khách và báo lỗi `P0001` khi vượt hạn mức của hạng. Giới hạn theo vai trò: `ALTER ROLE … SET statement_timeout` và `CONNECTION LIMIT`, với một vai trò cho mỗi hạng. Index dẫn đầu bằng `tenant_id` để câu của một khách không quét dòng của mọi khách.
 
 Nhiều người nghĩ database tự chia đều tài nguyên giữa các khách. Thật ra nó không biết "khách" là gì: giới hạn tần suất theo khách, hàng đợi công bằng và việc chuyển khách lớn sang hạng riêng nằm ở tầng trên (ứng dụng, cổng API). PGlite cũng không hủy câu khi quá `statement_timeout`, nên lab chỉ lưu và đọc lại thiết lập; tác dụng của nó chỉ thấy trên server thật.
+
+Hình từng bước ở cuối mục này đếm tải của bốn người bán trong tháng 10 hai cách: theo số câu và theo số dòng đọc.
 
 ## Cú pháp
 
@@ -232,6 +235,8 @@ When many tenants share tables and a server, one heavy tenant slows everyone dow
 Postgres offers three kinds of fence. A data quota checked at write time: a trigger counts the tenant's rows and raises `P0001` past its tier's quota. Per-role limits: `ALTER ROLE … SET statement_timeout` and `CONNECTION LIMIT`, with one role per tier. Indexes that lead with `tenant_id`, so one tenant's query does not scan every tenant's rows.
 
 Many people think the database shares its resources fairly between tenants. In fact it has no idea what a "tenant" is: per-tenant rate limits, fair queues and moving a big tenant to its own tier live in a layer above (the application, the API gateway). PGlite also never cancels a query past `statement_timeout`, so the lab only stores the setting and reads it back; its effect shows only on a real server.
+
+The step-through figure at the end of this section counts the four sellers' October load two ways: by queries and by rows read.
 
 ## Syntax
 

@@ -1,0 +1,52 @@
+# B5-14 (v46 Batch 5, L846): an index lookup costs the walk down the tree plus a trip to the table per row found; REINDEX only
+# shrinks the first. Lesson: e-pg-l5-17 (Ý chính). Data: the lab setup (VACUUM ANALYZE run one statement at a time), PGlite
+# (tools/v46-b5/l517.mjs): customers 100–299 = 2000 rows; orders_split: Bitmap Index Scan shared hit 6, Heap Blocks exact 364,
+# 370 in all; orders_packed (built after loading, as fresh as a REINDEX): index 4 (hit 1 + read 3), heap 364, 368; orders_cover
+# (customer_id) INCLUDE (amount): Index Only Scan, Heap Fetches 0, 9 pages (hit 2 + read 7). Bars = pages read.
+# Sources: https://www.postgresql.org/docs/18/sql-reindex.html, https://www.postgresql.org/docs/18/indexes-index-only-scans.html
+title: { vi: "Tra index: đi xuống cây, rồi về bảng", en: "An index lookup: down the tree, then to the table" }
+caption:
+  vi: "Báo cáo tổng tiền của khách 100 tới 299 (2000 dòng) trên ba bảng giống nhau của lab. Số trang là Buffers và Heap Blocks của EXPLAIN (ANALYZE, BUFFERS)."
+  en: "The report summing customers 100 to 299 (2000 rows) on the lab's three identical tables. Page counts are the Buffers and Heap Blocks of EXPLAIN (ANALYZE, BUFFERS)."
+alt:
+  vi: "Một lần tra index gồm đi xuống cây (vài trang) và về bảng cho từng dòng tìm được; khi các dòng nằm rải khắp bảng, phần về bảng lấn át. REINDEX chỉ làm gọn cây, còn index phủ bỏ hẳn phần về bảng."
+  en: "An index lookup is a walk down the tree (a few pages) plus a trip to the table for each row found; when the rows are spread over the table, the table part dominates. REINDEX only tidies the tree, while a covering index removes the table part."
+nodes:
+  - { id: q, shape: key, label: { vi: "khách 100–299", en: "customers 100–299" }, sub: { vi: "2000 dòng", en: "2000 rows" }, tone: new }
+  - { id: tr, label: { vi: "cây index", en: "index tree" }, sub: { vi: "6 trang", en: "6 pages" }, tone: live }
+  - { id: hp, shape: table, label: { vi: "trang bảng", en: "table pages" }, sub: { vi: "364 trang", en: "364 pages" }, tone: dead }
+  - id: b
+    shape: bars
+    label: { vi: "tổng số trang đọc", en: "total pages read" }
+    head: [{ vi: "cách", en: setup }, { vi: "trang", en: pages }]
+    items:
+      - { label: { vi: "index lộn xộn", en: "messy index" }, value: 10, note: "370", tone: dead }
+rows:
+  - [q, tr, hp]
+  - [b]
+phone:
+  rows: [[q], [tr], [hp], [b]]
+edges:
+  - { from: q, to: tr }
+  - { from: tr, to: hp, label: { vi: "2000 dòng", en: "2000 rows" } }
+steps:
+  - say: { vi: "6 trang cây, 364 trang bảng.", en: "6 tree pages, 364 table pages." }
+    alt: { vi: "Index tìm 2000 dòng sau 6 trang, nhưng các dòng đó nằm rải trên cả 364 trang của bảng, nên báo cáo đọc 370 trang.", en: "The index finds the 2000 rows in 6 pages, but those rows lie spread over all 364 pages of the table, so the report reads 370 pages." }
+  - say: { vi: "REINDEX: cây còn 4 trang, bảng vẫn 364.", en: "REINDEX: the tree drops to 4 pages, the table stays 364." }
+    alt: { vi: "Index xây gọn như vừa REINDEX chỉ bớt 2 trang cây, nên cùng câu vẫn đọc 368 trang.", en: "An index as tidy as a fresh REINDEX saves only 2 tree pages, so the same query still reads 368 pages." }
+    set:
+      tr: { sub: { vi: "4 trang (gọn)", en: "4 pages (tidy)" } }
+      b:
+        items:
+          - { label: { vi: "index lộn xộn", en: "messy index" }, value: 10, note: "370", tone: dead }
+          - { label: { vi: "sau REINDEX", en: "after REINDEX" }, value: 9.95, note: "368", tone: dead }
+  - say: { vi: "Index phủ: không về bảng, 9 trang.", en: "Covering index: no table trip, 9 pages." }
+    alt: { vi: "Index (customer_id) INCLUDE (amount) trả luôn amount, nên Index Only Scan không cần về bảng (Heap Fetches 0) và cả câu chỉ đọc 9 trang.", en: "The index (customer_id) INCLUDE (amount) returns amount itself, so the Index Only Scan never visits the table (Heap Fetches 0) and the whole query reads 9 pages." }
+    set:
+      tr: { label: { vi: "index phủ", en: "covering index" }, sub: { vi: "9 trang", en: "9 pages" } }
+      hp: { sub: { vi: "0 trang", en: "0 pages" }, tone: ghost }
+      b:
+        items:
+          - { label: { vi: "index lộn xộn", en: "messy index" }, value: 10, note: "370", tone: dead }
+          - { label: { vi: "sau REINDEX", en: "after REINDEX" }, value: 9.95, note: "368", tone: dead }
+          - { label: { vi: "index phủ", en: "covering index" }, value: 0.24, note: "9", tone: live }

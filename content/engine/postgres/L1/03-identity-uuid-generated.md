@@ -17,6 +17,7 @@ objectives:
   - vi: Khai báo cột sinh (generated column) và biết ở Postgres 18 nó mặc định là ảo (`VIRTUAL`).
     en: Declare a generated column and know that in Postgres 18 it is virtual (`VIRTUAL`) by default.
 requires: [e-pg-l1-02]
+figures: [{ name: pg-identity-gap, at: idea }]
 sources:
   - https://www.postgresql.org/docs/18/ddl-identity-columns.html
   - https://www.postgresql.org/docs/18/functions-sequence.html
@@ -90,6 +91,8 @@ Nhiều người nghĩ id do identity sinh luôn liên tục. Thật ra `nextval
 UUID. `uuid` là 16 byte, sinh được ở bất cứ đâu mà không cần hỏi database, hợp cho id công khai (đường dẫn, API) không để lộ số lượng đơn. `gen_random_uuid()` sinh bản 4, hoàn toàn ngẫu nhiên. `uuidv7()` (mới ở Postgres 18) sinh bản 7, bắt đầu bằng thời điểm tạo, nên giá trị mới nằm cuối index (chỉ mục) B-tree, ít xáo trộn trang hơn bản 4.
 
 Cột sinh (generated column). `GENERATED ALWAYS AS (expression)` luôn tính từ các cột khác của cùng dòng; không ai ghi tay được. `STORED` tính khi ghi và chiếm chỗ trên đĩa; `VIRTUAL` tính mỗi lần đọc và không chiếm chỗ. Từ Postgres 18, không ghi gì thì là `VIRTUAL`. Postgres 18 chưa cho đánh index trên cột `VIRTUAL`.
+
+Hình từng bước ở cuối mục này theo ba lệnh `INSERT` của ví dụ `events`: số 2 đã phát cho dòng bị hủy và không quay lại.
 
 ## Cú pháp
 
@@ -225,6 +228,8 @@ Many people think identity ids are always consecutive. In fact `nextval()` is ne
 UUID. A `uuid` is 16 bytes and can be generated anywhere without asking the database, which suits public ids (URLs, APIs) that should not reveal how many orders exist. `gen_random_uuid()` makes version 4, fully random. `uuidv7()` (new in Postgres 18) makes version 7, which starts with the creation time, so new values land at the end of a B-tree index and disturb fewer pages than version 4.
 
 Generated columns. `GENERATED ALWAYS AS (expression)` is always computed from other columns of the same row; nobody can write it by hand. `STORED` is computed on write and takes disk space; `VIRTUAL` is computed on every read and takes none. Since Postgres 18, writing neither gives `VIRTUAL`. Postgres 18 cannot index a `VIRTUAL` column yet.
+
+The step-through figure at the end of this section follows the three `INSERT`s of the `events` example: number 2 went to the cancelled row and never comes back.
 
 ## Syntax
 
