@@ -47,7 +47,7 @@ steps:
   - say: { vi: "Thiếu default mà có giá trị ngoài khoảng: lệnh bị từ chối.", en: "No default and a value outside: the command is refused." }
     alt: { vi: "Cùng các cận mà không có default, đơn 450000 không có chỗ nào để vào nên MongoDB từ chối cả lệnh thay vì lặng lẽ bỏ đơn đó.", en: "With the same bounds and no default, the 450000 order has nowhere to go, so MongoDB refuses the whole command rather than silently dropping that order." }
     set:
-      bk: { label: "[0, 100000, 300000]", tone: dead }
+      bk: { label: { vi: "không default: lỗi", en: "no default: error" }, mono: false, tone: dead }
       ord: { cells: [["6", "25000", "0"], ["8", "60000", "0"], ["1", "95000", "0"], ["2", "120000", "100000"], ["4", "150000", "100000"], ["5", "210000", "100000"], ["7", "285000", "100000"], ["3", "450000", { vi: "không có", en: "none" }]], rowTone: [ghost, ghost, ghost, ghost, ghost, ghost, ghost, dead] }
       out:
         items:

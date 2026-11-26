@@ -15,7 +15,7 @@ nodes:
   - { id: miss, label: Missing, sub: { vi: "chưa có mục", en: "no entry yet" }, tone: new }
   - { id: ina, label: Inactive, sub: { vi: "chỉ giữ chỗ", en: "a placeholder" } }
   - { id: act, label: Active, sub: { vi: "dùng lại kế hoạch", en: "plan reused" } }
-  - { id: ex, mono: true, label: "explain()", sub: { vi: "chọn lại từ đầu", en: "plans afresh" }, tone: ghost }
+  - { id: ex, mono: true, label: "explain()", sub: { vi: "bỏ qua cache", en: "skips the cache" }, tone: ghost }
   - { id: st, mono: true, label: "$planCacheStats", sub: { vi: "đọc các mục", en: "reads the entries" }, tone: ghost }
 rows:
   - [q]

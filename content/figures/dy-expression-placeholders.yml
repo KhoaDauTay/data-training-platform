@@ -22,7 +22,7 @@ nodes:
     head: [{ vi: "chỗ giữ", en: placeholder }, { vi: "giá trị", en: value }]
     cells: [[":c", "S: C-02"], [":x", "N: 500000"]]
   - { id: ex, shape: key, mono: true, label: "#t > :x", sub: FilterExpression, tone: new }
-  - { id: rd, mono: true, label: "total > 500000", sub: { vi: "DynamoDB đọc là", en: "DynamoDB reads" }, tone: live }
+  - { id: rd, label: { vi: "DynamoDB đọc là", en: "DynamoDB reads" }, sub: "total > 500000", tone: live }
   - { id: res, shape: key, label: Count 3, sub: ScannedCount 4, tone: live }
 rows:
   - [nm, vl]
