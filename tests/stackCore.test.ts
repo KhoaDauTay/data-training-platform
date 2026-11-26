@@ -130,6 +130,10 @@ where _fivetran_synced > (select max(_fivetran_synced) from {{ this }})
     expect(await vi.check(lab, lab.steps[0], noFilter)).toMatchObject({ ok: false, message: expect.stringContaining('is_incremental') });
     expect(await vi.check(lab, lab.steps[2], noFilter)).toMatchObject({ ok: false });
     expect(await vi.check(stg, stg.steps[1], stg.steps[1].solution)).toMatchObject({ ok: true });
+    // v46 (L836): wrong rows keep the row verdict; "Kết quả đúng, nhưng…" only when the rows are right
+    const off = await vi.check(stg, stg.steps[0], 'select order_id, amount from raw_shop.orders where order_id = 1');
+    expect(off).toMatchObject({ ok: false, reason: 'wrong' });
+    expect((off as { message?: string }).message ?? '').not.toContain('Kết quả đúng');
   }, 60_000);
   it('S-04: a source() typo is source-missing, explained in VI with line and column', async () => {
     await expect(vi.run(stg, "select * from {{ source('shopp', 'orders') }}", 0)).rejects.toMatchObject({ code: 'source-missing', message: expect.stringMatching(/^dòng 1, cột 15: Không có nguồn "shopp\.orders"\. Các nguồn của lab: shop\.orders\.$/) });
