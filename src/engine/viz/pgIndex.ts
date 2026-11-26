@@ -143,7 +143,7 @@ define<BrinModel>('pg-brin-ranges', {
   const [lo, up] = m.query;
   const draw = (list: typeof sorted, s: { bars?: boolean; q?: boolean; pick?: boolean }): Shape[] => {
     const out: Shape[] = [line('ax', X0, 210, X1, 210, { ink: 'edge' }), text('a0', X0, 222, '0', { size: SM, ink: 'muted', a: 'm' }), text('a1', X1, 222, String(hi), { size: SM, ink: 'muted', a: 'e' })];
-    if (s.q) out.push({ k: 'band', t: 'r', x: sx(lo), y: 18, w: Math.max(2, sx(up) - sx(lo)), h: 188, tone: 'ptr', o: 0.4 }, text('bandt', 330, 10, `${lo}–${up}`, { a: 'e', size: SM, ink: 'ptr', mono: true }));
+    if (s.q) out.push({ k: 'band', t: 'r', x: sx(lo), y: 18, w: Math.max(2, sx(up) - sx(lo)), h: 188, tone: 'ptr', o: 0.4, ok: true }, text('bandt', 330, 10, `${lo}–${up}`, { a: 'e', size: SM, ink: 'ptr', mono: true }));
     list.forEach((r, i) => {
       const y = 22 + i * 23;
       const overlap = r.max >= lo && r.min <= up;

@@ -1,5 +1,5 @@
 import { planNodesOf, type PlanVizNode } from './engineVizPlanJson';
-import { arc, box, cut, define, fill, line, num, type Shape, SM, text, type Tone } from './engineVizCore';
+import { arc, box, cut, define, fill, line, num, type Shape, SM, square, text, TIP, type Tone } from './engineVizCore';
 
 // ENG-VIZ Postgres planner and concurrency diagrams (knowledge map P12, C4): plan tree, locks, isolation anomalies.
 // The query path and partition pruning live in the lazy chunk engineVizPgFlow (v23, L263).
@@ -46,7 +46,7 @@ define<unknown>('pg-plan-tree', PLAN_SAMPLE, (m, tr) => {
       const p = nodes.find((x) => x.id === n.parent);
       if (p && depth.has(p.id)) {
         const ran = post.indexOf(n) < done;
-        out.push({ k: `e${n.id}`, t: 'p', d: `M${bx(n)} ${by(n) + RH / 2} H${bx(p) + 9} V${by(p) + RH}`, ink: ran ? 'new' : 'edge', arrow: ran, w: ran ? 1.8 : 1.2 });
+        out.push({ k: `e${n.id}`, t: 'p', d: `M${bx(n)} ${by(n) + RH / 2} H${bx(p) + 9} V${by(p) + RH + (ran ? TIP + 0.75 * 1.8 : 0)}`, ink: ran ? 'new' : 'edge', arrow: ran, w: ran ? 1.8 : 1.2 });
       }
     });
     pre.forEach((n) => {
@@ -108,8 +108,8 @@ define<LockModel>('pg-lock-matrix', { waits: [['T2', 'T1'], ['T3', 'T1'], ['T3',
       const lift = edges.some(([c, d]) => c === b && d === a) ? (x2 > x1 ? -10 : 10) : 0;
       const ink = tone === 'dead' ? 'dead' : 'warm';
       out.push(Math.abs(x2 - x1) > 150 // skip over the node in between
-        ? arc(`w${i}`, x1, y1 - 17, x2, y2 - 18, -34, { ink, w: 1.8 })
-        : line(`w${i}`, x1 + dx * 17, y1 + lift, x2 - dx * 19, y2 + lift, { ink, arrow: true, w: 1.8 }));
+        ? arc(`w${i}`, x1, y1 - 17, x2, y2 - 17, -22, { ink, w: 1.8, to: square(x2, y2, 16) })
+        : line(`w${i}`, x1 + dx * 17, y1 + lift, x2, y2 + lift, { ink, arrow: true, w: 1.8, to: square(x2, y2, 16) }));
     });
     return out;
   };

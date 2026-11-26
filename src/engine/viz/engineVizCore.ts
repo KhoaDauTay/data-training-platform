@@ -31,7 +31,7 @@ export type Tone = 'cell' | 'live' | 'dead' | 'new' | 'ptr' | 'warm' | 'free' | 
 export type Ink = 'ink' | 'muted' | 'live' | 'dead' | 'new' | 'ptr' | 'warm' | 'edge';
 type Base = { k: string; o?: number };
 export type Shape =
-  | (Base & { t: 'r'; x: number; y: number; w: number; h: number; tone?: Tone; rx?: number; bold?: boolean })
+  | (Base & { t: 'r'; x: number; y: number; w: number; h: number; tone?: Tone; rx?: number; bold?: boolean; ok?: boolean })
   | (Base & { t: 't'; x: number; y: number; s: string; ink?: Ink; size?: number; a?: 'm' | 'e'; b?: boolean; mono?: boolean })
   | (Base & { t: 'l'; x1: number; y1: number; x2: number; y2: number; ink?: Ink; w?: number; arrow?: boolean; dash?: boolean })
   | (Base & { t: 'c'; x: number; y: number; r: number; tone?: Tone })
@@ -73,7 +73,10 @@ function look(el: SVGElement, n: Shape, id: string): void {
     const [f, e] = FILL[n.tone ?? 'cell'];
     const dash = n.tone === 'free' || n.tone === 'ghost';
     set('style', `fill:var(${f});stroke:var(${e});stroke-width:${n.t === 'r' && n.bold ? 2.2 : 1.2}${dash ? ';stroke-dasharray:3 2' : ''}`);
-    if (n.t === 'r') set('rx', String(n.rx ?? 3));
+    if (n.t === 'r') {
+      set('rx', String(n.rx ?? 3));
+      set('data-overlap', n.ok ? 'ok' : false); // v39 F3 (L622): overlaps other boxes by design (the overlap checker skips it)
+    }
   } else if (n.t === 't') {
     set('style', `fill:var(${INK[n.ink ?? 'ink']});font-size:${Math.max(SM, n.size ?? SM)}px${n.b ? ';font-weight:700' : ''}${n.mono ? ';font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace' : ''}`);
     set('text-anchor', n.a === 'm' ? 'middle' : n.a === 'e' ? 'end' : false);
@@ -270,10 +273,44 @@ export function box(k: string, x: number, y: number, w: number, h: number, label
   return out;
 }
 export const text = (k: string, x: number, y: number, s: string, more: Partial<Extract<Shape, { t: 't' }>> = {}): Shape => ({ k, t: 't', x, y, s, ...more });
-export const line = (k: string, x1: number, y1: number, x2: number, y2: number, more: Partial<Extract<Shape, { t: 'l' }>> = {}): Shape => ({ k, t: 'l', x1, y1, x2, y2, ...more });
-/** A curved pointer from (x1,y1) to (x2,y2), bulging by `bend` (negative = upwards). */
-export const arc = (k: string, x1: number, y1: number, x2: number, y2: number, bend: number, more: Partial<Extract<Shape, { t: 'p' }>> = {}): Shape =>
-  ({ k, t: 'p', d: `M${r2(x1)} ${r2(y1)} Q${r2((x1 + x2) / 2)} ${r2((y1 + y2) / 2 + bend)} ${r2(x2)} ${r2(y2)}`, arrow: true, ...more });
+/** The box an arrow points at (a rect, or a circle's bounding square). */
+export interface Rect { x: number; y: number; w: number; h: number }
+/** v39 F3 (L620): how far an arrow's tip stays outside the box it points at (svg-system §2.2; the checker flags < 2). */
+export const TIP = 3;
+/**
+ * Where an arrow aimed from (fx,fy) through (x,y) must end so its tip stops TIP units outside `to`: the ray's entry into
+ * `to` grown by TIP, minus the 0.75·w the marker reaches past the line's end (viewBox 8, refX 7, markerWidth 6). A ray that
+ * misses the box keeps (x,y); the end never comes closer than 1 unit to (fx,fy), so a short arrow never flips.
+ */
+export function stopAt(fx: number, fy: number, x: number, y: number, w: number, to: Rect): [number, number] {
+  const dx = x - fx, dy = y - fy, len = Math.hypot(dx, dy);
+  if (!len) return [x, y];
+  let t = 0, out = Infinity;
+  for (const [p, d, lo, hi] of [[fx, dx, to.x - TIP, to.x + to.w + TIP], [fy, dy, to.y - TIP, to.y + to.h + TIP]]) {
+    if (d === 0) { if (p < lo || p > hi) return [x, y]; continue; }
+    t = Math.max(t, Math.min((lo - p) / d, (hi - p) / d));
+    out = Math.min(out, Math.max((lo - p) / d, (hi - p) / d));
+  }
+  if (t > out) return [x, y];
+  const s = Math.max(1, t * len - 0.75 * w);
+  return [fx + (dx / len) * s, fy + (dy / len) * s];
+}
+type To = { to?: Rect };
+/** A straight line; with `arrow` and `to` (the target box) it stops short so the tip stays TIP outside it. */
+export const line = (k: string, x1: number, y1: number, x2: number, y2: number, more: Partial<Extract<Shape, { t: 'l' }>> & To = {}): Shape => {
+  const { to, ...rest } = more;
+  const [ex, ey] = to && rest.arrow ? stopAt(x1, y1, x2, y2, rest.w ?? 1.4, to) : [x2, y2];
+  return { k, t: 'l', x1, y1, x2: ex, y2: ey, ...rest };
+};
+/** A curved pointer from (x1,y1) to (x2,y2), bulging by `bend` (negative = upwards); `to` stops it short like line(). */
+export const arc = (k: string, x1: number, y1: number, x2: number, y2: number, bend: number, more: Partial<Extract<Shape, { t: 'p' }>> & To = {}): Shape => {
+  const { to, ...rest } = more;
+  const cx = (x1 + x2) / 2, cy = (y1 + y2) / 2 + bend;
+  const [ex, ey] = to ? stopAt(cx, cy, x2, y2, rest.w ?? 1.4, to) : [x2, y2];
+  return { k, t: 'p', d: `M${r2(x1)} ${r2(y1)} Q${r2(cx)} ${r2(cy)} ${r2(ex)} ${r2(ey)}`, arrow: true, ...rest };
+};
+/** The rect of a circle shape (an arrow's `to`). */
+export const square = (x: number, y: number, r: number): Rect => ({ x: x - r, y: y - r, w: 2 * r, h: 2 * r });
 /** Cuts a label to `n` characters (no text measuring: jsdom has no geometry). */
 export const cut = (v: string, n: number): string => (v.length > n ? `${v.slice(0, n - 1)}…` : v);
 /** Catalog values arrive as numbers, numeric strings or NULL (PGlite): a number or undefined. */

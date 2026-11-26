@@ -1,4 +1,4 @@
-import { box, cut, define, fill, line, type Shape, SM, text, type Tone } from './engineVizCore';
+import { box, cut, define, fill, line, type Shape, SM, square, text, type Tone } from './engineVizCore';
 
 // ENG-VIZ MongoDB and DynamoDB diagrams (knowledge map §5–§6). Its own lazy chunk `engineVizNosql`, imported by
 // engineViz's loadViz(); it reuses the engine from the engineViz chunk.
@@ -48,14 +48,14 @@ define<Record<string, unknown>>('mg-bson-doc', {
       out.push({ k: `row${i}`, t: 'r', x: 10 + r.depth * 12, y, w: 320 - r.depth * 12, h: 18, tone: hot ? 'new' : 'plain' });
       out.push(text(`n${i}`, 16 + r.depth * 12, y + 9, cut(r.name, 10), { size: SM, b: true, mono: true }));
       out.push(text(`v${i}`, s.types ? 196 : 100, y + 9, cut(r.preview, s.types ? 13 : 24), { size: SM, mono: true, ink: 'muted' }));
-      if (s.types) out.push(...box(`ty${i}`, 122, y + 2, 64, 14, r.type, r.type === 'array' || r.type === 'object' ? 'ptr' : 'cell'));
+      if (s.types) out.push(...box(`ty${i}`, 122, y + 1, 64, 16, r.type, r.type === 'array' || r.type === 'object' ? 'ptr' : 'cell'));
       if (s.sizes) out.push(text(`b${i}`, 326, y + 9, String(r.size), { size: SM, mono: true, a: 'e' }));
     });
     if (s.strip) {
       const y = 22 + rows.length * 21 + 10;
       const sx = (b: number) => 10 + (b / size) * 320;
       let at = 4;
-      out.push(...box('len', sx(0), y, Math.max(14, sx(4) - sx(0)), 20, '', 'ptr'));
+      out.push(...box('len', sx(0), y, sx(4) - sx(0) - 1, 20, '', 'ptr')); // v39 F3 (L622): 1 unit before seg0, like the segments
       top.forEach((r, i) => {
         out.push(...box(`seg${i}`, sx(at), y, sx(at + r.size) - sx(at) - 1, 20, '', i % 2 ? 'cell' : 'new'));
         at += r.size;
@@ -132,7 +132,7 @@ define<PipeModel>('mg-aggregation-pipeline', {
   // v31 F5 + S5 (L510, L513): bars ≤ 70 units so "1000 docs" stays inside 340 at SM; the stages still to come are drawn
   // as dashed ghosts from step 1, so the frame is the whole pipeline (no empty space) and later steps only change tone.
   const row = (k: string, i: number, label: string, sub: string, n: number | undefined, tone: Tone, prev?: number): Shape[] => {
-    const y = 14 + i * 40;
+    const y = 14 + i * 48; // v39 F3 (L621): 14 units between stages, room for the arrowhead
     const w = Math.max(3, ((n ?? 0) / max) * 70);
     return [
       ...box(k, 10, y, 132, 34, label, tone, cut(sub, 18)),
@@ -144,7 +144,7 @@ define<PipeModel>('mg-aggregation-pipeline', {
   };
   const frame = (upto: number): Shape[] => [
     ...row('src', 0, 'collection', 'orders', m.input, 'cell'),
-    ...st.flatMap((s, i) => [line(`ln${i}`, 76, 48 + i * 40, 76, 54 + i * 40, { ink: i < upto ? 'ptr' : 'edge', arrow: true }),
+    ...st.flatMap((s, i) => [line(`ln${i}`, 76, 48 + i * 48, 76, 62 + i * 48, { ink: i < upto ? 'ptr' : 'edge', arrow: true, to: { x: 10, y: 62 + i * 48, w: 132, h: 34 } }),
       ...row(`s${i}`, i + 1, s.op, s.arg ?? '', i < upto ? s.out : undefined, i >= upto ? 'ghost' : i === upto - 1 ? 'new' : 'cell', i ? st[i - 1].out : m.input)]),
   ];
   const sayOf = (s: PipeModel['stages'][number], prev: number): string => {
@@ -155,7 +155,7 @@ define<PipeModel>('mg-aggregation-pipeline', {
     return base;
   };
   return {
-    title: tr('Pipeline tổng hợp', 'The aggregation pipeline'), w: 340, h: 14 + (st.length + 1) * 40 + 2,
+    title: tr('Pipeline tổng hợp', 'The aggregation pipeline'), w: 340, h: 14 + (st.length + 1) * 48 - 6,
     frames: [
       { say: fill(tr('Collection có {n} tài liệu đi vào pipeline (số minh họa, không phải dữ liệu lab bên dưới).', 'The collection\'s {n} documents enter the pipeline (illustrative numbers, not the lab data below).'), { n: m.input }), nodes: frame(0) },
       ...st.map((s, i) => ({ say: sayOf(s, i ? st[i - 1].out : m.input), nodes: frame(i + 1) })),
@@ -173,7 +173,8 @@ define<{ writes: string[] }>('mg-replica-set-oplog', { writes: ['insert x:1', 'u
       const [x, y] = N[k];
       const dead = s.down && k === 'P';
       out.push({ k: `n${k}`, t: 'c', x, y, r: 24, tone: dead ? 'dead' : s.names[i] === 'PRIMARY' ? 'new' : 'cell' }, text(`t${k}`, x, y, dead ? tr('sập', 'down') : s.names[i] === 'PRIMARY' ? 'P' : 'S', { a: 'm', b: true, size: 13 }));
-      out.push(text(`r${k}`, x, y + 34, s.names[i], { a: 'm', size: SM, ink: 'muted', b: true }));
+      // v39 F3 (L622): the top node's name sits above it, so the oplog arrows leaving its lower side cross no label
+      out.push(text(`r${k}`, x, k === 'P' ? y - 34 : y + 34, s.names[i], { a: 'm', size: SM, ink: 'muted', b: true }));
       for (let j = 0; j < s.logs[i]; j++) out.push(...box(`o${k}${j}`, k === 'P' ? x + 34 : x - 62, k === 'P' ? y - 18 + j * 20 : y + 44 + j * 20, 124, 17, cut(`ts ${j + 1} · ${m.writes[j] ?? 'op'}`, 20), dead ? 'ghost' : 'plain'));
     });
     if (s.pull) {
@@ -183,7 +184,7 @@ define<{ writes: string[] }>('mg-replica-set-oplog', { writes: ['insert x:1', 'u
         if (k === src || (s.down && k === 'P')) return;
         const [x1, y1] = N[src];
         const [x2, y2] = N[k];
-        out.push(line(`p${k}`, x1 + (x2 - x1) * 0.2, y1 + (y2 - y1) * 0.2, x1 + (x2 - x1) * 0.78, y1 + (y2 - y1) * 0.78, { ink: 'ptr', arrow: true, dash: true }));
+        out.push(line(`p${k}`, x1 + (x2 - x1) * 0.2, y1 + (y2 - y1) * 0.2, x2, y2, { ink: 'ptr', arrow: true, dash: true, to: square(x2, y2, 24) }));
       });
     }
     if (s.ack) out.push(...box('ack', 10, 14, 112, 30, 'ack w:majority', 'live'));
@@ -218,7 +219,7 @@ define<{ shards: number }>('mg-shard-chunks', { shards: 3 }, (m, tr) => {
     for (let i = 0; i < S; i++) {
       out.push({ k: `sh${i}`, t: 'r', x: sx(i), y: 70, w: cw, h: 140, tone: 'plain' }, text(`sht${i}`, sx(i) + cw / 2, 84, `shard ${i + 1}`, { a: 'm', b: true, size: SM }));
       const on = o.scatter || o.route?.includes(i);
-      out.push(line(`rt${i}`, 170, 42, sx(i) + cw / 2, 68, { ink: on ? 'new' : 'edge', arrow: !!on, w: on ? 1.8 : 1, dash: !on }));
+      out.push(line(`rt${i}`, 170, 42, sx(i) + cw / 2, 70, { ink: on ? 'new' : 'edge', arrow: !!on, w: on ? 1.8 : 1, dash: !on, to: { x: sx(i), y: 70, w: cw, h: 140 } }));
     }
     chunks.forEach((c) => out.push(...box(c.k, sx(c.shard) + 8, 96 + c.slot * 34, cw - 16, 28, c.label, c.k === o.hot ? 'dead' : c.tone ?? 'cell')));
     if (o.note) out.push(text('note', 10, 226, o.note, { size: SM, ink: 'muted' }));
@@ -258,7 +259,7 @@ define<PartModel>('dy-partitions-hash', { keys: ['CUST#1', 'CUST#2', 'CUST#3', '
     list.forEach((k, i) => {
       const hot = (s.hot || s.shard) && (k === m.hot || shards.includes(k));
       out.push(...box(`k${k}`, 10, ky(i), 96, 20, cut(k, 12), hot ? 'warm' : 'cell'));
-      if (s.hash) out.push(line(`l${k}`, 108, ky(i) + 10, 196, py(part(k)) + 20, { ink: hot ? 'warm' : 'edge', arrow: true, w: hot ? 1.6 : 1 }));
+      if (s.hash) out.push(line(`l${k}`, 108, ky(i) + 10, 200, py(part(k)) + 20, { ink: hot ? 'warm' : 'edge', arrow: true, w: hot ? 1.6 : 1, to: { x: 200, y: py(part(k)), w: 130, h: 40 } }));
     });
     for (let p = 0; p < P; p++) {
       const over = s.hot && !s.shard && load[p] > 4;
