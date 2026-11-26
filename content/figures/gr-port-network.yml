@@ -1,0 +1,37 @@
+# v47 Graph R1 (L1080–L1089): the capstone's port network. Lesson: e-gr-l2-06 (Ý chính). Data: the lab's lanes split into
+# legs (PGlite 0.5.16, PostgreSQL 18.6): VNDAD→SGSIN, VNDAD→KRPUS, SGSIN→NLRTM, SGSIN→AUSYD, KRPUS→USLAX, USLAX→VNDAD,
+# VNSGN→SGSIN. Drawn: the loop and the leg to SGSIN; the legs out of SGSIN (to NLRTM, AUSYD) show in the route table. Routes from VNDAD
+# with at most one transshipment = the lab's step 2 (5 rows); codes shortened to three letters in the grid.
+# Sources: https://www.postgresql.org/docs/18/queries-with.html, https://www.postgresql.org/docs/18/sql-createview.html
+title: { vi: "Mạng cảng: trung chuyển và vòng", en: "The port network: transshipments and a loop" }
+caption:
+  vi: "Tuyến VNDAD tới NLRTM qua SGSIN thành hai chặng. Tuyến về USLAX tới VNDAD đóng một vòng. VNSGN chỉ có chặng tới SGSIN nên VNDAD không tới được nó."
+  en: "The lane VNDAD to NLRTM through SGSIN becomes two legs. The return lane USLAX to VNDAD closes a loop. VNSGN only has a leg to SGSIN, so VNDAD cannot reach it."
+alt:
+  vi: "Tách tuyến có cảng trung chuyển thành hai chặng cho một đồ thị mà mọi câu hỏi đều đọc được; tuyến về USLAX tới VNDAD tạo vòng, nên câu đệ quy cần CYCLE. Kết quả: 5 đường có tối đa một lần trung chuyển, ba cảng VNDAD, KRPUS, USLAX nằm trên vòng, và VNSGN không tới được."
+  en: "Splitting a lane with a transshipment port into two legs gives a graph every question can read; the return lane from USLAX to VNDAD makes a loop, so the recursive query needs CYCLE. Result: 5 routes with at most one transshipment, the three ports VNDAD, KRPUS and USLAX on the loop, and VNSGN unreachable."
+nodes:
+  - { id: dad, shape: key, label: VNDAD }
+  - { id: pus, shape: key, label: KRPUS }
+  - { id: sin, shape: key, label: SGSIN }
+  - { id: lax, shape: key, label: USLAX }
+  - id: routes
+    shape: grid
+    label: { vi: "≤ 1 trung chuyển", en: "≤ 1 transshipment" }
+    head: [route, { vi: "lần", en: times }]
+    cells:
+      - [DAD>SIN, "0"]
+      - [DAD>PUS, "0"]
+      - [DAD>SIN>RTM, "1"]
+      - [DAD>SIN>SYD, "1"]
+      - [DAD>PUS>LAX, "1"]
+  - { id: sgn, shape: note, label: { vi: "VNSGN: không tới được", en: "VNSGN: unreachable" } }
+rows:
+  - [sin, dad]
+  - [lax, pus]
+  - [routes, sgn]
+edges:
+  - { from: dad, to: pus }
+  - { from: pus, to: lax }
+  - { from: lax, to: dad, label: { vi: "về", en: "back" } }
+  - { from: dad, to: sin }

@@ -1,0 +1,59 @@
+# v47 Graph R1 (L1080–L1089): the rounds of a recursive CTE. Lesson: e-gr-l2-01 (Ý chính). Data: the lab's legs from VNDAD
+# (PGlite 0.5.16, PostgreSQL 18.6): round 1 = HKHKG, SGSIN; round 2 = KRPUS, SGSIN (again, via HKHKG), NLRTM, AUSYD; round 3 =
+# USLAX and NLRTM, AUSYD again; with UNION the repeats are dropped and round 3 keeps only USLAX.
+# Source: https://www.postgresql.org/docs/18/queries-with.html
+title: { vi: "Mỗi vòng đi thêm một chặng", en: "Each round goes one leg further" }
+caption:
+  vi: "Phần neo cho VNDAD. Mỗi vòng, phần đệ quy nối các cảng mới của vòng trước với legs. Khi một vòng không cho cảng mới nào, vòng lặp dừng."
+  en: "The anchor gives VNDAD. Each round, the recursive term joins the previous round's new ports to legs. When a round gives no new port, the loop stops."
+alt:
+  vi: "CTE đệ quy đi từng vòng: mỗi vòng chỉ nối các dòng mới của vòng trước với bảng cạnh, và dừng khi bảng làm việc rỗng. Kết quả: từ VNDAD tới được 6 cảng sau 3 vòng."
+  en: "A recursive CTE goes round by round: each round joins only the previous round's new rows to the edge table, and it stops when the working table is empty. Result: 6 ports are reachable from VNDAD after 3 rounds."
+nodes:
+  - { id: dad, shape: key, label: VNDAD, sub: { vi: "vòng 0", en: "round 0" } }
+  - { id: hkg, label: HKHKG, sub: { vi: "vòng 1", en: "round 1" } }
+  - { id: sin, label: SGSIN, sub: { vi: "vòng 1", en: "round 1" } }
+  - { id: pus, shape: key, label: KRPUS }
+  - { id: rtm, shape: key, label: NLRTM }
+  - { id: syd, shape: key, label: AUSYD }
+  - { id: lax, shape: key, label: USLAX }
+rows:
+  - [dad]
+  - [hkg, sin]
+  - [pus, rtm, syd]
+  - [lax]
+phone:
+  rows: [[dad], [hkg, sin], [pus, rtm], [lax, syd]]
+edges:
+  - { id: e1, from: dad, to: hkg }
+  - { id: e2, from: dad, to: sin }
+  - { id: e3, from: hkg, to: sin }
+  - { id: e4, from: hkg, to: pus }
+  - { id: e5, from: sin, to: rtm }
+  - { id: e6, from: sin, to: syd }
+  - { id: e7, from: pus, to: lax }
+steps:
+  - say: { vi: "Vòng 0: phần neo chạy một lần.", en: "Round 0: the anchor runs once." }
+    alt: { vi: "Phần neo trả một dòng là VNDAD, và dòng đó thành bảng làm việc đầu tiên.", en: "The anchor returns one row, VNDAD, and that row becomes the first working table." }
+    show: [dad]
+    set:
+      dad: { tone: new }
+  - say: { vi: "Vòng 1: hai cảng kề VNDAD.", en: "Round 1: the two ports next to VNDAD." }
+    alt: { vi: "Phần đệ quy nối VNDAD với legs và cho HKHKG và SGSIN, hai dòng mới của bảng làm việc.", en: "The recursive term joins VNDAD to legs and gives HKHKG and SGSIN, the two new rows of the working table." }
+    show: [dad, hkg, sin, e1, e2]
+    set:
+      hkg: { tone: new }
+      sin: { tone: new }
+  - say: { vi: "Vòng 2: SGSIN gặp lại, UNION bỏ nó.", en: "Round 2: SGSIN again, UNION drops it." }
+    alt: { vi: "Từ HKHKG và SGSIN đi được KRPUS, NLRTM, AUSYD và lại SGSIN; với UNION, SGSIN đã có nên bị bỏ.", en: "From HKHKG and SGSIN the walk reaches KRPUS, NLRTM, AUSYD and SGSIN again; with UNION, SGSIN is already there and is dropped." }
+    show: [dad, hkg, sin, pus, rtm, syd, e1, e2, e3, e4, e5, e6]
+    set:
+      pus: { tone: new }
+      rtm: { tone: new }
+      syd: { tone: new }
+      sin: { tone: warm }
+  - say: { vi: "Vòng 3: USLAX, rồi hết đường.", en: "Round 3: USLAX, then no path left." }
+    alt: { vi: "Chỉ KRPUS còn cạnh đi ra, tới USLAX; USLAX không có cạnh nào nên vòng sau rỗng và câu dừng.", en: "Only KRPUS still has an outgoing edge, to USLAX; USLAX has none, so the next round is empty and the query stops." }
+    show: [dad, hkg, sin, pus, rtm, syd, lax, e1, e2, e3, e4, e5, e6, e7]
+    set:
+      lax: { tone: new }

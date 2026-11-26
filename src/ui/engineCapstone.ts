@@ -70,7 +70,7 @@ export function capChecks(c: CapCtx): HTMLElement {
     const s = steps(c)[i];
     const key: PredKey = s.check === 'rows' ? (s.ordered ? 'cap.check.rowsOrdered' : 'cap.check.rows') : `cap.check.${s.check}`;
     // R2 E03 (L578b): a step's cost bar is part of what grades it; Postgres/design name the plan cost (onPg, inlined: no content.ts value here).
-    const pg = c.l.engine === 'postgres' || c.l.engine === 'design' || c.l.engine === 'stack' || c.l.engine === 'olap' || c.l.engine === 'timeseries' || c.l.engine === 'telemetry' || c.l.engine === 'stream';
+    const pg = c.l.engine === 'postgres' || c.l.engine === 'design' || c.l.engine === 'stack' || c.l.engine === 'olap' || c.l.engine === 'timeseries' || c.l.engine === 'telemetry' || c.l.engine === 'graph' || c.l.engine === 'stream';
     const bar = s.perf ? et(pg ? 'cap.check.perfPg' : 'cap.check.perfNosql', { table: s.perf.table }) : '';
     return et(key, { i: i + 1 }) + bar;
   };
@@ -90,7 +90,7 @@ export function capChecks(c: CapCtx): HTMLElement {
 export function capPlans(c: CapCtx): HTMLElement | null {
   const { d, et, st } = c;
   const { h, cls } = d;
-  const piv = (c.l.engine === 'postgres' || c.l.engine === 'design' || c.l.engine === 'stack' || c.l.engine === 'olap' || c.l.engine === 'timeseries' || c.l.engine === 'telemetry' || c.l.engine === 'stream') ? c.pred.capstonePivot(c.l.lab) : undefined; // EXPLAIN plans are Postgres only
+  const piv = (c.l.engine === 'postgres' || c.l.engine === 'design' || c.l.engine === 'stack' || c.l.engine === 'olap' || c.l.engine === 'timeseries' || c.l.engine === 'telemetry' || c.l.engine === 'graph' || c.l.engine === 'stream') ? c.pred.capstonePivot(c.l.lab) : undefined; // EXPLAIN plans are Postgres only
   if (!piv) return null;
   const mine = c.mine(piv.gate) ?? (c.done ? steps(c)[piv.gate].solution : undefined);
   const open = c.passed.has(`s${piv.gate}`) && mine !== undefined;

@@ -1,0 +1,28 @@
+# v47 Graph R1 (L1080–L1089): the property graph and its two-table form. Lesson: e-gr-l1-03 (Ý chính). Data: the lab's nodes
+# 1 (Port VNDAD), 2 (Port SGSIN), 6 (Carrier Lantern Line) and edges (1, 2, LEG, days 3.2), (6, 1, CALLS_AT).
+# Sources: https://neo4j.com/docs/getting-started/graph-database/, https://www.postgresql.org/docs/18/functions-json.html
+title: { vi: "Đồ thị thuộc tính trong hai bảng", en: "A property graph in two tables" }
+caption:
+  vi: "Nút mang nhãn và thuộc tính; quan hệ có hướng, một kiểu và có thể mang thuộc tính. Trên PostgreSQL mỗi nút là một dòng của nodes, mỗi quan hệ một dòng của edges."
+  en: "Nodes carry labels and properties; a relationship has a direction, one type and may carry properties. On PostgreSQL each node is a row of nodes, each relationship a row of edges."
+alt:
+  vi: "Đồ thị thuộc tính có nút mang nhãn và quan hệ có hướng, có kiểu; cả hai mang thuộc tính. Trên PostgreSQL, nhãn và kiểu là cột chữ, thuộc tính nằm trong cột props kiểu jsonb, và mỗi bước đi theo quan hệ là một JOIN từ nodes qua edges."
+  en: "A property graph has nodes with labels and relationships with a direction and a type; both carry properties. On PostgreSQL the label and the type are text columns, the properties sit in a jsonb props column, and each step along a relationship is a JOIN from nodes through edges."
+nodes:
+  - { id: car, label: Lantern Line, sub: ":Carrier" }
+  - { id: dad, label: VNDAD, sub: ":Port" }
+  - { id: sin, label: SGSIN, sub: ":Port" }
+  - id: etab
+    shape: grid
+    label: edges
+    head: [src, dst, type, props]
+    cells:
+      - ["1", "2", LEG, "days: 3.2"]
+      - ["6", "1", CALLS_AT, "{}"]
+rows:
+  - [car]
+  - [dad, sin]
+  - [etab]
+edges:
+  - { from: car, to: dad }
+  - { from: dad, to: sin, label: "LEG days 3.2" }

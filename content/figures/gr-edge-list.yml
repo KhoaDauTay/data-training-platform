@@ -1,0 +1,37 @@
+# v47 Graph R1 (L1080–L1089): a graph as an edge list. Lesson: e-gr-l1-01 (Ý chính). Data: the lab's legs among VNDAD, HKHKG,
+# SGSIN and its partners pair (HKHKG, VNDAD), stored once with a < b (PGlite 0.5.16, PostgreSQL 18.6).
+# Sources: https://neo4j.com/docs/getting-started/graph-database/, https://www.postgresql.org/docs/18/ddl-constraints.html
+title: { vi: "Đồ thị là một bảng cạnh", en: "A graph is a table of edges" }
+caption:
+  vi: "Mỗi mũi tên là một dòng của legs, từ src tới dst. Quan hệ đối tác là vô hướng nên partners lưu mỗi cặp một lần, mã nhỏ hơn ở cột a."
+  en: "Each arrow is one row of legs, from src to dst. A partnership is undirected, so partners stores each pair once, the smaller code in column a."
+alt:
+  vi: "Một cạnh có hướng là một dòng (src, dst), nên ba mũi tên của hình là ba dòng của legs. Cặp đối tác vô hướng chỉ có một dòng, nên muốn tìm đối tác của VNDAD phải đọc cả cột a lẫn cột b."
+  en: "A directed edge is one (src, dst) row, so the figure's three arrows are three rows of legs. An undirected partner pair has a single row, so finding the partners of VNDAD means reading column a as well as column b."
+nodes:
+  - { id: dad, shape: key, label: VNDAD }
+  - { id: hkg, shape: key, label: HKHKG }
+  - { id: sin, shape: key, label: SGSIN }
+  - id: legs
+    shape: grid
+    label: legs
+    head: [src, dst]
+    cells:
+      - [VNDAD, HKHKG]
+      - [VNDAD, SGSIN]
+      - [SGSIN, HKHKG]
+  - id: pair
+    shape: grid
+    label: partners
+    sub: { vi: "vô hướng, a < b", en: "undirected, a < b" }
+    head: [a, b]
+    cells:
+      - [HKHKG, VNDAD]
+rows:
+  - [dad, hkg]
+  - [sin]
+  - [legs, pair]
+edges:
+  - { from: dad, to: hkg }
+  - { from: dad, to: sin }
+  - { from: sin, to: hkg }

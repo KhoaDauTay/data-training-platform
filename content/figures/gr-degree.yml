@@ -1,0 +1,26 @@
+# v47 Graph R1 (L1080–L1089): total degree per port. Lesson: e-gr-l2-04 (Ý chính). Data: the lab's 9 legs (PGlite 0.5.16,
+# PostgreSQL 18.6): total degree SGSIN 5 (out 2, in 3), HKHKG 4 (2, 2), KRPUS 2, VNDAD 2, the other five 1.
+# Sources: https://neo4j.com/docs/graph-data-science/current/algorithms/degree-centrality/, https://www.postgresql.org/docs/18/queries-union.html
+title: { vi: "Tổng bậc của từng cảng", en: "Total degree per port" }
+caption:
+  vi: "Tổng bậc = bậc ra + bậc vào, đếm bằng UNION ALL hai cột src và dst. SGSIN và HKHKG là hai đầu mối của mạng tuyến."
+  en: "Total degree = out-degree + in-degree, counted with a UNION ALL of columns src and dst. SGSIN and HKHKG are the two hubs of the route network."
+alt:
+  vi: "Độ trung tâm bậc đếm số cạnh chạm vào mỗi nút; cộng cả hai chiều thì nút nối nhiều chặng nhất nổi lên. Kết quả: SGSIN 5, HKHKG 4, KRPUS và VNDAD 2, năm cảng còn lại 1."
+  en: "Degree centrality counts the edges touching each node; adding both directions brings out the node joined to the most legs. Result: SGSIN 5, HKHKG 4, KRPUS and VNDAD 2, the other five ports 1."
+nodes:
+  - id: deg
+    shape: bars
+    label: { vi: "tổng bậc", en: "total degree" }
+    items:
+      - { label: SGSIN, value: 5, note: "5", tone: new }
+      - { label: HKHKG, value: 4, note: "4", tone: new }
+      - { label: KRPUS, value: 2, note: "2" }
+      - { label: VNDAD, value: 2, note: "2" }
+      - { label: AUSYD, value: 1, note: "1" }
+      - { label: NLRTM, value: 1, note: "1" }
+      - { label: USLAX, value: 1, note: "1" }
+      - { label: VNHPH, value: 1, note: "1" }
+      - { label: VNSGN, value: 1, note: "1" }
+rows:
+  - [deg]

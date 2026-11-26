@@ -1,0 +1,33 @@
+# v47 Graph R1 (L1080–L1089): one graph, two layouts. Lesson: e-gr-l1-02 (Ý chính). Data: the lab's legs among VNDAD, HKHKG,
+# SGSIN and KRPUS (VNDAD→HKHKG, VNDAD→SGSIN, SGSIN→HKHKG, HKHKG→KRPUS), checked in PGlite 0.5.16 (PostgreSQL 18.6).
+# Source: https://www.postgresql.org/docs/18/functions-aggregate.html
+title: { vi: "Danh sách kề và ma trận kề", en: "Adjacency list and adjacency matrix" }
+caption:
+  vi: "Bên trái: mỗi cảng kèm các cảng kế tiếp, chỉ có cạnh thật. Bên phải: một ô cho mỗi cặp, 1 là có cạnh; 4 cảng cho 16 ô nhưng chỉ 4 ô có cạnh."
+  en: "Left: each port with its next ports, only real edges. Right: one cell per pair, 1 means an edge; 4 ports give 16 cells but only 4 hold an edge."
+alt:
+  vi: "Danh sách kề chỉ lưu cạnh có thật, còn ma trận kề có một ô cho mọi cặp nút dù có cạnh hay không. Kết quả: 4 cảng và 4 cạnh cho 16 ô, 12 ô trống."
+  en: "An adjacency list stores only the edges that exist, while an adjacency matrix has a cell for every pair of nodes, edge or not. Result: 4 ports and 4 edges give 16 cells, 12 of them empty."
+nodes:
+  - id: list
+    shape: grid
+    label: { vi: "danh sách kề", en: "adjacency list" }
+    head: [src, next_ports]
+    cells:
+      - [VNDAD, "HKHKG,SGSIN"]
+      - [SGSIN, HKHKG]
+      - [HKHKG, KRPUS]
+      - [KRPUS, "·"]
+  - id: matrix
+    shape: grid
+    label: { vi: "ma trận kề", en: "adjacency matrix" }
+    sub: { vi: "hàng đi, cột đến", en: "row from, column to" }
+    head: [{ vi: "từ", en: from }, DAD, SIN, HKG, PUS]
+    cells:
+      - [DAD, "0", "1", "1", "0"]
+      - [SIN, "0", "0", "1", "0"]
+      - [HKG, "0", "0", "0", "1"]
+      - [PUS, "0", "0", "0", "0"]
+    cellTone: { "0:2": new, "0:3": new, "1:3": new, "2:4": new }
+rows:
+  - [list, matrix]

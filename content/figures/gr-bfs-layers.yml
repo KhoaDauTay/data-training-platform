@@ -1,0 +1,42 @@
+# v47 Graph R1 (L1080–L1089): breadth-first layers. Lesson: e-gr-l2-02 (Ý chính). Data: the lab's legs (PGlite 0.5.16,
+# PostgreSQL 18.6): depth 1 = HKHKG, KRPUS, SGSIN; depth 2 = USLAX (via KRPUS), NLRTM, AUSYD (via SGSIN). USLAX by fewest legs:
+# VNDAD>KRPUS>USLAX, 2 legs, 19.8 days; by fewest days: VNDAD>HKHKG>KRPUS>USLAX, 3 legs, 19.4 days. Drawn as two tables (three
+# ports a layer do not fit one row at 280). Codes are shortened to three letters in the route table.
+# Sources: https://www.postgresql.org/docs/18/queries-with.html, https://neo4j.com/docs/cypher-manual/current/patterns/shortest-paths/
+title: { vi: "Duyệt theo từng lớp độ sâu", en: "Walking one depth layer at a time" }
+caption:
+  vi: "Mỗi dòng là một lớp độ sâu tính từ VNDAD, mỗi cảng ghi ở lớp đầu tiên gặp nó. USLAX gặp lần đầu ở độ sâu 2, nhưng đường ít ngày nhất tới đó có 3 chặng."
+  en: "Each row is one depth layer from VNDAD, each port listed in the first layer that meets it. USLAX is first met at depth 2, but the route with the fewest days to it has 3 legs."
+alt:
+  vi: "Duyệt theo chiều rộng xét hết một độ sâu rồi mới sang độ sâu sau, nên lần đầu gặp nút đích là đường ít cạnh nhất. Kết quả: VNDAD>KRPUS>USLAX, 2 chặng, dù đường 3 chặng qua HKHKG ít ngày hơn."
+  en: "Breadth-first search finishes one depth before the next, so the first meeting with the target is the route with the fewest edges. Result: VNDAD>KRPUS>USLAX, 2 legs, even though the 3-leg route through HKHKG takes fewer days."
+nodes:
+  - id: layers
+    shape: grid
+    label: { vi: "lớp độ sâu", en: "depth layers" }
+    head: [{ vi: "độ sâu", en: depth }, { vi: "cảng", en: ports }]
+    cells:
+      - ["0", VNDAD]
+      - ["1", HKHKG KRPUS SGSIN]
+      - ["2", AUSYD NLRTM USLAX]
+  - id: routes
+    shape: grid
+    label: { vi: "đường tới USLAX", en: "routes to USLAX" }
+    head: [route, legs, days]
+    cells:
+      - [DAD>PUS>LAX, "2", "19.8"]
+      - [DAD>HKG>PUS>LAX, "3", "19.4"]
+rows:
+  - [layers]
+  - [routes]
+steps:
+  - say: { vi: "Độ sâu 1 xong rồi mới tới độ sâu 2.", en: "Depth 1 is finished before depth 2." }
+    alt: { vi: "BFS xét VNDAD, rồi cả ba cảng kề nó, rồi mới tới các cảng cách hai chặng như USLAX.", en: "BFS visits VNDAD, then all three ports next to it, and only then the ports two legs away such as USLAX." }
+    show: [layers]
+    set:
+      layers: { cellTone: { "2:1": new } }
+  - say: { vi: "Ít chặng nhất chưa chắc ít ngày nhất.", en: "The fewest legs is not always the fewest days." }
+    alt: { vi: "Đường 2 chặng qua KRPUS mất 19.8 ngày, còn đường 3 chặng qua HKHKG chỉ 19.4 ngày, nên đường theo trọng số phải cộng ngày.", en: "The 2-leg route through KRPUS takes 19.8 days, while the 3-leg route through HKHKG takes only 19.4, so a weighted route must add up the days." }
+    show: [layers, routes]
+    set:
+      routes: { cellTone: { "0:1": new, "1:2": new } }
