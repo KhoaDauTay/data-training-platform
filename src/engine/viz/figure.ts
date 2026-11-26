@@ -152,7 +152,7 @@ function size(n: FigNode, lang: Lang, room: number): Sized {
   return { w: Math.ceil(Math.max(64, widest(ls) + 2 * padX + (n.card ? CARD_W : 0))), h: tall(ls) + 2 * PAD_Y + (shape === 'table' ? CAP : 0) };
 }
 // ── v42 (L690–L692): ER entities: a title band, then one row per attribute with its PK / FK pills in a column of their own ──
-const HEAD = lineH(LS) + 2 * PAD_Y, FPAD = 4, PILL_W = 26, PILL_H = 20, LOOP = 36;
+const HEAD = lineH(LS) + 2 * PAD_Y, FPAD = 4, PILL_W = 26, PILL_H = 20, LOOP = 44;
 const fieldsOf = (n: FigNode, lang: Lang): { s: string; keys: string[] }[] => (n.fields ?? []).map((f) => {
   const o: Field = typeof f === 'object' && 'name' in f ? f : { name: f };
   return { s: cellText(n, o.name, lang), keys: [o.pk ? 'PK' : '', o.fk ? 'FK' : ''].filter(Boolean) };
