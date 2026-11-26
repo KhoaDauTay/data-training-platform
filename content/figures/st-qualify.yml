@@ -1,0 +1,30 @@
+# ST-15 (tools/v43/de-tools-plan.md §4): QUALIFY keeps rows after the window is computed, 2 steps. Lesson: e-st-l3-02 (Ý chính).
+# Data = the lab: orders 901 and 902 of raw_pay.events (903 and 904 have one event each and are left out of the drawing).
+# Source: https://docs.snowflake.com/en/sql-reference/constructs/qualify
+title: { vi: "QUALIFY lọc sau hàm cửa sổ", en: "QUALIFY filters after the window" }
+caption:
+  vi: "row_number() đánh số sự kiện trong từng đơn, mới nhất là 1; sau đó QUALIFY (hay WHERE ở câu ngoài) giữ dòng số 1."
+  en: "row_number() numbers the events within each order, newest first; then QUALIFY (or an outer WHERE) keeps row 1."
+alt:
+  vi: "Hàm cửa sổ chỉ có giá trị sau khi các dòng đã được lọc bằng WHERE, nên điều kiện trên nó phải chạy ở một bước sau: QUALIFY ở Snowflake, câu ngoài ở Postgres. Kết quả: mỗi đơn còn đúng sự kiện mới nhất."
+  en: "A window function only has a value after WHERE has filtered the rows, so a condition on it must run in a later step: QUALIFY in Snowflake, an outer query in Postgres. Result: each order keeps exactly its newest event."
+nodes:
+  - id: ev
+    shape: grid
+    mono: true
+    label: raw_pay.events
+    head: [order_id, status, rn]
+    cells: [["901", "Captured", "1"], ["901", "pending", "2"], ["902", "failed", "1"], ["902", "pending", "2"]]
+  - { id: rule, mono: true, label: "rn = 1", sub: QUALIFY, tone: warm }
+rows:
+  - [ev]
+  - [rule]
+edges:
+  - { from: ev, to: rule }
+steps:
+  - say: { vi: "Đánh số trong từng đơn, mới nhất trước.", en: "Number within each order, newest first." }
+    alt: { vi: "row_number() chia dòng theo order_id và đánh số theo thời gian giảm dần, nên sự kiện mới nhất của mỗi đơn mang số 1.", en: "row_number() splits the rows by order_id and numbers them by time descending, so each order's newest event gets number 1." }
+  - say: { vi: "Lọc sau khi đã đánh số: giữ số 1.", en: "Filter after numbering: keep number 1." }
+    alt: { vi: "Điều kiện rn = 1 chạy sau khi số đã có, nên đơn 901 còn Captured và đơn 902 còn failed; hai dòng pending bị bỏ.", en: "The condition rn = 1 runs once the numbers exist, so order 901 keeps Captured and order 902 keeps failed; the two pending rows are dropped." }
+    set:
+      ev: { rowTone: [new, dead, new, dead], strike: [1, 3] }
