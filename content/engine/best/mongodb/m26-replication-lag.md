@@ -41,8 +41,8 @@ quiz:
       - { vi: "Primary tự gửi lại mọi tài liệu đã đổi", en: "The primary resends every changed document by itself" }
     answer: 1
     why:
-      vi: "Docs: secondary mất kết nối chỉ đồng bộ lại bằng replication nếu kết nối trở lại trong cửa sổ oplog. Quá cửa sổ thì phần oplog nó cần không còn nữa."
-      en: "The docs: a disconnected secondary can only sync again through replication if the connection returns within the oplog window. Past that, the oplog entries it needs are gone."
+      vi: "Oplog là nhật ký ghi có cỡ cố định; cửa sổ 6 giờ nghĩa là chỉ giữ được 6 giờ thay đổi gần nhất. Secondary vắng 8 giờ cần cả 2 giờ đầu đã bị ghi đè, nên không đuổi kịp được, và primary không tự gửi lại tài liệu. Nó phải đồng bộ lại từ đầu (initial sync)."
+      en: "The oplog is a fixed-size log of writes; a 6-hour window means it holds only the last 6 hours of changes. A secondary gone for 8 hours needs the first 2 hours, which are overwritten, so it cannot catch up, and the primary does not resend documents. It needs a full resync (initial sync)."
 ---
 
 ## Ý chính

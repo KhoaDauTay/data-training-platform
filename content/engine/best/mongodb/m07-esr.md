@@ -41,8 +41,8 @@ quiz:
       - { vi: "`{ total: -1, createdAt: 1, status: 1 }`", en: "`{ total: -1, createdAt: 1, status: 1 }`" }
     answer: 1
     why:
-      vi: "Trường so bằng đứng đầu để phần còn lại của index đã sắp sẵn; trường sắp xếp đứng trước trường khoảng để tránh sort trong bộ nhớ. Docs ghi đây là hướng dẫn cho đa số trường hợp: khoảng rất chọn lọc thì có thể đặt trước sort."
-      en: "The equality field comes first so the rest of the index is already in order; the sort field comes before the range field to avoid an in-memory sort. The docs call this a guideline for most cases: a very selective range may go before the sort."
+      vi: "Luật ESR (Equality, Sort, Range: trường so bằng, rồi trường sắp xếp, rồi trường so khoảng) cho `status`, `total`, `createdAt`. `status` đứng đầu thì trong một giá trị `status`, index đã sắp theo `total`; `createdAt` đứng đầu thì mỗi ngày một đoạn riêng, nên MongoDB phải sort lại trong bộ nhớ; `total` đứng đầu thì sắp đúng nhưng phải đi qua mọi đơn để lọc `status`. Docs ghi đây là hướng dẫn cho đa số trường hợp: khoảng rất chọn lọc thì có thể đặt trước sort."
+      en: "The ESR rule (Equality, Sort, Range: equality fields, then the sort field, then range fields) gives `status`, `total`, `createdAt`. With `status` first, the index is already ordered by `total` within one `status` value; with `createdAt` first each date is its own run, so MongoDB must sort again in memory; with `total` first the order is right but it walks every order to filter `status`. The docs call this a guideline for most cases: a very selective range may go before the sort."
 ---
 
 ## Ý chính

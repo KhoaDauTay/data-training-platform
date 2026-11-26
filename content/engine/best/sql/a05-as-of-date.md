@@ -49,8 +49,8 @@ quiz:
       - { vi: "Báo lỗi vì `CURRENT_DATE` đã cũ", en: "An error, because `CURRENT_DATE` is stale" }
     answer: 1
     why:
-      vi: "`CURRENT_DATE` là ngày lúc câu chạy. Cửa sổ dời theo ngày chạy, nên không ai tái lập được số cũ. Ghi ngày chốt cụ thể thì câu cho cùng số mọi lúc."
-      en: "`CURRENT_DATE` is the date when the query runs. The window moves with the run date, so nobody can reproduce the old number. A fixed as-of date gives the same number every time."
+      vi: "Dữ liệu cũ không đổi, nhưng ranh giới cửa sổ thì đổi: `CURRENT_DATE` là ngày lúc câu chạy, nên chạy lại sau 7 ngày thì cửa sổ mất 7 ngày đầu và thêm 7 ngày mới. Câu không báo lỗi nào, nên không ai thấy số cũ đã mất. Ghi ngày chốt cụ thể thì câu cho cùng số mọi lúc."
+      en: "Old data does not change, but the window's edges do: `CURRENT_DATE` is the date when the query runs, so a re-run 7 days later drops the first 7 days and adds 7 new ones. The query raises no error, so nobody notices the old number is gone. A fixed as-of date gives the same number every time."
 ---
 
 ## Ý chính

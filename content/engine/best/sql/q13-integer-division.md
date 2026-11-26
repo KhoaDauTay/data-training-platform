@@ -46,8 +46,8 @@ quiz:
       - { vi: "Báo lỗi", en: "An error" }
     answer: 1
     why:
-      vi: "Hai vế đều là số nguyên nên phép chia cũng nguyên: kết quả bị cắt về phía 0. `415::numeric / 1428` mới cho 0,2906…"
-      en: "Both sides are integers, so the division is integer too: the result is truncated towards zero. `415::numeric / 1428` gives 0.2906…"
+      vi: "Hai vế đều là số nguyên nên phép chia cũng nguyên: 0,29 bị cắt phần lẻ về phía 0, còn 0. Không có lỗi, chỉ mất phần thập phân. `415::numeric / 1428` mới cho 0,2906…"
+      en: "Both sides are integers, so the division is integer too: 0.29 is truncated towards zero, leaving 0. There is no error, only the decimals are lost. `415::numeric / 1428` gives 0.2906…"
 ---
 
 ## Ý chính

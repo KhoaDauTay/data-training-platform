@@ -50,8 +50,8 @@ quiz:
       - { vi: "`{ tenantId: 1, status: 1, createdAt: -1 }`", en: "`{ tenantId: 1, status: 1, createdAt: -1 }`" }
     answer: 2
     why:
-      vi: "Hai phép bằng đứng trước trường sắp xếp (ESR), và `tenantId` đứng đầu để mọi truy vấn của một người bán chỉ quét đoạn khóa của người đó; index này cũng phục vụ `find({ tenantId })` nhờ quy tắc tiền tố."
-      en: "The two equalities come before the sort field (ESR), and `tenantId` comes first so every query of one seller scans only that seller's keys; this index also serves `find({ tenantId })` by the prefix rule."
+      vi: "Theo luật ESR (trường so bằng trước, rồi trường sắp xếp, rồi trường so khoảng), hai phép bằng `tenantId`, `status` đứng trước `createdAt`. Thiếu `tenantId` thì index quét cả trạng thái đó của mọi người bán; `createdAt` đứng đầu thì phải đi qua mọi ngày để lọc. Thêm nữa, `tenantId` đứng đầu để mọi truy vấn của một người bán chỉ quét đoạn khóa của người đó; index này cũng phục vụ `find({ tenantId })` nhờ quy tắc tiền tố."
+      en: "By the ESR rule (equality fields first, then the sort field, then range fields), the two equalities `tenantId`, `status` come before `createdAt`. Without `tenantId` the index scans that status for every seller; with `createdAt` first it walks every date to filter. Also, `tenantId` comes first so every query of one seller scans only that seller's keys; this index also serves `find({ tenantId })` by the prefix rule."
 ---
 
 ## Ý chính

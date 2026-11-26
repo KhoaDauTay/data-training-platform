@@ -39,8 +39,8 @@ quiz:
       - { vi: "`read` trên `shop`", en: "`read` on `shop`" }
     answer: 2
     why:
-      vi: "Quyền tối thiểu: chỉ đọc, chỉ đúng database cần. Tài khoản bị lộ thì thiệt hại dừng ở đó, giống role chỉ đọc cho người phân tích trong Postgres."
-      en: "Least privilege: read only, on only the database needed. If the account leaks, the damage stops there, like a read-only role for analysts in Postgres."
+      vi: "Người phân tích chỉ đọc `shop`, nên cấp đúng `read` trên `shop` (quyền tối thiểu). `readWrite` cho thêm quyền ghi họ không cần; `root` cho toàn quyền trên mọi database. Tài khoản bị lộ thì kẻ gian chỉ đọc được `shop`, không sửa hay xóa được gì."
+      en: "The analyst only reads `shop`, so grant exactly `read` on `shop` (least privilege). `readWrite` adds write access they do not need; `root` gives full power over every database. If the account leaks, the attacker can only read `shop`, not change or delete anything."
 ---
 
 ## Ý chính

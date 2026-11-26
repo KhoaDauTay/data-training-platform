@@ -62,8 +62,8 @@ quiz:
       - { vi: "Postgres tự đổi -3 thành 3", en: "Postgres turns -3 into 3" }
     answer: 1
     why:
-      vi: "Ràng buộc chạy ở mọi lần ghi, dù lệnh đến từ ứng dụng, script hay ai đó gõ tay. Dòng sai bị chặn ngay lúc ghi, không phải đợi tới khi báo cáo sai."
-      en: "A constraint runs on every write, whether it comes from the application, a script or someone typing by hand. The bad row is stopped at write time, not when a report goes wrong."
+      vi: "-3 không thỏa `CHECK (qty > 0)`, nên lệnh ghi bị từ chối với lỗi `23514`. Ràng buộc chạy ở mọi lần ghi, dù lệnh đến từ ứng dụng hay script, nên không có chuyện ghi trước rồi kiểm sau. Postgres cũng không bao giờ tự sửa giá trị: nó chỉ nhận hoặc từ chối."
+      en: "-3 fails `CHECK (qty > 0)`, so the insert is refused with error `23514`. A constraint runs on every write, from the application or a script, so nothing is written first and checked later. Postgres never fixes a value either: it only accepts or refuses."
 ---
 
 ## Ý chính

@@ -40,8 +40,8 @@ quiz:
       - { vi: "Vào shard có ít dữ liệu nhất", en: "Into the shard with the least data" }
     answer: 1
     why:
-      vi: "Khóa luôn tăng thì mọi giá trị mới lớn hơn mọi giá trị cũ, nên rơi vào chunk cuối có cận trên `MaxKey`. Hashed sharding băm giá trị nên lần ghi mới rải qua nhiều chunk."
-      en: "With an always increasing key every new value is larger than all old ones, so it lands in the last chunk, bounded above by `MaxKey`. Hashed sharding hashes the value, so new writes spread over many chunks."
+      vi: "Shard key `createdAt` luôn tăng thì mọi giá trị mới lớn hơn mọi giá trị cũ, nên rơi vào chunk (khoảng giá trị khóa) cuối có cận trên `MaxKey`, nằm trên một shard. Chỗ ghi do khoảng giá trị quyết định, không do shard nào ít dữ liệu, nên mọi lần ghi dồn về shard đó. Hashed sharding băm giá trị nên lần ghi mới rải qua nhiều chunk."
+      en: "With an always increasing shard key `createdAt`, every new value is larger than all old ones, so it lands in the last chunk (key range), bounded above by `MaxKey`, which sits on one shard. The key range decides where a write goes, not which shard holds the least data, so every write piles onto that shard. Hashed sharding hashes the value, so new writes spread over many chunks."
 ---
 
 ## Ý chính

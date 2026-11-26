@@ -55,8 +55,8 @@ quiz:
       - { vi: "`SELECT count(*) FROM orders`", en: "`SELECT count(*) FROM orders`" }
     answer: 1
     why:
-      vi: "Tổng số dòng \"trông ổn\" không chứng minh gì. Chỉ truy vấn tìm đúng dòng vi phạm mới cho biết giả định có đúng không; 0 là đạt."
-      en: "A row count that \"looks fine\" proves nothing. Only a query that finds the violating rows tells you whether the assumption holds; 0 is a pass."
+      vi: "`count(*)` của `payments` hay `orders` chỉ cho tổng số dòng; khoản trả mồ côi (trỏ tới đơn không tồn tại) nằm lẫn trong tổng đó, nên con số \"trông ổn\" không chứng minh gì. Chỉ truy vấn tìm đúng dòng vi phạm mới cho biết giả định có đúng không; 0 là đạt."
+      en: "`count(*)` on `payments` or `orders` only gives a total; orphan payments (pointing to a missing order) hide inside it, so a number that \"looks fine\" proves nothing. Only a query that finds the violating rows tells you whether the assumption holds; 0 is a pass."
 ---
 
 ## Ý chính

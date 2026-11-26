@@ -53,8 +53,8 @@ quiz:
       - { vi: "NULL", en: "NULL" }
     answer: 1
     why:
-      vi: "Có `ORDER BY`, khung mặc định chạy từ đầu partition tới dòng hiện tại (và các dòng ngang hàng). Dòng cuối của khung đó là dòng hiện tại, nên `last_value` trả ngày của chính nó."
-      en: "With `ORDER BY`, the default frame runs from the start of the partition to the current row (and its peers). The last row of that frame is the current row, so `last_value` returns its own date."
+      vi: "Hàm cửa sổ chỉ nhìn các dòng trong khung (frame) của nó. Có `ORDER BY`, khung mặc định chạy từ đầu partition tới dòng hiện tại (và các dòng cùng ngày), chưa tới đơn cuối của cửa hàng. Dòng cuối của khung đó là dòng hiện tại, nên `last_value` trả ngày của chính nó, không phải NULL. Muốn ngày đơn cuối thì ghi khung tới `UNBOUNDED FOLLOWING`."
+      en: "A window function only sees the rows in its frame. With `ORDER BY`, the default frame runs from the start of the partition to the current row (and rows with the same date), not yet to the store's last order. The last row of that frame is the current row, so `last_value` returns its own date, not NULL. For the last order date, write the frame up to `UNBOUNDED FOLLOWING`."
 ---
 
 ## Ý chính

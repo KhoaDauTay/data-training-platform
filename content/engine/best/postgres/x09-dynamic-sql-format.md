@@ -40,8 +40,8 @@ quiz:
       - { vi: "Báo lỗi ngay trong `format`", en: "An error inside `format` itself" }
     answer: 1
     why:
-      vi: "`%I` đặt tên trong nháy kép khi cần, nên cả chuỗi chỉ là một tên bảng. Dấu `;` không còn tách câu."
-      en: "`%I` double-quotes the name when needed, so the whole string is just one table name. The `;` no longer splits statements."
+      vi: "`%I` đặt tên trong nháy kép khi cần, nên cả chuỗi chỉ là một tên bảng và dấu `;` nằm trong tên, không tách được thành câu `DROP`. `format` không kiểm bảng có tồn tại, nên nó không lỗi; lỗi bảng không tồn tại chỉ đến lúc chạy câu."
+      en: "`%I` double-quotes the name when needed, so the whole string is just one table name and the `;` sits inside it, unable to start a `DROP` statement. `format` does not check that the table exists, so it does not fail; the missing-table error comes only when the query runs."
 ---
 
 ## Ý chính
