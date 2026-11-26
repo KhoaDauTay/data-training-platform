@@ -3,7 +3,8 @@
 # Deviation: the bars show the three sellers (the plan's "others 3" = S03 2 + S12 1); zone GOLD is a frame around the two chunks
 # (a group), not a box they point into; the compound key is two mono lines (it is 29 characters), so its "S07 splits" sub moved
 # into the two arrows it sends; the chunk months are an illustration of splitting by createdAt, not the lab's dates, and the
-# alt does not name them.
+# alt does not name them. Eye TZ1: one straight arrow from the compound key down into the zone (no elbow along the frame's border; an arrow onto the frame
+# itself leaves its label no room).
 # Source: https://www.mongodb.com/docs/manual/core/zone-sharding/
 title: { vi: "Người bán lớn cần trường thứ hai trong shard key", en: "A big seller needs a second shard-key field" }
 caption:
@@ -25,13 +26,12 @@ nodes:
   - { id: c1, label: chunk S07, sub: { vi: "tháng 9", en: Sep } }
   - { id: c2, label: chunk S07, sub: { vi: "tháng 10", en: Oct } }
 groups:
-  - { id: z, label: zone GOLD, nodes: [c1, c2] }
+  - { id: z, label: { vi: "zone GOLD (mạnh)", en: "zone GOLD (strong)" }, nodes: [c1, c2] }
 rows:
   - [b]
   - [k1, k2]
   - [c1, c2]
 edges:
-  - { from: k2, to: c1 }
   - { from: k2, to: c2 }
 steps:
   - say: { vi: "Chỉ tenantId: S07 dồn một chunk.", en: "tenantId only: S07 in one chunk." }

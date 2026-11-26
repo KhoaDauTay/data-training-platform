@@ -3,6 +3,7 @@
 # to both children the payment appears on lines 1, 2, 3 (sum 885000). Orders from 2026-10-01: bad sum 295481100 over 648 rows,
 # good 98493700 over 207 orders, 3.0 times. Bars are drawn to scale (3 : 1) with the totals in millions as notes.
 # Deviation: the plan's "October" bars label is "from 2026-10-01" (the card's filter); `good` is two mono-free lines (26 characters).
+# Eye FJ1: the fix has its own edge from payments (summed per order) to the right total; EN says "summed per order".
 # Source: https://www.postgresql.org/docs/18/queries-with.html
 title: { vi: "Join hai bảng con rồi mới sum", en: "Joining two child tables before sum" }
 caption:
@@ -22,7 +23,7 @@ nodes:
     cells: [["1", "295000"], ["2", "295000"], ["3", "295000"]]
     rowTone: [null, warm, warm]
   - { id: bad, shape: key, label: sum = 885000, tone: dead }
-  - { id: good, shape: key, label: { vi: "gộp payments trước: 295000", en: "aggregate payments first: 295000" }, tone: live }
+  - { id: good, shape: key, label: { vi: "gộp trước rồi join: 295000", en: "summed per order: 295000" }, tone: live }
   - id: tot
     shape: bars
     label: { vi: "đơn từ 2026-10-01", en: "orders since 2026-10-01" }
@@ -41,6 +42,7 @@ edges:
   - { from: it, to: j }
   - { from: pay, to: j }
   - { from: j, to: bad }
+  - { id: fix, from: pay, to: good }
 steps:
   - say: { vi: "Một khoản trả lặp theo số dòng hàng.", en: "One payment repeats once per item line." }
     show: [o, it, pay, j, bad]

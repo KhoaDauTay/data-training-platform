@@ -1,9 +1,8 @@
 # B4-2 (tools/v42/diagram-plan-v42.md): the index answers alone only if _id is not asked for. Lesson: e-mg-l3-09 (Ý chính).
 # Data (quoted rule from the lesson and the docs; no mongod in the browser): index { title: 1 }; find({ title: … }, { title: 1 })
 # still returns _id, so explain shows IXSCAN under FETCH; with { title: 1, _id: 0 } it shows IXSCAN alone.
-# Deviation: the two projections sit side by side on top (the one not in use is a placeholder), each pointing at the plan it
-# produces; the FETCH edge from the collection is drawn only in frame 1 (dashed: it opens documents; the plan box names both stages,
-# so no edge carries a label: on phones both arrows land on the plan's bottom as one bus). The optional reuse in e-mg-l3-07 is skipped (hosts.txt).
+# Deviation: one projection slot whose text changes per step (eye CQ2), pointing at the plan it produces; the FETCH edge from the collection is drawn only in frame 1 (dashed: it opens documents; the plan box names both stages,
+# so no edge carries a label). Phone rows put the index beside the plan and the collection under it, so each edge keeps its own head (eye CQ1). The optional reuse in e-mg-l3-07 is skipped (hosts.txt).
 # Source: https://www.mongodb.com/docs/manual/core/query-optimization/
 title: { vi: "Truy vấn được phủ: index tự trả lời", en: "A covered query: the index answers alone" }
 caption:
@@ -13,28 +12,27 @@ alt:
   vi: "Một truy vấn được phủ khi mọi trường lọc và trả về đều thuộc index; khi đó explain chỉ có IXSCAN, không FETCH. _id luôn được trả về trừ khi ghi _id: 0."
   en: "A query is covered when every filtered and returned field is in the index; then explain shows IXSCAN with no FETCH. _id is always returned unless you write _id: 0."
 nodes:
-  - { id: p1, shape: key, mono: true, label: "{ title: 1 }", tone: warm }
-  - { id: p2, shape: key, mono: true, label: "{\u00a0title:\u00a01, _id:\u00a00\u00a0}", tone: live }
+  - { id: p, shape: key, mono: true, label: "{ title: 1 }", tone: warm }
   - { id: ix, shape: grid, label: "index { title: 1 }", head: [title], cells: [["…"]], sub: { vi: "không có _id", en: "no _id" } }
   - { id: plan, label: IXSCAN → FETCH, sub: { vi: "cần _id", en: "needs _id" }, tone: warm }
   - { id: coll, shape: table, label: collection }
 rows:
-  - [p1, p2]
+  - [p]
   - [ix, plan, coll]
 phone:
-  rows: [[p1, p2], [plan], [ix, coll]]
+  rows: [[p], [ix, plan], [coll]]
 edges:
-  - { id: a1, from: p1, to: plan }
-  - { id: a2, from: p2, to: plan }
+  - { from: p, to: plan }
   - { from: ix, to: plan }
   - { id: f, from: coll, to: plan, dash: true }
 steps:
   - say: { vi: "Projection mặc định vẫn trả _id.", en: "The default projection still returns _id." }
-    show: [p1, ix, plan, coll, a1, f]
+    show: [p, ix, plan, coll, f]
     alt: { vi: "_id không thuộc index title, nên MongoDB phải mở tài liệu để lấy nó.", en: "_id is not in the title index, so MongoDB must open each document to get it." }
   - say: { vi: "Thêm _id: 0: index đủ trả lời.", en: "Add _id: 0: the index answers alone." }
-    show: [p2, ix, plan, coll, a2]
+    show: [p, ix, plan, coll]
     alt: { vi: "Mọi trường lọc và trả về đều nằm trong index, nên IXSCAN không cần FETCH.", en: "Every filtered and returned field is in the index, so IXSCAN needs no FETCH." }
     set:
+      p: { label: "{\u00a0title:\u00a01, _id:\u00a00\u00a0}", tone: live }
       plan: { label: IXSCAN, sub: { vi: "không mở tài liệu", en: "no document opened" }, tone: live }
-      coll: { tone: ghost }
+      coll: { tone: ghost, sub: { vi: "không đọc", en: not read } }

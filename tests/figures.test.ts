@@ -72,7 +72,7 @@ function extents(f: { nodes: Shape[] }): Map<string, { x0: number; y0: number; x
   const out = new Map<string, { x0: number; y0: number; x1: number; y1: number }>();
   const m = model(f, 0, 0);
   const add = (k: string | undefined, x: number, y: number, w: number, h: number): void => {
-    const id = /^n:([a-z0-9_-]+)/i.exec(k ?? '')?.[1];
+    const id = /^(?:pv:)?n:([a-z0-9_-]+)/i.exec(k ?? '')?.[1]; // v44 B4 X2: a faded preview holds its node's slot too
     if (!id) return;
     const o = out.get(id);
     out.set(id, o ? { x0: Math.min(o.x0, x), y0: Math.min(o.y0, y), x1: Math.max(o.x1, x + w), y1: Math.max(o.y1, y + h) } : { x0: x, y0: y, x1: x + w, y1: y + h });
@@ -192,7 +192,7 @@ describe.each(Object.keys(specs))('v39 figure %s', (name) => {
           for (const n of f.nodes) if (n.t === 't') {
             expect(n.size ?? 0, `${at}: "${n.s}"`).toBeGreaterThanOrEqual(13);
             // R1 E14: a note, and a table's or chart's title and sub, keep one line up to NOTE_CH characters on a wide figure
-            const note = W >= WIDE && (notes.has(/^n:(.+)\.t\d+$/.exec(n.k)?.[1] ?? '') || titled.has(/^n:(.+)\.[hs]\d+$/.exec(n.k)?.[1] ?? ''));
+            const note = W >= WIDE && (notes.has(/^(?:pv:)?n:(.+)\.t\d+$/.exec(n.k)?.[1] ?? '') || titled.has(/^(?:pv:)?n:(.+)\.[hs]\d+$/.exec(n.k)?.[1] ?? '')) // v44 B4 X2: pv: = a later step's node, faded;
             expect([...n.s].length, `${at}: "${n.s}"`).toBeLessThanOrEqual(note ? NOTE_CH : 18);
           }
           const ex = [...extents(f).entries()];
@@ -262,7 +262,15 @@ describe.each(Object.keys(specs))('v39 figure %s', (name) => {
         const shown = new Set(v?.step !== undefined ? spec.steps?.[v.step].show ?? spec.nodes.map((n) => n.id) : v?.show ?? spec.nodes.map((n) => n.id));
         // v44 (L784, L802 eye E2): a variant may patch a grid's rows or bars (another lesson's data), and its tables are the grids its
         // own frame draws, as the variant's and that step's set patch them (never the base's)
-        const patch = (n: FigSpec['nodes'][number]): FigSpec['nodes'][number] => ({ ...n, ...v?.set?.[n.id], ...(v?.step !== undefined ? spec.steps?.[v.step].set?.[n.id] : {}) }) as FigSpec['nodes'][number];
+        // B4 eye X4 (L822): the base figure's table is the node in `data_step`, else in the last step that shows it
+        const lastStep = (id: string): number | undefined => {
+          const st = spec.steps ?? [];
+          if (spec.data_step !== undefined && (!st[spec.data_step - 1]?.show || st[spec.data_step - 1].show!.includes(id))) return spec.data_step - 1;
+          for (let i = st.length - 1; i >= 0; i--) if (!st[i].show || st[i].show!.includes(id)) return i;
+          return undefined;
+        };
+        const stepOf = (id: string): number | undefined => (v ? v.step : lastStep(id));
+        const patch = (n: FigSpec['nodes'][number]): FigSpec['nodes'][number] => { const k = stepOf(n.id); return ({ ...n, ...v?.set?.[n.id], ...(k !== undefined ? spec.steps?.[k].set?.[n.id] : {}) }) as FigSpec['nodes'][number]; };
         const grids = spec.nodes.filter((n) => (n.shape === 'grid' || n.shape === 'bars') && (v?.step !== undefined || v?.show ? shown.has(n.id) : !spec.steps?.length || spec.steps.some((st) => !st.show || st.show.includes(n.id)))).map(patch); // v44 B4: a node only a variant shows has no table in the base figure
         expect(tables.length, `${lang} bảng dữ liệu`).toBe(grids.length);
         for (const [i, t] of tables.entries()) {

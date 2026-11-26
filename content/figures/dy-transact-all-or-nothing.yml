@@ -24,7 +24,7 @@ nodes:
     label: { vi: "lý do hủy", en: cancel reasons }
     sub: { vi: "vẫn tính 4 WCU", en: "still 4 WCU" }
     head: [{ vi: "hành động", en: action }, { vi: "lý do", en: reason }]
-    cells: [["1", { vi: "điều kiện sai", en: condition failed }], ["2", None]]
+    cells: [["1", { vi: "điều kiện sai", en: condition failed }], ["2", { vi: "None (không lỗi)", en: "None (no error)" }]]
     rowTone: [dead, null]
 groups:
   - { id: tx, label: { vi: "một transaction", en: one transaction }, nodes: [u1, u2] }

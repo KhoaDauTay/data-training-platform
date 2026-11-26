@@ -3,6 +3,7 @@
 # Data: the IAM rules are quoted from the lesson (docs-only: no IAM in dynoxide). Rows are real items of e-dy-l3-14's lab (SK cut
 # to SHIP#…#SH-<id>, the full key is 23 characters). RCU by tenant: dynoxide on e-dy-l5-09's two runnable Queries
 # (tools/v42/b4check.log): C02 eventually consistent 0.5 RCU, C01 strongly consistent 1.0 RCU (the plan's r-101 / r-102).
+# Eye TI1/TI2: a third step explains the RCU bars; step 2 no longer names ForAllValues/Null (the lesson text does).
 # Deviation: Scan sits beside the table (a dashed arrow, labelled) and the Query comes from above, so the two arrows never share a
 # side; the variant's GSI1PK values are cut to TENANT#C0n#… (22 characters), the grid's sub names the rest (all three are open shipments in the lab); no row links (side by side the rows already line up).
 # Source: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/specifying-conditions.html
@@ -50,8 +51,11 @@ steps:
     show: [iam, q, t]
     alt: { vi: "Điều kiện IAM so tiền tố partition key với danh tính, nên credentials của C02 chỉ chạm item TENANT#C02.", en: "The IAM condition compares the partition-key prefix with the identity, so C02's credentials touch only TENANT#C02 items." }
   - say: { vi: "Scan không mang khóa: phải cấm.", en: "Scan carries no key: deny it." }
+    show: [iam, q, t, s]
+    alt: { vi: "Scan không mang partition key nên điều kiện LeadingKeys không chặn được nó, vì vậy chính sách không được cấp Scan.", en: "Scan carries no partition key, so the LeadingKeys condition cannot stop it, and the policy must not grant Scan." }
+  - say: { vi: "Chi phí từng khách: cộng ConsumedCapacity theo mã khách.", en: "Cost per tenant: add up ConsumedCapacity by tenant id." }
     show: [iam, q, t, s, bill]
-    alt: { vi: "ForAllValues đúng khi request không có khóa, nên Scan lọt qua trừ khi thêm điều kiện Null và không cấp Scan.", en: "ForAllValues is true when a request has no key, so Scan slips through unless the Null condition is added and Scan is not granted." }
+    alt: { vi: "Hóa đơn chỉ có một dòng cho cả bảng, nên ứng dụng cộng ConsumedCapacity của mỗi request vào mã khách của nó: Query của C01 đọc nhất quán mạnh nên tốn gấp đôi.", en: "The bill has one line for the whole table, so the application adds each request's ConsumedCapacity to its tenant id: C01's Query is a strongly consistent read, so it costs twice as much." }
 variants:
   keys:
     show: [t, gk]

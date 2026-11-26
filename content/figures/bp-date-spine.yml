@@ -1,6 +1,7 @@
 # B4-11 (tools/v42/diagram-plan-v42.md): generate every month first, then LEFT JOIN the data. Card: e-bp-a01 (Ý chính).
 # Data (PGlite on lab, the card's pair, tools/v42/b4check.log): store 4, June–November 2025: the GROUP BY version returns 3 rows
 # (Sep 6, Oct 6, Nov 6); the date spine returns 6 (Jun 0, Jul 0, Aug 0, Sep 6, Oct 6, Nov 6).
+# Eye DS1/DS3: the GROUP BY chart keeps empty T6–T8 rows ("no row") that the spine fills with 0; "spine" is "trục tháng" in VI.
 # Source: https://www.postgresql.org/docs/18/functions-srf.html
 title: { vi: "Trục ngày giữ lại kỳ trống", en: "A date spine keeps the empty periods" }
 caption:
@@ -14,6 +15,9 @@ nodes:
     shape: bars
     label: { vi: "GROUP BY trên orders", en: "GROUP BY on orders" }
     items:
+      - { label: { vi: "T6", en: Jun }, value: 0, note: { vi: "không có dòng", en: no row }, tone: ghost }
+      - { label: { vi: "T7", en: Jul }, value: 0, note: { vi: "không có dòng", en: no row }, tone: ghost }
+      - { label: { vi: "T8", en: Aug }, value: 0, note: { vi: "không có dòng", en: no row }, tone: ghost }
       - { label: { vi: "T9", en: Sep }, value: 6, note: "6" }
       - { label: { vi: "T10", en: Oct }, value: 6, note: "6" }
       - { label: { vi: "T11", en: Nov }, value: 6, note: "6" }
@@ -25,7 +29,7 @@ nodes:
     colTone: [new, new, new, null, null, null]
   - id: good
     shape: bars
-    label: spine LEFT JOIN orders
+    label: { vi: "trục tháng LEFT JOIN orders", en: month spine LEFT JOIN orders }
     items:
       - { label: { vi: "T6", en: Jun }, value: 0, note: "0", tone: new }
       - { label: { vi: "T7", en: Jul }, value: 0, note: "0", tone: new }

@@ -5,6 +5,8 @@
 # Deviation: the ALTER's sub "waits: ACCESS EXCLUSIVE" (22 characters) is "cần khóa độc quyền" / "needs EXCLUSIVE" and the
 # caption names ACCESS EXCLUSIVE; in frame 3 the queue's rows run (live)
 # and the two wait edges are gone; etry is a box, not a note (an arrow into a bare note ends on its text, rule i).
+# Eye LQ1 (L825): the queue and the report share the top row, the ALTER waits under them; step 3 keeps its edges: the
+# queue runs beside the report ("chạy cùng", both ACCESS SHARE) and lock_timeout points at the ALTER it cancels.
 # Source: https://www.postgresql.org/docs/18/explicit-locking.html#LOCKING-TABLES
 title: { vi: "ALTER đang chờ chặn cả hàng phía sau", en: "A waiting ALTER blocks the whole queue behind it" }
 caption:
@@ -19,19 +21,18 @@ nodes:
     label: { vi: "SELECT đến sau", en: SELECTs after }
     cells: [[q1], [q2], [q3]]
     rowTone: [dead, dead, dead]
-  - { id: a, label: ALTER TABLE, sub: { vi: "cần khóa độc quyền", en: needs EXCLUSIVE }, tone: warm }
   - { id: r, label: { vi: "báo cáo dài", en: long report }, sub: ACCESS SHARE }
+  - { id: a, label: ALTER TABLE, sub: { vi: "cần khóa độc quyền", en: needs EXCLUSIVE }, tone: warm }
   - { id: lt, shape: key, mono: true, label: lock_timeout 2s, tone: live }
-  - { id: retry, tone: live, label: { vi: "ALTER bỏ cuộc, thử lại sau", en: "ALTER gives up, retries later" } }
 rows:
-  - [s, a, r]
-  - [lt, retry]
-phone:
-  rows: [[r], [a], [s], [lt, retry]]
+  - [s, r]
+  - [a]
+  - [lt]
 edges:
   - { id: ar, from: a, to: r, label: { vi: "chờ", en: waits } }
   - { id: sa, from: s, to: a, label: { vi: "chờ", en: wait } }
-  - { id: lr, from: lt, to: retry }
+  - { id: sr, from: s, to: r, label: { vi: "chạy cùng", en: run alongside } }
+  - { id: la, from: lt, to: a, label: { vi: "hủy sau 2s", en: cancels after 2s } }
 steps:
   - say: { vi: "ALTER chờ báo cáo dài.", en: "The ALTER waits for the long report." }
     show: [a, r, ar]
@@ -40,8 +41,8 @@ steps:
     show: [s, a, r, ar, sa]
     alt: { vi: "Một yêu cầu khóa đang chờ cũng chặn các yêu cầu xung đột đến sau, nên cả bảng đứng.", en: "A waiting lock request also blocks conflicting requests that arrive later, so the whole table stalls." }
   - say: { vi: "lock_timeout: ALTER bỏ cuộc, hàng thông.", en: "lock_timeout: the ALTER gives up, the queue clears." }
-    show: [s, a, r, lt, retry, lr]
+    show: [s, a, r, lt, sr, la]
     alt: { vi: "SET LOCAL lock_timeout giới hạn lúc chờ chỉ trong transaction đó, nên migration hỏng nhanh thay vì làm đứng bảng.", en: "SET LOCAL lock_timeout caps the wait for that transaction only, so the migration fails fast instead of stalling the table." }
     set:
       s: { rowTone: [live, live, live] }
-      a: { tone: ghost }
+      a: { tone: ghost, sub: { vi: "bỏ cuộc, thử lại", en: "gives up, retries" } }

@@ -4,7 +4,8 @@
 # e-dy-l3-06's lab gives 4 open orders in Hue (tools/v42/b4check.log). The three Orders rows are a sample with the lesson's key
 # names (the grids' titles say so). Variant: e-dy-l4-08's lab table Tickets (pk, sk), GSI OpenByQueue (open_queue + opened_at),
 # rows TCK#0019 and TCK#0058 are open (SHIPPING) and TCK#0002 has no open_queue (the lab's step 4 sets it), real values.
-# Deviation: REMOVE is an arrow out of the index (dashed), SET one into it, so the two never run side by side; each row that is in the index has a row arrow to its index row (side by side), so the empty cell is why O-2 has none; the item without the key is the last table row, so both row arrows run level.
+# Deviation: REMOVE is an arrow out of the index (dashed, straight down from it), SET one into it; the table carries status
+# (sample values) so the step-2 sentence about status has something to point at (eye SG1, SG2); each row that is in the index has a row arrow to its index row (side by side), so the empty cell is why O-2 has none; the item without the key is the last table row, so both row arrows run level.
 # Source: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-indexes-general-sparse-indexes.html
 title: { vi: "GSI thưa: thiếu khóa là không vào index", en: "A sparse GSI: no key, not in the index" }
 caption:
@@ -17,8 +18,8 @@ nodes:
   - id: t
     shape: grid
     label: { vi: "Orders (minh họa)", en: "Orders (sample)" }
-    head: [orderId, city, openSince]
-    cells: [[O-1, Hue, 10-02], [O-3, Hue, 10-05], [O-2, Hue, "–"]]
+    head: [orderId, city, openSince, status]
+    cells: [[O-1, Hue, 10-02, NEW], [O-3, Hue, 10-05, NEW], [O-2, Hue, "–", DONE]]
     cellTone: { "2:2": ghost }
   - id: g
     shape: grid
@@ -30,7 +31,7 @@ nodes:
   - { id: rm, shape: key, mono: true, label: REMOVE openSince, sub: { vi: "rời index", en: leaves the index }, tone: warm }
 rows:
   - [t, g]
-  - [rm, set]
+  - [set, rm]
 edges:
   - { from: "t#0", to: "g#0" }
   - { from: "t#1", to: "g#1" }
