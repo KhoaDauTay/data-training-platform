@@ -88,7 +88,8 @@ define<LockModel>('pg-lock-matrix', { waits: [['T2', 'T1'], ['T3', 'T1'], ['T3',
       ABBR.forEach((_, j) => {
         const bad = LOCK_CONFLICTS[i][j] === '1';
         const on = (hlRow === i && (hlCol === undefined || hlCol === j)) || (hlCol === j && hlRow === undefined);
-        out.push({ k: `m${i}.${j}`, t: 'r', x: X0 + j * C, y: Y0 + i * C, w: C - 2, h: C - 2, rx: 2, tone: bad ? 'dead' : 'plain', bold: on, o: hlRow === undefined || on ? 1 : 0.45 });
+        // v39 R1 (L627): 3 units between cells, so two bold (2.2) edges in a highlighted row never merge
+        out.push({ k: `m${i}.${j}`, t: 'r', x: X0 + j * C, y: Y0 + i * C, w: C - 3, h: C - 3, rx: 2, tone: bad ? 'dead' : 'plain', bold: on, o: hlRow === undefined || on ? 1 : 0.45 });
       });
     });
     out.push(...box('lg1', 236, Y0, 94, 20, tr('xung đột', 'conflict'), 'dead'), ...box('lg2', 236, Y0 + 26, 94, 20, tr('cùng giữ được', 'compatible'), 'plain'));

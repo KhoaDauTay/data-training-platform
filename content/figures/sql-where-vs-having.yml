@@ -6,6 +6,9 @@ title: { vi: "WHERE và HAVING: hai lần lọc", en: "WHERE and HAVING: two fil
 caption:
   vi: "WHERE bỏ từng món trước khi chia nhóm; HAVING bỏ cả nhóm sau khi đếm."
   en: "WHERE drops single items before grouping; HAVING drops whole groups after counting."
+alt:
+  vi: "Phần trên, WHERE lọc từng món theo giá dưới 50k: Dried mango 45k được giữ, Cashew nuts 89k bị bỏ, Shampoo 149k bị bỏ, Toothpaste 31k được giữ. Phần dưới, GROUP BY đếm món dưới 50k theo nhóm thành biểu đồ cột: Drinks 6, Snacks 5, Household 4, Stationery 4, Personal care 3. Vạch nét đứt ở 4 là HAVING ≥ 4: Personal care có 3 nên cả nhóm bị bỏ."
+  en: "Top: WHERE filters single items on a price under 50k: Dried mango 45k is kept, Cashew nuts 89k is out, Shampoo 149k is out, Toothpaste 31k is kept. Bottom: GROUP BY counts the items under 50k per category as a bar chart: Drinks 6, Snacks 5, Household 4, Stationery 4, Personal care 3. The dashed line at 4 is HAVING ≥ 4: Personal care has 3, so the whole group is out."
 nodes:
   - { id: wh, shape: note, label: { vi: "WHERE: lọc từng món", en: "WHERE: per item" } }
   - { id: i1, label: Dried mango, sub: { vi: "45k · giữ", en: "45k · kept" }, tone: live }

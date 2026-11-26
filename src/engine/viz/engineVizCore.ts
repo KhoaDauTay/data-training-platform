@@ -103,7 +103,7 @@ function stage(d: Diagram): { svg: SVGSVGElement; draw(f: Frame, animate: boolea
   const marker = (ink: Ink) => D.s('marker', { id: `${id}-${ink}`, viewBox: '0 0 8 8', refX: 7, refY: 4, markerWidth: 6, markerHeight: 6, orient: 'auto-start-reverse' },
     D.s('path', { d: 'M0 0 L8 4 L0 8 z', style: `fill:var(${INK[ink]})` }));
   const svg = D.s('svg', {
-    viewBox: `0 0 ${d.w} ${d.h}`, role: 'img', class: 'block h-auto w-full', style: `max-width:${d.maxW ?? 480}px;font-family:inherit;overflow:visible`,
+    viewBox: `0 0 ${d.w} ${d.h}`, role: 'img', class: 'mx-auto block h-auto w-full', style: `max-width:${d.maxW ?? 480}px;font-family:inherit;overflow:visible`, // R1 E15/E22/E24: mx-auto centres it in a wider frame
   }, D.s('defs', {}, ...(Object.keys(INK) as Ink[]).map(marker)));
   const els = new Map<string, SVGElement>();
   let end: (() => void) | undefined;
@@ -200,7 +200,7 @@ export function mount(host: HTMLElement, d: Diagram, lang: Lang, start = 0, fo?:
     class: 'm-0 grid gap-2', tabindex: '0', 'aria-roledescription': lang === 'vi' ? 'sơ đồ từng bước' : 'step-through diagram',
     'aria-label': `${d.title}. ${ui.keys}`, ...(fo ? { 'data-fig': fo!.name } : { 'data-viz': '' }),
   },
-  D.h('figcaption', { id: `${id}-cap`, class: fo ? '' : 'font-bold' }, ...(fo ? [D.h('b', {}, d.title), fo.caption ? ` ${fo.caption}` : ''] : [d.title])),
+  D.h('figcaption', { id: `${id}-cap`, class: fo ? '' : 'font-bold' }, ...(fo ? [D.h('b', { class: 'block' }, d.title), fo.caption] : [d.title])), // R1 E12: the caption on its own line
   D.h('div', { class: 'overflow-hidden rounded-(--r-ctl) bg-panel p-2 ring-1 ring-line max-sm:p-1' }, st.svg),
   ...(one ? [d.frames[0].say ? D.h('p', { class: 'm-0 text-body-sm' }, d.frames[0].say) : '', D.h('details', { class: 'text-body-sm' }, D.h('summary', {}, fo!.altTitle), alt)] : [
     // A5 (v31, L515): every step's sentence sits in the same grid cell, hidden but the shown one, so the cell is as tall as the
