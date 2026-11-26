@@ -19,6 +19,7 @@ import { localStore, readJson, writeJson } from './storage';
 import { domainOfHash, drillOfHash, isInterviewId, isSandboxHash, sandboxHash, sharedOf, type Route } from './route';
 import type { Ticket } from './tickets';
 import { bootGeneral, dropGeneral, initModes, interviewStep, ivPresence, onPracticeWrong, onSolved, openShared, renderLeft, renderReviewButton, reopenInterview, sandboxFromHash, startDrill, startLane } from './ui/modes';
+import './ui/caseCard'; // v47 D1/D2 (L930): the Overview's case studies and asks (content in the lazy `cases` chunk)
 import './ui/mapPage'; // V22-A: the Map page section (was routesSection in ui/homeView.ts)
 import './ui/me'; // v16 (L142): #/me nav item and page section; the page itself is the lazy meView chunk
 import './ui/engine'; // ENG-CORE (L220): #/engine nav item, page, sidebar rows and #/me block; the pages are the lazy engineView chunk

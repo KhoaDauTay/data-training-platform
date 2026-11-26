@@ -71,6 +71,14 @@ const vi = {
   'iv.loading': 'Đang mở phòng phỏng vấn…',
   'iv.timeUpSay': 'Hết giờ cho bộ đề này. Bạn vẫn làm tiếp được.',
   'iv.finished': 'Đã kết thúc bộ đề: đúng {solved}/{total} câu.',
+  // v47 D1/D2 (L930–L931): a domain case study or ask, run on the domain's own data
+  'cs.data': 'Dữ liệu: các bảng của lĩnh vực này mà bạn đã mở. Không có thẻ kết quả mong đợi: đọc kỹ từng cột đề bài yêu cầu.',
+  'cs.exit': 'Tạm dừng',
+  'cs.back': 'Về trang tổng quan',
+  'cs.clarify': 'Hỏi lại cho rõ',
+  'cs.clarifyHelp': 'Yêu cầu còn mơ hồ. Chọn cách hiểu đúng trước; đề bài chi tiết hiện ra sau khi bạn chọn đúng.',
+  'cs.notThis': 'Chưa phải cách hiểu này.',
+  'cs.understood': 'Cách hiểu đúng',
 } as const;
 
 export type IvKey = keyof typeof vi;
@@ -141,6 +149,13 @@ const en: Record<IvKey, string> = {
   'iv.loading': 'Opening the interview room…',
   'iv.timeUpSay': 'Time is up for this set. You can keep going.',
   'iv.finished': 'Set finished: {solved} of {total} right.',
+  'cs.data': 'Data: the tables of this domain you have opened. No expected-result card: read carefully which columns the step asks for.',
+  'cs.exit': 'Pause',
+  'cs.back': 'Back to the overview',
+  'cs.clarify': 'Ask before you answer',
+  'cs.clarifyHelp': 'The request is vague. Pick the right reading first; the detailed task shows once you pick it.',
+  'cs.notThis': 'Not this reading.',
+  'cs.understood': 'The right reading',
 };
 
 export const IV_DICT = { vi: vi as Record<IvKey, string>, en };

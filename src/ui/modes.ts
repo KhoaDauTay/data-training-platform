@@ -126,7 +126,7 @@ export const backToStory = (): void => enter({ kind: 'story' });
 export function leaveGeneral(): void {
   const m = session.mode;
   const back = m.kind === 'drill' ? `${hashOf('learn')}/${m.drill.skill ? `skill/${m.drill.skill}` : `adv/${m.drill.node}`}`
-    : m.kind === 'interview' ? INTERVIEW_PAGE : hashOf('practice'); // v17: an interview run stays in the pref, resumable from its page
+    : m.kind === 'interview' ? (m.run.id.startsWith('cs-') ? hashOf('overview') : INTERVIEW_PAGE) : hashOf('practice'); // v17: an interview run stays in the pref, resumable from its page (v47: a case from its Overview)
   ivAway();
   session.mode = { kind: 'story' };
   location.hash = back; // before the redraw: the workspace is about to hide, so the story brief's previews stay idle (Q7)
@@ -242,6 +242,12 @@ export const startInterview = (id: string, timer: boolean, fresh: boolean): Prom
 /** A reload, Back or Forward on #/learn/play/<g-iv-…> (main.ts): reopen that run at that question (`still` as in startDrill). */
 export const reopenInterview = (item: string, still: () => boolean = () => true): Promise<boolean> => withInterview((m) => {
   if (still()) m.reopen(item);
+});
+/** v47 D1/D2 (L930): a domain case or ask from its Overview card, walked as a take-home on the open domain's data (no lab seed). */
+export const startCase = (id: string, fresh: boolean): Promise<boolean> => loadIvUi().then((m) => (m.start(id, false, fresh), true), () => {
+  app.notice = { key: 'learn.failed' };
+  ctx?.rerender();
+  return false;
 });
 /** work.ts onStepSolved: a take-home's next step (main.ts sends story reviews to nextStep()); `sql` = what was graded. */
 export const interviewStep = (sql: string): void => ivUi?.stepSolved(sql);
