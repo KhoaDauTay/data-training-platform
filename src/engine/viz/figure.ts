@@ -194,8 +194,8 @@ function plans(spec: FigSpec, lang: Lang, variant?: string): Plan[] {
 }
 
 /** Lays the spec out `W` units wide (W = the svg's own width in px, 280–640) and returns the renderer's Diagram. */
-export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): Diagram {
-  const ps = plans(spec, lang, variant);
+export function layout(spec0: FigSpec, lang: Lang, W: number, variant?: string): Diagram {
+  const [spec, ps] = shownOnly(spec0, plans(spec0, lang, variant));
   const byId = new Map(spec.nodes.map((n) => [n.id, n]));
   const wide = W >= WIDE;
   // every frame's version of a node gets the same box: the largest; a table's title height too, so tables in one row line up
@@ -615,6 +615,17 @@ function pairOff(e: FigEdge, edges: FigEdge[], right: boolean): number {
 /** Of the arrows between two neighbours, the one with the widest label when there are several (their gap fits both). */
 function pairWidest(es: FigEdge[], lang: Lang): FigEdge | undefined {
   return es.length < 2 ? undefined : es.reduce((a, b) => (textWidth(tr(b.label, lang), SS) > textWidth(tr(a.label, lang), SS) ? b : a));
+}
+/** v44 (L762): a node no frame shows takes no slot (a variant drawn as one step leaves no blank row); edges to it go too. */
+function shownOnly(spec: FigSpec, ps: Plan[]): [FigSpec, Plan[]] {
+  const on = (id: string): boolean => ps.some((p) => p.show.has(id));
+  if (spec.nodes.every((n) => on(n.id))) return [spec, ps];
+  const keep = (rows: string[][]): string[][] => rows.map((r) => r.filter(on)).filter((r) => r.length);
+  const gs = (spec.groups ?? []).map((g) => ({ ...g, nodes: g.nodes.filter(on) })).filter((g) => g.nodes.length);
+  const end = (x: string): boolean => on(base(x)) || gs.some((g) => g.id === base(x));
+  const mask = (spec.edges ?? []).map((e) => end(e.from) && end(e.to)); // frames index their edges like the spec
+  return [{ ...spec, nodes: spec.nodes.filter((n) => on(n.id)), rows: keep(spec.rows), groups: gs, phone: spec.phone && { rows: keep(spec.phone.rows) },
+    edges: spec.edges?.filter((_, i) => mask[i]) }, ps.map((p) => ({ ...p, edges: p.edges.filter((_, i) => mask[i]) }))];
 }
 /** Edge ids some step or variant lists in `show`: such an edge is drawn only in the frames that list it (else whenever both
  * ends show). */
