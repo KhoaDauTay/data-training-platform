@@ -79,7 +79,7 @@ function enter(mode: Mode): void {
 const itemTicket = (i: PracticeItem): Ticket | undefined =>
   DRILL_ID.test(i.ticketId) ? drillUi?.reviewTicket(i.ticketId) : templates().has(i.ticketId) ? applyVariant(templates().get(i.ticketId)!, i.variant) : undefined;
 
-export function startPractice(items: PracticeItem[], warmup = false, placement = false): boolean {
+export function startPractice(items: PracticeItem[], warmup = false, placement = false, set?: PracticeRun['set']): boolean {
   const usable = items.flatMap((i) => (itemTicket(i) ? [i] : []));
   if (usable.length === 0) return false;
   enter({
@@ -95,6 +95,7 @@ export function startPractice(items: PracticeItem[], warmup = false, placement =
       draft: '',
       warmup,
       placement,
+      ...(set ? { set } : {}),
     },
   });
   return true;
@@ -103,6 +104,14 @@ export function startPractice(items: PracticeItem[], warmup = false, placement =
 /** v17 I4 (L145): the General entry check (items from learn.ts placementItems), a practice run of drills on `lab`. */
 export function startPlacement(items: PracticeItem[]): void {
   void loadDrillUi().then((m) => m.prepareLab()).then(() => void startPractice(items, false, true), () => {
+    app.notice = { key: 'learn.failed' };
+    ctx?.rerender();
+  });
+}
+
+/** v47 (L920): a Practise set (Fix the broken query, Mixed review per Part): drill tickets on `lab` as a Practice run that writes nothing. */
+export function startSet(items: PracticeItem[], set: PracticeRun['set']): void {
+  void loadDrillUi().then((m) => m.prepareLab()).then(() => void startPractice(items, false, false, set), () => {
     app.notice = { key: 'learn.failed' };
     ctx?.rerender();
   });
@@ -157,6 +166,7 @@ const loadDrillUi = () => import('./drillBrief').then((m) => {
     startPlacement, announce, readJson, writeJson, readTour, boonMark, enterMark, escOwned, guideHooks, guideSlot, showPane, parseRoute, mod: keyLabels(isMac).mod, isInterviewPage,
     ROUTE_PARTS: PARTS, partOf, learnTitles, runOn, verdictText, grade, renderResult, errorView, errorText, createEditor, // v24 R0
     masteryOf, deepDive, s, // v39 (L605): s for the figure builder
+    startSet, // v47 (L920)
   });
   return (drillUi = m);
 });
@@ -293,8 +303,11 @@ function completeLane(tk: Ticket): void {
 }
 
 export function onPracticeWrong(): void {
-  if (session.mode.kind === 'practice') session.mode.run.wrong++;
-  else if (session.mode.kind === 'drill') session.mode.wrong++;
+  if (session.mode.kind === 'practice') {
+    const run = session.mode.run;
+    run.wrong++;
+    if (run.set?.kind === 'mix' && run.wrong === 1) ctx?.rerender(); // v47 P3: the hints open now (work.ts redrew before counting)
+  } else if (session.mode.kind === 'drill') session.mode.wrong++;
 }
 
 /** Correct submit in Practice: 0 XP, no completion animation; moves the Leitner boxes of the item's skills. */
@@ -305,6 +318,12 @@ export function onPracticeSolved(): void {
   if (!item || run.result) return;
   const ok = isSuccess(run.wrong, run.hints);
   const day = today();
+  if (run.set) { // v47 (L920): a Practise set scores in memory and writes nothing to the Save
+    run.result = ok ? 'ok' : 'weak';
+    if (ok) run.passed++;
+    ctx?.rerender();
+    return;
+  }
   if (run.placement) { // L145: the entry check never moves a box down, never counts in the practice totals
     if (ok) app.save.review = seedReview(app.save.review, item.skills, day);
     persist(true);
@@ -398,15 +417,21 @@ function sandboxPane(host: HTMLElement): void {
 function practicePane(host: HTMLElement, run: PracticeRun): void {
   const finished = run.index >= run.items.length;
   const p = run.placement; // L145: the General entry check has its own words
-  const status = finished ? t(p ? 'place.done' : 'prac.done', { ok: run.passed, n: run.items.length })
+  const set = run.set;
+  const st = set && drillUi?.setText; // v47 (L920): a Practise set's words live in the learnui chunk (src/i18n/learn.ts)
+  const status = st ? (finished ? st('sets.done', { ok: run.passed, n: run.items.length })
+    : st(set.kind === 'fix' ? 'sets.fixBanner' : 'sets.mixBanner', { i: run.index + 1, n: run.items.length, part: set.part ?? 0 }))
+    : finished ? t(p ? 'place.done' : 'prac.done', { ok: run.passed, n: run.items.length })
     : t(p ? 'place.banner' : 'prac.banner', { i: run.index + 1, n: run.items.length });
+  const skippable = (p || st) && !finished && !run.result;
   const banner = h('div', { class: 'mb-3 rounded-(--r-ctl) bg-accent-soft p-3 ring-1 ring-accent', role: 'status' },
     finished ? h('h2', TITLE, status) : h('p', { class: 'm-0 font-semibold' }, status),
-    run.result ? h('p', { class: 'mt-1 mb-0' }, t(run.result === 'ok' ? (p ? 'place.ok' : 'prac.ok') : (p ? 'place.weak' : 'prac.weak'))) : null,
-    p && !finished && !run.result ? h('p', { class: 'mt-1 mb-0 text-body-sm' }, t('place.rule')) : null,
+    run.result ? h('p', { class: 'mt-1 mb-0' }, st ? st(run.result === 'ok' ? 'sets.ok' : 'sets.weak')
+      : t(run.result === 'ok' ? (p ? 'place.ok' : 'prac.ok') : (p ? 'place.weak' : 'prac.weak'))) : null,
+    skippable ? h('p', { class: 'mt-1 mb-0 text-body-sm' }, st ? st('sets.rule') : t('place.rule')) : null,
     h('div', { class: 'actions mb-0' },
       run.result && !finished ? h('button', { type: 'button', class: 'primary', onclick: () => nextItem() }, t('prac.next')) : null,
-      p && !finished && !run.result ? h('button', { type: 'button', onclick: () => nextItem() }, t('place.skip')) : null, // a skipped item writes nothing
+      skippable ? h('button', { type: 'button', onclick: () => nextItem() }, st ? st('sets.skip') : t('place.skip')) : null, // a skipped item writes nothing
       generalWork() ? h('button', { type: 'button', onclick: () => leaveGeneral() }, t('prac.exitReview'))
         : h('button', { type: 'button', onclick: () => backToStory() }, t('prac.exit'))));
   const body = h('div');
@@ -604,6 +629,11 @@ export function stumbleCard(): HTMLElement | null {
     })));
 }
 registerHomeSection({ id: 'stumble', order: 25, span: 'full', pages: ['practice'], render: stumbleCard });
+/** v47 (L920): the Practise sets, drawn by the learnui chunk once drillHub (above) has loaded it and the General content. */
+const setCard = (name: 'fixCard' | 'mixCard' | 'explainCard') => (): HTMLElement | null => (generalNow() && drillUi ? drillUi[name]() : null);
+registerHomeSection({ id: 'fixSet', order: 26, span: 'full', pages: ['practice'], render: setCard('fixCard') });
+registerHomeSection({ id: 'explainSet', order: 27, span: 'full', pages: ['practice'], render: setCard('explainCard') });
+registerHomeSection({ id: 'mixSet', order: 28, span: 'full', pages: ['practice'], render: setCard('mixCard') });
 
 /**
  * V22-C (L208): Home's one "Today's session" card, in place of the warm-up, review and drill cards (still on #/practice) and of the
