@@ -75,8 +75,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì ba câu đều ra cùng các dòng, và chữ `'2026-03-01'` trông y hệt ngày trong bảng; nhưng index lưu giá trị của chính cột `created_at`, không lưu `created_at::text` hay `created_at + 0`. Khi cột bị bọc trong phép ép kiểu hay phép tính, planner không tra index được và phải Seq Scan."
-      en: "It sounds right because all three return the same rows, and `'2026-03-01'` looks exactly like the date in the table, but the index stores the values of column `created_at` itself, not `created_at::text` or `created_at + 0`. Once the column is wrapped in a cast or arithmetic, the planner cannot look it up in the index and must Seq Scan."
+      vi: "Câu ép sang chữ nghe hợp lý vì ba câu đều ra cùng các dòng, và chữ `'2026-03-01'` trông y hệt ngày trong bảng; nhưng index lưu giá trị của chính cột `created_at`, không lưu `created_at::text` hay `created_at + 0`. Khi cột bị bọc trong phép ép kiểu hay phép tính, planner (bộ lập kế hoạch) không tra index được và phải Seq Scan: đọc lần lượt mọi dòng của bảng. Chỉ câu so cột trần với một giá trị `date` mới tra được index."
+      en: "The text cast sounds right because all three return the same rows, and `'2026-03-01'` looks exactly like the date in the table, but the index stores the values of column `created_at` itself, not `created_at::text` or `created_at + 0`. Once the column is wrapped in a cast or arithmetic, the planner cannot look it up in the index and must use a Seq Scan: read every row of the table in turn. Only the filter comparing the bare column with a `date` value can use the index."
   - q:
       vi: "Bảng có 5 index. Thêm một index thứ 6 thì việc gì chậm đi?"
       en: "A table has 5 indexes. Adding a 6th one slows down what?"
@@ -87,8 +87,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì ta thường chỉ nhìn index từ phía câu đọc, nhưng index là một cấu trúc riêng phải được giữ khớp với bảng. Mỗi dòng mới phải thêm một mục vào từng index, và index còn chiếm chỗ trên đĩa và trong bộ nhớ đệm."
-      en: "It sounds right because we usually look at an index from the reading side, but an index is a separate structure that must be kept in step with the table. Every new row adds an entry to each index, and indexes also take space on disk and in the cache."
+      vi: "\"Không gì cả\" nghe hợp lý vì ta thường chỉ nhìn index từ phía câu đọc, nhưng index là một cấu trúc riêng phải được giữ khớp với bảng. Với 6 index, mỗi `INSERT` ghi một dòng vào bảng cộng 6 mục index, nên ghi chậm đi. Câu `SELECT` thì không chậm đi: planner chỉ dùng index nào có ích, còn lại bỏ qua. Index còn chiếm chỗ trên đĩa và trong bộ nhớ đệm."
+      en: "\"Nothing\" sounds right because we usually look at an index from the reading side, but an index is a separate structure that must be kept in step with the table. With 6 indexes, each `INSERT` writes one table row plus 6 index entries, so writes slow down. A `SELECT` does not get slower: the planner uses only the indexes that help and ignores the rest. Indexes also take space on disk and in the cache."
 ---
 ## Mở bài
 

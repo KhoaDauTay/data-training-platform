@@ -80,8 +80,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì index giúp tìm dòng trùng nhanh, nhưng xung đột chỉ có nghĩa khi database cấm trùng. Postgres chọn một index hay ràng buộc duy nhất làm trọng tài; index thường không cấm gì nên không làm trọng tài được."
-      en: "It sounds right because an index finds duplicates quickly, but a conflict only means something when the database forbids duplicates. Postgres picks a unique index or constraint as the arbiter; a plain index forbids nothing, so it cannot be one."
+      vi: "\"Chạy được vì đã có index\" nghe hợp lý vì index giúp tìm dòng trùng nhanh, nhưng \"xung đột\" chỉ có nghĩa khi database cấm trùng. `ON CONFLICT (email)` cần một index hay ràng buộc duy nhất trên đúng `email` để biết dòng mới đụng dòng nào; index thường không cấm trùng gì, nên Postgres không tìm được thứ đó và từ chối cả câu với lỗi `42P10`, không thêm dòng nào."
+      en: "\"It works, because there is an index\" sounds right because an index finds duplicates quickly, but a \"conflict\" only means something when the database forbids duplicates. `ON CONFLICT (email)` needs a unique index or constraint on exactly `email` to know which row the new one clashes with; a plain index forbids no duplicates, so Postgres finds no such thing and refuses the whole statement with `42P10`, inserting nothing."
   - q:
       vi: "Hai phiên cùng lúc thêm một mã hàng mới chưa có. Câu nào bảo đảm mỗi phiên hoặc thêm hoặc sửa, không bao giờ vấp lỗi trùng khóa?"
       en: "Two sessions add the same new code at the same moment. Which statement guarantees each one either inserts or updates, never hitting a duplicate-key error?"
@@ -92,8 +92,8 @@ quiz:
     answer: 0
     trap: 2
     why:
-      vi: "Nghe hợp lý vì hai câu cho cùng kết quả khi chạy một mình, nhưng `MERGE` quyết định thêm hay sửa từ dữ liệu nó thấy lúc bắt đầu; nếu phiên kia vừa thêm cùng khóa, câu `INSERT` của nó vấp lỗi trùng. `ON CONFLICT` được làm riêng cho trường hợp này: gặp dòng vừa được thêm, nó chuyển sang sửa."
-      en: "It sounds right because both give the same result when run alone, but `MERGE` decides insert or update from what it sees when it starts; if the other session just inserted the same key, its `INSERT` hits a duplicate error. `ON CONFLICT` is built for this case: when it meets the row just inserted, it switches to the update."
+      vi: "\"Cả hai như nhau\" nghe hợp lý vì hai câu cho cùng kết quả khi chạy một mình, nhưng `MERGE` quyết định thêm hay sửa từ dữ liệu nó thấy lúc bắt đầu; nếu phiên kia vừa thêm cùng khóa, câu `INSERT` của nó vấp lỗi trùng. `ON CONFLICT` được làm riêng cho trường hợp này: gặp dòng vừa được thêm, nó chuyển sang sửa."
+      en: "\"Both, equally\" sounds right because both give the same result when run alone, but `MERGE` decides insert or update from what it sees when it starts; if the other session just inserted the same key, its `INSERT` hits a duplicate error. `ON CONFLICT` is built for this case: when it meets the row just inserted, it switches to the update."
 ---
 ## Mở bài
 

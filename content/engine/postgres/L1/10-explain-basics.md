@@ -67,8 +67,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì con số nằm cạnh chữ cost và trông như thời gian, nhưng `EXPLAIN` không chạy câu nên không đo được giờ. Đó là chi phí theo đơn vị planner: đọc tuần tự một trang tính 1, xử lý một dòng tính 0,01. Ở đây 129 trang + 20.000 × 0,01 = 329. Muốn thời gian thật thì dùng `EXPLAIN ANALYZE`."
-      en: "It sounds right because the number sits next to the word cost and looks like a time, but `EXPLAIN` does not run the query, so it cannot measure time. It is a cost in planner units: reading one page in order counts 1, handling one row counts 0.01. Here 129 pages + 20,000 x 0.01 = 329. For real times use `EXPLAIN ANALYZE`."
+      vi: "\"Mili giây\" nghe hợp lý vì con số nằm cạnh chữ cost và trông như thời gian, nhưng `EXPLAIN` không chạy câu nên không đo được giờ. Đó là cost (chi phí ước lượng) theo đơn vị của planner: đọc tuần tự một trang (page) tính 1, xử lý một dòng tính 0,01. Số trang chỉ là một phần của nó: 329 = 129 trang × 1 + 20.000 dòng × 0,01. Muốn thời gian thật thì dùng `EXPLAIN ANALYZE`."
+      en: "\"Milliseconds\" sounds right because the number sits next to the word cost and looks like a time, but `EXPLAIN` does not run the query, so it cannot measure time. It is the estimated cost in planner units: reading one page in order counts 1, handling one row counts 0.01. The page count is only part of it: 329 = 129 pages × 1 + 20,000 rows × 0.01. For real times use `EXPLAIN ANALYZE`."
 predict:
   sql: SELECT * FROM orders WHERE status = 'paid'
   expect: { node: Seq Scan, table: orders }
@@ -83,8 +83,8 @@ predict:
   answer: 2
   trap: 0
   why:
-    vi: "Nghe hợp lý vì `status` có index, mà có index thì tưởng nên dùng; nhưng câu lấy khoảng 18.000 trên 20.000 dòng, tức gần như mọi trang của bảng. Đi qua index rồi nhảy tới từng dòng tốn hơn đọc thẳng cả bảng theo thứ tự, nên planner chọn Seq Scan với `Filter: (status = 'paid'::text)`. Index chỉ có lợi khi câu lấy một phần nhỏ của bảng."
-    en: "It sounds right because `status` has an index, and an index seems made to be used, but the query takes about 18,000 of 20,000 rows, which is nearly every page of the table. Going through the index and jumping to each row costs more than reading the whole table in order, so the planner picks a Seq Scan with `Filter: (status = 'paid'::text)`. An index only pays off when a query reads a small part of the table."
+    vi: "Index Scan nghe hợp lý vì `status` có index, mà có index thì tưởng nên dùng; nhưng câu lấy 90 % của 20.000 đơn, tức 18.000 dòng, nằm trên gần như mọi trang của bảng. Đi qua index rồi nhảy tới từng dòng tốn hơn đọc thẳng cả bảng theo thứ tự, nên planner chọn Seq Scan với `Filter: (status = 'paid'::text)`. Index chỉ có lợi khi câu lấy một phần nhỏ của bảng."
+    en: "An Index Scan sounds right because `status` has an index, and an index seems made to be used, but the query takes 90% of 20,000 orders, that is 18,000 rows, spread over nearly every page of the table. Going through the index and jumping to each row costs more than reading the whole table in order, so the planner picks a Seq Scan with `Filter: (status = 'paid'::text)`. An index only pays off when a query reads a small part of the table."
 ---
 ## Mở bài
 
