@@ -1,0 +1,46 @@
+# v43 R2 (extensions-plan §b, lesson e-pg-ext-13): pg_partman keeps future partitions ready (premake) and detaches the oldest
+# (retention); pg_cron runs that maintenance on a schedule. In-game today is 2026-10-31. Illustration, not measured (neither
+# extension runs in the browser). Sources: https://github.com/pgpartman/pg_partman , https://github.com/citusdata/pg_cron
+title: { vi: "Lịch phân vùng tự chăm", en: "A partition calendar that looks after itself" }
+caption:
+  vi: "pg_partman tạo trước các tháng sắp tới và tách tháng quá hạn; pg_cron gọi việc đó mỗi đêm."
+  en: "pg_partman creates the coming months ahead and detaches the expired one; pg_cron runs that every night."
+alt:
+  vi: "Dữ liệu mới không bao giờ rơi vào tháng chưa có phân vùng, vì pg_partman luôn giữ sẵn vài tháng phía trước. Mỗi đêm pg_cron chạy phần bảo trì của pg_partman: tạo thêm một tháng ở đầu và tách tháng cũ nhất ra khỏi bảng."
+  en: "New data never lands in a month with no partition, because pg_partman always keeps a few months ready ahead. Every night pg_cron runs pg_partman's maintenance: it adds one month at the front and detaches the oldest month from the table."
+nodes:
+  - { id: cron, label: pg_cron, sub: { vi: "03:00 mỗi đêm", en: "03:00 nightly" }, tone: ghost }
+  - id: parts
+    shape: grid
+    label: container_events
+    sub: { vi: "phân vùng theo tháng", en: "monthly partitions" }
+    head: [{ vi: "tháng", en: "month" }, { vi: "trạng thái", en: "state" }]
+    cells:
+      - ["2026-08", { vi: "cũ nhất", en: "oldest" }]
+      - ["2026-09", { vi: "có dữ liệu", en: "has data" }]
+      - ["2026-10", { vi: "đang ghi", en: "being written" }]
+      - ["2026-11", { vi: "tạo trước", en: "made ahead" }]
+      - ["2026-12", { vi: "tạo trước", en: "made ahead" }]
+    cellTone: { "3:1": new, "4:1": new }
+rows:
+  - [cron, parts]
+edges:
+  - { from: cron, to: parts, label: run_maintenance }
+steps:
+  - say: { vi: "premake: các tháng tới đã có sẵn.", en: "premake: the coming months already exist." }
+    alt: { vi: "Tháng 11 và 12 đã được tạo trước, nên một dòng ghi sớm cho tháng sau vẫn có chỗ.", en: "November and December were created ahead, so a row written early for next month still has a place." }
+  - say: { vi: "Mỗi đêm: thêm tháng mới, tách tháng quá hạn.", en: "Every night: add a new month, detach the expired one." }
+    alt: { vi: "Lần chạy đêm của pg_cron thêm tháng 01/2027 ở đầu và tách tháng 08/2026 vì đã quá hạn giữ.", en: "pg_cron's nightly run adds January 2027 at the front and detaches August 2026 because it is past retention." }
+    set:
+      cron: { tone: live }
+      parts:
+        cells:
+          - ["2026-08", { vi: "đã tách", en: "detached" }]
+          - ["2026-09", { vi: "có dữ liệu", en: "has data" }]
+          - ["2026-10", { vi: "đang ghi", en: "being written" }]
+          - ["2026-11", { vi: "tạo trước", en: "made ahead" }]
+          - ["2026-12", { vi: "tạo trước", en: "made ahead" }]
+          - ["2027-01", { vi: "mới tạo", en: "just made" }]
+        rowTone: [ghost]
+        strike: [0]
+        cellTone: { "5:1": new }
