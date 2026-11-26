@@ -25,15 +25,19 @@ export interface FigNode {
   card?: Card;
   /** v42 (L690): an ER entity's attribute rows under its title band: a name, or `{ name, pk?, fk? }` drawn with PK / FK pills */
   fields?: (Bi | Field)[];
+  /** v44 (L780): an entity or box drawn with a double border (a weak entity) */
+  double?: boolean;
 }
-export interface Field { name: Bi; pk?: boolean; fk?: boolean }
+/** v44 (L780): partial = a weak entity's partial key (dashed underline); multi = a multivalued attribute (double-edged chip);
+ * derived = a derived attribute (dashed chip); part = one part of the composite attribute above it (indented, bracketed). */
+export interface Field { name: Bi; pk?: boolean; fk?: boolean; partial?: boolean; multi?: boolean; derived?: boolean; part?: boolean }
 /** v40 R2 (E-03): a crow's-foot end mark: exactly one, zero or one, one or more, zero or more; v42: `many` = a bare foot (no minimum). */
 export type Card = 'one' | 'zero-one' | 'many' | 'one-many' | 'zero-many';
 /** `from`/`to` = a node id, or `grid#row` (v40 R2: `grid#row.col`, the line leaves that cell's facing edge) for a link; `link` =
  * a plain line (a `grid#row` link is drawn only side by side; a node-to-node link (v40) is routed like an arrow across rows,
  * without a head). v40 R2: `ends` = crow's-foot marks at the from/to ends of a node-to-node link; `near` = drawn only between
  * neighbouring rows or side by side (never on a side lane; the text alternative keeps it). */
-export interface FigEdge { id?: string; from: string; to: string; label?: Bi; dash?: boolean; link?: boolean; ends?: [Card | null, Card | null]; near?: boolean }
+export interface FigEdge { id?: string; from: string; to: string; label?: Bi; dash?: boolean; link?: boolean; ends?: [Card | null, Card | null]; near?: boolean; bold?: boolean }
 /** v40: a dashed frame around whole author rows (one level), its label in a band on top. */
 export interface FigGroup { id: string; label: Bi; nodes: string[] }
 /** v42: a key may also be an edge's `id` (a step changes its `ends` or `label`) */
@@ -144,7 +148,7 @@ function size(n: FigNode, lang: Lang, room: number): Sized {
   if (shape === 'entity') {
     const fs = fieldsOf(n, lang), t = wrap(tr(n.label, lang));
     if (t.length > 1) fail(`${n.id}: tên thực thể > 18 ký tự`);
-    return { w: Math.ceil(Math.max(64, textWidth(t[0], LS, true) + 24, 22 + pillCol(fs) + Math.max(0, ...fs.map((f) => textWidth(f.s, SS, false, !!n.mono))))),
+    return { w: Math.ceil(Math.max(64, textWidth(t[0], LS, true) + 24, 22 + pillCol(fs) + Math.max(0, ...fs.map((f) => textWidth(f.s, SS, false, !!n.mono) + fieldPad(f.o))))),
       h: HEAD + (fs.length ? 2 * FPAD + fs.length * ROW_H : 0) };
   }
   const ls = boxLines(n, lang, room + 2 * MARGIN >= WIDE);
@@ -154,10 +158,13 @@ function size(n: FigNode, lang: Lang, room: number): Sized {
 }
 // ── v42 (L690–L692): ER entities: a title band, then one row per attribute with its PK / FK pills in a column of their own ──
 const HEAD = lineH(LS) + 2 * PAD_Y, FPAD = 4, PILL_W = 26, PILL_H = 20, LOOP = 44;
-const fieldsOf = (n: FigNode, lang: Lang): { s: string; keys: string[] }[] => (n.fields ?? []).map((f) => {
+const fieldsOf = (n: FigNode, lang: Lang): { s: string; keys: string[]; o: Field }[] => (n.fields ?? []).map((f) => {
   const o: Field = typeof f === 'object' && 'name' in f ? f : { name: f };
-  return { s: cellText(n, o.name, lang), keys: [o.pk ? 'PK' : '', o.fk ? 'FK' : ''].filter(Boolean) };
+  return { s: cellText(n, o.name, lang), keys: [o.pk ? 'PK' : '', o.fk ? 'FK' : ''].filter(Boolean), o };
 });
+/** v44 (L780): room an attribute's kind mark takes beside its name (a chip's padding, a composite part's indent) */
+const CHIP = 7, INDENT = 16;
+const fieldPad = (o: Field): number => (o.multi || o.derived ? 2 * CHIP : 0) + (o.part ? INDENT : 0);
 /** the pill column's width (every row of one entity starts its name at the same x) */
 const pillCol = (fs: { keys: string[] }[]): number => { const k = Math.max(0, ...fs.map((f) => f.keys.length)); return k ? k * (PILL_W + 4) + 4 : 0; };
 /** the middle of attribute row `i` */
@@ -400,21 +407,34 @@ export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): 
   const ends = (e: FigEdge): Record<string, string> => Object.fromEntries([['data-from', key(e.from)], ['data-to', key(e.to)]].filter(([, v]) => v));
   const parentOf = groupOf(spec);
   const groupBg = groupShapes(spec, lang, at, routes.flatMap((r) => (r ? [r.d] : [])));
-  const frames: Frame[] = ps.map((p) => {
+  const frames: Frame[] = ps.map((p, fi) => {
     const shapes: Shape[] = groupBg.filter((s) => vis(p.show, s.k.split(/[:.]/)[1])); // under everything: frame order is paint order; v41 R3: a frame with nothing shown in it hides
     routes.forEach((r, i) => {
       if (!r || !vis(p.show, r.e.from) || !vis(p.show, r.e.to)) return;
       const k = `e:${i}`, pe = p.edges[i]; // v42: this frame's ends and label
       shapes.push(r.e.link
-        ? { k, t: 'p', d: r.d, ink: pe.ends ? 'edge' : 'new', w: STROKE, dash: r.e.dash }
+        ? { k, t: 'p', d: r.d, ink: pe.ends ? 'edge' : 'new', w: r.e.bold ? 3 : STROKE, dash: r.e.dash } // v44 (L780): `bold` = an identifying relationship
         : { k, t: 'p', d: r.d, ink: 'edge', w: STROKE, arrow: true, dash: r.e.dash, attrs: ends(r.e) });
       if (pe.ends) shapes.push(...crowEnds(k, r.d, pe.ends, !!r.rev));
       if (r.lab && pe.label) shapes.push({ k: `${k}.l`, t: 't', x: r.lab.x, y: r.lab.y, s: tr(pe.label, lang), size: SS, a: r.lab.a, ink: 'muted' });
     });
     for (const n of p.nodes) if (p.show.has(n.id)) shapes.push(...draw(n, at.get(n.id)!, lang, wide, parentOf.get(n.id)));
+    shapes.push(...placeholders(p, ps.slice(fi + 1), at, parentOf));
     return { say: p.say, nodes: shapes };
   });
   return { title: tr(variantOf(spec, variant)?.title ?? spec.title, lang), w: W, h: H, frames, maxW: 640 };
+}
+
+/** v44 (L781, eye E3): every frame keeps the figure's full height (the page never jumps between steps), so the slot of a node a
+ * later step shows is drawn as a faint dashed outline: the room reads as "more to come", not as a broken figure. A slot that a
+ * shown node covers (alternates sharing one place) gets none. */
+function placeholders(p: Plan, later: Plan[], at: Map<string, Rect>, parentOf: Map<string, string>): Shape[] {
+  const shown = p.nodes.filter((n) => p.show.has(n.id)).map((n) => at.get(n.id)!);
+  const clear = (r: Rect): boolean => shown.every((s) => r.x + r.w + 8 <= s.x || s.x + s.w + 8 <= r.x || r.y + r.h + 8 <= s.y || s.y + s.h + 8 <= r.y);
+  return p.nodes.filter((n) => !p.show.has(n.id) && later.some((q) => q.show.has(n.id)) && clear(at.get(n.id)!)).map((n) => {
+    const r = at.get(n.id)!, g = parentOf.get(n.id);
+    return { k: `ph:${n.id}`, t: 'r', x: r.x, y: r.y, w: r.w, h: r.h, tone: 'ghost', rx: 8, o: 0.5, ...(g ? { attrs: { 'data-parent': g } } : {}) } as Shape;
+  });
 }
 
 // ── v40 layout pieces (L632–L637): rows and groups, side lanes, elbow labels ───────────────────────────────────────
@@ -670,6 +690,11 @@ function lines(k: string, ls: Line[], cx: number, top: number, more: Partial<Ext
 }
 
 /** One node's shapes. Keys: `n:<id>` (its box), `n:<id>.t<i>` (its lines), `n:<id>:<r>:<c>` (a grid cell)… */
+/** v44 (L780): the inner edge of a double border, 3 units in (an unfilled path: the box under it stays the checker's box) */
+function inset(k: string, r: Rect, rx: number): Shape {
+  const [x, y, w, h, q] = [r.x + 3, r.y + 3, r.w - 6, r.h - 6, Math.max(0, Math.min(rx, (r.h - 6) / 2))];
+  return { k, t: 'p', d: `M${x + q} ${y} L${x + w - q} ${y} Q${x + w} ${y} ${x + w} ${y + q} L${x + w} ${y + h - q} Q${x + w} ${y + h} ${x + w - q} ${y + h} L${x + q} ${y + h} Q${x} ${y + h} ${x} ${y + h - q} L${x} ${y + q} Q${x} ${y} ${x + q} ${y} Z`, ink: 'edge', w: 1.2 };
+}
 function draw(n: FigNode, r: Rect, lang: Lang, wide = false, parent?: string): Shape[] {
   const k = `n:${n.id}`;
   const shape = n.shape ?? 'box';
@@ -678,7 +703,9 @@ function draw(n: FigNode, r: Rect, lang: Lang, wide = false, parent?: string): S
   if (shape === 'box' || shape === 'key') {
     const ls = boxLines(n, lang);
     const cy = r.y + r.h / 2;
-    return [{ k, t: 'r', x: r.x, y: r.y, w: r.w, h: r.h, tone: n.tone ?? 'cell', rx: shape === 'key' ? Math.min(r.h / 2, 14) : 8, attrs },
+    const rx = shape === 'key' ? Math.min(r.h / 2, 14) : 8;
+    return [{ k, t: 'r', x: r.x, y: r.y, w: r.w, h: r.h, tone: n.tone ?? 'cell', rx, attrs },
+      ...(n.double ? [inset(`${k}.d`, r, Math.max(2, rx - 3))] : []),
       // v40 R2 (E-03): a legend entry: its mark at the right of a short stem, as if the entity stood there
       ...(n.card ? crowMark(`${k}.m`, r.x + CARD_W + 6, cy, r.x, cy, n.card) : []),
       ...lines(`${k}.t`, ls, r.x + (r.w + (n.card ? CARD_W : 0)) / 2, mid(r.y, r.h, ls), { ink }, k)];
@@ -689,15 +716,31 @@ function draw(n: FigNode, r: Rect, lang: Lang, wide = false, parent?: string): S
     const fs = fieldsOf(n, lang), pc = pillCol(fs), { x, y, w, h } = r, q = 8;
     const out: Shape[] = [{ k, t: 'r', x, y, w, h, tone: n.tone ?? 'plain', rx: q, attrs },
       { k: `${k}.b`, t: 'p', d: `M${x} ${y + HEAD} L${x} ${y + q} Q${x} ${y} ${x + q} ${y} L${x + w - q} ${y} Q${x + w} ${y} ${x + w} ${y + q} L${x + w} ${y + HEAD} Z`, tone: 'cell', ink: 'edge', w: 1.2 },
+      ...(n.double ? [inset(`${k}.d`, r, q - 3)] : []),
       { k: `${k}.t0`, t: 't', x: x + w / 2, y: y + HEAD / 2, s: tr(n.label, lang), size: LS, b: true, a: 'm', ink, attrs: { 'data-owner': k } }];
     fs.forEach((f, i) => {
       const cy = fieldY(r, i);
+      // v44 (L780): kind marks. A composite's parts are indented under it with a bracket; a multivalued attribute sits in a
+      // double-edged chip, a derived one in a dashed chip; a partial key is underlined with a dash.
+      const tx = x + 10 + pc + (f.o.part ? INDENT : 0) + (f.o.multi || f.o.derived ? CHIP : 0), tw = textWidth(f.s, SS, false, !!n.mono);
+      if (f.o.part && !fs[i - 1]?.o.part) {
+        const last = fs.findIndex((g, j) => j > i && !g.o.part), end = (last < 0 ? fs.length : last) - 1;
+        const bx = x + 10 + pc + 5, y0 = cy - ROW_H / 2 + 3, y1 = fieldY(r, end) + ROW_H / 2 - 3;
+        out.push({ k: `${k}.p${i}`, t: 'p', d: `M${bx + 5} ${y0} L${bx} ${y0} L${bx} ${y1} L${bx + 5} ${y1}`, ink: 'edge', w: 1.2 });
+      }
+      if (f.o.multi || f.o.derived) {
+        const c = { x: tx - CHIP, y: cy - 10, w: tw + 2 * CHIP, h: 20 };
+        out.push({ k: `${k}.c${i}`, t: 'r', ...c, tone: f.o.derived ? 'ghost' : 'plain', rx: 10 });
+        if (f.o.multi) out.push(inset(`${k}.c${i}.d`, c, 7));
+      }
+      if (f.o.partial) out.push({ k: `${k}.u${i}`, t: 'l', x1: tx, y1: cy + 8.5, x2: tx + tw, y2: cy + 8.5, ink: 'edge', w: 1.2, dash: true });
       f.keys.forEach((s, j) => {
         const pk = `${k}.k${i}${j}`, px = x + 10 + j * (PILL_W + 4);
         out.push({ k: pk, t: 'r', x: px, y: cy - PILL_H / 2, w: PILL_W, h: PILL_H, tone: s === 'PK' ? 'warm' : 'ptr', rx: 5 },
           { k: `${pk}.t`, t: 't', x: px + PILL_W / 2, y: cy, s, size: SS, b: true, a: 'm', ink: 'ink', attrs: { 'data-owner': pk, lang: 'en' } });
       });
-      out.push({ k: `${k}.f${i}`, t: 't', x: x + 10 + pc, y: cy, s: f.s, size: SS, mono: !!n.mono, ink: 'ink', attrs: { 'data-owner': k, ...(n.mono ? { lang: 'en' } : {}) } });
+      const owner = f.o.multi || f.o.derived ? `${k}.c${i}` : k;
+      out.push({ k: `${k}.f${i}`, t: 't', x: tx, y: cy, s: f.s, size: SS, mono: !!n.mono, ink: 'ink', attrs: { 'data-owner': owner, ...(n.mono ? { lang: 'en' } : {}) } });
     });
     return out;
   }
@@ -766,7 +809,8 @@ export function altText(spec: FigSpec, lang: Lang, variant?: string): string[] {
  * cells (a stepped figure that fills cells in gives its end state); a column blank in its header and every row is dropped. */
 export function altTables(spec: FigSpec, lang: Lang, variant?: string): FigTable[] {
   const ps = plans(spec, lang, variant);
-  const all = [merge(spec.nodes, variantOf(spec, variant)?.set), ...ps.map((p) => p.nodes)];
+  // v44 (L782, eye E2): a variant reads only the frame(s) it draws, never the base figure's version of a grid
+  const all = variant !== undefined ? ps.map((p) => p.nodes) : [spec.nodes, ...ps.map((p) => p.nodes)];
   const blanks = (n: FigNode): number => (n.cells ?? []).flat().filter((c) => !tr(c, lang)).length;
   const ns = all[0].filter((n) => (n.shape === 'grid' || n.shape === 'bars') && ps.some((p) => p.show.has(n.id)))
     .map((n) => all.map((f) => f.find((m) => m.id === n.id)!).reduce((a, b) => (blanks(b) < blanks(a) ? b : a)));
