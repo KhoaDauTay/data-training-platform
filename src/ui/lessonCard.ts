@@ -8,7 +8,7 @@ import { skillOfDrill } from '../home';
 import { actions as appActions, app, unlockedTables } from '../state';
 import { blanksIn, fillAction, firstBlank } from '../tickets';
 import { cx } from '../theme';
-import { byId, h, nodes, richText } from './dom';
+import { byId, h, nodes, reducedMotion, richText } from './dom';
 import { errorText, errorView } from './feedback';
 import { icon, partHead, skillIcon, type IconName } from './icons';
 import { renderResult } from './resultTable';
@@ -19,6 +19,37 @@ import { readTour } from '../onboarding';
 import { inDomain } from '../route';
 import { currentRoute } from './router';
 import { diffView, hasDiff, runOn, tablesIn, tryPreview, verdictText } from './tryPreview';
+import { s } from './svg';
+import { loadedGsap, loadGsap } from '../art/load';
+import type { FigMounted } from '../engine/viz/figure';
+
+/**
+ * v46 (L860–L861): a quick lesson's `figure:` at the end of its concept part. The builder is the lazy `engineFigure` chunk
+ * (import() only, like figureSlot in the lazy lesson pages: figureSlot itself is never imported here, so main gains no shared chunk),
+ * fetched once the host is on screen. One host per card place (brief / dialog) and lesson, kept across redraws; a language change remounts it on the same step.
+ */
+const figHosts = new Map<string, { lang: string; host: HTMLElement; m?: FigMounted }>();
+function figureBox(l: Lesson, place: string): HTMLElement | null {
+  const ref = l.figure;
+  if (!ref) return null;
+  const key = `${place}|${l.id}`;
+  const lang = getLang();
+  const old = figHosts.get(key);
+  if (old?.lang === lang) return old.host;
+  const step = old?.m?.index;
+  old?.m?.destroy();
+  const e: { lang: string; host: HTMLElement; m?: FigMounted } = { lang, host: h('div', { class: 'mt-3 min-w-0', 'data-fig-slot': ref.name }) };
+  figHosts.set(key, e);
+  const mountNow = (): void => void import('../engine/viz/figure')
+    .then((f) => f.mountFigure(e.host, ref, { h, s, reducedMotion, loadedGsap, loadGsap, getLang }, 'sql', lang, step))
+    .then((m) => { if (figHosts.get(key) === e) e.m = m; else m?.destroy(); }, () => { if (figHosts.get(key) === e) figHosts.delete(key); }); // a failed chunk: the next draw tries again
+  if (typeof IntersectionObserver !== 'function') mountNow();
+  else {
+    const io = new IntersectionObserver((xs) => { if (xs.some((x) => x.isIntersecting)) { io.disconnect(); mountNow(); } }, { rootMargin: '200px' });
+    io.observe(e.host);
+  }
+  return e.host;
+}
 
 
 // Session state by skill id. The brief is rebuilt on every rerender, so what the player typed or ran lives here.
@@ -237,7 +268,8 @@ function card(l: Lesson, titleId: string, actions: HTMLElement[], tour = false, 
       // v15 Q6, L303: inside a domain the lesson's tables (lab) are not the company's; said first, and same-named tables by name
       !guided && inDomain(currentRoute()) ? labNote(l) : null,
       section('book', t('lesson.concept'), richText(l.concept[lang]),
-        skill ? h('p', { class: 'mt-2 mb-0' }, h('b', {}, t('lesson.syntax')), ' ', h('code', {}, skill.syntax)) : null),
+        skill ? h('p', { class: 'mt-2 mb-0' }, h('b', {}, t('lesson.syntax')), ' ', h('code', {}, skill.syntax)) : null,
+        figureBox(l, titleId)),
       section('code', t('lesson.example'), h('pre', { class: 'sql' }, l.example), h('div', { class: 'actions mb-0' }, runExample),
         tour ? tourSlot('lesson') : null, gslot('lesson-example'), exampleOut),
       section('info', t('lesson.explain'), richText(byMarker(l.explain[lang]))),
