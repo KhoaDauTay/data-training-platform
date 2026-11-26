@@ -1,0 +1,29 @@
+# GA-5 (tools/v39/diagram-plan.md): two filters, two moments. Lesson: having (Lỗi hay gặp).
+# Query: SELECT category, count(*) FROM products WHERE price_vnd < 50000 GROUP BY category HAVING count(*) >= 4
+# Data (lab, checked in PGlite): Dried mango 45000, Cashew nuts 200g 89000, Shampoo 650ml 149000, Toothpaste 31000;
+# cheap items per category Drinks 6, Snacks 5, Household 4, Stationery 4, Personal care 3; HAVING keeps 4 categories.
+title: { vi: "WHERE và HAVING: hai lần lọc", en: "WHERE and HAVING: two filters" }
+caption:
+  vi: "WHERE bỏ từng món trước khi chia nhóm; HAVING bỏ cả nhóm sau khi đếm."
+  en: "WHERE drops single items before grouping; HAVING drops whole groups after counting."
+nodes:
+  - { id: wh, shape: note, label: { vi: "WHERE: lọc từng món", en: "WHERE: per item" } }
+  - { id: i1, label: Dried mango, sub: { vi: "45k · giữ", en: "45k · kept" }, tone: live }
+  - { id: i2, label: Cashew nuts, sub: { vi: "89k · bỏ", en: "89k · out" }, tone: dead }
+  - { id: i3, label: Shampoo, sub: { vi: "149k · bỏ", en: "149k · out" }, tone: dead }
+  - { id: i4, label: Toothpaste, sub: { vi: "31k · giữ", en: "31k · kept" }, tone: live }
+  - id: groups
+    shape: bars
+    label: { vi: "GROUP BY: món dưới 50k", en: "GROUP BY: items under 50k" }
+    sub: { vi: "HAVING ≥ 4: nét đứt", en: "HAVING ≥ 4: dashed line" }
+    mark: 4
+    items:
+      - { label: Drinks, value: 6 }
+      - { label: Snacks, value: 5 }
+      - { label: Household, value: 4 }
+      - { label: Stationery, value: 4 }
+      - { label: Personal care, value: 3, tone: dead, note: { vi: "3 < 4 → bỏ", en: "3 < 4 → out" } }
+rows:
+  - [wh]
+  - [i1, i2, i3, i4]
+  - [groups]

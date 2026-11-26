@@ -1,0 +1,38 @@
+# GA-8 (tools/v39/diagram-plan.md): where the condition goes. Lessons: left_join (Lỗi hay gặp), anti_join (Ý chính, variant `anti` = step 3).
+# Data (lab, checked in PGlite): stores LEFT JOIN orders ON o.store_id = s.id AND o.order_date = '2026-10-26' → 8 rows:
+# Hai Chau 1382 1383, Son Tra 1378, Ben Thanh NULL, Thao Dien 1379 1380 1381, Hoan Kiem NULL; date in WHERE → 6 rows.
+# Source: https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-JOIN
+title: { vi: "Điều kiện ở ON hay ở WHERE", en: "The condition in ON or in WHERE" }
+caption:
+  vi: "Cửa hàng LEFT JOIN đơn ngày 26/10."
+  en: "Stores LEFT JOIN orders of 26 Oct."
+nodes:
+  - id: t
+    shape: grid
+    head: [{ vi: "cửa hàng", en: store }, o.id, "", ""]
+    cells:
+      - [Hai Chau, "1382", "1383", ""]
+      - [Son Tra, "1378", "", ""]
+      - [Ben Thanh, "NULL", "", ""]
+      - [Thao Dien, "1379", "1380", "1381"]
+      - [Hoan Kiem, "NULL", "", ""]
+    toneOf: { "NULL": warm }
+  - { id: cond, mono: true, label: "AND o.order_date", sub: { vi: "ngày ở ON", en: "date in ON" } }
+  - { id: count, label: { vi: "8 dòng", en: "8 rows" }, tone: new }
+rows:
+  - [t]
+  - [cond, count]
+steps:
+  - say: { vi: "LEFT JOIN giữ mọi cửa hàng; thiếu đơn thì cột đơn là NULL.", en: "LEFT JOIN keeps every store; no order means NULL order columns." }
+  - say: { vi: "WHERE chạy sau phép nối: NULL không bằng ngày nào, hai cửa hàng biến mất.", en: "WHERE runs after the join: NULL equals no date, two stores vanish." }
+    set:
+      t: { strike: [2, 4], rowTone: [null, null, dead, null, dead] }
+      cond: { label: "WHERE o.order_date", sub: { vi: "ngày ở WHERE", en: "date in WHERE" }, tone: dead }
+      count: { label: { vi: "6 dòng", en: "6 rows" }, tone: dead }
+  - say: { vi: "Giữ đúng dòng không có cặp: cửa hàng không bán được gì.", en: "Keep only rows with no partner: stores that sold nothing." }
+    set:
+      t: { rowTone: [ghost, ghost, null, ghost, null] }
+      cond: { label: "WHERE o.id IS NULL", sub: anti-join, tone: live }
+      count: { label: { vi: "2 dòng", en: "2 rows" }, tone: live }
+variants:
+  anti: { step: 2 }

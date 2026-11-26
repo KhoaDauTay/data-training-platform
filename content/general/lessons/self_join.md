@@ -3,6 +3,7 @@ id: self_join
 title: "Self-join: nối một bảng với chính nó"
 title_en: "Self-join: join a table to itself"
 minutes: 20
+figures: [{ name: sql-self-join-tree, at: idea }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Đặt hai bí danh cho cùng một bảng để mỗi dòng gặp được dòng nó trỏ tới, như nhân viên và quản lý.
@@ -131,6 +132,8 @@ Self-join là nối một bảng với chính nó. Bạn viết bảng hai lần
 
 Nhiều người nghĩ **self-join là một loại phép nối đặc biệt**. Thật ra không có cú pháp riêng nào: đó là `JOIN` thường, chỉ khác là hai bên là cùng một bảng. Phần khó duy nhất là giữ đúng vai và đúng chiều của hai bí danh.
 
+Hình cuối mục này vẽ một nhánh của bảng `staff`: mỗi mũi tên là `manager_id` trỏ lên người quản lý. Bên dưới, cùng một bảng đóng vai `e` và `m`, nối bằng `m.id = e.manager_id`.
+
 ## Cú pháp
 
 Đặt tên bí danh theo vai (`e`, `m`) thay vì `a`, `b` khi có thể; đọc lại sẽ dễ hơn.
@@ -146,6 +149,8 @@ HR asks: "Who does each employee report to?" The `staff` table has a `manager_id
 A self-join joins a table to itself. You write the table twice with two aliases, one role each: `e` is the employee, `m` the manager. The condition `ON m.id = e.manager_id` says which `m` row goes with which `e` row. Everything else (aliases before columns, `LEFT JOIN`, counting) works like any join.
 
 Many people think **a self-join is a special kind of join**. There is no special syntax at all: it is a plain `JOIN`, the only difference being that both sides are the same table. The only hard part is keeping the two aliases' roles and direction straight.
+
+The figure at the end of this section draws one branch of the `staff` table: every arrow is a `manager_id` pointing up to the manager. Below it, the same table plays `e` and `m`, joined on `m.id = e.manager_id`.
 
 ## Syntax
 

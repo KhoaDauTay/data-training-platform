@@ -1,0 +1,36 @@
+# GA-10 (tools/v39/diagram-plan.md): one table, two roles. Lesson: self_join (Ý chính).
+# Data (lab `staff`, checked in PGlite): Ha Minh (CEO, manager_id NULL) → Do Lan, Ly Quan, Ong Lan; Do Lan → 3 store managers;
+# Ly Quan → Ta Vy (Store manager, store 3) → Vu Giang, Phan Khanh (Cashiers) → Lam Phuong (Stock clerk). Only that branch is drawn.
+# Source: https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-JOIN (table aliases)
+title: { vi: "Một bảng, hai vai", en: "One table, two roles" }
+caption:
+  vi: "Mỗi mũi tên là manager_id: nó trỏ về một dòng khác của chính bảng staff. Bí danh e (nhân viên) và m (quản lý) cho bảng đóng hai vai."
+  en: "Every arrow is manager_id: it points back to another row of the same staff table. Aliases e (employee) and m (manager) let the table play both roles."
+nodes:
+  - { id: ha, label: Ha Minh, sub: CEO }
+  - { id: nul, mono: true, label: "manager_id NULL", sub: { vi: "LEFT JOIN để giữ", en: "LEFT JOIN to keep" }, tone: warm }
+  - { id: dl, label: Do Lan, sub: { vi: "+3 người", en: "+3 people" }, tone: ghost }
+  - { id: lq, label: Ly Quan, sub: { vi: "QL vùng", en: "Reg. mgr" } }
+  - { id: tv, label: Ta Vy, sub: { vi: "QL cửa hàng", en: "Store mgr" }, tone: new }
+  - { id: vg, label: Vu Giang, sub: { vi: "Thu ngân", en: "Cashier" } }
+  - { id: pk, label: Phan Khanh, sub: { vi: "Thu ngân", en: "Cashier" } }
+  - { id: lp, label: Lam Phuong, sub: { vi: "Kho", en: "Stock clerk" } }
+  - { id: se, shape: grid, label: staff e, head: [name, manager_id], cells: [[Ta Vy, "3"]], tone: new }
+  - { id: sm, shape: grid, label: staff m, head: [id, name], cells: [["3", Ly Quan]] }
+  - { id: on, shape: note, mono: true, label: "ON m.id = e.manager_id" }
+rows:
+  - [ha, nul]
+  - [dl, lq]
+  - [tv]
+  - [vg, pk]
+  - [lp]
+  - [se, sm]
+  - [on]
+edges:
+  - { from: dl, to: ha }
+  - { from: lq, to: ha }
+  - { from: tv, to: lq }
+  - { from: vg, to: tv }
+  - { from: pk, to: tv }
+  - { from: lp, to: pk }
+  - { from: "se#0", to: "sm#0", link: true }

@@ -1,0 +1,38 @@
+# GA-1 (tools/v39/diagram-plan.md): SELECT cuts columns, WHERE cuts rows. Data: lab `stores`, all 5 rows (checked in PGlite).
+# Variant `cols` (lesson select): SELECT name, city FROM stores. Variant `rows` (lesson where): … WHERE city = 'Da Nang'.
+# Source: https://www.postgresql.org/docs/current/queries-select-lists.html
+title: { vi: "SELECT cắt cột, WHERE cắt dòng", en: "SELECT cuts columns, WHERE cuts rows" }
+caption:
+  vi: "Bảng gốc không đổi; câu truy vấn chỉ chọn phần nó cần."
+  en: "The table itself never changes; the query picks the part it needs."
+nodes:
+  - id: stores
+    shape: grid
+    label: stores
+    head: [id, name, city, opened_on]
+    cells:
+      - ["1", Hai Chau, Da Nang, "2023-03-01"]
+      - ["2", Son Tra, Da Nang, "2024-06-15"]
+      - ["3", Ben Thanh, HCM City, "2022-11-20"]
+      - ["4", Thao Dien, HCM City, "2025-09-01"]
+      - ["5", Hoan Kiem, Hanoi, "2024-01-10"]
+  - { id: keep, shape: key, label: "", tone: new }
+  - { id: drop, shape: key, label: "", tone: ghost }
+  - { id: result, shape: note, label: "" }
+rows:
+  - [stores]
+  - [keep, drop]
+  - [result]
+variants:
+  cols:
+    set:
+      stores: { colTone: [ghost, new, new, ghost] }
+      keep: { label: { vi: "SELECT giữ cột", en: "SELECT keeps cols" }, sub: "name, city" }
+      drop: { label: { vi: "không xin → bỏ", en: "not asked → gone" }, sub: "id, opened_on" }
+      result: { label: { vi: "Kết quả: 5 dòng × 2 cột", en: "Result: 5 rows × 2 cols" } }
+  rows:
+    set:
+      stores: { rowTone: [live, live, ghost, ghost, ghost], strike: [2, 3, 4] }
+      keep: { label: { vi: "WHERE giữ dòng", en: "WHERE keeps rows" }, sub: "city = 'Da Nang'", tone: live }
+      drop: { label: { vi: "dòng khác → bỏ", en: "other rows → gone" }, sub: "3, 4, 5" }
+      result: { label: { vi: "Kết quả: 2 dòng × 4 cột", en: "Result: 2 rows × 4 cols" } }

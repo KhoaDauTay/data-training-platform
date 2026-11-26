@@ -135,7 +135,8 @@ describe.each(Object.keys(specs))('v39 figure %s', (name) => {
           }
           const m = model(f, d.w, d.h);
           for (const a of m.arrows) {
-            const t = m.boxes.find((b) => b.k === a.to)!;
+            const t = m.boxes.find((b) => b.k === a.to);
+            if (!t) continue; // a grid end: analyze() finds its nearest cell (rule e, tip < 2)
             const g = Math.max(t.x - a.tip[0], a.tip[0] - (t.x + t.w), t.y - a.tip[1], a.tip[1] - (t.y + t.h));
             expect(g, `${at}: ${a.k} mũi tên cách đích`).toBeGreaterThanOrEqual(2.99);
           }

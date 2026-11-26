@@ -3,6 +3,7 @@ id: join
 title: "JOIN: ghép hai bảng theo một khóa"
 title_en: "JOIN: combine two tables on a key"
 minutes: 25
+figures: [{ name: sql-inner-join-pairs, at: idea }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Ghép một bảng với bảng nó trỏ tới qua khóa ngoại, như đơn hàng với cửa hàng.
@@ -138,6 +139,8 @@ Dữ liệu được chia ra nhiều bảng để mỗi điều chỉ ghi một 
 
 Nhiều người nghĩ **`JOIN` giữ nguyên số dòng của bảng đầu tiên**. Thật ra nó tạo **một dòng cho mỗi cặp khớp**: dòng không có cặp bị bỏ, và dòng có nhiều cặp bị nhân lên. Vì thế sau mỗi phép ghép, hãy đếm lại số dòng.
 
+Hình cuối mục này ghép năm đơn ngày 31/10 với `stores`: mỗi đơn nối tới cửa hàng có `id` bằng `store_id` của nó, còn Son Tra không có đơn nào nên không có mặt trong kết quả.
+
 ## Cú pháp
 
 `JOIN` viết sau `FROM`; điều kiện ghép nằm trong `ON`, điều kiện lọc nằm trong `WHERE`.
@@ -153,6 +156,8 @@ The orders table only says `store_id = 3`, but the director wants to read "Ben T
 Data is split across tables so each fact is written once: the store's name lives in `stores`, an order only keeps the store's id (a foreign key). `JOIN … ON` puts them back together: for each row of one table, Postgres finds the rows of the other that pass the `ON` condition and builds a new row with the columns of both.
 
 Many people think **`JOIN` keeps the row count of the first table**. In fact it makes **one row per matched pair**: a row with no match is dropped, and a row with several matches is multiplied. So after every join, count the rows again.
+
+The figure at the end of this section joins the five orders of 31 Oct to `stores`: each order links to the store whose `id` equals its `store_id`, and Son Tra, with no order that day, is missing from the result.
 
 ## Syntax
 

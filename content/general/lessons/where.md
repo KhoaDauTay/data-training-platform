@@ -3,6 +3,7 @@ id: where
 title: "WHERE: chỉ giữ những dòng thỏa điều kiện"
 title_en: "WHERE: keep only the rows that pass a condition"
 minutes: 25
+figures: [{ name: sql-rows-columns, at: idea, variant: rows }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Viết một điều kiện so sánh trên cột số, chữ và ngày để giữ đúng những dòng cần.
@@ -146,6 +147,8 @@ Trưởng nhóm chăm sóc khách hỏi: "Ai là khách của mình ở Huế?" 
 
 Nhiều người nghĩ **Postgres đọc điều kiện từ trái sang phải như một câu văn**. Thật ra `AND` luôn được ghép trước `OR`, giống phép nhân đi trước phép cộng. Câu chạy được nhưng nghĩa khác điều bạn định nói, và không có lỗi nào cảnh báo. Ngoặc là cách để nói rõ ý mình.
 
+Hình cuối mục này dùng lại bảng `stores`: `WHERE city = 'Da Nang'` giữ hai dòng đầu và gạch ba dòng còn lại, nhưng không bớt cột nào. `SELECT` cắt theo chiều dọc, `WHERE` cắt theo chiều ngang.
+
 ## Cú pháp
 
 `WHERE` đứng ngay sau `FROM` và trước `ORDER BY`. Mỗi điều kiện trả đúng hoặc sai cho từng dòng.
@@ -161,6 +164,8 @@ The customer care lead asks: "Who are our customers in Hue?" The `customers` tab
 `WHERE` comes after `FROM` and carries a condition. Postgres looks at every row of the table: when the condition is true the row stays, when false it goes. The result's columns do not change, only the number of rows shrinks. A condition is a comparison (`=`, `<>`, `<`, `>`…), and several conditions combine with `AND` (both true) or `OR` (at least one true).
 
 Many people think **Postgres reads a condition left to right like a sentence**. In fact `AND` is always grouped before `OR`, just as multiplication comes before addition. The query runs but means something other than what you meant, and no error warns you. Brackets are how you say what you mean.
+
+The figure at the end of this section reuses the `stores` table: `WHERE city = 'Da Nang'` keeps the first two rows and strikes the other three, but drops no column. `SELECT` cuts vertically, `WHERE` cuts horizontally.
 
 ## Syntax
 

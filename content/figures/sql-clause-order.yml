@@ -1,0 +1,53 @@
+# GA-2 (tools/v39/diagram-plan.md): written order vs run order. Lesson: having (Ý chính); group_by, order_by, limit link to it.
+# The lesson's query: SELECT category, count(*) FROM products WHERE price_vnd < 50000 GROUP BY category HAVING count(*) >= 4
+# (30 products; 22 under 50k in 5 categories; 4 categories keep ≥ 4, checked in PGlite).
+# Order: https://www.postgresql.org/docs/current/sql-select.html#SQL-SELECT-DESCRIPTION
+title: { vi: "Thứ tự viết và thứ tự chạy", en: "Written order and run order" }
+caption:
+  vi: "Bạn viết SELECT đầu tiên, Postgres chạy nó gần cuối. Trên điện thoại hai danh sách xếp chồng; số thứ tự ở danh sách chạy."
+  en: "You write SELECT first; Postgres runs it near the end. On a phone the two lists stack; the run list carries the numbers."
+nodes:
+  - id: w
+    shape: grid
+    label: { vi: "Thứ tự viết", en: "Written order" }
+    cells: [[SELECT], [FROM], [WHERE], [GROUP BY], [HAVING], [ORDER BY], [LIMIT]]
+  - id: r
+    shape: grid
+    label: { vi: "Thứ tự chạy", en: "Run order" }
+    cells:
+      - ["1", FROM, { vi: "30 dòng", en: "30 rows" }]
+      - ["2", WHERE, { vi: "bỏ món ≥ 50k", en: "drop items ≥ 50k" }]
+      - ["3", GROUP BY, { vi: "5 nhóm", en: "5 groups" }]
+      - ["4", HAVING, { vi: "giữ 4 nhóm", en: "keep 4 groups" }]
+      - ["5", SELECT, { vi: "tính cột", en: "compute cols" }]
+      - ["6", ORDER BY, { vi: "sắp xếp", en: "sort" }]
+      - ["7", LIMIT, { vi: "cắt N dòng", en: "cut N rows" }]
+rows:
+  - [w, r]
+edges:
+  - { from: "w#0", to: "r#4", link: true }
+  - { from: "w#1", to: "r#0", link: true }
+  - { from: "w#2", to: "r#1", link: true }
+  - { from: "w#3", to: "r#2", link: true }
+  - { from: "w#4", to: "r#3", link: true }
+  - { from: "w#5", to: "r#5", link: true }
+  - { from: "w#6", to: "r#6", link: true }
+steps:
+  - say: { vi: "Bạn viết SELECT trước, nhưng Postgres chạy FROM trước.", en: "You write SELECT first, but Postgres runs FROM first." }
+    set:
+      w: { rowTone: [new] }
+      r: { rowTone: [new] }
+  - say: { vi: "WHERE lọc từng dòng trước khi có nhóm.", en: "WHERE filters single rows before any group exists." }
+    set:
+      w: { rowTone: [null, new, new] }
+      r: { rowTone: [new, new] }
+  - say: { vi: "HAVING lọc cả nhóm, sau khi đếm xong.", en: "HAVING filters whole groups, after counting." }
+    set:
+      w: { rowTone: [null, null, null, new, new] }
+      r: { rowTone: [null, null, new, new] }
+  - say:
+      vi: "Bí danh đặt ở SELECT không dùng được trong WHERE hay HAVING, vì chúng chạy trước SELECT."
+      en: "An alias made in SELECT cannot be used in WHERE or HAVING: they run before SELECT."
+    set:
+      w: { rowTone: [new, null, null, null, null, new, new] }
+      r: { rowTone: [null, null, null, null, new, new, new] }

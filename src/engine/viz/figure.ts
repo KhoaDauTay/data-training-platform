@@ -16,7 +16,7 @@ export interface FigNode {
   /** box (default), key (pill), grid (cells; `label` above, `sub` below), bars (horizontal bars), note (text only) */
   shape?: 'box' | 'key' | 'grid' | 'bars' | 'note';
   label?: Bi; sub?: Bi; tone?: Tone; mono?: boolean;
-  head?: Bi[]; cells?: Bi[][]; toneOf?: Record<string, Tone>; rowTone?: (Tone | null)[]; strike?: number[];
+  head?: Bi[]; cells?: Bi[][]; toneOf?: Record<string, Tone>; rowTone?: (Tone | null)[]; colTone?: (Tone | null)[]; strike?: number[];
   items?: { label: Bi; value: number; note?: Bi; tone?: Tone }[]; mark?: number;
 }
 /** `from`/`to` = a node id, or `grid#row` for a link; `link` = a plain line between neighbours (drawn only side by side). */
@@ -242,6 +242,9 @@ export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): 
     return Math.round(r.y + tall(titleLines(n, lang, 'label')) + (n.label === undefined ? 0 : 4) + ((n.head ? 1 : 0) + Number(row) + 0.5) * ROW_H);
   }
 
+  /** data-from/data-to name a box the checker can find: a box or key end (a grid or bars end has no single rect, the checker finds its nearest cell). */
+  const boxy = (end: string): boolean => ['box', 'key'].includes(byId.get(base(end))?.shape ?? 'box');
+  const ends = (e: FigEdge): Record<string, string> => ({ ...(boxy(e.from) ? { 'data-from': `n:${base(e.from)}` } : {}), ...(boxy(e.to) ? { 'data-to': `n:${base(e.to)}` } : {}) });
   const frames: Frame[] = ps.map((p) => {
     const shapes: Shape[] = [];
     routes.forEach((r, i) => {
@@ -249,7 +252,7 @@ export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): 
       const k = `e:${i}`;
       shapes.push(r.e.link
         ? { k, t: 'p', d: r.d, ink: 'new', w: STROKE, dash: r.e.dash }
-        : { k, t: 'p', d: r.d, ink: 'edge', w: STROKE, arrow: true, dash: r.e.dash, attrs: { 'data-from': `n:${base(r.e.from)}`, 'data-to': `n:${base(r.e.to)}` } });
+        : { k, t: 'p', d: r.d, ink: 'edge', w: STROKE, arrow: true, dash: r.e.dash, attrs: ends(r.e) });
       if (r.lab) shapes.push({ k: `${k}.l`, t: 't', x: r.lab.x, y: r.lab.y, s: r.lab.s, size: SS, a: r.lab.a, ink: 'muted' });
     });
     for (const n of p.nodes) if (p.show.has(n.id)) shapes.push(...draw(n, at.get(n.id)!, lang));
@@ -295,7 +298,7 @@ function draw(n: FigNode, r: Rect, lang: Lang): Shape[] {
       row.forEach((v, c) => {
         const s = cellText(n, v, lang);
         const ck = `${k}:${i}:${c}`;
-        const tone: Tone = head ? 'cell' : n.toneOf?.[s] ?? n.rowTone?.[body] ?? n.tone ?? 'plain';
+        const tone: Tone = head ? 'cell' : n.toneOf?.[s] ?? n.rowTone?.[body] ?? n.colTone?.[c] ?? n.tone ?? 'plain';
         if (s) {
           out.push({ k: ck, t: 'r', x, y, w: cols[c], h: ROW_H, tone, rx: 0 },
             { k: `${ck}.t`, t: 't', x: x + cols[c] / 2, y: y + ROW_H / 2, s, size: SS, b: head, mono: !!n.mono && !head, a: 'm', ink: tone === 'ghost' ? 'muted' : 'ink',

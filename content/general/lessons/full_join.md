@@ -3,6 +3,7 @@ id: full_join
 title: "FULL JOIN: đối chiếu hai bên, giữ cả dòng lẻ"
 title_en: "FULL JOIN: reconcile two sides, keeping the strays"
 minutes: 25
+figures: [{ name: sql-join-family, at: idea }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Đặt hai danh sách cạnh nhau và giữ dòng chỉ có ở một bên, như chỉ tiêu và doanh số.
@@ -145,6 +146,8 @@ Giám đốc đặt hai con số cạnh nhau: chỉ tiêu tháng 2 và doanh s�
 
 Nhiều người nghĩ **`LEFT JOIN` là đủ cho mọi phép "giữ dòng thiếu"**. Nó chỉ giữ dòng lẻ của **một** bên. Khi cả hai bên đều có thể có dòng mà bên kia không có, chỉ `FULL JOIN` thấy được cả hai.
 
+Hình cuối mục này chạy ba kiểu nối trên cùng dữ liệu tháng 2: `INNER JOIN` và `LEFT JOIN` từ chỉ tiêu đều ra 4 dòng và mất cửa hàng 4; `FULL JOIN` ra 5 dòng.
+
 ## Cú pháp
 
 `FULL JOIN` thường đi cùng hai CTE đã gộp về cùng độ chi tiết, và một `COALESCE` cho khóa.
@@ -160,6 +163,8 @@ The director puts two numbers side by side: each store's February target and Feb
 `FULL JOIN` keeps every row of both sides. A matched pair appears once with both sides' columns; a row found on one side only still appears, with the other side's columns empty. Since the key can be empty on either side, the result's key column is written as `COALESCE(a.key, b.key)`. Add `WHERE a.key IS NULL OR b.key IS NULL` and you have a reconciliation list.
 
 Many people think **`LEFT JOIN` covers every "keep the missing rows" case**. It only keeps the strays of **one** side. When both sides can hold rows the other lacks, only `FULL JOIN` sees both.
+
+The figure at the end of this section runs three joins on the same February data: `INNER JOIN` and a `LEFT JOIN` from the targets both give 4 rows and lose store 4; `FULL JOIN` gives 5 rows.
 
 ## Syntax
 

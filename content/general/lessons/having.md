@@ -3,6 +3,7 @@ id: having
 title: "HAVING: lọc các nhóm sau khi gộp"
 title_en: "HAVING: filter groups after aggregating"
 minutes: 20
+figures: [{ name: sql-clause-order, at: idea }, { name: sql-where-vs-having, at: pitfalls }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Giữ chỉ những nhóm có số đếm, tổng hay trung bình thỏa một điều kiện.
@@ -72,8 +73,8 @@ pitfalls:
     wrong: "SELECT category, count(*) FROM products GROUP BY category HAVING count(*) >= 4 AND price_vnd < 50000"
     fix: "SELECT category, count(*) FROM products WHERE price_vnd < 50000 GROUP BY category HAVING count(*) >= 4"
     why:
-      vi: "Sau khi gộp, một nhóm có 6 giá khác nhau, nên `price_vnd` không còn một giá trị để so: lỗi 42803. Điều kiện trên từng dòng thuộc về `WHERE`, đặt trước `GROUP BY`."
-      en: "After grouping, a category holds 6 different prices, so `price_vnd` has no single value to compare: error 42803. A condition on single rows belongs in `WHERE`, before `GROUP BY`."
+      vi: "Sau khi gộp, một nhóm có 6 giá khác nhau, nên `price_vnd` không còn một giá trị để so: lỗi 42803. Điều kiện trên từng dòng thuộc về `WHERE`, đặt trước `GROUP BY`. Hình cuối mục này vẽ hai lần lọc đó trên câu đúng."
+      en: "After grouping, a category holds 6 different prices, so `price_vnd` has no single value to compare: error 42803. A condition on single rows belongs in `WHERE`, before `GROUP BY`. The figure at the end of this section draws those two filters on the right query."
 quiz:
   - q:
       vi: "Nên viết `WHERE category <> 'Drinks'` hay `HAVING category <> 'Drinks'` trong một câu `GROUP BY category`?"
@@ -131,6 +132,8 @@ Kế toán nghi có đơn bị thanh toán hai lần. Bạn đã biết đếm s
 
 Nhiều người nghĩ **`HAVING` chỉ là một cách viết khác của `WHERE`**. Thật ra hai cái chạy ở hai thời điểm: lúc `WHERE` chạy chưa có số đếm nào, và lúc `HAVING` chạy thì từng dòng đã gộp vào nhóm. Vì vậy hàm gộp không vào được `WHERE`, và cột thường (không nằm trong `GROUP BY`) không vào được `HAVING`.
 
+Hình từng bước ở cuối mục này đặt thứ tự viết cạnh thứ tự chạy: `FROM`, `WHERE`, `GROUP BY`, `HAVING` chạy trước `SELECT`, rồi mới đến `ORDER BY` và `LIMIT`.
+
 ## Cú pháp
 
 `HAVING` đứng ngay sau `GROUP BY`.
@@ -146,6 +149,8 @@ Accounting suspects that some orders were paid twice. You already know how to co
 `HAVING` is the `WHERE` of groups. It runs after `GROUP BY`, so its condition can use aggregates such as `count(*)` or `avg(price_vnd)`, and it keeps or drops a whole group. `WHERE` runs before any group exists and only sees single rows.
 
 Many people think **`HAVING` is just another way to write `WHERE`**. In fact the two run at different moments: when `WHERE` runs there is no count yet, and when `HAVING` runs the rows are already folded into groups. That is why an aggregate cannot go in `WHERE`, and a plain column (not in the `GROUP BY`) cannot go in `HAVING`.
+
+The step-through figure at the end of this section puts the written order beside the run order: `FROM`, `WHERE`, `GROUP BY`, `HAVING` run before `SELECT`, then come `ORDER BY` and `LIMIT`.
 
 ## Syntax
 

@@ -3,6 +3,7 @@ id: group_by
 title: "GROUP BY: một con số cho mỗi nhóm"
 title_en: "GROUP BY: one number per group"
 minutes: 25
+figures: [{ name: sql-group-fold, at: idea }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Chia dòng thành nhóm theo một hay nhiều cột và tính hàm gộp cho từng nhóm.
@@ -143,6 +144,8 @@ Phòng mua hàng không muốn một con số cho cả cửa hàng nữa: "Mỗi
 
 Nhiều người nghĩ **có thể đưa bất kỳ cột nào vào `SELECT` cạnh hàm gộp**. Thật ra mỗi dòng kết quả đại diện cho cả một nhóm, nên chỉ những cột có một giá trị duy nhất trong nhóm (chính là cột nhóm) mới hiện được. Cột khác thì phải nằm trong hàm gộp, hoặc được thêm vào `GROUP BY`, và thêm vào thì nhóm nhỏ đi.
 
+Hình từng bước ở cuối mục này gộp đơn hàng theo `status`: 1428 đơn thành ba dòng, PAID 1298, CANCELLED 92, REFUNDED 38. Thứ tự các mệnh đề chạy được vẽ ở bài `HAVING`.
+
 ## Cú pháp
 
 `GROUP BY` đứng sau `WHERE` và trước `ORDER BY`.
@@ -158,6 +161,8 @@ Purchasing no longer wants one number for the whole shop: "How many items does e
 `GROUP BY` splits the rows (those left after `WHERE`) into groups, one group per different value of the grouping column. Aggregates run separately inside each group, and the result has exactly one row per group. Grouping by two columns makes one group per pair of values.
 
 Many people think **any column can go in the `SELECT` next to an aggregate**. In fact each result row stands for a whole group, so only columns with a single value inside the group (the grouping columns) can show. Any other column must sit inside an aggregate, or be added to the `GROUP BY`, and adding it makes the groups smaller.
+
+The step-through figure at the end of this section groups orders by `status`: 1428 orders become three rows, PAID 1298, CANCELLED 92, REFUNDED 38. The order the clauses run in is drawn in the `HAVING` lesson.
 
 ## Syntax
 

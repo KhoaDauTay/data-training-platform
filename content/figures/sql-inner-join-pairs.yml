@@ -1,0 +1,38 @@
+# GA-7 (tools/v39/diagram-plan.md): rows meet through the key. Lesson: join (Ý chính).
+# Query: orders o JOIN stores s ON s.id = o.store_id WHERE o.order_date = '2026-10-31'
+# Data (lab, checked in PGlite): 1416→5 Hoan Kiem, 1417→3 Ben Thanh, 1418→3 Ben Thanh, 1419→1 Hai Chau, 1420→4 Thao Dien.
+# Source: https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-JOIN
+title: { vi: "INNER JOIN ghép dòng qua khóa", en: "INNER JOIN pairs rows through the key" }
+caption:
+  vi: "Đơn ngày 31/10 tìm cửa hàng của nó qua ON s.id = o.store_id. Son Tra không có đơn nào hôm đó nên không có trong kết quả."
+  en: "Each order of 31 Oct finds its store through ON s.id = o.store_id. Son Tra had no order that day, so it is not in the result."
+nodes:
+  - id: o
+    shape: grid
+    label: orders o
+    mono: true
+    head: [id, store_id]
+    cells: [["1416", "5"], ["1417", "3"], ["1418", "3"], ["1419", "1"], ["1420", "4"]]
+  - id: s
+    shape: grid
+    label: stores s
+    head: [id, name]
+    cells: [["1", Hai Chau], ["2", Son Tra], ["3", Ben Thanh], ["4", Thao Dien], ["5", Hoan Kiem]]
+    rowTone: [new, ghost, new, new, new]
+  - { id: on, mono: true, label: "s.id = o.store_id", sub: { vi: "ON → 5 dòng", en: "ON → 5 rows" } }
+  - { id: none, shape: note, label: { vi: "Son Tra: không có đơn 31/10", en: "Son Tra: no order on 31 Oct" } }
+  - id: res
+    shape: grid
+    label: { vi: "Kết quả", en: "Result" }
+    head: [o.id, s.name]
+    cells: [["1416", Hoan Kiem], ["1417", Ben Thanh], ["1418", Ben Thanh], ["1419", Hai Chau], ["1420", Thao Dien]]
+rows:
+  - [o, s]
+  - [on, none]
+  - [res]
+edges:
+  - { from: "o#0", to: "s#4", link: true }
+  - { from: "o#1", to: "s#2", link: true }
+  - { from: "o#2", to: "s#2", link: true }
+  - { from: "o#3", to: "s#0", link: true }
+  - { from: "o#4", to: "s#3", link: true }

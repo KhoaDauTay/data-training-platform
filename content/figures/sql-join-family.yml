@@ -1,0 +1,32 @@
+# GA-9 (tools/v39/diagram-plan.md): INNER, LEFT, FULL on the same data (rows, not a Venn diagram). Lesson: full_join (Ý chính).
+# Data (lab, checked in PGlite): February targets t for stores 1 2 3 5; February sales a for stores 1 2 3 4 5 (store 4: sales, no target).
+# Source: https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-JOIN
+title: { vi: "INNER, LEFT, FULL trên cùng dữ liệu", en: "INNER, LEFT, FULL on the same data" }
+caption:
+  vi: "Chỉ tiêu tháng 2 (t) và doanh số tháng 2 (a), theo mã cửa hàng. Loại JOIN quyết định dòng không có cặp của bên nào được giữ."
+  en: "February targets (t) and February sales (a), by store id. The join type decides whose unmatched rows survive."
+nodes:
+  - { id: kt, mono: true, label: "t: 1 2 3 5", sub: { vi: "chỉ tiêu", en: "targets" } }
+  - { id: ka, mono: true, label: "a: 1 2 3 4 5", sub: { vi: "doanh số", en: "sales" } }
+  - id: inner
+    shape: grid
+    label: INNER
+    head: [t, a]
+    cells: [["1", "1"], ["2", "2"], ["3", "3"], ["5", "5"]]
+    sub: { vi: "4 dòng · chỉ có cặp", en: "4 rows · matched only" }
+  - id: left
+    shape: grid
+    label: LEFT (t)
+    head: [t, a]
+    cells: [["1", "1"], ["2", "2"], ["3", "3"], ["5", "5"]]
+    sub: { vi: "mất cửa hàng 4", en: "store 4 lost" }
+  - id: full
+    shape: grid
+    label: FULL
+    head: [t, a]
+    cells: [["1", "1"], ["2", "2"], ["3", "3"], ["5", "5"], ["NULL", "4"]]
+    toneOf: { "NULL": warm }
+    sub: { vi: "5 dòng · đủ cả hai", en: "5 rows · both sides" }
+rows:
+  - [kt, ka]
+  - [inner, left, full]

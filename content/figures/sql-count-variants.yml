@@ -1,0 +1,29 @@
+# GA-3 (tools/v39/diagram-plan.md): count(*), count(col), count(DISTINCT col). Lesson: aggregate (Ý chính).
+# Data (lab, checked in PGlite): customers 300 rows; city NULL on 17 → count(city) 283; 5 distinct non-NULL cities.
+# The strip is 8 sample cells of `city`. Source: https://www.postgresql.org/docs/current/functions-aggregate.html
+title: { vi: "Ba kiểu count trên cùng một cột", en: "Three counts on one column" }
+caption:
+  vi: "Hàm gộp bỏ qua ô NULL; chỉ count(*) đếm mọi dòng."
+  en: "Aggregates skip NULL cells; only count(*) counts every row."
+nodes:
+  - id: city
+    shape: grid
+    label: { vi: "customers.city (8 ô mẫu)", en: "customers.city (8 samples)" }
+    head: [city]
+    cells: [[Da Nang], [HCM City], ["NULL"], [Hue], [Da Nang], [Hanoi], ["NULL"], [Can Tho]]
+    toneOf: { "NULL": ghost }
+  - { id: star, mono: true, label: "count(*)" }
+  - { id: col, mono: true, label: "count(city)" }
+  - { id: dist, mono: true, label: "count(DISTINCT city)" }
+  - { id: n300, label: "300", sub: { vi: "mọi dòng", en: "every row" }, tone: new }
+  - { id: n283, label: "283", sub: { vi: "bỏ ô trống", en: "skips empty cells" }, tone: new }
+  - { id: n5, label: "5", sub: { vi: "giá trị khác nhau", en: "distinct values" }, tone: new }
+rows:
+  - [city]
+  - [star, n300]
+  - [col, n283]
+  - [dist, n5]
+edges:
+  - { from: star, to: n300 }
+  - { from: col, to: n283 }
+  - { from: dist, to: n5 }

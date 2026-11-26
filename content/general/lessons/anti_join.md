@@ -3,6 +3,7 @@ id: anti_join
 title: "Anti-join: tìm dòng không có cặp"
 title_en: "Anti-join: find the rows with no match"
 minutes: 25
+figures: [{ name: sql-left-join-on-vs-where, at: idea, variant: anti }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Tìm khách chưa mua, sản phẩm chưa bán, khoản tiền không khớp đơn nào bằng `LEFT JOIN … IS NULL`.
@@ -130,6 +131,8 @@ Anti-join tìm dòng của bảng A không có cặp nào ở bảng B. Cách vi
 
 Nhiều người nghĩ **kiểm tra cột nào của B trống cũng được**. Thật ra chỉ cột không bao giờ trống khi có cặp thật mới đáng tin, thường là khóa chính. Một cột có thể trống tự nhiên (như ngày giao) sẽ để lọt cả những dòng có cặp.
 
+Hình cuối mục này là bước cuối của hình trong bài `LEFT JOIN`: sau `WHERE o.id IS NULL` chỉ còn Ben Thanh và Hoan Kiem, hai cửa hàng không có đơn ngày 26/10.
+
 ## Cú pháp
 
 Ba phần luôn đi cùng nhau: `LEFT JOIN`, điều kiện trong `ON`, `IS NULL` trên khóa.
@@ -145,6 +148,8 @@ Marketing wants to send an offer to "the customers who have not ordered since Se
 An anti-join finds the rows of table A that have no partner in table B. With a join: `LEFT JOIN` to keep every row of A, then `WHERE` keeps the rows where B's key is empty, meaning nothing was paired. Every condition about B (period, status) must sit in `ON`, because it decides which partners count.
 
 Many people think **testing any column of B for emptiness works**. In fact only a column that is never empty for a real partner can be trusted, usually the primary key. A column that can be empty by nature (such as a delivery date) lets matched rows slip through.
+
+The figure at the end of this section is the last step of the one in the `LEFT JOIN` lesson: after `WHERE o.id IS NULL` only Ben Thanh and Hoan Kiem remain, the two stores with no order on 26 Oct.
 
 ## Syntax
 

@@ -3,6 +3,7 @@ id: aggregate
 title: "Hàm gộp: gói nhiều dòng thành một con số"
 title_en: "Aggregates: fold many rows into one number"
 minutes: 25
+figures: [{ name: sql-count-variants, at: idea }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Đếm, cộng, lấy trung bình, nhỏ nhất và lớn nhất của cả một bảng hay một phần đã lọc.
@@ -137,6 +138,8 @@ Hàm gộp (`count`, `sum`, `avg`, `min`, `max`) nhận cả một cột của n
 
 Nhiều người nghĩ **ô trống (NULL) được tính là 0**. Thật ra mọi hàm gộp trừ `count(*)` bỏ hẳn ô trống: trung bình chỉ chia cho các ô có giá trị, và `count(email)` không đếm khách chưa có email. Vì vậy cùng một bảng, `count(*)` và `count(email)` có thể khác nhau, và cả hai đều đúng cho câu hỏi của mình.
 
+Hình cuối mục này đặt ba kiểu đếm cạnh nhau trên bảng `customers`: `count(*)` ra 300, `count(city)` ra 283 vì 17 ô trống, `count(DISTINCT city)` ra 5.
+
 ## Cú pháp
 
 Hàm gộp đứng trong `SELECT`; mỗi hàm có thể có tên riêng bằng `AS`.
@@ -152,6 +155,8 @@ Accounting asks: "How much money have we received in total, and what is the aver
 An aggregate (`count`, `sum`, `avg`, `min`, `max`) takes a whole column over many rows and returns one value. When the `SELECT` holds only aggregates, the result is exactly one row. `WHERE` still runs first, so you fold exactly the filtered part.
 
 Many people think **an empty cell (NULL) counts as 0**. In fact every aggregate except `count(*)` skips empty cells: an average divides only by the cells that have a value, and `count(email)` does not count customers with no email. So on the same table `count(*)` and `count(email)` can differ, and both are right for their own question.
+
+The figure at the end of this section puts three counts side by side on the `customers` table: `count(*)` gives 300, `count(city)` gives 283 because 17 cells are empty, `count(DISTINCT city)` gives 5.
 
 ## Syntax
 

@@ -1,0 +1,37 @@
+# GA-4 (tools/v39/diagram-plan.md): many rows fold into one per group. Lesson: group_by (Ý chính).
+# Data (lab, checked in PGlite): SELECT status, count(*) FROM orders GROUP BY status → PAID 1298, CANCELLED 92, REFUNDED 38 (1428).
+# The 12 cells are a sample (P = PAID, C = CANCELLED, R = REFUNDED); letters, not colour alone, carry the status.
+# Source: https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-GROUP
+title: { vi: "GROUP BY gộp nhiều dòng thành một", en: "GROUP BY folds many rows into one" }
+caption:
+  vi: "P = PAID, C = CANCELLED, R = REFUNDED. Mỗi dòng vào đúng một nhóm; mỗi nhóm ra một dòng."
+  en: "P = PAID, C = CANCELLED, R = REFUNDED. Every row lands in exactly one group; every group gives one row."
+nodes:
+  - id: all
+    shape: grid
+    label: { vi: "1428 đơn (12 mẫu)", en: "1428 orders (12 shown)" }
+    cells: [[P, C, P, P, R, P], [P, P, C, P, P, P]]
+    toneOf: { P: new, C: dead, R: warm }
+  - { id: gp, shape: grid, cells: [[P, P, P, P, P], [P, P, P, P, ""]], toneOf: { P: new } }
+  - { id: gc, shape: grid, cells: [[C, C]], toneOf: { C: dead } }
+  - { id: gr, shape: grid, cells: [[R]], toneOf: { R: warm } }
+  - { id: rp, label: "PAID · 1298", tone: new }
+  - { id: rc, label: "CANCELLED · 92", tone: dead }
+  - { id: rr, label: "REFUNDED · 38", tone: warm }
+  - { id: sum, shape: note, label: "1298+92+38 = 1428" }
+rows:
+  - [all]
+  - [gp, rp]
+  - [gc, rc]
+  - [gr, rr]
+  - [sum]
+edges:
+  - { from: gp, to: rp }
+  - { from: gc, to: rc }
+  - { from: gr, to: rr }
+steps:
+  - say: { vi: "Mỗi đơn có một status.", en: "Every order has a status." }
+    show: [all]
+  - say: { vi: "GROUP BY xếp dòng cùng status vào một nhóm.", en: "GROUP BY puts rows with the same status in one group." }
+    show: [all, gp, gc, gr]
+  - say: { vi: "Mỗi nhóm thành một dòng; count(*) đếm số dòng của nhóm.", en: "Each group becomes one row; count(*) counts the group's rows." }

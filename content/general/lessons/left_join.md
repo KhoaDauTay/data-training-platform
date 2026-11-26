@@ -3,6 +3,7 @@ id: left_join
 title: "LEFT JOIN và RIGHT JOIN: giữ cả dòng không có cặp"
 title_en: "LEFT JOIN and RIGHT JOIN: keep the rows without a match"
 minutes: 25
+figures: [{ name: sql-left-join-on-vs-where, at: pitfalls }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Giữ mọi dòng của một bảng khi nối, kể cả dòng không có cặp ở bảng kia.
@@ -70,8 +71,8 @@ pitfalls:
     wrong: "SELECT s.name, o.id FROM stores s LEFT JOIN orders o ON o.store_id = s.id WHERE o.order_date = '2026-10-26'"
     fix: "SELECT s.name, o.id FROM stores s LEFT JOIN orders o ON o.store_id = s.id AND o.order_date = '2026-10-26'"
     why:
-      vi: "`WHERE` chạy sau phép nối. Dòng không có cặp có `order_date` là NULL, không thỏa điều kiện nên bị loại: `LEFT JOIN` thành nối thường, ra 6 dòng thay vì 8."
-      en: "`WHERE` runs after the join. A row with no partner has a NULL `order_date`, fails the condition and is dropped: the `LEFT JOIN` becomes a plain join, 6 rows instead of 8."
+      vi: "`WHERE` chạy sau phép nối. Dòng không có cặp có `order_date` là NULL, không thỏa điều kiện nên bị loại: `LEFT JOIN` thành nối thường, ra 6 dòng thay vì 8. Hình từng bước ở cuối mục này cho thấy hai dòng biến mất."
+      en: "`WHERE` runs after the join. A row with no partner has a NULL `order_date`, fails the condition and is dropped: the `LEFT JOIN` becomes a plain join, 6 rows instead of 8. The step-through figure at the end of this section shows the two rows vanish."
   - title: { vi: "count(*) đếm cả dòng không có cặp", en: "count(*) counts the unmatched row too" }
     wrong: "SELECT s.name, count(*) AS orders FROM stores s LEFT JOIN orders o ON o.store_id = s.id AND o.order_date = '2026-10-29' GROUP BY s.name ORDER BY s.name"
     fix: "SELECT s.name, count(o.id) AS orders FROM stores s LEFT JOIN orders o ON o.store_id = s.id AND o.order_date = '2026-10-29' GROUP BY s.name ORDER BY s.name"

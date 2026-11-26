@@ -3,6 +3,7 @@ id: select
 title: "SELECT: lấy đúng những cột bạn cần"
 title_en: "SELECT: take exactly the columns you need"
 minutes: 25
+figures: [{ name: sql-rows-columns, at: idea, variant: cols }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-23" }
 objectives:
   - vi: Đọc một bảng như dòng và cột, và lấy ra đúng các cột một câu hỏi cần.
@@ -128,6 +129,8 @@ Một bảng giống một trang tính có tên: mỗi **dòng** là một thứ
 
 Nhiều người nghĩ **`SELECT` làm thay đổi bảng**. Thật ra nó chỉ đọc: bảng gốc vẫn y nguyên sau mọi câu `SELECT`, kể cả khi bạn thêm cột tính ra.
 
+Hình cuối mục này dùng bảng `stores`: `SELECT name, city` giữ hai cột được tô đậm, hai cột còn lại mờ đi vì không được xin. Bảng gốc vẫn đủ năm dòng, bốn cột.
+
 ## Cú pháp
 
 Phần trong `[ ]` là tùy chọn. `SELECT` và `FROM` viết hoa hay thường đều được; tên cột viết thường thì không cần nháy.
@@ -143,6 +146,8 @@ The chain's manager asks: "Send me the name and the city of every store." The da
 A table is like a named spreadsheet: each **row** is one thing (one store), each **column** one of its attributes (name, city), and a column such as `id` is the **key** that tells rows apart. `SELECT` says which columns you want, `FROM` says which table to read. The result is a new, temporary table: as many rows as the source table, and exactly the columns you listed, in the order you wrote them. You can also put a calculation or a constant in it; Postgres computes it for every row.
 
 Many people think **`SELECT` changes the table**. It only reads: the source table is untouched after any `SELECT`, even when you add computed columns.
+
+The figure at the end of this section uses the `stores` table: `SELECT name, city` keeps the two highlighted columns, and the other two fade because nobody asked for them. The table itself still has five rows and four columns.
 
 ## Syntax
 
