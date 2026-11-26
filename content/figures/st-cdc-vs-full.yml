@@ -1,0 +1,40 @@
+# ST-4 (tools/v43/de-tools-plan.md §4): full refresh vs change data capture, 2 steps. Lesson: e-st-l1-04 (Ý chính).
+# Data = the lesson's demo: app.orders (4 rows), the change log app.order_changes (an update, a delete, two inserts).
+# Sources: https://docs.airbyte.com/platform/using-airbyte/core-concepts/sync-modes ; https://www.postgresql.org/docs/18/logical-replication.html
+title: { vi: "Chép cả bảng hay chép thay đổi", en: "Copy the table or copy the changes" }
+caption:
+  vi: "Chép lại cả bảng đọc mọi dòng mỗi lần; CDC đọc nhật ký thay đổi nên thấy cả dòng bị xóa."
+  en: "A full refresh reads every row each time; CDC reads the change log, so it also sees deleted rows."
+alt:
+  vi: "Có hai cách để bảng raw theo kịp nguồn: đọc lại cả bảng mỗi lần, hoặc đọc nhật ký thay đổi của database. Cách thứ hai rẻ hơn và vẫn thấy được dòng bị xóa, nên công cụ nạp đánh dấu được xóa mềm."
+  en: "There are two ways to keep a raw table in step with its source: reread the whole table each time, or read the database's change log. The second is cheaper and still sees deleted rows, so the ingestion tool can flag soft deletes."
+nodes:
+  - { id: src, shape: table, mono: true, label: app.orders, sub: { vi: "nguồn", en: "source" } }
+  - { id: log, label: { vi: "nhật ký thay đổi", en: "change log" }, sub: { vi: "thêm, sửa, xóa", en: "add, edit, delete" } }
+  - { id: full, label: { vi: "chép cả bảng", en: "full refresh" }, sub: { vi: "mọi dòng", en: "every row" } }
+  - { id: cdc, label: CDC, sub: { vi: "chỉ thay đổi", en: "changes only" } }
+  - { id: raw, shape: table, mono: true, label: raw_shop.orders, sub: { vi: "trong kho", en: "in the warehouse" } }
+rows:
+  - [src, log]
+  - [full, cdc]
+  - [raw]
+edges:
+  - { from: src, to: full }
+  - { from: log, to: cdc }
+  - { from: full, to: raw }
+  - { from: cdc, to: raw }
+steps:
+  - say: { vi: "Chép cả bảng: đọc lại mọi dòng mỗi lần.", en: "Full refresh: reread every row each time." }
+    alt: { vi: "Chép cả bảng luôn đúng vì đọc lại mọi dòng, nhưng chi phí tăng theo cỡ bảng chứ không theo số thay đổi.", en: "A full refresh is always right because it rereads every row, but its cost grows with the table's size rather than with the number of changes." }
+    set:
+      src: { tone: live }
+      full: { tone: live }
+      log: { tone: ghost }
+      cdc: { tone: ghost }
+  - say: { vi: "CDC: đọc nhật ký, thấy cả dòng bị xóa.", en: "CDC: read the log, deletes included." }
+    alt: { vi: "CDC chỉ đọc những gì đã đổi từ nhật ký của database, và vì nhật ký ghi cả thao tác xóa nên bảng raw biết dòng nào đã mất ở nguồn.", en: "CDC reads only what changed from the database's log, and because the log records deletes too, the raw table learns which rows are gone at the source." }
+    set:
+      log: { tone: live }
+      cdc: { tone: new }
+      full: { tone: ghost }
+      raw: { sub: { vi: "có dấu xóa", en: "deletes flagged" } }
