@@ -54,6 +54,13 @@ function ctx(g: General): LearnCtx {
     known: d$.knownSkills(app.save, tickets, ids) };
 }
 
+/** v47 S3 (L911): the entry check's items for the welcome's "I know SQL" (the same list as the card below). */
+export function placementOf(deps: DrillDeps, g: General): ReturnType<typeof placementItems> {
+  d$ = deps;
+  const c = ctx(g);
+  return placementItems(c.parts, c.general, c.known);
+}
+
 /** Draws the learning page for the current hash into a fresh element. */
 export function learnPage(deps: DrillDeps, g: General): HTMLElement {
   d$ = deps;
