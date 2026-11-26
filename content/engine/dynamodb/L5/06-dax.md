@@ -8,6 +8,7 @@ title_en: "DAX: an in-memory cache in front of DynamoDB"
 kind: concept
 runtime: docs
 minutes: 8
+figures: [{ name: dy-dax-caches, at: example }]
 objectives:
   - { vi: "Phân biệt item cache (GetItem, BatchGetItem) và query cache (Query, Scan) của DAX", en: "Tell the DAX item cache (GetItem, BatchGetItem) from its query cache (Query, Scan)" }
   - { vi: "Biết request nào DAX trả từ bộ đệm và request nào nó chuyển thẳng sang DynamoDB", en: "Know which requests DAX answers from cache and which it passes straight to DynamoDB" }
@@ -81,14 +82,7 @@ TransactGetItems                         DynamoDB, not cached
 UpdateItem                               DynamoDB, then item cache; query cache unchanged
 ```
 
-Một lần ghi qua DAX, rồi đọc lại:
-
-```text
-12:00:00  Query  category = tea        -> 12 items, stored in query cache
-12:00:30  UpdateItem P-01 price=50000  -> DynamoDB + item cache
-12:00:40  GetItem P-01                 -> price 50000 (item cache)
-12:00:45  Query  category = tea        -> P-01 still at the old price (query cache)
-```
+Một lần ghi qua DAX, rồi đọc lại: Query `category = tea` lúc 12:00:00 lưu 12 item vào query cache; `UpdateItem` đổi giá `P-01` thành 50000 lúc 12:00:30; `GetItem` lúc 12:00:40 thấy giá mới từ item cache, còn Query lúc 12:00:45 vẫn trả giá cũ từ query cache. Hình dưới đi từng bước.
 
 ## Lỗi hay gặp
 
@@ -164,14 +158,7 @@ TransactGetItems                         DynamoDB, not cached
 UpdateItem                               DynamoDB, then item cache; query cache unchanged
 ```
 
-One write through DAX, then reading again:
-
-```text
-12:00:00  Query  category = tea        -> 12 items, stored in query cache
-12:00:30  UpdateItem P-01 price=50000  -> DynamoDB + item cache
-12:00:40  GetItem P-01                 -> price 50000 (item cache)
-12:00:45  Query  category = tea        -> P-01 still at the old price (query cache)
-```
+One write through DAX, then reading again: a Query `category = tea` at 12:00:00 stores 12 items in the query cache; `UpdateItem` sets the price of `P-01` to 50000 at 12:00:30; a `GetItem` at 12:00:40 sees the new price from the item cache, while the Query at 12:00:45 still returns the old price from the query cache. The figure below goes step by step.
 
 ## Common mistakes
 

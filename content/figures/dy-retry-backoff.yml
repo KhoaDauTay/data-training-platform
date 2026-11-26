@@ -1,0 +1,44 @@
+# B1-9 (tools/v42/diagram-plan-v42.md): retry the throttle, never the condition. Lesson: e-dy-l5-08 (Ví dụ), replaces the backoff
+# text block and the WRONG/FIX retry pair in Lỗi hay gặp (whose sentence now points at step 3). Data (quoted from the lesson):
+# attempt 1 and 2 throttled (ProvisionedThroughputExceededException), waits ~50 ms and ~100 ms plus jitter, attempt 3 ok;
+# ValidationException gets no retry; ConditionalCheckFailedException → GetItem → decide → new write. The full exception names
+# are in the caption (too long for 2 × 18).
+# Source: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Programming.Errors.html
+title: { vi: "Thử lại lỗi tải, không thử lại điều kiện sai", en: "Retry the throttle, never the failed condition" }
+caption:
+  vi: "ProvisionedThroughputExceededException và lỗi 5xx là tạm thời: thử lại, mỗi lần chờ lâu gấp đôi cộng ngẫu nhiên. ValidationException sai y hệt ở mọi lần gửi. ConditionalCheckFailedException nghĩa là item đã đổi: đọc lại trước khi ghi."
+  en: "ProvisionedThroughputExceededException and 5xx errors are temporary: retry, doubling the wait each time plus jitter. A ValidationException fails the same way every time. ConditionalCheckFailedException means the item changed: read it again before writing."
+alt:
+  vi: "Chỉ thử lại lỗi tạm thời (throttle, 5xx) với backoff có ngẫu nhiên. Lỗi request thì sửa request, còn điều kiện sai thì đọc lại item trước khi ghi lần nữa."
+  en: "Retry only transient errors (throttling, 5xx) with jittered backoff. Fix a malformed request, and after a failed condition re-read the item before writing again."
+nodes:
+  - id: att
+    shape: grid
+    label: { vi: "thử lại khi bị throttle", en: "retrying a throttle" }
+    head: [{ vi: "lần", en: try }, { vi: "kết quả", en: result }, { vi: "chờ + ngẫu nhiên", en: "wait + jitter" }]
+    cells:
+      - ["1", throttle, "~50 ms"]
+      - ["2", throttle, "~100 ms"]
+      - ["3", ok, "·"]
+    rowTone: [warm, warm, live]
+  - { id: val, label: { vi: "lỗi Validation", en: "Validation error" }, sub: { vi: "sửa request", en: "fix the request" }, tone: dead }
+  - { id: cc, label: ConditionalCheck, sub: Failed, tone: warm }
+  - { id: get, label: GetItem, sub: { vi: "đọc lại", en: "read again" } }
+  - { id: dec, label: { vi: "quyết định", en: decide } }
+  - { id: nw, label: { vi: "ghi mới", en: "new write" }, sub: { vi: "có điều kiện", en: "with a condition" }, tone: live }
+rows:
+  - [att, val]
+  - [cc, get, dec, nw]
+edges:
+  - { from: cc, to: get }
+  - { from: get, to: dec }
+  - { from: dec, to: nw }
+steps:
+  - say: { vi: "Throttle: chờ lâu dần, có ngẫu nhiên.", en: "Throttled: wait longer each time, with jitter." }
+    alt: { vi: "Lỗi do tải là tạm thời, và chờ gấp đôi kèm ngẫu nhiên giữ cho các client không cùng thử lại một lúc.", en: "A load error is temporary, and doubling the wait with jitter keeps clients from retrying in step." }
+    show: [att]
+  - say: { vi: "Lỗi request: không thử lại.", en: "Request error: do not retry." }
+    alt: { vi: "Request sai sẽ sai y hệt ở mọi lần gửi lại, nên chỉ sửa request mới giúp.", en: "A malformed request fails the same way every time it is sent, so only fixing the request helps." }
+    show: [att, val]
+  - say: { vi: "Điều kiện sai: đọc lại rồi mới ghi.", en: "Condition failed: read again before writing." }
+    alt: { vi: "Điều kiện sai nghĩa là item đã đổi, nên gửi lại y nguyên luôn thất bại; phải đọc trạng thái mới rồi quyết định.", en: "A failed condition means the item changed, so resending as is always fails; read the new state and decide." }

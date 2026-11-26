@@ -8,6 +8,7 @@ title_en: Schedules, conflict serializability and the precedence graph
 kind: quiz
 runtime: browser
 minutes: 15
+figures: [{ name: ds-precedence-graph, at: example }]
 objectives:
   - vi: Chỉ ra các cặp thao tác xung đột trong một lịch và vẽ đồ thị tiền nhiệm.
     en: Find the conflicting pairs of operations in a schedule and draw its precedence graph.
@@ -108,27 +109,7 @@ Hai thao tác **xung đột** khi thuộc hai transaction khác nhau, chạm cù
 
 ## Ví dụ
 
-Lịch trong lab, mỗi dòng một bước:
-
-```text
-step  T1      T2      T3
-1     R(A)
-2             R(A)
-3     W(A)
-4             W(A)
-5                     R(B)
-6             W(B)
-```
-
-Cặp xung đột và cạnh:
-
-```text
-R1(A) step 1  before  W2(A) step 4   ->  T1 -> T2
-R2(A) step 2  before  W1(A) step 3   ->  T2 -> T1
-W1(A) step 3  before  W2(A) step 4   ->  T1 -> T2
-R3(B) step 5  before  W2(B) step 6   ->  T3 -> T2
-cycle T1 -> T2 -> T1: not conflict serializable
-```
+Hình dưới vẽ lịch trong lab, mỗi dòng một bước, rồi dựng đồ thị từng cạnh một: cạnh ngược T2 → T1 khép chu trình, nên lịch không khả tuần tự xung đột.
 
 Đây là mẫu "cập nhật bị mất": cả hai đọc A rồi cùng ghi, lần ghi của T1 bị T2 đè.
 
@@ -155,27 +136,7 @@ Two operations **conflict** when they belong to different transactions, touch th
 
 ## Example
 
-The lab's schedule, one step per line:
-
-```text
-step  T1      T2      T3
-1     R(A)
-2             R(A)
-3     W(A)
-4             W(A)
-5                     R(B)
-6             W(B)
-```
-
-Conflicting pairs and edges:
-
-```text
-R1(A) step 1  before  W2(A) step 4   ->  T1 -> T2
-R2(A) step 2  before  W1(A) step 3   ->  T2 -> T1
-W1(A) step 3  before  W2(A) step 4   ->  T1 -> T2
-R3(B) step 5  before  W2(B) step 6   ->  T3 -> T2
-cycle T1 -> T2 -> T1: not conflict serializable
-```
+The figure below draws the lab's schedule, one step per line, then builds the graph one edge at a time: the reverse edge T2 → T1 closes a cycle, so the schedule is not conflict serializable.
 
 This is the "lost update" pattern: both read A and then both write it, and T2's write overwrites T1's.
 
