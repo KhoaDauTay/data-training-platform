@@ -8,6 +8,7 @@ title_en: Keys for many tenants - tenant_id in the primary and foreign keys
 kind: lab
 runtime: browser
 minutes: 18
+figures: [{ name: pg-tenancy-models, at: idea, step: 3 }]
 objectives:
   - vi: Đặt `tenant_id` đầu khóa chính của mọi bảng thuộc về một khách hàng.
     en: Put `tenant_id` first in the primary key of every table a tenant owns.
@@ -115,6 +116,8 @@ Ba thói quen đi kèm: đánh index cho khóa ngoại ghép ở bảng con (xó
 **Đổi một bảng đang chạy**: thêm khóa ngoại ghép vào bảng lớn thì Postgres phải kiểm mọi dòng cũ. Cách êm có hai bước: `ADD FOREIGN KEY … NOT VALID` chỉ kiểm dòng ghi từ lúc đó, rồi `VALIDATE CONSTRAINT` quét dòng cũ mà không chặn ghi. Nếu bước kiểm báo lỗi 23503, đó chính là những tham chiếu chéo đã lọt vào từ trước: sửa dữ liệu, rồi kiểm lại.
 
 **Số riêng cho từng tenant**: một sequence chung vẫn đủ cho `(tenant_id, id)`, số chỉ có khoảng trống. Khi người bán muốn hóa đơn của mình bắt đầu từ 1 và liền nhau, dùng một bảng đếm theo tenant: `UPDATE counters SET n = n + 1 WHERE tenant_id = 2 RETURNING n` trong cùng giao dịch ghi hóa đơn. Lệnh này giữ lock trên dòng đếm của đúng một tenant, nên hai người bán không phải chờ nhau.
+
+Hình từng bước ở cuối mục này so ba cách chia khách; nó mở ở bước Pool (mọi khách chung bảng), cho thấy vì sao `tenant_id` phải đứng đầu khóa.
 
 ## Cú pháp
 
@@ -259,6 +262,8 @@ Three habits come with it: index the composite foreign key on the child side (de
 **Changing a live table**: adding a composite foreign key to a big table makes Postgres check every old row. The smooth way has two steps: `ADD FOREIGN KEY … NOT VALID` checks only rows written from then on, then `VALIDATE CONSTRAINT` scans the old rows without blocking writes. If that check reports error 23503, those are exactly the cross-tenant references that slipped in earlier: fix the data, then validate again.
 
 **Per-tenant numbers**: one shared sequence is still enough for `(tenant_id, id)`; the numbers just have gaps. When a seller wants its invoices to start at 1 with no gaps, use a counter table per tenant: `UPDATE counters SET n = n + 1 WHERE tenant_id = 2 RETURNING n` in the same transaction that writes the invoice. It holds a lock on one tenant's counter row only, so two sellers never wait for each other.
+
+The step-through figure at the end of this section compares the three ways to split tenants; it opens on the Pool step (every tenant in one table), which shows why `tenant_id` leads the key.
 
 ## Syntax
 

@@ -8,6 +8,7 @@ title_en: "One schema per tenant"
 kind: lab
 runtime: browser
 minutes: 15
+figures: [{ name: pg-tenancy-models, at: idea, step: 2 }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-25" }
 objectives:
   - { vi: "Tạo một schema cho mỗi khách với cùng bộ bảng, và chọn khách bằng `search_path` hoặc tên đầy đủ", en: "Create one schema per tenant with the same set of tables, and pick the tenant with `search_path` or the full name" }
@@ -82,6 +83,8 @@ Mỗi khách một schema (`seller_1.products`, `seller_2.products`…) trong c�
 Nhiều người nghĩ mô hình này mở rộng thoải mái như dùng chung bảng. Thật ra mỗi bảng, index và sequence của mỗi khách là một đối tượng thật trong catalog: 500 khách × 40 bảng là 20.000 bảng chưa kể index, và catalog, sao lưu, đổi cấu trúc đều chậm theo. Mỗi đợt đổi cấu trúc phải chạy một lần cho mỗi schema, nên cần một bảng ghi phiên bản và một câu kiểm lệch để biết schema nào bị sót.
 
 `search_path` là trạng thái của phiên, giống thiết lập khách ở `e-pg-l5-20`: một yêu cầu quên đặt lại sẽ đọc schema của khách trước. Mô hình này hợp với vài chục khách cần tùy biến riêng; nhiều khách nhỏ giống nhau thì dùng chung bảng với cột `tenant_id`.
+
+Hình từng bước ở cuối mục này so ba cách chia khách; nó mở ở bước schema riêng cho mỗi khách, cách của bài này.
 
 ## Cú pháp
 
@@ -207,6 +210,8 @@ One schema per tenant (`seller_1.products`, `seller_2.products`…) inside one d
 Many people think this model scales as easily as shared tables. In fact every table, index and sequence of every tenant is a real catalog object: 500 tenants × 40 tables is 20,000 tables before indexes, and the catalog, backups and migrations all slow down with it. Every migration has to run once per schema, so you need a version table and a drift query to know which schema was missed.
 
 `search_path` is session state, like the tenant setting in `e-pg-l5-20`: a request that forgets to reset it reads the previous tenant's schema. This model suits a few dozen tenants that need their own customisation; many small, similar tenants share tables with a `tenant_id` column.
+
+The step-through figure at the end of this section compares the three ways to split tenants; it opens on the schema-per-tenant step, this lesson's way.
 
 ## Syntax
 

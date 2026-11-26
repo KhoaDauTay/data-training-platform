@@ -107,6 +107,21 @@ describe('theme', () => {
     expect(bad).toEqual([]);
   });
 
+  it('v39 (L604): hình vẽ (--eng-*): chữ --eng-ink/--eng-sub ≥ 4,5:1 trên mọi nền tone, nét --eng-edge và viền tone ≥ 3:1 trên nền hình', () => {
+    const root = css.split(':root {')[1]?.split('}')[0] ?? '';
+    const eng = (t: string): string => /^eng-/.test(t) ? new RegExp(`--${t}:\\s*var\\(--([\\w-]+)\\)`).exec(root)?.[1] ?? `?${t}` : t;
+    const light = tokens(':root');
+    const dark = { ...light, ...tokens(':root[data-theme=dark]') };
+    const FILLS = ['eng-head', 'eng-cell', 'eng-active-soft', 'eng-live-soft', 'eng-dead-soft', 'eng-hot-soft', 'eng-ptr-soft'];
+    const need: [string, string, number][] = [
+      ...FILLS.flatMap((f): [string, string, number][] => [['eng-ink', f, 4.5], ['eng-sub', f, 4.5]]),
+      ...['eng-edge', 'eng-active', 'eng-live', 'eng-dead', 'eng-hot', 'eng-ptr'].map((e): [string, string, number] => [e, 'panel', 3]),
+    ];
+    const bad = ([['light', light], ['dark', dark]] as const).flatMap(([name, tk]) => need
+      .filter(([f, b, min]) => !tk[eng(f)] || !tk[eng(b)] || ratio(tk[eng(f)], tk[eng(b)]) < min).map(([f, b]) => `${name} ${f}/${b}`));
+    expect(bad).toEqual([]);
+  });
+
   it('L132: vòng cổ, đai và bóng giai đoạn sau ≥ 3:1 (đồ họa, WCAG 1.4.11) ở cả hai theme', () => {
     const light = tokens(':root');
     const dark = { ...light, ...tokens(':root[data-theme=dark]') };

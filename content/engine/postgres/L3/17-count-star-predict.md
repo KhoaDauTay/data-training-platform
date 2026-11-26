@@ -8,6 +8,7 @@ title_en: "Predict: does count(*) read the primary key to be fast?"
 kind: predict
 runtime: browser
 minutes: 10
+figures: [{ name: pg-vacuum-flow, at: idea }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Đoán kế hoạch của `count(*)` trên bảng vừa nạp và trên bảng đã VACUUM
@@ -123,6 +124,8 @@ Index Only Scan bỏ qua heap được ở một trang duy nhất khi trang đó
 
 Vì vậy trên bảng vừa nạp mà chưa VACUUM, Index Only Scan đọc index rồi vẫn đọc gần hết heap: tệ hơn Seq Scan. Planner biết điều này qua `relallvisible` trong `pg_class` và chọn Seq Scan. Cách chữa `count(*)` chậm là để autovacuum theo kịp (hay chạy VACUUM sau một lần nạp lớn), không phải thêm index. Nếu chỉ cần con số gần đúng, `reltuples` trong `pg_class` là ước lượng miễn phí.
 
+Hình từng bước ở cuối mục này cho thấy VACUUM đánh dấu trang "mọi dòng đều thấy được" trong visibility map; chỉ trang có dấu đó mới cho đếm mà không đọc heap.
+
 ## Ví dụ
 
 Ép dùng index trên bảng chưa VACUUM và chỉ giữ dòng `Heap Fetches`:
@@ -155,6 +158,8 @@ Many people think `count(*)` only has to read the primary key and is nearly inst
 An Index Only Scan can skip the heap for a page only when that page has the all-visible bit in the visibility map: every tuple on it is visible to every transaction. VACUUM sets this bit; any INSERT, UPDATE or DELETE on the page clears it. On a page without the bit, every index entry must go back to the heap to ask, and the plan counts those trips as `Heap Fetches`.
 
 So on a freshly loaded table that was never vacuumed, an Index Only Scan reads the index and then still reads almost the whole heap: worse than a Seq Scan. The planner knows this through `relallvisible` in `pg_class` and picks a Seq Scan. The fix for a slow `count(*)` is autovacuum keeping up (or a VACUUM after a big load), not another index. If an approximate number is enough, `reltuples` in `pg_class` is a free estimate.
+
+The step-through figure at the end of this section shows VACUUM marking pages "all visible" in the visibility map; only a marked page can be counted without reading the heap.
 
 ## Example
 

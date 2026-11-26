@@ -8,6 +8,7 @@ title_en: $match, $project and $set in a pipeline
 kind: lab
 runtime: browser
 minutes: 12
+figures: [{ name: mg-pipeline, at: idea }]
 objectives:
   - vi: Lọc bằng `$match` rồi đổi hình kết quả bằng `$project`.
     en: Filter with `$match`, then reshape the result with `$project`.
@@ -103,6 +104,8 @@ Một `$project` hoặc chọn (`1`) hoặc loại (`0`), không trộn hai ki�
 
 Làm được: lọc rồi trả đúng hình dữ liệu một màn hình cần, kèm các trường tính sẵn.
 
+Hình từng bước ở cuối mục này cho tài liệu đi qua từng stage của một pipeline. Nó mở đầu bằng `$match`, stage đầu tiên của bài này; `$project` đứng ở cùng chỗ khi bạn cần đổi hình tài liệu.
+
 ## Cú pháp
 
 ```text
@@ -197,6 +200,8 @@ In an expression, `"$total"` is the value of field `total`, while `"total"` with
 A `$project` either includes (`1`) or excludes (`0`), never both; only `_id` may be excluded in an including projection.
 
 You can now: filter and return exactly the data shape a screen needs, with computed fields.
+
+The step-through figure at the end of this section sends documents through each stage of a pipeline. It opens with `$match`, the first stage of this lesson; `$project` sits in the same place when you need to reshape the documents.
 
 ## Syntax
 

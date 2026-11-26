@@ -67,14 +67,14 @@ pitfalls:
     wrong: "SELECT category, count(*) FROM products WHERE count(*) >= 6 GROUP BY category"
     fix: "SELECT category, count(*) FROM products GROUP BY category HAVING count(*) >= 6"
     why:
-      vi: "`WHERE` xét từng dòng trước khi có nhóm, nên lúc đó chưa có số đếm nào: lỗi 42803 \"aggregate functions are not allowed in WHERE\". Điều kiện về nhóm đặt ở `HAVING`."
-      en: "`WHERE` looks at single rows before any group exists, so there is no count yet: error 42803 \"aggregate functions are not allowed in WHERE\". Conditions about groups go in `HAVING`."
+      vi: "`WHERE` xét từng dòng trước khi có nhóm, nên lúc đó chưa có số đếm nào: lỗi 42803 \"aggregate functions are not allowed in WHERE\". Điều kiện về nhóm đặt ở `HAVING`. Hình cuối mục này vẽ hai lần lọc, `WHERE` rồi `HAVING`, trên câu đúng."
+      en: "`WHERE` looks at single rows before any group exists, so there is no count yet: error 42803 \"aggregate functions are not allowed in WHERE\". Conditions about groups go in `HAVING`. The figure at the end of this section draws the two filters, `WHERE` then `HAVING`, on the right query."
   - title: { vi: "Điều kiện từng dòng đặt trong HAVING", en: "A row condition inside HAVING" }
     wrong: "SELECT category, count(*) FROM products GROUP BY category HAVING count(*) >= 4 AND price_vnd < 50000"
     fix: "SELECT category, count(*) FROM products WHERE price_vnd < 50000 GROUP BY category HAVING count(*) >= 4"
     why:
-      vi: "Sau khi gộp, một nhóm có 6 giá khác nhau, nên `price_vnd` không còn một giá trị để so: lỗi 42803. Điều kiện trên từng dòng thuộc về `WHERE`, đặt trước `GROUP BY`. Hình cuối mục này vẽ hai lần lọc đó trên câu đúng."
-      en: "After grouping, a category holds 6 different prices, so `price_vnd` has no single value to compare: error 42803. A condition on single rows belongs in `WHERE`, before `GROUP BY`. The figure at the end of this section draws those two filters on the right query."
+      vi: "Sau khi gộp, một nhóm có 6 giá khác nhau, nên `price_vnd` không còn một giá trị để so: lỗi 42803. Điều kiện trên từng dòng thuộc về `WHERE`, đặt trước `GROUP BY`."
+      en: "After grouping, a category holds 6 different prices, so `price_vnd` has no single value to compare: error 42803. A condition on single rows belongs in `WHERE`, before `GROUP BY`."
 quiz:
   - q:
       vi: "Nên viết `WHERE category <> 'Drinks'` hay `HAVING category <> 'Drinks'` trong một câu `GROUP BY category`?"

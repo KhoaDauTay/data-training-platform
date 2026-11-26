@@ -8,6 +8,7 @@ title_en: Recovery - ARIES and PostgreSQL's redo-only WAL
 kind: concept
 runtime: browser
 minutes: 15
+figures: [{ name: pg-wal-flow, at: idea }]
 objectives:
   - vi: Giải thích luật ghi nhật ký trước (WAL) và bốn chính sách steal/no-steal, force/no-force.
     en: Explain the write-ahead logging rule and the four policies steal/no-steal, force/no-force.
@@ -95,6 +96,8 @@ Bộ đệm giữ trang trong RAM, nên lúc sập, đĩa có thể thiếu thay
 
 **PostgreSQL** chỉ có làm lại. Nhờ MVCC, thay đổi của giao dịch hủy chỉ là phiên bản dòng không ai thấy, nên không cần gỡ. Nó còn ghi cả trang lần đầu trang đổi sau mỗi điểm kiểm tra, chống trang ghi dở. Sao lưu: `pg_dump` cho bản logic; bản sao vật lý cộng lưu trữ WAL cho phép khôi phục tới một thời điểm. Chi tiết WAL thật ở `e-pg-l3-12`.
 
+Hình từng bước ở cuối mục này theo một thay đổi đi vào WAL trước, rồi mới tới tệp dữ liệu: đó là cách ghi chỉ-redo của Postgres.
+
 ## Ví dụ
 
 Nhật ký lớn lên khi ghi: so LSN trước và sau một lần chèn.
@@ -173,6 +176,8 @@ The buffer cache keeps pages in RAM, so at a crash the disk may lack committed c
 **ARIES** is the classic recovery algorithm. Each log record has a sequence number, the LSN; each page remembers its `pageLSN`, the LSN of the last change it holds. After a crash, three phases: **analysis** reads the log from the last checkpoint to learn which transactions did not commit and which pages may be dirty; **redo** repeats every change whose LSN is greater than the page's `pageLSN`, losers' changes included; **undo** walks the log backwards removing the losers' changes, writing compensation records (CLRs) so that a second crash never undoes twice. Fuzzy checkpoints do not stop the system.
 
 **PostgreSQL** only redoes. Thanks to MVCC, an aborted transaction's changes are just row versions nobody sees, so nothing must be removed. It also writes the whole page the first time a page changes after each checkpoint, against torn pages. Backups: `pg_dump` for a logical copy; a physical base backup plus a WAL archive allows point-in-time recovery. The real WAL in detail is in `e-pg-l3-12`.
+
+The step-through figure at the end of this section follows one change into the WAL first and only then into the data files: that is how Postgres logs redo only.
 
 ## Example
 

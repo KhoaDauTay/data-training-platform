@@ -8,6 +8,7 @@ title_en: Grouping with $group
 kind: lab
 runtime: browser
 minutes: 14
+figures: [{ name: mg-pipeline, at: idea }]
 objectives:
   - vi: Gom tài liệu theo một khóa và tổng hợp bằng `$sum`, `$avg`, `$max`.
     en: Group documents by a key and summarise them with `$sum`, `$avg`, `$max`.
@@ -114,6 +115,8 @@ Kết quả của `$group` không có thứ tự cố định. Cần thứ tự 
 
 Làm được: viết báo cáo "tổng, trung bình, lớn nhất theo nhóm" và top N.
 
+Hình từng bước ở cuối mục này cho tài liệu đi qua từng stage; `$group` gộp chúng, `$sort` xếp lại kết quả.
+
 ## Cú pháp
 
 ```text
@@ -207,6 +210,8 @@ At the end of the month, each store wants its revenue and its number of orders. 
 `$count` is a short way to count the documents left at the end of a pipeline.
 
 You can now: write "total, average, maximum per group" reports and top-N lists.
+
+The step-through figure at the end of this section sends documents through each stage; `$group` folds them, `$sort` orders the result.
 
 ## Syntax
 

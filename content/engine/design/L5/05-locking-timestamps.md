@@ -8,6 +8,7 @@ title_en: Two-phase locking, timestamps and PostgreSQL's MVCC
 kind: concept
 runtime: browser
 minutes: 15
+figures: [{ name: pg-mvcc-timeline, at: idea }]
 objectives:
   - vi: Giải thích khóa hai pha, khóa hai pha nghiêm ngặt và vì sao chúng có thể bế tắc.
     en: Explain two-phase locking, strict two-phase locking and why they can deadlock.
@@ -84,6 +85,8 @@ Hai giao dịch cùng sửa một tài khoản, database phải chọn ai đi tr
 **Thứ tự nhãn thời gian**: mỗi giao dịch nhận một nhãn lúc bắt đầu, và các thao tác xung đột phải theo thứ tự nhãn; ai đến muộn so với nhãn của mình thì bị hủy và chạy lại, không ai phải chờ nên không bế tắc. **Luật ghi Thomas** nới một chỗ: khi giao dịch già ghi một mục mà giao dịch trẻ hơn đã ghi (và chưa ai trẻ hơn đọc), lần ghi cũ chỉ bị bỏ qua thay vì hủy cả giao dịch, vì nó đằng nào cũng bị đè.
 
 **PostgreSQL** dùng MVCC: mỗi lần `UPDATE` tạo một phiên bản dòng mới (cột ẩn `xmin`, `xmax`), mỗi câu đọc nhìn một ảnh chụp. Đọc không khóa. Hai người ghi cùng một dòng thì người sau chờ khóa dòng. Mức `SERIALIZABLE` dùng SSI: không khóa thêm, mà theo dõi phụ thuộc đọc-ghi và hủy một giao dịch khi thấy vòng nguy hiểm. Hai phiên chạy cùng lúc không tái hiện được trong trình duyệt (PGlite chỉ có một phiên); hành vi đó được mô tả theo tài liệu PostgreSQL ở `e-pg-l4-12` và `e-pg-l4-13`.
+
+Hình từng bước ở cuối mục này là nửa MVCC của bài: mỗi lần sửa tạo một phiên bản dòng mới, và mỗi giao dịch chỉ thấy phiên bản hợp với ảnh chụp của nó.
 
 ## Cú pháp
 
@@ -166,6 +169,8 @@ Two transactions change the same account, and the database must choose who goes 
 **Timestamp ordering**: each transaction gets a timestamp when it starts, and conflicting operations must follow timestamp order; a transaction that arrives too late for its timestamp is aborted and restarted, nobody waits, so there is no deadlock. The **Thomas write rule** relaxes one case: when an older transaction writes an item that a younger one has already written (and no younger one has read it), the old write is simply skipped instead of aborting the transaction, since it would be overwritten anyway.
 
 **PostgreSQL** uses MVCC: every `UPDATE` creates a new row version (hidden columns `xmin`, `xmax`), and every read sees a snapshot. Reads take no row locks. Two writers of the same row: the second waits for the row lock. The `SERIALIZABLE` level uses SSI: no extra locks, it tracks read-write dependencies and aborts one transaction when it sees a dangerous cycle. Two sessions running at once cannot be reproduced in the browser (PGlite has one session); that behaviour is described from the PostgreSQL documentation in `e-pg-l4-12` and `e-pg-l4-13`.
+
+The step-through figure at the end of this section is the MVCC half of the lesson: every update makes a new row version, and each transaction sees only the version that fits its snapshot.
 
 ## Syntax
 

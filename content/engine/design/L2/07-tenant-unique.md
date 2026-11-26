@@ -8,6 +8,7 @@ title_en: Unique per tenant - UNIQUE (tenant_id, email)
 kind: lab
 runtime: browser
 minutes: 16
+figures: [{ name: pg-tenancy-models, at: idea, step: 3 }]
 objectives:
   - vi: Viết luật duy nhất trong phạm vi một khách hàng thay vì cho cả hệ thống.
     en: Write a uniqueness rule scoped to one tenant instead of the whole system.
@@ -108,6 +109,8 @@ Hai biến thể hay gặp. Email không phân biệt hoa thường: index duy n
 **Thêm hoặc bỏ qua, theo tenant**: `INSERT … ON CONFLICT (tenant_id, email) DO NOTHING` chỉ dùng được khi có một luật duy nhất đúng trên các cột ấy. Với index biểu thức, đích xung đột phải viết đúng biểu thức: `ON CONFLICT (tenant_id, lower(email))`. Viết `ON CONFLICT (email)` thì Postgres báo lỗi 42P10 vì không có luật nào khớp, và đó là dấu hiệu tốt: luật toàn cục đã không còn.
 
 **Thêm luật vào bảng đang chạy**: `CREATE UNIQUE INDEX CONCURRENTLY` dựng index mà không chặn ghi. Nếu dữ liệu cũ đã có hai dòng trùng trong cùng một tenant, lệnh dừng với lỗi 23505 và để lại một index ở trạng thái INVALID, phải xóa đi rồi dựng lại. Vì vậy tìm và gộp các dòng trùng trước, bằng `GROUP BY tenant_id, lower(email) HAVING count(*) > 1`. Index trên cột trần còn có thể thành ràng buộc nhờ `ADD CONSTRAINT … UNIQUE USING INDEX`; index biểu thức thì giữ là index.
+
+Hình từng bước ở cuối mục này so ba cách chia khách và mở ở bước Pool; khi nhiều khách dùng chung bảng, mỗi ràng buộc duy nhất phải bắt đầu bằng `tenant_id`.
 
 ## Cú pháp
 
@@ -242,6 +245,8 @@ Two common variants. Case-insensitive email: a unique index on the expression `(
 **Upserts per tenant**: `INSERT … ON CONFLICT (tenant_id, email) DO NOTHING` only works when there is a unique rule on exactly those columns. With an expression index, the conflict target must spell out the expression: `ON CONFLICT (tenant_id, lower(email))`. Writing `ON CONFLICT (email)` makes Postgres fail with 42P10, as no rule matches, and that is a good sign: the global rule is gone.
 
 **Adding the rule to a live table**: `CREATE UNIQUE INDEX CONCURRENTLY` builds the index without blocking writes. If the old data already holds two duplicate rows inside one tenant, the command stops with error 23505 and leaves an INVALID index behind, which must be dropped and built again. So find and merge the duplicates first, with `GROUP BY tenant_id, lower(email) HAVING count(*) > 1`. An index on plain columns can then become a constraint through `ADD CONSTRAINT … UNIQUE USING INDEX`; an expression index stays an index.
+
+The step-through figure at the end of this section compares the three ways to split tenants and opens on the Pool step; when tenants share tables, every unique constraint must start with `tenant_id`.
 
 ## Syntax
 

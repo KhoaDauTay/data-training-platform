@@ -134,6 +134,20 @@ describe.each(Object.keys(specs))('v39 figure %s', (name) => {
             else if (dx < 0) expect(dy, `${at}: ${ex[a][0]} ↕ ${ex[b][0]}`).toBeGreaterThanOrEqual(GAP_MIN_Y);
           }
           const m = model(f, d.w, d.h);
+          // (g) twin: every box and arrow point inside the viewBox (the svg is exactly W wide, so nothing scrolls)
+          for (const b of m.boxes) expect(b.x >= 0 && b.y >= 0 && b.x + b.w <= d.w && b.y + b.h <= d.h, `${at}: ${b.k} hors viewBox`).toBe(true);
+          for (const a of m.arrows) for (const [x, y] of a.pts) expect(x >= 0 && y >= 0 && x <= d.w && y <= d.h, `${at}: ${a.k} hors viewBox`).toBe(true);
+          // lines the checker skips (links, the bars mark; strikes cross their own row on purpose) never cross a label
+          for (const n of f.nodes) {
+            if (n.arrow || (n.t !== 'l' && n.t !== 'p') || /:x\d+$/.test(n.k)) continue;
+            const pts = n.t === 'l' ? samplePath(`M${n.x1} ${n.y1} L${n.x2} ${n.y2}`) : samplePath(n.d);
+            for (const t of m.texts) {
+              const hit = pts.some(([x, y]) => x > t.x + 0.5 && x < t.x + t.w - 0.5 && y > t.y + t.size * 0.15 && y < t.y + t.h - t.size * 0.15);
+              expect(hit, `${at}: ${n.k} cắt chữ "${t.s}"`).toBe(false);
+            }
+          }
+          // tokens only: every tone and ink the builder writes maps to an --eng-* alias in the core
+          for (const n of f.nodes) expect(JSON.stringify(n)).not.toMatch(/#[0-9a-f]{3,6}\b|rgb\(|var\(--(?!eng-)/i);
           for (const a of m.arrows) {
             const t = m.boxes.find((b) => b.k === a.to);
             if (!t) continue; // a grid end: analyze() finds its nearest cell (rule e, tip < 2)

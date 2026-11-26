@@ -410,9 +410,12 @@ describe('engineViz colours', () => {
     const used = new Set(Object.values(sources).flatMap((src) => [...src.matchAll(/'(--[a-z0-9-]+)'/g)].map((m) => m[1])));
     const light = css.split(':root {')[1].split('}')[0];
     const dark = css.split(':root[data-theme=dark] {')[1].split('}')[0];
+    // v39 (L604): the core paints with the --eng-* aliases, defined once on :root as var(--v7 token); the dark theme
+    // redefines the token they point at
+    const alias = (t: string): string => new RegExp(`${t}:\\s*var\\((--[a-z0-9-]+)\\)`).exec(light)?.[1] ?? t;
     for (const t of used) {
       expect(light, t).toContain(`${t}:`);
-      expect(dark, t).toContain(`${t}:`);
+      expect(dark, `${t} → ${alias(t)}`).toContain(`${alias(t)}:`);
     }
   });
 });

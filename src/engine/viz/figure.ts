@@ -1,4 +1,4 @@
-import { type Deps, type Diagram, type Frame, init, mount, type Shape, type Tone } from './engineVizCore';
+import { type Deps, type Diagram, type Frame, init, mount, type Shape, stopAt, type Tone } from './engineVizCore';
 import { GLYPHS, W400, W700 } from './glyphs';
 import type { Lang } from './registry';
 
@@ -64,9 +64,7 @@ export function wrap(s: string): string[] {
 
 // ── grammar (svg-system §2) ──────────────────────────────────────────────────────────────────────────────────────
 const LS = 14, SS = 13, PAD_Y = 6, CELL_X = 6, ROW_H = 24, BAR_H = 22;
-export const GAP_X = 16, GAP_Y = 36, GAP_LABEL = 52, MARGIN = 8, TIP = 3, STROKE = 1.5;
-/** The core's marker reaches 0.75 × stroke past the line's end (viewBox 8, refX 7, markerWidth 6). */
-const EXT = 0.75 * STROKE;
+export const GAP_X = 16, GAP_Y = 36, GAP_LABEL = 52, MARGIN = 8, STROKE = 1.5;
 type Line = { s: string; size: number; b: boolean; mono: boolean };
 interface Sized { w: number; h: number }
 
@@ -97,7 +95,7 @@ function barsDims(n: FigNode, lang: Lang, room: number): { lw: number; u: number
   const its = n.items ?? [];
   const lw = Math.max(0, ...its.map((i) => textWidth(cellText(n, i.label, lang), SS)));
   const vw = Math.max(0, ...its.map((i) => textWidth(i.note === undefined ? String(i.value) : cellText(n, i.note, lang), SS)));
-  const top = Math.max(1, ...its.map((i) => i.value));
+  const top = Math.max(1, n.mark ?? 0, ...its.map((i) => i.value));
   return { lw, vw, u: Math.max(8, Math.min(20, Math.floor((room - lw - vw - 16) / top))) };
 }
 function size(n: FigNode, lang: Lang, room: number): Sized {
@@ -110,7 +108,7 @@ function size(n: FigNode, lang: Lang, room: number): Sized {
       inner = { w: cols.reduce((a, b) => a + b, 0), h: ((n.head ? 1 : 0) + (n.cells?.length ?? 0)) * ROW_H };
     } else {
       const { lw, u, vw } = barsDims(n, lang, room);
-      inner = { w: lw + 8 + Math.max(1, ...(n.items ?? []).map((i) => i.value)) * u + 8 + vw, h: (n.items?.length ?? 0) * BAR_H };
+      inner = { w: lw + 8 + Math.max(1, n.mark ?? 0, ...(n.items ?? []).map((i) => i.value)) * u + 8 + vw, h: (n.items?.length ?? 0) * BAR_H };
     }
     return { w: Math.ceil(Math.max(inner.w, widest(t), widest(sb))), h: tall(t) + (t.length ? 4 : 0) + inner.h + (sb.length ? 4 : 0) + tall(sb) };
   }
@@ -215,16 +213,19 @@ export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): 
       if (Math.abs(vrows[ra].indexOf(base(e.from)) - vrows[ra].indexOf(base(e.to))) !== 1) fail(`${e.from}→${e.to}: cùng hàng nhưng không cạnh nhau`);
       const cy = Math.round((Math.max(a.y, b.y) + Math.min(a.y + a.h, b.y + b.h)) / 2);
       const right = a.x < b.x;
-      const x1 = right ? a.x + a.w + 2 : a.x - 2, x2 = right ? b.x - TIP - EXT : b.x + b.w + TIP + EXT;
+      const x1 = right ? a.x + a.w + 2 : a.x - 2;
+      const [x2] = stopAt(x1, cy, b.x + b.w / 2, cy, STROKE, b); // the core's rule (L620): the tip stays 3 units outside b
       return { e, d: `M${x1} ${cy} L${x2} ${cy}`, lab: label ? { x: (x1 + x2) / 2, y: cy - 6 - lineH(SS) / 2, a: 'm' as const, s: label } : undefined };
     }
     if (Math.abs(ra - rb) !== 1) fail(`${e.from}→${e.to}: hai hàng không liền nhau (cần đổi rows)`);
     const down = rb > ra;
-    const y1 = down ? a.y + a.h + 2 : a.y - 2, y2 = down ? b.y - TIP - EXT : b.y + b.h + TIP + EXT;
+    const y1 = down ? a.y + a.h + 2 : a.y - 2;
+    const y2 = (x: number, from: number): number => stopAt(x, from, x, b.y + b.h / 2, STROKE, b)[1];
     const lo = Math.max(a.x, b.x), hi = Math.min(a.x + a.w, b.x + b.w);
     if (hi - lo >= 24) {
       const x = Math.round((lo + hi) / 2);
-      return { e, d: `M${x} ${y1} L${x} ${y2}`, lab: label ? { x: x + 6, y: (y1 + y2) / 2, a: undefined, s: label } : undefined };
+      const ye = y2(x, y1);
+      return { e, d: `M${x} ${y1} L${x} ${ye}`, lab: label ? { x: x + 6, y: (y1 + ye) / 2, a: undefined, s: label } : undefined };
     }
     if (label) fail(`${e.from}→${e.to}: nhãn trên đường gấp khúc chưa hỗ trợ`);
     const gap = Math.min(ra, rb);
@@ -232,7 +233,7 @@ export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): 
     lanes.set(gap, k + 1);
     const ym = Math.round((bands[gap][1] + bands[gap + 1][0]) / 2) + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * 8;
     const ax = Math.round(a.x + a.w / 2), bx = Math.round(b.x + b.w / 2);
-    return { e, d: `M${ax} ${y1} L${ax} ${ym} L${bx} ${ym} L${bx} ${y2}` };
+    return { e, d: `M${ax} ${y1} L${ax} ${ym} L${bx} ${ym} L${bx} ${y2(bx, ym)}` };
   });
   /** A link end's y: a grid row's middle (`grid#2`), else the node's middle. */
   function anchorY(end: string, r: Rect): number {
@@ -312,7 +313,7 @@ function draw(n: FigNode, r: Rect, lang: Lang): Shape[] {
   } else {
     const { lw, vw } = barsDims(n, lang, 0);
     const its = n.items ?? [];
-    const top = Math.max(1, ...its.map((i) => i.value));
+    const top = Math.max(1, n.mark ?? 0, ...its.map((i) => i.value));
     const unit = Math.max(8, Math.min(20, Math.floor((r.w - lw - vw - 16) / top))); // the node is as wide as size() made it
     const bx = r.x + Math.round((r.w - (lw + 8 + top * unit + 8 + vw)) / 2) + Math.ceil(lw) + 8;
     its.forEach((it, i) => {
@@ -320,7 +321,7 @@ function draw(n: FigNode, r: Rect, lang: Lang): Shape[] {
       const s = tr(it.note, lang) || String(it.value);
       out.push({ k: `${k}.l${i}`, t: 't', x: bx - 8, y: cy, s: tr(it.label, lang), size: SS, a: 'e', ink: 'ink' },
         { k: `${k}:b${i}`, t: 'r', x: bx, y: cy - 7, w: it.value * unit, h: 14, tone: it.tone ?? n.tone ?? 'new', rx: 3 },
-        { k: `${k}.v${i}`, t: 't', x: bx + it.value * unit + 8, y: cy, s, size: SS, ink: 'ink' });
+        { k: `${k}.v${i}`, t: 't', x: bx + Math.max(it.value, n.mark ?? 0) * unit + 8, y: cy, s, size: SS, ink: 'ink' });
     });
     if (n.mark !== undefined) out.push({ k: `${k}.m`, t: 'l', x1: bx + n.mark * unit, y1: y + 1, x2: bx + n.mark * unit, y2: y + its.length * BAR_H - 1, ink: 'warm', w: 1.5, dash: true });
     y += its.length * BAR_H;
