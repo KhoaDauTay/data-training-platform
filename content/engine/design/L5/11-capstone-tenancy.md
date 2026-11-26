@@ -150,6 +150,8 @@ Sáu bước. Bước 1 đo tải theo shard. Bước 2 và 3 đặt bảo mật
 
 Lab chạy bằng superuser, nên chính sách không lọc câu của bạn ở bước 6; cách thử nó bằng một vai trò thường có ở `e-pg-l5-19`, cách tách người bán lớn ra partition riêng ở `e-pg-l4-20`. Cả cụm thật (nhiều shard, chép dữ liệu) không chạy trong trình duyệt: ở đây danh mục và dữ liệu là một database.
 
+Hình từng bước cuối mục này vẽ bước 1 và bước 4: người bán 1 nặng gấp mười hai lần người kế tiếp, và một dòng danh mục đưa họ sang `s3`.
+
 ## Tóm tắt
 
 - Đo trước khi chuyển: nối đơn với danh mục cho thấy shard nào và người bán nào nặng.
@@ -171,6 +173,8 @@ Three tables: `shards` (`s1`, `s2` shared, `s3` dedicated), `directory` (50 sell
 Six steps. Step 1 measures load per shard. Steps 2 and 3 turn on row-level security and the `seller_rows` policy (graded on the catalog); `NULLIF(…, '')` makes the policy closed when no tenant is set: no rows, no error. Step 4 moves seller 1 to `s3` with one version-checked catalog row. Step 5 creates an index that starts with `tenant_id`, and step 6 asks for seller 1's last week, with a speed bar.
 
 The lab runs as a superuser, so the policy does not filter your query in step 6; how to test it with a normal role is in `e-pg-l5-19`, and how to give a big seller its own partition is in `e-pg-l4-20`. The real cluster (several shards, data copies) does not run in the browser: here the catalog and the data are one database.
+
+The step-through figure at the end of this section draws steps 1 and 4: seller 1 is twelve times the next seller, and one catalog row moves them to `s3`.
 
 ## Recap
 

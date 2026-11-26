@@ -109,6 +109,8 @@ Cái bẫy là NULL. `count(DISTINCT y)` bỏ qua NULL, nên một mã có lúc 
 
 Khi đã tin một phụ thuộc là luật nghiệp vụ, đừng giữ nó bằng hy vọng. Tách nó ra bảng riêng mà vế trái là khóa chính: `products (code, name)`. Khóa không cho hai dòng cùng `code`, nên không thể có hai tên. Nhiều người thử giữ luật bằng `UNIQUE` trên bảng phẳng. Thật ra mã được lặp lại trên nhiều dòng đơn là đúng, nên ràng buộc đó chặn luôn dữ liệu hợp lệ.
 
+Hình từng bước cuối mục này chạy phép thử trên `order_lines`: P2 có hai giá nên bị bác, còn tên của P3 có một NULL mà `count(DISTINCT)` vẫn đếm ra 1.
+
 ## Cú pháp
 
 ```sql
@@ -208,6 +210,8 @@ Testing `X → Y` on data always follows one pattern: group by X, count the dist
 The trap is NULL. `count(DISTINCT y)` skips NULLs, so a code that sometimes has a name and sometimes an empty one still counts 1. For a functional dependency, two rows with the same X where one has Y and the other has none are two different values. Add one when the group holds a NULL.
 
 Once you trust a dependency as a business rule, do not keep it by hope. Move it to its own table whose primary key is the left side: `products (code, name)`. The key forbids two rows with the same `code`, so two names are impossible. Many people try to keep the rule with `UNIQUE` on the flat table. In fact a code repeated on many order lines is correct, so that constraint also blocks valid data.
+
+The step-through figure at the end of this section runs the test on `order_lines`: P2 has two prices, so it is refuted, while P3's names hold a NULL and `count(DISTINCT)` still counts 1.
 
 ## Syntax
 

@@ -94,6 +94,8 @@ Một câu đi qua bốn bước: phân tích cú pháp, viết lại (mở view
 
 **Nối**: vòng lồng duyệt mỗi dòng ngoài và tìm dòng trong, rất tốt khi vòng ngoài ít dòng và bảng trong có index; bản theo khối đọc bảng trong một lần cho mỗi khối của bảng ngoài thay vì mỗi dòng. Nối băm dựng bảng băm trên bên nhỏ rồi quét bên lớn, chỉ dùng cho `=`. Nối trộn cần hai bên đã sắp theo khóa nối. **Chiếu bỏ trùng** và phép tập (`DISTINCT`, `UNION`, `EXCEPT`) dùng sắp xếp hoặc băm. Kế hoạch thật của Postgres và cách đọc chi phí có trong `e-pg-l4-04` và `e-pg-l3-14`.
 
+Hình từng bước cuối mục này sắp `nums` với bộ nhớ 4 giá trị: ba run đã sắp, rồi một lượt trộn.
+
 ## Ví dụ
 
 Chọn qua index: điều kiện khớp một dòng.
@@ -181,6 +183,8 @@ A query goes through four steps: parse, rewrite (expand views, rules), plan, exe
 **External sorting** when data is bigger than memory: read a piece that fits in memory, sort it, write it out as a **run**; then merge several runs per pass until one is left. With N pages and B memory pages: about ⌈N/B⌉ runs, each merge pass combining B − 1 runs. **Selection** (`WHERE`): a sequential scan reads every page; an index scan goes straight to the matching rows, good when few match; a bitmap scan collects positions from the index and reads the pages in order, between the two.
 
 **Joins**: a nested loop takes each outer row and looks up inner rows, very good when the outer side is small and the inner table has an index; the block version reads the inner table once per block of the outer table instead of once per row. A hash join builds a hash table on the small side and scans the big side, for `=` only. A merge join needs both sides sorted on the join key. **Duplicate-removing projection** and set operations (`DISTINCT`, `UNION`, `EXCEPT`) use sorting or hashing. Real Postgres plans and how to read their costs are in `e-pg-l4-04` and `e-pg-l3-14`.
+
+The step-through figure at the end of this section sorts `nums` with memory for 4 values: three sorted runs, then one merge pass.
 
 ## Example
 
