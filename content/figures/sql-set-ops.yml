@@ -1,0 +1,42 @@
+# GB-3 (tools/v39/diagram-plan.md): UNION ALL, UNION, EXCEPT. Lessons: union (Ý chính, variant `union`), except (Ý chính, variant `except`).
+# Data (lab, checked in PGlite): stores.city = Da Nang, Da Nang, Ho Chi Minh City, Ho Chi Minh City, Hanoi; customers.city
+# IS NOT NULL = 283 rows over Can Tho, Da Nang, Hanoi, Ho Chi Minh City, Hue. UNION → 5 cities; customers EXCEPT stores → Can Tho, Hue.
+# B shows one row per city (5 of its 283), labelled as a sample. Source: https://www.postgresql.org/docs/current/queries-union.html
+title: { vi: "UNION ALL, UNION, EXCEPT", en: "UNION ALL, UNION, EXCEPT" }
+caption:
+  vi: "Phép tập hợp xếp chồng dòng của hai câu có cùng cột, khác phép nối là thêm cột."
+  en: "Set operations stack the rows of two queries with the same columns, unlike a join, which adds columns."
+nodes:
+  - { id: a, shape: grid, label: "A: stores", head: [city], cells: [[Da Nang], [Da Nang], [Ho Chi Minh City], [Ho Chi Minh City], [Hanoi]], sub: { vi: "5 / 5 dòng", en: "5 / 5 rows" } }
+  - { id: b, shape: grid, label: "B: customers", head: [city], cells: [[Da Nang], [Ho Chi Minh City], [Hanoi], [Hue], [Can Tho]], sub: { vi: "5 / 283 dòng (mẫu)", en: "5 / 283 rows (sample)" } }
+  - id: ua
+    shape: grid
+    label: UNION ALL
+    cells: [[Da Nang], [Da Nang], [Ho Chi Minh City], [Ho Chi Minh City], [Hanoi], [Da Nang], [Ho Chi Minh City], [Hanoi], [Hue], [Can Tho]]
+    sub: { vi: "giữ trùng · 288 dòng", en: "keeps repeats · 288 rows" }
+  - { id: u, shape: grid, label: UNION, cells: [[Can Tho], [Da Nang], [Hanoi], [Ho Chi Minh City], [Hue]], sub: { vi: "bỏ trùng · 5 dòng", en: "no repeats · 5 rows" } }
+  - { id: ex, shape: grid, label: B EXCEPT A, cells: [[Can Tho], [Hue]], sub: { vi: "có ở B, không ở A", en: "in B, not in A" } }
+  - { id: rule, shape: key, label: { vi: "cùng số cột, cùng kiểu", en: "same columns, same types" } }
+rows:
+  - [a, b]
+  - [ua, u, ex]
+  - [rule]
+variants:
+  union:
+    title: { vi: "UNION ALL giữ trùng, UNION bỏ trùng", en: "UNION ALL keeps repeats, UNION removes them" }
+    set:
+      ua: { colTone: [new] }
+      u: { colTone: [new] }
+      ex: { colTone: [ghost] }
+    alt:
+      vi: "A là thành phố của 5 cửa hàng: Da Nang hai lần, Ho Chi Minh City hai lần, Hanoi. B là thành phố của khách (283 dòng, hình chỉ vẽ 5, mỗi thành phố một dòng): Da Nang, Ho Chi Minh City, Hanoi, Hue, Can Tho. UNION ALL xếp chồng mọi dòng và giữ trùng: 288 dòng. UNION bỏ trùng, còn 5 thành phố: Can Tho, Da Nang, Hanoi, Ho Chi Minh City, Hue. EXCEPT (mờ đi ở đây) giữ Hue và Can Tho. Hai bên phải có cùng số cột và cùng kiểu."
+      en: "A is the city of the 5 stores: Da Nang twice, Ho Chi Minh City twice, Hanoi. B is the customers' city (283 rows; the figure draws 5, one per city): Da Nang, Ho Chi Minh City, Hanoi, Hue, Can Tho. UNION ALL stacks every row and keeps repeats: 288 rows. UNION removes repeats and leaves 5 cities: Can Tho, Da Nang, Hanoi, Ho Chi Minh City, Hue. EXCEPT (faded here) keeps Hue and Can Tho. Both sides need the same number of columns and the same types."
+  except:
+    title: { vi: "B EXCEPT A: có ở B, không ở A", en: "B EXCEPT A: in B, not in A" }
+    set:
+      ua: { colTone: [ghost] }
+      u: { colTone: [ghost] }
+      ex: { colTone: [new] }
+    alt:
+      vi: "A là thành phố của 5 cửa hàng: Da Nang, Ho Chi Minh City, Hanoi (hai thành phố đầu mỗi nơi hai cửa hàng). B là thành phố của khách (283 dòng, hình vẽ 5, mỗi thành phố một dòng): Da Nang, Ho Chi Minh City, Hanoi, Hue, Can Tho. B EXCEPT A giữ những thành phố có ở B mà không có ở A: Can Tho và Hue, mỗi nơi một lần. UNION ALL (288 dòng) và UNION (5 thành phố) mờ đi để so. Đảo hai bên thì kết quả khác: A EXCEPT B rỗng."
+      en: "A is the city of the 5 stores: Da Nang, Ho Chi Minh City, Hanoi (the first two have two stores each). B is the customers' city (283 rows; the figure draws 5, one per city): Da Nang, Ho Chi Minh City, Hanoi, Hue, Can Tho. B EXCEPT A keeps the cities found in B but not in A: Can Tho and Hue, each once. UNION ALL (288 rows) and UNION (5 cities) are faded for comparison. Swap the sides and the result changes: A EXCEPT B is empty."

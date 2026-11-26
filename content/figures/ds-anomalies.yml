@@ -1,0 +1,35 @@
+# DS-7 (tools/v39/diagram-plan.md): one fact stored three times. Lesson: e-ds-l4-01 (Ý chính).
+# Data: the Example ex_orders (order_id, customer_id, customer_city, product): (1, 1, Hue, pen), (2, 1, Hue, ink), (3, 1, Hue, paper),
+# (4, 2, Hoi An, bag). Update: UPDATE … SET customer_city = 'Da Nang' WHERE order_id = 1 → customer 1 has 2 cities. Delete: DELETE …
+# WHERE customer_id = 2 → no row about customer 2. Insert: a customer with no order has no row (Common mistakes: 23502 on order_id).
+title: { vi: "Một sự thật lưu ba lần", en: "One fact stored three times" }
+caption:
+  vi: "Thành phố là của khách, không phải của đơn. Lưu nó ở mỗi đơn sinh ra ba kiểu hỏng: sửa, xóa và thêm."
+  en: "The city belongs to the customer, not to the order. Storing it on every order causes three kinds of damage: update, delete and insert."
+alt:
+  vi: "Bảng ex_orders: đơn 1, 2, 3 của khách 1 ở Hue (pen, ink, paper), đơn 4 của khách 2 ở Hoi An (bag). Thành phố của khách 1 nằm ở ba bản sao. Bước 1, sửa: đổi thành phố của đơn 1 sang Da Nang, hai bản còn lại vẫn Hue, nên khách 1 có hai thành phố. Bước 2, xóa: xóa đơn 4, thành phố Hoi An của khách 2 mất theo. Bước 3, thêm: khách 3 ở Hue chưa có đơn nào thì không có chỗ, vì order_id là khóa và không được trống."
+  en: "Table ex_orders: orders 1, 2, 3 of customer 1 in Hue (pen, ink, paper), order 4 of customer 2 in Hoi An (bag). Customer 1's city sits in three copies. Step 1, update: order 1's city becomes Da Nang while the other two copies stay Hue, so customer 1 has two cities. Step 2, delete: deleting order 4 loses customer 2's city, Hoi An, too. Step 3, insert: customer 3 in Hue with no order yet has no place, because order_id is the key and cannot be empty."
+nodes:
+  - id: t
+    shape: grid
+    label: ex_orders
+    head: [order_id, customer_id, customer_city]
+    cells: [["1", "1", Hue], ["2", "1", Hue], ["3", "1", Hue], ["4", "2", Hoi An]]
+    cellTone: { "0:2": warm, "1:2": warm, "2:2": warm }
+    sub: { vi: "thành phố khách 1: 3 bản sao", en: "customer 1's city: 3 copies" }
+  - { id: badge, shape: key, label: { vi: "2 thành phố", en: "2 cities" }, sub: { vi: "của khách 1", en: "for customer 1" }, tone: dead }
+rows:
+  - [t]
+  - [badge]
+steps:
+  - say: { vi: "Sửa một bản sao, quên hai bản kia.", en: "Fix one copy, forget the other two." }
+    set:
+      t: { cells: [["1", "1", Da Nang], ["2", "1", Hue], ["3", "1", Hue], ["4", "2", Hoi An]], cellTone: { "0:2": new, "1:2": warm, "2:2": warm } }
+  - say: { vi: "Xóa đơn cuối của khách 2: thành phố của khách cũng mất.", en: "Delete customer 2's last order: the customer's city is gone too." }
+    set:
+      t: { strike: [3], rowTone: [null, null, null, dead] }
+      badge: { label: { vi: "mất Hoi An", en: "Hoi An lost" }, sub: { vi: "thành phố khách 2", en: "customer 2's city" } }
+  - say: { vi: "Khách mới chưa có đơn: không có chỗ ghi thành phố, vì order_id là khóa.", en: "A new customer with no order: no place to store the city, because order_id is the key." }
+    set:
+      t: { cells: [["1", "1", Hue], ["2", "1", Hue], ["3", "1", Hue], ["4", "2", Hoi An], ["—", "3", Hue]], rowTone: [null, null, null, null, dead], cellTone: { "4:0": dead } }
+      badge: { label: { vi: "không có chỗ", en: "no place" }, sub: { vi: "cho khách 3", en: "for customer 3" } }

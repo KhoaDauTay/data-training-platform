@@ -1,0 +1,47 @@
+# DS-6 (tools/v39/diagram-plan.md): computing X⁺ round by round. Lesson: e-ds-l3-03 (Ví dụ).
+# Data: the lab's fds: a → b, b → c, {c,d} → e. Closure of {a,d}: {a,d} → {a,b,d} → {a,b,c,d} → {a,b,c,d,e} (lab step 2 asks for it).
+# "⁺" is not in the measured glyph table, so the drawing writes "{a,d}+"; the caption keeps X⁺. The side note "a, d on no right side →
+# in every key" is longer than 18 × 2: it is in the caption.
+title: { vi: "Tính bao đóng từng vòng", en: "Computing a closure round by round" }
+caption:
+  vi: "{a,d}⁺ chỉ lớn lên khi cả vế trái của một phụ thuộc đã nằm trong tập, và dừng khi một vòng không thêm gì. a và d không ở vế phải nào, nên có mặt trong mọi khóa."
+  en: "{a,d}⁺ grows only when a whole left side is already inside the set, and stops when a round adds nothing. a and d are on no right side, so they are in every key."
+alt:
+  vi: "Ba phụ thuộc: a → b, b → c, {c,d} → e; năm thuộc tính a, b, c, d, e. Vòng 0: tập là {a,d}. Vòng 1: a có trong tập nên a → b dùng được, thêm b: {a,b,d}. Vòng 2: b → c thêm c: {a,b,c,d}. Vòng 3: c và d đều đã có nên {c,d} → e thêm e: {a,b,c,d,e}. Bao đóng {a,d}⁺ chứa mọi thuộc tính, nên {a,d} là khóa."
+  en: "Three dependencies: a → b, b → c, {c,d} → e; five attributes a, b, c, d, e. Round 0: the set is {a,d}. Round 1: a is inside, so a → b fires and adds b: {a,b,d}. Round 2: b → c adds c: {a,b,c,d}. Round 3: c and d are both inside, so {c,d} → e adds e: {a,b,c,d,e}. The closure {a,d}⁺ holds every attribute, so {a,d} is a key."
+nodes:
+  - { id: f1, shape: key, mono: true, label: "a → b", sub: { vi: "chờ", en: "waiting" }, tone: ghost }
+  - { id: f2, shape: key, mono: true, label: "b → c", sub: { vi: "chờ", en: "waiting" }, tone: ghost }
+  - { id: f3, shape: key, mono: true, label: "{c,d} → e", sub: { vi: "chờ", en: "waiting" }, tone: ghost }
+  - id: set
+    shape: grid
+    mono: true
+    label: { vi: "vòng 0", en: "round 0" }
+    cells: [[a, b, c, d, e]]
+    colTone: [new, ghost, ghost, new, ghost]
+    sub: "{a,d}"
+  - { id: key, mono: true, label: "{a,d}+ = {a,b,c,d,e}", tone: live }
+rows:
+  - [f1, f2, f3]
+  - [set]
+  - [key]
+steps:
+  - say: { vi: "Bắt đầu từ {a,d}.", en: "Start from {a,d}." }
+    show: [f1, f2, f3, set]
+  - say: { vi: "a đã có trong tập, nên a → b thêm b.", en: "a is inside the set, so a → b adds b." }
+    show: [f1, f2, f3, set]
+    set:
+      f1: { sub: { vi: "vòng 1", en: "round 1" }, tone: new }
+      set: { label: { vi: "vòng 1", en: "round 1" }, colTone: [new, new, ghost, new, ghost], sub: "{a,b,d}" }
+  - say: { vi: "b vừa vào, nên b → c thêm c.", en: "b just came in, so b → c adds c." }
+    show: [f1, f2, f3, set]
+    set:
+      f1: { sub: { vi: "vòng 1", en: "round 1" }, tone: live }
+      f2: { sub: { vi: "vòng 2", en: "round 2" }, tone: new }
+      set: { label: { vi: "vòng 2", en: "round 2" }, colTone: [new, new, new, new, ghost], sub: "{a,b,c,d}" }
+  - say: { vi: "Cả c và d đã có, nên {c,d} → e thêm e: đủ mọi thuộc tính, {a,d} là khóa.", en: "c and d are both inside, so {c,d} → e adds e: every attribute, {a,d} is a key." }
+    set:
+      f1: { sub: { vi: "vòng 1", en: "round 1" }, tone: live }
+      f2: { sub: { vi: "vòng 2", en: "round 2" }, tone: live }
+      f3: { sub: { vi: "vòng 3", en: "round 3" }, tone: new }
+      set: { label: { vi: "vòng 3", en: "round 3" }, colTone: [new, new, new, new, new], sub: "{a,b,c,d,e}" }

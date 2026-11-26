@@ -1,0 +1,33 @@
+# DS-8 (tools/v39/diagram-plan.md): a lossless split. Lessons: e-ds-l4-02 (Ví dụ), e-ds-l4-06 (Thực hành).
+# Data: the Example ex_enrol (student_id, course_id, course_title; PK (student_id, course_id)): (1, 10, SQL), (2, 10, SQL), (3, 10, SQL),
+# (1, 20, Stats); ex_course AS SELECT DISTINCT course_id, course_title (10 SQL, 20 Stats) + PRIMARY KEY (course_id); the join back on
+# course_id gives the 4 rows again. Source: https://www.postgresql.org/docs/current/sql-createtableas.html
+title: { vi: "Tách bảng không mất gì", en: "A split that loses nothing" }
+caption:
+  vi: "Chuyển cột phụ thuộc sang một bảng có khóa là cột quyết định nó: sự thật lưu một lần, nối lại vẫn đủ dòng."
+  en: "Move the dependent column into a table keyed by the column that determines it: the fact is stored once, and joining back gives every row."
+alt:
+  vi: "course_id quyết định course_title, nhưng khóa của ex_enrol là cặp (student_id, course_id): đó là phụ thuộc vào một phần khóa. Bảng trước khi tách có bốn dòng: sinh viên 1, 2, 3 học khóa 10 SQL, sinh viên 1 học khóa 20 Stats; chữ SQL lặp ba lần. Sau khi tách: ex_enrol chỉ còn student_id và course_id, bốn dòng; ex_course có khóa course_id với hai dòng, 10 SQL và 20 Stats. course_id của ex_enrol là khóa ngoại trỏ tới ex_course. Nối hai bảng lại ra đúng bốn dòng ban đầu."
+  en: "course_id determines course_title, but the key of ex_enrol is the pair (student_id, course_id): a dependency on part of the key. Before the split the table has four rows: students 1, 2, 3 take course 10 SQL, student 1 takes course 20 Stats; the word SQL repeats three times. After the split: ex_enrol keeps only student_id and course_id, four rows; ex_course is keyed by course_id with two rows, 10 SQL and 20 Stats. course_id in ex_enrol is a foreign key to ex_course. Joining the two back gives exactly the four original rows."
+nodes:
+  - { id: dep, shape: key, mono: true, label: "course_id → course_title", tone: warm }
+  - { id: part, shape: note, label: { vi: "phụ thuộc một phần khóa", en: "depends on part of the key" } }
+  - id: wide
+    shape: grid
+    label: { vi: "ex_enrol (trước)", en: "ex_enrol (before)" }
+    head: [student_id, course_id, course_title]
+    cells: [["1", "10", SQL], ["2", "10", SQL], ["3", "10", SQL], ["1", "20", Stats]]
+    cellTone: { "0:2": warm, "1:2": warm, "2:2": warm }
+    sub: { vi: "SQL lặp 3 lần", en: "SQL repeated 3 times" }
+  - { id: enrol, shape: grid, label: { vi: "ex_enrol (sau)", en: "ex_enrol (after)" }, head: [student_id, course_id], cells: [["1", "10"], ["2", "10"], ["3", "10"], ["1", "20"]], colTone: [null, ptr], sub: { vi: "course_id là khóa ngoại", en: "course_id is a foreign key" } }
+  - { id: course, shape: grid, label: ex_course, head: [course_id, course_title], cells: [["10", SQL], ["20", Stats]], colTone: [ptr, live], sub: "PK (course_id)" }
+  - { id: back, shape: key, label: { vi: "nối lại: đúng 4 dòng", en: "join back: exactly 4 rows" }, tone: live }
+rows:
+  - [dep, part]
+  - [wide]
+  - [enrol, course]
+  - [back]
+edges:
+  - { from: wide, to: enrol }
+  - { from: wide, to: course }
+  - { from: enrol, to: course }

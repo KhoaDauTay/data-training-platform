@@ -1,0 +1,26 @@
+# DS-5 (tools/v39/diagram-plan.md): data can refute a dependency, never prove it. Lesson: e-ds-l3-01 (Ví dụ).
+# Data: the lab's deliveries, rows ordered by carrier: FastGo 0901 (ids 1, 2, 4), SlowShip 0902 (3) and 0903 (5), QuickBox 0904 (6).
+# The SQL pattern (GROUP BY carrier HAVING count(DISTINCT carrier_phone) > 1) is longer than 18 × 2: it is in the caption.
+title: { vi: "Dữ liệu bác được phụ thuộc, không chứng minh được", en: "Data can refute a dependency, never prove it" }
+caption:
+  vi: "Hai dòng cùng carrier mà khác carrier_phone là đủ bác carrier → carrier_phone. Câu GROUP BY carrier HAVING count(DISTINCT carrier_phone) > 1 tìm đúng những dòng đó."
+  en: "Two rows with the same carrier and different carrier_phone are enough to refute carrier → carrier_phone. GROUP BY carrier HAVING count(DISTINCT carrier_phone) > 1 finds exactly those rows."
+alt:
+  vi: "Câu hỏi: carrier có quyết định carrier_phone không? Bảng deliveries xếp theo carrier: FastGo ở ba dòng 1, 2, 4, cùng số 0901; SlowShip ở dòng 3 với 0902 và dòng 5 với 0903; QuickBox chỉ một dòng, 0904. FastGo một số: chưa bác được. SlowShip hai số: phụ thuộc bị bác bỏ. QuickBox chỉ có một dòng nên không nói được gì. Một kết quả sạch không chứng minh phụ thuộc đúng; chỉ một cặp dòng trái là đủ bác."
+  en: "The question: does carrier determine carrier_phone? Table deliveries ordered by carrier: FastGo on three rows 1, 2, 4, all with 0901; SlowShip on row 3 with 0902 and row 5 with 0903; QuickBox on one row, 0904. FastGo has one phone: not refuted. SlowShip has two phones: the dependency is refuted. QuickBox has one row, so it says nothing. A clean result does not prove a dependency; one pair of disagreeing rows is enough to refute it."
+nodes:
+  - { id: q, shape: key, mono: true, label: "carrier → carrier_phone ?" }
+  - id: t
+    shape: grid
+    label: deliveries
+    head: [id, carrier, carrier_phone]
+    cells: [["1", FastGo, "0901"], ["2", FastGo, "0901"], ["4", FastGo, "0901"], ["3", SlowShip, "0902"], ["5", SlowShip, "0903"], ["6", QuickBox, "0904"]]
+    rowTone: [live, live, live, dead, dead]
+    cellTone: { "3:2": dead, "4:2": dead }
+  - { id: k1, shape: key, label: { vi: "FastGo: 1 số", en: "FastGo: 1 phone" }, sub: { vi: "chưa bác", en: "not refuted" }, tone: live }
+  - { id: k2, shape: key, label: { vi: "SlowShip: 2 số", en: "SlowShip: 2 phones" }, sub: { vi: "bác bỏ", en: "refuted" }, tone: dead }
+  - { id: k3, shape: key, label: { vi: "QuickBox: 1 dòng", en: "QuickBox: 1 row" }, sub: { vi: "không nói gì", en: "says nothing" } }
+rows:
+  - [q]
+  - [t]
+  - [k1, k2, k3]

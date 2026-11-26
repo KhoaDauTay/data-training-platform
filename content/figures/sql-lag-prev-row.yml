@@ -1,0 +1,33 @@
+# GB-7 (tools/v39/diagram-plan.md): LAG takes the previous row, not the previous day. Lesson: window_lag (Ý chính).
+# Data (lab, checked in PGlite): Ben Thanh orders per day 25: 4, 27: 2, 28: 6, 29: 4, 30: 4, 31: 2; no row on 26 Oct.
+# LAG(n, 1, 0) OVER (ORDER BY order_date): prev 0, 4, 2, 6, 4, 4; change +4, -2, +4, -2, 0, -2. The 26 Oct row is drawn struck: it
+# does not exist. Arrows inside one table are not part of the grammar (L616): highlighted cells and keys carry the link.
+# Source: https://www.postgresql.org/docs/current/functions-window.html
+title: { vi: "LAG lấy dòng trước, không phải ngày trước", en: "LAG takes the previous row, not the previous day" }
+caption:
+  vi: "LAG dời cột xuống một dòng theo thứ tự cửa sổ, nên ngày không có dòng bị bỏ qua lặng lẽ."
+  en: "LAG shifts the column down one row in window order, so a day with no row is skipped silently."
+alt:
+  vi: "Số đơn mỗi ngày của Ben Thanh với prev = LAG(n, 1, 0) và change = n − prev. 25/10: n 4, prev 0 (giá trị mặc định, vì không có dòng trước), change +4. Ngày 26/10 không có dòng nào. 27/10: n 2, prev 4, change −2: prev là số của 25/10, không phải 26/10. 28/10: 6, prev 2, +4. 29/10: 4, prev 6, −2. 30/10: 4, prev 4, 0. 31/10: 2, prev 4, −2."
+  en: "Ben Thanh's orders per day with prev = LAG(n, 1, 0) and change = n − prev. 25 Oct: n 4, prev 0 (the default, since there is no earlier row), change +4. 26 Oct has no row at all. 27 Oct: n 2, prev 4, change −2: prev is 25 Oct's number, not 26 Oct's. 28 Oct: 6, prev 2, +4. 29 Oct: 4, prev 6, −2. 30 Oct: 4, prev 4, 0. 31 Oct: 2, prev 4, −2."
+nodes:
+  - id: t
+    shape: grid
+    head: [order_date, n, prev, change]
+    cells:
+      - [{ vi: "25/10", en: "25 Oct" }, "4", "0", "+4"]
+      - [{ vi: "26/10", en: "26 Oct" }, "—", "—", "—"]
+      - [{ vi: "27/10", en: "27 Oct" }, "2", "4", "-2"]
+      - [{ vi: "28/10", en: "28 Oct" }, "6", "2", "+4"]
+      - [{ vi: "29/10", en: "29 Oct" }, "4", "6", "-2"]
+      - [{ vi: "30/10", en: "30 Oct" }, "4", "4", "0"]
+      - [{ vi: "31/10", en: "31 Oct" }, "2", "4", "-2"]
+    rowTone: [null, ghost]
+    strike: [1]
+    cellTone: { "0:1": new, "2:2": new, "0:2": warm }
+  - { id: link, shape: key, label: { vi: "prev 27/10 = n 25/10", en: "27 Oct prev = 25 Oct n" }, tone: new }
+  - { id: def, shape: key, label: { vi: "0 ở dòng đầu", en: "0 on the first row" }, sub: { vi: "giá trị mặc định", en: "the default" }, tone: warm }
+  - { id: gap, shape: key, label: { vi: "26/10: không có dòng", en: "26 Oct: no row" }, tone: ghost }
+rows:
+  - [t]
+  - [link, def, gap]

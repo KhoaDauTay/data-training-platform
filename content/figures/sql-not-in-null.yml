@@ -1,0 +1,39 @@
+# GB-2 (tools/v39/diagram-plan.md): one NULL empties NOT IN. Lessons: exists (Lỗi hay gặp), in_subquery (Ví dụ, "NOT IN an toàn").
+# Data (lab, checked in PGlite): SELECT customer_id FROM orders WHERE order_date >= '2026-10-20' → 87 rows, 5 NULL (walk-ins),
+# smallest ids 2, 4, 5, 6; customer 3 is not in it. customers NOT IN (…) → 0 rows; NOT EXISTS (…) → 235 rows.
+# Source: https://www.postgresql.org/docs/current/functions-subquery.html#FUNCTIONS-SUBQUERY-NOTIN
+title: { vi: "Một NULL làm NOT IN rỗng", en: "One NULL empties NOT IN" }
+caption:
+  vi: "x NOT IN (danh sách) là một chuỗi phép <> nối bằng AND. Một phép so với NULL ra NULL, nên cả chuỗi không bao giờ TRUE."
+  en: "x NOT IN (list) is a chain of <> joined by AND. A comparison with NULL gives NULL, so the whole chain is never TRUE."
+alt:
+  vi: "Danh sách mã khách có đơn từ 20/10 gồm 87 dòng: 2, 4, 5, 6, … và 5 dòng NULL. Thử khách 3, người không có trong danh sách: 3 <> 2 là TRUE, 3 <> 4 là TRUE, nhưng 3 <> NULL là NULL. Nối bằng AND, TRUE AND NULL ra NULL chứ không ra TRUE, nên khách 3 bị bỏ. Mọi khách đều gặp cùng chuyện: NOT IN trả 0 dòng, còn NOT EXISTS, vốn xét từng cặp, trả 235 dòng."
+  en: "The list of customer ids with an order since 20 Oct has 87 rows: 2, 4, 5, 6, … and 5 NULL rows. Try customer 3, who is not in the list: 3 <> 2 is TRUE, 3 <> 4 is TRUE, but 3 <> NULL is NULL. Joined with AND, TRUE AND NULL gives NULL, not TRUE, so customer 3 is dropped. Every customer meets the same fate: NOT IN returns 0 rows, while NOT EXISTS, which checks pairs, returns 235 rows."
+nodes:
+  - id: list
+    shape: grid
+    mono: true
+    label: { vi: "mã khách có đơn từ 20/10", en: "customer ids since 20 Oct" }
+    cells: [["2", "4", "5", "6", "…", "NULL"]]
+    toneOf: { "NULL": warm }
+    sub: { vi: "87 dòng, 5 dòng NULL", en: "87 rows, 5 of them NULL" }
+  - id: test
+    shape: grid
+    mono: true
+    label: { vi: "khách 3 NOT IN …", en: "customer 3 NOT IN …" }
+    cells: [["3 <> 2", "TRUE"], ["3 <> 4", "TRUE"], ["…", "…"], ["3 <> NULL", "NULL"]]
+    toneOf: { "TRUE": live, "NULL": warm }
+  - { id: and, mono: true, label: "TRUE AND NULL", sub: { vi: "= NULL, không TRUE", en: "= NULL, not TRUE" }, tone: warm }
+  - { id: notin, label: NOT IN, sub: { vi: "0 dòng", en: "0 rows" }, tone: dead }
+  - { id: notex, label: NOT EXISTS, sub: { vi: "235 dòng", en: "235 rows" }, tone: live }
+  - { id: pairs, shape: note, label: { vi: "NOT EXISTS xét từng cặp", en: "NOT EXISTS checks pairs" } }
+rows:
+  - [list]
+  - [test]
+  - [and]
+  - [notin, notex]
+  - [pairs]
+edges:
+  - { from: list, to: test }
+  - { from: test, to: and }
+  - { from: and, to: notin }

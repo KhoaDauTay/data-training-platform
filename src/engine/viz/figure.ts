@@ -203,7 +203,7 @@ export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): 
     const end = (x: number, from: number): number => (plain ? (down ? b.y : b.y + b.h) : stopAt(x, from, x, b.y + b.h / 2, STROKE, b)[1]);
     if (Math.abs(ra - rb) !== 1) {
       if (label) fail(`${e.from}→${e.to}: nhãn trên làn bên chưa hỗ trợ`);
-      return { e, d: laneRoute(a, b, ra, rb, CW + 8 + 16 * side++, lane, end) };
+      return { e, d: laneRoute(a, b, ra, rb, CW + 8 + 16 * side++, lane, end, lands.get(e)) };
     }
     const land = lands.get(e);
     if (land !== undefined) { // v40 (R1 E10): several arrows into one box land apart
@@ -369,7 +369,7 @@ function spreadTips(edges: FigEdge[], at: Map<string, Rect>, rowOf: Map<string, 
   for (const e of edges) {
     if (e.link) continue;
     const ra = rowOf.get(base(e.from))!, rb = rowOf.get(base(e.to))!;
-    if (Math.abs(ra - rb) !== 1) continue;
+    if (ra === rb) continue; // lanes too: they arrive from the gap above (or below) like an elbow
     const key = `${base(e.to)}|${rb > ra}`;
     by.set(key, [...(by.get(key) ?? []), e]);
   }
@@ -383,9 +383,9 @@ function spreadTips(edges: FigEdge[], at: Map<string, Rect>, rowOf: Map<string, 
 }
 /** A side lane: out into the gap next to the source row, across to the lane at the right, along it, then back through the
  * gap next to the target row and into the target (never across a row's neighbours). */
-function laneRoute(a: Rect, b: Rect, ra: number, rb: number, lx: number, lane: (gap: number) => number, end: (x: number, from: number) => number): string {
+function laneRoute(a: Rect, b: Rect, ra: number, rb: number, lx: number, lane: (gap: number) => number, end: (x: number, from: number) => number, land?: number): string {
   const down = rb > ra;
-  const ax = Math.round(a.x + a.w / 2), bx = Math.round(b.x + b.w / 2);
+  const ax = Math.round(a.x + a.w / 2), bx = land ?? Math.round(b.x + b.w / 2);
   const y1 = down ? a.y + a.h + 2 : a.y - 2;
   const ys = lane(down ? ra : ra - 1), yt = lane(down ? rb - 1 : rb);
   return `M${ax} ${y1} L${ax} ${ys} L${lx} ${ys} L${lx} ${yt} L${bx} ${yt} L${bx} ${end(bx, yt)}`;

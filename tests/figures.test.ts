@@ -113,7 +113,7 @@ describe.each(Object.keys(specs))('v39 figure %s', (name) => {
   });
   it('mọi ký tự vẽ ra có trong bảng độ rộng Nunito (ký tự lạ ước 0,62 em: đo lại bảng trước)', () => {
     const fold = (s: string): string => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D');
-    const odd = [...new Set(strings({ ...spec, steps: (spec.steps ?? []).map((s) => ({ ...s, say: '' })), caption: '', title: '' }).flatMap((s) => [...fold(s)]))].filter((c) => !GLYPHS.includes(c));
+    const odd = [...new Set(strings({ ...spec, steps: (spec.steps ?? []).map((s) => ({ ...s, say: '' })), caption: '', title: '', alt: '', variants: Object.fromEntries(Object.entries(spec.variants ?? {}).map(([k, v]) => [k, { ...v, alt: '', title: '', caption: '' }])) }).flatMap((s) => [...fold(s)]))].filter((c) => !GLYPHS.includes(c));
     expect(odd).toEqual([]);
   });
 

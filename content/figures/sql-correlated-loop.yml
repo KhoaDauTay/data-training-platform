@@ -1,0 +1,48 @@
+# GB-1 (tools/v39/diagram-plan.md): the inner query runs once per outer row. Lesson: correlated_value (Ý chính).
+# Query: SELECT s.name, (SELECT max(o.order_date) FROM orders o WHERE o.store_id = s.id) FROM stores s
+# Data (lab, checked in PGlite): Hai Chau 2026-10-31, Son Tra 2026-10-30, Ben Thanh, Thao Dien, Hoan Kiem 2026-10-31.
+# Source: https://www.postgresql.org/docs/current/sql-expressions.html#SQL-SYNTAX-SCALAR-SUBQUERIES
+title: { vi: "Truy vấn con chạy lại cho từng dòng", en: "The subquery runs again for each row" }
+caption:
+  vi: "Truy vấn con nhắc tới s.id của dòng ngoài, nên mỗi cửa hàng có một lần chạy riêng, với giá trị của chính nó."
+  en: "The subquery names s.id of the outer row, so each store gets a run of its own, with its own value."
+alt:
+  vi: "Bên trái là bảng stores với 5 cửa hàng. Ở giữa là truy vấn con max(order_date) lọc theo store_id. Với Hai Chau (id 1), truy vấn con chạy với store_id = 1 và ra 2026-10-31. Với Son Tra (id 2), nó chạy lại với store_id = 2 và ra 2026-10-30. Cuối cùng cả 5 dòng đều có giá trị: Son Tra 2026-10-30, bốn cửa hàng còn lại 2026-10-31. Truy vấn con đã chạy 5 lần, mỗi dòng ngoài một lần."
+  en: "On the left is the stores table with 5 stores. In the middle is the subquery max(order_date) filtered by store_id. For Hai Chau (id 1) the subquery runs with store_id = 1 and gives 2026-10-31. For Son Tra (id 2) it runs again with store_id = 2 and gives 2026-10-30. In the end all 5 rows have a value: Son Tra 2026-10-30, the other four stores 2026-10-31. The subquery ran 5 times, once per outer row."
+nodes:
+  - id: s
+    shape: grid
+    label: stores s
+    head: [id, name]
+    cells: [["1", Hai Chau], ["2", Son Tra], ["3", Ben Thanh], ["4", Thao Dien], ["5", Hoan Kiem]]
+  - { id: q, mono: true, label: "max(order_date)", sub: "WHERE store_id = 1", tone: new }
+  - id: r
+    shape: grid
+    mono: true
+    label: { vi: "kết quả", en: "result" }
+    head: [last_order]
+    cells: [["?"], ["?"], ["?"], ["?"], ["?"]]
+    toneOf: { "?": ghost }
+  - { id: n, shape: key, label: { vi: "chạy 5 lần", en: "ran 5 times" }, tone: live }
+rows:
+  - [s, q, r]
+  - [n]
+edges:
+  - { from: s, to: q }
+  - { from: q, to: r }
+steps:
+  - say: { vi: "Với cửa hàng 1, truy vấn con chạy với s.id = 1.", en: "For store 1 the subquery runs with s.id = 1." }
+    show: [s, q, r]
+    set:
+      s: { rowTone: [new] }
+      r: { cells: [["2026-10-31"], ["?"], ["?"], ["?"], ["?"]], cellTone: { "0:0": new } }
+  - say: { vi: "Dòng tiếp theo, chạy lại với s.id = 2.", en: "Next row, run again with s.id = 2." }
+    show: [s, q, r]
+    set:
+      s: { rowTone: [null, new] }
+      q: { sub: "WHERE store_id = 2" }
+      r: { cells: [["2026-10-31"], ["2026-10-30"], ["?"], ["?"], ["?"]], cellTone: { "1:0": new } }
+  - say: { vi: "Một lần cho mỗi dòng ngoài; Postgres có thể tối ưu, nhưng ý nghĩa là vậy.", en: "Once per outer row; Postgres may optimise it, but that is the meaning." }
+    set:
+      q: { sub: { vi: "mỗi s.id một lần", en: "once per s.id" } }
+      r: { cells: [["2026-10-31"], ["2026-10-30"], ["2026-10-31"], ["2026-10-31"], ["2026-10-31"]] }
