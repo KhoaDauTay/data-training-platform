@@ -54,9 +54,9 @@ lab:
         vi: "Phần chung của hai set: giao."
         en: "What two sets share: the intersection."
     - task:
-        vi: "Sản phẩm `p07` có gắn nhãn `paper` không?"
-        en: "Is product `p07` tagged `paper`?"
-      solution: SISMEMBER tags:p07 paper
+        vi: "Sản phẩm `p07` có gắn nhãn `silk` không?"
+        en: "Is product `p07` tagged `silk`?"
+      solution: SISMEMBER tags:p07 silk
       check: doc
       hint:
         vi: "Hỏi một phần tử có trong set không, trả 1 hoặc 0."

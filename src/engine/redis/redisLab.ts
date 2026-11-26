@@ -19,6 +19,7 @@ const TEXT = {
     noError: 'Lệnh này chạy được. Bước này muốn thấy Redis từ chối nó với lỗi `{c}`.',
     otherError: 'Redis báo lỗi `{got}`, còn bước này muốn lỗi `{c}`.',
     errorLast: 'Dòng cuối báo lỗi: {got}',
+    state: 'Câu trả lời đúng, nhưng dữ liệu sau các lệnh khác lời giải ở khóa `{key}`.',
   },
   en: {
     empty: 'There is no command to grade yet.',
@@ -28,6 +29,7 @@ const TEXT = {
     noError: 'This command runs. This step wants to see Redis refuse it with the error `{c}`.',
     otherError: 'Redis answered with the error `{got}`, but this step wants `{c}`.',
     errorLast: 'The last line failed: {got}',
+    state: 'The reply is right, but after your commands the data differs from the solution at key `{key}`.',
   },
 };
 const fill = (s: string, p: Record<string, string | number>): string => s.replace(/\{(\w+)\}/g, (_, k: string) => String(p[k] ?? ''));
@@ -120,6 +122,11 @@ export function redisRunner(env: { lang(): 'vi' | 'en' }): LabRunner {
       }
       const adv = step.expect?.advance ?? 0;
       if (adv) { mine.advance(adv); ref.advance(adv); }
+      // L953b: the keyspace must end like the Solution's (type, value, time to live), so a write whose reply happens to match
+      // (a SADD that answers 0 like SISMEMBER) or an extra write never passes
+      const [ma, mb] = [mine.dump(), ref.dump()];
+      const diff = [...new Set([...Object.keys(ma), ...Object.keys(mb)])].sort().find((k) => JSON.stringify(ma[k]) !== JSON.stringify(mb[k]));
+      if (diff !== undefined) return { ok: false, reason: 'wrong', message: fill(t().state, { key: diff }) };
       if (step.after) {
         const a = runScript(mine, step.after, false), b = runScript(ref, step.after, false);
         const bad = a.findIndex((x, k) => replyKey(x, step.ordered, b[k]) !== replyKey(b[k], step.ordered));

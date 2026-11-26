@@ -62,6 +62,9 @@ describe('Redis R1: wiring (ids, routes, Save, badges, runner)', () => {
     expect((await runner.run(lab, 'GET n', 1)).rows).toEqual([['GET n', '"2"']]);
     expect((await runner.run(lab, '@advance 5\nPING', 0)).rows[0][1]).toBe("(error) ERR unknown command '@advance', with args beginning with: '5' ");
     await expect(runner.run(lab, 'LPUSH n x')).rejects.toMatchObject({ code: 'WRONGTYPE' });
+    // L953b: a right reply with a different keyspace fails (SADD answers 0 like SISMEMBER would)
+    const sets = { setup: 'SADD s a', steps: [{ solution: 'SISMEMBER s b', check: 'doc', ordered: false }] } as unknown as EngineLesson['lab'] & object;
+    expect(await runner.check(sets, sets.steps[0], 'SADD s c\nSISMEMBER s b')).toMatchObject({ ok: false, message: expect.stringContaining('`s`') });
     const db = new RedisSim();
     expect(runScript(db, 'SET k v\n@client 1\nGET k').map((l) => [l.client, format(l.reply)])).toEqual([[0, 'OK'], [1, '"v"']]);
   });

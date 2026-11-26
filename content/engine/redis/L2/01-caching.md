@@ -63,14 +63,16 @@ lab:
         vi: "Xóa khóa cache, đừng ghi giá mới vào nó."
         en: "Delete the cache key, do not write the new price into it."
     - task:
-        vi: "Cache của `p09` vừa hết hạn và nhiều request cùng muốn dựng lại. Request `req-42` thử giành khóa `lock:product:p09`, giữ 5000 ms, chỉ khi chưa ai giữ."
-        en: "`p09`'s cache just expired and many requests want to rebuild it. Request `req-42` tries to take lock `lock:product:p09` for 5000 ms, only if nobody holds it."
-      solution: SET lock:product:p09 req-42 NX PX 5000
+        vi: "Cache của `p01` vừa bị xóa và nhiều request cùng muốn dựng lại. Request `req-42` giành khóa `lock:product:p01`, giữ 5000 ms, chỉ khi chưa ai giữ."
+        en: "`p01`'s cache was just deleted and many requests want to rebuild it. Request `req-42` takes lock `lock:product:p01` for 5000 ms, only if nobody holds it."
+      solution: SET lock:product:p01 req-42 NX PX 5000
       check: doc
-      after: GET lock:product:p09
+      after: GET lock:product:p01
+      target: lock:product:p01
+      expect: { pttl: 5000 }
       hint:
-        vi: "`SET … NX PX 5000`. Khóa đang có người giữ, nên câu trả lời là `(nil)` và `req-42` nên đợi rồi đọc cache lại."
-        en: "`SET … NX PX 5000`. Someone holds the lock, so the reply is `(nil)` and `req-42` should wait and read the cache again."
+        vi: "`SET … NX PX 5000`. Chưa ai giữ nên câu trả lời là `OK`; ví dụ bên dưới cho thấy request đến sau nhận `(nil)`."
+        en: "`SET … NX PX 5000`. Nobody holds it, so the reply is `OK`; the example below shows a later request getting `(nil)`."
 quiz:
   - q:
       vi: "Giá `p01` đổi trong PostgreSQL. Cách nào giữ cache đúng mà ít rủi ro nhất?"
