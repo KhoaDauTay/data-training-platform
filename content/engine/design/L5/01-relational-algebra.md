@@ -8,6 +8,7 @@ title_en: Relational algebra and SQL
 kind: concept
 runtime: browser
 minutes: 15
+figures: [{ name: ds-algebra-tree, at: idea }, { name: ds-algebra-tree, at: example, variant: pushed }]
 objectives:
   - vi: Đọc được một biểu thức đại số quan hệ (σ, π, ρ, ∪, −, ∩, ×, ⋈, γ) và viết câu SQL tương ứng.
     en: Read a relational algebra expression (σ, π, ρ, ∪, −, ∩, ×, ⋈, γ) and write the matching SQL.
@@ -93,6 +94,8 @@ SQL không chỉ có truy vấn. Lệnh chia thành bốn nhóm: DDL định ngh
 
 Hai biểu thức **tương đương** khi cho cùng kết quả trên mọi dữ liệu, và optimizer sống nhờ điều đó. Nó đẩy phép chọn xuống sát bảng (σ trước ⋈) để phép nối nhận ít bộ hơn, đổi chỗ và nhóm lại các phép nối (⋈ giao hoán và kết hợp) để tìm thứ tự rẻ nhất, gộp các phép chiếu liên tiếp thành một. Trong `EXPLAIN`, dòng `Filter` ngay dưới một `Seq Scan` là phép chọn đã được đẩy xuống, và thứ tự các nút `Join` là thứ tự nối planner chọn. Planner làm việc trên cây đại số, nên viết bảng nào trước trong `FROM` thường không đổi kế hoạch. Ngoại lệ là chỗ luật không cho đổi: nối ngoài không giao hoán tùy ý, và điều kiện đặt ở `ON` khác ở `WHERE`. Bài `e-pg-l4-05` xem điều này trên kế hoạch thật.
 
+Hình dưới vẽ câu `SELECT DISTINCT e.name, d.title FROM emp e JOIN dept d ON e.dept_id = d.id WHERE e.city = 'Hue'` thành cây phép toán, rồi đẩy σ xuống sát `emp`.
+
 ## Ví dụ
 
 Ký hiệu đại số và câu SQL tương ứng:
@@ -129,6 +132,8 @@ Gom nhóm γ: số người mỗi phòng.
 ```sql
 SELECT dept_id, count(*) AS people FROM emp GROUP BY dept_id ORDER BY dept_id;
 ```
+
+Hình cuối phần này là cây sau khi đẩy σ xuống: phép nối chỉ nhận 3 bộ của `emp` mà kết quả vẫn là 3 bộ.
 
 ## Lỗi hay gặp
 
@@ -190,6 +195,8 @@ SQL is more than queries. Statements fall into four groups: DDL defines structur
 
 Two expressions are **equivalent** when they give the same result on every database, and the optimizer lives on that. It pushes selections down next to the tables (σ before ⋈) so joins receive fewer tuples, swaps and regroups joins (⋈ is commutative and associative) to find the cheapest order, and merges consecutive projections into one. In `EXPLAIN`, a `Filter` line right under a `Seq Scan` is a selection that was pushed down, and the order of the `Join` nodes is the join order the planner chose. Because the planner works on the algebra tree, not on the order of the words you typed, which table you write first in `FROM` usually does not change the plan. The exceptions are where the rules forbid a swap: outer joins do not commute freely, and a condition in `ON` is not the same as one in `WHERE`. Lesson `e-pg-l4-05` looks at this on real plans.
 
+The figure below draws the query `SELECT DISTINCT e.name, d.title FROM emp e JOIN dept d ON e.dept_id = d.id WHERE e.city = 'Hue'` as a tree of operators, then pushes σ down to `emp`.
+
 ## Example
 
 Algebra notation and the matching SQL:
@@ -226,6 +233,8 @@ Grouping γ: people per department.
 ```sql
 SELECT dept_id, count(*) AS people FROM emp GROUP BY dept_id ORDER BY dept_id;
 ```
+
+The last figure of this section is the tree after pushing σ down: the join takes only 3 tuples of `emp` and the result is still 3 tuples.
 
 ## Common mistakes
 

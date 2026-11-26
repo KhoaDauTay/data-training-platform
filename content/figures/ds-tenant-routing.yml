@@ -1,0 +1,50 @@
+# B1-2 (tools/v42/diagram-plan-v42.md): a request finds its shard through the directory, never a default. Lesson: e-ds-l5-10
+# (Ý chính), replaces the request-path text block; the registry `pg-tenant-placement` stays as `viz:`. Data: the lesson's
+# illustration (t-04 on s2 through proxy-s2.lab; after the move, version 1 → 2, on s1). Deviation: step 2 also turns the
+# proxy and writer to s1 (the plan kept s2 there, which would contradict the directory row), and the plan's separate `err`
+# note is the old-shard box itself in step 3 (one slot; L761 edge `ro` changes label and dash), so no blank row shows. The router → directory arrow carries no label (its "look up" crossed the stale-cache arrow beside it on a phone; the caption says it).
+# Fact: the lesson's own design rules; sibling source https://docs.aws.amazon.com/wellarchitected/latest/saas-lens/silo-pool-and-bridge-models.html
+title: { vi: "Yêu cầu tìm shard qua danh mục", en: "A request finds its shard through the directory" }
+caption:
+  vi: "Bộ định tuyến đọc tenant_id từ danh tính đã kiểm, tra danh mục, rồi đi qua proxy của shard. Danh mục chỉ ghi địa chỉ proxy, không ghi máy ghi."
+  en: "The router reads tenant_id from the verified identity, looks it up in the directory, then goes through the shard's proxy. The directory holds only the proxy address, never the writer."
+alt:
+  vi: "Mọi yêu cầu đi một đường: danh tính đã kiểm, danh mục, proxy của shard, rồi máy ghi. Khi không chắc khách ở đâu, đường đó dừng lại thay vì đoán."
+  en: "Every request takes one path: the verified identity, the directory, the shard's proxy, then the writer. When the tenant's home is uncertain, the path stops instead of guessing."
+align: true
+nodes:
+  - { id: req, shape: key, mono: true, label: tenant_id = t-04 }
+  - { id: router, label: { vi: "bộ định tuyến", en: "request router" } }
+  - { id: dir, shape: table, label: directory, sub: "t-04 → s2 · v1" }
+  - { id: old, label: { vi: "s2 chặn ghi t-04", en: "s2 refuses t-04" }, sub: { vi: "khách đã chuyển", en: "tenant moved" }, tone: warm }
+  - { id: w, shape: table, label: s2 writer }
+  - { id: proxy, label: proxy-s2.lab }
+rows:
+  - [req, router, dir]
+  - [old, w, proxy]
+phone:
+  rows: [[req], [router], [dir, old], [proxy], [w]]
+edges:
+  - { from: req, to: router }
+  - { from: router, to: dir }
+  - { from: dir, to: proxy, label: { vi: "địa chỉ proxy", en: "proxy address" } }
+  - { from: proxy, to: w }
+  - { id: ro, from: router, to: old, dash: true, label: { vi: "bản nhớ cũ", en: "old copy" } }
+steps:
+  - say: { vi: "Router tra danh mục rồi đi qua proxy của shard.", en: "The router looks up the directory, then goes through the shard's proxy." }
+    alt: { vi: "Danh mục chỉ ghi địa chỉ proxy, nên không ứng dụng nào đi tắt tới máy ghi khi proxy hỏng.", en: "The directory stores only the proxy address, so no app can skip straight to the writer when the proxy is down." }
+    show: [req, router, dir, proxy, w]
+  - say: { vi: "Khách đã chuyển: nơi cũ từ chối, router tra lại.", en: "The tenant moved: the old shard refuses, the router looks again." }
+    alt: { vi: "Bản nhớ tạm của router còn trỏ về s2 vài giây, nên s2 phải từ chối ghi của khách đã đi thay vì nhận lặng lẽ.", en: "The router's cache still points at s2 for a few seconds, so s2 must refuse the moved tenant's writes instead of taking them silently." }
+    show: [req, router, dir, proxy, w, old, ro]
+    set:
+      dir: { sub: "t-04 → s1 · v2", tone: new }
+      proxy: { label: proxy-s1.lab }
+      w: { label: s1 writer }
+  - say: { vi: "Danh mục không trả lời: từ chối, không đi shard mặc định.", en: "The directory does not answer: refuse, never a default shard." }
+    alt: { vi: "Ghi nhầm sang shard của người bán khác khó gỡ hơn nhiều so với vài giây báo bận.", en: "Writing into another seller's shard is far harder to undo than a few seconds of busy errors." }
+    show: [req, router, dir, old, ro]
+    set:
+      dir: { sub: { vi: "không trả lời", en: "no answer" }, tone: ghost }
+      old: { label: { vi: "lỗi tạm thời", en: "transient error" }, sub: { vi: "không đoán shard", en: "no guessed shard" }, tone: dead }
+      ro: { label: { vi: "từ chối", en: "refuse" }, dash: false }

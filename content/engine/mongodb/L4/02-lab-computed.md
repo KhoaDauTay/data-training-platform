@@ -9,6 +9,7 @@ kind: lab
 minutes: 15
 runtime: browser
 viz: mg-pipeline
+figures: [{ name: mg-computed-bucket, at: idea, variant: computed }]
 objectives:
   - vi: "Tính trước tổng tiền và số món của mỗi đơn bằng biểu thức trên mảng"
     en: "Precompute each order's total and item count with array expressions"

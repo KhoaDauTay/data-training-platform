@@ -1,0 +1,84 @@
+# B1-5 (tools/v42/diagram-plan-v42.md): one edge item, read from both ends. Lessons: e-dy-l3-10 (Ý chính; its Cú pháp keeps the
+# two Query lines and drops the "edge item" layout line the figure draws), variant `school` in e-dy-l4-07 (Ví dụ, replaces the
+# item-shape text block). Data (each lab's setup, Query on dynoxide, tests/_ scratch run 2026-11-26): Shop ORDER#O-503 →
+# PRODUCT#P-01 (qty 3), P-02 (1), P-04 (2); GSI1 PRODUCT#P-02 → ORDER#O-502, O-503, O-507. School STU#s02 → profile + CRS#c1,
+# c3, c4 (the pitfall's 4 items); GSI ByTarget CRS#c4 → STU#s02, s05, s06. The dashed row arrow joins the same item in the table
+# and in the index (the variant moves it to its own shared item, L761 `set` on an edge id).
+# Deviation: `school` is one static frame (a variant draws one frame), not two.
+# Source: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-adjacency-graphs.html
+title: { vi: "Một item cạnh, đọc từ hai đầu", en: "One edge item, read from both ends" }
+caption:
+  vi: "Mỗi cặp đơn–sản phẩm là một item cạnh trong partition của đơn. GSI1 có khóa đảo: cùng item đó nằm trong partition của sản phẩm, DynamoDB tự chép sang."
+  en: "Each order–product pair is an edge item in the order's partition. GSI1 has the keys swapped: the same item sits in the product's partition, copied there by DynamoDB."
+alt:
+  vi: "Quan hệ nhiều-nhiều được lưu bằng item cạnh: chiều xuôi đọc partition của nguồn, chiều ngược đọc GSI có khóa đảo. Ứng dụng ghi mỗi cạnh một lần; DynamoDB chép sang GSI, nhất quán cuối."
+  en: "A many-to-many relation is stored as edge items: forward reads the source's partition, reverse reads a GSI with the keys swapped. The app writes each edge once; DynamoDB copies it to the GSI, eventually consistent."
+nodes:
+  - { id: q1, shape: key, label: "Query PK = ORDER#O-503" }
+  - id: tbl
+    shape: grid
+    mono: true
+    label: { vi: "bảng Shop", en: "table Shop" }
+    head: [PK, SK, qty]
+    cells:
+      - [ORDER#O-503, PRODUCT#P-01, "3"]
+      - [ORDER#O-503, PRODUCT#P-02, "1"]
+      - [ORDER#O-503, PRODUCT#P-04, "2"]
+  - id: gsi
+    shape: grid
+    mono: true
+    label: GSI1
+    head: [GSI1PK, GSI1SK]
+    cells:
+      - [PRODUCT#P-02, ORDER#O-502]
+      - [PRODUCT#P-02, ORDER#O-503]
+      - [PRODUCT#P-02, ORDER#O-507]
+  - { id: q2, shape: key, label: "Query GSI1PK = PRODUCT#P-02" }
+rows:
+  - [q1, q2]
+  - [tbl, gsi]
+phone:
+  rows: [[q1], [tbl], [gsi], [q2]]
+edges:
+  - { from: q1, to: tbl }
+  - { id: cp, from: "tbl#1", to: "gsi#1", dash: true }
+  - { from: q2, to: gsi }
+steps:
+  - say: { vi: "Chiều xuôi: một Query trên partition của đơn.", en: "Forward: one Query on the order's partition." }
+    alt: { vi: "Mỗi cặp đơn–sản phẩm là một item cạnh nằm trong partition của đơn, nên đọc mọi sản phẩm của đơn là một Query.", en: "Each order–product pair is an edge item in the order's partition, so all the order's products are one Query." }
+    show: [q1, tbl]
+  - say: { vi: "Chiều ngược: GSI đảo khóa.", en: "Reverse: a GSI with the keys swapped." }
+    alt: { vi: "Query luôn cần bằng trên partition key, nên chiều ngược cần một GSI lấy sản phẩm làm partition key, nơi DynamoDB chép sẵn item cạnh.", en: "A Query always needs equality on the partition key, so the reverse direction needs a GSI keyed by product, where DynamoDB has copied the edge item." }
+    set:
+      tbl: { rowTone: [null, new, null] }
+      gsi: { rowTone: [null, new, null] }
+variants:
+  school:
+    title: { vi: "Học viên và khóa học: nút và cạnh", en: "Students and courses: nodes and edges" }
+    caption:
+      vi: "Trong bảng School, item có pk = sk là nút (hồ sơ học viên), item có sk là một khóa học là cạnh (lượt ghi danh). GSI ByTarget lấy sk làm partition key, nên đọc được học viên của một khóa học."
+      en: "In the School table an item with pk = sk is a node (the student's profile), an item whose sk is a course is an edge (an enrolment). GSI ByTarget takes sk as its partition key, so it reads a course's students."
+    alt:
+      vi: "Nút và cạnh dùng chung một partition: Query theo học viên trả cả hồ sơ lẫn các lượt ghi danh, nên phải lọc sk bằng begins_with. Chiều ngược đọc GSI ByTarget, nơi cạnh của STU#s02 với CRS#c4 nằm trong partition của khóa học."
+      en: "Nodes and edges share a partition: a Query by student returns the profile and the enrolments, so sk is narrowed with begins_with. The reverse reads GSI ByTarget, where the edge from STU#s02 to CRS#c4 sits in the course's partition."
+    set:
+      q1: { label: "Query pk = STU#s02" }
+      tbl:
+        label: { vi: "bảng School", en: "table School" }
+        head: [pk, sk, { vi: "loại", en: kind }]
+        cells:
+          - [STU#s02, STU#s02, { vi: "nút", en: node }]
+          - [STU#s02, CRS#c1, { vi: "cạnh", en: edge }]
+          - [STU#s02, CRS#c3, { vi: "cạnh", en: edge }]
+          - [STU#s02, CRS#c4, { vi: "cạnh", en: edge }]
+        rowTone: [warm, null, null, new]
+      gsi:
+        label: GSI ByTarget
+        head: [sk, pk]
+        cells:
+          - [CRS#c4, STU#s02]
+          - [CRS#c4, STU#s05]
+          - [CRS#c4, STU#s06]
+        rowTone: [new, null, null]
+      q2: { label: "Query ByTarget sk = CRS#c4" }
+      cp: { from: "tbl#3", to: "gsi#0" }

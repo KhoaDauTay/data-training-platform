@@ -9,6 +9,7 @@ kind: concept
 runtime: browser
 minutes: 15
 viz: pg-tenant-placement
+figures: [{ name: ds-tenant-routing, at: idea }]
 objectives:
   - vi: Tra danh mục để định tuyến một yêu cầu tới proxy của shard đúng, và chuyển một khách bằng một lần đổi dòng có kiểm phiên bản.
     en: Look up the catalog to route a request to the right shard's proxy, and move a tenant with one version-checked row change.
@@ -119,14 +120,7 @@ Chuyển một khách: tạm chặn ghi của khách, chép dữ liệu theo lô
 
 Cấp phát: mỗi shard là một khối cố định (cụm máy, proxy, cấu hình có phiên bản, khóa mã hóa, bí mật cho từng vai trò, cảnh báo), dựng bằng cùng một mô-đun hạ tầng cho cả gói chung lẫn gói riêng, chỉ khác tham số. Kịch bản dựng chỉ tạo vai trò, chưa tạo bảng. Nhiều người nghĩ kịch bản chạy xanh một lần là xong. Thật ra nó phải được thử trên môi trường mới tinh, và phải kiểm theo đúng đường ứng dụng đi: qua proxy.
 
-Minh họa đường đi của một yêu cầu (không chạy trong trình duyệt):
-
-```text
-tenant_id = t-04
-  → router → directory
-  → proxy-s2.lab
-  → s2 writer
-```
+Hình dưới minh họa đường đi của một yêu cầu, khi khách vừa chuyển shard và khi danh mục không trả lời (không chạy trong trình duyệt).
 
 ## Ví dụ
 
@@ -232,14 +226,7 @@ Moving a tenant: block the tenant's writes, copy its data in batches, compare ro
 
 Provisioning: each shard is a fixed unit (cluster, proxy, versioned settings, encryption key, a secret per role, alarms), built from the same infrastructure module for shared and dedicated tiers, with different inputs only. The bootstrap script creates roles but no tables yet. Many people think a script that passed once is done. In fact it must be tested on a brand-new environment, and checked along the path applications really take: through the proxy.
 
-An illustration of one request's path (not run in the browser):
-
-```text
-tenant_id = t-04
-  → router → directory
-  → proxy-s2.lab
-  → s2 writer
-```
+The figure below illustrates one request's path, right after the tenant moved and when the directory does not answer (not run in the browser).
 
 ## Example
 
