@@ -49,10 +49,10 @@ export function resumeTarget(completed: readonly string[], next: Ticket | undefi
   return next && { kind: 'ticket', ticket: next };
 }
 
-const ENGINE_OF: Record<string, string> = { pg: 'postgres', mg: 'mongodb', dy: 'dynamodb', ds: 'design', st: 'stack' };
+const ENGINE_OF: Record<string, string> = { pg: 'postgres', mg: 'mongodb', dy: 'dynamodb', ds: 'design', st: 'stack', ol: 'olap' };
 /** An Engine lesson id (`e-pg-l3-04`) → its engine and level; undefined for anything else (Best Practice cards, path drills). */
 export function engineLevelOf(id: string): { engine: string; level: number } | undefined {
-  const m = /^e-(pg|mg|dy|ds|st)-l([1-5])-/.exec(id);
+  const m = /^e-(pg|mg|dy|ds|st|ol)-l([1-5])-/.exec(id);
   return m ? { engine: ENGINE_OF[m[1]], level: Number(m[2]) } : undefined;
 }
 

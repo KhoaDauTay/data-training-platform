@@ -1,0 +1,12 @@
+- id: workload
+  vi: OLTP và OLAP
+  en: OLTP and OLAP
+- id: pganalytics
+  vi: Phân tích trên PostgreSQL
+  en: Analytics on PostgreSQL
+- id: columnar
+  vi: Lưu theo cột
+  en: Column storage
+- id: clickhouse
+  vi: ClickHouse
+  en: ClickHouse

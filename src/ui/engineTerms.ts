@@ -14,9 +14,9 @@ import type { PageSub } from './homeView';
  */
 let d: EngineDeps;
 let terms: Term[] = [];
-const NAME: Record<EngineId, string> = { postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB', design: '', stack: '' };
+const NAME: Record<EngineId, string> = { postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB', design: '', stack: '', olap: '' };
 /** F15: design is never a glossary engine (glossary.ts ENG), so it gets no filter (it would match nothing). */
-const TERM_ENGINES = ENGINES.filter((e) => e !== 'design' && e !== 'stack');
+const TERM_ENGINES = ENGINES.filter((e) => e !== 'design' && e !== 'stack' && e !== 'olap');
 const tt = (key: TermsKey, params?: I18n.Params): string => termsText(d.getLang(), d.locale(), key, params);
 const lang = (): 'vi' | 'en' => d.getLang();
 
