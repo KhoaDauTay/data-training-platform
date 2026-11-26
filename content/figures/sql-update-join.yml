@@ -20,7 +20,7 @@ nodes:
     rowTone: [null, null, null, null, new]
   - id: t
     shape: grid
-    label: { vi: "store_targets t, 12/2026", en: "store_targets t, Dec" }
+    label: { vi: "store_targets t, 12/2026", en: "store_targets t, Dec" }
     head: [store_id, target_vnd]
     cells: [["1", "10000000"], ["2", "5000000"], ["3", "15000000"], ["4", "6000000"], ["5", "9000000"]]
   - { id: on, mono: true, label: "s.id = t.store_id", sub: "s.city = 'Hanoi'" }

@@ -1,6 +1,7 @@
 # v46 (L862): DISTINCT keeps each different result row once. Lessons: distinct (Ý chính) + its quick lesson.
 # Data (lab, checked in PGlite 2026-11-26): stores 1 Hai Chau / 2 Son Tra = Da Nang, 3 Ben Thanh / 4 Thao Dien = Ho Chi Minh City,
 # 5 Hoan Kiem = Hanoi. SELECT DISTINCT city FROM stores ORDER BY city → Da Nang, Hanoi, Ho Chi Minh City (3 rows).
+# The stores are listed by city (as DISTINCT's sort would group them), so no link crosses another.
 # The tone follows the city and the city's name is in every cell, so colour never carries the meaning alone.
 # Source: https://www.postgresql.org/docs/current/sql-select.html#SQL-DISTINCT
 title: { vi: "DISTINCT giữ mỗi giá trị một lần", en: "DISTINCT keeps each value once" }
@@ -18,9 +19,9 @@ nodes:
     cells:
       - [Hai Chau, Da Nang]
       - [Son Tra, Da Nang]
+      - [Hoan Kiem, Hanoi]
       - [Ben Thanh, Ho Chi Minh City]
       - [Thao Dien, Ho Chi Minh City]
-      - [Hoan Kiem, Hanoi]
     toneOf: { "Da Nang": new, "Ho Chi Minh City": warm, Hanoi: live }
   - id: res
     shape: grid
@@ -36,6 +37,6 @@ rows:
 edges:
   - { from: "stores#0.1", to: "res#0.0", link: true }
   - { from: "stores#1.1", to: "res#0.0", link: true }
-  - { from: "stores#2.1", to: "res#2.0", link: true }
+  - { from: "stores#2.1", to: "res#1.0", link: true }
   - { from: "stores#3.1", to: "res#2.0", link: true }
-  - { from: "stores#4.1", to: "res#1.0", link: true }
+  - { from: "stores#4.1", to: "res#2.0", link: true }

@@ -38,7 +38,11 @@ function figureBox(l: Lesson, place: string): HTMLElement | null {
   if (old?.lang === lang) return old.host;
   const step = old?.m?.index;
   old?.m?.destroy();
-  const e: { lang: string; host: HTMLElement; m?: FigMounted } = { lang, host: h('div', { class: 'mt-3 min-w-0', 'data-fig-slot': ref.name }) };
+  // The builder never draws narrower than 280 (+ the frame's 8): the brief's host is the viewport − 80 (pane, task and card
+  // padding), the dialog's − 34, so below 368 px the host takes some padding (brief: the card's and the task pane's; dialog: its
+  // body's) and a 320 phone still gets ≥ 13 px labels (L861; measured 232 → 280 px in the brief, 278 → 294 in the dialog).
+  const bleed = place === 'lesson-dialog-title' ? 'mt-3 min-w-0 max-[367px]:-mx-2' : 'mt-3 min-w-0 max-[367px]:-mx-6';
+  const e: { lang: string; host: HTMLElement; m?: FigMounted } = { lang, host: h('div', { class: bleed, 'data-fig-slot': ref.name }) };
   figHosts.set(key, e);
   const mountNow = (): void => void import('../engine/viz/figure')
     .then((f) => f.mountFigure(e.host, ref, { h, s, reducedMotion, loadedGsap, loadGsap, getLang }, 'sql', lang, step))

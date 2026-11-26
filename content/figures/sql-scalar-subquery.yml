@@ -16,7 +16,7 @@ nodes:
   - id: res
     shape: grid
     label: { vi: "Câu ngoài", en: "Outer query" }
-    sub: "price_vnd > 52833.33"
+    sub: { vi: "giá > 52833.33", en: "price > 52833.33" }
     head: [name, price_vnd]
     cells:
       - [Desk lamp, "259000"]
