@@ -27,6 +27,8 @@
   --eng-ink: var(--text); --eng-sub: var(--muted); --eng-cell: var(--panel); --eng-head: var(--surface-2); --eng-free: var(--surface-2);
   --eng-active: var(--accent); --eng-active-soft: var(--accent-soft); --eng-live: var(--good); --eng-dead: var(--bad); --eng-dead-soft: var(--bad-soft);
   --eng-hot: var(--warn); --eng-hot-soft: var(--warn-soft); --eng-frozen: var(--syn-type); --eng-frozen-soft: var(--info-soft);
+  /* v39 (L604): the figure builder paints with --eng-* only; --eng-edge is a meaningful stroke (≥ 4.5:1), never --border */
+  --eng-live-soft: var(--good-soft); --eng-ptr: var(--info); --eng-ptr-soft: var(--info-soft); --eng-edge: var(--muted);
   --bg: #fbf7f0; --panel: #ffffff; --text: #2a2320; --muted: #5c5149; --border: #d8cab8;
   --accent: #0f766e; --accent-soft: #dcf2ee; --on-accent: #ffffff; --good: #17752f; --bad: #b42318; --warn: #9a4f00;
   --code: #f0e8dc; --sea: #e8f1f8; --land: #d9e2ea; --bar: #1f3b57; --disabled: #8a8a90;

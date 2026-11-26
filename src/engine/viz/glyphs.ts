@@ -1,0 +1,6 @@
+// v39 (F1, L601): Nunito Variable advances in em (hundredths), measured in Edge at 100 px by tools/v39/measure-glyphs.mjs
+// (glyph-widths.json): the 95 printable ASCII characters + the symbols the figures use. A layout built from this table is the
+// same in Node (Vitest) and the browser; scripts/overlap-check.mjs watches for drift. Do not edit by hand: re-measure.
+export const GLYPHS = "0123456789 !\"#$%&'()*+,-./:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~→←↔·…–—≥≤×✓";
+export const W400 = '60,60,60,60,60,60,60,60,60,60,26,23,39,60,60,93,69,22,32,32,45,60,23,42,23,28,23,23,60,60,60,44,95,73,68,67,74,58,55,73,76,26,32,63,54,86,74,77,63,77,67,62,60,73,69,110,65,60,59,32,28,32,60,50,36,53,58,46,58,53,33,59,57,23,24,50,30,86,57,56,58,58,36,48,35,56,52,84,53,51,46,35,27,35,60,86,86,86,23,69,50,100,69,69,60,75';
+export const W700 = '60,60,60,60,60,60,60,60,60,60,27,25,45,60,60,95,73,24,36,36,45,60,25,43,25,31,25,25,60,60,60,46,95,74,69,68,76,60,56,74,77,28,35,67,56,87,75,79,65,79,69,63,62,74,71,111,67,62,61,35,31,35,60,50,38,55,60,47,60,54,36,60,59,26,26,54,32,88,59,58,60,60,39,49,38,58,53,85,55,53,47,39,29,39,60,86,86,86,25,75,50,100,71,71,60,75';

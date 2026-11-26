@@ -11,6 +11,7 @@
  * ## Practice). Section text: paragraphs, `- ` bullet lists, inline `code` and ``` fenced blocks; nothing else.
  */
 import type { PerfSpec } from '../planCheck';
+import { type FigRef, parseFigures } from './figureSlot';
 
 /** v28 R4 (L322, L420): `design` = database design and DBMS theory, the fourth card; its labs run on PostgreSQL (`onPg`). */
 export const ENGINES = ['postgres', 'mongodb', 'dynamodb', 'design'] as const;
@@ -103,6 +104,8 @@ export interface EngineLesson {
   /** v38 (R2 E08): a source written as `{ url, title }` shows that title in "Đọc thêm" instead of its URL slug. */
   sourceTitles?: Record<string, string>;
   viz?: string;
+  /** v39 (L600): figures placed at the end of a named section (src/engine/figureSlot.ts). Full lesson only, never in META_KEYS. */
+  figures?: FigRef[];
   lab?: Lab;
   quiz?: Question[];
   predict?: Predict;
@@ -194,6 +197,7 @@ export function parseEngineLesson(source: string | LessonSource, path: string, y
   if (src.body === undefined) return lesson;
   if (!lesson.objectives.length) fail('cần ít nhất một objectives');
   if (fm.viz !== undefined) lesson.viz = /^[a-z0-9-]+$/.test(String(fm.viz)) ? String(fm.viz) : fail('viz phải là [a-z0-9-]+');
+  if (fm.figures !== undefined) lesson.figures = parseFigures(fm.figures, Object.keys(SECTIONS), fail);
   if (fm.lab !== undefined) {
     const lab = fm.lab as Record<string, unknown>;
     const steps = list(lab.steps, 'lab.steps').map((v, i): LabStep => {
@@ -240,6 +244,7 @@ export function parseEngineLesson(source: string | LessonSource, path: string, y
   if (vi.map((s) => s.id).join() !== en.map((s) => s.id).join()) fail('mục VI và EN phải giống nhau, cùng thứ tự');
   if (!vi.length) fail('cần ít nhất một mục ## trong thân bài');
   lesson.sections = vi.map((s, i) => ({ id: s.id, text: { vi: s.text, en: en[i].text } }));
+  for (const f of lesson.figures ?? []) if (!vi.some((s) => s.id === f.at)) fail(`figures: bài không có mục "${f.at}" cho ${f.name}`);
   return lesson;
 }
 

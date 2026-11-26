@@ -8,6 +8,7 @@ title_en: NULL is not a value
 kind: quiz
 runtime: browser
 minutes: 10
+figures: [{ name: sql-null-truth, at: idea }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Đoán đúng kết quả của so sánh, đếm và `NOT IN` khi có NULL, để không viết câu lọc âm thầm bỏ sót dòng.
@@ -137,7 +138,7 @@ Quản lý hỏi "bao nhiêu nhân viên không thuộc phòng 20?", bạn viế
 
 ## Ý chính
 
-NULL nghĩa là "không biết" hoặc "không có". Nó không bằng, không khác, không lớn hơn bất cứ thứ gì, kể cả chính nó: mọi phép so sánh thường với NULL cho ra NULL. Logic SQL vì thế có ba giá trị: true, false và NULL (unknown). `true AND NULL` là NULL, nhưng `false AND NULL` là false và `true OR NULL` là true, vì kết quả đã rõ dù vế kia là gì.
+NULL nghĩa là "không biết" hoặc "không có". Nó không bằng, không khác, không lớn hơn bất cứ thứ gì, kể cả chính nó: mọi phép so sánh thường với NULL cho ra NULL. Logic SQL vì thế có ba giá trị: true, false và NULL (unknown). `true AND NULL` là NULL, nhưng `false AND NULL` là false và `true OR NULL` là true, vì kết quả đã rõ dù vế kia là gì. Hình cuối mục này vẽ đủ hai bảng chân trị của `AND` và `OR`.
 
 Nhiều người nghĩ một điều kiện ra NULL thì cũng gần như true. Thật ra `WHERE` chỉ giữ dòng có điều kiện là true; dòng ra NULL bị bỏ y như false, và không có thông báo nào. Ngược lại, `CHECK` chỉ từ chối dòng có điều kiện là false, nên NULL lọt qua `CHECK`. Cùng một NULL, hai chỗ xử lý ngược nhau.
 
@@ -235,7 +236,7 @@ Your manager asks "how many staff are not in department 20?", you write `dept_id
 
 ## Key idea
 
-NULL means "unknown" or "missing". It is not equal to, different from or greater than anything, itself included: every ordinary comparison with NULL yields NULL. SQL logic therefore has three values: true, false and NULL (unknown). `true AND NULL` is NULL, but `false AND NULL` is false and `true OR NULL` is true, because the result is settled whatever the other side is.
+NULL means "unknown" or "missing". It is not equal to, different from or greater than anything, itself included: every ordinary comparison with NULL yields NULL. SQL logic therefore has three values: true, false and NULL (unknown). `true AND NULL` is NULL, but `false AND NULL` is false and `true OR NULL` is true, because the result is settled whatever the other side is. The figure at the end of this section draws both truth tables, `AND` and `OR`.
 
 Many people think a condition that yields NULL is almost true. In fact `WHERE` keeps only rows whose condition is true; a NULL row is dropped just like false, with no warning. Conversely, `CHECK` only rejects rows whose condition is false, so NULL gets through a `CHECK`. The same NULL, handled in opposite ways in two places.
 

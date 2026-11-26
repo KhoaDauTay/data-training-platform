@@ -29,7 +29,8 @@ export const init = (deps: Deps): void => void (D = deps);
 export type Tone = 'cell' | 'live' | 'dead' | 'new' | 'ptr' | 'warm' | 'free' | 'ghost' | 'plain';
 /** Text and line colours. */
 export type Ink = 'ink' | 'muted' | 'live' | 'dead' | 'new' | 'ptr' | 'warm' | 'edge';
-type Base = { k: string; o?: number };
+/** `attrs` (v39 figures, L603): extra attributes written once per frame (data-owner, data-from, data-to, lang) for the overlap checker. */
+type Base = { k: string; o?: number; attrs?: Record<string, string> };
 export type Shape =
   | (Base & { t: 'r'; x: number; y: number; w: number; h: number; tone?: Tone; rx?: number; bold?: boolean })
   | (Base & { t: 't'; x: number; y: number; s: string; ink?: Ink; size?: number; a?: 'm' | 'e'; b?: boolean; mono?: boolean })
@@ -43,16 +44,18 @@ export interface Frame { say: string; nodes: Shape[] }
  * Labels never shrink below it: a long one is cut (`cut`) or its box grows. On wide screens the svg stops at 480 px.
  */
 export const SM = 12.5;
-export interface Diagram { title: string; w: number; h: number; frames: Frame[] }
+/** `maxW` (v39 figures): the svg's max width in px (480 by default; a figure laid out for its host's width uses 640, 1 unit = 1 px). */
+export interface Diagram { title: string; w: number; h: number; frames: Frame[]; maxW?: number }
 export type Tr = (vi: string, en: string) => string;
 
+// v39 (L604): the --eng-* aliases (style.css), the same colours as the v7 tokens they point at; figures and old diagrams share them.
 const FILL: Record<Tone, [string, string]> = {
-  cell: ['--surface-2', '--muted'], live: ['--good-soft', '--good'], dead: ['--bad-soft', '--bad'],
-  new: ['--accent-soft', '--accent'], ptr: ['--info-soft', '--info'], warm: ['--warn-soft', '--warn'],
-  free: ['--panel', '--muted'], ghost: ['--panel', '--muted'], plain: ['--panel', '--muted'],
+  cell: ['--eng-head', '--eng-edge'], live: ['--eng-live-soft', '--eng-live'], dead: ['--eng-dead-soft', '--eng-dead'],
+  new: ['--eng-active-soft', '--eng-active'], ptr: ['--eng-ptr-soft', '--eng-ptr'], warm: ['--eng-hot-soft', '--eng-hot'],
+  free: ['--eng-cell', '--eng-edge'], ghost: ['--eng-cell', '--eng-edge'], plain: ['--eng-cell', '--eng-edge'],
 };
 const INK: Record<Ink, string> = {
-  ink: '--text', muted: '--muted', live: '--good', dead: '--bad', new: '--accent', ptr: '--info', warm: '--warn', edge: '--muted',
+  ink: '--eng-ink', muted: '--eng-sub', live: '--eng-live', dead: '--eng-dead', new: '--eng-active', ptr: '--eng-ptr', warm: '--eng-hot', edge: '--eng-edge',
 };
 const TAG = { r: 'rect', t: 'text', l: 'line', c: 'circle', p: 'path' } as const;
 /** Model key → SVG attribute of the numbers a tween may move. */
@@ -86,6 +89,7 @@ function look(el: SVGElement, n: Shape, id: string): void {
     set('marker-end', n.arrow ? `url(#${id}-${ink})` : false);
     if (n.t === 'p') set('d', n.d);
   }
+  for (const [a, v] of Object.entries(n.attrs ?? {})) set(a, v);
 }
 const putNums = (el: SVGElement, n: Shape, v: number[]): void => NUM[n.t].forEach(([, a], i) => el.setAttribute(a, r2(v[i])));
 
@@ -96,7 +100,7 @@ function stage(d: Diagram): { svg: SVGSVGElement; draw(f: Frame, animate: boolea
   const marker = (ink: Ink) => D.s('marker', { id: `${id}-${ink}`, viewBox: '0 0 8 8', refX: 7, refY: 4, markerWidth: 6, markerHeight: 6, orient: 'auto-start-reverse' },
     D.s('path', { d: 'M0 0 L8 4 L0 8 z', style: `fill:var(${INK[ink]})` }));
   const svg = D.s('svg', {
-    viewBox: `0 0 ${d.w} ${d.h}`, role: 'img', class: 'block h-auto w-full', style: 'max-width:480px;font-family:inherit;overflow:visible',
+    viewBox: `0 0 ${d.w} ${d.h}`, role: 'img', class: 'block h-auto w-full', style: `max-width:${d.maxW ?? 480}px;font-family:inherit;overflow:visible`,
   }, D.s('defs', {}, ...(Object.keys(INK) as Ink[]).map(marker)));
   const els = new Map<string, SVGElement>();
   let end: (() => void) | undefined;
@@ -168,27 +172,39 @@ const BTN = 'rounded-full border border-accent bg-panel px-3 py-1 font-bold text
 /** Play: each step tweens (≤ 0.55 s) then holds; the whole step stays under 3 s (L101). Stops at the last step, never loops. */
 const HOLD_MS = 2050; // the 0.55 s tween + 1.5 s rest (engine-ux-spec §6); 4 s per frame under reduced motion
 
-export function mount(host: HTMLElement, d: Diagram, lang: Lang, start = 0): VizHandle {
+/**
+ * v39 figures (F1, L602): `fig` marks a figure built from a content spec (src/engine/viz/figure.ts): the root carries
+ * `data-fig`, the caption follows the title, and the generated text alternative (every node and arrow) sits in a <details>.
+ * A figure with one frame is static (P3): no buttons, counter, status line or focus stop.
+ */
+export interface FigOpts { name: string; caption: string; alt: string[]; altTitle: string }
+let figs = 0;
+export function mount(host: HTMLElement, d: Diagram, lang: Lang, start = 0, fo?: FigOpts): VizHandle {
   const ui = UI[lang];
   const n = d.frames.length;
   const st = stage(d);
+  const one = !!fo && n === 1;
+  const id = `fig${++figs}`;
   const say = D.h('p', { role: 'status', 'aria-live': 'polite', class: 'm-0 text-body-sm [grid-area:1/1]' });
   const counter = D.h('span', { class: 'muted tabular-nums', 'aria-hidden': 'true' });
   const back = D.h('button', { type: 'button', class: BTN }, `‹ ${ui.back}`);
   const play = D.h('button', { type: 'button', class: BTN, 'aria-pressed': 'false' }, ui.play);
   const next = D.h('button', { type: 'button', class: BTN }, `${ui.next} ›`);
   const items = d.frames.map((f, i) => D.h('li', {}, f.say));
-  const fig = D.h('figure', {
+  const alt = fo ? D.h('div', { id: `${id}-alt` }, ...fo.alt.map((p) => D.h('p', { class: 'm-0' }, p))) : null;
+  if (one) st.svg.setAttribute('aria-labelledby', `${id}-cap ${id}-alt`);
+  const fig = D.h('figure', one ? { class: 'm-0 grid gap-2', 'data-fig': fo!.name } : {
     class: 'm-0 grid gap-2', tabindex: '0', 'aria-roledescription': lang === 'vi' ? 'sơ đồ từng bước' : 'step-through diagram',
-    'aria-label': `${d.title}. ${ui.keys}`, 'data-viz': '',
+    'aria-label': `${d.title}. ${ui.keys}`, ...(fo ? { 'data-fig': fo!.name } : { 'data-viz': '' }),
   },
-  D.h('figcaption', { class: 'font-bold' }, d.title),
+  D.h('figcaption', { id: `${id}-cap`, class: fo ? '' : 'font-bold' }, ...(fo ? [D.h('b', {}, d.title), fo.caption ? ` ${fo.caption}` : ''] : [d.title])),
   D.h('div', { class: 'overflow-hidden rounded-(--r-ctl) bg-panel p-2 ring-1 ring-line max-sm:p-1' }, st.svg),
-  // A5 (v31, L515): every step's sentence sits in the same grid cell, hidden but the shown one, so the cell is as tall as the
-  // longest and the buttons below never move between steps
-  D.h('div', { class: 'grid' }, say, ...d.frames.map((f) => D.h('p', { class: 'invisible m-0 text-body-sm [grid-area:1/1]', 'aria-hidden': 'true' }, f.say))),
-  D.h('div', { class: 'flex flex-wrap items-center gap-2' }, back, play, next, counter),
-  D.h('details', { class: 'text-body-sm' }, D.h('summary', {}, ui.all), D.h('ol', {}, ...items)));
+  ...(one ? [d.frames[0].say ? D.h('p', { class: 'm-0 text-body-sm' }, d.frames[0].say) : '', D.h('details', { class: 'text-body-sm' }, D.h('summary', {}, fo!.altTitle), alt)] : [
+    // A5 (v31, L515): every step's sentence sits in the same grid cell, hidden but the shown one, so the cell is as tall as the
+    // longest and the buttons below never move between steps
+    D.h('div', { class: 'grid' }, say, ...d.frames.map((f) => D.h('p', { class: 'invisible m-0 text-body-sm [grid-area:1/1]', 'aria-hidden': 'true' }, f.say))),
+    D.h('div', { class: 'flex flex-wrap items-center gap-2' }, back, play, next, counter),
+    D.h('details', { class: 'text-body-sm' }, D.h('summary', {}, ui.all), D.h('ol', {}, ...items), alt)]));
   let at = -1;
   let timer: number | undefined;
   const halt = (): void => {
@@ -203,7 +219,7 @@ export function mount(host: HTMLElement, d: Diagram, lang: Lang, start = 0): Viz
     st.draw(d.frames[to], animate && to === at + 1);
     at = to;
     const label = ui.step.replace('{i}', String(to + 1)).replace('{n}', String(n));
-    st.svg.setAttribute('aria-label', `${d.title}. ${label}: ${d.frames[to].say}`);
+    if (!one) st.svg.setAttribute('aria-label', `${d.title}. ${label}: ${d.frames[to].say}`);
     say.textContent = d.frames[to].say;
     counter.textContent = `${to + 1} / ${n}`;
     items.forEach((li, j) => (j === to ? li.setAttribute('aria-current', 'step') : li.removeAttribute('aria-current')));
@@ -231,7 +247,7 @@ export function mount(host: HTMLElement, d: Diagram, lang: Lang, start = 0): Viz
     play.setAttribute('aria-pressed', 'true');
     tick();
   };
-  fig.addEventListener('keydown', (e) => {
+  if (!one) fig.addEventListener('keydown', (e) => {
     const k = (e as KeyboardEvent).key;
     const to = k === 'ArrowRight' ? at + 1 : k === 'ArrowLeft' ? at - 1 : k === 'Home' ? 0 : k === 'End' ? n - 1 : undefined;
     if (to === undefined) return;

@@ -19,6 +19,7 @@ import type * as Tickets from '../tickets';
 import type { Ticket } from '../tickets';
 import type * as Brief from './brief';
 import type * as Dom from './dom';
+import type * as Svg from './svg';
 import type * as Icons from './icons';
 import type * as LessonCard from './lessonCard';
 import type * as Modes from './modes';
@@ -67,6 +68,8 @@ export interface DrillDeps extends GuideDeps {
   masteryOf: typeof Mastery.masteryOf;
   /** v28 LINK (L432): the "Đào sâu" chips to Engine lessons (src/ui/deepDive.ts, main; its table is a lazy chunk). */
   deepDive: (id: string) => HTMLElement | null;
+  /** v39 (P1, L605): the SVG helper the figure builder draws with (with h/reducedMotion/gsap/getLang above = the figure's Deps). */
+  s: typeof Svg.s;
 }
 
 let d$: DrillDeps;

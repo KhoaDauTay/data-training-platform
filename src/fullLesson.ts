@@ -9,6 +9,8 @@
  * Body: VI sections, then `# EN` with the same headings in English (## Opening, ## Key idea, ## Syntax). SQL lives once, in
  * the frontmatter; prose may use `code` spans and paragraphs only.
  */
+import { type FigRef, parseFigures } from './engine/figureSlot';
+
 export interface Bi { vi: string; en: string }
 export interface RunExample { title: Bi; sql: string; read: Bi }
 export interface Pitfall { title: Bi; wrong: string; fix: string; why: Bi }
@@ -27,6 +29,8 @@ export interface FullLesson {
   quiz: LessonQuestion[];
   recap: Bi[];
   sources: string[];
+  /** v39 (L600): figures placed at the end of a section (src/engine/figureSlot.ts). */
+  figures?: FigRef[];
 }
 /** What the `?fm` import gives (scripts/contentJson.mjs mdData). */
 export interface LessonSource { fm: Record<string, unknown>; body: string }
@@ -109,6 +113,7 @@ export function parseFullLesson(src: LessonSource, origin = 'lesson'): FullLesso
     }),
     recap: arr(fm.recap, origin, 'recap').map((r, i) => bi(r, origin, `recap[${i}]`)),
     sources: arr(fm.sources, origin, 'sources').map((u) => (typeof u === 'string' && /^https:\/\//.test(u) ? u : fail(origin, 'sources: chỉ link https'))),
+    ...(fm.figures === undefined ? {} : { figures: parseFigures(fm.figures, LESSON_SECTIONS, (m) => fail(origin, m)) }),
   };
 }
 

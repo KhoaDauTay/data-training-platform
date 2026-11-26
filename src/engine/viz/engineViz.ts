@@ -53,10 +53,13 @@ export const VIZ_ALIAS: Record<string, string> = {
   'mg-replica-election': 'mg-replica-set-oplog',
   'mg-sharding': 'mg-shard-chunks',
 };
-/** The registered diagram a lesson's `viz:` name means, or undefined (draw nothing). `engine` = `pg` | `mg` | `dy`. */
+/**
+ * The registered diagram a lesson's `viz:` name means, or undefined (draw nothing). `engine` = `pg` | `mg` | `dy` | `ds` |
+ * `sql` (v39 P2, L606: `sql-`/`ds-` are prefixes too; a Design lesson's bare name also tries `pg-`, the diagrams it borrows).
+ */
 export function resolveViz(name: string, engine: string): string | undefined {
   const known = [...new Set([...vizNames(), ...NOSQL_VIZ, ...PG_FLOW_VIZ, ...TENANT_VIZ])];
-  const bare = /^(pg|mg|dy)-/.test(name) ? [name] : [name, `${engine}-${name}`];
+  const bare = /^(pg|mg|dy|ds|sql)-/.test(name) ? [name] : [name, `${engine}-${name}`, ...(engine === 'ds' ? [`pg-${name}`] : [])];
   for (const c of bare.flatMap((x) => [x, VIZ_ALIAS[x]]).filter((x): x is string => !!x)) {
     if (known.includes(c)) return c;
     const longer = known.filter((k) => k.startsWith(`${c}-`));

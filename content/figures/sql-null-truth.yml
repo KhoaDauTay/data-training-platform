@@ -1,0 +1,31 @@
+# GA-6 (tools/v39/diagram-plan.md): three-valued logic. Lessons: null_logic (Ý chính), e-pg-l1-05 (Ý chính).
+# Truth tables: https://www.postgresql.org/docs/current/functions-logical.html ; IS NULL: functions-comparison.html
+title: { vi: "Logic ba giá trị", en: "Three-valued logic" }
+caption:
+  vi: "NULL là “không biết”: so sánh với NULL cho ra NULL, và WHERE chỉ giữ dòng TRUE."
+  en: "NULL means unknown: a comparison with NULL gives NULL, and WHERE keeps TRUE rows only."
+nodes:
+  - id: and
+    shape: grid
+    head: ["AND", "TRUE", "FALSE", "NULL"]
+    cells:
+      - ["TRUE", "TRUE", "FALSE", "NULL"]
+      - ["FALSE", "FALSE", "FALSE", "FALSE"]
+      - ["NULL", "NULL", "FALSE", "NULL"]
+    toneOf: { "NULL": warm }
+  - id: or
+    shape: grid
+    head: ["OR", "TRUE", "FALSE", "NULL"]
+    cells:
+      - ["TRUE", "TRUE", "TRUE", "TRUE"]
+      - ["FALSE", "TRUE", "FALSE", "NULL"]
+      - ["NULL", "TRUE", "NULL", "NULL"]
+    toneOf: { "NULL": warm }
+  - { id: eq, shape: key, mono: true, label: "NULL = NULL", sub: "→ NULL", tone: warm }
+  - { id: is, shape: key, mono: true, label: "NULL IS NULL", sub: "→ TRUE", tone: live }
+  - { id: plus, shape: key, mono: true, label: "1 + NULL", sub: "→ NULL", tone: warm }
+  - { id: where, shape: note, label: { vi: "WHERE chỉ giữ TRUE", en: "WHERE keeps TRUE only" } }
+rows:
+  - [and, or]
+  - [eq, is, plus]
+  - [where]

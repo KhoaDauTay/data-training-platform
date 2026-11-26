@@ -1,4 +1,5 @@
 import type { QueryResult } from '../db/run';
+import { figureSlot } from '../engine/figureSlot';
 import type { FullLesson, LessonSection } from '../fullLesson';
 import { LESSON_SECTIONS } from '../fullLesson';
 export { parseFullLesson } from '../fullLesson';
@@ -90,8 +91,11 @@ function sectionHead(s: LessonSection, aside?: string): HTMLElement {
       secName(s)),
     aside ? h('span', { class: 'text-body-sm text-muted tabular-nums' }, aside) : null);
 }
+/** v39 (P1/P4, L605): the lesson's figures placed in section `s`, at its end (the builder is the lazy engineFigure chunk). */
+const figs = (s: LessonSection): HTMLElement[] => (lessonNow?.figures ?? []).filter((f) => f.at === s).map((f) => figureSlot(`${lessonNow!.id}|${f.name}|${s}`, f,
+  { h: d$.h, s: d$.s, reducedMotion: d$.reducedMotion, loadedGsap: d$.loadedGsap, loadGsap: d$.loadGsap, getLang: d$.getLang }, 'sql'));
 const section = (s: LessonSection, aside: string | undefined, ...body: (Node | null)[]): HTMLElement =>
-  d$.h('section', { id: secId(s), 'data-sec': s, class: 'flex scroll-mt-4 flex-col gap-3', 'aria-labelledby': `${secId(s)}-h` }, sectionHead(s, aside), ...body.filter((x): x is Node => !!x));
+  d$.h('section', { id: secId(s), 'data-sec': s, class: 'flex scroll-mt-4 flex-col gap-3', 'aria-labelledby': `${secId(s)}-h` }, sectionHead(s, aside), ...body.filter((x): x is Node => !!x), ...figs(s));
 
 /** Runs `sql` on `lab` like "Thử ngay" (runOn: lab seeded on first use), stores the output, redraws `out`. */
 async function runInto(key: string, sql: string, out: HTMLElement, btn: HTMLButtonElement, say?: (r: QueryResult) => string): Promise<void> {

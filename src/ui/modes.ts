@@ -21,6 +21,7 @@ import { applyVariant } from '../variants';
 import { hints, renderBrief, shapeCard } from './brief';
 import { earlyCard, goalCard, optionalNote, skillChips, wrapUp } from './chapterView';
 import { announce, byId, h, loader, nodes, reducedMotion, richText } from './dom';
+import { s } from './svg';
 import { meChunk } from './meChunk';
 import { boonMark, coachDone, enterMark, escOwned, guideHooks, guideSlot } from './coach';
 import { showPane } from './paneTabs';
@@ -155,7 +156,7 @@ const loadDrillUi = () => import('./drillBrief').then((m) => {
     lessonSeen: isSeen, knownSkills, learnSkillOf, learnAdvOf, learnModuleOf, moduleTitle, illustration, loadedGsap, loadGsap, reducedMotion, icon, skillIcon, loadTickets, CHAPTERS,
     startPlacement, announce, readJson, writeJson, readTour, boonMark, enterMark, escOwned, guideHooks, guideSlot, showPane, parseRoute, mod: keyLabels(isMac).mod, isInterviewPage,
     ROUTE_PARTS: PARTS, partOf, learnTitles, runOn, verdictText, grade, renderResult, errorView, errorText, createEditor, // v24 R0
-    masteryOf, deepDive,
+    masteryOf, deepDive, s, // v39 (L605): s for the figure builder
   });
   return (drillUi = m);
 });

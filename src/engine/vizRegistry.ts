@@ -21,7 +21,7 @@ let chunk: Promise<typeof EngineViz> | undefined;
 const load = (): Promise<typeof EngineViz> => (chunk ??= import('./viz/engineViz').catch((e: unknown) => { chunk = undefined; throw e; }));
 
 /** The mount of a lesson's diagram (`model`: catalog rows from a lab, e.g. heap_page_items for `pg-heap-page`), or undefined when the name has none. */
-export async function vizMountFor(name: string, engine: 'pg' | 'mg' | 'dy', deps: VizDeps, model?: unknown): Promise<VizMount | undefined> {
+export async function vizMountFor(name: string, engine: 'pg' | 'mg' | 'dy' | 'ds' | 'sql', deps: VizDeps, model?: unknown): Promise<VizMount | undefined> {
   const m = await load();
   const real = m.resolveViz(name, engine);
   return real ? m.vizMount(real, deps, model) : undefined;

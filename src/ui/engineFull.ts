@@ -1,4 +1,5 @@
 import { blocksOf, onPg, SECTIONS, type EngineId, type EngineLesson, type SectionId } from '../engine/content';
+import { figureSlot } from '../engine/figureSlot';
 import { DEMO_SECS, demoBlocks, demoSetup, errCode, pairOf, pgDemoOut, pgDemoScript, type DemoBlock, type DemoOut } from '../engine/demo';
 import type { LabEnv, LabOutput, LabRunner } from '../engine/labs';
 import { fullText, type FullKey } from '../i18n/engineFull';
@@ -152,9 +153,12 @@ export function sections(x: FullCtx, keep: (id: SectionId) => boolean): HTMLElem
       ...blocksOf(s.text[c.lang]).map((b) => b.kind === 'p' ? h('p', { class: 'm-0' }, ...c.inline(b.text, true))
         : b.kind === 'ul' ? h('ul', { class: 'm-0 list-disc space-y-1 pl-5' }, ...b.items.map((t) => h('li', {}, ...c.inline(t, true))))
           // v38 (R2 E10): a marked block that cannot run here (```text) still gets its Sai/Sửa card, without Run
-          : live && (bs[j]?.runs || bs[j]?.mark) ? demoView(bs, j++) : (live && j++, h('pre', { tabindex: '0', class: 'sql m-0 overflow-x-auto', lang: 'en' }, b.code))));
+          : live && (bs[j]?.runs || bs[j]?.mark) ? demoView(bs, j++) : (live && j++, h('pre', { tabindex: '0', class: 'sql m-0 overflow-x-auto', lang: 'en' }, b.code))),
+      // v39 (P4, L605): the lesson's figures for this section, at its end
+      ...(l.figures ?? []).filter((f) => f.at === s.id).map((f) => figureSlot(`${l.id}|${f.name}|${f.at}`, f, c.d.viz, FIG_ENGINE[l.engine])));
   });
 }
+const FIG_ENGINE: Record<EngineId, string> = { postgres: 'pg', mongodb: 'mg', dynamodb: 'dy', design: 'ds' };
 
 interface Item { key: string; icon: IconName; name: string; target: string; count?: string }
 function itemsOf(): Item[] {

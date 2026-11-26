@@ -3,6 +3,7 @@ id: null_logic
 title: "NULL: giá trị \"chưa biết\" và IS NULL"
 title_en: "NULL: the \"unknown\" value and IS NULL"
 minutes: 25
+figures: [{ name: sql-null-truth, at: idea }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Tìm dòng có ô trống, hoặc không trống, bằng `IS NULL` / `IS NOT NULL`.
@@ -128,6 +129,8 @@ NULL là ô trống, nghĩa là "chưa biết". Vì không biết giá trị, m�
 
 Nhiều người nghĩ **`city <> 'Hue'` gồm mọi người không ở Huế**. Thật ra nó chỉ gồm những người có thành phố và thành phố đó khác Huế. Người chưa có thành phố bị bỏ lặng lẽ. Khi câu hỏi muốn tính cả họ, thêm `OR city IS NULL` hoặc viết `IS DISTINCT FROM`.
 
+Hình cuối mục này là hai bảng chân trị của `AND` và `OR`; ô nào là NULL cũng ghi chữ NULL. Hàng dưới hình cho thấy `NULL = NULL` ra NULL, còn `NULL IS NULL` ra TRUE.
+
 ## Cú pháp
 
 `IS NULL` viết liền sau tên cột, không có dấu bằng.
@@ -143,6 +146,8 @@ Customer care asks: "How many customers are not in Hue?" You count `city` not eq
 NULL is an empty cell, meaning "unknown". Since the value is unknown, every comparison with it (`=`, `<>`, `<`) gives NULL instead of TRUE or FALSE, and `WHERE` only keeps rows that give TRUE. To ask "is this cell empty", use `IS NULL` or `IS NOT NULL`: these two always return TRUE or FALSE.
 
 Many people think **`city <> 'Hue'` covers everyone not in Hue**. In fact it only covers people who have a city and whose city is not Hue. People with no city are dropped silently. When the question should include them, add `OR city IS NULL` or write `IS DISTINCT FROM`.
+
+The figure at the end of this section shows the truth tables of `AND` and `OR`; every NULL cell says NULL in words. The row under them shows that `NULL = NULL` gives NULL, while `NULL IS NULL` gives TRUE.
 
 ## Syntax
 
