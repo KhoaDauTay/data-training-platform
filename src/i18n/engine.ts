@@ -179,6 +179,16 @@ const vi = {
   'tables.none': 'Lab bắt đầu chưa có bảng nào: các bước sẽ tạo bảng.',
   'tables.cols': '{n} cột',
   'cap.current': 'đang làm',
+  // v43 (L720–L722): the PostgreSQL Extensions shelf
+  'level.EXT': 'Extension',
+  'ext.title': 'Kệ extension của PostgreSQL',
+  'ext.short': 'PostGIS, pg_trgm, unaccent, pgcrypto… mỗi gói một bài đầy đủ có lab',
+  'ext.go': 'Mở kệ',
+  'ext.intro': 'Extension là gói cắm thêm vào PostgreSQL: kiểu dữ liệu, hàm, toán tử, loại index mới. Mỗi bài dạy một gói người làm dữ liệu hay gặp, lab chạy thật trên PGlite khi gói đó có bản cho trình duyệt.',
+  'ext.noxp': 'Phần tham khảo: không tính XP, không có huy hiệu. Bài xong vẫn được đánh dấu.',
+  'ext.done': '{k}/{n} bài đã xong',
+  'complete.noxp': 'Xong bài.',
+  'runtime.docs.ext': 'Phần chính không chạy ở đây: extension này chưa có bản cho trình duyệt (nó cần một tiến trình server, một máy khác hoặc bản build riêng). Khối có nút Chạy là cách làm tương đương bằng PostgreSQL thuần, chạy thật ở đây.',
 };
 export type EngineKey = keyof typeof vi;
 
@@ -354,6 +364,15 @@ const en: Record<EngineKey, string> = {
   'tables.none': 'The lab starts with no tables: the steps create them.',
   'tables.cols': '{n} columns',
   'cap.current': 'current',
+  'level.EXT': 'Extensions',
+  'ext.title': 'The PostgreSQL extensions shelf',
+  'ext.short': 'PostGIS, pg_trgm, unaccent, pgcrypto… one full lesson with a lab per package',
+  'ext.go': 'Open the shelf',
+  'ext.intro': 'An extension is a package you plug into PostgreSQL: new data types, functions, operators and index types. Each lesson teaches one package data people meet often; its lab runs for real on PGlite when the package has a browser build.',
+  'ext.noxp': 'Reference shelf: no XP, no badges. Finished lessons are still marked.',
+  'ext.done': '{k} of {n} lessons done',
+  'complete.noxp': 'Lesson done.',
+  'runtime.docs.ext': 'The main part does not run here: this extension has no browser build (it needs a server process, another machine or its own build). Blocks with a Run button show the plain PostgreSQL equivalent and do run here.',
 };
 
 export const ENGINE_DICT = { vi: vi as Record<EngineKey, string>, en };

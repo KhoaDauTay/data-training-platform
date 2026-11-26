@@ -14,7 +14,14 @@ import { pg_trgm } from '@electric-sql/pglite/contrib/pg_trgm';
 import { pg_visibility } from '@electric-sql/pglite/contrib/pg_visibility';
 import { pg_walinspect } from '@electric-sql/pglite/contrib/pg_walinspect';
 import { pgcrypto } from '@electric-sql/pglite/contrib/pgcrypto';
+import { citext } from '@electric-sql/pglite/contrib/citext';
+import { fuzzystrmatch } from '@electric-sql/pglite/contrib/fuzzystrmatch';
+import { hstore } from '@electric-sql/pglite/contrib/hstore';
+import { tablefunc } from '@electric-sql/pglite/contrib/tablefunc';
+import { unaccent } from '@electric-sql/pglite/contrib/unaccent';
+import { uuid_ossp } from '@electric-sql/pglite/contrib/uuid_ossp';
 import { postgis } from '@electric-sql/pglite-postgis';
+import { vector } from '@electric-sql/pglite-pgvector';
 import { sqlErrorInfo } from '../../db/run';
 import type { ScriptResult, LabScript, PgExtension, StepResult } from './script';
 import { runCheck } from './check';
@@ -31,6 +38,8 @@ export const EXTENSIONS: Record<PgExtension, Extension> = {
   // L711: PostGIS (@electric-sql/pglite-postgis 0.2.16, pinned to PGlite 0.5.16). Its ~20 MB tarball is fetched only by a
   // lab that names it and is never precached.
   postgis,
+  // v43 (L723–L724): the Extensions shelf. Each tarball is fetched only by a lab that names it, never precached.
+  citext, fuzzystrmatch, unaccent, 'uuid-ossp': uuid_ossp, hstore, tablefunc, vector,
 };
 
 /** Rows kept per step; lab output is catalog-sized, the UI shows less. */
@@ -54,6 +63,12 @@ export function labTemplate(): Promise<Blob> {
 
 export { splitSql } from './split';
 
+/** Extension names a script creates (`plainOnly`: without IF NOT EXISTS), lower case; `uuid-ossp` keeps its hyphen. */
+function createdIn(sql: string, plainOnly: boolean): Set<string> {
+  const re = plainOnly ? /\bCREATE\s+EXTENSION\s+(?!IF\b)"?([\w-]+)"?/gi : /\bCREATE\s+EXTENSION\s+(?:IF\s+NOT\s+EXISTS\s+)?"?([\w-]+)"?/gi;
+  return new Set([...sql.matchAll(re)].map((m) => m[1].toLowerCase()));
+}
+
 const blank = (sql: string): StepResult => ({ sql, status: 'skipped', columns: [], types: [], rows: [], notices: [], ms: 0 });
 
 /** Runs `script` on a fresh database and closes it. Throws only when the runtime cannot start (unknown extension, boot). */
@@ -64,7 +79,11 @@ export async function runLabScript(script: LabScript): Promise<ScriptResult> {
   if (bad) throw new Error(`unknown extension ${bad}`);
   const db = await PGlite.create({ loadDataDir: await labTemplate(), extensions: Object.fromEntries(names.map((n) => [n, EXTENSIONS[n]])) });
   try {
-    for (const n of names) await db.exec(`CREATE EXTENSION ${n}`); // n is a key of EXTENSIONS, never player text
+    // n is a key of EXTENSIONS, never player text. v43 (L725): an extension a step creates itself (plain `CREATE EXTENSION x`,
+    // the Extensions shelf's install step) and the setup never names is only loaded, so that step does not fail with 42710.
+    const late = createdIn(script.steps.map((st) => (typeof st === 'string' ? st : st.sql)).join('\n'), true);
+    const inSetup = createdIn(script.setup ?? '', false);
+    for (const n of names) if (!late.has(n) || inSetup.has(n)) await db.exec(`CREATE EXTENSION "${n}"`);
     const bootMs = Math.round(performance.now() - t0);
     const steps = script.steps.map((st) => blank(typeof st === 'string' ? st : st.sql));
     const done = (more: Partial<ScriptResult>): ScriptResult => {
@@ -73,7 +92,7 @@ export async function runLabScript(script: LabScript): Promise<ScriptResult> {
       return { steps, checks, ok, ...more, bootMs, ms: Math.round(performance.now() - t0) };
     };
     for (const sql of splitSql(script.setup ?? '')) {
-      const ext = /^CREATE\s+EXTENSION\s+(?:IF\s+NOT\s+EXISTS\s+)?"?(\w+)"?\s*$/i.exec(sql)?.[1];
+      const ext = /^CREATE\s+EXTENSION\s+(?:IF\s+NOT\s+EXISTS\s+)?"?([\w-]+)"?\s*$/i.exec(sql)?.[1];
       if (ext && (names as string[]).includes(ext)) continue;
       try {
         await db.exec(sql);

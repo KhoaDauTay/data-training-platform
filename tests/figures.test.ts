@@ -19,7 +19,7 @@ import { VI_DIACRITIC } from './generalRules';
 
 const specs = Object.fromEntries(Object.entries(import.meta.glob<FigSpec>('../content/figures/*.yml', { import: 'default', eager: true }))
   .map(([p, s]) => [p.replace(/^.*\/(.+)\.yml$/, '$1'), s]));
-const engineFiles = import.meta.glob<string>('../content/engine/*/L*/*.md', { query: '?raw', import: 'default', eager: true });
+const engineFiles = import.meta.glob<string>('../content/engine/*/{L*,ext}/*.md', { query: '?raw', import: 'default', eager: true });
 const engine: EngineLesson[] = Object.entries(engineFiles).map(([p, s]) => parseEngineLesson(s, p, parse));
 const general = await Promise.all(Object.entries(fullLessons).map(async ([p, load]) => parseFullLesson(await load(), lessonIdOf(p))));
 const SHORT = { postgres: 'pg', mongodb: 'mg', dynamodb: 'dy', design: 'ds' } as const;

@@ -18,7 +18,8 @@ interface Env {
   slow?: LabEnv['slow'];
 }
 
-const KNOWN: readonly PgExtension[] = ['pageinspect', 'pg_visibility', 'amcheck', 'pg_walinspect', 'pg_buffercache', 'pg_freespacemap', 'bloom', 'btree_gin', 'btree_gist', 'pg_trgm', 'pg_stat_statements', 'ltree', 'pgcrypto', 'cube', 'earthdistance', 'postgis'];
+const KNOWN: readonly PgExtension[] = ['pageinspect', 'pg_visibility', 'amcheck', 'pg_walinspect', 'pg_buffercache', 'pg_freespacemap', 'bloom', 'btree_gin', 'btree_gist', 'pg_trgm', 'pg_stat_statements', 'ltree', 'pgcrypto', 'cube', 'earthdistance', 'postgis',
+  'citext', 'fuzzystrmatch', 'unaccent', 'uuid-ossp', 'hstore', 'tablefunc', 'vector'];
 /** Functions → the extension that defines them (a step may call one the setup did not create). */
 const BY_FUNCTION: [RegExp, PgExtension][] = [
   [/\b(get_raw_page|heap_page_items|heap_tuple_infomask_flags|page_header|bt_metap|bt_page_items|bt_page_stats|brin_page_items|brin_metapage_info|brin_revmap_data|gin_metapage_info|gin_page_opaque_info|gin_leafpage_items|hash_page_items|fsm_page_contents)\s*\(/i, 'pageinspect'],
@@ -29,10 +30,22 @@ const BY_FUNCTION: [RegExp, PgExtension][] = [
   [/\bpg_buffercache\b/i, 'pg_buffercache'],
   [/\bpg_freespace\s*\(/i, 'pg_freespacemap'],
   [/\bST_[A-Za-z0-9_]+\s*\(/i, 'postgis'],
+  // v43 (L723–L724): the Extensions shelf. Only names no other extension and no core function uses; `<->` is shared by
+  // PostGIS, pg_trgm and cube, so pgvector is found by its type and its own operators.
+  [/\b(similarity|word_similarity|strict_word_similarity|show_trgm)\s*\(/i, 'pg_trgm'],
+  [/\b(levenshtein|levenshtein_less_equal|soundex|difference|metaphone|dmetaphone|dmetaphone_alt|daitch_mokotoff)\s*\(/i, 'fuzzystrmatch'],
+  [/\bunaccent\s*\(/i, 'unaccent'],
+  [/\buuid_(generate_v[1345](mc)?|ns_(url|dns|oid|x500)|nil)\s*\(/i, 'uuid-ossp'],
+  [/\bcrosstab[0-9]*\s*\(|\bconnectby\s*\(|\bnormal_rand\s*\(/i, 'tablefunc'],
+  [/\b(crypt|gen_salt|digest|hmac|pgp_sym_encrypt|pgp_sym_decrypt|pgp_pub_encrypt|pgp_pub_decrypt|armor|dearmor|gen_random_bytes)\s*\(/i, 'pgcrypto'],
+  [/\b(nlevel|subpath|subltree|lca|text2ltree|ltree2text)\s*\(|::\s*l(tree|query|txtquery)\b/i, 'ltree'],
+  [/::\s*citext\b|\bcitext\b(?!\s*\()/i, 'citext'],
+  [/::\s*hstore\b|\bhstore\s*\(/i, 'hstore'],
+  [/\b(vector|halfvec|sparsevec)\s*\(\s*\d|::\s*(vector|halfvec|sparsevec)\b|<=>|<#>|<\+>|\b(vector_cosine_ops|vector_l2_ops|vector_ip_ops)\b/i, 'vector'],
 ];
 export function extensionsOf(...sql: (string | undefined)[]): PgExtension[] {
   const text = sql.filter(Boolean).join('\n');
-  const named = [...text.matchAll(/\bCREATE\s+EXTENSION\s+(?:IF\s+NOT\s+EXISTS\s+)?"?(\w+)"?/gi)].map((m) => m[1].toLowerCase() as PgExtension);
+  const named = [...text.matchAll(/\bCREATE\s+EXTENSION\s+(?:IF\s+NOT\s+EXISTS\s+)?"?([\w-]+)"?/gi)].map((m) => m[1].toLowerCase() as PgExtension); // v43: "uuid-ossp" keeps its hyphen
   const used = BY_FUNCTION.filter(([re]) => re.test(text)).map(([, x]) => x);
   // earthdistance needs cube first
   const all = [...new Set([...named, ...used])].filter((x) => KNOWN.includes(x));

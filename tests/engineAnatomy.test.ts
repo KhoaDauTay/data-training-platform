@@ -19,7 +19,7 @@ import { runLabScript, splitSql } from '../src/engine/pglab/session';
 import { wordCount } from '../src/fullLesson';
 import { compareResults, grade } from '../src/grader';
 
-const files = import.meta.glob<string>('../content/engine/postgres/L*/*.md', { query: '?raw', import: 'default', eager: true });
+const files = import.meta.glob<string>('../content/engine/postgres/{L*,ext}/*.md', { query: '?raw', import: 'default', eager: true });
 const all = Object.entries(files).map(([p, raw]) => {
   const fm = parse(/^---\n([\s\S]*?)\n---\n/.exec(raw.replace(/\r\n/g, '\n'))![1]) as Record<string, unknown>;
   return { l: parseEngineLesson(raw, p, parse), fm };
