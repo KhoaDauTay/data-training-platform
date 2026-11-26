@@ -273,12 +273,12 @@ export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): 
     const end = (x: number, from: number): number => (plain ? (down ? b.y : b.y + b.h) : stopAt(x, from, x, b.y + b.h / 2, STROKE, b)[1] + (down ? 2 : -2) - (down ? 1 : -1) * out(e.to)); // v41 R3 (E2): 8 clear of a table's title or sub
     const L = land(e);
     if (far(e)) {
-      // v41 R3 (E1/E2): a lane beside the rows in between when it fits (up on the left, down on the right), leaving and landing on that third; else the side lane at the right
+      // v41 R3 (E1/E2): a lane beside the rows in between when it fits (up on the left, down on the right), leaving and landing 16 in from that side; else the side lane at the right
       const key = [ra, rb].sort().join();
       const lx = localLane(spec, pl, e, near2.get(key) ?? 0);
       if (lx !== undefined) near2.set(key, (near2.get(key) ?? 0) + 1);
       else if (label) fail(`${e.from}→${e.to}: nhãn trên làn bên chưa hỗ trợ`);
-      const third = (r: Rect): number => Math.round(r.x + (r.w * (lx === undefined ? 1.5 : lx > r.x + r.w / 2 ? 2 : 1)) / 3);
+      const third = (r: Rect): number => Math.round(lx === undefined ? r.x + r.w / 2 : lx > r.x + r.w / 2 ? r.x + r.w - Math.min(r.w / 3, 16) : r.x + Math.min(r.w / 3, 16)); // 16 in from the lane side, clear of a straight arrow in the middle
       const d = laneRoute(third(a), y1, typeof L === 'number' ? L : third(b), ra, rb, lx ?? CW + 8 + 16 * laneNo++, nextLane, end);
       const q = d.split(/[ ML]+/).filter(Boolean).map(Number), lft = q[4] < q[0]; // a label beside the lane's vertical run, on its outer side
       return { e, d, lab: label ? { x: q[4] + (lft ? -6 : 6), y: (q[5] + q[7]) / 2, a: lft ? ('e' as const) : undefined, s: label } : undefined };

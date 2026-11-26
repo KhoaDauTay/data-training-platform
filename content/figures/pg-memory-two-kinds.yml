@@ -46,11 +46,11 @@ steps:
     set:
       rd: { tone: plain }
       ck: { tone: new }
-      sb: { sub: { vi: "p0 bẩn: sửa, chưa ghi", en: "p0 dirty: not written" }, cellTone: { "0:0": warm } }
+      sb: { sub: { vi: "p0: trang bẩn", en: "p0: dirty page" }, cellTone: { "0:0": warm } }
   - say: { vi: "Sort dùng work_mem riêng, không dùng shared buffers.", en: "A sort uses private work_mem, not shared buffers." }
     alt: { vi: "Bên dưới, nhóm riêng: mỗi kết nối có work_mem 4 MB cho mỗi nút sort hay hash. Sort của kết nối 2 lớn hơn work_mem nên tràn ra file tạm trên đĩa (external merge Disk), không đụng tới shared buffers.", en: "Below, the private group: each connection has 4 MB of work_mem per sort or hash node. Connection 2's sort is larger than work_mem, so it spills to temp files on disk (external merge Disk) without touching shared buffers." }
     set:
       rd: { tone: plain }
-      sb: { sub: { vi: "p0 bẩn: sửa, chưa ghi", en: "p0 dirty: not written" }, cellTone: { "0:0": warm } }
+      sb: { sub: { vi: "p0: trang bẩn", en: "p0: dirty page" }, cellTone: { "0:0": warm } }
       c2: { tone: warm }
       srt: { tone: warm }
