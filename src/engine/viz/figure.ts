@@ -177,6 +177,7 @@ export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): 
     lanes.set(gap, k + 1);
     return Math.round((bands[gap][1] + bands[gap + 1][0]) / 2) + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * 8;
   };
+  const lands = spreadTips(edges, at, rowOf);
   const routes = edges.map((e) => {
     const a = at.get(base(e.from)) ?? fail(`edge: không có node "${e.from}"`);
     const b = at.get(base(e.to)) ?? fail(`edge: không có node "${e.to}"`);
@@ -204,6 +205,12 @@ export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): 
       if (label) fail(`${e.from}→${e.to}: nhãn trên làn bên chưa hỗ trợ`);
       return { e, d: laneRoute(a, b, ra, rb, CW + 8 + 16 * side++, lane, end) };
     }
+    const land = lands.get(e);
+    if (land !== undefined) { // v40 (R1 E10): several arrows into one box land apart
+      if (land >= a.x + 8 && land <= a.x + a.w - 8) return { e, d: `M${land} ${y1} L${land} ${end(land, y1)}`, lab: label ? { x: land + 6, y: (y1 + end(land, y1)) / 2, a: undefined, s: label } : undefined };
+      const ym = lane(Math.min(ra, rb)), ax = Math.round(a.x + a.w / 2);
+      return { e, d: `M${ax} ${y1} L${ax} ${ym} L${land} ${ym} L${land} ${end(land, ym)}`, lab: label ? elbowLabel(label, ax, land, ym, e) : undefined };
+    }
     const lo = Math.max(a.x, b.x), hi = Math.min(a.x + a.w, b.x + b.w);
     if (hi - lo >= 24) {
       const x = Math.round((lo + hi) / 2);
@@ -227,8 +234,9 @@ export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): 
   const boxy = (end: string): boolean => ['box', 'key', 'table', 'doc'].includes(byId.get(base(end))?.shape ?? 'box');
   const ends = (e: FigEdge): Record<string, string> => ({ ...(boxy(e.from) ? { 'data-from': `n:${base(e.from)}` } : {}), ...(boxy(e.to) ? { 'data-to': `n:${base(e.to)}` } : {}) });
   const parentOf = groupOf(spec);
+  const groupBg = groupShapes(spec, lang, at, CW, routes.flatMap((r) => (r ? [r.d] : [])));
   const frames: Frame[] = ps.map((p) => {
-    const shapes: Shape[] = [...groupShapes(spec, lang, at, CW)]; // under everything: frame order is paint order
+    const shapes: Shape[] = [...groupBg]; // under everything: frame order is paint order
     routes.forEach((r, i) => {
       if (!r || !p.show.has(base(r.e.from)) || !p.show.has(base(r.e.to))) return;
       const k = `e:${i}`;
@@ -329,7 +337,7 @@ function placeRows(spec: FigSpec, lang: Lang, W: number, dims: Map<string, Sized
   return { vrows, rowOf, at, bands, H: y + MARGIN, CW };
 }
 /** The dashed group frames and their labels, keys `g:<id>` (the checker's parent of every member box). */
-function groupShapes(spec: FigSpec, lang: Lang, at: Map<string, Rect>, CW: number): Shape[] {
+function groupShapes(spec: FigSpec, lang: Lang, at: Map<string, Rect>, CW: number, paths: string[]): Shape[] {
   return (spec.groups ?? []).flatMap((g) => {
     const rs = g.nodes.map((id) => at.get(id)!);
     const y0 = Math.min(...rs.map((r) => r.y)), y1 = Math.max(...rs.map((r) => r.y + r.h));
@@ -337,9 +345,41 @@ function groupShapes(spec: FigSpec, lang: Lang, at: Map<string, Rect>, CW: numbe
     if (more !== undefined) fail(`nhóm ${g.id}: nhãn > 18 ký tự`);
     const k = `g:${g.id}`;
     const top = y0 - GBAND - GPAD;
+    // the label sits in the band at the left, or at the right when an arrow enters the group through the left spot
+    const w = textWidth(s, SS, true);
+    const xs = paths.flatMap((d) => vertXs(d, top, top + GBAND));
+    const free = (x0: number): boolean => xs.every((x) => x < x0 - 6 || x > x0 + w + 6);
+    let lx = MARGIN + 10;
+    while (!free(lx)) if ((lx += 4) > CW - 10 - w) fail(`nhóm ${g.id}: mũi tên chắn mọi chỗ đặt nhãn`);
     return [{ k, t: 'r', x: MARGIN, y: top, w: CW - MARGIN, h: y1 + GPAD - top, tone: 'ghost', rx: 12 } as Shape,
-      { k: `${k}.t`, t: 't', x: MARGIN + 10, y: top + GBAND / 2 + 2, s, size: SS, b: true, ink: 'muted', attrs: { 'data-owner': k } } as Shape];
+      { k: `${k}.t`, t: 't', x: lx, y: top + GBAND / 2 + 2, s, size: SS, b: true, ink: 'muted', attrs: { 'data-owner': k } } as Shape];
   });
+}
+/** The x of every vertical segment of an absolute M/L path that crosses the band [y0, y1]. */
+function vertXs(d: string, y0: number, y1: number): number[] {
+  const p = (d.match(/-?\d*\.?\d+/g) ?? []).map(Number);
+  const out: number[] = [];
+  for (let i = 2; i + 1 < p.length; i += 2) if (p[i] === p[i - 2] && Math.max(p[i + 1], p[i - 1]) > y0 && Math.min(p[i + 1], p[i - 1]) < y1) out.push(p[i]);
+  return out;
+}
+/** Arrows between neighbouring rows that share a target and a side land at ⅓/⅔… of its width, in the order of their sources. */
+function spreadTips(edges: FigEdge[], at: Map<string, Rect>, rowOf: Map<string, number>): Map<FigEdge, number> {
+  const out = new Map<FigEdge, number>();
+  const by = new Map<string, FigEdge[]>();
+  for (const e of edges) {
+    if (e.link) continue;
+    const ra = rowOf.get(base(e.from))!, rb = rowOf.get(base(e.to))!;
+    if (Math.abs(ra - rb) !== 1) continue;
+    const key = `${base(e.to)}|${rb > ra}`;
+    by.set(key, [...(by.get(key) ?? []), e]);
+  }
+  for (const es of by.values()) {
+    if (es.length < 2) continue;
+    const b = at.get(base(es[0].to))!;
+    const cx = (e: FigEdge): number => { const a = at.get(base(e.from))!; return a.x + a.w / 2; };
+    [...es].sort((p, q) => cx(p) - cx(q)).forEach((e, i) => out.set(e, Math.round(b.x + (b.w * (i + 1)) / (es.length + 1))));
+  }
+  return out;
 }
 /** A side lane: out into the gap next to the source row, across to the lane at the right, along it, then back through the
  * gap next to the target row and into the target (never across a row's neighbours). */
