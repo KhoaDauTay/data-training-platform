@@ -139,7 +139,7 @@ describe.each(Object.keys(specs))('v39 figure %s', (name) => {
           for (const a of m.arrows) for (const [x, y] of a.pts) expect(x >= 0 && y >= 0 && x <= d.w && y <= d.h, `${at}: ${a.k} hors viewBox`).toBe(true);
           // lines the checker skips (links, the bars mark; strikes cross their own row on purpose) never cross a label
           for (const n of f.nodes) {
-            if (n.arrow || (n.t !== 'l' && n.t !== 'p') || /:x\d+$/.test(n.k)) continue;
+            if ((n.t !== 'l' && n.t !== 'p') || n.arrow || /:x\d+$/.test(n.k)) continue;
             const pts = n.t === 'l' ? samplePath(`M${n.x1} ${n.y1} L${n.x2} ${n.y2}`) : samplePath(n.d);
             for (const t of m.texts) {
               const hit = pts.some(([x, y]) => x > t.x + 0.5 && x < t.x + t.w - 0.5 && y > t.y + t.size * 0.15 && y < t.y + t.h - t.size * 0.15);
