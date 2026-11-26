@@ -63,7 +63,7 @@ describe('cấu trúc', () => {
   });
 
   it('parser ném khi id, domain, số bước, clarify hoặc rubric sai', () => {
-    const one = (patch: string) => parseCases(parseYaml(casesYml.split('\n- id: cs-ec-1')[0].replace('- id: cs-lg-1', patch)));
+    const one = (patch: string) => parseCases(parseYaml(casesYml.replace(/\r\n/g, '\n').split('\n- id: cs-ec-1')[0].replace('- id: cs-lg-1', patch)));
     expect(() => one('- id: g-lg-1')).toThrow(/id/);
     expect(() => one('- id: cs-ec-9')).toThrow(/domain/);
     const raw = parseYaml(casesYml) as Record<string, unknown>[];
