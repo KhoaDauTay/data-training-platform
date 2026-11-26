@@ -146,7 +146,7 @@ Giám đốc đặt hai con số cạnh nhau: chỉ tiêu tháng 2 và doanh s�
 
 Nhiều người nghĩ **`LEFT JOIN` là đủ cho mọi phép "giữ dòng thiếu"**. Nó chỉ giữ dòng lẻ của **một** bên. Khi cả hai bên đều có thể có dòng mà bên kia không có, chỉ `FULL JOIN` thấy được cả hai.
 
-Hình cuối mục này chạy ba kiểu nối trên cùng dữ liệu tháng 2: `INNER JOIN` và `LEFT JOIN` từ chỉ tiêu đều ra 4 dòng và mất cửa hàng 4; `FULL JOIN` ra 5 dòng.
+Hình cuối mục này chạy ba kiểu nối trên hai ngày đơn hàng, mỗi bên có một cửa hàng bên kia không có: ngày 23/10 có đơn của cửa hàng 1, 2, 3, 5, ngày 24/10 của 1, 2, 3, 4. `INNER JOIN` ra 3 dòng; `LEFT JOIN` từ ngày 23 ra 4 dòng và mất cửa hàng 4; `FULL JOIN` ra 5 dòng, có ô trống ở cả hai bên.
 
 ## Cú pháp
 
@@ -164,7 +164,7 @@ The director puts two numbers side by side: each store's February target and Feb
 
 Many people think **`LEFT JOIN` covers every "keep the missing rows" case**. It only keeps the strays of **one** side. When both sides can hold rows the other lacks, only `FULL JOIN` sees both.
 
-The figure at the end of this section runs three joins on the same February data: `INNER JOIN` and a `LEFT JOIN` from the targets both give 4 rows and lose store 4; `FULL JOIN` gives 5 rows.
+The figure at the end of this section runs three joins on two days of orders, each side holding a store the other lacks: 23 Oct has orders from stores 1, 2, 3, 5, and 24 Oct from 1, 2, 3, 4. `INNER JOIN` gives 3 rows; a `LEFT JOIN` from the 23rd gives 4 rows and loses store 4; `FULL JOIN` gives 5 rows, with empty cells on both sides.
 
 ## Syntax
 

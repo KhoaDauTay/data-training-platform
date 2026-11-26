@@ -83,8 +83,8 @@ define<LockModel>('pg-lock-matrix', { waits: [['T2', 'T1'], ['T3', 'T1'], ['T3',
   const matrix = (hlRow?: number, hlCol?: number): Shape[] => {
     const out: Shape[] = [];
     ABBR.forEach((a, i) => {
-      out.push(text(`rl${i}`, X0 - 4, Y0 + i * C + C / 2, a, { a: 'e', size: SM, b: true, ink: i === hlRow ? 'new' : 'ink' }));
-      out.push(text(`cl${i}`, X0 + i * C + C / 2, i % 2 ? Y0 - 22 : Y0 - 9, a, { a: 'm', size: SM, b: true, ink: i === hlCol ? 'new' : 'ink' }));
+      out.push(text(`rl${i}`, X0 - 4, Y0 + i * C + (C - 3) / 2, a, { a: 'e', size: SM, b: true, ink: i === hlRow ? 'new' : 'ink' }));
+      out.push(text(`cl${i}`, X0 + i * C + (C - 3) / 2, i % 2 ? Y0 - 22 : Y0 - 9, a, { a: 'm', size: SM, b: true, ink: i === hlCol ? 'new' : 'ink' }));
       ABBR.forEach((_, j) => {
         const bad = LOCK_CONFLICTS[i][j] === '1';
         const on = (hlRow === i && (hlCol === undefined || hlCol === j)) || (hlCol === j && hlRow === undefined);
