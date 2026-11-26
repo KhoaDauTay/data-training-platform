@@ -1,0 +1,21 @@
+# TS-13 (v47 L972): the capstone's duty shift: raw reefer readings feed the screen, the silence check and the alarms.
+# Lesson: e-ts-l3-04 (Ý chính). Data = the lab: 34,330 readings of 12 reefers; CQRU2009 silent since 20:09; CQRU2004 two episodes, 50 minutes.
+title: { vi: "Một ca trực", en: "One duty shift" }
+caption:
+  vi: "Từ 34.330 số đo: màn hình 12 container, một container im lặng từ 20:09, và hai đợt vượt ngưỡng của CQRU2004."
+  en: "From 34,330 readings: a screen of 12 containers, one container silent since 20:09, and two episodes above the limit for CQRU2004."
+alt:
+  vi: "Mọi câu trả lời của ca trực đều đọc cùng một bảng số đo, mỗi câu theo một cách: dòng mới nhất, dòng quá cũ, dòng vượt ngưỡng gom thành đợt."
+  en: "Every answer of the shift reads the same readings table, each in its own way: the newest row, a row too old, rows above the limit merged into episodes."
+groups:
+  - { id: shift, label: { vi: "ca trực", en: "duty shift" }, nodes: [screen, silent, alarm] }
+nodes:
+  - { id: raw, shape: table, label: reefer_temps, sub: { vi: "34.330 dòng", en: "34,330 rows" } }
+  - { id: screen, label: { vi: "màn hình", en: "screen" }, sub: { vi: "12 dòng", en: "12 rows" } }
+  - { id: silent, label: { vi: "im lặng", en: "silent" }, sub: "CQRU2009", tone: warm }
+  - { id: alarm, label: { vi: "2 đợt", en: "2 episodes" }, sub: "CQRU2004", tone: new }
+rows:
+  - [raw]
+  - [screen, silent, alarm]
+edges:
+  - { from: raw, to: shift }
