@@ -70,8 +70,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: 'Nghe hợp lý nếu xem `$unwind` như một phép đổi hình, nhưng nó ra một tài liệu cho mỗi phần tử: 12 dòng thành 12 tài liệu. Đơn 9 có mảng rỗng nên bị bỏ, trừ khi bật `preserveNullAndEmptyArrays`.'
-      en: 'It sounds right if `$unwind` is just a reshape, but it outputs one document per element: 12 lines become 12 documents. Order 9 has an empty array, so it is dropped unless `preserveNullAndEmptyArrays` is on.'
+      vi: '`$unwind` không chỉ đổi hình: nó ra một tài liệu cho mỗi phần tử của mảng, nên 12 dòng hàng thành 12 tài liệu, không phải 9. Đơn 9 có mảng rỗng, không có phần tử nào để tách, nên `$unwind` mặc định bỏ hẳn đơn đó, vì vậy không ra 13. Chỉ khi bật `preserveNullAndEmptyArrays` thì đơn 9 mới được giữ thành tài liệu thứ 13.'
+      en: '`$unwind` does more than reshape: it outputs one document per array element, so 12 lines become 12 documents, not 9. Order 9 has an empty array with no element to split, so a default `$unwind` drops that order entirely, which is why it is not 13. Only with `preserveNullAndEmptyArrays` on is order 9 kept as a 13th document.'
   - q:
       vi: 'Muốn tính tổng tiền của từng đơn (cộng `qty` × `price` trong chính đơn đó). Có cần `$unwind` không?'
       en: 'You want each order''s own total (the sum of `qty` × `price` inside that order). Do you need `$unwind`?'
@@ -83,8 +83,8 @@ quiz:
     answer: 0
     trap: 1
     why:
-      vi: 'Nghe hợp lý vì gom nhóm theo phần tử thì cần tách, nhưng tổng của một đơn nằm trọn trong tài liệu: `$sum` với `$map` tính được mà không nhân số tài liệu lên.'
-      en: 'It sounds right because grouping by element needs a split, but one order''s total lives inside the document: `$sum` with `$map` computes it without multiplying the documents.'
+      vi: 'Cần tách khi gom nhóm theo phần tử qua nhiều đơn (như theo sản phẩm), nhưng tổng của một đơn nằm trọn trong một tài liệu. `$map` biến mỗi dòng thành `qty` × `price`, rồi `$sum` cộng mảng đó, ngay trong `$set` hoặc `$project`. Dùng `$unwind` thì phải tách 12 dòng thành 12 tài liệu rồi `$group` lại theo `_id` đơn: thêm hai stage, và đơn 9 rỗng bị mất.'
+      en: 'You need a split to group by element across orders (such as per product), but one order''s total lives inside a single document. `$map` turns each line into `qty` × `price`, then `$sum` adds that array, right inside `$set` or `$project`. With `$unwind` you would split the 12 lines into 12 documents and `$group` them back by order `_id`: two extra stages, and the empty order 9 is lost.'
 ---
 ## Mở bài
 

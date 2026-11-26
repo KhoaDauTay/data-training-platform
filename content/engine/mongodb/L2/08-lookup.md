@@ -93,8 +93,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: 'Nghe hợp lý vì quan hệ là một-một, nhưng `$lookup` luôn trả một mảng trong trường `as`, dù có một cặp hay không có cặp nào. Muốn một tài liệu thì thêm `$unwind: "$buyer"`.'
-      en: 'It sounds right because the relationship is one-to-one, but `$lookup` always returns an array in the `as` field, whether it finds one match or none. To get one document, add `$unwind: "$buyer"`.'
+      vi: 'Mỗi đơn đúng là chỉ có một khách, nhưng `$lookup` không biết điều đó: nó luôn trả một mảng trong trường `as`, dù có một cặp hay không có cặp nào, nên đơn 2 nhận `buyer: [{ _id: "c2", name: "Binh", … }]`. Nó cũng không chỉ lấy tên: mỗi phần tử là cả tài liệu khách, với mọi trường như `city`. Muốn một tài liệu thì thêm `$unwind: "$buyer"`, rồi đọc tên bằng `"$buyer.name"`.'
+      en: 'Each order does have just one customer, but `$lookup` does not know that: it always returns an array in the `as` field, whether it finds one match or none, so order 2 gets `buyer: [{ _id: "c2", name: "Binh", … }]`. Nor does it take only the name: each element is the whole customer document, with every field such as `city`. To get one document, add `$unwind: "$buyer"`, then read the name with `"$buyer.name"`.'
 ---
 ## Mở bài
 

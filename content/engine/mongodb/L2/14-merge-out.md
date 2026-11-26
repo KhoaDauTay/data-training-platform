@@ -32,8 +32,8 @@ quiz:
     answer: 0
     trap: 1
     why:
-      vi: 'Nghe hợp lý vì pipeline chỉ tính một ngày nên có vẻ chỉ thêm một ngày, nhưng `$out` thay hoàn toàn collection đích nếu nó đã có. Muốn thêm hoặc cập nhật mà giữ dữ liệu cũ thì dùng `$merge`.'
-      en: 'It sounds right because the pipeline computes only one day, so it seems to add one day, but `$out` completely replaces the target collection if it exists. To add or update while keeping old data, use `$merge`.'
+      vi: 'Pipeline chỉ tính một ngày nên có vẻ chỉ thêm một ngày, nhưng `$out` không gộp: nó thay hoàn toàn collection đích bằng kết quả, nên 30 ngày cũ mất và chỉ còn hôm nay. Lệnh cũng không báo lỗi khi collection đã tồn tại: thay collection có sẵn chính là cách `$out` làm việc. Muốn thêm hoặc cập nhật mà giữ dữ liệu cũ thì dùng `$merge`.'
+      en: 'The pipeline computes only one day, so it seems to add one day, but `$out` does not merge: it replaces the whole target collection with the result, so the 30 old days are gone and only today remains. Nor does the command fail because the collection exists: replacing an existing collection is exactly how `$out` works. To add or update while keeping old data, use `$merge`.'
   - q:
       vi: 'Báo cáo theo ngày, `_id` là ngày. Chạy lại cho hôm nay: ngày đã có thì ghi đè cả tài liệu, ngày chưa có thì thêm. Chọn `$merge` nào?'
       en: 'A per-day report with the day as `_id`. Re-running it for today: an existing day is overwritten as a whole, a missing day is inserted. Which `$merge`?'
@@ -46,8 +46,8 @@ quiz:
         en: '`{ $merge: { into: "daily_sales", whenMatched: "fail" } }`'
     answer: 0
     why:
-      vi: '`"replace"` thay tài liệu khớp bằng tài liệu kết quả, `"insert"` thêm tài liệu chưa có. `"keepExisting"` giữ bản cũ, `"discard"` bỏ tài liệu mới, `"fail"` dừng lệnh.'
-      en: '`"replace"` swaps the matching document for the result document, `"insert"` adds a missing one. `"keepExisting"` keeps the old one, `"discard"` drops the new one, `"fail"` stops the command.'
+      vi: '`"replace"` thay tài liệu khớp bằng tài liệu kết quả, `"insert"` thêm tài liệu chưa có: đúng hai yêu cầu. Lựa chọn thứ hai làm ngược lại: `"keepExisting"` giữ số cũ của hôm nay nên chạy lại không có tác dụng, còn `"discard"` bỏ tài liệu của ngày chưa có nên hôm nay không bao giờ được thêm. `"fail"` dừng lệnh ngay khi gặp ngày đã có, nên không chạy lại được.'
+      en: '`"replace"` swaps the matching document for the result document, `"insert"` adds a missing one: exactly the two requirements. The second option does the opposite: `"keepExisting"` keeps today''s old figure, so a re-run has no effect, and `"discard"` drops the document of a missing day, so today is never added. `"fail"` stops the command as soon as it meets an existing day, so it cannot be re-run.'
   - q:
       vi: Không ghi `whenMatched` và `whenNotMatched` thì `$merge` làm gì?
       en: Without `whenMatched` and `whenNotMatched`, what does `$merge` do?
@@ -60,8 +60,8 @@ quiz:
         en: Fail because options are missing
     answer: 0
     why:
-      vi: 'Mặc định là `whenMatched: "merge"` (giống `$mergeObjects`: trường mới ghi đè, trường cũ khác vẫn giữ) và `whenNotMatched: "insert"`. `$merge` và `$out` đều phải là stage cuối của pipeline.'
-      en: 'The defaults are `whenMatched: "merge"` (like `$mergeObjects`: new fields overwrite, other old fields stay) and `whenNotMatched: "insert"`. Both `$merge` and `$out` must be the last stage of the pipeline.'
+      vi: 'Hai tham số đều có giá trị mặc định nên không thiếu gì: `whenMatched: "merge"` (giống `$mergeObjects`: trường mới ghi đè, trường cũ khác vẫn giữ) và `whenNotMatched: "insert"`. Vì vậy trong ví dụ của bài, `S1` giữ `manager`, `S2` được thêm và `S3` vẫn còn, khác hẳn `$out` vốn xóa `S3`. `$merge` và `$out` đều phải là stage cuối của pipeline.'
+      en: 'Both options have defaults, so nothing is missing: `whenMatched: "merge"` (like `$mergeObjects`: new fields overwrite, other old fields stay) and `whenNotMatched: "insert"`. So in the lesson''s example `S1` keeps `manager`, `S2` is inserted and `S3` stays, unlike `$out`, which removes `S3`. Both `$merge` and `$out` must be the last stage of the pipeline.'
 ---
 ## Mở bài
 

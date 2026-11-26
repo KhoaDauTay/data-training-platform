@@ -36,8 +36,8 @@ predict:
   answer: 1
   trap: 3
   why:
-    vi: 'Nghe hợp lý vì một kiểu sai thường gây lỗi, và nhiều người nghĩ "schemaless" nghĩa là không cần thiết kế, nhưng `$sum` bỏ qua im lặng mọi giá trị không phải số ("$sum ignores the non-numeric values", docs `$sum`). Hue vẫn có `orders` 1 nhưng `revenue` 0, và không có lỗi nào báo cho bạn.'
-    en: 'It sounds right because a wrong type usually raises an error, and many people think "schemaless" means no design is needed, but `$sum` silently skips every non-numeric value ("$sum ignores the non-numeric values", `$sum` docs). Hue still has `orders` 1 but `revenue` 0, and nothing warns you.'
+    vi: 'Một kiểu sai thường gây lỗi, nhưng `$sum` bỏ qua im lặng mọi giá trị không phải số ("$sum ignores the non-numeric values", docs `$sum`), nên pipeline không báo gì. Nó cũng không tự đổi chuỗi `''300000''` thành số, nên không ra 300000. Nhóm Hue chỉ có đúng giá trị bị bỏ qua đó, và `$sum` của một nhóm không có số nào là 0, không phải `null`. Kết quả: Hue có `orders` 1 nhưng `revenue` 0.'
+    en: 'A wrong type usually raises an error, but `$sum` silently skips every non-numeric value ("$sum ignores the non-numeric values", `$sum` docs), so the pipeline reports nothing. Nor does it convert the string `''300000''` to a number, so the answer is not 300000. The Hue group holds only that skipped value, and the `$sum` of a group with no number is 0, not `null`. Result: Hue has `orders` 1 but `revenue` 0.'
 quiz:
   - q:
       vi: 'Đơn `''o3''` có `total` là chuỗi `''300000''`. Bộ lọc `{ total: { $gt: 100000 } }` có trả về `''o3''` không?'
@@ -52,8 +52,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: 'Nghe hợp lý vì con số trong chuỗi đúng là lớn hơn, nhưng toán tử so sánh của MongoDB chỉ khớp khi kiểu BSON cùng nhóm (type bracketing). Chuỗi `''300000''` không bao giờ khớp `$gt` với một số, và không có lỗi nào.'
-      en: 'It sounds right because the number inside the string is larger, but MongoDB comparison operators only match when the BSON types are in the same group (type bracketing). The string `''300000''` never matches `$gt` against a number, and no error is raised.'
+      vi: 'Con số trong chuỗi đúng là lớn hơn, nhưng toán tử so sánh của MongoDB chỉ so giá trị cùng nhóm kiểu BSON (type bracketing): số với số, chuỗi với chuỗi. Chuỗi `''300000''` không bao giờ khớp `$gt` với một số, nên `''o3''` biến khỏi kết quả. Không có lỗi: với MongoDB, một tài liệu khác kiểu chỉ đơn giản là không khớp, giống như tài liệu thiếu trường.'
+      en: 'The number inside the string is indeed larger, but MongoDB comparison operators only compare values of the same BSON type group (type bracketing): numbers with numbers, strings with strings. The string `''300000''` never matches `$gt` against a number, so `''o3''` drops out of the result. There is no error: to MongoDB a document of another type simply does not match, like a document missing the field.'
 lab:
   setup: |
     {"collections": {"orders": [
@@ -128,6 +128,8 @@ db.orders.find({ total: { $gt: 100000 } })
 db.orders.find({ $expr: { $gt: [{ $toDouble: '$total' }, 100000] } })
 ```
 
+Bản sai trả `o1` và `o2`, bỏ sót `o3`. Bản tạm đổi `total` thành số trước khi so (`$toDouble`), nên trả cả ba đơn.
+
 Tin con số tổng khi một giá trị là chuỗi:
 
 ```js
@@ -140,7 +142,7 @@ db.orders.aggregate([{ $group: { _id: '$city', revenue: { $sum: '$total' } } }, 
 db.orders.aggregate([{ $group: { _id: '$city', revenue: { $sum: { $toDouble: '$total' } } } }, { $sort: { _id: 1 } }])
 ```
 
-Đổi kiểu trong truy vấn chỉ là chữa tạm; cách đúng là sửa dữ liệu (bước 3).
+Bản sai cho Hue `revenue` 0; bản tạm cho 300000. Đổi kiểu trong truy vấn chỉ là chữa tạm: mỗi truy vấn đều phải nhớ đổi, và lọc không dùng được index trên `total`. Cách đúng là sửa dữ liệu (bước 3).
 
 ## Thực hành
 
@@ -193,6 +195,8 @@ db.orders.find({ total: { $gt: 100000 } })
 db.orders.find({ $expr: { $gt: [{ $toDouble: '$total' }, 100000] } })
 ```
 
+The wrong version returns `o1` and `o2` and misses `o3`. The stopgap turns `total` into a number before comparing (`$toDouble`), so it returns all three orders.
+
 Trusting a total when one value is a string:
 
 ```js
@@ -205,7 +209,7 @@ db.orders.aggregate([{ $group: { _id: '$city', revenue: { $sum: '$total' } } }, 
 db.orders.aggregate([{ $group: { _id: '$city', revenue: { $sum: { $toDouble: '$total' } } } }, { $sort: { _id: 1 } }])
 ```
 
-Converting inside a query is only a stopgap; the real fix is to fix the data (step 3).
+The wrong version gives Hue a `revenue` of 0; the stopgap gives 300000. Converting inside a query is only a stopgap: every query must remember to convert, and the filter cannot use an index on `total`. The real fix is to fix the data (step 3).
 
 ## Practice
 

@@ -35,8 +35,8 @@ predict:
   answer: 1
   trap: 3
   why:
-    vi: 'Nghe hợp lý vì `$lookup` giữ mọi khách như LEFT JOIN, nhưng điều đó chỉ đúng trước `$unwind`. Riêng `$lookup` là left outer join: `''c4''` vẫn còn, với `orders: []`. Nhưng `$unwind` tạo một tài liệu cho mỗi phần tử của mảng, và mảng rỗng thì không tạo tài liệu nào. Kết quả là `''c1''` hai lần, `''c2''`, `''c3''`: 4 tài liệu, `''c4''` mất. Cặp `$lookup` + `$unwind` vì vậy chạy như INNER JOIN của SQL.'
-    en: 'It sounds right because `$lookup` keeps every customer like a LEFT JOIN, but only until `$unwind`. `$lookup` alone is a left outer join: `''c4''` is still there, with `orders: []`. But `$unwind` makes one document per array element, and an empty array makes none. The result is `''c1''` twice, `''c2''`, `''c3''`: 4 documents, `''c4''` gone. So `$lookup` + `$unwind` behaves like an SQL INNER JOIN.'
+    vi: '`$lookup` giữ mọi khách như LEFT JOIN, nhưng chỉ cho tới khi gặp `$unwind`. Riêng `$lookup` là left outer join: `''c4''` vẫn còn, với `orders: []` (mảng rỗng, không phải `null`). Nhưng `$unwind` tạo một tài liệu cho mỗi phần tử của mảng, và mảng rỗng thì không tạo tài liệu nào, nên `''c4''` mất thay vì ra tài liệu thứ 5. Kết quả là `''c1''` hai lần, `''c2''`, `''c3''`: 4 tài liệu, nhưng không phải "mỗi khách một": `''c1''` tách thành 2. Cặp `$lookup` + `$unwind` vì vậy chạy như INNER JOIN của SQL.'
+    en: '`$lookup` keeps every customer like a LEFT JOIN, but only until `$unwind`. `$lookup` alone is a left outer join: `''c4''` is still there, with `orders: []` (an empty array, not `null`). But `$unwind` makes one document per array element, and an empty array makes none, so `''c4''` is gone instead of giving a 5th document. The result is `''c1''` twice, `''c2''`, `''c3''`: 4 documents, but not "one per customer": `''c1''` is split into 2. So `$lookup` + `$unwind` behaves like an SQL INNER JOIN.'
 quiz:
   - q:
       vi: 'Trang hồ sơ khách chạy `$lookup` từ `customers` sang `orders` (1 triệu tài liệu) khoảng 1000 lần mỗi giây. `orders` chưa có index nào trên `customer`. Nên sửa gì trước?'
@@ -50,8 +50,8 @@ quiz:
         en: Add `$unwind` to make the result smaller
     answer: 1
     why:
-      vi: 'Docs `$lookup` viết rằng stage này sẽ "perform better when the foreign collection contains an index on the foreignField", và "Unindexed or correlated-subquery $lookup operations on large collections can slow down query performance". Docs cũng gợi ý nhúng dữ liệu hay đọc cùng nhau. Câu này theo docs chính thức, chưa đo trong trình duyệt: mingo không có index.'
-      en: 'The `$lookup` docs say it will "perform better when the foreign collection contains an index on the foreignField", and "Unindexed or correlated-subquery $lookup operations on large collections can slow down query performance". The docs also suggest embedding data that is read together. This answer follows the official docs and is not measured in the browser: mingo has no indexes.'
+      vi: 'Không có index trên `customer`, mỗi khách phải quét cả 1 triệu đơn (COLLSCAN) để tìm cặp, và việc đó lặp 1000 lần mỗi giây. Docs `$lookup` viết rằng stage này sẽ "perform better when the foreign collection contains an index on the foreignField", và "Unindexed or correlated-subquery $lookup operations on large collections can slow down query performance"; docs cũng gợi ý nhúng dữ liệu hay đọc cùng nhau. `$unwind` đứng sau `$lookup` nên không bớt được lần quét nào, chỉ làm thêm tài liệu. Câu này theo docs chính thức, chưa đo trong trình duyệt: mingo không có index.'
+      en: 'With no index on `customer`, each customer scans all 1 million orders (COLLSCAN) to find its matches, 1000 times per second. The `$lookup` docs say it will "perform better when the foreign collection contains an index on the foreignField", and "Unindexed or correlated-subquery $lookup operations on large collections can slow down query performance"; the docs also suggest embedding data that is read together. `$unwind` comes after `$lookup`, so it saves no scan and only adds documents. This answer follows the official docs and is not measured in the browser: mingo has no indexes.'
 lab:
   setup: |
     {"collections": {
@@ -136,6 +136,8 @@ db.customers.aggregate([{ $lookup: { from: 'orders', localField: '_id', foreignF
 db.customers.aggregate([{ $lookup: { from: 'orders', localField: '_id', foreignField: 'customer', as: 'orders' } }, { $unwind: { path: '$orders', preserveNullAndEmptyArrays: true } }])
 ```
 
+Bản sai trả 4 tài liệu, không có Dung; bản sửa trả 5, Dung có mặt nhưng không có trường `orders`.
+
 Đếm đơn bằng `$unwind` rồi `$group`:
 
 ```js
@@ -147,6 +149,8 @@ db.customers.aggregate([{ $lookup: { from: 'orders', localField: '_id', foreignF
 // FIX: count the array, no $unwind
 db.customers.aggregate([{ $lookup: { from: 'orders', localField: '_id', foreignField: 'customer', as: 'orders' } }, { $project: { _id: '$name', n: { $size: '$orders' } } }])
 ```
+
+Bản sai đếm An 2, Binh 1, Chi 1 và không có tài liệu nào cho Dung. Bản sửa đếm thẳng mảng `orders`, mảng rỗng cho `n` bằng 0.
 
 ## Thực hành
 
@@ -211,6 +215,8 @@ db.customers.aggregate([{ $lookup: { from: 'orders', localField: '_id', foreignF
 db.customers.aggregate([{ $lookup: { from: 'orders', localField: '_id', foreignField: 'customer', as: 'orders' } }, { $unwind: { path: '$orders', preserveNullAndEmptyArrays: true } }])
 ```
 
+The wrong version returns 4 documents without Dung; the fix returns 5, with Dung present but no `orders` field.
+
 Counting orders with `$unwind` and then `$group`:
 
 ```js
@@ -222,6 +228,8 @@ db.customers.aggregate([{ $lookup: { from: 'orders', localField: '_id', foreignF
 // FIX: count the array, no $unwind
 db.customers.aggregate([{ $lookup: { from: 'orders', localField: '_id', foreignField: 'customer', as: 'orders' } }, { $project: { _id: '$name', n: { $size: '$orders' } } }])
 ```
+
+The wrong version counts An 2, Binh 1, Chi 1 and has no entry for Dung. The fix counts the `orders` array directly, and an empty array gives `n` 0.
 
 ## Practice
 

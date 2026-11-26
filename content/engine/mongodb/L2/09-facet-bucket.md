@@ -70,8 +70,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: 'Nghe hợp lý nếu coi mỗi khoảng là "từ … đến …" gồm cả hai đầu, nhưng mỗi khoảng của `$bucket` gồm cận dưới và không gồm cận trên. `100000` là cận dưới của nhóm thứ hai.'
-      en: 'It sounds right if each range is "from … to …" with both ends included, but each `$bucket` range includes its lower bound and excludes its upper bound. `100000` is the lower bound of the second group.'
+      vi: 'Dễ coi mỗi khoảng là "từ … đến …" gồm cả hai đầu, nhưng mỗi khoảng của `$bucket` gồm cận dưới và không gồm cận trên: nhóm `0` là `[0, 100000)`, nên `100000` không thuộc nó. `100000` là cận dưới của nhóm thứ hai `[100000, 300000)`, nên đơn vào nhóm `_id` `100000`. Không có lỗi, vì giá trị vẫn nằm trong một khoảng; lệnh chỉ báo lỗi khi giá trị vượt mọi khoảng mà thiếu `default`.'
+      en: 'It is easy to read each range as "from … to …" with both ends included, but each `$bucket` range includes its lower bound and excludes its upper bound: group `0` is `[0, 100000)`, so `100000` is not in it. `100000` is the lower bound of the second group `[100000, 300000)`, so the order lands in group `_id` `100000`. There is no error, because the value still fits a range; the command fails only when a value falls outside every range and there is no `default`.'
   - q:
       vi: '`$facet` có hai pipeline con. Nó trả ra bao nhiêu tài liệu?'
       en: 'A `$facet` has two sub-pipelines. How many documents does it return?'
@@ -85,8 +85,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: 'Nghe hợp lý vì có hai báo cáo, nhưng `$facet` luôn trả đúng một tài liệu; mỗi tên trong `$facet` là một trường chứa mảng kết quả của pipeline con đó.'
-      en: 'It sounds right because there are two reports, but `$facet` always returns exactly one document; each name in `$facet` is a field holding the array result of that sub-pipeline.'
+      vi: 'Có hai báo cáo, nhưng `$facet` không trả mỗi báo cáo một tài liệu: nó luôn trả đúng một tài liệu, mỗi tên trong `$facet` là một trường chứa mảng kết quả của pipeline con đó (ở bước 2 là `byStatus` và `top`). Nó cũng không giữ số tài liệu đầu vào như `$set`: 8 đơn đi vào, các pipeline con gom chúng lại, và chỉ một tài liệu đi ra.'
+      en: 'There are two reports, but `$facet` does not return one document per report: it always returns exactly one document, and each name in `$facet` is a field holding the array result of that sub-pipeline (in step 2, `byStatus` and `top`). Nor does it keep the input count like `$set`: 8 orders go in, the sub-pipelines fold them, and a single document comes out.'
 ---
 ## Mở bài
 

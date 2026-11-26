@@ -47,8 +47,8 @@ quiz:
         en: '`validationAction: "error"`'
     answer: 0
     why:
-      vi: '`"strict"` (mặc định) kiểm mọi lần thêm và sửa. `"moderate"` kiểm lần thêm và lần sửa tài liệu đang hợp lệ, còn tài liệu vốn đã sai thì sửa không cần qua kiểm tra.'
-      en: '`"strict"` (the default) checks every insert and update. `"moderate"` checks inserts and updates to documents that are already valid; updates to documents that were already invalid skip the check.'
+      vi: '`"strict"` (mặc định) kiểm mọi lần thêm và sửa, nên một lần sửa để tài liệu cũ vẫn sai sẽ bị chặn, đúng điều bạn không muốn. `"moderate"` kiểm lần thêm và lần sửa tài liệu đang hợp lệ, còn tài liệu vốn đã sai thì sửa không cần qua kiểm tra. `validationAction: "error"` không chọn tài liệu nào được kiểm; nó chỉ nói làm gì khi vi phạm (từ chối), nên không giải quyết được chuyện tài liệu cũ.'
+      en: '`"strict"` (the default) checks every insert and update, so an update that leaves an old document invalid is blocked, which is exactly what you want to avoid. `"moderate"` checks inserts and updates to documents that are already valid; updates to documents that were already invalid skip the check. `validationAction: "error"` does not choose which documents are checked; it only says what happens on a violation (reject), so it does not solve the old documents.'
   - q:
       vi: Muốn tìm những tài liệu hiện có đang vi phạm validator, dùng truy vấn nào?
       en: To find the existing documents that break the validator, which query do you use?
@@ -61,8 +61,8 @@ quiz:
         en: You cannot, you only find out at write time
     answer: 0
     why:
-      vi: '`$jsonSchema` cũng là một toán tử truy vấn. `find({ $jsonSchema: schema })` trả tài liệu hợp lệ; bọc trong `$nor` để lấy tài liệu không hợp lệ.'
-      en: '`$jsonSchema` is also a query operator. `find({ $jsonSchema: schema })` returns the valid documents; wrap it in `$nor` to get the invalid ones.'
+      vi: 'Validator chỉ kiểm lúc ghi, nhưng `$jsonSchema` cũng là một toán tử truy vấn, nên dữ liệu cũ vẫn kiểm được bất cứ lúc nào, kể cả trước khi bật validator. `find({ $jsonSchema: schema })` trả các tài liệu khớp luật, tức tài liệu hợp lệ, ngược với điều cần tìm. Bọc trong `$nor` (không khớp điều kiện nào trong danh sách) để lấy tài liệu không hợp lệ.'
+      en: 'A validator only checks at write time, but `$jsonSchema` is also a query operator, so old data can be checked at any time, even before the validator is turned on. `find({ $jsonSchema: schema })` returns the documents that match the rules, the valid ones, the opposite of what you want. Wrap it in `$nor` (matches none of the listed conditions) to get the invalid ones.'
 ---
 ## Mở bài
 
