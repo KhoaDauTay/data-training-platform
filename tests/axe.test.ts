@@ -131,7 +131,7 @@ describe('axe-core (v15 Q10)', () => {
     expect(v).toEqual([]);
   });
 
-  it('v46 (b56 eye, L857): a story ticket\'s quick lesson card in the brief mounts its figure too', async () => {
+  it('v46 (b56 eye, L882): a story ticket\'s quick lesson card in the brief mounts its figure too', async () => {
     await visit('#/learn');
     const stub = globalThis.IntersectionObserver;
     vi.stubGlobal('IntersectionObserver', class {

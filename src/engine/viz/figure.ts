@@ -37,7 +37,7 @@ export type Card = 'one' | 'zero-one' | 'many' | 'one-many' | 'zero-many';
  * a plain line (a `grid#row` link is drawn only side by side; a node-to-node link (v40) is routed like an arrow across rows,
  * without a head). v40 R2: `ends` = crow's-foot marks at the from/to ends of a node-to-node link; `near` = drawn only between
  * neighbouring rows or side by side (never on a side lane; the text alternative keeps it). */
-/** v46 (L850, eye X2/X3): `kind` = the line language. Default: a solid arrow (happens, flows); a later step's node is a faded
+/** v46 (L880, b56 eye X2/X3): `kind` = the line language. Default: a solid arrow (happens, flows); a later step's node is a faded
  * preview (comes later). `skip`: a dashed line without a head (does not happen, is skipped, does not exist; its label says so, e.g. "không về bảng"). `error`: a solid red arrow (the error path). A dashed frame is a group only. */
 export type EdgeKind = 'skip' | 'error';
 export interface FigEdge { id?: string; from: string; to: string; label?: Bi; dash?: boolean; link?: boolean; ends?: [Card | null, Card | null]; near?: boolean; bold?: boolean; kind?: EdgeKind }
@@ -410,7 +410,7 @@ export function layout(spec0: FigSpec, lang: Lang, W: number, variant?: string):
       const k = `e:${i}`, pe = p.edges[i]; // v42: this frame's ends and label; v44: and its dash
       shapes.push(r.e.link
         ? { k, t: 'p', d: r.d, ink: pe.ends ? 'edge' : 'new', w: pe.bold ? 3 : STROKE, dash: pe.dash } // v44 (L800): `bold` = an identifying relationship or total participation (a step may set it)
-        : pe.kind === 'skip' ? { k, t: 'p', d: r.d, ink: 'muted', w: STROKE, dash: true, attrs: { ...ends(r.e), 'data-kind': 'skip' } } // v46 (L850): no head, the label says it does not happen
+        : pe.kind === 'skip' ? { k, t: 'p', d: r.d, ink: 'muted', w: STROKE, dash: true, attrs: { ...ends(r.e), 'data-kind': 'skip' } } // v46 (L880): no head, the label says it does not happen
           : { k, t: 'p', d: r.d, ink: pe.kind === 'error' ? 'dead' : 'edge', w: STROKE, arrow: true, dash: pe.kind === 'error' ? false : pe.dash, attrs: { ...ends(r.e), ...(pe.kind ? { 'data-kind': pe.kind } : {}) } });
       if (pe.ends) shapes.push(...crowEnds(k, r.d, pe.ends, !!r.rev));
       if (r.lab && pe.label) shapes.push({ k: `${k}.l`, t: 't', x: r.lab.x, y: r.lab.y, s: tr(pe.label, lang), size: SS, a: r.lab.a, ink: 'muted' });
@@ -591,9 +591,10 @@ function groupShapes(spec: FigSpec, lang: Lang, at: Map<string, Rect>, paths: st
     // the label sits in the band, as far left as no arrow crossing the band (or ending on the frame, v41 R3) allows
     const w = textWidth(s, SS, true);
     const xs = paths.flatMap((d) => { const p = d.split(/[ ML]+/).filter(Boolean).map(Number), y = p[p.length - 1]; return [...vertXs(d, top, top + GBAND), ...(y >= top - 12 && y <= top ? [p[p.length - 2]] : [])]; });
-    const free = (x0: number): boolean => xs.every((x) => x < x0 - 6 || x > x0 + w + 6);
-    let lx = MARGIN + 10;
-    while (!free(lx)) if ((lx += 4) > x + gw - 10 - w) fail(`nhóm ${g.id}: mũi tên chắn mọi chỗ đặt nhãn`);
+    const free = (x0: number, c: number): boolean => xs.every((x) => x < x0 - c || x > x0 + w + c);
+    // v46 (L880, b56 eye PG8): 12 clear of every arrow where the band has room, else the old 6
+    const spot = (c: number): number | undefined => { for (let l = MARGIN + 10; l <= x + gw - 10 - w; l += 4) if (free(l, c)) return l; return undefined; };
+    const lx = spot(12) ?? spot(6) ?? fail(`nhóm ${g.id}: mũi tên chắn mọi chỗ đặt nhãn`);
     return [{ k, t: 'r', x, y: top, w: gw, h, tone: 'ghost', rx: 12 } as Shape,
       { k: `${k}.t`, t: 't', x: lx, y: top + GBAND / 2 + 2, s, size: SS, b: true, ink: 'muted', attrs: { 'data-owner': k } } as Shape];
   });
@@ -792,7 +793,7 @@ function draw(n: FigNode, r: Rect, lang: Lang, wide = false, parent?: string): S
         const ck = `${k}:${i}:${c}`;
         const hl = head ? undefined : n.cellTone?.[`${body}:${c}`];
         const tone: Tone = head ? 'cell' : hl ?? n.toneOf?.[s] ?? n.rowTone?.[body] ?? n.colTone?.[c] ?? n.tone ?? 'plain';
-        // v46 (L850, eye X1): an empty cell in a row that has text keeps its border and tone (no torn table, no lost highlight);
+        // v46 (L880, b56 eye X1): an empty cell in a row that has text keeps its border and tone (no torn table, no lost highlight);
         // a row with no text at all is a reserved slot and stays undrawn
         if (s || filled) out.push({ k: ck, t: 'r', x, y, w: cols[c], h: ROW_H, tone, rx: 0, bold: !!hl, attrs }); // v40 R2: a grid in a group names it too
         if (s) {

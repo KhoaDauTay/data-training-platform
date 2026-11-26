@@ -391,7 +391,7 @@ const SHAPES: FigSpec = {
     { from: 'pool', to: 'far' },
   ],
 };
-describe('v46 (L850, b56 eye X1–X3): the line language and empty cells', () => {
+describe('v46 (L880, b56 eye X1–X3): the line language and empty cells', () => {
   const SPEC = { title: 'k', caption: 'k', alt: 'k.', nodes: [{ id: 'a', label: 'A' }, { id: 'b', label: 'B' }, { id: 'c', label: 'C' },
     { id: 'g', shape: 'grid', label: 'g', head: ['x', 'y'], cells: [['1', ''], ['', '']], cellTone: { '0:1': 'warm' } }],
     rows: [['a', 'b', 'c'], ['g']], edges: [{ from: 'a', to: 'b', kind: 'skip', label: 'không' }, { from: 'b', to: 'c', kind: 'error' }, { from: 'c', to: 'g' }] } as unknown as Parameters<typeof layout>[0];
