@@ -8,6 +8,7 @@ title_en: "Adjacency list: many-to-many and the inverted GSI"
 kind: lab
 runtime: browser
 minutes: 12
+figures: [{ name: dy-adjacency-list, at: idea }]
 objectives:
   - vi: Lưu quan hệ nhiều-nhiều (đơn và sản phẩm) bằng item cạnh `ORDER#… / PRODUCT#…`.
     en: Store a many-to-many relation (orders and products) as edge items `ORDER#… / PRODUCT#…`.
@@ -145,12 +146,11 @@ Chiều ngược cần một GSI có khóa đảo: `GSI1PK = PRODUCT#P-04`, `GSI
 
 Nhiều người nghĩ chỉ cần Query `SK = PRODUCT#P-04` trên bảng. Thật ra Query luôn cần bằng trên partition key; chỉ biết sort key thì phải Scan. Ở đây `GSI1PK`/`GSI1SK` được ghi riêng trên item cạnh; một cách khác AWS mô tả là GSI có partition key là `SK` và sort key là `PK` của bảng, để mọi item tự có chiều ngược.
 
-Lab chạy bằng dynoxide trên bảng `Shop` của các bài trước.
+Hình dưới vẽ cùng một item cạnh ở hai nơi: trong partition của đơn trên bảng, và trong partition của sản phẩm trên GSI1. Lab chạy bằng dynoxide trên bảng `Shop` của các bài trước.
 
 ## Cú pháp
 
 ```text
-edge item:  PK = ORDER#<o>   SK = PRODUCT#<p>   GSI1PK = PRODUCT#<p>   GSI1SK = ORDER#<o>   qty, price
 forward:    Query  PK = ORDER#<o> AND begins_with(SK, "PRODUCT#")
 reverse:    Query  IndexName GSI1, GSI1PK = PRODUCT#<p>
 ```
@@ -227,12 +227,11 @@ The reverse direction needs a GSI with swapped keys: `GSI1PK = PRODUCT#P-04`, `G
 
 Many people think a Query `SK = PRODUCT#P-04` on the table is enough. In fact a Query always needs equality on the partition key; knowing only the sort key means a Scan. Here `GSI1PK`/`GSI1SK` are written separately on the edge items; another way AWS describes is a GSI whose partition key is the table's `SK` and sort key its `PK`, so every item gets its reverse direction for free.
 
-The lab runs on dynoxide on the `Shop` table of the previous lessons.
+The figure below draws one edge item in two places: in the order's partition on the table, and in the product's partition on GSI1. The lab runs on dynoxide on the `Shop` table of the previous lessons.
 
 ## Syntax
 
 ```text
-edge item:  PK = ORDER#<o>   SK = PRODUCT#<p>   GSI1PK = PRODUCT#<p>   GSI1SK = ORDER#<o>   qty, price
 forward:    Query  PK = ORDER#<o> AND begins_with(SK, "PRODUCT#")
 reverse:    Query  IndexName GSI1, GSI1PK = PRODUCT#<p>
 ```

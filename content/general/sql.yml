@@ -242,9 +242,9 @@
   kind: trap
   task: { vi: "Đơn đặt ngày 2026-10-31 của khách thành viên (đơn có `customer_id`; đơn khách vãng lai có `customer_id` trống và không tính), mọi trạng thái: mã đơn và tên khách, theo thứ tự đó.", en: "Orders placed on 2026-10-31 by member customers (the order has a `customer_id`; walk-in orders have an empty `customer_id` and are left out), every status: order id and customer name, in that order." }
   solution: "SELECT o.id, c.name FROM orders o JOIN customers c ON c.id = o.customer_id WHERE o.order_date = '2026-10-31'"
-  hint: { vi: "Điều kiện nối phải ghép đúng cột khóa: khách của đơn nằm ở `customer_id`.", en: "The join condition must match the right key: an order's customer is in `customer_id`." }
+  hint: { vi: "Điều kiện nối phải so đúng cột khóa: khách của đơn nằm ở `customer_id`.", en: "The join condition must match the right key: an order's customer is in `customer_id`." }
   wrong:
-    - { sql: "SELECT o.id, c.name FROM orders o JOIN customers c ON c.id = o.store_id WHERE o.order_date = '2026-10-31'", vi: "ON ghép nhầm cột (`store_id`): Postgres không báo lỗi, nhưng mỗi đơn gắn với một khách sai.", en: "ON matches the wrong column (`store_id`): Postgres does not complain, but each order gets the wrong customer." }
+    - { sql: "SELECT o.id, c.name FROM orders o JOIN customers c ON c.id = o.store_id WHERE o.order_date = '2026-10-31'", vi: "ON so nhầm cột (`store_id`): Postgres không báo lỗi, nhưng mỗi đơn gắn với khách có mã bằng mã cửa hàng của đơn, không phải người đã mua.", en: "ON matches the wrong column (`store_id`): Postgres does not complain, but each order gets the customer whose id equals the order's store id, not the buyer." }
 - id: g-join-4
   skill: join
   kind: review
@@ -279,7 +279,7 @@
   kind: trap
   task: { vi: "Dòng hàng của các đơn đặt ngày 2026-10-29: mã đơn, tên sản phẩm, tên cửa hàng.", en: "Lines of the orders placed on 2026-10-29: order id, product name, store name." }
   solution: "SELECT i.order_id, p.name, s.name FROM order_items i JOIN products p ON p.id = i.product_id JOIN orders o ON o.id = i.order_id JOIN stores s ON s.id = o.store_id WHERE o.order_date = '2026-10-29'"
-  hint: { vi: "Hai bảng cùng có cột `name`: ghi bí danh trước mỗi cột.", en: "Two tables both have a `name` column: put the alias before each column." }
+  hint: { vi: "Hai bảng cùng có cột `name`: ghi alias trước mỗi cột.", en: "Two tables both have a `name` column: put the alias before each column." }
   wrong:
     - { sql: "SELECT order_id, name, name FROM order_items i JOIN products p ON p.id = i.product_id JOIN orders o ON o.id = i.order_id JOIN stores s ON s.id = o.store_id WHERE o.order_date = '2026-10-29'", vi: "`name` có ở cả `products` lẫn `stores`, nên Postgres báo cột mơ hồ. Viết `p.name`, `s.name`.", en: "`name` exists in both `products` and `stores`, so Postgres says the column is ambiguous. Write `p.name`, `s.name`." }
 - id: g-multi-join-4
@@ -299,7 +299,7 @@
     FROM staff e ___
     JOIN stores s ON s.id = e.store_id
   solution: "SELECT e.name, s.name FROM staff e LEFT JOIN stores s ON s.id = e.store_id"
-  hint: { vi: "Phép nối giữ mọi dòng của bảng bên trái, kể cả dòng không ghép được.", en: "The join that keeps every row of the left table, even the unmatched ones." }
+  hint: { vi: "Phép nối giữ mọi dòng của bảng bên trái, kể cả dòng không có cặp.", en: "The join that keeps every row of the left table, even the unmatched ones." }
 - id: g-left-join-2
   skill: left_join
   kind: open
@@ -313,7 +313,7 @@
   solution: "SELECT s.name, t.target_vnd FROM stores s LEFT JOIN store_targets t ON t.store_id = s.id AND t.month = '2026-06-01'"
   hint: { vi: "Điều kiện về tháng thuộc bảng bên phải, nên đặt nó trong ON.", en: "The month condition is about the right-hand table, so put it in ON." }
   wrong:
-    - { sql: "SELECT s.name, t.target_vnd FROM stores s LEFT JOIN store_targets t ON t.store_id = s.id WHERE t.month = '2026-06-01'", vi: "Điều kiện trên bảng bên phải đặt ở WHERE loại mất cửa hàng không có mục tiêu: phép nối thành nối thường.", en: "A condition on the right table in WHERE drops the store with no target: the join turns back into an inner join." }
+    - { sql: "SELECT s.name, t.target_vnd FROM stores s LEFT JOIN store_targets t ON t.store_id = s.id WHERE t.month = '2026-06-01'", vi: "Cửa hàng không có mục tiêu tháng 6 có cột tháng trống, nên điều kiện tháng đặt ở WHERE loại nó: LEFT JOIN thành JOIN thường.", en: "The store with no June target has an empty month, so the month condition in WHERE drops it: the LEFT JOIN becomes an inner join." }
 - id: g-left-join-4
   skill: left_join
   kind: review
@@ -332,13 +332,13 @@
     LEFT JOIN orders o ON o.customer_id = c.id AND o.order_date >= '2026-07-01'
     WHERE ___ IS NULL
   solution: "SELECT c.id, c.name FROM customers c LEFT JOIN orders o ON o.customer_id = c.id AND o.order_date >= '2026-07-01' WHERE o.id IS NULL"
-  hint: { vi: "Khách không ghép được đơn nào thì mọi cột của `orders` đều trống; kiểm khóa của đơn.", en: "A customer with no matching order has every `orders` column empty; check the order's key." }
+  hint: { vi: "Khách không có đơn nào để nối thì mọi cột của `orders` đều trống; kiểm khóa của đơn.", en: "A customer with no matching order has every `orders` column empty; check the order's key." }
 - id: g-anti-join-2
   skill: anti_join
   kind: open
   task: { vi: "Cửa hàng nào chưa có mục tiêu doanh thu cho tháng 2026-02-01? Lấy tên cửa hàng.", en: "Which stores have no revenue target for month 2026-02-01? Get the store name." }
   solution: "SELECT s.name FROM stores s LEFT JOIN store_targets t ON t.store_id = s.id AND t.month = '2026-02-01' WHERE t.store_id IS NULL"
-  hint: { vi: "Nối giữ mọi cửa hàng với điều kiện tháng trong ON, rồi giữ dòng không ghép được.", en: "Join keeping every store with the month in ON, then keep the rows that did not match." }
+  hint: { vi: "Nối giữ mọi cửa hàng với điều kiện tháng trong ON, rồi giữ dòng không có cặp.", en: "Join keeping every store with the month in ON, then keep the rows that did not match." }
 - id: g-anti-join-3
   skill: anti_join
   kind: trap
@@ -352,7 +352,7 @@
   kind: review
   task: { vi: "Cửa hàng nào không có đơn nào trong ngày 29/10/2026? Lấy tên cửa hàng.", en: "Which stores had no order on 2026-10-29? Get the store name." }
   solution: "SELECT s.name FROM stores s LEFT JOIN orders o ON o.store_id = s.id AND o.order_date = '2026-10-29' WHERE o.id IS NULL"
-  hint: { vi: "Giữ mọi cửa hàng, ghép với đơn của đúng ngày đó, rồi chỉ giữ cửa hàng không ghép được đơn nào.", en: "Keep every store, match it with that day's orders, then keep only the stores that matched no order." }
+  hint: { vi: "Giữ mọi cửa hàng, nối với đơn của đúng ngày đó, rồi chỉ giữ cửa hàng không nối được đơn nào.", en: "Keep every store, match it with that day's orders, then keep only the stores that matched no order." }
 
 # ---- date_math (ch4)
 - id: g-date-math-1
@@ -417,7 +417,7 @@
   ordered: true
   hint: { vi: "Một tháng ở đây gồm cả năm: tháng 3/2025 khác tháng 3/2026.", en: "A month here includes its year: March 2025 is not March 2026." }
   wrong:
-    - { sql: "SELECT extract(month FROM order_date), count(*) FROM orders GROUP BY 1 ORDER BY 1", vi: "`extract(month …)` chỉ ra số tháng, nên tháng 3 của hai năm bị gộp: chỉ còn 12 dòng.", en: "`extract(month …)` only gives the month number, so March of two years is merged: only 12 rows are left." }
+    - { sql: "SELECT extract(month FROM order_date), count(*) FROM orders GROUP BY 1 ORDER BY 1", vi: "`extract(month …)` chỉ ra số tháng, nên tháng 3 của hai năm rơi vào một nhóm: chỉ còn 12 dòng.", en: "`extract(month …)` only gives the month number, so March of two years is merged: only 12 rows are left." }
 - id: g-date-bucket-4
   skill: date_bucket
   kind: review
@@ -563,7 +563,7 @@
     ___ dim_date d
     WHERE s.city = 'Da Nang' AND d.date_key BETWEEN '2026-10-29' AND '2026-10-31'
   solution: "SELECT s.name, d.date_key FROM stores s CROSS JOIN dim_date d WHERE s.city = 'Da Nang' AND d.date_key BETWEEN '2026-10-29' AND '2026-10-31'"
-  hint: { vi: "Phép ghép không có điều kiện, đưa mỗi cửa hàng gặp mọi ngày.", en: "The join with no condition, which makes every store meet every day." }
+  hint: { vi: "Phép nối không có điều kiện, đưa mỗi cửa hàng gặp mọi ngày.", en: "The join with no condition, which makes every store meet every day." }
 - id: g-cross-join-2
   skill: cross_join
   kind: open
@@ -585,7 +585,7 @@
   kind: review
   task: { vi: "Kế hoạch trưng bày: mỗi sản phẩm nhóm `Snacks` phải có mặt ở mỗi cửa hàng tại `Da Nang`. Liệt kê mọi cặp: tên sản phẩm và tên cửa hàng.", en: "A display plan: every product in the `Snacks` category must be on show in every store in `Da Nang`. List every pair: the product name and the store name." }
   solution: "SELECT p.name, s.name FROM products p CROSS JOIN stores s WHERE p.category = 'Snacks' AND s.city = 'Da Nang'"
-  hint: { vi: "Lọc từng bảng rồi ghép mọi cặp; 6 món × 2 cửa hàng.", en: "Filter each table, then pair everything; 6 items × 2 stores." }
+  hint: { vi: "Lọc từng bảng rồi nối mọi cặp; 6 món × 2 cửa hàng.", en: "Filter each table, then pair everything; 6 items × 2 stores." }
 
 # ---- self_join (ch5)
 - id: g-self-join-1
@@ -594,7 +594,7 @@
   task: { vi: "Mỗi nhân viên có quản lý: tên nhân viên và tên quản lý trực tiếp.", en: "Each staff member who has a manager: staff name and direct manager's name." }
   starter: "SELECT e.name, m.name FROM staff e JOIN staff m ON ___"
   solution: "SELECT e.name, m.name FROM staff e JOIN staff m ON m.id = e.manager_id"
-  hint: { vi: "Bảng `staff` dùng hai lần với hai bí danh; quản lý là dòng có `id` bằng `manager_id` của nhân viên.", en: "Use `staff` twice with two aliases; the manager is the row whose `id` equals the employee's `manager_id`." }
+  hint: { vi: "Bảng `staff` dùng hai lần với hai alias; quản lý là dòng có `id` bằng `manager_id` của nhân viên.", en: "Use `staff` twice with two aliases; the manager is the row whose `id` equals the employee's `manager_id`." }
 - id: g-self-join-2
   skill: self_join
   kind: open
@@ -614,7 +614,7 @@
   kind: review
   task: { vi: "Cặp nhân viên làm cùng cửa hàng và cùng vai trò: tên hai người, mỗi cặp một lần, người có mã nhỏ hơn đứng trước.", en: "Pairs of staff members at the same store with the same role: the two names, each pair once, the one with the smaller id first." }
   solution: "SELECT a.name, b.name FROM staff a JOIN staff b ON b.store_id = a.store_id AND b.role = a.role AND a.id < b.id"
-  hint: { vi: "Dùng `staff` hai lần với hai bí danh; so mã bằng dấu nhỏ hơn để không ghép một người với chính mình và không lặp cặp.", en: "Use `staff` twice with two aliases; compare ids with less-than so nobody pairs with themselves and no pair repeats." }
+  hint: { vi: "Dùng `staff` hai lần với hai alias; so mã bằng dấu nhỏ hơn để không bắt cặp một người với chính mình và không lặp cặp.", en: "Use `staff` twice with two aliases; compare ids with less-than so nobody pairs with themselves and no pair repeats." }
 
 # ---- string_fn (ch6)
 - id: g-string-fn-1
@@ -730,14 +730,14 @@
   solution: "SELECT store_id, round(count(shipped_on)::numeric / count(*), 2) FROM orders GROUP BY store_id"
   hint: { vi: "Số nguyên chia số nguyên bỏ phần thập phân.", en: "An integer divided by an integer drops the decimals." }
   wrong:
-    - { sql: "SELECT store_id, round(count(shipped_on) / count(*), 2) FROM orders GROUP BY store_id", vi: "Hai số đếm đều là số nguyên, nên phép chia ra 0 cho mọi cửa hàng. Đổi một vế sang `numeric`.", en: "Both counts are integers, so the division gives 0 for every store. Cast one side to `numeric`." }
+    - { sql: "SELECT store_id, round(count(shipped_on) / count(*), 2) FROM orders GROUP BY store_id", vi: "Hai số đếm là số nguyên, nên phép chia bỏ phần thập phân: mọi tỉ lệ dưới 1 thành 0. Đổi một vế sang `numeric`.", en: "Both counts are integers, so the division drops the fraction: every share below 1 becomes 0. Cast one side to `numeric`." }
 
 - id: g-cast-4
   skill: cast
   kind: review
   task: { vi: "Mỗi món ăn vặt (danh mục `Snacks`): tên và giá tính theo nghìn đồng, làm tròn 1 chữ số thập phân.", en: "Each snack (category `Snacks`): the name and the price in thousands of VND, rounded to 1 decimal." }
   solution: "SELECT name, ROUND(price_vnd::numeric / 1000, 1) FROM products WHERE category = 'Snacks'"
-  hint: { vi: "`price_vnd` là số nguyên: đổi sang `numeric` trước khi chia, nếu không phần lẻ bị cắt.", en: "`price_vnd` is an integer: convert it to `numeric` before dividing, or the fraction is cut off." }
+  hint: { vi: "`price_vnd` là số nguyên: đổi sang `numeric` trước khi chia, nếu không phần thập phân bị cắt.", en: "`price_vnd` is an integer: convert it to `numeric` before dividing, or the fraction is cut off." }
 
 # ---- scalar_subquery (ch7)
 - id: g-scalar-subquery-1
@@ -774,7 +774,7 @@
   kind: review
   task: { vi: "Những dòng hàng có số lượng bằng số lượng lớn nhất từng có trong một dòng hàng: mã đơn, số thứ tự dòng và số lượng.", en: "The order lines whose quantity equals the largest quantity ever seen on one line: the order id, the line number and the quantity." }
   solution: "SELECT order_id, line_no, qty FROM order_items WHERE qty = (SELECT MAX(qty) FROM order_items)"
-  hint: { vi: "Tính số lượng lớn nhất trong một câu con trả về đúng một giá trị, rồi so từng dòng với nó.", en: "Compute the largest quantity in a sub-query that returns exactly one value, then compare each line with it." }
+  hint: { vi: "Tính số lượng lớn nhất trong một truy vấn con trả về đúng một giá trị, rồi so từng dòng với nó.", en: "Compute the largest quantity in a sub-query that returns exactly one value, then compare each line with it." }
 
 # ---- in_subquery (ch7)
 - id: g-in-subquery-1
@@ -923,7 +923,7 @@
   kind: review
   task: { vi: "Mỗi cửa hàng: tên và số nhân viên của cửa hàng đó, tính ngay trong danh sách cột.", en: "Each store: the name and its number of staff, computed right in the column list." }
   solution: "SELECT s.name, (SELECT COUNT(*) FROM staff e WHERE e.store_id = s.id) FROM stores s"
-  hint: { vi: "Một câu con trong danh sách cột, đếm `staff` có `store_id` bằng mã của cửa hàng ở câu ngoài.", en: "A sub-query in the column list that counts the `staff` rows whose `store_id` equals the outer store's id." }
+  hint: { vi: "Một truy vấn con trong danh sách cột, đếm `staff` có `store_id` bằng mã của cửa hàng ở câu ngoài.", en: "A sub-query in the column list that counts the `staff` rows whose `store_id` equals the outer store's id." }
 
 # ---- cte (ch8)
 - id: g-cte-1
@@ -1000,14 +1000,14 @@
   hint: { vi: "Hai bước đặt tên, cách nhau bằng dấu phẩy, sau một chữ WITH duy nhất.", en: "Two named steps, separated by a comma, after a single WITH." }
   wrong:
     - sql: "WITH by_cat AS (SELECT p.category, SUM(i.qty * i.unit_price_vnd) AS sales FROM orders o JOIN order_items i ON i.order_id = o.id JOIN products p ON p.id = i.product_id WHERE o.status = 'PAID' AND o.order_date >= '2026-01-01' GROUP BY p.category) WITH total AS (SELECT SUM(sales) AS t FROM by_cat) SELECT by_cat.category, ROUND(100.0 * by_cat.sales / total.t, 1) FROM by_cat, total"
-      vi: "Viết `WITH` hai lần là lỗi cú pháp. Chỉ một `WITH` ở đầu, các bước sau nối bằng dấu phẩy."
+      vi: "Viết `WITH` hai lần là lỗi cú pháp. Chỉ một `WITH` ở đầu, các bước sau cách nhau bằng dấu phẩy."
       en: "Writing `WITH` twice is a syntax error. One `WITH` at the start, the later steps joined with commas."
 - id: g-multi-cte-4
   skill: multi_cte
   kind: review
   task: { vi: "Tháng 10/2026, danh mục nào có doanh thu đơn đã thanh toán (`PAID`) thấp nhất? Doanh thu một dòng hàng = số lượng × đơn giá. Lấy danh mục và doanh thu.", en: "In October 2026, which category had the lowest paid-order (`PAID`) revenue? The revenue of an order line = quantity × unit price. Get the category and the revenue." }
   solution: "WITH by_cat AS (SELECT p.category, SUM(i.qty * i.unit_price_vnd) AS sales FROM orders o JOIN order_items i ON i.order_id = o.id JOIN products p ON p.id = i.product_id WHERE o.status = 'PAID' AND o.order_date >= '2026-10-01' AND o.order_date < '2026-11-01' GROUP BY p.category), worst AS (SELECT MIN(sales) AS sales FROM by_cat) SELECT by_cat.category, by_cat.sales FROM by_cat JOIN worst ON worst.sales = by_cat.sales"
-  hint: { vi: "Hai bước có tên: doanh thu mỗi danh mục, rồi mức thấp nhất của bước đó; cuối cùng ghép hai bước.", en: "Two named steps: revenue per category, then the lowest value of that step; finally join the two." }
+  hint: { vi: "Hai bước có tên: doanh thu mỗi danh mục, rồi mức thấp nhất của bước đó; cuối cùng nối hai bước.", en: "Two named steps: revenue per category, then the lowest value of that step; finally join the two." }
 
 # ---- distinct_on (ch8)
 - id: g-distinct-on-1
@@ -1071,7 +1071,7 @@
   kind: trap
   task: { vi: "Liệt kê nhóm hàng của từng dòng hàng bán ngày 30/10/2026 ở cửa hàng 1, nối tiếp bằng nhóm hàng của từng dòng hàng bán cùng ngày ở cửa hàng 3 (đơn mọi trạng thái). Mỗi dòng hàng một dòng, giữ cả các dòng lặp lại.", en: "List the category of every order line sold on 2026-10-30 at store 1, followed by the category of every line sold that day at store 3 (orders of every status). One row per order line, keep the repeats." }
   solution: "SELECT p.category FROM order_items i JOIN orders o ON o.id = i.order_id JOIN products p ON p.id = i.product_id WHERE o.store_id = 1 AND o.order_date = '2026-10-30' UNION ALL SELECT p.category FROM order_items i JOIN orders o ON o.id = i.order_id JOIN products p ON p.id = i.product_id WHERE o.store_id = 3 AND o.order_date = '2026-10-30'"
-  hint: { vi: "Có một cách ghép bỏ dòng trùng và một cách giữ nguyên; đề cần giữ.", en: "One way of stacking drops duplicate rows and one keeps them; the task needs them kept." }
+  hint: { vi: "Có một cách xếp chồng bỏ dòng trùng và một cách giữ nguyên; đề cần giữ.", en: "One way of stacking drops duplicate rows and one keeps them; the task needs them kept." }
   wrong:
     - sql: "SELECT p.category FROM order_items i JOIN orders o ON o.id = i.order_id JOIN products p ON p.id = i.product_id WHERE o.store_id = 1 AND o.order_date = '2026-10-30' UNION SELECT p.category FROM order_items i JOIN orders o ON o.id = i.order_id JOIN products p ON p.id = i.product_id WHERE o.store_id = 3 AND o.order_date = '2026-10-30'"
       vi: "`UNION` bỏ dòng trùng: mỗi nhóm hàng chỉ còn một dòng, mất các dòng hàng lặp lại. Dùng `UNION ALL`."
@@ -1163,7 +1163,7 @@
   kind: review
   task: { vi: "So số lượng bán của từng sản phẩm ngày 30/10/2026 với ngày 31/10/2026 (mọi trạng thái đơn). Sản phẩm chỉ bán một trong hai ngày vẫn có mặt, ngày kia để trống. Lấy mã sản phẩm, số lượng ngày 30 và số lượng ngày 31.", en: "Compare each product's quantity sold on 2026-10-30 with 2026-10-31 (any order status). A product sold on only one of the two days still appears, with the other day empty. Get the product id, the quantity on the 30th and the quantity on the 31st." }
   solution: "WITH a AS (SELECT i.product_id, SUM(i.qty) AS q FROM order_items i JOIN orders o ON o.id = i.order_id WHERE o.order_date = '2026-10-30' GROUP BY i.product_id), b AS (SELECT i.product_id, SUM(i.qty) AS q FROM order_items i JOIN orders o ON o.id = i.order_id WHERE o.order_date = '2026-10-31' GROUP BY i.product_id) SELECT COALESCE(a.product_id, b.product_id), a.q, b.q FROM a FULL JOIN b ON b.product_id = a.product_id"
-  hint: { vi: "Tính riêng từng ngày, rồi ghép hai bên mà giữ dòng không có cặp ở cả hai phía; mã sản phẩm lấy từ phía nào có.", en: "Compute each day on its own, then join the two keeping unmatched rows on both sides; take the product id from whichever side has it." }
+  hint: { vi: "Tính riêng từng ngày, rồi nối hai bên mà giữ dòng không có cặp ở cả hai phía; mã sản phẩm lấy từ phía nào có.", en: "Compute each day on its own, then join the two keeping unmatched rows on both sides; take the product id from whichever side has it." }
 
 # ---- insert_select (v26 R2, Part 9, General only: content/general/skills-general.yml)
 # Write drills (L390): `check:` is the read that grades them, run after the write in the same BEGIN … ROLLBACK. They write
@@ -1233,7 +1233,7 @@
   task: { vi: "Bảng `payments` có những lần thu bị ghi hai lần: cùng `order_id`, cùng `amount_vnd`. Xóa bản thừa, giữ lại đúng một bản mỗi cặp (bản có `id` nhỏ hơn). Một lần thu và một lần hoàn tiền (số âm) của cùng đơn không phải bản trùng.", en: "The `payments` table has payments recorded twice: same `order_id`, same `amount_vnd`. Delete the extra copy and keep exactly one of each pair (the one with the smaller `id`). A payment and a refund (a negative amount) of the same order are not duplicates." }
   solution: "DELETE FROM payments p USING payments q WHERE p.order_id = q.order_id AND p.amount_vnd = q.amount_vnd AND p.id > q.id"
   check: "SELECT order_id, count(*), sum(amount_vnd) FROM payments GROUP BY order_id HAVING count(*) > 1 OR order_id % 97 = 0"
-  hint: { vi: "Ghép bảng với chính nó để mỗi dòng thấy bản sao của mình; chỉ xóa bản đứng sau.", en: "Pair the table with itself so each row sees its copy; delete only the later one." }
+  hint: { vi: "Nối bảng với chính nó để mỗi dòng thấy bản sao của mình; chỉ xóa bản đứng sau.", en: "Pair the table with itself so each row sees its copy; delete only the later one." }
   wrong:
     - sql: "DELETE FROM payments p USING payments q WHERE p.order_id = q.order_id AND p.amount_vnd = q.amount_vnd AND p.id <> q.id"
       vi: "`p.id <> q.id` đúng cho cả hai bản của một cặp (mỗi bản thấy bản kia), nên cả hai bị xóa: đơn mất luôn lần thu. Chỉ xóa bản có `id` lớn hơn: `p.id > q.id`."
@@ -1403,7 +1403,7 @@
   kind: review
   task: { vi: "Mỗi đơn của khách số 7: mã đơn, ngày đặt và số đơn khách đã đặt tính tới đơn này (theo ngày, cùng ngày thì theo mã đơn).", en: "Each order of customer 7: the order id, the order date and how many orders the customer had placed up to and including this one (by date, then by order id)." }
   solution: "SELECT id, order_date, COUNT(*) OVER (ORDER BY order_date, id) FROM orders WHERE customer_id = 7"
-  hint: { vi: "Một phép đếm chạy dồn theo thứ tự ngày rồi mã, giữ nguyên từng dòng đơn.", en: "A running count in date-then-id order that keeps every order row." }
+  hint: { vi: "Một phép đếm cộng dồn theo thứ tự ngày rồi mã, giữ nguyên từng dòng đơn.", en: "A running count in date-then-id order that keeps every order row." }
 
 # ---- explain_read (ch11)
 - id: g-explain-read-1

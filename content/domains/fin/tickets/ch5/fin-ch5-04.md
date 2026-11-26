@@ -26,7 +26,7 @@ reflect:
     - { vi: "Tên chi nhánh lớn nhất của vùng", en: "The name of the region's largest branch" }
     - { vi: "Chữ \"tổng\"", en: "The word \"total\"" }
   answer: 0
-  why: { vi: "Tổng phụ để trống cột đã được gộp. Vì vậy phải sắp ô trống xuống cuối nhóm thì dòng tổng mới đứng sau các chi nhánh.", en: "A subtotal leaves the rolled-up column empty. That is why empty cells must sort last, so the total row comes after the branches." }
+  why: { vi: "Dòng tổng phụ để trống cột không còn chia nhóm (vùng tổng thì trống tên chi nhánh). Vì vậy phải sắp ô trống xuống cuối nhóm thì dòng tổng mới đứng sau các chi nhánh.", en: "A subtotal leaves the rolled-up column empty. That is why empty cells must sort last, so the total row comes after the branches." }
 wrong:
   - sql: "SELECT b.region, b.name, sum(g.amount) FROM gl_entries g JOIN branches b ON b.id = g.branch_id JOIN accounts a ON a.id = g.account_id WHERE a.kind = 'expense' AND g.posted_on >= '{{from}}' AND g.posted_on < '{{to}}' GROUP BY b.region, b.name ORDER BY b.region, b.name"
     vi: "Thiếu các dòng tổng: gom thường chỉ ra một dòng mỗi chi nhánh. Đề cần thêm dòng tổng của từng vùng và dòng tổng công ty."
@@ -38,8 +38,8 @@ Báo cáo quý cho ban điều hành cần chi phí theo vùng rồi tới từn
 Tổng thực chi (chỉ khoản mục chi phí) quý {{q}}, tức từ tháng {{m1}} đến hết tháng {{m2}}, theo vùng và chi nhánh, kèm một dòng tổng cho mỗi vùng và một dòng tổng công ty. Vùng, tên chi nhánh, tổng chi; dòng tổng để trống cột đã gộp. Xếp theo vùng rồi tên chi nhánh, theo thứ tự chữ cái; dòng tổng của mỗi vùng đứng cuối vùng đó, dòng tổng công ty đứng cuối cùng.
 
 ## Hints
-1. Gom theo vùng và chi nhánh, xin thêm tổng phụ theo vùng và tổng chung trong cùng một lần gom. Dòng tổng để trống cột đã gộp, nên khi sắp phải đẩy ô trống xuống cuối. Bài nâng cao "Tổng phụ" giải thích cách này.
-2. `GROUP BY ROLLUP (b.region, b.name)` thêm dòng tổng vùng và tổng chung. Sắp `ORDER BY b.region NULLS LAST, b.name NULLS LAST`. Ghép ba bảng: `gl_entries g`, `branches b`, `accounts a`.
+1. Gom theo vùng và chi nhánh, xin thêm tổng phụ theo vùng và tổng chung trong cùng một lần gom. Dòng tổng để trống cột không còn chia nhóm, nên khi sắp phải đẩy ô trống xuống cuối. Bài nâng cao "Tổng phụ" giải thích cách này.
+2. `GROUP BY ROLLUP (b.region, b.name)` thêm dòng tổng vùng và tổng chung. Sắp `ORDER BY b.region NULLS LAST, b.name NULLS LAST`. Nối ba bảng: `gl_entries g`, `branches b`, `accounts a`.
 3. `SELECT b.region, b.name, sum(g.amount) FROM gl_entries g JOIN branches b ON ... JOIN accounts a ON ... WHERE ... GROUP BY ROLLUP (b.region, b.name) ORDER BY b.region NULLS LAST, b.name NULLS LAST`
 
 ## Solution

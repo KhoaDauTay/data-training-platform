@@ -71,20 +71,20 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì vài cột là đủ cho đa số người, nhưng số email không có trần, và tìm một email phải dò mọi cột. Phức hợp là một giá trị có nhiều phần (địa chỉ = phố, thành phố); đa trị là nhiều giá trị, nên thành bảng con."
-      en: "It sounds right because a few columns cover most people, but the number of emails has no ceiling and finding one email means checking every column. Composite is one value with parts (address = street, city); multivalued is several values, so it becomes a child table."
+      vi: "Cột `email1`, `email2` nghe hợp lý vì đa số sinh viên chỉ có một hai email, nhưng số email không có trần, và tìm một email phải dò mọi cột. Thuộc tính phức hợp (composite) là một giá trị gồm nhiều phần (địa chỉ = phố + thành phố); ở đây là nhiều giá trị cùng loại, tức thuộc tính đa trị (multivalued), nên thành bảng con mỗi email một dòng. Email cũng không dẫn xuất (derived) được: không tính ra nó từ cột nào khác, nên phải lưu."
+      en: "Columns `email1`, `email2` sound right because most students have one or two emails, but the number has no ceiling and finding one email means checking every column. A composite attribute is one value with several parts (address = street + city); here there are several values of the same kind, a multivalued attribute, so it becomes a child table with one row per email. An email is not derived either: no other column computes it, so it must be stored."
   - q:
       vi: "Mỗi đơn hàng thuộc đúng một khách, một khách có thể chưa có đơn nào. Phía đơn hàng tham gia mối quan hệ thế nào?"
       en: "Every order belongs to exactly one customer, and a customer may have no orders yet. How does the order side take part in the relationship?"
     options:
       - { vi: "Toàn phần: mọi đơn phải có khách, nên `customer_id` là `NOT NULL`", en: "Total: every order must have a customer, so `customer_id` is `NOT NULL`" }
       - { vi: "Bộ phận, vì có khách chưa có đơn", en: "Partial, because some customers have no orders" }
-      - { vi: "Quan hệ M:N", en: "An M:N relationship" }
+      - { vi: "Mối quan hệ M:N", en: "An M:N relationship" }
     answer: 0
     trap: 1
     why:
-      vi: "Nhiều người đọc mức tham gia của cả mối quan hệ một lần. Thật ra mỗi phía có mức riêng: phía khách là bộ phận (có khách không đơn), phía đơn là toàn phần (đơn nào cũng có khách), và trên bảng toàn phần thành `NOT NULL`."
-      en: "Many people read participation once for the whole relationship. In fact each side has its own: the customer side is partial (a customer with no order exists), the order side total (every order has a customer), and on tables total becomes `NOT NULL`."
+      vi: "\"Bộ phận\" là câu trả lời cho phía khách, không phải phía đơn: mức tham gia (participation) được đọc riêng cho từng phía. Phía khách là bộ phận vì có khách chưa có đơn; phía đơn là toàn phần vì đơn nào cũng có đúng một khách, nên trên bảng `customer_id` là `NOT NULL`. Đây cũng không phải M:N: một đơn chỉ thuộc một khách, nên lực lượng (cardinality) là 1:N."
+      en: "\"Partial\" answers for the customer side, not the order side: participation is read separately for each side. The customer side is partial because some customers have no orders; the order side is total because every order has exactly one customer, so on the table `customer_id` is `NOT NULL`. It is not M:N either: an order belongs to one customer only, so the cardinality is 1:N."
 ---
 ## Mở bài
 

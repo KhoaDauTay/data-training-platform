@@ -6,18 +6,18 @@ minutes: 20
 figures: [{ name: sql-self-join-tree, at: idea }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
-  - vi: Đặt hai bí danh cho cùng một bảng để mỗi dòng gặp được dòng nó trỏ tới, như nhân viên và quản lý.
+  - vi: Đặt hai alias cho cùng một bảng để mỗi dòng gặp được dòng nó trỏ tới, như nhân viên và quản lý.
     en: Give one table two aliases so each row can meet the row it points to, such as an employee and their manager.
   - vi: Đi lên hai cấp (quản lý của quản lý) bằng một lần nối nữa.
     en: Climb two levels (the manager's manager) with one more join.
-  - vi: Ghép cặp các dòng cùng nhóm mà không lặp và không tự ghép với mình.
+  - vi: Ghép cặp các dòng cùng nhóm mà không lặp và không tự bắt cặp với mình.
     en: Pair rows of the same group without repeats and without a row pairing with itself.
 syntax: |-
   SELECT e.name, m.name AS manager
   FROM staff e
   [LEFT] JOIN staff m ON m.id = e.manager_id
 options:
-  - { code: "staff e, staff m", vi: "hai bí danh, hai vai: người được hỏi và người họ trỏ tới", en: "two aliases, two roles: the person asked about and the one they point to" }
+  - { code: "staff e, staff m", vi: "hai alias, hai vai: người được hỏi và người họ trỏ tới", en: "two aliases, two roles: the person asked about and the one they point to" }
   - { code: "ON m.id = e.manager_id", vi: "chiều nối: khóa của người quản lý bằng cột trỏ của nhân viên", en: "the direction: the manager's key equals the employee's pointer column" }
   - { code: "LEFT JOIN", vi: "giữ cả người không có quản lý (cấp cao nhất)", en: "keeps people with no manager (the top level)" }
   - { code: "a.id < b.id", vi: "khi ghép cặp: bỏ cặp tự thân và cặp đảo ngược", en: "when pairing: drops self-pairs and reversed pairs" }
@@ -29,7 +29,7 @@ examples:
       JOIN staff m ON m.id = e.manager_id
       WHERE e.store_id = 3
     read:
-      vi: "4 người: Ta Vy (quản lý cửa hàng) báo cáo cho Ly Quan, hai thu ngân báo cáo cho Ta Vy. Cùng một bảng đóng hai vai nhờ hai bí danh `e` và `m`."
+      vi: "4 người: Ta Vy (quản lý cửa hàng) báo cáo cho Ly Quan, hai thu ngân báo cáo cho Ta Vy. Cùng một bảng đóng hai vai nhờ hai alias `e` và `m`."
       en: "4 people: Ta Vy (the store manager) reports to Ly Quan, two cashiers report to Ta Vy. One table plays two roles thanks to the aliases `e` and `m`."
   - title: { vi: "Giữ cả người đứng đầu", en: "Keeping the person at the top" }
     sql: |-
@@ -48,7 +48,7 @@ examples:
       GROUP BY m.name
       ORDER BY reports DESC, m.name
     read:
-      vi: "12 người có cấp dưới; Do Lan và Ha Minh mỗi người 3. Nhóm theo phía `m` (người quản lý), đếm phía `e` (người báo cáo)."
+      vi: "12 người có cấp dưới; Do Lan và Ha Minh mỗi người 3. Gom nhóm theo phía `m` (người quản lý), đếm phía `e` (người báo cáo)."
       en: "12 people have direct reports; Do Lan and Ha Minh have 3 each. Group on the `m` side (the managers), count the `e` side (the reports)."
   - title: { vi: "Hai cấp: quản lý của quản lý", en: "Two levels: the manager's manager" }
     sql: |-
@@ -58,7 +58,7 @@ examples:
       JOIN staff g ON g.id = m.manager_id
       WHERE e.role = 'Stock clerk'
     read:
-      vi: "3 nhân viên kho, mỗi người hai cấp trên. Mỗi cấp thêm một bí danh và một lần nối; với số cấp không biết trước, cần truy vấn đệ quy (nâng cao)."
+      vi: "3 nhân viên kho, mỗi người hai cấp trên. Mỗi cấp thêm một alias và một lần nối; với số cấp không biết trước, cần truy vấn đệ quy (nâng cao)."
       en: "3 stock clerks, each with two levels above. Each level adds one alias and one join; for an unknown number of levels you need a recursive query (advanced)."
   - title: { vi: "Hai cửa hàng cùng thành phố", en: "Two stores in the same city" }
     sql: |-
@@ -81,11 +81,11 @@ pitfalls:
     why:
       vi: "Câu sai đọc thành \"m là người báo cáo cho e\": cột thứ hai liệt kê cấp dưới, không phải quản lý (3 dòng sai nghĩa thay vì 4). Đọc `ON` thành câu: \"m là người có id bằng manager_id của e\"."
       en: "The wrong query reads \"m reports to e\": the second column lists reports, not managers (3 rows with the wrong meaning instead of 4). Read the `ON` aloud: \"m is the person whose id equals e's manager_id\"."
-  - title: { vi: "Hai lần cùng một bảng mà không bí danh", en: "The same table twice without aliases" }
+  - title: { vi: "Hai lần cùng một bảng mà không alias", en: "The same table twice without aliases" }
     wrong: "SELECT name, name FROM staff JOIN staff ON id = manager_id"
     fix: "SELECT e.name, m.name FROM staff e JOIN staff m ON m.id = e.manager_id"
     why:
-      vi: "Không có bí danh, Postgres không phân biệt được hai lần xuất hiện của `staff`: lỗi 42712. Self-join luôn cần hai tên khác nhau."
+      vi: "Không có alias, Postgres không phân biệt được hai lần xuất hiện của `staff`: lỗi 42712. Self-join luôn cần hai tên khác nhau."
       en: "Without aliases, Postgres cannot tell the two copies of `staff` apart: error 42712. A self-join always needs two different names."
 quiz:
   - q:
@@ -93,7 +93,7 @@ quiz:
       en: "Does a self-join create a copy of the table in the database?"
     options:
       - { vi: "Có, Postgres chép bảng sang tên mới", en: "Yes, Postgres copies the table under the new name" }
-      - { vi: "Không, bí danh chỉ là hai cách gọi cùng một bảng trong câu truy vấn", en: "No, the aliases are just two names for the same table inside the query" }
+      - { vi: "Không, alias chỉ là hai cách gọi cùng một bảng trong câu truy vấn", en: "No, the aliases are just two names for the same table inside the query" }
       - { vi: "Có, nhưng chỉ tạm thời trên đĩa", en: "Yes, but only temporarily on disk" }
     answer: 1
     trap: 0
@@ -110,10 +110,10 @@ quiz:
     answer: 0
     trap: 2
     why:
-      vi: "`<>` đúng là bỏ được cửa hàng tự ghép với mình, nên trông đủ. Nhưng A–B và B–A đều thỏa `<>`, nên mỗi cặp vẫn ra hai lần. `<` chỉ giữ chiều có id nhỏ trước."
+      vi: "`<>` đúng là bỏ được cửa hàng tự bắt cặp với mình, nên trông đủ. Nhưng A–B và B–A đều thỏa `<>`, nên mỗi cặp vẫn ra hai lần. `<` chỉ giữ chiều có id nhỏ trước."
       en: "`<>` does remove a store paired with itself, so it looks enough. But A–B and B–A both pass `<>`, so each pair still appears twice. `<` keeps only the direction with the smaller id first."
 recap:
-  - vi: "Self-join = cùng một bảng, hai bí danh, hai vai."
+  - vi: "Self-join = cùng một bảng, hai alias, hai vai."
     en: "Self-join = one table, two aliases, two roles."
   - vi: "Đọc `ON` thành câu để chắc chiều nối; `LEFT JOIN` để giữ người không có cấp trên."
     en: "Read the `ON` as a sentence to get the direction right; `LEFT JOIN` keeps people with nobody above."
@@ -128,15 +128,15 @@ Phòng nhân sự hỏi: "Mỗi nhân viên báo cáo cho ai?" Bảng `staff` c�
 
 ## Ý chính
 
-Self-join là nối một bảng với chính nó. Bạn viết bảng hai lần với hai bí danh, mỗi bí danh một vai: `e` là nhân viên, `m` là người quản lý. Điều kiện `ON m.id = e.manager_id` nói dòng `m` nào đi với dòng `e` nào. Mọi thứ khác (bí danh trước cột, `LEFT JOIN`, đếm) như một phép nối bình thường.
+Self-join là nối một bảng với chính nó. Bạn viết bảng hai lần với hai alias, mỗi alias một vai: `e` là nhân viên, `m` là người quản lý. Điều kiện `ON m.id = e.manager_id` nói dòng `m` nào đi với dòng `e` nào. Mọi thứ khác (alias trước cột, `LEFT JOIN`, đếm) như một phép nối bình thường.
 
-Nhiều người nghĩ **self-join là một loại phép nối đặc biệt**. Thật ra không có cú pháp riêng nào: đó là `JOIN` thường, chỉ khác là hai bên là cùng một bảng. Phần khó duy nhất là giữ đúng vai và đúng chiều của hai bí danh.
+Nhiều người nghĩ **self-join là một loại phép nối đặc biệt**. Thật ra không có cú pháp riêng nào: đó là `JOIN` thường, chỉ khác là hai bên là cùng một bảng. Phần khó duy nhất là giữ đúng vai và đúng chiều của hai alias.
 
 Hình cuối mục này vẽ một nhánh của bảng `staff`: mỗi mũi tên là `manager_id` trỏ lên người quản lý. Bên dưới, cùng một bảng đóng vai `e` và `m`, nối bằng `m.id = e.manager_id`.
 
 ## Cú pháp
 
-Đặt tên bí danh theo vai (`e`, `m`) thay vì `a`, `b` khi có thể; đọc lại sẽ dễ hơn.
+Đặt tên alias theo vai (`e`, `m`) thay vì `a`, `b` khi có thể; đọc lại sẽ dễ hơn.
 
 # EN
 

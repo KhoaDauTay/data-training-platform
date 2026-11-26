@@ -9,6 +9,7 @@ kind: lab
 minutes: 16
 runtime: browser
 viz: mg-pipeline
+figures: [{ name: mg-computed-bucket, at: idea, variant: bucket }]
 objectives:
   - vi: "Gom nhiều tài liệu nhỏ thành một bucket theo nguồn và theo giờ"
     en: "Group many small documents into one bucket per source and hour"

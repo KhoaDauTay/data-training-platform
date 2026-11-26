@@ -69,7 +69,7 @@ ORDER BY 1
 
 ## Hints
 1. Bước 1 và 3 chia dòng vào nhóm theo luật rồi gom theo nhóm đó. Bước 2 đi qua ba bảng, tính tỷ lệ bằng hai phép cộng có điều kiện khác nhau, rồi lọc nhóm sau khi gom. Bước 3 lấy điểm từ hồ sơ của khoản vay.
-2. Bước 1: `GROUP BY 1`. Bước 2: `sum(s.outstanding) FILTER (WHERE s.dpd > 30)`, `HAVING ... > 0.03 * sum(s.outstanding)`. Bước 3: ghép `applications a` qua `a.id = l.application_id`; viết `100.0 *` để phép chia ra số thập phân.
+2. Bước 1: `GROUP BY 1`. Bước 2: `sum(s.outstanding) FILTER (WHERE s.dpd > 30)`, `HAVING ... > 0.03 * sum(s.outstanding)`. Bước 3: nối `applications a` qua `a.id = l.application_id`; viết `100.0 *` để phép chia ra số thập phân.
 3. `SELECT CASE WHEN a.score < 600 THEN 1 WHEN a.score < 700 THEN 2 ELSE 3 END, count(*), round(100.0 * count(*) FILTER (WHERE s.dpd > 30) / count(*), 2) FROM ... GROUP BY 1 ORDER BY 1`
 
 # EN

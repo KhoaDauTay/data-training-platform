@@ -75,8 +75,9 @@ const KIND_ICON = { concept: 'kindConcept', lab: 'kindLab', predict: 'kindPredic
 const et = (key: EngineKey, params?: I18n.Params): string => engineText(d.getLang(), d.locale(), key, params);
 
 /** Parses every engine's content (throws on a broken file: the main part shows the load failure and Retry). */
-export function initEngine(deps: EngineDeps, src: EngineSources): void {
+export function initEngine(deps: EngineDeps, src: EngineSources, bp: Record<string, { fm: unknown }> = {}): void {
   d = deps;
+  bpTitles = Object.fromEntries(Object.values(bp).map(({ fm }) => fm as { id: string; title: string; title_en: string }).map((f) => [f.id, { vi: f.title, en: f.title_en }]));
   fullSrc = src.full;
   lessons = Object.entries(src.meta).map(([path, s]) => parseEngineLesson(s, path));
   for (const e of ENGINES) {
@@ -120,22 +121,37 @@ const nextOf = (all: EngineLesson[], ok: Set<string>): EngineLesson | undefined 
 
 /**
  * Paragraphs and list items: `code` spans, and **bold** outside code (558 spans in content/engine; review v22 RC: the
- * asterisks showed as text). Nothing else is interpreted.
+ * asterisks showed as text), and lesson/card ids as titled links (v44, below). Nothing else is interpreted.
  */
-function inline(text: string, marked = false): (Node | string)[] {
-  const plain = (q: string): (Node | string)[] => (marked && mark ? mark.inline(q) : [q]); // v27: term buttons, never in code spans
-  return text.split(/(`[^`\n]+`)/).filter(Boolean).flatMap((p) => (p.length > 1 && p.startsWith('`') && p.endsWith('`') ? [codeOrLink(p.slice(1, -1))]
+export function inline(text: string, marked = false): (Node | string)[] {
+  // v27: term buttons (marked), never in code spans; v44: bare ids are links before the terms see them
+  const plain = (q: string): (Node | string)[] => q.split(BARE).flatMap((x, i) => (i % 2 ? idRef(x) : marked && mark ? mark.inline(x) : x ? [x] : []));
+  // v35 R1 (T1-C8-01, L559): inline code may break anywhere, so one long span never widens a 320 px page
+  return text.split(CODE).flatMap((p, i) => (!p ? [] : i % 2 ? (p.startsWith('`') && !new RegExp(`^\x60${ID}\x60$`).test(p) ? [d.h('code', { class: '[overflow-wrap:anywhere]' }, p.slice(1, -1))] : idRef(p))
     : p.split(/(\*\*[^*\n]+\*\*)/).filter(Boolean).flatMap((q) => (q.length > 4 && q.startsWith('**') && q.endsWith('**') ? [d.h('strong', {}, ...plain(q.slice(2, -2)))] : plain(q)))));
 }
-/** v28 R4 (L421): a code span holding a lesson id (`e-pg-l4-12`) is a link to that lesson, named by its title (the design track's "go deeper" links). */
-function codeOrLink(c: string): Node {
-  const to = /^e-(pg|mg|dy|ds)-(l[1-5]|ext)-\d\d$/.test(c) ? lessons.find((x) => x.id === c) : undefined;
+/**
+ * v44 (L790–L791): a lesson or Best Practice id anywhere in Engine text (prose, quiz `why`, hints, facts, BP cards; bare or
+ * in backticks, with or without a "bài/lesson/thẻ/card" before it) is a link named by the lesson's or card's title only: a
+ * learner never reads `e-pg-l4-03`. The word before stays prose ("bài Thống kê nhiều cột ↗"); without a title (never for
+ * shipped content: tests/engineBpLink.test.ts) the link says "bài liên quan" and swallows that word, so no "bài bài".
+ */
+const ID = String.raw`e-(?:(?:pg|mg|dy|ds)-(?:l[1-5]|ext)-|bp-[a-z])\d\d`; // v43: + the Extensions shelf (e-pg-ext-NN)
+const PRE = String.raw`(?:(?<=^|[\s(])(?:bài|thẻ|lab|lesson|card) )?`;
+const CODE = new RegExp(`(${PRE}\x60${ID}\x60|\x60[^\x60\n]+\x60)`);
+const BARE = new RegExp(String.raw`(${PRE}\b${ID}(?![\w-]))`);
+const SHORT = { pg: 'postgres', mg: 'mongodb', dy: 'dynamodb', ds: 'design' } as const;
+let bpTitles: Record<string, { vi: string; en: string }> = {};
+function idRef(seg: string): (Node | string)[] {
+  const word = /^\S+ /.exec(seg)?.[0] ?? '';
+  const id = seg.slice(word.length).replace(/`/g, '');
+  const m = /^e-(pg|mg|dy|ds)-(l[1-5]|ext)-/.exec(id);
+  const title = m ? lessons.find((x) => x.id === id)?.title : bpTitles[id];
+  const href = m ? d.engineHash(SHORT[m[1] as keyof typeof SHORT], (m[2] === 'ext' ? 'EXT' : m[2].toUpperCase()) as Level, id) : bpHashOf(id);
+  if (!href) return [seg]; // an e-bp code with no track letter: content tests keep this from shipping
   // v38 R3 (R3-05, L593): a completed lesson or card gets the done tick (with its sr-only word), so the hub's map shows progress
-  const seen = d.app.save.completed.includes(c);
-  if (to) return xref(lessonHash(to), `${nameOf(to.engine)} ${to.level} · ${to.title[lang()]}`, seen);
-  const bp = bpHashOf(c);
-  // v35 R1 (T1-C8-01, L559): inline code may break anywhere, so one long span never widens a 320 px page
-  return bp ? xref(bp, `Best Practice · ${c.slice(5).toUpperCase()}`, seen) : d.h('code', { class: '[overflow-wrap:anywhere]' }, c);
+  const a = xref(href, title?.[lang()] ?? et('xref.related'), d.app.save.completed.includes(id));
+  return title ? [word, a] : [a];
 }
 /**
  * v35 R1 (E01, L558): a lesson or card link reads as a link: accent ink (≥ 4.5:1 on every surface, both themes), a solid

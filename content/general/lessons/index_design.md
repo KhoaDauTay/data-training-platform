@@ -62,7 +62,7 @@ examples:
       ORDER BY ts DESC
       LIMIT 5
     read:
-      vi: "`events_big` có 25.000 dòng và chỉ mục `(customer_id, ts)`: 5 sự kiện mới nhất của khách 42 đến thẳng từ chỉ mục, đọc ngược. Đây là mẫu \"N bản ghi mới nhất của một đối tượng\"."
+      vi: "`events_big` có 25.000 dòng và chỉ mục `(customer_id, ts)`: 5 sự kiện mới nhất của khách 42 đến thẳng từ chỉ mục, đọc ngược. Đây là mẫu \"N dòng mới nhất của một đối tượng\"."
       en: "`events_big` has 25,000 rows and a `(customer_id, ts)` index: customer 42's 5 latest events come straight from the index, read backwards. This is the \"latest N records of one entity\" pattern."
 pitfalls:
   - title: { vi: "Chỉ lọc cột thứ hai", en: "Filtering only the second column" }
@@ -100,7 +100,7 @@ quiz:
     answer: 1
     trap: 2
     why:
-      vi: "Chỉ mục không làm câu đọc chậm đi (planner bỏ qua cái không có lợi), nhưng mỗi câu ghi phải sửa mọi chỉ mục của bảng. Chỉ thêm chỉ mục cho câu hỏi thật sự hay chạy, và xóa cái không ai dùng."
+      vi: "Chỉ mục không làm câu đọc chậm đi, vì bộ lập kế hoạch (planner) bỏ qua chỉ mục không có lợi; nhưng mỗi câu ghi phải sửa mọi chỉ mục của bảng. Chỉ thêm chỉ mục cho câu hỏi thật sự hay chạy, và xóa cái không ai dùng."
       en: "Indexes do not slow reads down (the planner ignores those that do not help), but every write must update every index on the table. Add an index only for queries that really run often, and drop the ones nobody uses."
 recap:
   - vi: "Chỉ mục nhiều cột: cột so bằng trước, cột khoảng hay sắp xếp sau."

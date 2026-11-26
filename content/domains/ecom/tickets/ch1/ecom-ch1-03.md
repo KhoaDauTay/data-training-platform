@@ -37,7 +37,7 @@ Tuần này banner trang chủ dành cho nhóm hàng {{cat_name}}. Banner chỉ 
 Gửi mình 5 sản phẩm đắt nhất đang còn bán của nhóm hàng số {{cat}} ({{cat_name}}): mã SKU, tên sản phẩm, giá bán. Đắt nhất lên đầu; cùng giá thì xếp theo mã SKU theo thứ tự chữ cái.
 
 ## Hints
-1. Lọc đúng nhóm hàng và hàng còn bán như bài trước, rồi xếp theo giá từ cao xuống thấp và chỉ giữ vài dòng đầu.
+1. Lọc đúng nhóm hàng và hàng còn bán như việc "Hàng giá mềm cho đợt khuyến mãi của shop", rồi xếp theo giá từ cao xuống thấp và chỉ giữ vài dòng đầu.
 2. Nhóm hàng là cột `category_id`. Sắp xếp giảm dần viết `ORDER BY price DESC, sku`; giữ 5 dòng đầu viết `LIMIT 5` ở cuối câu.
 3. `SELECT sku, name, price FROM products WHERE category_id = {{cat}} AND is_active = true ORDER BY ... LIMIT 5`
 
@@ -57,6 +57,6 @@ This week the home page banner belongs to the {{cat_name}} category. The banner 
 Send me the 5 most expensive products still on sale in category number {{cat}} ({{cat_name}}): SKU code, product name, price. Most expensive first; on equal prices, by SKU code in alphabetical order.
 
 ## Hints
-1. Filter the right category and the items still on sale like the last task, then sort by price from high to low and keep only the first few rows.
+1. Filter the right category and the items still on sale like the task "Low-priced items for a shop promotion", then sort by price from high to low and keep only the first few rows.
 2. The category is column `category_id`. A descending sort is written `ORDER BY price DESC, sku`; keeping the first 5 rows is `LIMIT 5` at the end of the query.
 3. `SELECT sku, name, price FROM products WHERE category_id = {{cat}} AND is_active = true ORDER BY ... LIMIT 5`

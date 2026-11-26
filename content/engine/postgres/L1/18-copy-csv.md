@@ -67,8 +67,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe đúng vì ta quen nghĩ lệnh chạy ở chỗ mình gõ, nhưng `COPY` với tên file do tiến trình server đọc ghi, trên đĩa của server. Trong lab này server là PGlite trong tab trình duyệt, nên `/tmp` nằm trong bộ nhớ của tab và mất khi lab chạy lại."
-      en: "It sounds right because we think a command runs where we type it, but `COPY` with a file name is read and written by the server process, on the server's disk. In this lab the server is PGlite inside the browser tab, so `/tmp` lives in the tab's memory and is gone when the lab runs again."
+      vi: "\"File xuất hiện trên máy người dùng\" nghe đúng vì ta quen nghĩ lệnh chạy ở chỗ mình gõ, nhưng `COPY` với tên file do tiến trình server đọc ghi, trên đĩa của máy chủ database. Vì ghi được lên đĩa server là quyền nguy hiểm, Postgres chỉ cho superuser hoặc role có `pg_write_server_files`. `COPY` xuất được (bước 1 của lab), nên không có lỗi cú pháp. Trong lab này server là PGlite trong tab trình duyệt, nên `/tmp` nằm trong bộ nhớ của tab và mất khi lab chạy lại."
+      en: "\"The file appears on the user's machine\" sounds right because we think a command runs where we type it, but `COPY` with a file name is read and written by the server process, on the database server's disk. Since writing to the server's disk is a dangerous power, Postgres allows it only to a superuser or a role with `pg_write_server_files`. `COPY` does export (step 1 of the lab), so there is no syntax error. In this lab the server is PGlite inside the browser tab, so `/tmp` lives in the tab's memory and is gone when the lab runs again."
   - q:
       vi: "File CSV có ô trống `,,` ở cột chữ. Nạp bằng `FORMAT csv` mặc định thì ô đó thành gì?"
       en: "A CSV file has an empty field `,,` in a text column. Loaded with the default `FORMAT csv`, what does that field become?"
@@ -79,8 +79,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nhiều người nghĩ ô trống là chuỗi rỗng. Thật ra ở dạng CSV, ô trống không nháy là NULL, còn `\"\"` là chuỗi rỗng. Muốn chữ khác (như `NA`) là NULL thì thêm tùy chọn `NULL`."
-      en: "Many people think an empty field is an empty string. In fact in CSV format an unquoted empty field is NULL, while `\"\"` is an empty string. To make another word (such as `NA`) NULL, add the `NULL` option."
+      vi: "\"Chuỗi rỗng\" nghe hợp lý vì giữa hai dấu phẩy không có gì. Nhưng ở dạng CSV, Postgres đọc ô trống không nháy là NULL, còn `\"\"` (có nháy) là chuỗi rỗng; hai cách viết khác nhau để file giữ được cả hai giá trị. Cột chữ nhận NULL được, nên không lỗi. Muốn chữ khác (như `NA`) là NULL thì thêm tùy chọn `NULL`, như bước 2 của lab."
+      en: "\"An empty string\" sounds right because there is nothing between the two commas. But in CSV format Postgres reads an unquoted empty field as NULL, while `\"\"` (quoted) is an empty string; two spellings let the file keep both values. A text column accepts NULL, so there is no error. To make another word (such as `NA`) NULL, add the `NULL` option, as in step 2 of the lab."
 ---
 ## Mở bài
 

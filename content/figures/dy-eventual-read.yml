@@ -1,0 +1,57 @@
+# B1-4 (tools/v42/diagram-plan-v42.md): a read may land on a copy that has not caught up. Lessons: e-dy-l2-11 (Ví dụ), replaces
+# the t0/t1 timeline text block; variant `gsi` in e-dy-l3-12 (Ý chính: its Orders table and GSI byStatus, the quiz's new NEW order). Data (quoted from the lesson, the costs measured there
+# on dynoxide): PutItem address "Hue" at t0; at t1 a default GetItem may return the old address (0.5 RCU), a ConsistentRead one
+# returns "Hue" (1 RCU). Deviation: the grid's rows are t1 (copy 3 not caught up) and t2 (all caught up), so the stale cell sits
+# where the lesson's t1 reads happen; one read box below the grid is the default GetItem in step 2 and ConsistentRead in step 3
+# (two side by side do not fit 280 without a lane), with the cell it may answer from highlighted.
+# Source: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ReadConsistency.html
+title: { vi: "Đọc có thể chạm bản sao chưa kịp cập nhật", en: "A read may land on a copy that has not caught up" }
+caption:
+  vi: "DynamoDB chép mỗi bảng sang nhiều Availability Zone và xác nhận lần ghi khi nó đã bền, không chờ mọi bản sao. Đọc mặc định (nhất quán cuối) có thể trả giá trị cũ trong chốc lát; ConsistentRead luôn trả bản mới nhất."
+  en: "DynamoDB copies each table across Availability Zones and acknowledges a write once it is durable, without waiting for every copy. A default (eventually consistent) read can briefly return an old value; ConsistentRead always returns the latest."
+alt:
+  vi: "Đọc nhất quán cuối có thể trả giá trị cũ trong chốc lát và rẻ một nửa; đọc mạnh luôn mới và đắt gấp đôi. Bật đọc mạnh đúng chỗ người dùng vừa ghi rồi đọc lại."
+  en: "An eventually consistent read can briefly return an old value at half the price; a strong read is always current at twice the price. Turn it on where users read back what they just wrote."
+nodes:
+  - { id: w, shape: key, label: { vi: "t0: PutItem address = Hue", en: "t0: PutItem address = Hue" } }
+  - id: tl
+    shape: grid
+    label: { vi: "các bản sao", en: "the copies" }
+    head: [t, { vi: "bản 1", en: copy 1 }, { vi: "bản 2", en: copy 2 }, { vi: "bản 3", en: copy 3 }]
+    cells:
+      - [t1, Hue, Hue, { vi: "cũ", en: old }]
+      - [t2, Hue, Hue, Hue]
+    cellTone: { "0:3": warm }
+  - { id: r, label: GetItem, sub: { vi: "0.5 RCU, có thể cũ", en: "0.5 RCU, maybe old" }, tone: warm }
+rows:
+  - [w]
+  - [tl]
+  - [r]
+edges:
+  - { from: w, to: tl }
+  - { from: r, to: tl }
+steps:
+  - say: { vi: "Ghi được xác nhận khi đã bền; bản 3 chưa nhận.", en: "The write is acknowledged once durable; copy 3 has not got it yet." }
+    alt: { vi: "Mỗi bảng được nhân bản sang nhiều Availability Zone, và lời xác nhận không chờ mọi bản sao.", en: "Each table is replicated across Availability Zones, and the acknowledgement does not wait for every copy." }
+    show: [w, tl]
+  - say: { vi: "Đọc mặc định có thể chạm bản cũ.", en: "A default read can hit the old copy." }
+    alt: { vi: "Đọc nhất quán cuối rẻ một nửa vì bản sao nào cũng được trả lời, kể cả bản chưa kịp nhận lần ghi.", en: "An eventually consistent read costs half because any copy may answer, even one that has not got the write yet." }
+    show: [w, tl, r]
+  - say: { vi: "ConsistentRead trả bản mới nhất, giá gấp đôi.", en: "ConsistentRead returns the latest, at twice the price." }
+    alt: { vi: "Đọc mạnh chỉ trả lời từ bản đã có mọi lần ghi thành công, nên tốn 1 RCU thay vì 0.5.", en: "A strong read answers only from a copy with every acknowledged write, so it costs 1 RCU instead of 0.5." }
+    set:
+      r: { label: ConsistentRead, sub: { vi: "1 RCU, luôn mới", en: "1 RCU, always new" }, tone: live }
+      tl: { cellTone: { "0:1": live, "0:3": warm } }
+variants:
+  gsi:
+    title: { vi: "GSI chỉ có đọc nhất quán cuối", en: "A GSI has eventual reads only" }
+    caption:
+      vi: "GSI được DynamoDB cập nhật bất đồng bộ từ bảng, nên một Query trên GSI có thể chưa thấy lần ghi vừa xong, và ConsistentRead trên GSI bị từ chối."
+      en: "DynamoDB updates a GSI asynchronously from its table, so a Query on the GSI may not see a write that just finished, and ConsistentRead on a GSI is refused."
+    alt:
+      vi: "GSI được cập nhật bất đồng bộ từ bảng, nên chỉ có đọc nhất quán cuối. Muốn bản mới nhất, lấy khóa ở GSI rồi đọc bảng bằng đọc mạnh."
+      en: "A GSI is updated asynchronously from the table, so it only has eventual reads. For the latest, take the key from the GSI and read the table strongly."
+    set:
+      w: { label: { vi: "t0: PutItem đơn NEW", en: "t0: PutItem a NEW order" } }
+      tl: { label: { vi: "bảng và GSI", en: "table and GSI" }, head: [t, Orders, GSI byStatus], cells: [[t1, { vi: "có đơn", en: has it }, { vi: "chưa có", en: not yet }], [t2, { vi: "có đơn", en: has it }, { vi: "có đơn", en: has it }]], cellTone: { "0:2": warm } }
+      r: { label: ConsistentRead, sub: { vi: "trên GSI: từ chối", en: "on a GSI: refused" }, tone: dead }

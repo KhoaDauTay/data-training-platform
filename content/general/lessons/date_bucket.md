@@ -42,7 +42,7 @@ examples:
       GROUP BY 1
       ORDER BY 1
     read:
-      vi: "5 tuần, bắt đầu từ thứ Hai 28/09: tuần đầu chỉ có 27 đơn vì bộ lọc bỏ các ngày tháng 9 của tuần đó. Tuần ở mép khoảng lọc thường thiếu ngày."
+      vi: "5 tuần, bắt đầu từ thứ Hai 28/09: tuần đầu chỉ có 27 đơn vì điều kiện lọc bỏ các ngày tháng 9 của tuần đó. Tuần ở mép khoảng lọc thường thiếu ngày."
       en: "5 weeks, starting on Monday 28 September: the first week has only 27 orders because the filter drops its September days. Weeks at the edge of a filter are often short."
   - title: { vi: "Thứ nào bán nhiều đơn nhất", en: "Which weekday sells the most" }
     sql: |-
@@ -51,7 +51,7 @@ examples:
       GROUP BY 1
       ORDER BY 1
     read:
-      vi: "7 dòng, thứ Tư (3) nhiều nhất với 225 đơn. `extract` bỏ hẳn năm và tháng, nên ở đây gộp mọi tuần lại là đúng ý."
+      vi: "7 dòng, thứ Tư (3) nhiều nhất với 225 đơn. `extract` bỏ hẳn năm và tháng, nên ở đây mọi tuần dồn vào 7 nhóm thứ, đúng ý câu hỏi."
       en: "7 rows; Wednesday (3) leads with 225 orders. `extract` drops the year and month entirely, which is exactly what this question wants."
   - title: { vi: "Tháng dạng chữ để hiển thị", en: "Months as text for display" }
     sql: |-
@@ -97,7 +97,7 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "\"Tháng 10\" nghe như một giá trị, nên `extract(month …)` có vẻ hợp. Nhưng nó gộp mọi tháng 10 thành một nhóm và mất luôn phép so sánh. `date_trunc` giữ năm."
+      vi: "\"Tháng 10\" nghe như một giá trị, nên `extract(month …)` có vẻ hợp. Nhưng nó dồn mọi tháng 10 vào một nhóm, nên không còn hai con số để so. `date_trunc` giữ năm."
       en: "\"October\" sounds like one value, so `extract(month …)` looks fitting. But it merges every October into one group and the comparison is gone. `date_trunc` keeps the year."
   - q:
       vi: "Vì sao lọc \"tháng 10\" bằng `WHERE date_trunc('month', order_date) = '2026-10-01'` kém hơn khoảng nửa mở?"
@@ -128,9 +128,9 @@ Giám đốc muốn một biểu đồ: số đơn mỗi tháng trong năm nay. 
 
 ## Ý chính
 
-`date_trunc('month', order_date)` lùi một ngày về ngày đầu tháng của nó, nên mọi ngày trong cùng tháng cho cùng một giá trị; nhóm theo giá trị đó là có số liệu mỗi tháng. `'week'` lùi về thứ Hai. `extract` thì lấy riêng một phần (thứ, giờ, tháng) và bỏ hết phần còn lại.
+`date_trunc('month', order_date)` lùi một ngày về ngày đầu tháng của nó, nên mọi ngày trong cùng tháng cho cùng một giá trị; gom nhóm theo giá trị đó là có số liệu mỗi tháng. `'week'` lùi về thứ Hai. `extract` thì lấy riêng một phần (thứ, giờ, tháng) và bỏ hết phần còn lại.
 
-Nhiều người nghĩ **`extract(month …)` là cách gom theo tháng**. Thật ra nó trả số 1–12 và quên năm: tháng 1/2025 và 1/2026 rơi vào một giỏ. Muốn từng tháng trên dòng thời gian, dùng `date_trunc`; chỉ dùng `extract` khi câu hỏi thật sự gộp mọi năm (như "thứ nào đông nhất").
+Nhiều người nghĩ **`extract(month …)` là cách gom theo tháng**. Thật ra nó trả số 1–12 và quên năm: tháng 1/2025 và 1/2026 rơi vào một giỏ. Muốn từng tháng trên dòng thời gian, dùng `date_trunc`; chỉ dùng `extract` khi câu hỏi thật sự gom chung mọi năm (như "thứ nào đông nhất").
 
 ## Cú pháp
 

@@ -38,8 +38,8 @@ Mình đang thiết kế lại hạn mức cho từng sản phẩm. Trung bình 
 Các khoản giải ngân từ {{d1}} đến hết {{d2}}, theo từng sản phẩm: tên sản phẩm, trung vị tiền gốc và tiền gốc trung bình, cả hai làm tròn tới đồng. Trung vị lớn nhất lên đầu; bằng nhau thì theo tên sản phẩm.
 
 ## Hints
-1. Trung vị là phân vị 0,5: xếp tiền gốc trong nhóm từ nhỏ đến lớn và lấy giá trị đứng giữa. Ghép tên sản phẩm từ danh sách sản phẩm. Bài nâng cao "Phân vị" giải thích hàm này.
-2. `percentile_cont(0.5) WITHIN GROUP (ORDER BY l.principal)` trả số thực; ép `::numeric` trước khi `round(...)`. Ghép `products p` qua `p.id = l.product_id`, gom `GROUP BY p.name`, sắp `ORDER BY 2 DESC, 1`.
+1. Trung vị là phân vị 0,5: xếp tiền gốc trong nhóm từ nhỏ đến lớn và lấy giá trị đứng giữa. Nối tên sản phẩm từ danh sách sản phẩm. Bài nâng cao "Phân vị" giải thích hàm này.
+2. `percentile_cont(0.5) WITHIN GROUP (ORDER BY l.principal)` trả số thực; ép `::numeric` trước khi `round(...)`. Nối `products p` qua `p.id = l.product_id`, gom `GROUP BY p.name`, sắp `ORDER BY 2 DESC, 1`.
 3. `SELECT p.name, round(percentile_cont(0.5) WITHIN GROUP (ORDER BY l.principal)::numeric), round(avg(l.principal)) FROM loans l JOIN products p ON ... WHERE ... GROUP BY p.name ORDER BY 2 DESC, 1`
 
 ## Solution

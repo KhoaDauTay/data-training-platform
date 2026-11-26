@@ -1,6 +1,6 @@
 ---
 id: having
-title: "HAVING: lọc các nhóm sau khi gộp"
+title: "HAVING: lọc các nhóm sau khi gom nhóm"
 title_en: "HAVING: filter groups after aggregating"
 minutes: 20
 figures: [{ name: sql-clause-order, at: idea }, { name: sql-where-vs-having, at: pitfalls }]
@@ -20,9 +20,9 @@ syntax: |-
   HAVING group_condition
 options:
   - { code: "WHERE", vi: "lọc từng dòng, trước khi chia nhóm; không dùng được hàm gộp", en: "filters single rows, before grouping; cannot use aggregates" }
-  - { code: "HAVING", vi: "lọc cả nhóm, sau khi gộp; thường chứa hàm gộp", en: "filters whole groups, after aggregating; usually holds an aggregate" }
+  - { code: "HAVING", vi: "lọc cả nhóm, sau khi gom nhóm; thường chứa hàm gộp", en: "filters whole groups, after aggregating; usually holds an aggregate" }
   - { code: "HAVING count(*) > 1", vi: "nhóm có nhiều hơn một dòng: tìm trùng", en: "groups with more than one row: finding duplicates" }
-  - { code: "HAVING ... AND ...", vi: "ghép nhiều điều kiện nhóm như ở `WHERE`", en: "combine group conditions as in `WHERE`" }
+  - { code: "HAVING ... AND ...", vi: "kết hợp nhiều điều kiện nhóm như ở `WHERE`", en: "combine group conditions as in `WHERE`" }
 examples:
   - title: { vi: "Nhóm hàng có giá trung bình trên 50.000", en: "Categories averaging over 50,000" }
     sql: |-
@@ -50,7 +50,7 @@ examples:
       HAVING count(*) > 1
       ORDER BY order_id
     read:
-      vi: "51 đơn có hơn một dòng trong `payments`, bắt đầu từ đơn 97. Đây là cách kiểm tra trùng kinh điển: nhóm theo cột phải là duy nhất, giữ nhóm có nhiều hơn một dòng."
+      vi: "51 đơn có hơn một dòng trong `payments`, bắt đầu từ đơn 97. Đây là cách kiểm tra trùng kinh điển: gom nhóm theo cột lẽ ra phải là duy nhất, giữ nhóm có nhiều hơn một dòng."
       en: "51 orders have more than one row in `payments`, starting with order 97. This is the classic duplicate check: group by the column that should be unique, keep the groups with more than one row."
   - title: { vi: "WHERE và HAVING trong cùng một câu", en: "WHERE and HAVING in one query" }
     sql: |-
@@ -73,7 +73,7 @@ pitfalls:
     wrong: "SELECT category, count(*) FROM products GROUP BY category HAVING count(*) >= 4 AND price_vnd < 50000"
     fix: "SELECT category, count(*) FROM products WHERE price_vnd < 50000 GROUP BY category HAVING count(*) >= 4"
     why:
-      vi: "Sau khi gộp, một nhóm có 6 giá khác nhau, nên `price_vnd` không còn một giá trị để so: lỗi 42803. Điều kiện trên từng dòng thuộc về `WHERE`, đặt trước `GROUP BY`."
+      vi: "Sau khi gom nhóm, một nhóm có 6 giá khác nhau, nên `price_vnd` không còn một giá trị để so: lỗi 42803. Điều kiện trên từng dòng thuộc về `WHERE`, đặt trước `GROUP BY`."
       en: "After grouping, a category holds 6 different prices, so `price_vnd` has no single value to compare: error 42803. A condition on single rows belongs in `WHERE`, before `GROUP BY`."
 quiz:
   - q:
@@ -109,10 +109,10 @@ quiz:
       - { vi: "`WHERE count(email) > 1`", en: "`WHERE count(email) > 1`" }
     answer: 0
     why:
-      vi: "`DISTINCT` cho mỗi email một lần, che mất chuyện trùng; `WHERE` không nhận hàm gộp. Nhóm theo cột phải là duy nhất rồi giữ nhóm có hơn một dòng."
+      vi: "`DISTINCT` cho mỗi email một lần, che mất chuyện trùng; `WHERE` không nhận hàm gộp. Gom nhóm theo cột lẽ ra phải là duy nhất rồi giữ nhóm có hơn một dòng."
       en: "`DISTINCT` shows each email once and hides the repeats; `WHERE` refuses aggregates. Group by the column that should be unique and keep the groups with more than one row."
 recap:
-  - vi: "`WHERE` lọc dòng trước khi gộp; `HAVING` lọc nhóm sau khi gộp."
+  - vi: "`WHERE` lọc dòng trước khi gom nhóm; `HAVING` lọc nhóm sau khi gom nhóm."
     en: "`WHERE` filters rows before grouping; `HAVING` filters groups after."
   - vi: "Hàm gộp trong `WHERE` là lỗi 42803; cột thường trong `HAVING` cũng vậy."
     en: "An aggregate in `WHERE` is error 42803; so is a plain column in `HAVING`."
@@ -130,7 +130,7 @@ Kế toán nghi có đơn bị thanh toán hai lần. Bạn đã biết đếm s
 
 `HAVING` là `WHERE` của các nhóm. Nó chạy sau `GROUP BY`, nên điều kiện của nó dùng được hàm gộp như `count(*)` hay `avg(price_vnd)`, và nó giữ hoặc bỏ cả một nhóm. `WHERE` thì chạy trước khi có nhóm và chỉ nhìn từng dòng.
 
-Nhiều người nghĩ **`HAVING` chỉ là một cách viết khác của `WHERE`**. Thật ra hai cái chạy ở hai thời điểm: lúc `WHERE` chạy chưa có số đếm nào, và lúc `HAVING` chạy thì từng dòng đã gộp vào nhóm. Vì vậy hàm gộp không vào được `WHERE`, và cột thường (không nằm trong `GROUP BY`) không vào được `HAVING`.
+Nhiều người nghĩ **`HAVING` chỉ là một cách viết khác của `WHERE`**. Thật ra hai cái chạy ở hai thời điểm: lúc `WHERE` chạy chưa có số đếm nào, và lúc `HAVING` chạy thì từng dòng đã được gom vào nhóm. Vì vậy hàm gộp không vào được `WHERE`, và cột thường (không nằm trong `GROUP BY`) không vào được `HAVING`.
 
 Hình từng bước ở cuối mục này đặt thứ tự viết cạnh thứ tự chạy: `FROM`, `WHERE`, `GROUP BY`, `HAVING` chạy trước `SELECT`, rồi mới đến `ORDER BY` và `LIMIT`.
 

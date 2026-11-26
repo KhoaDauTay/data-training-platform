@@ -55,7 +55,7 @@ examples:
       GROUP BY s.name, p.category
       ORDER BY s.name, units DESC
     read:
-      vi: "25 dòng = 5 cửa hàng × 5 nhóm hàng. Ở Ben Thanh, văn phòng phẩm bán nhiều nhất (148 món). Nối đủ bảng trước, rồi gộp theo cột của hai bảng khác nhau."
+      vi: "25 dòng = 5 cửa hàng × 5 nhóm hàng. Ở Ben Thanh, văn phòng phẩm bán nhiều nhất (148 món). Nối đủ bảng trước, rồi gom nhóm theo cột của hai bảng khác nhau."
       en: "25 rows = 5 stores × 5 categories. At Ben Thanh, stationery sells the most (148 units). Join every table first, then group by columns from two different tables."
   - title: { vi: "Doanh số và số đơn cùng lúc", en: "Sales and order count together" }
     sql: |-

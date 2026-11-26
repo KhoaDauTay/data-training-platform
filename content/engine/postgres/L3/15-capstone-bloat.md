@@ -146,8 +146,8 @@ quiz:
       - { vi: "Có, nhưng chỉ cần `VACUUM` thường, không cần FULL", en: "Yes, but a plain `VACUUM` is enough, no FULL needed" }
     answer: 1
     why:
-      vi: "Đề xuất này hấp dẫn vì nó đúng ở bài trước, với bảng khác: ở đó trang đầy. Ở đây bước 2 cho thấy trang còn chỗ (48 bản mới ở trang 0) mà bước 1 vẫn 0 HOT. HOT cần **cả hai** điều kiện; cái hỏng là điều kiện về index, nên thêm chỗ trống không đổi được gì."
-      en: "The proposal is tempting because it was right in the earlier lesson, on a different table: there the pages were full. Here step 2 shows the page had room (48 new versions on page 0) and step 1 still has 0 HOT. HOT needs **both** conditions; the broken one is the index condition, so more free space changes nothing."
+      vi: "Đề xuất này hấp dẫn vì nó đúng ở bài fillfactor, với bảng khác: ở đó trang đầy. Ở đây bước 2 cho thấy trang còn chỗ (48 bản mới vẫn ở trang 0) mà bước 1 vẫn 0 HOT. HOT update cần **cả hai** điều kiện: trang có chỗ và không đổi cột có index. Cái hỏng là điều kiện về index (`touched_at` có index và đổi mỗi lần bấm), nên thêm chỗ trống, bằng `VACUUM FULL` hay `VACUUM` thường, không đổi được gì."
+      en: "The proposal is tempting because it was right in the fillfactor lesson, on a different table: there the pages were full. Here step 2 shows the page had room (48 new versions still on page 0) and step 1 still has 0 HOT. A HOT update needs **both** conditions: room on the page and no indexed column changed. The broken one is the index condition (`touched_at` is indexed and changes on every click), so more free space, from `VACUUM FULL` or a plain `VACUUM`, changes nothing."
   - q:
       vi: "Kết luận cho đội ứng dụng: sửa `carts` thế nào?"
       en: "Conclusion for the app team: how should `carts` be fixed?"
@@ -158,8 +158,8 @@ quiz:
       - { vi: "Chạy `CHECKPOINT` thường xuyên hơn để WAL nhỏ lại", en: "Run `CHECKPOINT` more often to shrink the WAL" }
     answer: 1
     why:
-      vi: "Thêm index nghe như cách tăng tốc quen thuộc, nhưng UPDATE tìm giỏ bằng khóa chính, và một index trên cột bị sửa chính là thứ đã chặn HOT. Bằng chứng là ba con số: 0 HOT ở `carts`, 100 bản ghi Btree cho 50 UPDATE, và 48 HOT ở `carts_lean` chỉ vì thiếu index đó. `CHECKPOINT` dày hơn còn làm WAL to thêm (full-page image)."
-      en: "Adding an index sounds like the usual speed-up, but the UPDATE finds a cart by its primary key, and an index on a changed column is exactly what blocked HOT. The evidence is three numbers: 0 HOT on `carts`, 100 Btree records for 50 UPDATEs, and 48 HOT on `carts_lean` just for lacking that index. A more frequent `CHECKPOINT` would make the WAL bigger (full-page images)."
+      vi: "Thêm index nghe như cách tăng tốc quen thuộc, nhưng UPDATE tìm giỏ bằng khóa chính, và một index trên cột bị sửa chính là thứ đã chặn HOT. Bằng chứng là ba con số: 0 HOT ở `carts`, 100 bản ghi Btree cho 50 UPDATE, và 48 HOT ở `carts_lean` chỉ vì thiếu index đó. `shared_buffers` không đổi được số bản ghi phải ghi. `CHECKPOINT` dày hơn còn làm WAL to thêm, vì mỗi lần sửa đầu tiên sau checkpoint ghi cả trang (full-page image)."
+      en: "Adding an index sounds like the usual speed-up, but the UPDATE finds a cart by its primary key, and an index on a changed column is exactly what blocked HOT. The evidence is three numbers: 0 HOT on `carts`, 100 Btree records for 50 UPDATEs, and 48 HOT on `carts_lean` just for lacking that index. `shared_buffers` cannot change how many records must be written. A more frequent `CHECKPOINT` would make the WAL bigger, because the first change after each checkpoint logs the whole page (a full-page image)."
 ---
 ## Mở bài
 

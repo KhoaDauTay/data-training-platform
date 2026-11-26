@@ -88,7 +88,7 @@ pitfalls:
     wrong: "SELECT id, order_date FROM orders WHERE customer_id = 7 AND order_date - LAG(order_date) OVER (ORDER BY order_date) > 30"
     fix: "WITH g AS (SELECT id, order_date, order_date - LAG(order_date) OVER (ORDER BY order_date, id) AS gap FROM orders WHERE customer_id = 7) SELECT id, order_date FROM g WHERE gap > 30"
     why:
-      vi: "Như mọi hàm cửa sổ, `LAG` chạy sau `WHERE`, nên Postgres báo 42P20. Tính nó trong CTE, rồi lọc ở câu ngoài."
+      vi: "Như mọi hàm cửa sổ, `LAG` chạy sau `WHERE`, nên Postgres báo lỗi 42P20 (hàm cửa sổ không được dùng trong điều kiện lọc). Tính nó trong CTE, rồi lọc ở câu ngoài."
       en: "Like every window function, `LAG` runs after `WHERE`, so Postgres raises 42P20. Compute it in a CTE and filter in the outer query."
   - title: { vi: "Thứ tự trong OVER ngược với câu hỏi", en: "An OVER order that runs against the question" }
     wrong: "SELECT id, order_date, LAG(order_date) OVER (ORDER BY order_date DESC, id) AS prev_date FROM orders WHERE customer_id = 7 ORDER BY order_date, id"

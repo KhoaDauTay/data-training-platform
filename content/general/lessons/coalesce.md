@@ -29,7 +29,7 @@ examples:
     read:
       vi: "4 dòng; khách 17 (Bui Hoa) chưa có thành phố nên hiện `Unknown`. Bảng gốc không đổi, chỉ kết quả có chữ thay thế."
       en: "4 rows; customer 17 (Bui Hoa) has no city, so `Unknown` shows. The table is unchanged; only the result carries the replacement."
-  - title: { vi: "Nhóm theo cột đã điền", en: "Grouping by the filled-in column" }
+  - title: { vi: "Gom nhóm theo cột đã điền", en: "Grouping by the filled-in column" }
     sql: |-
       SELECT COALESCE(city, 'Unknown') AS city, count(*)
       FROM customers

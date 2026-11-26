@@ -49,8 +49,9 @@ function engineChunk(): Promise<EngineView> {
         cheer: { mascot, react, badge: () => illustration('aspect-square', (il) => il.doneBadge()) },
         best: (e) => b.entry(e),
       };
-      m.initEngine(deps, src);
-      b.initBest(deps, { ...bs, meta: { ...bs.meta, ...bm.meta, ...bd.meta } }, src.meta, { skill: (id) => SKILLS.find((x) => x.id === id)?.label, sourceTitle: m.sourceTitle });
+      const bpMeta = { ...bs.meta, ...bm.meta, ...bd.meta };
+      m.initEngine(deps, src, bpMeta); // v44 (L790): card titles for the id links
+      b.initBest(deps, { ...bs, meta: bpMeta }, src.meta, { skill: (id) => SKILLS.find((x) => x.id === id)?.label, sourceTitle: m.sourceTitle, inline: m.inline });
       best = b;
       failed = false;
       return (view = m);

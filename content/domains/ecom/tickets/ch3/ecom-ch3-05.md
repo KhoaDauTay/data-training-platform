@@ -67,8 +67,8 @@ ORDER BY c.city
 ```
 
 ## Hints
-1. Bước 1 đi qua bốn bảng như bài doanh thu theo nhóm hàng, nhưng dừng ở shop. Bước 2 và 3 tìm thứ không có: giữ mọi sản phẩm (hay mọi đơn), gắn đánh giá (hay thanh toán) nếu có, rồi giữ dòng không gắn được gì.
-2. Bước 1: `JOIN sellers s ON s.id = p.seller_id`, gom theo `s.id, s.name`. Bước 2: điều kiện ngày đặt trong phần ghép `ON r.product_id = p.id AND r.created_on >= '2026-07-01'`, rồi lọc `r.id IS NULL`. Bước 3: `LEFT JOIN payments p ON p.order_id = o.id` và `p.id IS NULL`.
+1. Bước 1 đi qua bốn bảng như việc "Doanh thu theo nhóm hàng", nhưng dừng ở shop. Bước 2 và 3 tìm thứ không có: giữ mọi sản phẩm (hay mọi đơn), gắn đánh giá (hay thanh toán) nếu có, rồi giữ dòng không gắn được gì.
+2. Bước 1: `JOIN sellers s ON s.id = p.seller_id`, gom theo `s.id, s.name`. Bước 2: điều kiện ngày đặt trong phần nối `ON r.product_id = p.id AND r.created_on >= '2026-07-01'`, rồi lọc `r.id IS NULL`. Bước 3: `LEFT JOIN payments p ON p.order_id = o.id` và `p.id IS NULL`.
 3. `SELECT p.sku, p.name FROM products p LEFT JOIN reviews r ON ... WHERE r.id IS NULL AND p.is_active = true ORDER BY p.sku`
 
 # EN
@@ -84,6 +84,6 @@ The products still on sale that have received no review since 1 July 2026 (older
 The cancelled orders that have no payment at all (customers paying on delivery who cancelled before delivery), counted by the customer's city. Send the city and the number of orders, sorted by city name.
 
 ## Hints
-1. Step 1 walks four tables like the revenue-by-category task, but stops at the shop. Steps 2 and 3 look for what is missing: keep every product (or every order), attach reviews (or payments) if any, then keep the rows with nothing attached.
+1. Step 1 walks four tables like the task "Revenue by category", but stops at the shop. Steps 2 and 3 look for what is missing: keep every product (or every order), attach reviews (or payments) if any, then keep the rows with nothing attached.
 2. Step 1: `JOIN sellers s ON s.id = p.seller_id`, grouped by `s.id, s.name`. Step 2: the date condition goes into the join `ON r.product_id = p.id AND r.created_on >= '2026-07-01'`, then filter `r.id IS NULL`. Step 3: `LEFT JOIN payments p ON p.order_id = o.id` and `p.id IS NULL`.
 3. `SELECT p.sku, p.name FROM products p LEFT JOIN reviews r ON ... WHERE r.id IS NULL AND p.is_active = true ORDER BY p.sku`

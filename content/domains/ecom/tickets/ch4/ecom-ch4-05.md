@@ -62,7 +62,7 @@ ORDER BY 1
 ```
 
 ## Hints
-1. Bước 1 gom theo ngày như gom theo tháng. Bước 2 tìm kiện có ngày giao trống. Bước 3 gom theo tuần, và thay ngày giao trống bằng hôm nay như bài kiện đi mất bao lâu.
+1. Bước 1 gom theo ngày như việc "Số đơn từng tháng" gom theo tháng. Bước 2 tìm kiện có ngày giao trống. Bước 3 gom theo tuần, và thay ngày giao trống bằng hôm nay như việc "Kiện đi mất bao lâu, kể cả kiện chưa tới".
 2. Bước 1: `date_trunc('day', ordered_at)`. Bước 2: `d.delivered_on IS NULL`, `DATE '2026-10-31' - d.promised_on`. Bước 3: `date_trunc('week', shipped_on)`, `COALESCE(delivered_on, DATE '2026-10-31') - promised_on`, `city IN ('Da Nang', 'Hue', 'Nha Trang')`.
 3. `SELECT date_trunc('week', shipped_on), ROUND(AVG(COALESCE(delivered_on, DATE '2026-10-31') - promised_on), 2) FROM deliveries WHERE ... GROUP BY 1 ORDER BY 1`
 
@@ -79,6 +79,6 @@ As of today, 31 October 2026: the parcels not delivered yet whose promised date 
 The parcels Kite Logistics carried to Da Nang, Hue and Nha Trang, shipped from Monday 3 August to Sunday 25 October 2026: per shipping week (weeks start on Monday and are shown as that Monday), how many days late on average compared with the promised date? Parcels not delivered yet count up to today, 31 October 2026. Round to 2 decimals; earliest week first.
 
 ## Hints
-1. Step 1 groups by day the way you grouped by month. Step 2 looks for parcels with an empty delivery date. Step 3 groups by week and replaces an empty delivery date with today, like the how-long-parcels-take task.
+1. Step 1 groups by day the way the task "Orders per month" grouped by month. Step 2 looks for parcels with an empty delivery date. Step 3 groups by week and replaces an empty delivery date with today, like the task "How long parcels take, unfinished ones included".
 2. Step 1: `date_trunc('day', ordered_at)`. Step 2: `d.delivered_on IS NULL`, `DATE '2026-10-31' - d.promised_on`. Step 3: `date_trunc('week', shipped_on)`, `COALESCE(delivered_on, DATE '2026-10-31') - promised_on`, `city IN ('Da Nang', 'Hue', 'Nha Trang')`.
 3. `SELECT date_trunc('week', shipped_on), ROUND(AVG(COALESCE(delivered_on, DATE '2026-10-31') - promised_on), 2) FROM deliveries WHERE ... GROUP BY 1 ORDER BY 1`

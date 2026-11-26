@@ -43,7 +43,7 @@ Câu truy vấn trong editor gần xong, chỉ thiếu thứ cần gom nhóm ở
 Mỗi đơn vị vận chuyển đã nhận bao nhiêu kiện gửi đi trong tháng {{month}} (tính theo ngày gửi)? Mỗi đơn vị một dòng: tên đơn vị và số kiện. Thứ tự dòng không quan trọng.
 
 ## Hints
-1. Đếm như bài trước, nhưng đếm riêng cho từng đơn vị vận chuyển: mỗi đơn vị là một nhóm.
+1. Đếm số dòng như việc "Tiền đã thu trong tháng", nhưng đếm riêng cho từng đơn vị vận chuyển: mỗi đơn vị là một nhóm.
 2. Gom nhóm theo cột tên đơn vị: `GROUP BY courier`.
 3. `SELECT courier, count(*) FROM deliveries WHERE ... GROUP BY courier`
 
@@ -64,6 +64,6 @@ The query in the editor is almost done; only the thing to group by is missing at
 How many parcels did each courier take in {{month_en}} (by shipping date)? One row per courier: its name and the number of parcels. Row order does not matter.
 
 ## Hints
-1. Count like the last task, but count separately for each courier: each courier is one group.
+1. Count rows like the task "Money collected in the month", but count separately for each courier: each courier is one group.
 2. Group by the courier name column: `GROUP BY courier`.
 3. `SELECT courier, count(*) FROM deliveries WHERE ... GROUP BY courier`

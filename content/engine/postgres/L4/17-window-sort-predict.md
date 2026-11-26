@@ -107,8 +107,8 @@ quiz:
       - { vi: "Có, nhưng chỉ khi đã có index theo `customer_id`", en: "Yes, but only once there is an index on `customer_id`" }
     answer: 0
     why:
-      vi: "\"Chỉ cần 3 dòng mỗi nhóm thì chỉ đọc 3 dòng\" nghe hợp lý. Nhưng muốn biết đơn nào lớn nhất thì phải xem hết đơn của khách đó: kế hoạch vẫn là `WindowAgg` trên `Sort` trên `Seq Scan` cả bảng. Postgres đẩy điều kiện vào `WindowAgg` (dòng `Run Condition`) để thôi tính thêm số thứ tự trong nhóm, không để đọc ít hơn."
-      en: "\"Only 3 rows per group are needed, so only 3 rows are read\" sounds right. But to know which orders are largest, every order of that customer must be seen: the plan is still `WindowAgg` over `Sort` over a full `Seq Scan`. Postgres pushes the condition into `WindowAgg` (the `Run Condition` line) to stop numbering inside a group, not to read less."
+      vi: "\"Chỉ cần 3 dòng mỗi nhóm thì chỉ đọc 3 dòng\" nghe hợp lý. Nhưng muốn biết đơn nào lớn nhất thì phải xem hết đơn của khách đó: kế hoạch vẫn là `WindowAgg` trên `Sort` trên `Seq Scan` cả bảng. Postgres đẩy điều kiện vào `WindowAgg` (dòng `Run Condition`) để thôi tính thêm số thứ tự trong nhóm, không để đọc ít hơn. Index chỉ trên `customer_id` cũng không đổi điều đó: nó không có thứ tự theo `amount`, và câu vẫn cần mọi đơn của mọi khách."
+      en: "\"Only 3 rows per group are needed, so only 3 rows are read\" sounds right. But to know which orders are largest, every order of that customer must be seen: the plan is still `WindowAgg` over `Sort` over a full `Seq Scan`. Postgres pushes the condition into `WindowAgg` (the `Run Condition` line) to stop numbering inside a group, not to read less. An index on `customer_id` alone changes nothing either: it holds no order by `amount`, and the query still needs every order of every customer."
 ---
 
 ## Mở bài

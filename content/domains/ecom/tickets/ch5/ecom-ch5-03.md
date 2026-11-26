@@ -24,7 +24,7 @@ reflect:
     - { vi: "Vì một câu không được dùng hai hàm gộp", en: "Because one query may not use two aggregate functions" }
     - { vi: "Để chạy nhanh hơn", en: "To run faster" }
   answer: 0
-  why: { vi: "Hai tầng gộp: tầng một ra số đơn mỗi khách, tầng hai đếm khách theo nhóm. Khối WITH đặt tên cho tầng một để tầng hai đọc như một bảng.", en: "Two levels of aggregation: level one gives orders per customer, level two counts customers per group. The WITH block names level one so level two reads it like a table." }
+  why: { vi: "Hai tầng gom nhóm: tầng một ra số đơn mỗi khách, tầng hai đếm khách theo nhóm. Khối WITH đặt tên cho tầng một để tầng hai đọc như một bảng.", en: "Two levels of aggregation: level one gives orders per customer, level two counts customers per group. The WITH block names level one so level two reads it like a table." }
 wrong:
   - sql: "WITH per_customer AS (SELECT customer_id, count(*) AS n FROM orders WHERE status <> 'cancelled' AND ordered_at < '{{to}}' GROUP BY customer_id) SELECT CASE WHEN n = 1 THEN 1 WHEN n <= 3 THEN 2 ELSE 3 END AS grp, sum(n) FROM per_customer GROUP BY grp ORDER BY grp"
     vi: "Cột thứ hai đang cộng số đơn của cả nhóm. Đề cần số khách trong mỗi nhóm."

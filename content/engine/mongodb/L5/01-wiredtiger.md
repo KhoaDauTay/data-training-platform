@@ -8,6 +8,7 @@ title_en: "WiredTiger: snapshots, checkpoints, journal, cache"
 kind: concept
 minutes: 12
 runtime: docs
+figures: [{ name: mg-checkpoint-journal, at: example }]
 objectives:
   - vi: "Giải thích checkpoint 60 giây và journal cùng giữ dữ liệu bền ra sao"
     en: "Explain how 60-second checkpoints and the journal keep data durable together"
@@ -84,14 +85,7 @@ RAM 1 GB   -> max(0.5 x 0, 0.256) = 0.256 GB
 
 Dòng cuối cho thấy sàn 0,256 GB: máy rất nhỏ vẫn có cache.
 
-Dòng thời gian của một lần sập:
-
-```text
-10:00:00  checkpoint A written
-10:00:20  insert order 501   -> journal
-10:00:40  crash
-restart   open checkpoint A, replay journal -> order 501 is back
-```
+Dòng thời gian của một lần sập: checkpoint A được ghi lúc 10:00:00, đơn `501` được thêm lúc 10:00:20 và vào journal, máy sập lúc 10:00:40; khi khởi động lại, MongoDB mở checkpoint A rồi phát lại journal. Hình dưới đi từng bước.
 
 Đơn `501` chưa có trong checkpoint nào nhưng đã nằm trong journal, nên nó quay lại khi khởi động.
 
@@ -169,14 +163,7 @@ RAM 1 GB   -> max(0.5 x 0, 0.256) = 0.256 GB
 
 The last line shows the 0.256 GB floor: even a tiny machine gets a cache.
 
-The timeline of a crash:
-
-```text
-10:00:00  checkpoint A written
-10:00:20  insert order 501   -> journal
-10:00:40  crash
-restart   open checkpoint A, replay journal -> order 501 is back
-```
+The timeline of a crash: checkpoint A is written at 10:00:00, order `501` is inserted at 10:00:20 and goes into the journal, the machine crashes at 10:00:40; on restart, MongoDB opens checkpoint A and replays the journal. The figure below goes step by step.
 
 Order `501` is in no checkpoint yet but is already in the journal, so it comes back on restart.
 

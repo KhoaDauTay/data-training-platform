@@ -41,8 +41,8 @@ lab:
         vi: "So `sum(amount_f) = 1` và `sum(amount_n) = 1` trong cùng một `SELECT`."
         en: "Compare `sum(amount_f) = 1` and `sum(amount_n) = 1` in one `SELECT`."
       fact:
-        vi: "`float_is_1` là false (tổng là 0,9999999999999999), `numeric_is_1` là true: sai số nhị phân cộng dồn qua từng dòng."
-        en: "`float_is_1` is false (the total is 0.9999999999999999), `numeric_is_1` is true: the binary error adds up row by row."
+        vi: "`float_is_1` là false (tổng là 0,9999999999999999), `numeric_is_1` là true: hệ nhị phân không ghi đúng được 0,1, nên mỗi dòng lệch một chút và mười lần lệch cộng lại thành sai."
+        en: "`float_is_1` is false (the total is 0.9999999999999999), `numeric_is_1` is true: binary cannot store 0.1 exactly, so each row is slightly off and ten small errors add up."
         probe: SELECT sum(amount_f) = 1, sum(amount_n) = 1 FROM pay
         expect: [[false, true]]
     - task:
@@ -82,8 +82,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì `double precision` là kiểu số có phần lẻ, nhưng nó có sai số nhị phân nên cộng nhiều lần thì tổng tiền lệch. `numeric` lưu chính xác từng chữ số, nên tổng tiền không lệch; `text` không cộng trừ được."
-      en: "It sounds right because `double precision` is a number type with a fraction, but it has binary rounding error, so totals drift once you add many amounts. `numeric` stores every digit exactly, so totals never drift; `text` cannot be added up."
+      vi: "`double precision` nghe hợp lý vì nó nhận phần lẻ, nhưng nó lưu số ở dạng nhị phân, chỉ gần đúng: ở bước 1, mười khoản 0,1 cộng ra 0,9999999999999999. `numeric(14,2)` lưu đúng từng chữ số thập phân, nên tổng tiền không lệch. `text` thì không cộng trừ được."
+      en: "`double precision` sounds right because it takes a fraction, but it stores numbers in binary, only approximately: in step 1, ten amounts of 0.1 add up to 0.9999999999999999. `numeric(14,2)` stores every decimal digit exactly, so totals never drift. `text` cannot be added up at all."
   - q:
       vi: Một lần đăng nhập xảy ra lúc 09:00 giờ UTC. Kiểu nào giữ đúng thời điểm đó cho người xem ở mọi múi giờ?
       en: A login happens at 09:00 UTC. Which type keeps that exact instant for viewers in every time zone?
@@ -94,8 +94,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì tên `timestamp` đúng là \"thời điểm\", nhưng nó bỏ phần múi giờ, nên hai người ở hai nơi hiểu khác nhau. `timestamptz` lưu một thời điểm tuyệt đối và đổi sang múi giờ của phiên khi hiển thị."
-      en: "It sounds right because the name `timestamp` means \"an instant\", but it drops the zone, so two people in two places read it differently. `timestamptz` stores an absolute instant and converts it to the session zone for display."
+      vi: "`timestamp` nghe hợp lý vì tên của nó nghĩa là \"thời điểm\", nhưng khi ghi nó bỏ phần múi giờ (time zone) `+00`: ở bước 2, cột này chỉ còn `09:00` và một phiên ở +07 hiểu đó là 02:00 UTC. `timestamptz` lưu một thời điểm tuyệt đối và đổi sang múi giờ của phiên khi hiển thị. `date` thì mất luôn giờ."
+      en: "`timestamp` sounds right because its name means \"an instant\", but on write it drops the `+00` zone: in step 2 the column keeps only `09:00`, and a session at +07 reads that as 02:00 UTC. `timestamptz` stores an absolute instant and converts it to the session zone for display. `date` loses the time entirely."
   - q:
       vi: Bạn muốn tên khách tối đa 100 ký tự. Cách nào đúng với Postgres?
       en: You want customer names to be at most 100 characters. Which is right for Postgres?
@@ -106,8 +106,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì lời khuyên \"chuỗi độ dài cố định thì nhanh hơn\" có từ vài hệ CSDL khác, nhưng ở Postgres ba kiểu chuỗi không khác nhau về hiệu năng, và `char(n)` còn đệm khoảng trắng nên thường chậm nhất. Giới hạn độ dài bằng `varchar(n)` hoặc `CHECK`."
-      en: "It sounds right because the advice \"fixed-length strings are faster\" comes from some other databases, but in Postgres the three string types perform the same, and `char(n)` also pads with blanks and is usually the slowest. Cap the length with `varchar(n)` or a `CHECK`."
+      vi: "`char(100)` nghe hợp lý vì lời khuyên \"chuỗi độ dài cố định thì nhanh hơn\" có từ vài hệ cơ sở dữ liệu khác, nhưng ở Postgres ba kiểu chuỗi dùng chung một cách lưu và nhanh như nhau. `char(n)` còn đệm khoảng trắng: ở bước 3, `Lan` trong `char(10)` tốn 11 byte so với 4 byte của `text`. Giới hạn được: `varchar(100)` hoặc `CHECK` từ chối chuỗi dài hơn."
+      en: "`char(100)` sounds right because the advice \"fixed-length strings are faster\" comes from some other databases, but in Postgres the three string types share one storage format and are equally fast. `char(n)` also pads with blanks: in step 3, `Lan` in `char(10)` takes 11 bytes against 4 for `text`. A limit is possible: `varchar(100)` or a `CHECK` refuses longer strings."
 ---
 ## Mở bài
 

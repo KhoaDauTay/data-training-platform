@@ -1,0 +1,55 @@
+# B1-1 (tools/v42/diagram-plan-v42.md): who must go first, and the cycle that forbids it. Lesson: e-ds-l5-04 (Ví dụ), replaces
+# the schedule and conflict-pair text blocks. Data: the lab's `ops` (steps 1 R1(A), 2 R2(A), 3 W1(A), 4 W2(A), 5 R3(B), 6 W2(B));
+# the lab's edge query gives T1→T2, T2→T1, T3→T2 (PGlite). T1→T2 has two reasons (R1<W2, W1<W2): its label names the first.
+# v44 (L760): T1 ⇄ T2 is a pair (two opposite arrows 14 apart, labels outside); the edges appear one step at a time (L761: an
+# edge id in `show`). Phone: T1 and T2 keep one row (a pair never stacks), T3 under them.
+# Sources: https://www.postgresql.org/docs/18/transaction-iso.html, https://arxiv.org/abs/1208.4179
+title: { vi: "Đồ thị tiền nhiệm: ai phải đi trước", en: "The precedence graph: who must go first" }
+caption:
+  vi: "Mỗi giao dịch là một đỉnh; mỗi cặp thao tác xung đột (khác giao dịch, cùng mục, ít nhất một ghi) cho một cạnh từ thao tác trước tới thao tác sau. Đồ thị có chu trình thì lịch không khả tuần tự xung đột."
+  en: "Each transaction is a node; each conflicting pair of operations (different transactions, the same item, at least one write) gives an edge from the earlier one to the later one. A cycle means the schedule is not conflict serializable."
+alt:
+  vi: "Đồ thị tiền nhiệm có một cạnh cho mỗi cặp thao tác xung đột; có chu trình thì không có thứ tự tuần tự nào tương đương. Kết quả: T1 → T2 → T1, đây là cập nhật bị mất."
+  en: "The precedence graph has an edge for each conflicting pair; a cycle means no equivalent serial order exists. Result: T1 → T2 → T1, a lost update."
+nodes:
+  - id: sched
+    shape: grid
+    label: { vi: "lịch", en: "schedule" }
+    head: ["#", T1, T2, T3]
+    cells:
+      - ["1", R(A), "·", "·"]
+      - ["2", "·", R(A), "·"]
+      - ["3", W(A), "·", "·"]
+      - ["4", "·", W(A), "·"]
+      - ["5", "·", "·", R(B)]
+      - ["6", "·", W(B), "·"]
+  - { id: t1, shape: key, label: T1 }
+  - { id: t2, shape: key, label: T2 }
+  - { id: t3, shape: key, label: T3 }
+  - { id: cyc, shape: note, label: { vi: "chu trình T1 → T2 → T1", en: "cycle T1 → T2 → T1" } }
+rows:
+  - [sched]
+  - [t1, t2, t3]
+  - [cyc]
+phone:
+  rows: [[sched], [t1, t2], [cyc, t3]]
+edges:
+  - { id: a12, from: t1, to: t2, label: "A: R1<W2" }
+  - { id: a21, from: t2, to: t1, label: "A: R2<W1" }
+  - { id: b32, from: t3, to: t2, label: "B: R3<W2" }
+steps:
+  - say: { vi: "Mỗi giao dịch là một đỉnh.", en: "Each transaction is a node." }
+    alt: { vi: "Một cạnh chỉ nối hai thao tác của hai giao dịch khác nhau trên cùng mục khi ít nhất một trong hai là ghi.", en: "An edge joins only two operations of different transactions on the same item where at least one of them writes." }
+    show: [sched, t1, t2, t3]
+  - say: { vi: "R1(A) trước W2(A): cạnh T1 → T2.", en: "R1(A) before W2(A): edge T1 → T2." }
+    alt: { vi: "T1 đọc A trước khi T2 ghi A, nên mọi thứ tự tuần tự tương đương phải đặt T1 trước T2, và T3 cũng phải trước T2 vì B.", en: "T1 reads A before T2 writes it, so any equivalent serial order puts T1 first, and T3 must also precede T2 because of B." }
+    show: [sched, t1, t2, t3, a12, b32]
+    set:
+      sched: { cellTone: { "0:1": new, "3:2": new, "4:3": new, "5:2": new } }
+  - say: { vi: "R2(A) trước W1(A): cạnh ngược, thành chu trình.", en: "R2(A) before W1(A): the reverse edge closes a cycle." }
+    alt: { vi: "T2 cũng đọc A trước khi T1 ghi A, nên T2 cũng phải đứng trước T1: hai yêu cầu trái nhau là một chu trình và không có thứ tự tuần tự nào.", en: "T2 also reads A before T1 writes it, so T2 must come first too: two opposite demands form a cycle and no serial order exists." }
+    show: [sched, t1, t2, t3, cyc, a12, a21, b32]
+    set:
+      sched: { cellTone: { "1:2": warm, "2:1": warm } }
+      t1: { tone: dead }
+      t2: { tone: dead }

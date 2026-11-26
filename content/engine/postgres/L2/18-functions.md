@@ -94,8 +94,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì chữ REPLACE, nhưng Postgres nhận diện hàm bằng tên cộng kiểu tham số. Kiểu khác thì là chữ ký khác, nên REPLACE không tìm thấy gì để thay và tạo hàm thứ hai."
-      en: "It sounds right because of the word REPLACE, but Postgres identifies a function by its name plus its argument types. Different types make a different signature, so REPLACE finds nothing to replace and creates a second function."
+      vi: "Chữ REPLACE làm ta nghĩ bản cũ bị thay, nhưng Postgres nhận diện hàm bằng tên cộng danh sách kiểu tham số (chữ ký). `fee(integer)` và `fee(bigint)` là hai chữ ký khác nhau, nên REPLACE không tìm thấy gì để thay và tạo hàm thứ hai. Cũng không có lỗi: cùng tên, khác kiểu tham số là nạp chồng (overloading), được phép."
+      en: "The word REPLACE suggests the old one is replaced, but Postgres identifies a function by its name plus its list of argument types (its signature). `fee(integer)` and `fee(bigint)` are two different signatures, so REPLACE finds nothing to replace and creates a second function. There is no error either: the same name with other argument types is overloading, which is allowed."
   - q:
       vi: "Hàm `stock_of(id)` đọc bảng `stock`. Nên đánh dấu nó thế nào?"
       en: "Function `stock_of(id)` reads table `stock`. How should it be marked?"
@@ -106,8 +106,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì kết quả trông cố định, nhưng `IMMUTABLE` hứa kết quả không bao giờ đổi, nên planner có thể tính sẵn và index có thể lưu nó; khi bảng đổi, kết quả cũ thành sai. `STABLE` là lời hứa đúng cho hàm chỉ đọc."
-      en: "It sounds right because the result looks fixed, but `IMMUTABLE` promises it never changes, so the planner may precompute it and an index may store it; once the table changes, the old result is wrong. `STABLE` is the honest promise for a read-only function."
+      vi: "`IMMUTABLE` nghe hợp lý vì hôm nay kết quả trông cố định, nhưng nó hứa kết quả không bao giờ đổi, nên planner có thể tính sẵn một lần và index có thể lưu kết quả; khi bảng `stock` đổi, kết quả đã lưu thành sai. `VOLATILE` không bắt buộc: nó là mặc định cho hàm có thể đổi kết quả ngay trong một câu, nên planner phải gọi lại cho từng dòng. `STABLE` hứa đúng điều hàm chỉ đọc làm được: không đổi trong một câu lệnh."
+      en: "`IMMUTABLE` sounds right because the result looks fixed today, but it promises the result never changes, so the planner may compute it once and an index may store it; once table `stock` changes, the stored result is wrong. `VOLATILE` is not required: it is the default for functions whose result may change even within one statement, so the planner must call it again for every row. `STABLE` promises exactly what a read-only function can keep: no change within one statement."
 ---
 ## Mở bài
 
