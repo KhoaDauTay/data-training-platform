@@ -1,0 +1,21 @@
+# RD-2 (v47 R1, L958): one OTP from creation to expiry on the virtual clock. Lesson: e-rd-l1-02 (Ý chính).
+# Data = the lab's otp:lily (SET … EX 60, then @advance 15000 → TTL 45) and the example's @advance 61000 → (nil), TTL -2.
+# Expiry rule: db.c keyIsExpired (now > when), checked lazily on access (Valkey 8.1).
+title: { vi: "Một mã OTP sống 60 giây", en: "An OTP that lives 60 seconds" }
+caption:
+  vi: "Đồng hồ ảo của bài: TTL đếm ngược theo giây; qua hạn, khóa bị xóa và TTL trả -2."
+  en: "The lesson's virtual clock: TTL counts down in seconds; past the expiry the key is deleted and TTL returns -2."
+alt:
+  vi: "Một khóa ghi bằng SET … EX 60 tự biến mất sau 60 giây, ứng dụng không phải xóa. Kết quả: 15 giây sau TTL trả 45, 61 giây sau GET trả (nil) và TTL trả -2."
+  en: "A key written with SET … EX 60 disappears by itself after 60 seconds, and the app does not have to delete it. Result: 15 seconds later TTL returns 45, 61 seconds later GET returns (nil) and TTL returns -2."
+nodes:
+  - { id: t0, mono: true, label: "SET … EX 60", sub: { vi: "giây 0 · TTL 60", en: "second 0 · TTL 60" }, tone: new }
+  - { id: t1, mono: true, label: "TTL → 45", sub: { vi: "giây 15", en: "second 15" } }
+  - { id: t2, mono: true, label: "GET → (nil)", sub: { vi: "giây 61 · TTL -2", en: "second 61 · TTL -2" }, tone: dead }
+rows:
+  - [t0, t1, t2]
+phone:
+  rows: [[t0], [t1], [t2]]
+edges:
+  - { from: t0, to: t1, label: "+15 s" }
+  - { from: t1, to: t2, label: "+46 s" }

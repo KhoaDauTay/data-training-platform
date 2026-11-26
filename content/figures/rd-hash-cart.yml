@@ -1,0 +1,28 @@
+# RD-3 (v47 R1, L958): a cart as one hash key. Lesson: e-rd-l1-03 (Ý chính).
+# Data = the lab after steps 1–3: cart:lily p01 2, p07 2 (HINCRBY), p03 1 (HSET); HGETALL prints field, value, field, value.
+title: { vi: "Giỏ hàng là một hash", en: "A cart is one hash" }
+caption:
+  vi: "Một khóa cart:lily, ba trường. HINCRBY sửa p07 tại chỗ, HGETALL đọc cả giỏ trong một lệnh."
+  en: "One key cart:lily, three fields. HINCRBY changes p07 in place, HGETALL reads the whole cart in one command."
+alt:
+  vi: "Hash gom các cặp trường và giá trị của một đối tượng vào một khóa, nên một lệnh đọc được cả giỏ và một lệnh sửa được một trường. Kết quả: cart:lily có p01 là 2, p07 là 2 sau HINCRBY, p03 là 1."
+  en: "A hash gathers an object's field and value pairs into one key, so one command reads the whole cart and one command changes one field. Result: cart:lily has p01 at 2, p07 at 2 after HINCRBY, p03 at 1."
+nodes:
+  - { id: k, shape: key, mono: true, label: "cart:lily" }
+  - id: h
+    shape: grid
+    mono: true
+    label: hash
+    head: [field, value]
+    cells:
+      - [p01, "2"]
+      - [p07, "2"]
+      - [p03, "1"]
+    rowTone: [null, new, new]
+  - { id: inc, mono: true, label: "HINCRBY … p07 1", sub: "(integer) 2" }
+rows:
+  - [k]
+  - [h, inc]
+edges:
+  - { from: k, to: h }
+  - { from: inc, to: "h#1" }

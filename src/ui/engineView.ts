@@ -68,13 +68,13 @@ let lessons: EngineLesson[] = [];
 const trees = {} as Record<EngineId, Tree>;
 /** modules.yml names per engine (the Extensions shelf groups its lessons by these, v43 L720). */
 const modNames = {} as Record<EngineId, ModuleName[]>;
-const NAME: Record<Exclude<EngineId, 'design' | 'stack'>, string> = { postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB' };
+const NAME: Record<Exclude<EngineId, 'design' | 'stack'>, string> = { postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB', redis: 'Redis' };
 /** v28 R4 (L420): product names stay as they are; the design track's name is translated. */
 /** v46 (L839a): a lab whose learner types Jinja (a model step, or a ref()/source() Solution: dbt.ts isDbtLab, inlined) shows the dbt notice. */
 const dbtLab = (l: EngineLesson): boolean => !!l.lab?.steps.some((s) => s.model || /\{\{\s*(ref|source)\s*\(/.test(s.solution));
 const nameOf = (e: EngineId): string => (e === 'design' || e === 'stack' ? et(`name.${e}`) : NAME[e]);
 /** L280: one generic picture per engine (no logos): a table grid, a JSON document, a key and its values. */
-const ENGINE_ICON = { postgres: 'engRelational', mongodb: 'engDocument', dynamodb: 'engKeyValue', design: 'engDesign', stack: 'engStack' } as const satisfies Record<EngineId, Icons.IconName>;
+const ENGINE_ICON = { postgres: 'engRelational', mongodb: 'engDocument', dynamodb: 'engKeyValue', redis: 'engRedis', design: 'engDesign', stack: 'engStack' } as const satisfies Record<EngineId, Icons.IconName>;
 const KIND_ICON = { concept: 'kindConcept', lab: 'kindLab', predict: 'kindPredict', quiz: 'kindQuiz', capstone: 'kindCapstone' } as const satisfies Record<Kind, Icons.IconName>;
 const et = (key: EngineKey, params?: I18n.Params): string => engineText(d.getLang(), d.locale(), key, params);
 
@@ -141,16 +141,16 @@ export function inline(text: string, marked = false): (Node | string)[] {
  * learner never reads `e-pg-l4-03`. The word before stays prose ("bài Thống kê nhiều cột ↗"); without a title (never for
  * shipped content: tests/engineBpLink.test.ts) the link says "bài liên quan" and swallows that word, so no "bài bài".
  */
-const ID = String.raw`e-(?:(?:pg|mg|dy|ds|st)-(?:l[1-5]|ext)-|bp-[a-z])\d\d`; // v43: + the Extensions shelf (e-pg-ext-NN)
+const ID = String.raw`e-(?:(?:pg|mg|dy|rd|ds|st)-(?:l[1-5]|ext)-|bp-[a-z])\d\d`; // v43: + the Extensions shelf (e-pg-ext-NN)
 const PRE = String.raw`(?:(?<=^|[\s(])(?:bài|thẻ|lab|lesson|card) )?`;
 const CODE = new RegExp(`(${PRE}\x60${ID}\x60|\x60[^\x60\n]+\x60)`);
 const BARE = new RegExp(String.raw`(${PRE}\b${ID}(?![\w-]))`);
-const SHORT = { pg: 'postgres', mg: 'mongodb', dy: 'dynamodb', ds: 'design', st: 'stack' } as const;
+const SHORT = { pg: 'postgres', mg: 'mongodb', dy: 'dynamodb', rd: 'redis', ds: 'design', st: 'stack' } as const;
 let bpTitles: Record<string, { vi: string; en: string }> = {};
 function idRef(seg: string): (Node | string)[] {
   const word = /^\S+ /.exec(seg)?.[0] ?? '';
   const id = seg.slice(word.length).replace(/`/g, '');
-  const m = /^e-(pg|mg|dy|ds|st)-(l[1-5]|ext)-/.exec(id);
+  const m = /^e-(pg|mg|dy|rd|ds|st)-(l[1-5]|ext)-/.exec(id);
   const title = m ? lessons.find((x) => x.id === id)?.title : bpTitles[id];
   const href = m ? d.engineHash(SHORT[m[1] as keyof typeof SHORT], (m[2] === 'ext' ? 'EXT' : m[2].toUpperCase()) as Level, id) : bpHashOf(id);
   if (!href) return [seg]; // an e-bp code with no track letter: content tests keep this from shipping
@@ -700,7 +700,7 @@ function labView(l: EngineLesson, v: Visit): HTMLElement {
     cardHead(`${l.id}-lab`, 'kindLab', et('lab.title')),
     cap && cc ? cap.capBar(cc) : null,
     h('div', { class: 'flex flex-col gap-3 rounded-(--r-ctl) bg-info-soft p-4 text-body-sm ring-1 ring-info-line' },
-      h('p', { class: 'm-0' }, !live ? et('lab.noRunner') : l.engine === 'mongodb' ? et('lab.dataMongo') : l.engine === 'dynamodb' ? et('lab.dataDynamo') : l.lab!.setup ? et('lab.dataPg') : et('lab.data')),
+      h('p', { class: 'm-0' }, !live ? et('lab.noRunner') : l.engine === 'mongodb' ? et('lab.dataMongo') : l.engine === 'dynamodb' ? et('lab.dataDynamo') : l.engine === 'redis' ? et('lab.dataRedis') : l.lab!.setup ? et('lab.dataPg') : et('lab.data')),
       // v43 (L726): the PostGIS tarball (~20 MB) is not precached; say so before the first Run
       live && onPg(l.engine) && /\bpostgis\b/i.test(l.lab!.setup ?? '') ? h('p', { class: 'm-0 text-muted', 'data-postgis-note': '' }, et('lab.postgisOnce')) : null,
       // v46 S-13 (L835): the dbt notice again where the Jinja is typed
@@ -740,7 +740,7 @@ function labView(l: EngineLesson, v: Visit): HTMLElement {
         h('details', {}, h('summary', { class: 'cursor-pointer text-body-sm font-semibold text-accent-ink' }, et('lab.hint')), h('p', { class: 'mt-2 mb-0 text-body-sm' }, ...inline(s.hint[lang()]))),
         h('p', { role: 'status', 'data-ek': `${key}-status`, class: cls.cx('m-0 text-body-sm', msg ? (msg.ok ? 'good' : 'bad') : '') }, ...inline(msg?.text ?? '')),
         s.fact && passed ? h('p', { class: 'm-0 rounded-(--r-inset) bg-good-soft p-3 text-body-sm ring-1 ring-good-line' }, h('b', {}, `${et('lab.fact')}: `), ...inline(s.fact[lang()])) : null,
-        out ? h('div', { class: 'overflow-x-auto', tabindex: '0' }, shown ? d.renderResult(shown, undefined, undefined, onPg(l.engine) ? undefined : et(l.engine === 'mongodb' ? 'res.docs' : 'res.items', { n: shown.rows.length }), l.engine === 'stack' ? { empty: false } : undefined) : d.errorView((out as { error: unknown }).error, false)) : null,
+        out ? h('div', { class: 'overflow-x-auto', tabindex: '0' }, shown ? d.renderResult(shown, undefined, undefined, onPg(l.engine) ? undefined : et(l.engine === 'mongodb' ? 'res.docs' : l.engine === 'redis' ? 'res.lines' : 'res.items', { n: shown.rows.length }), l.engine === 'stack' ? { empty: false } : undefined) : d.errorView((out as { error: unknown }).error, false)) : null,
         shown ? R().metaView(d, shown) : null,
         shown ? N()?.stepEnd(d, s, shown, passed, key) : null,
         shown ? R().insideView(d, vizSlot, shown, `${key}-inside`) : null,
@@ -790,10 +790,10 @@ function vizSlot(slot: string, name: string | undefined, engine: EngineId, model
   }, () => { vizHosts.delete(slot); }); // a failed chunk leaves the slot empty; the next visit tries again
   return entry.host;
 }
-const SHORT_OF: Record<EngineId, 'pg' | 'mg' | 'dy'> = { postgres: 'pg', mongodb: 'mg', dynamodb: 'dy', design: 'pg', stack: 'pg' }; // design diagrams are Postgres ones
+const SHORT_OF: Record<EngineId, 'pg' | 'mg' | 'dy'> = { postgres: 'pg', mongodb: 'mg', dynamodb: 'dy', redis: 'dy', design: 'pg', stack: 'pg' }; // design diagrams are Postgres ones; Redis has no live-model diagram (its figures are specs)
 
 const HONEST_CLS: Record<Honest, string> = {
-  pg: 'bg-good-soft text-ink', mingo: 'bg-good-soft text-ink', dynoxide: 'bg-good-soft text-ink', diagram: 'bg-surface-2 text-muted', docs: 'bg-info-soft text-ink',
+  pg: 'bg-good-soft text-ink', mingo: 'bg-good-soft text-ink', dynoxide: 'bg-good-soft text-ink', redis: 'bg-good-soft text-ink', diagram: 'bg-surface-2 text-muted', docs: 'bg-info-soft text-ink',
 };
 /** The one honest runtime chip under the title (§3.6, checklist L1). */
 function honestChip(l: EngineLesson): HTMLElement {

@@ -1,0 +1,15 @@
+- id: basics
+  vi: Khóa, chuỗi và thời gian sống
+  en: Keys, strings and time to live
+- id: types
+  vi: Các kiểu dữ liệu
+  en: Data types
+- id: patterns
+  vi: Cache và bộ đếm
+  en: Caches and counters
+- id: atomic
+  vi: Giao dịch và lựa chọn
+  en: Transactions and choices
+- id: capstone
+  vi: Bài tổng hợp
+  en: Capstone
