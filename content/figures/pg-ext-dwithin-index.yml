@@ -1,0 +1,40 @@
+# v43 EXT-03 (tools/v43/extensions-plan.md): ST_DWithin's two stages through a GiST index. Lesson: e-pg-ext-03 (Ý chính).
+# Data (PGlite 0.5.16 + PostGIS 3.6.2, lesson setup): 20,000 orders, GiST orders_pos_gist; stall 1 POINT(108.224 16.068);
+# pos && _ST_Expand(stall, 3000) = 2,210 rows; EXPLAIN ANALYZE: Bitmap Heap Scan actual 1,562, Rows Removed by Filter 648.
+# Sources: https://postgis.net/docs/using_postgis_query.html, https://www.postgresql.org/docs/18/gist.html
+title: { vi: "Hộp bao trước, đo thật sau", en: "Boxes first, real distance after" }
+caption:
+  vi: "ST_DWithin(pos, quầy, 3000) đi qua hai tầng: index GiST giữ các điểm có hộp bao chạm vùng 3 km, rồi Postgres đo khoảng cách thật cho riêng các ứng viên đó."
+  en: "ST_DWithin(pos, stall, 3000) runs in two stages: the GiST index keeps the points whose boxes touch the 3 km area, then Postgres measures the real distance for those candidates only."
+alt:
+  vi: "Index GiST chỉ mở những hộp bao chạm vùng tìm kiếm và bỏ qua phần còn lại, rồi ST_DWithin chỉ đo khoảng cách thật cho những ứng viên sống sót. Kết quả: chỉ một phần nhỏ trong 20 000 đơn phải đo."
+  en: "The GiST index only opens the bounding boxes that touch the search area and skips the rest, then ST_DWithin measures the real distance for the surviving candidates only. Result: only a small part of the 20,000 orders is ever measured."
+nodes:
+  - { id: idx, label: orders_pos_gist, sub: { vi: "20 000 điểm", en: "20,000 points" } }
+  - { id: far, label: { vi: "hộp ở xa", en: "far boxes" }, sub: { vi: "bỏ qua 17 790", en: "17,790 skipped" }, tone: ghost }
+  - { id: cand, label: { vi: "hộp chạm vùng", en: "boxes touching" }, sub: { vi: "2 210 ứng viên", en: "2,210 candidates" }, tone: ghost }
+  - { id: out, label: { vi: "ngoài 3 km", en: "beyond 3 km" }, sub: { vi: "648 đơn", en: "648 orders" }, tone: ghost }
+  - { id: hit, label: { vi: "trong 3 km", en: "within 3 km" }, sub: { vi: "1 562 đơn", en: "1,562 orders" }, tone: ghost }
+rows:
+  - [idx]
+  - [far, cand]
+  - [out, hit]
+edges:
+  - { from: idx, to: far }
+  - { from: idx, to: cand, label: "&&" }
+  - { from: cand, to: out }
+  - { from: cand, to: hit }
+steps:
+  - say: { vi: "Tầng một: index chỉ mở các hộp chạm vùng 3 km.", en: "Stage one: the index only opens the boxes touching the 3 km area." }
+    alt: { vi: "Điều kiện && trên hộp bao mở rộng 3 km để index bỏ qua các hộp ở xa và chỉ đưa ra những ứng viên có hộp chạm vùng.", en: "The && condition on a box widened by 3 km lets the index skip the far boxes and hand out only the candidates whose boxes touch the area." }
+    show: [idx, far, cand]
+    set:
+      cand: { tone: live }
+      far: { tone: dead }
+  - say: { vi: "Tầng hai: đo khoảng cách thật cho từng ứng viên.", en: "Stage two: measure the real distance for each candidate." }
+    alt: { vi: "ST_DWithin đo khoảng cách thật cho từng ứng viên, giữ những đơn trong 3 km và loại những đơn chỉ có hộp chạm vùng.", en: "ST_DWithin measures the real distance for each candidate, keeping the orders within 3 km and dropping those whose box only touched the area." }
+    set:
+      cand: { tone: live }
+      far: { tone: dead }
+      hit: { tone: new }
+      out: { tone: dead }

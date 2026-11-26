@@ -680,7 +680,9 @@ function capCtx(l: EngineLesson, v: Visit): import('./engineCapstone').CapCtx {
 
 /** Tables and columns of the lab's own schema after its setup (a lab on the shop chain: only the tables its steps name). */
 const TABLES_SQL = `SELECT c.table_name::text AS t, string_agg(c.column_name || ' ' || c.data_type, ', ' ORDER BY c.ordinal_position) AS cols
-FROM information_schema.columns c WHERE c.table_schema = current_schema() GROUP BY 1 ORDER BY 1`;
+FROM information_schema.columns c WHERE c.table_schema = current_schema()
+  AND NOT EXISTS (SELECT FROM pg_depend d WHERE d.classid = 'pg_class'::regclass AND d.deptype = 'e' AND d.objid = format('%I.%I', c.table_schema, c.table_name)::regclass)
+GROUP BY 1 ORDER BY 1`; // v43: not an extension's own tables and views (PostGIS: spatial_ref_sys, geometry_columns…)
 async function loadTables(l: EngineLesson, v: Visit): Promise<void> {
   v.tables = 'busy';
   d.rerender();

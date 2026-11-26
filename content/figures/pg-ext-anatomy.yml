@@ -1,0 +1,33 @@
+# v43 EXT-01 (tools/v43/extensions-plan.md): what one CREATE EXTENSION installs. Lesson: e-pg-ext-01 (Ý chính).
+# Data (PGlite 0.5.16, lesson setup + CREATE EXTENSION citext): pg_extension citext 1.8; pg_depend deptype 'e' rows by classid:
+# pg_proc 47, pg_operator 26, pg_cast 8, pg_opclass 3, pg_opfamily 3, pg_type 2; staff.email ALTERed to citext depends on the type.
+# Source: https://www.postgresql.org/docs/18/extend-extensions.html
+title: { vi: "Một gói, một lô đối tượng", en: "One package, one set of objects" }
+caption:
+  vi: "CREATE EXTENSION citext cài kiểu, hàm, toán tử, phép ép kiểu và lớp toán tử, tất cả thuộc về một dòng trong pg_extension. Cột staff.email dùng kiểu citext nên phụ thuộc vào gói."
+  en: "CREATE EXTENSION citext installs types, functions, operators, casts and operator classes, all owned by one row in pg_extension. Column staff.email uses the citext type, so it depends on the package."
+alt:
+  vi: "Một lệnh CREATE EXTENSION cài cả một lô đối tượng và ghi một dòng trong pg_extension làm chủ của cả lô, nên gỡ gói là gỡ cả lô. Một cột dùng kiểu của gói sẽ chặn lệnh gỡ, hoặc bị xóa theo nếu thêm CASCADE."
+  en: "One CREATE EXTENSION installs a whole set of objects and writes one row in pg_extension that owns the set, so removing the package removes the set. A column that uses one of the package's types blocks the removal, or is dropped with it under CASCADE."
+nodes:
+  - { id: ext, label: pg_extension, sub: citext 1.8, tone: live }
+  - id: objs
+    shape: grid
+    label: { vi: "đối tượng của gói", en: "the package's objects" }
+    sub: { vi: "pg_depend, loại e", en: "pg_depend, type e" }
+    head: [{ vi: "loại", en: "kind" }, { vi: "số", en: "count" }]
+    cells:
+      - [{ vi: "hàm", en: "functions" }, "47"]
+      - [{ vi: "toán tử", en: "operators" }, "26"]
+      - [{ vi: "phép ép kiểu", en: "casts" }, "8"]
+      - [{ vi: "lớp toán tử", en: "operator classes" }, "3"]
+      - [{ vi: "họ toán tử", en: "operator families" }, "3"]
+      - [{ vi: "kiểu", en: "types" }, "2"]
+  - { id: col, label: staff.email, sub: { vi: "cột kiểu citext", en: "a citext column" }, tone: warm }
+rows:
+  - [ext]
+  - [objs]
+  - [col]
+edges:
+  - { from: ext, to: objs, label: { vi: "sở hữu", en: "owns" } }
+  - { from: col, to: objs, label: { vi: "dùng kiểu", en: "uses the type" } }
