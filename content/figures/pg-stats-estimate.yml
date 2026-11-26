@@ -4,7 +4,8 @@
 # reltuples 30000; status = 'closed' → Seq Scan rows=3000 (real 3000); closed_at null_frac 0.9 → IS NULL rows=27000 (real 27000).
 # parcels (e-pg-l4-02): {delivered,in_transit,returned,lost} = {0.7,0.2,0.09,0.01}, reltuples 20000; status = 'lost' → Bitmap Heap
 # Scan rows=200. Bars are the frequencies × 10 (the note is the real frequency).
-# Deviation: the plan's variant was plain frame 1 (tickets data in a parcels lesson); it is step 1 patched with parcels' numbers.
+# Deviation: step 2 swaps the MCV bars for null_frac and redoes the product (0.9 × 30000), so the box is never left unconnected;
+# the plan's variant was plain frame 1 (tickets data in a parcels lesson); it is step 1 patched with parcels' numbers.
 # Sources: https://www.postgresql.org/docs/18/planner-stats.html, https://www.postgresql.org/docs/18/row-estimation-examples.html
 title: { vi: "Planner ước số dòng bằng một phép nhân", en: "The planner estimates rows with one multiplication" }
 caption:

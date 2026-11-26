@@ -1,7 +1,8 @@
 # B3-1 (tools/v42/diagram-plan-v42.md): some ALTERs only touch the catalog, some rewrite the file. Lesson: e-pg-l1-13 (Ý chính),
 # the three commands of its Example. Data (PGlite, lesson setup; tools/v42/b3check.log): pg_relation_filenode('orders') is the same
 # after ADD COLUMN channel text NOT NULL DEFAULT 'web' (true), new after ALTER COLUMN customer_ref TYPE bigint USING (false), the
-# same after note varchar(40) → varchar(80) (true). "file A" / "file B" stand for the two filenodes (no fake number).
+# same after note varchar(40) → varchar(80) (true). Deviation: no es note; the command's arrow into file A says "untouched" (dashed)
+# or "reads every row", and file A's sub says whether it stays. "file A" / "file B" stand for the two filenodes (no fake number).
 # Source: https://www.postgresql.org/docs/18/sql-altertable.html
 title: { vi: "ALTER chỉ sửa catalog hay ghi lại bảng", en: "Does an ALTER touch only the catalog or rewrite the table" }
 caption:

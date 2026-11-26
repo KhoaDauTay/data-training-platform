@@ -2,7 +2,8 @@
 # (Ý chính). Data (PGlite, lesson setup; tools/v42/b3check*.log): users row 1236 = User1236@Example.com, lower = user1236@example.com;
 # WHERE lower(email) = 'user1236@example.com' → Seq Scan (Filter lower(email) = …) with no index and with a plain index on email;
 # after CREATE INDEX … (lower(email)) → Index Scan, rows=1; upper(email) = … still Seq Scan. A cell holds ≤ 18 characters, so the
-# two strings are cut after the @ (the grids' subs say which is as written and which is lower-cased).
+# Deviation: no dashed col→plan edge (two arrows into one box form a bus, which takes no label); "no match" is the grid's sub.
+# The two strings are cut after the @ (the grids' subs say which is as written and which is lower-cased).
 # Source: https://www.postgresql.org/docs/18/indexes-expressional.html
 title: { vi: "Index trên biểu thức lower(email)", en: "An index on the expression lower(email)" }
 caption:
