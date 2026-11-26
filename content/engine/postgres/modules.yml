@@ -1,3 +1,24 @@
+# v43 R2 (L730): Extensions shelf modules (e-pg-ext-04, 08–14)
+- id: ext-vector
+  module: ext-vector
+  level: EXT
+  vi: Tìm theo vector
+  en: Vector search
+- id: ext-types
+  module: ext-types
+  level: EXT
+  vi: Kiểu dữ liệu từ extension
+  en: Data types from extensions
+- id: ext-analysis
+  module: ext-analysis
+  level: EXT
+  vi: Phân tích và quan sát
+  en: Analysis and observability
+- id: ext-server
+  module: ext-server
+  level: EXT
+  vi: Extension chỉ có trên server
+  en: Server-only extensions
 - id: ddl
   module: ddl
   level: L1
