@@ -30,7 +30,7 @@ rows:
 edges:
   - { from: val, to: cmp }
   - { from: cmp, to: res }
-  - { from: "page#2", to: toast, label: { vi: "con trỏ", en: "pointer" } }
+  - { from: "page#2", to: toast }
 steps:
   - say: { vi: "Dòng 1: nhỏ, ở lại trang.", en: "Row 1: small, it stays." }
     show: [thr, val, cmp, res, page]

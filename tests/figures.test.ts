@@ -302,5 +302,39 @@ describe('v40 builder shapes', () => {
   });
 });
 
+// v41 (R2 lesson 2, L651): an arrow naming a grid row leaves from that row's cells when the two nodes sit side by side
+// (straight when the target spans the row, a step in the gap otherwise; no label); stacked, it is routed from the node like any arrow.
+const ROWS: FigSpec = {
+  title: 'v41 row arrows', caption: 'test',
+  nodes: [
+    { id: 'page', shape: 'grid', label: 'page', head: ['id', 'stored'], cells: [['1', 'inline'], ['2', 'pointer'], ['3', 'inline']] },
+    { id: 'toast', shape: 'grid', label: 'toast', head: ['seq', 'len'], cells: [['0', '1996'], ['1', '1996'], ['2', '412']] },
+    { id: 'low', label: 'box' },
+  ],
+  rows: [['page', 'toast'], ['low']],
+  edges: [{ from: 'page#1', to: 'toast' }, { from: 'page#2', to: 'low' }],
+};
+describe('v41 row-anchored arrows', () => {
+  for (const lang of LANGS) it.each(WIDTHS)(`${lang} · W %i: mũi tên rời đúng dòng bảng, không chồng lấn`, (W) => {
+    const d = layout(ROWS, lang, W);
+    const f = d.frames[0];
+    expect(analyze(model(f, d.w, d.h), W), `rows ${lang} W${W}`).toEqual([]);
+    const a = f.nodes.find((n) => n.t === 'p' && n.arrow && n.k === 'e:0');
+    const row = f.nodes.find((n) => n.k === 'n:page:2:1'); // head is row 0, so body row 1 is drawn row 2
+    expect(a && a.t === 'p' && row && row.t === 'r').toBe(true);
+    if (a?.t !== 'p' || row?.t !== 'r') return;
+    const [x0, y0] = samplePath(a.d)[0];
+    const side = f.nodes.find((n) => n.k === 'n:toast:1:0');
+    const sideBySide = side?.t === 'r' && side.y < row.y + row.h && side.y + side.h > row.y;
+    if (sideBySide) {
+      expect(y0, 'starts at the row middle').toBeCloseTo(row.y + row.h / 2, 0);
+      expect(x0 - (row.x + row.w), 'starts 2 past the cell edge').toBeCloseTo(2, 0);
+    }
+  });
+  it('lỗi nội dung: nhãn trên mũi tên từ dòng bảng (dòng và đích tự nói tên)', () => {
+    expect(() => layout({ ...ROWS, edges: [{ from: 'page#1', to: 'toast', label: 'x' }] }, 'vi', 640)).toThrow(/dòng bảng/);
+  });
+});
+
 /** Rows are ≥ 36 apart; a node shorter than its row sits in the middle, so its own gap is never smaller. */
 const GAP_MIN_Y = 35.5;

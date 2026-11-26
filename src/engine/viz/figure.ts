@@ -222,7 +222,7 @@ export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): 
       const y1 = anchorY(l, L), y2 = anchorY(r, R);
       return { e, d: `M${L.x + L.w} ${y1} L${R.x} ${y2}`, lab: label && y1 === y2 ? { x: (L.x + L.w + R.x) / 2, y: y1 - 6 - lineH(SS) / 2, a: 'm' as const, s: label } : undefined };
     }
-    if (ra === rb && (e.from.includes('#') || e.to.includes('#'))) return rowArrow(e, a, b, label);
+    if (ra === rb && (e.from.includes('#') || e.to.includes('#'))) return label ? fail(`${e.from}: dòng bảng, không nhãn`) : rowArrow(e, a, b);
     if (ra === rb) {
       if (Math.abs(vrows[ra].indexOf(base(e.from)) - vrows[ra].indexOf(base(e.to))) !== 1) fail(`${e.from}→${e.to}: cùng hàng nhưng không cạnh nhau`);
       const cy = Math.round((Math.max(a.y, b.y) + Math.min(a.y + a.h, b.y + b.h)) / 2);
@@ -256,31 +256,19 @@ export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): 
     if (label && L === 'bus') fail(`${e.from}→${e.to}: nhãn trên đường bus chưa hỗ trợ`);
     return { e, d: `M${ax} ${y1} L${ax} ${ym} L${bx} ${ym} L${bx} ${end(bx, ym)}`, lab: label ? elbowLabel(label, ax, bx, ym, e) : undefined };
   });
-  /** v41 (R2 lesson 2): an arrow that names a grid row (`page#2`) leaves from that row's cell edge when the two nodes sit side
-   * by side: straight when the target spans the row's height, else an orthogonal step in the middle of the gap (no label
-   * there, the step would cross it). Stacked on a phone it is routed like any arrow, from the node. */
-  function rowArrow(e: FigEdge, a: Rect, b: Rect, label: string) {
-    if (Math.abs(vrows[rowOf.get(base(e.from))!].indexOf(base(e.from)) - vrows[rowOf.get(base(e.to))!].indexOf(base(e.to))) !== 1) fail(`${e.from}→${e.to}: cùng hàng nhưng không cạnh nhau`);
-    const right = a.x < b.x;
-    const edge = (end: string, r: Rect, out: boolean): number => {
-      const n = byId.get(base(end))!;
-      const gw = n.shape === 'grid' ? gridCols(n, lang).reduce((p, q) => p + q, 0) : r.w;
-      const x0 = r.x + Math.round((r.w - gw) / 2);
-      return out === right ? x0 + gw : x0;
+  /** v41 (R2 lesson 2, L651): an arrow naming a grid row (`page#2`) leaves from that row's cells when the nodes sit side by
+   * side, straight or with one step in the gap (no label: the row and the target name it); stacked, it is routed from the node like any arrow. */
+  function rowArrow(e: FigEdge, a: Rect, b: Rect) {
+    const s = a.x < b.x ? 1 : -1;
+    /** the x where a node's cells end on the side facing (out = 1) or away from (out = -1) the other node */
+    const edge = (end: string, r: Rect, out: number): number => {
+      const n = byId.get(base(end))!, gw = n.shape === 'grid' ? gridCols(n, lang).reduce((p, q) => p + q, 0) : r.w;
+      return r.x + Math.round((r.w - gw) / 2) + (out * s > 0 ? gw : 0);
     };
-    const y1 = e.from.includes('#') ? anchorY(e.from, a) : Math.round(a.y + a.h / 2);
-    const yb = e.to.includes('#') ? anchorY(e.to, b) : Math.min(b.y + b.h - 8, Math.max(b.y + 8, y1));
-    const x1 = edge(e.from, a, true) + (right ? 2 : -2);
-    const tx = edge(e.to, b, false);
-    const box = { x: right ? tx : b.x, y: b.y, w: right ? b.x + b.w - tx : tx - b.x, h: b.h };
-    if (y1 === yb) {
-      const [x2] = stopAt(x1, y1, right ? tx + 4 : tx - 4, y1, STROKE, box);
-      return { e, d: `M${x1} ${y1} L${x2} ${y1}`, lab: label ? { x: (x1 + x2) / 2, y: y1 - 6 - lineH(SS) / 2, a: 'm' as const, s: label } : undefined };
-    }
-    if (label) fail(`${e.from}→${e.to}: nhãn trên mũi tên gấp khúc từ dòng bảng chưa hỗ trợ`);
-    const xm = Math.round((x1 + tx) / 2);
-    const [x2] = stopAt(xm, yb, right ? tx + 4 : tx - 4, yb, STROKE, box);
-    return { e, d: `M${x1} ${y1} L${xm} ${y1} L${xm} ${yb} L${x2} ${yb}`, lab: undefined };
+    const y1 = anchorY(e.from, a), yb = e.to.includes('#') ? anchorY(e.to, b) : Math.min(b.y + b.h - 8, Math.max(b.y + 8, y1));
+    const x1 = edge(e.from, a, 1) + 2 * s, tx = edge(e.to, b, -1), xm = Math.round((x1 + tx) / 2);
+    // the tip (end + 0.75·w) stays 3 short of the cells, as stopAt() does
+    return { e, d: `M${x1} ${y1} L${xm} ${y1} L${xm} ${yb} L${tx - (3 + 0.75 * STROKE) * s} ${yb}`, lab: undefined };
   }
   /** A link end's y: a grid row's middle (`grid#2`), else the node's middle. */
   function anchorY(end: string, r: Rect): number {
