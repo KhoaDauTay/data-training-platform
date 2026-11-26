@@ -23,7 +23,7 @@ quiz:
       - { vi: "3375 RCU, vượt trần 3000", en: "3375 RCU, over the 3000 ceiling" }
     answer: 1
     why: { vi: "Đọc làm tròn cỡ item lên bội 4 KB: 3 KB thành 4 KB = 1 khối, và mỗi khối đọc nhất quán mạnh tốn 1 RCU (read capacity unit, đơn vị đọc). 4500 lần × 1 RCU = 4500 RCU, vượt trần 3000 RCU mỗi giây của một partition. 2250 là giá đọc nhất quán cuối (nửa giá); 3375 là tính theo 3 KB thật (4500 × 3/4) mà quên làm tròn.", en: "Reads round the item size up to a multiple of 4 KB: 3 KB becomes 4 KB = 1 block, and each block read strongly consistent costs 1 RCU (read capacity unit). 4500 reads × 1 RCU = 4500 RCU, over the 3000 RCU per second ceiling of one partition. 2250 is the eventually consistent price (half); 3375 prices the real 3 KB (4500 × 3/4) and forgets the rounding." }
-  - q: { vi: "Cùng tải đó nhưng đổi sang đọc nhất quán cuối cùng. Kết quả?", en: "Same load, but switched to eventually consistent reads. Result?" }
+  - q: { vi: "Cùng tải đó nhưng đổi sang đọc nhất quán cuối. Kết quả?", en: "Same load, but switched to eventually consistent reads. Result?" }
     options:
       - { vi: "2250 RCU, dưới trần 3000", en: "2250 RCU, under the 3000 ceiling" }
       - { vi: "Vẫn 4500 RCU", en: "Still 4500 RCU" }
@@ -53,7 +53,7 @@ quiz:
 
 ## Ý chính
 
-Đọc: làm tròn cỡ item lên bội 4 KB. 1 RCU = một lần đọc nhất quán mạnh, hoặc hai lần đọc nhất quán cuối cùng; đọc trong transaction tốn gấp đôi đọc mạnh. Query và Scan cộng cỡ các item rồi mới làm tròn; GetItem và BatchGetItem làm tròn từng item.
+Đọc: làm tròn cỡ item lên bội 4 KB. 1 RCU = một lần đọc nhất quán mạnh, hoặc hai lần đọc nhất quán cuối; đọc trong transaction tốn gấp đôi đọc nhất quán mạnh. Query và Scan cộng cỡ các item rồi mới làm tròn; GetItem và BatchGetItem làm tròn từng item.
 
 Ghi: làm tròn lên bội 1 KB. 1 WCU = một lần ghi; ghi trong transaction tốn gấp đôi. Trần của một partition: 3000 RCU và 1000 WCU mỗi giây.
 
@@ -61,7 +61,7 @@ Nhiều người nghĩ mỗi lần ghi là 1 WCU, bất kể cỡ item. Thật r
 
 ## Ví dụ
 
-Đọc mạnh 4500 lần mỗi giây, item 3 KB:
+Đọc nhất quán mạnh 4500 lần mỗi giây, item 3 KB:
 
 ```text
 3 KB -> 4 KB = 1 RCU (strong)
@@ -88,7 +88,7 @@ BatchGetItem: 10 x (4.08 KB -> 8 KB) = 20 RCU (strong)
 ## Tóm tắt
 
 - Đọc làm tròn lên bội 4 KB; ghi lên bội 1 KB.
-- Đọc nhất quán cuối cùng tốn nửa RCU; transaction tốn gấp đôi.
+- Đọc nhất quán cuối tốn nửa RCU; transaction tốn gấp đôi.
 - Query và Scan làm tròn tổng; GetItem và BatchGetItem làm tròn từng item.
 - Số shard tối thiểu = tổng của khóa / trần (3000 RCU hoặc 1000 WCU), rồi để dư.
 

@@ -73,15 +73,35 @@ describe('term buttons in a lesson', () => {
   });
 });
 
-describe('#/engine/interview', () => {
-  it('the room: engine picker, bands with 3 sets and the take-homes', async () => {
+// v47 S4 (L980–L985): the engine banks are the PostgreSQL / MongoDB / DynamoDB tabs of the one room under Học
+describe('the one interview room: engine tabs (#/learn/interview?e=…), old #/engine/interview hashes as aliases', () => {
+  const tabs = (): [string | null, string | null][] => [...document.querySelectorAll('#home nav[data-iv-tabs] a')].map((a) => [a.getAttribute('href'), a.getAttribute('aria-current')]);
+  it('the old room hash lands on the PostgreSQL tab: four tabs, bands with 3 sets and the take-homes', async () => {
     await visit('#/engine/interview', () => expect(q('#iv-junior')).not.toBeNull());
-    expect(byId('home-title').textContent).toBe('Phỏng vấn Engine');
-    expect(document.querySelectorAll('#engine-page a[href^="#/engine/interview/pg-"]')).toHaveLength(12);
-    expect(document.querySelectorAll('#engine-page a[href^="#/engine/interview/e-iv-pg-th-"]')).toHaveLength(4);
+    expect(location.hash).toBe('#/learn/interview?e=pg'); // replaced in place (router upgrade)
+    expect(document.body.dataset.route).toBe('learn');
+    expect(byId('home-title').textContent).toBe('Phòng phỏng vấn');
+    expect([...document.querySelectorAll('#home nav[aria-label="Đường dẫn"] a')].map((a) => a.getAttribute('href'))).toEqual(['#/learn']);
+    expect(tabs()).toEqual([['#/learn/interview', null], ['#/learn/interview?e=pg', 'page'], ['#/learn/interview?e=mg', null], ['#/learn/interview?e=dy', null]]);
+    expect(document.querySelectorAll('#engine-page a[href^="#/learn/interview/pg-"]')).toHaveLength(12);
+    expect(document.querySelectorAll('#engine-page a[href^="#/learn/interview/e-iv-pg-th-"]')).toHaveLength(4);
     expect(proseText(byId('engine-page'))).not.toMatch(/`[^`]+`/); // F02: a take-home title with `orders` renders as code
-    expect([...document.querySelectorAll('#engine-page a[href^="#/engine/interview/e-iv-pg-th-"]')].some((a) => a.closest('li')?.querySelector('b code'))).toBe(true);
-    expect(q('#engine-page a[href="#/learn/interview"]')).not.toBeNull(); // F27: the other room
+    expect([...document.querySelectorAll('#engine-page a[href^="#/learn/interview/e-iv-pg-th-"]')].some((a) => a.closest('li')?.querySelector('b code'))).toBe(true);
+    expect(q('#engine-page a[href^="#/engine/interview"]')).toBeNull(); // no "other room" any more
+    expect(await problems()).toEqual([]);
+  });
+
+  it('each tab: MongoDB and DynamoDB banks, SQL = the graded sets (no engine bank)', async () => {
+    await visit('#/learn/interview?e=mg', () => expect(q('#engine-page a[href^="#/learn/interview/mg-"]')).not.toBeNull());
+    expect(tabs()[2][1]).toBe('page');
+    expect(q('#engine-page a[href^="#/learn/interview/pg-"]')).toBeNull();
+    expect(await problems()).toEqual([]);
+    await visit('#/learn/interview?e=dy', () => expect(q('#engine-page a[href^="#/learn/interview/dy-"]')).not.toBeNull());
+    expect(tabs()[3][1]).toBe('page');
+    await visit('#/learn/interview', () => expect(q('#iv-sets')).not.toBeNull());
+    expect(tabs()[0][1]).toBe('page');
+    expect(q('#engine-page')).toBeNull();
+    expect(byId('home-title').textContent).toBe('Phòng phỏng vấn');
     expect(await problems()).toEqual([]);
   });
 
@@ -89,6 +109,8 @@ describe('#/engine/interview', () => {
     const before = localStorage.getItem('cargo-query-save');
     const xp = app.save.xp;
     await visit('#/engine/interview/pg-junior-1', () => expect(q('[data-ek="iv-start"]')).not.toBeNull());
+    expect(location.hash).toBe('#/learn/interview/pg-junior-1');
+    expect([...document.querySelectorAll('#home nav[aria-label="Đường dẫn"] a')].map((a) => a.getAttribute('href'))).toEqual(['#/learn', '#/learn/interview?e=pg']);
     expect(await problems()).toEqual([]);
     q<HTMLButtonElement>('[data-ek="iv-start"]')!.click();
     for (let i = 0; i < 5; i++) {
@@ -121,7 +143,7 @@ describe('#/engine/interview', () => {
   });
 
   it('a take-home: brief, queries, drafts kept in the pref, model + rubric after submit', async () => {
-    await visit('#/engine/interview/e-iv-pg-th-1', () => expect(q('[data-ek="iv-th-submit"]')).not.toBeNull());
+    await visit('#/learn/interview/e-iv-pg-th-1', () => expect(q('[data-ek="iv-th-submit"]')).not.toBeNull());
     expect(byId('home-title').textContent).toBe('Ba truy vấn chậm của trang quản trị');
     expect(await problems()).toEqual([]);
     const box = q<HTMLTextAreaElement>('[data-ek="iv-th-0"]')!;
@@ -133,10 +155,11 @@ describe('#/engine/interview', () => {
     expect(await problems()).toEqual([]);
   });
 
-  it('the overview and the sidebar link both pages', async () => {
+  it('the Databases hub (Tham khảo) and its sidebar link the glossary and the one room', async () => {
     await visit('#/engine');
     expect(q('#engine-page a[href="#/engine/terms"]')).not.toBeNull();
-    expect(q('#engine-page a[href="#/engine/interview"]')).not.toBeNull();
+    expect(q('#engine-page a[href="#/learn/interview?e=pg"]')).not.toBeNull();
+    expect(q('#side a[href="#/learn/interview?e=pg"]')).not.toBeNull();
     expect(await problems()).toEqual([]);
   });
 });

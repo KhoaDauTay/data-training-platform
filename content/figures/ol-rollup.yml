@@ -1,0 +1,20 @@
+# OL-04 (v47 R1, L990): ROLLUP (port, mode) as three levels of one result. Lesson: e-ol-l2-01 (Ý chính).
+# Numbers are a small sample (sea 40 + air 25 = 65 for VNDAD; + 50 for VNSGN = 115). Source:
+# https://www.postgresql.org/docs/18/queries-table-expressions.html#QUERIES-GROUPING-SETS
+title: { vi: "ROLLUP: chi tiết, tổng phụ, tổng chung", en: "ROLLUP: detail, subtotal, grand total" }
+caption:
+  vi: "Một câu trả ba tầng; NULL ở cột đã gộp, và GROUPING() đánh dấu tầng của mỗi dòng."
+  en: "One query returns three levels; NULL in the rolled-up column, and GROUPING() marks each row's level."
+alt:
+  vi: "ROLLUP trên cảng rồi phương thức cho các dòng chi tiết, một tổng phụ cho mỗi cảng có NULL ở cột phương thức, và một tổng chung có NULL ở cả hai cột. Kết quả: cột GROUPING() là 0, 1, 3 cho ba tầng."
+  en: "ROLLUP on port then mode gives the detail rows, one subtotal per port with NULL in the mode column, and one grand total with NULL in both columns. Result: the GROUPING() column is 0, 1, 3 for the three levels."
+nodes:
+  - id: r
+    shape: grid
+    mono: true
+    label: "ROLLUP (port, mode)"
+    head: [port, mode, teu, lvl]
+    cells: [["VNDAD", "sea", "40", "0"], ["VNDAD", "air", "25", "0"], ["VNDAD", "NULL", "65", "1"], ["VNSGN", "NULL", "50", "1"], ["NULL", "NULL", "115", "3"]]
+    rowTone: [null, null, warm, warm, new]
+rows:
+  - [r]

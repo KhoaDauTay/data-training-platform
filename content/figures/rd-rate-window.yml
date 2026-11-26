@@ -1,0 +1,27 @@
+# RD-9 (v47 R1, L959): a fixed-window rate limit on one counter key. Lesson: e-rd-l2-02 (Ý chính).
+# Data = the lab: rl:k7:1000 at 57 → INCR 58 (allowed), EXPIRE … 60 NX → TTL 60; rl:k9:1000 at 100 → INCR 101 → the app answers 429.
+title: { vi: "Giới hạn 100 request mỗi phút", en: "A limit of 100 requests per minute" }
+caption:
+  vi: "Mỗi khóa API, mỗi phút một bộ đếm có hạn 60 giây; INCR trả số mới, ứng dụng so với 100."
+  en: "One counter per API key per minute, with a 60-second expiry; INCR returns the new number and the app compares it with 100."
+alt:
+  vi: "INCR đếm trong một lệnh nên nhiều máy chủ cùng đếm không mất lượt, và EXPIRE … NX cho cửa sổ tự biến mất sau một phút. Kết quả: k7 lên 58 và được qua, k9 lên 101 và bị từ chối với 429."
+  en: "INCR counts in one command, so many servers counting together lose nothing, and EXPIRE … NX makes the window disappear after a minute. Result: k7 goes to 58 and passes, k9 goes to 101 and is refused with 429."
+nodes:
+  - { id: r7, label: { vi: "request của k7", en: "k7's request" } }
+  - { id: r9, label: { vi: "request của k9", en: "k9's request" } }
+  - { id: c7, mono: true, label: "INCR rl:k7:1000", sub: { vi: "58 · TTL 60", en: "58 · TTL 60" }, tone: live }
+  - { id: c9, mono: true, label: "INCR rl:k9:1000", sub: "101", tone: dead }
+  - { id: ok, label: { vi: "qua", en: "allowed" }, sub: "58 ≤ 100", tone: live }
+  - { id: no, label: "429", sub: "101 > 100", tone: dead }
+rows:
+  - [r7, r9]
+  - [c7, c9]
+  - [ok, no]
+phone:
+  rows: [[r7], [c7], [ok], [r9], [c9], [no]]
+edges:
+  - { from: r7, to: c7 }
+  - { from: r9, to: c9 }
+  - { from: c7, to: ok }
+  - { from: c9, to: no }

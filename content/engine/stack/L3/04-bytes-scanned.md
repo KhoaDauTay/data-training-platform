@@ -19,6 +19,7 @@ objectives:
 requires: [e-st-l3-01]
 sources:
   - { url: "https://docs.cloud.google.com/bigquery/docs/best-practices-costs", title: "BigQuery docs: Best practices for controlling costs" }
+  - { url: "https://docs.cloud.google.com/bigquery/docs/best-practices-performance-compute", title: "BigQuery docs: Optimize query computation (Avoid SELECT *)" }
   - { url: "https://docs.cloud.google.com/bigquery/docs/partitioned-tables", title: "BigQuery docs: Introduction to partitioned tables" }
   - { url: "https://docs.cloud.google.com/bigquery/docs/clustered-tables", title: "BigQuery docs: Introduction to clustered tables" }
   - https://www.postgresql.org/docs/18/ddl-partitioning.html
@@ -74,7 +75,7 @@ Nhóm marketing của Chợ Lồng Đèn chạy BigQuery, và một câu `SELECT
 
 ## Ý chính
 
-Ở chế độ theo yêu cầu (on-demand), BigQuery tính tiền theo **số byte câu lệnh đọc** (byte logic, chưa nén), không theo thời gian chạy. BigQuery lưu theo cột, nên câu chỉ đọc các cột nó nhắc tới: `SELECT *` đọc mọi cột, kể cả cột `payload` nặng nhất. Với bảng không phân cụm, `LIMIT` không giảm lượng dữ liệu đọc.
+Ở chế độ theo yêu cầu (on-demand), BigQuery tính tiền theo **số byte câu lệnh đọc** (byte logic, chưa nén), không theo thời gian chạy. BigQuery lưu theo cột, và tài liệu của BigQuery gọi số cột câu đọc là projection, khuyên chỉ chọn cột cần dùng: `SELECT *` đọc và tính tiền mọi cột, kể cả cột `payload` nặng nhất. Với bảng không phân cụm, `LIMIT` không giảm lượng dữ liệu đọc.
 
 Bảng **partition** chia theo một cột (thường là ngày): một bộ lọc trên chính cột đó cho phép bỏ qua partition không khớp. Bảng **phân cụm** (clustering) xếp dữ liệu theo vài cột trong mỗi partition, nên lọc theo các cột đó, và cả `LIMIT`, có thể đọc ít hơn. Trước khi chạy, dry run cho một ước lượng byte (cận trên), và thiết lập số byte tối đa được tính chặn những câu quá đắt.
 
@@ -162,7 +163,7 @@ WHERE day = '2026-10-31';
 ## Tóm tắt
 
 - BigQuery theo yêu cầu tính theo byte đọc, không theo thời gian chạy.
-- Chỉ các cột được nhắc tới bị đọc: tránh `SELECT *`.
+- Mỗi cột thêm vào là thêm byte phải đọc: tránh `SELECT *`.
 - Lọc thẳng trên cột partition để bỏ partition; phân cụm giúp đọc ít hơn nữa.
 - `LIMIT` trên bảng không phân cụm không giảm byte; dùng dry run để ước trước.
 
@@ -174,7 +175,7 @@ Lantern Market's marketing team runs BigQuery, and a `SELECT *` meant as "a quic
 
 ## Key idea
 
-In on-demand mode, BigQuery bills by **the bytes a query reads** (logical, uncompressed bytes), not by running time. BigQuery stores data by column, so a query reads only the columns it mentions: `SELECT *` reads every column, including the heaviest `payload`. On a non-clustered table, `LIMIT` does not reduce the data read.
+In on-demand mode, BigQuery bills by **the bytes a query reads** (logical, uncompressed bytes), not by running time. BigQuery stores data by column, and its docs call the number of columns a query reads its projection and advise selecting only the columns you need: `SELECT *` reads and bills every column, including the heaviest `payload`. On a non-clustered table, `LIMIT` does not reduce the data read.
 
 A **partitioned** table is split on one column (often a date): a filter on that very column lets the query skip partitions that do not match. A **clustered** table sorts data by a few columns within each partition, so filtering on them, and even `LIMIT`, can read less. Before running, a dry run gives a byte estimate (an upper bound), and a maximum-bytes-billed setting blocks queries that would cost too much.
 
@@ -262,6 +263,6 @@ WHERE day = '2026-10-31';
 ## Recap
 
 - On-demand BigQuery bills by bytes read, not by running time.
-- Only the columns a query mentions are read: avoid `SELECT *`.
+- Every extra column adds bytes to read: avoid `SELECT *`.
 - Filter on the bare partition column to skip partitions; clustering helps read even less.
 - `LIMIT` on a non-clustered table does not reduce bytes; use a dry run to estimate first.

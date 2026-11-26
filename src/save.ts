@@ -136,7 +136,7 @@ export const INTERVIEW_ID = /^g-iv-/;
  * (no SAVE_VERSION bump). Loose on purpose: a later id shape must survive a read; tests/engineContent.test.ts holds the
  * exact shape. Never a ticket, so no chapter, rank, Lily stage or "tasks done" count reads them.
  */
-export const ENGINE_ID = /^e-(pg|mg|dy|ds|st|ts|bp)-[a-z0-9-]+$/; // v47 (L970): + ts // v24 BP-T (L345): Best Practice cards e-bp-<code>; v28 R4 (L420): design lessons e-ds-…; no SAVE_VERSION bump
+export const ENGINE_ID = /^e-(pg|mg|dy|rd|ds|st|ol|ts|bp)-[a-z0-9-]+$/; // v47 (L970): + ts // v47 (L950): Redis lessons e-rd-…; v47 (L990): + ol; v24 BP-T (L345): Best Practice cards e-bp-<code>; v28 R4 (L420): design lessons e-ds-…; no SAVE_VERSION bump
 export const isWorkId = (ids: ReadonlySet<string>, id: string): boolean =>
   !INTERVIEW_ID.test(id) && (ids.has(id) || DRILL_ID.test(id) || ECOM_ID.test(id) || FIN_ID.test(id) || ENGINE_ID.test(id));
 

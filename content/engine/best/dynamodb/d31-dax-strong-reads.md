@@ -50,7 +50,7 @@ Dùng DAX cho đọc lặp lại, eventually consistent (danh mục, hồ sơ). 
 ## Vì sao
 
 - DAX chuyển đọc nhất quán mạnh sang DynamoDB và không cache kết quả.
-- Trả tiền cluster DAX cho tải toàn đọc mạnh là trả cho một lớp chỉ chuyển tiếp.
+- Trả tiền cluster DAX cho tải toàn đọc nhất quán mạnh là trả cho một lớp chỉ chuyển tiếp.
 
 ## Ví dụ
 

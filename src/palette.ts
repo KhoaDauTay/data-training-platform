@@ -3,7 +3,7 @@
  * General skills (their full lesson page), Database Engine lessons and glossary terms. Hashes come from the caller (main's
  * route builders), so this file imports no main module.
  */
-export type PaletteKind = 'skill' | 'lesson' | 'term';
+export type PaletteKind = 'skill' | 'lesson' | 'term' | 'page';
 export interface PaletteItem { kind: PaletteKind; title: string; alt?: string; sub?: string; href: string }
 
 interface Bi { vi: string; en: string }
@@ -15,12 +15,12 @@ export interface PaletteSources {
   lessons: Record<string, { fm?: unknown }>;
   terms: unknown;
 }
-export interface PaletteHashes { skill: (id: string) => string; lesson: (engine: string, level: string, id: string) => string; term: (id: string) => string }
+export interface PaletteHashes { skill: (id: string) => string; lesson: (engine: string, level: string, id: string) => string; term: (id: string) => string; interview?: (tab: 'sql' | 'pg' | 'mg' | 'dy') => string }
 
 const str = (x: unknown): string => (typeof x === 'string' ? x : '');
-const ENGINE_NAME: Record<string, string> = { postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB' };
+const ENGINE_NAME: Record<string, string> = { postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB', redis: 'Redis', olap: 'OLAP & ClickHouse' };
 
-export function paletteItems(src: PaletteSources, lang: 'vi' | 'en', hash: PaletteHashes, designName = 'Design', stackName = 'Data stack', tsName = 'Time-series'): PaletteItem[] {
+export function paletteItems(src: PaletteSources, lang: 'vi' | 'en', hash: PaletteHashes, designName = 'Design', stackName = 'Data stack', roomName = 'Interview room', tsName = 'Time-series'): PaletteItem[] {
   const skills = src.skills.map((s): PaletteItem => ({ kind: 'skill', title: s.label[lang], alt: s.id, href: hash.skill(s.id) }));
   const lessons = Object.values(src.lessons).flatMap((x): PaletteItem[] => {
     const l = (x.fm ?? {}) as LessonMeta;
@@ -33,7 +33,10 @@ export function paletteItems(src: PaletteSources, lang: 'vi' | 'en', hash: Palet
     const [id, term, vi] = [str(t.id), str(t.term), str(t.vi_term).replace(/`/g, '')];
     return id && term ? [{ kind: 'term', title: term, alt: vi && vi !== term ? vi : undefined, href: hash.term(id) }] : [];
   });
-  return [...skills, ...lessons, ...terms];
+  // v47 S4 (L984): the one interview room, one result per tab (searchable as "interview" or "phong van" in both languages)
+  const rooms = hash.interview ? ([['sql', 'SQL'], ['pg', 'PostgreSQL'], ['mg', 'MongoDB'], ['dy', 'DynamoDB']] as const)
+    .map(([tab, name]): PaletteItem => ({ kind: 'page', title: `${roomName} · ${name}`, alt: 'interview phỏng vấn', href: hash.interview!(tab) })) : [];
+  return [...skills, ...lessons, ...terms, ...rooms];
 }
 
 /** Lower case, no Vietnamese marks: "Lọc dòng" matches "loc dong". */

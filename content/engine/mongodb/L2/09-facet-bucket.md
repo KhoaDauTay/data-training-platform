@@ -102,7 +102,7 @@ Trang tổng quan cần biểu đồ đơn theo khoảng giá trị, số đơn 
 - `default`: tên nhóm cho giá trị nằm ngoài mọi khoảng (thiếu `default` mà có giá trị ngoài khoảng thì lệnh báo lỗi);
 - `output`: các phép tổng hợp, như `$group`.
 
-`$facet` chạy nhiều pipeline con trên cùng một dòng tài liệu đầu vào và trả về đúng một tài liệu, mỗi trường là kết quả của một pipeline con. Hợp với trang tổng quan cần nhiều con số cùng lúc.
+`$facet` chạy nhiều pipeline con trên cùng một luồng tài liệu đầu vào và trả về đúng một tài liệu, mỗi trường là kết quả của một pipeline con. Hợp với trang tổng quan cần nhiều con số cùng lúc.
 
 `$sortByCount: "$status"` là cách viết gọn của gom nhóm đếm rồi sắp giảm dần.
 

@@ -14,8 +14,8 @@ export interface PaletteDeps {
 }
 
 const TEXT = {
-  vi: { title: 'Tìm bài và thuật ngữ', label: 'Tìm', hint: 'Gõ tên kỹ năng, bài Engine hoặc thuật ngữ. Enter mở kết quả đầu, mũi tên để chọn.', loading: 'Đang tải danh mục…', failed: 'Không tải được danh mục Engine; vẫn tìm được kỹ năng SQL.', none: 'Không có kết quả.', count: '{n} kết quả', close: 'Đóng', skill: 'Kỹ năng SQL', lesson: 'Bài Engine', term: 'Thuật ngữ', design: 'Thiết kế CSDL', stack: 'Công cụ dữ liệu', timeseries: 'Chuỗi thời gian' },
-  en: { title: 'Search lessons and terms', label: 'Search', hint: 'Type a skill, an Engine lesson or a term. Enter opens the first result, arrow keys move.', loading: 'Loading the index…', failed: 'Could not load the Engine index; SQL skills are still searchable.', none: 'No results.', count: '{n} results', close: 'Close', skill: 'SQL skill', lesson: 'Engine lesson', term: 'Term', design: 'Database design', stack: 'Data stack', timeseries: 'Time-series' },
+  vi: { title: 'Tìm bài và thuật ngữ', label: 'Tìm', hint: 'Gõ tên kỹ năng, bài Engine hoặc thuật ngữ. Enter mở kết quả đầu, mũi tên để chọn.', loading: 'Đang tải danh mục…', failed: 'Không tải được danh mục Engine; vẫn tìm được kỹ năng SQL.', none: 'Không có kết quả.', count: '{n} kết quả', close: 'Đóng', skill: 'Kỹ năng SQL', lesson: 'Bài Engine', term: 'Thuật ngữ', page: 'Trang', room: 'Phòng phỏng vấn', design: 'Thiết kế CSDL', stack: 'Công cụ dữ liệu', timeseries: 'Chuỗi thời gian' },
+  en: { title: 'Search lessons and terms', label: 'Search', hint: 'Type a skill, an Engine lesson or a term. Enter opens the first result, arrow keys move.', loading: 'Loading the index…', failed: 'Could not load the Engine index; SQL skills are still searchable.', none: 'No results.', count: '{n} results', close: 'Close', skill: 'SQL skill', lesson: 'Engine lesson', term: 'Term', page: 'Page', room: 'Interview room', design: 'Database design', stack: 'Data stack', timeseries: 'Time-series' },
 } as const;
 
 let d: PaletteDeps;
@@ -25,11 +25,11 @@ let field: HTMLInputElement;
 let results: HTMLElement;
 let status: HTMLElement;
 const tx = (k: keyof typeof TEXT.vi): string => TEXT[d.lang()][k];
-const KIND_ICON: Record<PaletteKind, Icons.IconName> = { skill: 'route', lesson: 'engRelational', term: 'book' };
+const KIND_ICON: Record<PaletteKind, Icons.IconName> = { skill: 'route', lesson: 'engRelational', term: 'book', page: 'secPractice' };
 
 function items(): PaletteItem[] {
   const s = typeof sources === 'object' ? sources : { lessons: {}, terms: [] };
-  return paletteItems({ skills: d.skills, ...s }, d.lang(), d.hashes, tx('design'), tx('stack'), tx('timeseries'));
+  return paletteItems({ skills: d.skills, ...s }, d.lang(), d.hashes, tx('design'), tx('stack'), tx('room'), tx('timeseries'));
 }
 
 function draw(): void {
