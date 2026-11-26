@@ -24,14 +24,15 @@ nodes:
       - { label: closed, value: 1, note: "0.1", tone: live }
   - { id: n, shape: key, mono: true, label: reltuples 30000 }
   - { id: x, label: "0.1 × 30000", sub: { vi: "= 3000 dòng", en: "= 3000 rows" }, tone: live }
-  - { id: nul, label: null_frac 0.9, sub: "IS NULL → 27000" }
+  - { id: nul, label: null_frac 0.9, sub: closed_at, tone: live }
   - { id: plan, shape: key, mono: true, label: Seq Scan, sub: rows=3000 }
 rows:
-  - [mcv]
+  - [mcv, nul]
   - [n, x]
-  - [nul, plan]
+  - [plan]
 edges:
   - { from: mcv, to: x }
+  - { from: nul, to: x }
   - { from: n, to: x }
   - { from: x, to: plan }
 steps:
@@ -39,8 +40,11 @@ steps:
     show: [mcv, n, x, plan]
     alt: { vi: "closed có tần suất đo được 0.1, nên ước lượng bằng 0.1 nhân 30000 dòng, khớp số thật.", en: "closed has a measured frequency of 0.1, so the estimate is 0.1 times 30000 rows, matching the real count." }
   - say: { vi: "IS NULL dùng null_frac.", en: "IS NULL uses null_frac." }
-    show: [mcv, n, x, nul, plan]
-    alt: { vi: "Chín phần mười closed_at để trống, nên ước 27000 dòng.", en: "Nine tenths of closed_at are empty, so the estimate is 27000 rows." }
+    show: [nul, n, x, plan]
+    alt: { vi: "Chín phần mười closed_at để trống, nên ước 0.9 nhân 30000 bằng 27000 dòng, cũng khớp số thật.", en: "Nine tenths of closed_at are empty, so the estimate is 0.9 times 30000, or 27000 rows, again the real count." }
+    set:
+      x: { label: "0.9 × 30000", sub: { vi: "= 27000 dòng", en: "= 27000 rows" } }
+      plan: { sub: rows=27000 }
 variants:
   mcv:
     step: 0

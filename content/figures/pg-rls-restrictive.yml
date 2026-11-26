@@ -32,6 +32,7 @@ rows:
   - [or, r]
   - [and]
   - [out, force]
+align: true
 edges:
   - { from: p1, to: or }
   - { from: p2, to: or }

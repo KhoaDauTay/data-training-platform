@@ -13,28 +13,29 @@ alt:
 nodes:
   - { id: cmd, shape: key, mono: true, label: "ADD COLUMN … DEFAULT 'web'" }
   - { id: cat, shape: table, label: pg_catalog, sub: { vi: "lưu DEFAULT", en: "keeps the DEFAULT" } }
-  - { id: f1, shape: doc, label: file A, sub: orders }
+  - { id: f1, shape: doc, label: file A, sub: { vi: "vẫn là file này", en: "still this file" }, tone: live }
   - { id: f2, shape: doc, label: file B, sub: { vi: "+ index mới", en: "+ new indexes" }, tone: new }
-  - { id: res, shape: note, label: { vi: "cùng file", en: "same file" }, tone: live }
 rows:
   - [cmd, cat]
   - [f1, f2]
-  - [res]
+phone: { rows: [[cat], [cmd], [f1, f2]] }
 edges:
   - { from: cmd, to: cat, label: { vi: "chỉ catalog", en: "catalog only" } }
-  - { from: f1, to: f2, label: { vi: "ghi mọi dòng", en: "every row" } }
+  - { id: e1, from: cmd, to: f1, dash: true, label: { vi: "không đụng", en: "untouched" } }
+  - { from: f1, to: f2, label: { vi: "ghi sang", en: "writes to" } }
 steps:
   - say: { vi: "DEFAULT hằng: lưu một lần trong catalog.", en: "Constant DEFAULT: stored once in the catalog." }
-    show: [cmd, cat, f1, res]
+    show: [cmd, cat, f1]
     alt: { vi: "Postgres trả giá trị mặc định cho dòng cũ khi đọc, nên không dòng nào phải ghi lại.", en: "Postgres hands old rows the default when they are read, so no row is rewritten." }
   - say: { vi: "Đổi kiểu cách lưu: ghi sang file mới.", en: "A storage change: a new file." }
-    show: [cmd, f1, f2, res]
+    show: [cmd, f1, f2]
     alt: { vi: "text sang bigint đổi cách lưu từng giá trị, nên mọi dòng và mọi index được ghi lại dưới khóa cao nhất.", en: "text to bigint changes how every value is stored, so all rows and indexes are rewritten under the strongest lock." }
     set:
       cmd: { label: "TYPE bigint" }
-      res: { label: { vi: "ghi lại + dựng index", en: "rewrite + reindex" }, tone: dead }
+      f1: { sub: { vi: "file cũ, bỏ đi", en: "old file, dropped" }, tone: dead }
+      e1: { dash: false, label: { vi: "đọc mọi dòng", en: "reads every row" } }
   - say: { vi: "Nới varchar: không ghi lại.", en: "Widen a varchar: no rewrite." }
-    show: [cmd, cat, f1, res]
+    show: [cmd, cat, f1]
     alt: { vi: "Nới giới hạn độ dài không đổi byte nào trên đĩa.", en: "Raising a length limit changes no byte on disk." }
     set:
       cmd: { label: "varchar(40→80)" }
