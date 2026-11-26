@@ -80,8 +80,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe đúng vì ví dụ quen thuộc đều dùng dấu nháy, nhưng tự thoát chỉ chặn đúng một đường. Một số nối không có nháy (`WHERE id = ' || p`) vẫn nhận `1 OR true`, và tên bảng cần quy tắc khác hẳn. `EXECUTE … USING` gửi giá trị tách khỏi câu lệnh; `quote_literal`/`%L` và `quote_ident`/`%I` là các hàm thoát của chính Postgres."
-      en: "It sounds right because the familiar examples all use quotes, but hand escaping blocks only one road. A number concatenated without quotes (`WHERE id = ' || p`) still accepts `1 OR true`, and table names need a different rule entirely. `EXECUTE … USING` sends the value apart from the command; `quote_literal`/`%L` and `quote_ident`/`%I` are Postgres' own escaping functions."
+      vi: "Nhân đôi dấu nháy nghe đủ vì ví dụ tấn công ở bước 1 dùng dấu nháy, nhưng tự thoát (escape) chỉ chặn đúng một đường. Giới hạn 20 ký tự cũng không chặn được, vì `1 OR true` chỉ có 9 ký tự. Một số nối không có nháy (`WHERE id = ' || p`) vẫn nhận `1 OR true`, và tên bảng cần quy tắc khác hẳn. `EXECUTE … USING` gửi giá trị tách khỏi câu lệnh; `quote_literal`/`%L` và `quote_ident`/`%I` là các hàm thoát của chính Postgres."
+      en: "Doubling quotes sounds enough because the step 1 attack used a quote, but hand escaping blocks only one road. A 20-character limit does not stop it either, since `1 OR true` is only 9 characters. A number concatenated without quotes (`WHERE id = ' || p`) still accepts `1 OR true`, and table names need a different rule entirely. `EXECUTE … USING` sends the value apart from the command; `quote_literal`/`%L` and `quote_ident`/`%I` are Postgres' own escaping functions."
   - q:
       vi: "Người dùng chọn tên bảng để xuất báo cáo. Cách nào đúng?"
       en: "The user picks the table name for a report. Which way is right?"
