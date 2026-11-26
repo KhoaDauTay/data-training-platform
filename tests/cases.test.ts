@@ -120,6 +120,7 @@ describe('Solution', () => {
     const run = await RUN[c.domain]();
     const r = await run(sql);
     expect(r.rows.length).toBeGreaterThan(0);
+    if (!s.ordered) expect(r.rows).toHaveLength(1); // takeHomeTicket grades every step in order: only a one-row step may skip ORDER BY
     // deterministic: the same rows twice, and no two rows alike (a tie would make the order of equal rows matter)
     expect((await run(sql)).rows).toEqual(r.rows);
     expect(new Set(r.rows.map((x) => JSON.stringify(x))).size).toBe(r.rows.length);

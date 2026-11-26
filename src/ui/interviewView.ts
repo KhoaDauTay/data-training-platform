@@ -89,7 +89,10 @@ function build(id: string, timer: boolean, fresh: boolean): InterviewRun {
   const set = setOf(id);
   const old = fresh ? undefined : read().live[id];
   if (old?.phase === 'work') d$.prefs.setPresence(old, true, Date.now()); // FIX-1: the time away (even a closed tab) is not counted
-  if (fresh) toldUp.delete(id);
+  if (fresh) {
+    toldUp.delete(id);
+    picks.delete(id); // v47: a fresh ask starts with no option pressed
+  }
   const live: LiveRun = old ?? {
     id, timer: !!set && timer, start: Date.now(), index: 0, step: 0, solved: [], drafts: {}, passed: {}, hints: [], phase: 'work', text: '', checks: [],
   };
