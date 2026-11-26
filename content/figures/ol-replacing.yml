@@ -1,0 +1,36 @@
+# OL-10 (v47 R1, L990): ReplacingMergeTree(ver) before and after a merge of two parts. Lesson: e-ol-l3-03.
+# Source: https://clickhouse.com/docs/engines/table-engines/mergetree-family/replacingmergetree
+title: { vi: "Bản trùng chỉ mất khi gộp", en: "Duplicates go only on merge" }
+caption:
+  vi: "Hai part cùng có C05; sau khi gộp chỉ còn bản ver lớn nhất. Trước đó, FINAL gộp lúc đọc."
+  en: "Two parts both hold C05; after the merge only the largest ver is left. Before that, FINAL merges at read time."
+alt:
+  vi: "Mỗi lần chèn tạo một part, nên hai bản của cùng container nằm ở hai part và đều được đọc. Khi tiến trình nền gộp hai part, chỉ bản có ver lớn nhất được giữ."
+  en: "Every insert creates a part, so two versions of one container sit in two parts and are both read. When the background process merges the two parts, only the version with the largest ver is kept."
+nodes:
+  - id: p1
+    shape: grid
+    mono: true
+    label: "part 1"
+    head: [container, status, ver]
+    cells: [["C05", "booked", "1"], ["C06", "booked", "1"]]
+    rowTone: [dead, null]
+  - id: p2
+    shape: grid
+    mono: true
+    label: "part 2"
+    head: [container, status, ver]
+    cells: [["C05", "sailed", "2"]]
+  - id: m
+    shape: grid
+    mono: true
+    label: { vi: "sau khi gộp", en: "after the merge" }
+    head: [container, status, ver]
+    cells: [["C05", "sailed", "2"], ["C06", "booked", "1"]]
+    rowTone: [new, null]
+rows:
+  - [p1, p2]
+  - [m]
+edges:
+  - { from: p1, to: m }
+  - { from: p2, to: m }
