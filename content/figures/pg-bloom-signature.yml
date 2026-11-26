@@ -6,8 +6,8 @@
 # kinds of row, not for real ids. Sources: https://www.postgresql.org/docs/18/bloom.html
 title: { vi: "Bloom: chữ ký bit của từng dòng", en: "Bloom: a bit signature per row" }
 caption:
-  vi: "Minh họa 8 bit; chữ ký thật dài 80 bit và mỗi cột bật 2 bit. Số ứng viên và số dòng bị loại là của lab, câu b = 42 AND e = 7."
-  en: "An illustration with 8 bits; the real signature is 80 bits and each column sets 2. The candidate and removed counts are the lab's, for b = 42 AND e = 7."
+  vi: "Minh họa 8 bit; chữ ký thật dài 80 bit và mỗi cột bật 2 bit; hai cột có thể bật trùng một bit, như bit 5 ở đây. Số ứng viên và số dòng bị loại là của lab, câu b = 42 AND e = 7."
+  en: "An illustration with 8 bits; the real signature is 80 bits and each column sets 2; two columns can share a bit, like bit 5 here. The candidate and removed counts are the lab's, for b = 42 AND e = 7."
 alt:
   vi: "Bloom lưu cho mỗi dòng một chữ ký bit và nhặt mọi dòng có đủ các bit của điều kiện, nên không bao giờ sót dòng khớp thật. Vì nhiều giá trị bật trùng bit, vài dòng sai lọt qua và phải kiểm lại trên bảng. Kết quả: 18 ứng viên, 17 bị loại, 1 dòng."
   en: "Bloom keeps a bit signature per row and picks every row that has all the condition's bits, so it never misses a real match. Because many values set the same bits, some wrong rows get through and are rechecked on the table. Result: 18 candidates, 17 removed, 1 row."

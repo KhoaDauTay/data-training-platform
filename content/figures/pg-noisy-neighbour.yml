@@ -2,15 +2,15 @@
 # tenant. Lesson: e-pg-l5-22 (Ý chính). Data: the lab's usage_log for October (31 days × 4 sellers), PGlite
 # (tools/v46-b5/check1.log): sum(queries) 6975 · 7285 · 7595 · 7905; sum(rows_read) 697500 · 28365000 · 759500 · 790500 for
 # sellers 1–4. Bars are in thousands of queries and in millions of rows read (one decimal), the notes carry the real sums;
-# seller 2 reads about 37 times seller 1 with about the same number of queries. Sources:
+# seller 2 reads 36 to 41 times each other seller (28365000 / 790500 = 35.9, / 697500 = 40.7) with about the same number of queries. Sources:
 # https://www.postgresql.org/docs/18/monitoring-stats.html, https://www.postgresql.org/docs/18/runtime-config-client.html
 title: { vi: "Hàng xóm ồn ào: đếm việc, đừng đếm câu", en: "A noisy neighbour: count work, not queries" }
 caption:
   vi: "Bảng usage_log của lab, cộng cả tháng 10 cho bốn người bán chung bảng."
   en: "The lab's usage_log, summed over October for the four sellers sharing the tables."
 alt:
-  vi: "Đếm số câu thì bốn người bán gần như ngang nhau, nhưng đếm số dòng đọc thì người bán 2 nặng gấp khoảng 37 lần. Vì vậy hãy đo tải theo việc làm thật, rồi mới đặt hạn mức cho đúng người."
-  en: "Counted by queries the four sellers are almost equal, but counted by rows read seller 2 is about 37 times heavier. So measure load by real work before you put a limit on the right tenant."
+  vi: "Đếm số câu thì bốn người bán gần như ngang nhau, nhưng đếm số dòng đọc thì người bán 2 nặng gấp 36 tới 41 lần mỗi người còn lại. Vì vậy hãy đo tải theo việc làm thật, rồi mới đặt hạn mức cho đúng người."
+  en: "Counted by queries the four sellers are almost equal, but counted by rows read seller 2 is 36 to 41 times heavier than each of the others. So measure load by real work before you put a limit on the right tenant."
 nodes:
   - id: q
     shape: bars
@@ -19,7 +19,7 @@ nodes:
     head: [{ vi: "người bán", en: seller }, { vi: "số câu", en: queries }]
     items:
       - { label: "1", value: 7.0, note: "6975" }
-      - { label: "2", value: 7.3, note: "7285", tone: warm }
+      - { label: "2", value: 7.3, note: "7285" }
       - { label: "3", value: 7.6, note: "7595" }
       - { label: "4", value: 7.9, note: "7905" }
   - id: r
@@ -44,5 +44,5 @@ steps:
           - { label: "2", value: 0, note: "?", tone: ghost }
           - { label: "3", value: 0, note: "?", tone: ghost }
           - { label: "4", value: 0, note: "?", tone: ghost }
-  - say: { vi: "Đếm dòng đọc: người bán 2 gấp khoảng 37 lần.", en: "Counting rows read: seller 2 is about 37 times more." }
+  - say: { vi: "Đếm dòng đọc: người bán 2 gấp 36–41 lần.", en: "Counting rows read: seller 2 is 36–41 times more." }
     alt: { vi: "Người bán 2 đọc 28365000 dòng trong khi những người khác đọc dưới 800000, nên chính họ là hàng xóm ồn ào dù số câu không hơn ai.", en: "Seller 2 reads 28365000 rows while the others read under 800000, so they are the noisy neighbour although they send no more queries than anyone." }

@@ -2,14 +2,14 @@
 # holds it up. Lesson: e-pg-l3-11 (Ý chính; a docs quiz, no lab). Data: the documentation, not a lab: autovacuum_freeze_max_age
 # default 200 million, vacuum_failsafe_age default 1.6 billion, the wraparound point 2^31 ≈ 2147 million XIDs back; a WARNING
 # once 40 million XIDs are LEFT before that point (age ≈ 2107 million) and new XIDs refused once 3 million are left (age ≈ 2144
-# million). Bars are in millions of XIDs of age; the dashed mark is the wraparound point (the chart's sub says so). The last two
+# million). Bars are in units of 400 million XIDs of age (≥ 8 px a unit keeps them inside 280), the notes carry the real figures; the dashed mark is the wraparound point (the chart's sub says so). The last two
 # bars are almost as long as the mark on purpose: there is little room left. Sources:
 # https://www.postgresql.org/docs/18/routine-vacuuming.html#VACUUM-FOR-WRAPAROUND,
 # https://www.postgresql.org/docs/18/runtime-config-vacuum.html
 title: { vi: "Tuổi XID: các mốc trước khi quay vòng", en: "XID age: the marks before wraparound" }
 caption:
-  vi: "Tuổi của XID cũ nhất chưa freeze, tính bằng triệu transaction, theo mặc định trong tài liệu Postgres 18. Vạch đứt là điểm quay vòng, khoảng 2147 triệu."
-  en: "The age of the oldest unfrozen XID in millions of transactions, with the defaults from the Postgres 18 documentation. The dashed line is the wraparound point, about 2147 million."
+  vi: "Tuổi của XID cũ nhất chưa freeze, theo mặc định trong tài liệu Postgres 18; số thật ghi bên phải mỗi thanh. Vạch đứt là điểm quay vòng, khoảng 2147 triệu transaction."
+  en: "The age of the oldest unfrozen XID, with the defaults from the Postgres 18 documentation; the real figure is written right of each bar. The dashed line is the wraparound point, about 2147 million transactions."
 alt:
   vi: "Tuổi XID cũ nhất càng gần điểm quay vòng thì Postgres càng làm mạnh: ép VACUUM, rồi VACUUM hết tốc lực, rồi cảnh báo và cuối cùng từ chối mọi lệnh ghi. Một phiên giữ transaction mở chặn mọi lần freeze, nên phải kết thúc nó trước."
   en: "The closer the oldest XID's age gets to the wraparound point, the harder Postgres acts: it forces a VACUUM, then a full-speed VACUUM, then warns and finally refuses every write. A session holding a transaction open blocks every freeze, so it must be ended first."

@@ -21,6 +21,8 @@ nodes:
     head: [{ vi: "cách", en: setup }, { vi: "trang", en: pages }]
     items:
       - { label: { vi: "index lộn xộn", en: "messy index" }, value: 10, note: "370", tone: dead }
+      - { label: { vi: "sau REINDEX", en: "after REINDEX" }, value: 9.95, note: "368", tone: dead }
+      - { label: { vi: "index phủ", en: "covering index" }, value: 0.24, note: "9", tone: live }
 rows:
   - [q, tr, hp]
   - [b]
@@ -28,10 +30,14 @@ phone:
   rows: [[q], [tr], [hp], [b]]
 edges:
   - { from: q, to: tr }
-  - { from: tr, to: hp, label: { vi: "2000 dòng", en: "2000 rows" } }
+  - { id: trip, from: tr, to: hp, label: { vi: "2000 dòng", en: "2000 rows" } }
 steps:
   - say: { vi: "6 trang cây, 364 trang bảng.", en: "6 tree pages, 364 table pages." }
     alt: { vi: "Index tìm 2000 dòng sau 6 trang, nhưng các dòng đó nằm rải trên cả 364 trang của bảng, nên báo cáo đọc 370 trang.", en: "The index finds the 2000 rows in 6 pages, but those rows lie spread over all 364 pages of the table, so the report reads 370 pages." }
+    set:
+      b:
+        items:
+          - { label: { vi: "index lộn xộn", en: "messy index" }, value: 10, note: "370", tone: dead }
   - say: { vi: "REINDEX: cây còn 4 trang, bảng vẫn 364.", en: "REINDEX: the tree drops to 4 pages, the table stays 364." }
     alt: { vi: "Index xây gọn như vừa REINDEX chỉ bớt 2 trang cây, nên cùng câu vẫn đọc 368 trang.", en: "An index as tidy as a fresh REINDEX saves only 2 tree pages, so the same query still reads 368 pages." }
     set:
@@ -45,6 +51,7 @@ steps:
     set:
       tr: { label: { vi: "index phủ", en: "covering index" }, sub: { vi: "9 trang", en: "9 pages" } }
       hp: { sub: { vi: "0 trang", en: "0 pages" }, tone: ghost }
+      trip: { dash: true, label: { vi: "không về bảng", en: "no table trip" } }
       b:
         items:
           - { label: { vi: "index lộn xộn", en: "messy index" }, value: 10, note: "370", tone: dead }

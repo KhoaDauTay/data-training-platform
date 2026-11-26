@@ -30,12 +30,14 @@ rows:
 edges:
   - { from: a, to: b1 }
   - { from: b1, to: b2 }
-  - { from: b2, to: h, dash: true, label: { vi: "lỗi 23505", en: "error 23505" } }
+  - { id: err, from: b2, to: h, dash: true, label: { vi: "lỗi 23505", en: "error 23505" } }
   - { from: h, to: t }
 steps:
   - say: { vi: "Hai dòng mới đã ghi, một ngoài khối, một trong khối.", en: "Two new rows written, one outside the block, one inside." }
+    show: [a, b1, b2, h, t]
     alt: { vi: "Hàm ghi tài khoản 100 ở ngoài khối, rồi vào khối có EXCEPTION và ghi tài khoản 101, nên lúc này bảng có cả hai dòng.", en: "The function writes account 100 outside the block, then enters the block with EXCEPTION and writes account 101, so for now the table holds both rows." }
   - say: { vi: "id 1 đã có: lỗi 23505, cả khối bị hoàn tác.", en: "id 1 exists: error 23505, the whole block is undone." }
+    show: [a, b1, b2, h, t, err]
     alt: { vi: "Lệnh ghi id 1 trùng khóa chính nên lỗi 23505, và trước khi nhánh WHEN unique_violation chạy, subtransaction hoàn tác cả dòng 101 đã ghi trong khối.", en: "Writing id 1 hits the primary key, error 23505, and before the WHEN unique_violation handler runs, the subtransaction undoes row 101 that the block had written." }
     set:
       b1: { sub: { vi: "đã hoàn tác", en: "undone" }, tone: ghost }
