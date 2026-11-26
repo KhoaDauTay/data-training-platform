@@ -730,7 +730,7 @@
   solution: "SELECT store_id, round(count(shipped_on)::numeric / count(*), 2) FROM orders GROUP BY store_id"
   hint: { vi: "Số nguyên chia số nguyên bỏ phần thập phân.", en: "An integer divided by an integer drops the decimals." }
   wrong:
-    - { sql: "SELECT store_id, round(count(shipped_on) / count(*), 2) FROM orders GROUP BY store_id", vi: "Hai số đếm là số nguyên và số đơn đã gửi nhỏ hơn tổng số đơn, nên phép chia bỏ phần thập phân và ra 0. Đổi một vế sang `numeric`.", en: "Both counts are integers and the shipped count is below the total, so the division drops the fraction and gives 0. Cast one side to `numeric`." }
+    - { sql: "SELECT store_id, round(count(shipped_on) / count(*), 2) FROM orders GROUP BY store_id", vi: "Hai số đếm là số nguyên, nên phép chia bỏ phần thập phân: mọi tỉ lệ dưới 1 thành 0. Đổi một vế sang `numeric`.", en: "Both counts are integers, so the division drops the fraction: every share below 1 becomes 0. Cast one side to `numeric`." }
 
 - id: g-cast-4
   skill: cast
@@ -1000,7 +1000,7 @@
   hint: { vi: "Hai bước đặt tên, cách nhau bằng dấu phẩy, sau một chữ WITH duy nhất.", en: "Two named steps, separated by a comma, after a single WITH." }
   wrong:
     - sql: "WITH by_cat AS (SELECT p.category, SUM(i.qty * i.unit_price_vnd) AS sales FROM orders o JOIN order_items i ON i.order_id = o.id JOIN products p ON p.id = i.product_id WHERE o.status = 'PAID' AND o.order_date >= '2026-01-01' GROUP BY p.category) WITH total AS (SELECT SUM(sales) AS t FROM by_cat) SELECT by_cat.category, ROUND(100.0 * by_cat.sales / total.t, 1) FROM by_cat, total"
-      vi: "Viết `WITH` hai lần là lỗi cú pháp. Chỉ một `WITH` ở đầu, các bước sau nối bằng dấu phẩy."
+      vi: "Viết `WITH` hai lần là lỗi cú pháp. Chỉ một `WITH` ở đầu, các bước sau cách nhau bằng dấu phẩy."
       en: "Writing `WITH` twice is a syntax error. One `WITH` at the start, the later steps joined with commas."
 - id: g-multi-cte-4
   skill: multi_cte

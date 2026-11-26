@@ -509,7 +509,7 @@
   applies: { vi: "Cây quản lý, danh mục nhiều cấp.", en: "Reporting lines, nested categories." }
   lesson:
     concept:
-      vi: "WITH RECURSIVE có hai phần nối bằng UNION ALL: phần mở đầu (anchor) chọn các dòng xuất phát, phần đệ quy nối bảng với chính kết quả CTE để đi xuống thêm một cấp. Postgres lặp lại tới khi không còn dòng mới."
+      vi: "WITH RECURSIVE có hai phần xếp chồng bằng UNION ALL: phần mở đầu (anchor) chọn các dòng xuất phát, phần đệ quy nối bảng với chính kết quả CTE để đi xuống thêm một cấp. Postgres lặp lại tới khi không còn dòng mới."
       en: "WITH RECURSIVE has two parts joined by UNION ALL: the anchor picks the starting rows, the recursive part joins the table to the CTE's own result to go one level further. Postgres repeats until no new rows appear."
     example: |-
       WITH RECURSIVE t AS (
@@ -1796,7 +1796,7 @@
       kind: challenge
       task: { vi: "Một bảng kiểm gồm 5 phép, mỗi phép một dòng (số phép, số vi phạm): 1 = số dòng `payments` có `order_id` không có trong `orders`; 2 = số đơn có hơn một khoản thanh toán dương; 3 = số dòng `raw_signups` có ngày đăng ký sau 2026-10-31; 4 = số dòng `raw_signups` có email trống (NULL) hoặc không khớp mẫu `^[a-z0-9._]+@[a-z0-9.-]+[.][a-z]+$` (so nguyên văn, phân biệt hoa thường); 5 = số khách trong `customers` không có email (NULL).", en: "A check table with 5 checks, one row each (check number, offending count): 1 = rows of `payments` whose `order_id` is not in `orders`; 2 = orders with more than one positive payment; 3 = rows of `raw_signups` with a sign-up date after 2026-10-31; 4 = rows of `raw_signups` whose email is empty (NULL) or does not match the pattern `^[a-z0-9._]+@[a-z0-9.-]+[.][a-z]+$` (compared as stored, case-sensitive); 5 = customers in `customers` without an email (NULL)." }
       solution: "SELECT 1 AS check_no, count(*) AS problems FROM payments p WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.id = p.order_id) UNION ALL SELECT 2, count(*) FROM (SELECT order_id FROM payments WHERE amount_vnd > 0 GROUP BY order_id HAVING count(*) > 1) d UNION ALL SELECT 3, count(*) FROM raw_signups WHERE signup_date > '2026-10-31' UNION ALL SELECT 4, count(*) FROM raw_signups WHERE email IS NULL OR email !~ '^[a-z0-9._]+@[a-z0-9.-]+[.][a-z]+$' UNION ALL SELECT 5, count(*) FROM customers WHERE email IS NULL"
-      hint: { vi: "Mỗi phép một câu đếm, nối bằng UNION ALL. Email trống không khớp mẫu nào, nên phải kiểm IS NULL riêng.", en: "One count per check, joined with UNION ALL. A blank email matches no pattern, so test IS NULL separately." }
+      hint: { vi: "Mỗi phép một câu đếm, xếp chồng bằng UNION ALL. Email trống không khớp mẫu nào, nên phải kiểm IS NULL riêng.", en: "One count per check, joined with UNION ALL. A blank email matches no pattern, so test IS NULL separately." }
 
 - id: c2
   group: C

@@ -37,7 +37,7 @@
     vi: ["chỉ …", "bỏ …", "không tính …", "thuộc …", "từ ngày … đến …", "trước ngày …"]
     en: ["only …", "leave out …", "not counting …", "in the … region", "from … to …", "before …"]
   concept:
-    vi: "SELECT chọn cột; WHERE chọn dòng. Mỗi dòng được kiểm điều kiện sau WHERE: đúng thì giữ, sai thì bỏ. Cần nhiều điều kiện cùng đúng thì nối bằng AND; chỉ cần một trong hai thì dùng OR."
+    vi: "SELECT chọn cột; WHERE chọn dòng. Mỗi dòng được kiểm điều kiện sau WHERE: đúng thì giữ, sai thì bỏ. Cần nhiều điều kiện cùng đúng thì kết hợp bằng AND; chỉ cần một trong hai thì dùng OR."
     en: "SELECT picks columns; WHERE picks rows. Every row is checked against the condition after WHERE: true keeps it, false drops it. When several conditions must all hold, join them with AND; when either one is enough, use OR."
   example: |-
     SELECT name, price_vnd
@@ -151,8 +151,8 @@
     en: "① `WHERE category = 'Drinks'`: drinks only. ② `COUNT(*)`: 6 products. ③ `MIN(price_vnd)`: the cheapest, 9,000. ④ `MAX(price_vnd)`: the most expensive, 35,000. Result: 1 row, 3 numbers."
   mistake:
     sql: "SELECT category, COUNT(*) FROM products"
-    vi: "Trộn một cột thường với hàm gộp: Postgres báo lỗi column \"products.category\" must appear in the GROUP BY clause. Muốn một con số cho mỗi danh mục thì phải gom nhóm (kỹ năng Gom nhóm, GROUP BY)."
-    en: "A plain column mixed with an aggregate: Postgres says column \"products.category\" must appear in the GROUP BY clause. One number per category needs grouping (the Group by skill, GROUP BY)."
+    vi: "Trộn một cột thường với hàm gộp: Postgres báo lỗi column \"products.category\" must appear in the GROUP BY clause. Muốn một con số cho mỗi danh mục thì phải gom nhóm (kỹ năng \"Gom nhóm (GROUP BY)\")."
+    en: "A plain column mixed with an aggregate: Postgres says column \"products.category\" must appear in the GROUP BY clause. One number per category needs grouping (the \"Group by\" skill)."
   try:
     task:
       vi: "Từ bảng `orders`, chỉ các đơn có `channel` là `ONLINE` (mọi `status`): một dòng gồm số đơn, rồi `order_date` sớm nhất."
@@ -997,7 +997,7 @@
       JOIN stores s ON s.id = per_store.store_id
       WHERE per_store.n >= 30
       ORDER BY per_store.n DESC
-    vi: "Dấu phẩy thừa trước câu chính: Postgres báo lỗi syntax error at or near \"SELECT\". Dấu phẩy chỉ dùng để nối bước này với bước sau."
+    vi: "Dấu phẩy thừa trước câu chính: Postgres báo lỗi syntax error at or near \"SELECT\". Dấu phẩy chỉ dùng để ngăn bước này với bước sau."
     en: "An extra comma before the main query: Postgres reports syntax error at or near \"SELECT\". The comma only joins one step to the next."
   try:
     task:
@@ -1058,7 +1058,7 @@
       FROM per_city, a
       WHERE per_city.n > a.avg_n
       ORDER BY per_city.city
-    vi: "Viết `WITH` hai lần: Postgres báo lỗi syntax error at or near \"WITH\". Chỉ một `WITH` ở đầu, các bước nối bằng dấu phẩy."
+    vi: "Viết `WITH` hai lần: Postgres báo lỗi syntax error at or near \"WITH\". Chỉ một `WITH` ở đầu, các bước cách nhau bằng dấu phẩy."
     en: "Writing `WITH` twice: Postgres reports syntax error at or near \"WITH\". Use one `WITH` at the top and join the steps with commas."
   try:
     task:
@@ -1118,7 +1118,7 @@
     vi: ["chung một danh sách", "gom … vào một danh sách", "hai sổ …"]
     en: ["in one list", "into one list", "two different books"]
   concept:
-    vi: "UNION ALL nối kết quả của hai câu SELECT thành một danh sách, câu này nằm dưới câu kia. Hai câu phải có cùng số cột, cùng kiểu theo thứ tự. UNION (không ALL) còn bỏ các dòng trùng. ORDER BY viết một lần ở cuối, áp cho cả danh sách."
+    vi: "UNION ALL xếp chồng kết quả của hai câu SELECT thành một danh sách, câu này nằm dưới câu kia. Hai câu phải có cùng số cột, cùng kiểu theo thứ tự. UNION (không ALL) còn bỏ các dòng trùng. ORDER BY viết một lần ở cuối, áp cho cả danh sách."
     en: "UNION ALL stacks the results of two SELECTs into one list, one under the other. Both must have the same number of columns, with matching types in order. UNION (without ALL) also removes duplicate rows. ORDER BY goes once at the end and sorts the whole list."
   example: |-
     SELECT name, 'STORE' AS kind
