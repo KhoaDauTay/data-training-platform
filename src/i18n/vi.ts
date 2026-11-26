@@ -118,13 +118,13 @@ export const vi = {
   'voice.rowsAndValues': 'Số dòng và giá trị đều lệch, bạn xem lại điều kiện lọc nhé.',
   'nav.practice': 'Luyện SQL',
   'nav.practiceShort': 'Luyện SQL', // review v22 RC: the top-bar label (EN is shorter there)
-  'nav.engine': 'Database Engine', // ENG-CORE (L220): a proper name in both languages (SAME_OK)
-  'nav.engineShort': 'Engine', // review v22 RC (product-design-db-engine §7.2): the top-bar label; the page title stays "Database Engine" (SAME_OK)
-  'deep.title': 'Đào sâu trong Database Engine:',
-  'engine.loading': 'Đang mở khu Database Engine…',
-  'engine.failed': 'Không tải được khu Database Engine. Kiểm tra kết nối mạng rồi thử lại.',
+  'nav.engine': 'Cơ sở dữ liệu', // v47 S1 (L900): was "Database Engine"; the route id stays `engine`
+  'nav.engineShort': 'CSDL', // v47 S1 (L900): the top-bar label and the phone switch (was "Engine"); the page h1 is nav.engine
+  'deep.title': 'Đào sâu trong Cơ sở dữ liệu:',
+  'engine.loading': 'Đang mở khu Cơ sở dữ liệu…',
+  'engine.failed': 'Không tải được khu Cơ sở dữ liệu. Kiểm tra kết nối mạng rồi thử lại.',
   'engine.switch': 'Chọn phần học',
-  'nav.learnBoth': 'Học', // L219 D-E1: the phone bottom bar's one item for Lộ trình + Database Engine
+  'nav.learnBoth': 'Học', // L219 D-E1: the phone bottom bar's one item for Lộ trình + Cơ sở dữ liệu
   'nav.me': 'Tiến bộ',
   'me.title': 'Tiến bộ của tôi',
   'me.loading': 'Đang mở trang tiến bộ…',
@@ -724,6 +724,26 @@ export const vi = {
   'welcome.short.ecommerce': 'Bán lẻ trực tuyến · 7 chương',
   'welcome.short.general': 'Bài học + bài luyện theo kỹ năng',
   'welcome.entering': 'Đang mở lĩnh vực đã chọn…',
+  // v47 S3 (L910–L912): the goal step, the entry check step, Home's Engine names
+  'welcome.goalTitle': 'Bạn muốn học gì?',
+  'welcome.goalIntro': 'Chọn một hướng. Chưa chắc thì bấm Tiếp: bạn bắt đầu như người mới học phân tích dữ liệu. Đổi lại lúc nào cũng được trong menu ⋯.',
+  'welcome.goalReplay': 'Chọn lại hướng học. Trang chủ sẽ gợi ý bước tiếp theo theo hướng này.',
+  'welcome.goalLabel': 'Chọn mục tiêu',
+  'welcome.goal.analyst': 'Mới học phân tích dữ liệu',
+  'welcome.goal.sql': 'Đã biết SQL',
+  'welcome.goal.internals': 'Muốn hiểu bên trong database',
+  'welcome.goal.engineer': 'Kỹ sư dữ liệu',
+  'welcome.goalShort.analyst': 'Chọn một công ty, làm việc bằng SQL từ bước đầu',
+  'welcome.goalShort.sql': 'Làm bài kiểm tra đầu vào, bỏ qua phần đã biết',
+  'welcome.goalShort.internals': 'PostgreSQL, MongoDB, DynamoDB: chọn cấp độ L1–L5',
+  'welcome.goalShort.engineer': 'Công cụ dữ liệu (dbt, Snowflake…) và thiết kế CSDL',
+  'welcome.checkTitle': 'Kiểm tra đầu vào',
+  'welcome.checkIntro': 'Mỗi Phần của lộ trình một bài ngắn. Làm đúng bài nào, Phần đó tính là đã học. Sai không mất gì, không có điểm.',
+  'welcome.checkLater': 'Bỏ qua cũng được: bài kiểm tra vẫn nằm ở trang Lộ trình.',
+  'welcome.checkStart': 'Làm bài kiểm tra',
+  'welcome.checkSkip': 'Bỏ qua',
+  'welcome.eng.design': 'Thiết kế CSDL',
+  'welcome.eng.stack': 'Công cụ dữ liệu',
   // L87: the teaching scene (Boon teaches, Lily = the player listens) and Lily's growth on Home
   'teach.scene': 'Boon đang dạy Lily, bạn cùng học của bạn, bên tấm bảng',
   'teach.lily': 'Lily, bạn cùng học của bạn: bấm để Lily reo lên',
@@ -805,7 +825,7 @@ export const vi = {
   'home.domains': 'Lĩnh vực',
   'home.enter': 'Vào làm',
   'home.skillsTeaser': 'Kỹ năng SQL: đã học {n}/{total}',
-  'home.pathTitle': 'Lộ trình học: SQL nền tảng, rồi Database Engine',
+  'home.pathTitle': 'Lộ trình học: SQL nền tảng, rồi Cơ sở dữ liệu',
   'home.pathSql': 'Lộ trình SQL',
   'search.open': 'Tìm bài và thuật ngữ', // F12 (L490); v42 (L710): the top-bar search box's tooltip
   'search.keys': '{mod}+K',

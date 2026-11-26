@@ -10,7 +10,7 @@ const GROUPS = [
   ['tickets', /^ticketSources-/, 110], // ticket markdown, lazy, fetched at boot (src/content.ts): 37 KB after ch1–6, 64 KB after ch7–9, 99 KB after ch10–12 (Plan 4 S7, L40 rule); V22-E (L201): ch1–8 only, frontmatter as JSON
   ['ticketLate', /^ticketLateSources-/, 50], // V22-E (L201): Logistics tickets of chapters 9–12 (src/ticketLateSources.ts), fetched in parallel with `tickets` by loadContent()
   ['lanes', /^laneSources-/, 20], // lane briefs and side tasks (content/lanes/), lazy, fetched at boot beside the tickets (Plan 5)
-  ['en', /^en-.*\.js$/, 20], // EN dictionary, lazy (Plan 5 T3): 11 KB, fetched at boot only when the player's language is EN
+  ['en', /^en-.*\.js$/, 22], // v47 (L914a): 20 -> 22 after S1 (CSDL names) + S3 (goal step) strings; EN dictionary, lazy (Plan 5 T3): 11 KB, fetched at boot only when the player's language is EN
   ['lessons', /^lessonSources-/, 35], // quick lessons (content/lessons.yml), lazy, fetched at boot beside the tickets (Plan 6): 8 KB for 11 lessons; Plan 8a: 38 lessons, ~0.75 KB each
   ['art', /^logistics-/, 20], // Plan 8b D8b-2: Tien Sa scene, route map and completion scenes, lazy (prefetched when idle after the first render): 7 KB, took 6 KB off main
   ['illustrations', /^illustrations-/, 15], // Plan 8b D8b-8: drawn illustrations (learning path, modules, empty states, Finance), lazy, fetched by the first page that shows one
@@ -51,6 +51,7 @@ const GROUPS = [
   ['engine', /^engineSources-/, 40], // ENG-CORE (L220), L248: the Database Engine lesson index (list fields of every lesson as JSON, src/engineSources.ts), fetched on the first #/engine or #/me visit: 23 KB gz for 195 lessons
   ['engineLesson', /^\d\d-[a-z0-9-]+-[\w-]{8}\.js$/, 8, 'each'], // L248: one lazy chunk per lesson (content/engine/<engine>/L<n>/<NN>-<slug>.md as JSON), fetched when it opens; per file, 5.9 KB gz max at integration
   ['engineui', /^engineView-/, 22], // v45 (L759b): 21 → 22 after the merge with v43 (Extensions) + the stack card, i18n and fixes = 21.5 KB gz. v43 (L733): 20 → 21, the Extensions shelf (page, card, sidebar row, VI/EN text) = 20.7 KB gz. v33 (L537): 19.3 → 17.9 KB gz, the result extras moved to `engineResult`. ENG-CORE (L220): src/ui/engineView.ts + src/engine/{content,labs,vizRegistry,inside}.ts + src/i18n/engine.ts (pages, lesson viewer, graders, VI/EN text), lazy: 9.7 KB gz at T1
+  ['enginehub', /^engineHub-/, 5], // v47 S1 (L902): src/ui/engineHub.ts + src/i18n/engineHub.ts (the #/engine landing in three groups and the grouped sidebar), lazy beside engineView; continue card, track cards and sidebar moved out of engineui
   ['engineuiPath', /^enginePathView-/, 6], // L280: the NoSQL path pages (src/ui/enginePathView.ts), split out of engineView in the Engine redesign; lazy on the first #/engine/mongodb/path
   ['engineTerms', /^engineTermsSources-/, 50], // v27 (L412): content/engine/glossary.yml as JSON (296 terms, every field the page shows), lazy beside a lesson's chunk or on #/engine/terms: 46.2 KB gz (design-v27 §4.2 guessed 39 for 270)
   ['engineTermsUi', /^engineTerms-/, 8], // v27 (L412): src/ui/engineTerms.ts + src/engine/glossary.ts + src/i18n/engineTerms.ts (glossary page, term buttons and popovers): 4.7 KB gz

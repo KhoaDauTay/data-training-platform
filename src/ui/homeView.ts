@@ -4,14 +4,14 @@ import { homeModel, knownSkills, kpisOf, kpiTiles, reliesOn, resumeTarget, type 
 import { awayDays, readGoal, weekCount } from '../goal';
 import { loadHistory } from '../history';
 import { localStore, readJson } from '../storage';
-import { sqlOnly } from '../onboarding';
+import { readIntent, sqlOnly } from '../onboarding';
 import { getLang, locale, t, type Key } from '../i18n';
 import { CHAPTERS, chaptersOf, chapterTitle, domainSkills, moduleTitle, nextTicket, PARTS, partOf, rankOf, ROUTE_SKILLS, SKILLS, type Bilingual } from '../progress';
 import { domainSlot } from '../save';
 import { domainArt } from './domainArt';
 import { domainLine } from './topbar';
 import { derive } from '../scene';
-import { domainHash, isInterviewPage, learnAdvOf, learnModuleOf, learnSkillOf } from '../route';
+import { domainHash, engineHash, isInterviewPage, learnAdvOf, learnModuleOf, learnSkillOf } from '../route';
 import { laneInfo, lanePanel, wirePins } from './lanePanel';
 import { mascot, MOVES, setLilyStage } from './mascots';
 import { gainSince, growing, markGrew, react, settle } from './celebrate';
@@ -115,13 +115,20 @@ function resume(id: string): void {
 }
 
 /** v15 Q2: what "Continue" opens (the last drill's skill, the learning path, or the open domain's next task). */
-export const resumeNow = (): Resume | undefined => resumeTarget(app.save.completed, nextTicket(app.tickets, done()), sqlOnly(), ROUTE_SKILLS.map((s) => s.id)); // v25 R1: a last drill of a General-only skill resumes on its page
-/** Its name: the task title, the skill, or the learning path. */
+export const resumeNow = (): Resume | undefined => resumeTarget(app.save.completed, nextTicket(app.tickets, done()), sqlOnly(), ROUTE_SKILLS.map((s) => s.id), readIntent()); // v25 R1: a last drill of a General-only skill resumes on its page; v47 S3: the welcome's goal
+/** v47 S3: product names are never translated; the two tracks are. */
+const engineName = (e: string): string =>
+  e === 'design' ? t('welcome.eng.design') : e === 'stack' ? t('welcome.eng.stack') : ({ postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB' } as Record<string, string>)[e] ?? e;
+/** Its name: the task title, the skill, the Engine track (and level), or the learning path. */
 export const resumeName = (r: Resume): string =>
-  r.kind === 'ticket' ? textOf(r.ticket, getLang()).title : r.kind === 'skill' ? SKILLS.find((s) => s.id === r.skill)!.label[getLang()] : t('nav.learn');
+  r.kind === 'ticket' ? textOf(r.ticket, getLang()).title : r.kind === 'skill' ? SKILLS.find((s) => s.id === r.skill)!.label[getLang()]
+  : r.kind === 'engine' ? `${engineName(r.engine)}${r.level ? ` · L${r.level}` : ''}` : t('nav.learn');
+/** Where a non-ticket resume goes. */
+const resumeHref = (r: Exclude<Resume, { kind: 'ticket' }>): string =>
+  r.kind === 'skill' ? `${hashOf('learn')}/skill/${r.skill}` : r.kind === 'engine' ? engineHash(r.engine, r.level ? `L${r.level}` : undefined) : hashOf('learn');
 export function openResume(r: Resume): void {
   if (r.kind === 'ticket') resume(r.ticket.id);
-  else location.hash = r.kind === 'skill' ? `${hashOf('learn')}/skill/${r.skill}` : hashOf('learn');
+  else location.hash = resumeHref(r);
 }
 
 /** v12.0 U5: Home is across domains: one line to go on (task · domain), no colleague's message (that card is the Overview's). v15 Q2: or the General area's. */
@@ -134,10 +141,13 @@ export function resumeLine(): HTMLElement | null {
     h('p', { id: 'resume-title', class: 'm-0 min-w-0 flex-1' },
       h('span', { class: 'text-muted' }, t('home.resumeLabel')), ' ',
       h('b', {}, resumeName(r)),
-      r.kind === 'learn' ? null : h('span', { class: 'text-muted' }, ` · ${r.kind === 'ticket' ? t(DOMAINS.find((d) => d.id === activeDomain())!.name) : t('nav.learn')}`)),
+      r.kind === 'learn' ? null : h('span', { class: 'text-muted' }, ` · ${r.kind === 'ticket' ? t(DOMAINS.find((d) => d.id === activeDomain())!.name) : r.kind === 'engine' ? t('nav.engineShort') : t('nav.learn')}`)),
+    // v47 S3 (L912): a data engineer's second door, Design, beside the Data stack
+    r.kind === 'engine' && r.engine === 'stack' && readIntent() === 'engineer'
+      ? h('a', { href: engineHash('design'), 'data-resume': 'design', class: cx(BTN_SECONDARY, 'px-4 py-2 no-underline') }, t('welcome.eng.design')) : null,
     r.kind === 'ticket'
       ? h('button', { type: 'button', class: btn, onclick: () => resume(r.ticket.id) }, go)
-      : h('a', { href: r.kind === 'skill' ? `${hashOf('learn')}/skill/${r.skill}` : hashOf('learn'), class: cx(btn, 'no-underline') }, go));
+      : h('a', { href: resumeHref(r), class: cx(btn, 'no-underline') }, go));
 }
 
 /** `track`/`fill`: whole class strings (height + colours). */
@@ -457,7 +467,7 @@ function welcomeBack(): HTMLElement | null {
   const due = reviewCount();
   const what = !r ? '' : r.kind === 'ticket'
     ? t('back.ticket', { title: resumeName(r), domain: t(DOMAINS.find((d) => d.id === activeDomain())!.name), n: r.ticket.chapter })
-    : r.kind === 'skill' ? `${resumeName(r)} (${t('nav.learn')})` : '';
+    : r.kind === 'skill' ? `${resumeName(r)} (${t('nav.learn')})` : r.kind === 'engine' ? `${resumeName(r)} (${t('nav.engineShort')})` : '';
   return h('p', { class: 'col-span-2 m-0 rounded-(--r-card) rounded-tl-sm bg-sun px-3 py-2 text-body-sm text-sun-ink', 'data-welcome-back': '' },
     h('b', {}, 'Boon: '), [t('back.hi'), what && t('back.where', { what }), due ? t('back.due', { n: due }) : ''].filter(Boolean).join(' '));
 }

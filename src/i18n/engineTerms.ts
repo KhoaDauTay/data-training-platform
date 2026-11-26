@@ -7,7 +7,7 @@ import type { Lang, Params } from './index';
  */
 const vi = {
   'title': 'Thuật ngữ',
-  'intro': 'Các từ dùng trong khu Database Engine, mỗi từ một giải thích ngắn và một trang docs chính thức. Trong bài, lần đầu một từ xuất hiện thì có nút mở giải thích này.',
+  'intro': 'Các từ dùng trong khu Cơ sở dữ liệu, mỗi từ một giải thích ngắn và một trang docs chính thức. Trong bài, lần đầu một từ xuất hiện thì có nút mở giải thích này.',
   'search': 'Tìm thuật ngữ',
   'search.hint': 'Tìm theo tên tiếng Anh hoặc tiếng Việt, có dấu hay không đều được.',
   'engines': 'Theo engine',
@@ -31,7 +31,7 @@ export type TermsKey = keyof typeof vi;
 
 const en: Record<TermsKey, string> = {
   'title': 'Terms',
-  'intro': 'The words used in the Database Engine area, each with a short explanation and an official docs page. In a lesson, the first time a word appears it has a button that opens this explanation.',
+  'intro': 'The words used in the Databases area, each with a short explanation and an official docs page. In a lesson, the first time a word appears it has a button that opens this explanation.',
   'search': 'Search terms',
   'search.hint': 'Search by the English or the Vietnamese name, with or without accents.',
   'engines': 'By engine',
