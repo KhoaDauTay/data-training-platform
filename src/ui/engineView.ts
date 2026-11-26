@@ -64,11 +64,11 @@ export interface EngineSources { meta: Record<string, LessonSource>; full: Recor
 let d: EngineDeps;
 let lessons: EngineLesson[] = [];
 const trees = {} as Record<EngineId, Tree>;
-const NAME: Record<Exclude<EngineId, 'design'>, string> = { postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB' };
+const NAME: Record<Exclude<EngineId, 'design' | 'stack'>, string> = { postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB' };
 /** v28 R4 (L420): product names stay as they are; the design track's name is translated. */
-const nameOf = (e: EngineId): string => (e === 'design' ? et('name.design') : NAME[e]);
+const nameOf = (e: EngineId): string => (e === 'design' || e === 'stack' ? et(`name.${e}`) : NAME[e]);
 /** L280: one generic picture per engine (no logos): a table grid, a JSON document, a key and its values. */
-const ENGINE_ICON = { postgres: 'engRelational', mongodb: 'engDocument', dynamodb: 'engKeyValue', design: 'engDesign' } as const satisfies Record<EngineId, Icons.IconName>;
+const ENGINE_ICON = { postgres: 'engRelational', mongodb: 'engDocument', dynamodb: 'engKeyValue', design: 'engDesign', stack: 'engStack' } as const satisfies Record<EngineId, Icons.IconName>;
 const KIND_ICON = { concept: 'kindConcept', lab: 'kindLab', predict: 'kindPredict', quiz: 'kindQuiz', capstone: 'kindCapstone' } as const satisfies Record<Kind, Icons.IconName>;
 const et = (key: EngineKey, params?: I18n.Params): string => engineText(d.getLang(), d.locale(), key, params);
 
@@ -118,7 +118,7 @@ function inline(text: string, marked = false): (Node | string)[] {
 }
 /** v28 R4 (L421): a code span holding a lesson id (`e-pg-l4-12`) is a link to that lesson, named by its title (the design track's "go deeper" links). */
 function codeOrLink(c: string): Node {
-  const to = /^e-(pg|mg|dy|ds)-l[1-5]-\d\d$/.test(c) ? lessons.find((x) => x.id === c) : undefined;
+  const to = /^e-(pg|mg|dy|ds|st)-l[1-5]-\d\d$/.test(c) ? lessons.find((x) => x.id === c) : undefined;
   // v38 R3 (R3-05, L593): a completed lesson or card gets the done tick (with its sr-only word), so the hub's map shows progress
   const seen = d.app.save.completed.includes(c);
   if (to) return xref(lessonHash(to), `${nameOf(to.engine)} ${to.level} · ${to.title[lang()]}`, seen);
@@ -778,7 +778,7 @@ function vizSlot(slot: string, name: string | undefined, engine: EngineId, model
   }, () => { vizHosts.delete(slot); }); // a failed chunk leaves the slot empty; the next visit tries again
   return entry.host;
 }
-const SHORT_OF: Record<EngineId, 'pg' | 'mg' | 'dy'> = { postgres: 'pg', mongodb: 'mg', dynamodb: 'dy', design: 'pg' }; // design diagrams are Postgres ones
+const SHORT_OF: Record<EngineId, 'pg' | 'mg' | 'dy'> = { postgres: 'pg', mongodb: 'mg', dynamodb: 'dy', design: 'pg', stack: 'pg' }; // design diagrams are Postgres ones
 
 const HONEST_CLS: Record<Honest, string> = {
   pg: 'bg-good-soft text-ink', mingo: 'bg-good-soft text-ink', dynoxide: 'bg-good-soft text-ink', diagram: 'bg-surface-2 text-muted', docs: 'bg-info-soft text-ink',
@@ -828,6 +828,7 @@ function lessonBody(l: EngineLesson): HTMLElement {
         h('a', { href: d.engineHash(l.engine, l.level), class: 'text-muted' }, module.name[lang()]),
         isDone ? h('span', { class: cls.cx(cls.PILL, cls.DONE_PILL) }, d.icon('check', 'size-4'), et('done')) : null),
       l.runtime === 'docs' ? h('p', { class: 'm-0 text-body-sm text-muted', 'data-runtime': 'docs' }, et(docsNoteKey(l) as EngineKey)) : null,
+      l.lab?.steps.some((s) => s.model) ? h('p', { class: 'm-0 text-body-sm text-muted', 'data-stack-sim': '' }, et('stack.sim')) : null, // v45 (L743)
       req.length ? h('p', { class: 'm-0 flex flex-wrap items-center gap-2 text-body-sm' }, h('span', { class: 'text-muted' }, `${et('requires')}:`),
         ...req.map((x) => h('a', { href: lessonHash(x), class: cls.cx(cls.PILL, 'min-h-6 bg-code text-ink no-underline hover:bg-accent-soft') }, x.title[lang()], tick(ok.has(x.id))))) : null),
     ...secs((id) => id === 'open'),

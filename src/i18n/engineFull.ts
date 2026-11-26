@@ -23,6 +23,7 @@ const vi = {
   // v38 (R2 E17): what one result row is called on each engine
   'unit.postgres': 'dòng',
   'unit.design': 'dòng',
+  'unit.stack': 'dòng',
   'unit.mongodb': 'tài liệu',
   'unit.dynamodb': 'item',
   'run.chipError': 'Lỗi mong đợi · {code}',
@@ -53,6 +54,7 @@ const en: Record<FullKey, string> = {
   'run.shownOnly': 'Shown only, not run here',
   'unit.postgres': 'rows',
   'unit.design': 'rows',
+  'unit.stack': 'rows',
   'unit.mongodb': 'documents',
   'unit.dynamodb': 'items',
   'run.chipError': 'Expected error · {code}',

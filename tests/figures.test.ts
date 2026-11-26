@@ -22,7 +22,7 @@ const specs = Object.fromEntries(Object.entries(import.meta.glob<FigSpec>('../co
 const engineFiles = import.meta.glob<string>('../content/engine/*/L*/*.md', { query: '?raw', import: 'default', eager: true });
 const engine: EngineLesson[] = Object.entries(engineFiles).map(([p, s]) => parseEngineLesson(s, p, parse));
 const general = await Promise.all(Object.entries(fullLessons).map(async ([p, load]) => parseFullLesson(await load(), lessonIdOf(p))));
-const SHORT = { postgres: 'pg', mongodb: 'mg', dynamodb: 'dy', design: 'ds' } as const;
+const SHORT = { postgres: 'pg', mongodb: 'mg', dynamodb: 'dy', design: 'ds', stack: 'st' } as const;
 /** Every figure reference in content: lesson id, its engine short name, the reference. */
 const refs: { id: string; eng: string; f: FigRef }[] = [
   ...engine.flatMap((l) => (l.figures ?? []).map((f) => ({ id: l.id, eng: SHORT[l.engine], f }))),
@@ -104,7 +104,7 @@ describe('v39 figures: content links', () => {
 describe.each(Object.keys(specs))('v39 figure %s', (name) => {
   const spec = specs[name];
   it('giới hạn: ≤ 12 node, ≤ 14 mũi tên, ≤ 6 bước; tên file = [a-z0-9-]+; VI và EN đủ, EN không dấu', () => {
-    expect(name).toMatch(/^(sql|ds|pg|mg|dy)-[a-z0-9-]+$/);
+    expect(name).toMatch(/^(sql|ds|st|pg|mg|dy)-[a-z0-9-]+$/);
     expect(spec.nodes.length).toBeLessThanOrEqual(12);
     expect((spec.edges ?? []).length).toBeLessThanOrEqual(14);
     expect((spec.steps ?? []).length).toBeLessThanOrEqual(6);

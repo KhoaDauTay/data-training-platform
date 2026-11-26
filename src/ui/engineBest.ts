@@ -80,7 +80,7 @@ const setTips = (f: (p: BpPref) => Partial<BpPref>): void => {
 // ---- small text helpers (./content's blocksOf is engineView's: importing it would make a shared chunk)
 /** v38 R3 (R3-10, L597): a lesson id in a card's prose (`e-ds-l4-09`) links to that lesson by its title, styled like engineView's xrefs. */
 function idLink(id: string): HTMLElement | null {
-  if (!/^e-(pg|mg|dy|ds)-l[1-5]-\d\d$/.test(id)) return null;
+  if (!/^e-(pg|mg|dy|ds|st)-l[1-5]-\d\d$/.test(id)) return null;
   const fm = Object.values(lessonsMeta).map((x) => x.fm as { id?: string; engine?: string; level?: string; title?: string; title_en?: string }).find((x) => x.id === id);
   return fm?.engine && fm.level ? d.h('a', { href: d.engineHash(fm.engine, fm.level, id), 'data-xref': '', class: 'font-semibold text-accent-ink underline decoration-1 underline-offset-[3px] hover:decoration-2' },
     (lang() === 'vi' ? fm.title : fm.title_en) ?? id, d.icon('arrowRight', 'ml-0.5 inline size-3.5 align-[-2px]')) : null;

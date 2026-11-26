@@ -2,6 +2,7 @@ import type { QueryResult } from '../../db/run';
 import type { GradeResult } from '../../grader';
 import type { Lab, LabStep } from '../content';
 import { perfVerdict, planLines, type LabEnv, type LabRunner, type LabVerdict } from '../labs';
+import { compileStep, isDbtLab } from '../stack/dbt';
 import { PgLabClient } from './client';
 import type { PgExtension } from './script';
 
@@ -43,7 +44,11 @@ export function extensionsOf(...sql: (string | undefined)[]): PgExtension[] {
 const reads = (sql: string): boolean => /^\s*(\(\s*)?(select|with|explain|table|values|show)\b/i.test(sql.replace(/^\s*(--[^\n]*\n\s*)*/, ''));
 /** The earlier steps' solutions that change the database, in order (DDL, VACUUM, ANALYZE, DML). */
 export const replayOf = (lab: Lab, step: number | undefined): string[] =>
-  (step === undefined ? [] : lab.steps.slice(0, step)).map((s) => s.solution).filter((s) => !reads(s));
+  (step === undefined ? [] : lab.steps.slice(0, step)).flatMap((s, j) =>
+    (isDbtLab(lab.steps) ? (s.model || !reads(s.solution) ? compileStep(lab.setup, lab.steps, j, s.solution) : []) : reads(s.solution) ? [] : [s.solution]));
+/** v45 (L742): a dbt lab compiles step `i`'s code (a model build may be several statements); any other lab runs it as written. */
+const stmtsOf = (lab: Lab, step: number | undefined, code: string): string[] =>
+  step !== undefined && isDbtLab(lab.steps) ? compileStep(lab.setup, lab.steps, step, code) : [code];
 
 /**
  * What a DDL step left behind, one row per object: index definitions, columns, constraints, views, statistics, and (v27
@@ -83,10 +88,12 @@ export function pgScriptRunner(env: Env, client: Pick<PgLabClient, 'run' | 'rese
   /** Setup + replay + `code` (+ `then`); returns the last statement's result. Throws the Postgres error like DbClient (string `code`). */
   const exec = async (lab: Lab, code: string, step: number | undefined, then?: string): Promise<QueryResult> => {
     const replay = replayOf(lab, step);
-    const steps = [...replay, code, ...(then ? [then] : [])];
+    const own = stmtsOf(lab, step, code);
+    const steps = [...replay, ...own, ...(then ? [then] : [])];
     const r = await client.run({ setup: lab.setup, extensions: extensionsOf(lab.setup, ...lab.steps.map((s) => s.solution), code), steps });
     if (r.setupError) throw Object.assign(new Error(r.setupError.message), r.setupError);
-    for (const s of r.steps) if (s.error) throw Object.assign(new Error(s.error.message), s.error);
+    // a compiled statement's error position points into the compiled SQL, not the player's code: drop it
+    for (const s of r.steps) if (s.error) throw Object.assign(new Error(s.error.message), s.error, own[0] !== code ? { position: undefined } : {});
     const s = r.steps[r.steps.length - 1];
     return { columns: s.columns, types: s.types, rows: s.rows, ms: s.ms, ...(s.truncated ? { truncated: s.truncated } : {}) };
   };
@@ -97,7 +104,8 @@ export function pgScriptRunner(env: Env, client: Pick<PgLabClient, 'run' | 'rese
       const r = await client.run({ setup: lab.setup, extensions: extensionsOf(lab.setup, ...lab.steps.map((s) => s.solution)), steps: [] });
       if (r.setupError) throw Object.assign(new Error(r.setupError.message), r.setupError);
     },
-    run: (lab, code, step) => exec(lab, code, step),
+    // v45: Run on a dbt model step shows what the model holds (its `after:` read), not the empty CREATE
+    run: (lab, code, step) => exec(lab, code, step, step !== undefined ? lab.steps[step]?.model && lab.steps[step].after : undefined),
     // the script replays every block above the one run, so it gets more than one lab's LAB_TIMEOUT_MS
     demo: (setup, steps) => client.run({ setup, extensions: extensionsOf(setup, ...steps.map((s) => (typeof s === 'string' ? s : s.sql))), steps, timeoutMs: 60_000 }),
     explain: async (lab, sql) => planLines((await exec(lab, explainSql(sql), undefined)).rows[0]?.[0]),
