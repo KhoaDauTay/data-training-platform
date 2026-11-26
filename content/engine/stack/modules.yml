@@ -1,0 +1,6 @@
+- id: ingest
+  vi: Dữ liệu thô về kho
+  en: Raw data lands
+- id: dbt
+  vi: Model và test kiểu dbt
+  en: dbt-style models and tests
