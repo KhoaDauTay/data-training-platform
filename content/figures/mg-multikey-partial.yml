@@ -1,0 +1,69 @@
+# B4-1 (tools/v42/diagram-plan-v42.md): one key per array element; a partial index holds only matching documents. Lessons:
+# e-mg-l3-01 (Ý chính), variants `partial` in e-mg-l3-02 and `multikey` in e-mg-l3-03 (Ý chính).
+# Data: mingo on `shop` (tools/v42/b4check.log): { tags: "sale" } matches 4 products, P04 "toy 1" has tags [sale, gift]; the
+# partial index { year: 1 } with year > 2000 against year > 1990 → COLLSCAN is quoted from the lesson's // WRONG block (docs rule).
+# Deviation: the plan's illustrative p1 [sale, tea] is the real P04 [sale, gift]; the index rows point at the document (a key
+# points back to its document), so the arrows run from each index row to P04; the variants are `show` frames (each draws only its
+# own half), not `step: i`, because step 2 keeps the multikey half on screen.
+# Source: https://www.mongodb.com/docs/manual/core/index-partial/
+title: { vi: "Index multikey và index partial", en: "Multikey and partial indexes" }
+caption:
+  vi: "Index trên trường mảng giữ một khóa cho mỗi phần tử khác nhau. Index partial chỉ giữ tài liệu khớp bộ lọc, nên chỉ phục vụ truy vấn nằm trọn trong bộ lọc đó."
+  en: "An index on an array field keeps one key per distinct element. A partial index keeps only the documents matching its filter, so it serves only queries that lie inside that filter."
+alt:
+  vi: "Index multikey giữ một khóa cho mỗi phần tử mảng, nên mảng không trần làm index phình. Index partial chỉ chứa tài liệu khớp bộ lọc và chỉ được dùng khi điều kiện truy vấn nằm trọn trong đó."
+  en: "A multikey index keeps one key per array element, so an unbounded array bloats it. A partial index holds only matching documents and is used only when the query's condition lies entirely inside its filter."
+nodes:
+  - id: ix
+    shape: grid
+    label: "index { tags: 1 }"
+    head: [{ vi: "khóa", en: key }, { vi: "tài liệu", en: document }]
+    cells: [[gift, P04], [sale, P04]]
+    colTone: [new, null]
+  - { id: doc, shape: doc, label: P04, sub: "tags: sale, gift" }
+  - { id: note1, shape: note, label: { vi: "2 khóa, 1 tài liệu", en: "2 keys, 1 document" } }
+  - id: pf
+    shape: grid
+    label: { vi: "index partial", en: partial index }
+    sub: { vi: "chỉ year > 2000", en: "only year > 2000" }
+    cells: [["2001", "2002", "…", "2026"]]
+    tone: new
+  - { id: q, shape: key, mono: true, label: "year > 1990" }
+  - { id: gap, label: "1991–2000", sub: { vi: "index không có", en: "not in the index" }, tone: dead }
+  - { id: plan, shape: key, label: COLLSCAN, tone: dead }
+rows:
+  - [ix, doc]
+  - [note1]
+  - [pf]
+  - [q, gap, plan]
+edges:
+  - { from: "ix#1", to: doc }
+  - { from: "ix#2", to: doc }
+  - { from: q, to: gap, label: { vi: "cần", en: needs } }
+  - { from: pf, to: gap, dash: true }
+  - { from: gap, to: plan }
+steps:
+  - say: { vi: "Mảng: mỗi phần tử một khóa.", en: "Array: one key per element." }
+    show: [ix, doc, note1]
+    alt: { vi: "Index trên trường mảng tự thành multikey, mỗi giá trị khác nhau là một khóa trỏ về cùng tài liệu.", en: "An index on an array field becomes multikey, each distinct value a key pointing at the same document." }
+  - say: { vi: "Partial chỉ dùng khi truy vấn nằm trọn trong bộ lọc.", en: "A partial index serves only queries inside its filter." }
+    alt: { vi: "year > 1990 cần cả 1991–2000, mà index không có, nên MongoDB bỏ index để không thiếu kết quả.", en: "year > 1990 needs 1991–2000 too, which the index lacks, so MongoDB skips it rather than return too few documents." }
+variants:
+  multikey:
+    show: [ix, doc, note1]
+    title: { vi: "Index multikey: một khóa mỗi phần tử", en: "A multikey index: one key per element" }
+    caption:
+      vi: "Index { tags: 1 } trên sản phẩm P04 có tags [sale, gift] giữ hai khóa, cả hai trỏ về cùng một tài liệu."
+      en: "The index { tags: 1 } on product P04 with tags [sale, gift] holds two keys, both pointing at the same document."
+    alt:
+      vi: "Index trên trường mảng giữ một khóa cho mỗi giá trị khác nhau của mảng, mọi khóa trỏ về cùng tài liệu. Nên index phủ được điều kiện trên mảng mà không mở tài liệu, nhưng không dựng lại được cả mảng."
+      en: "An index on an array field keeps one key per distinct value of the array, every key pointing at the same document. So the index can match a condition on the array without opening the document, but it cannot rebuild the whole array."
+  partial:
+    show: [pf, q, gap, plan]
+    title: { vi: "Index partial: truy vấn phải nằm trong bộ lọc", en: "A partial index: the query must lie inside the filter" }
+    caption:
+      vi: "Index partial { year: 1 } chỉ giữ phim có year > 2000. Truy vấn year > 1990 còn cần 1991–2000, nên MongoDB đọc cả collection."
+      en: "The partial index { year: 1 } keeps only movies with year > 2000. The query year > 1990 also needs 1991–2000, so MongoDB reads the whole collection."
+    alt:
+      vi: "Index partial thiếu hẳn các tài liệu ngoài bộ lọc, nên MongoDB chỉ dùng nó khi chứng minh được truy vấn nằm trọn trong bộ lọc. year > 1990 rộng hơn year > 2000, nên kế hoạch là COLLSCAN."
+      en: "A partial index lacks every document outside its filter, so MongoDB uses it only when it can prove the query lies inside that filter. year > 1990 is wider than year > 2000, so the plan is COLLSCAN."

@@ -8,6 +8,7 @@
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 import { analyze, samplePath, type OverlapFrame } from '../scripts/overlap-check.mjs';
+import { parseBestCard, type BpCard } from '../src/engine/best';
 import { parseEngineLesson, type EngineLesson } from '../src/engine/content';
 import type { Shape } from '../src/engine/viz/engineVizCore';
 import { resolveViz } from '../src/engine/viz/engineViz';
@@ -23,10 +24,17 @@ const engineFiles = import.meta.glob<string>('../content/engine/*/{L*,ext}/*.md'
 const engine: EngineLesson[] = Object.entries(engineFiles).map(([p, s]) => parseEngineLesson(s, p, parse));
 const general = await Promise.all(Object.entries(fullLessons).map(async ([p, load]) => parseFullLesson(await load(), lessonIdOf(p))));
 const SHORT = { postgres: 'pg', mongodb: 'mg', dynamodb: 'dy', design: 'ds' } as const;
+// v44 B4 (P1, L812): Best Practice cards host figures too (engineBest's FIG_TRACK)
+const best = Object.entries(import.meta.glob<string>('../content/engine/best/*/*.md', { query: '?raw', import: 'default', eager: true })).map(([p, t]) => {
+  const m = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/.exec(t.replace(/\r\n/g, '\n'))!;
+  return parseBestCard({ fm: parse(m[1]), body: m[2] }, p) as BpCard;
+});
+const BP_SHORT = { sql: 'sql', postgres: 'pg', mongodb: 'mg', dynamodb: 'dy' } as const;
 /** Every figure reference in content: lesson id, its engine short name, the reference. */
 const refs: { id: string; eng: string; f: FigRef }[] = [
   ...engine.flatMap((l) => (l.figures ?? []).map((f) => ({ id: l.id, eng: SHORT[l.engine], f }))),
   ...general.flatMap((l) => (l.figures ?? []).map((f) => ({ id: l.id, eng: 'sql', f }))),
+  ...best.flatMap((c) => (c.figures ?? []).map((f) => ({ id: c.id, eng: BP_SHORT[c.track], f }))),
 ];
 const specName = (r: { eng: string; f: FigRef }): string | undefined => [r.f.name, `${r.eng}-${r.f.name}`].find((n) => specs[n]);
 const WIDTHS = [640, 335, 280];

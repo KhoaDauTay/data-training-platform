@@ -1,0 +1,42 @@
+# B4-4 (tools/v42/diagram-plan-v42.md): a shard-key prefix goes to one shard; anything else asks them all. Lesson: e-mg-l5-06
+# (Ý chính); e-mg-l5-05 keeps its registry mg-sharding.
+# Data (quoted from the lesson and the docs; no sharded cluster in the browser): shard key { a, b, c }; { a }, { a, b } and
+# { a, b, c } are prefixes and are targeted; { b, c } is broadcast. Which shard holds a: 5 is an illustration (shard 2).
+# Source: https://www.mongodb.com/docs/manual/core/sharded-cluster-query-router/
+title: { vi: "mongos định tuyến theo tiền tố shard key", en: "mongos routes by the shard-key prefix" }
+caption:
+  vi: "Shard key { a, b, c }. Bộ lọc có tiền tố (a, hoặc a và b) đi thẳng tới shard giữ chunk đó; bộ lọc thiếu a bị gửi tới mọi shard, và mongos chờ đủ cả ba."
+  en: "Shard key { a, b, c }. A filter with a prefix (a, or a and b) goes straight to the shard holding that chunk; a filter without a is sent to every shard, and mongos waits for all three."
+alt:
+  vi: "Truy vấn có shard key hoặc tiền tố của nó được gửi tới đúng shard; thiếu thì mongos hỏi mọi shard và gộp kết quả. Thứ tự trường quyết định, không phải số trường."
+  en: "A query with the shard key or a prefix of it goes to the right shard; otherwise mongos asks every shard and merges. Field order decides, not the number of fields."
+nodes:
+  - { id: q, shape: key, mono: true, label: "{ a: 5, b: 2 }", sub: { vi: "tiền tố", en: prefix }, tone: live }
+  - { id: m, label: mongos }
+  - { id: s1, shape: table, label: shard 1 }
+  - { id: s2, shape: table, label: shard 2 }
+  - { id: s3, shape: table, label: shard 3 }
+  - { id: res, shape: note, label: "targeted: 1 shard" }
+rows:
+  - [q]
+  - [m]
+  - [s1, s2, s3]
+  - [res]
+edges:
+  - { from: q, to: m }
+  - { id: b1, from: m, to: s1 }
+  - { id: b2, from: m, to: s2 }
+  - { id: b3, from: m, to: s3 }
+steps:
+  - say: { vi: "Có tiền tố shard key: đi thẳng một shard.", en: "Shard-key prefix: straight to one shard." }
+    show: [q, m, s1, s2, s3, res, b2]
+    alt: { vi: "mongos biết chunk nào giữ khoảng của a, nên chỉ hỏi shard giữ chunk đó.", en: "mongos knows which chunk holds that range of a, so it asks only the shard holding it." }
+    set:
+      s1: { tone: ghost }
+      s3: { tone: ghost }
+  - say: { vi: "Thiếu cột đầu: hỏi mọi shard.", en: "First field missing: ask every shard." }
+    show: [q, m, s1, s2, s3, res, b1, b2, b3]
+    alt: { vi: "{ b, c } không phải tiền tố, nên mongos gửi tới mọi shard rồi chờ tất cả trả lời.", en: "{ b, c } is not a prefix, so mongos sends to every shard and waits for all of them." }
+    set:
+      q: { label: "{ b: 2, c: 9 }", sub: { vi: "không tiền tố", en: no prefix }, tone: warm }
+      res: { label: { vi: "broadcast: chờ cả 3", en: "broadcast: waits for 3" } }

@@ -9,6 +9,7 @@
  * folders and tracks() drops the other tracks. v25/v26 add one folder to that glob and one id here.
  */
 import type { Bi, Question } from './content';
+import { type FigRef, parseFigures } from './figureSlot';
 import type { LabScript, ScriptResult } from './pglab/script';
 
 /**
@@ -52,6 +53,8 @@ export interface BpCard extends BpMeta {
   sourceTitles?: Record<string, string>;
   verified: { version: string; date: string }; pair: Pair; quiz: Question[]; tip?: Bi;
   sections: { id: BpSectionId; text: Bi }[];
+  /** v44 B4 (P1, L812): figures under a section (`at` = idea | why | example), as an Engine lesson's; full card only, never in BP_META. */
+  figures?: FigRef[];
 }
 export const BP_META = 'id,engine,track,level,module,title,title_en,avoid,lint,skills';
 export interface CardSource { fm: unknown; body?: string }
@@ -132,6 +135,8 @@ export function parseBestCard(src: CardSource, path: string): BpCard | BpMeta {
   if (vi.map((s) => s.id).join() !== en.map((s) => s.id).join()) fail('mục VI và EN phải giống nhau, cùng thứ tự');
   if (vi[0]?.id !== 'idea' || vi[1]?.id !== 'why') fail('thân bài mở bằng ## Ý chính rồi ## Vì sao');
   card.sections = vi.map((s, i) => ({ id: s.id, text: { vi: s.text, en: en[i].text } }));
+  if (fm.figures !== undefined) card.figures = parseFigures(fm.figures, Object.keys(BP_SECTIONS), fail);
+  for (const f of card.figures ?? []) if (!vi.some((s) => s.id === f.at)) fail(`figures: thẻ không có mục "${f.at}" cho ${f.name}`);
   return card;
 }
 
