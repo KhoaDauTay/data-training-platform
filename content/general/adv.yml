@@ -213,7 +213,7 @@
         en: "Take the chain-wide median value of `PAID` orders (order value = `qty` × `unit_price_vnd` added up over the order's lines; with an even count, the average of the two middle values). For each store: the store id and the % = the store's `PAID` orders worth more than that median / all of the store's `PAID` orders × 100 (rounded to 1 decimal), sorted by store id."
       solution: "WITH t AS (SELECT o.id, o.store_id, sum(i.qty * i.unit_price_vnd) AS total FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' GROUP BY o.id, o.store_id), m AS (SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY total) AS med FROM t) SELECT t.store_id, round(100.0 * count(*) FILTER (WHERE t.total > m.med) / count(*), 1) FROM t CROSS JOIN m GROUP BY t.store_id ORDER BY t.store_id"
       ordered: true
-      hint: { vi: "Một CTE cho giá trị từng đơn, một CTE cho trung vị (một dòng), ghép bằng `CROSS JOIN`, rồi đếm có điều kiện.", en: "One CTE for each order's value, one for the median (a single row), join them with `CROSS JOIN`, then count with a condition." }
+      hint: { vi: "Một CTE cho giá trị từng đơn, một CTE cho trung vị (một dòng), nối bằng `CROSS JOIN`, rồi đếm có điều kiện.", en: "One CTE for each order's value, one for the median (a single row), join them with `CROSS JOIN`, then count with a condition." }
 
 - id: a3
   group: A
@@ -314,7 +314,7 @@
   applies: { vi: "Bảng doanh thu cửa hàng × danh mục có tổng phụ.", en: "Store × category revenue tables with subtotals." }
   lesson:
     concept:
-      vi: "GROUP BY ROLLUP (a, b) gom theo (a, b), thêm dòng tổng phụ cho từng a và một dòng tổng chung. CUBE thêm cả tổng theo b. GROUPING SETS cho bạn tự liệt kê các cách gom. Ở dòng tổng, cột bị gộp là NULL; GROUPING(cột) ra 1 ở những dòng đó để phân biệt với NULL thật."
+      vi: "GROUP BY ROLLUP (a, b) gom theo (a, b), thêm dòng tổng phụ cho từng a và một dòng tổng chung. CUBE thêm cả tổng theo b. GROUPING SETS cho bạn tự liệt kê các cách gom. Ở dòng tổng, cột không còn chia nhóm là NULL; GROUPING(cột) ra 1 ở những dòng đó để phân biệt với NULL thật."
       en: "GROUP BY ROLLUP (a, b) groups by (a, b), adds a subtotal row for each a and one grand total row. CUBE also adds totals by b. GROUPING SETS lets you list the groupings yourself. On a total row the rolled-up column is NULL; GROUPING(column) returns 1 there, to tell it apart from a real NULL."
     example: |-
       SELECT s.name,
@@ -400,7 +400,7 @@
         vi: "Quý 3/2026 (tháng 7–9), doanh thu đơn `PAID` (`qty` × `unit_price_vnd`) theo tháng và danh mục, có tổng phụ mỗi tháng và tổng chung. Cột: tháng (`date_trunc`), danh mục, doanh thu, mức (một cột: `GROUPING` của cả hai cột trong một lần gọi, ra 0, 1 hoặc 3), và tỷ lệ % của dòng so với doanh thu của dòng tổng chung (mức 3, không cộng các dòng tổng phụ), làm tròn 1 chữ số thập phân."
         en: "Q3 2026 (July–September) revenue from `PAID` orders (`qty` × `unit_price_vnd`) by month and category, with a subtotal per month and a grand total. Columns: month (`date_trunc`), category, revenue, level (one column: `GROUPING` of both columns in a single call, giving 0, 1 or 3), and the row's % of the grand total row's revenue (level 3, subtotal rows not added), rounded to 1 decimal."
       solution: "WITH r AS (SELECT date_trunc('month', o.order_date) AS month, p.category, sum(i.qty * i.unit_price_vnd) AS revenue, GROUPING(date_trunc('month', o.order_date), p.category) AS level FROM orders o JOIN order_items i ON i.order_id = o.id JOIN products p ON p.id = i.product_id WHERE o.status = 'PAID' AND o.order_date >= '2026-07-01' AND o.order_date < '2026-10-01' GROUP BY ROLLUP (date_trunc('month', o.order_date), p.category)) SELECT month, category, revenue, level, round(100.0 * revenue / max(revenue) FILTER (WHERE level = 3) OVER (), 1) FROM r"
-      hint: { vi: "Tổng chung là dòng có mức 3; lấy nó cho mọi dòng bằng một hàm cửa sổ `OVER ()` có `FILTER`.", en: "The grand total is the row at level 3; spread it to every row with a window aggregate `OVER ()` plus `FILTER`." }
+      hint: { vi: "Tổng chung là dòng có mức GROUPING bằng 3; lấy nó cho mọi dòng bằng một hàm cửa sổ `OVER ()` có `FILTER`.", en: "The grand total is the row whose GROUPING level is 3; spread it to every row with a window aggregate `OVER ()` plus `FILTER`." }
 
 - id: a5
   group: A
@@ -783,7 +783,7 @@
       ) x
       ORDER BY s.name, x.units DESC, x.product
     explain:
-      vi: "① Truy vấn con nhắc tới `s.id` của dòng cửa hàng bên trái: nhờ `LATERAL`. ② Với mỗi cửa hàng: gom theo sản phẩm, xếp giảm dần, `LIMIT 3`. ③ Kết quả 15 dòng = 5 cửa hàng × 3 sản phẩm; ở Ben Thanh đứng đầu là Highlighter set với 165 đơn vị. ④ `p.name` trong `ORDER BY` là tiêu chí phụ để top 3 không đổi giữa các lần chạy."
+      vi: "① Truy vấn con nhắc tới `s.id` của dòng cửa hàng bên trái: nhờ `LATERAL`. ② Với mỗi cửa hàng: gom theo sản phẩm, xếp giảm dần, `LIMIT 3`. ③ Kết quả 15 dòng = 5 cửa hàng × 3 sản phẩm; ở Ben Thanh đứng đầu là Highlighter set với 165 đơn vị. ④ `p.name` trong `ORDER BY` là tiêu chí sắp xếp phụ để top 3 không đổi giữa các lần chạy."
       en: "① The subquery mentions the left store row's `s.id`: that is what `LATERAL` allows. ② For each store: group by product, sort descending, `LIMIT 3`. ③ Result: 15 rows = 5 stores × 3 products; at Ben Thanh the top one is Highlighter set with 165 units. ④ `p.name` in `ORDER BY` is the tie-breaker so the top 3 stays the same between runs."
     mistake:
       sql: |-
@@ -1050,7 +1050,7 @@
       GROUP BY 1
       ORDER BY 1
     explain:
-      vi: "① `count(DISTINCT o.id)`: sau khi nối với dòng hàng, mỗi đơn lặp lại nhiều lần, nên phải đếm mã đơn khác nhau. ② `::numeric` trước khi chia để không mất phần lẻ. ③ Kết quả: 4 tháng; tháng 7 có 115 đơn, AOV 486.231 đồng; tháng 10 có 200 đơn, doanh thu 97.162.500 đồng, AOV 485.813 đồng. Doanh thu tăng mạnh nhưng AOV gần như đứng yên: tăng là do nhiều đơn hơn, không phải đơn to hơn."
+      vi: "① `count(DISTINCT o.id)`: sau khi nối với dòng hàng, mỗi đơn lặp lại nhiều lần, nên phải đếm mã đơn khác nhau. ② `::numeric` trước khi chia để không mất phần thập phân. ③ Kết quả: 4 tháng; tháng 7 có 115 đơn, AOV 486.231 đồng; tháng 10 có 200 đơn, doanh thu 97.162.500 đồng, AOV 485.813 đồng. Doanh thu tăng mạnh nhưng AOV gần như đứng yên: tăng là do nhiều đơn hơn, không phải đơn to hơn."
       en: "① `count(DISTINCT o.id)`: after the join with item lines each order repeats, so count distinct order ids. ② `::numeric` before dividing so the fraction is not lost. ③ Result: 4 months; July has 115 orders, AOV 486,231 VND; October has 200 orders, revenue 97,162,500 VND, AOV 485,813 VND. Revenue grew a lot but AOV barely moved: growth came from more orders, not bigger ones."
     mistake:
       sql: |-
@@ -1235,8 +1235,8 @@
         count(DISTINCT session_id) FILTER (WHERE event = 'paid') AS paid
       FROM app_events
     explain:
-      vi: "① Mỗi cột là một bước, cùng một bảng sự kiện, khác điều kiện trong `FILTER`. ② `count(DISTINCT session_id)` đếm phiên, không đếm sự kiện. ③ Kết quả: 900 phiên xem, 488 thêm vào giỏ, 299 tới thanh toán, 241 trả tiền. Tỷ lệ cả phễu: 241 / 900 ≈ 26,8%; bước rơi nhiều nhất là từ xem sang giỏ (còn 54%)."
-      en: "① Each column is a step: same event table, a different condition in `FILTER`. ② `count(DISTINCT session_id)` counts sessions, not events. ③ Result: 900 sessions viewed, 488 added to cart, 299 reached checkout, 241 paid. Whole-funnel conversion: 241 / 900 ≈ 26.8%; the biggest drop is from view to cart (54% stay)."
+      vi: "① Mỗi cột là một bước, cùng một bảng sự kiện, khác điều kiện trong `FILTER`. ② `count(DISTINCT session_id)` đếm phiên, không đếm sự kiện. ③ Kết quả: 900 phiên xem, 488 thêm vào giỏ, 299 tới thanh toán, 241 trả tiền. Tỷ lệ cả phễu: 241 / 900 ≈ 26,8%; bước rơi nhiều nhất là từ xem sang giỏ (488 / 900, còn 54%)."
+      en: "① Each column is a step: same event table, a different condition in `FILTER`. ② `count(DISTINCT session_id)` counts sessions, not events. ③ Result: 900 sessions viewed, 488 added to cart, 299 reached checkout, 241 paid. Whole-funnel conversion: 241 / 900 ≈ 26.8%; the biggest drop is from view to cart (488 / 900, 54% stay)."
     mistake:
       sql: |-
         SELECT count(DISTINCT user_id) FILTER (WHERE event = 'view') AS viewed,
@@ -1244,7 +1244,7 @@
           count(DISTINCT user_id) FILTER (WHERE event = 'checkout') AS checked_out,
           count(DISTINCT user_id) FILTER (WHERE event = 'paid') AS paid
         FROM app_events
-      vi: "Đếm theo `user_id` thì mất mọi phiên khách vãng lai (`user_id` trống) và gộp nhiều phiên của cùng một khách: đó là phễu theo người, không phải theo phiên."
+      vi: "Đếm theo `user_id` thì mất mọi phiên khách vãng lai (`user_id` trống) và đếm nhiều phiên của cùng một khách là một: đó là phễu theo người, không phải theo phiên."
       en: "Counting by `user_id` drops every anonymous session (empty `user_id`) and merges several sessions of one customer: that is a funnel by person, not by session."
     try:
       task: { vi: "Tách phễu theo thiết bị (`device` trong cột JSON `props`): thiết bị và số phiên ở 4 bước như ví dụ.", en: "Split the funnel by device (`device` in the JSON column `props`): device and the session counts of the 4 steps as in the example." }
@@ -1412,8 +1412,8 @@
       GROUP BY 1, 2
       ORDER BY 1, 2
     explain:
-      vi: "① Mỗi dòng là một nhóm của một thí nghiệm. ② `count(*) FILTER (WHERE converted)`: số khách chuyển đổi. ③ `100.0 *` trước khi chia để ra số thập phân. Kết quả: thí nghiệm 1 có A 40/150 = 26,7%, B 42/150 = 28,0%; thí nghiệm 2 có A 20,7%, B 17,3%. B của thí nghiệm 1 hơn 1,3 điểm %, nhưng chỉ là 2 khách: còn quá sớm để kết luận."
-      en: "① Each row is one group of one experiment. ② `count(*) FILTER (WHERE converted)`: the customers who converted. ③ `100.0 *` before dividing to get decimals. Result: experiment 1 has A 40/150 = 26.7%, B 42/150 = 28.0%; experiment 2 has A 20.7%, B 17.3%. B in experiment 1 is 1.3 points ahead, but that is only 2 customers: too early to call."
+      vi: "① Mỗi dòng là một nhóm của một thí nghiệm. ② `count(*) FILTER (WHERE converted)`: số khách chuyển đổi. ③ `100.0 *` trước khi chia để ra số thập phân. Kết quả: thí nghiệm 1 có A 40/150 = 26,7%, B 42/150 = 28,0%; thí nghiệm 2 có A 20,7%, B 17,3%. B của thí nghiệm 1 hơn 28,0 − 26,7 = 1,3 điểm phần trăm, nhưng chỉ là 42 − 40 = 2 khách: còn quá sớm để kết luận."
+      en: "① Each row is one group of one experiment. ② `count(*) FILTER (WHERE converted)`: the customers who converted. ③ `100.0 *` before dividing to get decimals. Result: experiment 1 has A 40/150 = 26.7%, B 42/150 = 28.0%; experiment 2 has A 20.7%, B 17.3%. B in experiment 1 is 28.0 − 26.7 = 1.3 points ahead, but that is only 42 − 40 = 2 customers: too early to call."
     mistake:
       sql: |-
         SELECT experiment_id, variant, avg(converted) AS rate
@@ -1455,7 +1455,7 @@
       kind: trap
       task: { vi: "Tỷ lệ chuyển đổi chung (cả hai nhóm) của từng thí nghiệm, dạng số thập phân từ 0 tới 1, làm tròn 3 chữ số.", en: "The overall conversion rate (both groups) of each experiment, as a decimal from 0 to 1, rounded to 3 decimals." }
       solution: "SELECT experiment_id, round(count(*) FILTER (WHERE converted)::numeric / count(*), 3) AS rate FROM assignments GROUP BY experiment_id"
-      hint: { vi: "Chia hai số nguyên trong Postgres thì bỏ phần lẻ: đổi một vế sang `numeric`.", en: "Dividing two integers in Postgres drops the fraction: cast one side to `numeric`." }
+      hint: { vi: "Chia hai số nguyên trong Postgres thì bỏ phần thập phân: đổi một vế sang `numeric`.", en: "Dividing two integers in Postgres drops the fraction: cast one side to `numeric`." }
       wrong:
         - sql: "SELECT experiment_id, round(count(*) FILTER (WHERE converted) / count(*), 3) AS rate FROM assignments GROUP BY experiment_id"
           vi: "Số nguyên chia số nguyên ra số nguyên: 82 / 300 = 0. Ép kiểu một vế trước khi chia."
@@ -1499,8 +1499,8 @@
       WHERE day BETWEEN '2026-09-01' AND '2026-09-15'
       ORDER BY day
     explain:
-      vi: "① CTE `d`: doanh thu mỗi ngày có bán của cửa hàng 3. ② `ROWS BETWEEN 28 PRECEDING AND 1 PRECEDING`: 28 ngày bán trước, không gồm hôm nay. ③ Lọc ngày sau khi tính cửa sổ, để ngày đầu tháng vẫn có đủ quá khứ. Kết quả: 14 ngày; ngày 09/09/2026 bán 6.095.000 đồng trong khi trung bình 918.425 và độ lệch chuẩn 507.111: lệch hơn 10 lần độ lệch chuẩn."
-      en: "① CTE `d`: revenue for each sales day of store 3. ② `ROWS BETWEEN 28 PRECEDING AND 1 PRECEDING`: the 28 previous sales days, not today. ③ Filter dates after the window is computed, so early-month days still have their history. Result: 14 days; on 2026-09-09 the store sold 6,095,000 VND against a mean of 918,425 and a standard deviation of 507,111: more than 10 standard deviations above."
+      vi: "① CTE `d`: doanh thu mỗi ngày có bán của cửa hàng 3. ② `ROWS BETWEEN 28 PRECEDING AND 1 PRECEDING`: 28 ngày bán trước, không gồm hôm nay. ③ Lọc ngày sau khi tính cửa sổ, để ngày đầu tháng vẫn có đủ quá khứ. Kết quả: 14 ngày; ngày 09/09/2026 bán 6.095.000 đồng trong khi trung bình 918.425 và độ lệch chuẩn 507.111: (6.095.000 − 918.425) / 507.111 ≈ 10,2 lần độ lệch chuẩn."
+      en: "① CTE `d`: revenue for each sales day of store 3. ② `ROWS BETWEEN 28 PRECEDING AND 1 PRECEDING`: the 28 previous sales days, not today. ③ Filter dates after the window is computed, so early-month days still have their history. Result: 14 days; on 2026-09-09 the store sold 6,095,000 VND against a mean of 918,425 and a standard deviation of 507,111: (6,095,000 − 918,425) / 507,111 ≈ 10.2 standard deviations above."
     mistake:
       sql: |-
         WITH d AS (
@@ -1802,12 +1802,12 @@
   group: C
   status: partial
   title: { vi: "Star schema và grain", en: "Star schemas and grain" }
-  why: { vi: "Hầu hết kho dữ liệu BI là bảng fact ở giữa và các bảng dimension xung quanh; đọc sai grain là đếm sai.", en: "Most BI warehouses are a fact table in the middle with dimension tables around it; misreading the grain means counting wrong." }
+  why: { vi: "Hầu hết kho dữ liệu phân tích (BI) là bảng fact ở giữa và các bảng dimension xung quanh; đọc sai grain (mỗi dòng fact là gì) là đếm sai.", en: "Most BI warehouses are a fact table in the middle with dimension tables around it; misreading the grain means counting wrong." }
   needs: [multi_join, group_by, left_join]
   applies: { vi: "đọc kho dữ liệu của công ty", en: "Reading the company's data warehouse" }
   lesson:
     concept:
-      vi: "Bảng fact ghi sự kiện đo được (ở đây một dòng hàng đã bán: số lượng, doanh thu), các bảng dimension mô tả ngữ cảnh (ngày, sản phẩm, khách). Grain là \"một dòng fact là gì\". Hỏi về đơn mà fact ở grain dòng hàng thì phải đếm mã đơn khác nhau. Thiết kế schema (DDL) học ở tài liệu Kimball."
+      vi: "Bảng fact ghi sự kiện đo được (ở đây một dòng hàng đã bán: số lượng, doanh thu), các bảng dimension mô tả ngữ cảnh (ngày, sản phẩm, khách). Grain là \"một dòng fact là gì\". Hỏi về đơn mà fact ở grain dòng hàng thì phải đếm mã đơn khác nhau. Thiết kế schema (các lệnh tạo bảng, DDL) học ở tài liệu Kimball."
       en: "The fact table records measurable events (here one sold item line: quantity, revenue); dimension tables describe the context (date, product, customer). The grain is \"what one fact row is\". Asking about orders when the fact grain is the item line means counting distinct order ids. Schema design (DDL) is covered by the Kimball material."
     example: |-
       SELECT d.year, d.month, sum(f.revenue_vnd) AS revenue
@@ -1989,7 +1989,7 @@
   readings:
     - title: { vi: "1. SELECT và WHERE: chọn cột, lọc bằng mặt nạ", en: "1. SELECT and WHERE: pick columns, filter with a mask" }
       body:
-        vi: "Một bảng trong pandas là một DataFrame. Danh sách tên cột trong `[[...]]` là SELECT. WHERE là một mặt nạ đúng/sai: mỗi so sánh cho một cột True/False, ghép bằng `&` (AND) hoặc `|` (OR), mỗi vế trong ngoặc tròn. Viết `==`, không phải `=`."
+        vi: "Một bảng trong pandas là một DataFrame. Danh sách tên cột trong `[[...]]` là SELECT. WHERE là một mặt nạ đúng/sai: mỗi so sánh cho một cột True/False, kết hợp bằng `&` (AND) hoặc `|` (OR), mỗi vế trong ngoặc tròn. Viết `==`, không phải `=`."
         en: "A table in pandas is a DataFrame. A list of column names in `[[...]]` is SELECT. WHERE is a true/false mask: each comparison gives a column of True/False, combined with `&` (AND) or `|` (OR), each side in parentheses. Write `==`, not `=`."
       sql: |-
         SELECT id, store_id, order_date
@@ -2012,7 +2012,7 @@
         )
     - title: { vi: "3. JOIN: merge", en: "3. JOIN: merge" }
       body:
-        vi: "`pd.merge` là JOIN, mặc định là INNER JOIN. Cột nối cùng tên thì dùng `on`, khác tên thì `left_on` và `right_on`. `how=\"left\"` là LEFT JOIN. Hai bảng có cột trùng tên (ở đây là `id`) thì pandas thêm đuôi `_x` và `_y`, giống việc bạn phải đặt bí danh trong SQL."
+        vi: "`pd.merge` là JOIN, mặc định là INNER JOIN. Cột nối cùng tên thì dùng `on`, khác tên thì `left_on` và `right_on`. `how=\"left\"` là LEFT JOIN. Hai bảng có cột trùng tên (ở đây là `id`) thì pandas thêm đuôi `_x` và `_y`, giống việc bạn phải đặt alias trong SQL."
         en: "`pd.merge` is JOIN, an INNER JOIN by default. Use `on` when the key columns share a name, `left_on` and `right_on` when they do not. `how=\"left\"` is a LEFT JOIN. When both tables have a column with the same name (here `id`), pandas adds the suffixes `_x` and `_y`, much like the aliases you write in SQL."
       sql: |-
         SELECT o.id, s.city
