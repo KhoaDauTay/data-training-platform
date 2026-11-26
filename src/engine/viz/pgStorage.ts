@@ -57,7 +57,7 @@ define<HeapModel | HeapRow[]>('pg-heap-page', HEAP_SAMPLE, (m0, tr) => {
     if (freeEnd - freeX > 44) out.push(...box('free', freeX + 2, Y, freeEnd - freeX - 4, 36, tr('trống', 'free'), 'free'));
     tup.forEach((r, j) => {
       out.push(...box(`t${r.lp}`, tX(j), Y, 28, 36, `t${r.lp}`, tone(r)));
-      out.push(arc(`a${r.lp}`, lpX(shown.indexOf(r)) + 8, Y - 1, tX(j) + 14, Y - 1, -(26 + 7 * j), { ink: tone(r) === 'dead' ? 'dead' : 'ptr', w: 1.2 }));
+      out.push(arc(`a${r.lp}`, lpX(shown.indexOf(r)) + 8, Y - 1, tX(j) + 14, Y - 1, -(26 + 7 * j), { ink: tone(r) === 'dead' ? 'dead' : 'ptr', w: 1.2, to: { x: tX(j), y: Y, w: 28, h: 36 } }));
     });
     // detail cards, one full-width row each (v31 F5: two columns could not hold the monospace line at SM)
     vis.forEach((r) => {
@@ -139,7 +139,7 @@ define<HotModel>('pg-hot-chain', { xids: [740, 741, 742], index: 'notes_pkey', k
       const tone: Tone = s.pruned ? (i === 0 ? 'ptr' : i === 1 ? 'free' : 'live') : i < s.n - 1 ? 'dead' : 'live';
       out.push(...box(`lp${i}`, lpX(i), Y, 16, 36, String(i + 1), s.look && !s.pruned ? 'new' : tone));
     }
-    out.push(line('i2lp', 40, 58, lpX(0) + 8, Y - 2, { arrow: true, ink: s.look ? 'new' : 'ptr', w: s.look ? 2 : 1.4 }));
+    out.push(line('i2lp', 40, 58, lpX(0) + 8, Y - 2, { arrow: true, ink: s.look ? 'new' : 'ptr', w: s.look ? 2 : 1.4, to: { x: lpX(0), y: Y, w: 16, h: 36 } }));
     const free0 = lpX(lps) + 2;
     const tuples = s.pruned ? [2] : [...Array(s.n).keys()];
     const free1 = tX(s.pruned ? 0 : s.n - 1) - 2;
@@ -147,10 +147,10 @@ define<HotModel>('pg-hot-chain', { xids: [740, 741, 742], index: 'notes_pkey', k
     tuples.forEach((t, j) => {
       const dead = !s.pruned && t < s.n - 1;
       out.push(...box(`t${t}`, tX(j), Y, 30, 36, `t${t + 1}`, s.look ? 'new' : dead ? 'dead' : 'live'));
-      out.push(arc(`a${t}`, lpX(s.pruned ? 2 : t) + 8, Y + 37, tX(j) + 15, Y + 37, 30 + 8 * j, { ink: dead ? 'dead' : 'ptr', w: 1.2 }));
-      if (t > 0 && !s.pruned) out.push(arc(`c${t}`, tX(j - 1) + 15, Y - 1, tX(j) + 15, Y - 1, -26, { ink: s.look ? 'new' : 'dead', w: 1.4 }));
+      out.push(arc(`a${t}`, lpX(s.pruned ? 2 : t) + 8, Y + 37, tX(j) + 15, Y + 37, 30 + 8 * j, { ink: dead ? 'dead' : 'ptr', w: 1.2, to: { x: tX(j), y: Y, w: 30, h: 36 } }));
+      if (t > 0 && !s.pruned) out.push(arc(`c${t}`, tX(j - 1) + 15, Y - 1, tX(j) + 15, Y - 1, -26, { ink: s.look ? 'new' : 'dead', w: 1.4, to: { x: tX(j), y: Y, w: 30, h: 36 } }));
     });
-    if (s.pruned) out.push(arc('redir', lpX(0) + 8, Y - 1, lpX(2) + 8, Y - 1, -16, { ink: 'ptr', w: 1.6 }));
+    if (s.pruned) out.push(arc('redir', lpX(0) + 8, Y - 1, lpX(2) + 8, Y - 1, -16, { ink: 'ptr', w: 1.6, to: { x: lpX(2), y: Y, w: 16, h: 36 } }));
     // tuple notes
     const notes: [string, string, Tone][] = s.pruned
       ? [[`lp1 → lp3`, 'redirect', 'ptr'], ['lp2', 'unused', 'free'], ['t3', `xmin ${x3}`, 'live']]
@@ -194,7 +194,7 @@ define<MvccModel>('pg-mvcc-timeline', { xids: [100, 101], before: 'price 10', af
       text('cap', 10, 210, tr('Hai phiên bản của cùng một dòng trong heap', 'Two versions of the same row in the heap'), { size: SM, ink: 'muted' }),
     ];
     if (st) out.push(...box('v2', 180, 150, 150, 44, `v2 · ${cut(m.after, 12)}`, sees === 2 ? 'new' : st === 2 ? 'live' : 'warm', `xmin ${b} · xmax 0`));
-    if (st) out.push(arc('ct', 160, 172, 180, 172, -14, { ink: 'ptr' }));
+    if (st) out.push(line('ct', 160, 172, 180, 172, { ink: 'ptr', arrow: true, to: { x: 180, y: 150, w: 150, h: 44 } })); // v39 F3: straight, a 20-unit arc left no room for its head
     return out;
   };
   const snap = (x: number): Shape[] => [{ k: 'snap', t: 'r', x, y: LA - 16, w: 330 - x, h: 32, tone: 'ptr', o: 0.35 }, text('snapt', 328, LA - 22, 'snapshot', { a: 'e', size: SM, ink: 'ptr' })];
@@ -287,9 +287,9 @@ define<WalModel>('pg-wal-flow', {
       const tone: Tone = s.replay !== undefined && i <= s.replay ? 'new' : fpi ? 'ptr' : 'cell';
       out.push(...box(`r${i}`, 20 + i * 106, 104, 100, 44, cut(r.record_type, 13), tone, fpi ? `+FPI ${num(r.fpi_length)} B` : cut(r.start_lsn, 14)));
     });
-    if (s.flushed) out.push(line('fl', 20, 154, 20 + recs.length * 106 - 6, 154, { ink: 'live', w: 3 }), text('flt', 330, 92, `fsync → ${last}`, { a: 'e', size: SM, mono: true, ink: 'live' }));
+    if (s.flushed) out.push(line('fl', 20, 154, 20 + recs.length * 106 - 6, 154, { ink: 'live', w: 3 }), /* v39 F3 (L622): beside the WAL lane name, clear of the redo arrow */ text('flt', 48, 92, `fsync → ${last}`, { size: SM, mono: true, ink: 'live' }));
     if (s.dirty && !s.crash) out.push(text('dt', 170, 47, tr('bẩn: chưa ghi xuống đĩa', 'dirty: not on disk yet'), { size: SM, ink: 'warm' }));
-    if (s.replay !== undefined) out.push(arc('rp', 250, 102, 164, 50, -24, { ink: 'new', w: 2 }), text('rpt', 170, 30, tr('REDO từ điểm redo', 'REDO from the redo point'), { size: SM, ink: 'new' }));
+    if (s.replay !== undefined) out.push(arc('rp', 250, 102, 164, 50, -24, { ink: 'new', w: 2, to: { x: 10, y: 26, w: 150, h: 42 } }), text('rpt', 170, 30, tr('REDO từ điểm redo', 'REDO from the redo point'), { size: SM, ink: 'new' }));
     return out;
   };
   return {

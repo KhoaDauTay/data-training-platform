@@ -1,4 +1,4 @@
-import { box, cut, define, fill, line, type Shape, SM, text, type Tone } from './engineVizCore';
+import { box, cut, define, fill, line, type Shape, SM, stopAt, text, TIP, type Tone } from './engineVizCore';
 
 // v34 (L544): the multi-tenant diagrams, a lazy chunk of their own (budget group engineVizTenant) loaded by engineViz's
 // loadViz() the first time a lesson names one. pg-tenancy-models is a built-in picture (no lab model needed): three
@@ -46,7 +46,7 @@ define<TenancyModel>('pg-tenancy-models', {}, (m, tr) => {
     out.push({ k: 'pl', t: 'r', x: COLS[2], y: 86, w: W, h: 120, tone: tone(2, 'cell') });
     out.push(text('plh', COLS[2] + W / 2, 96, table, { a: 'm', b: true, ink: on(2) ? 'ink' : 'muted' }));
     POOL.forEach((ti, i) => {
-      out.push({ k: `ps${i}`, t: 'r', x: COLS[2] + 6, y: 106 + i * 16, w: W - 12, h: 14, tone: tone(2, TENANT_TONE[ti]), rx: 2 });
+      out.push({ k: `ps${i}`, t: 'r', x: COLS[2] + 6, y: 105.5 + i * 16, w: W - 12, h: 15, tone: tone(2, TENANT_TONE[ti]), rx: 2 }); // v39 F3 (L622): 15 high, the label's ink fits
       out.push(text(`pt${i}`, COLS[2] + 10, 113 + i * 16, `tenant_id ${ts[ti]}`, { ink: on(2) ? 'ink' : 'muted' }));
     });
     // The three rating rows: a full-width heading, then one word per column (the word carries the meaning)
@@ -101,7 +101,7 @@ define<PlacementModel>('pg-tenant-placement', PLACEMENT_SAMPLE, (m, tr) => {
     const pick = step === 0 || step >= 3 ? mv : undefined;
     const out: Shape[] = [text('note', 334, 10, tr('Minh họa · không chạy trong trình duyệt', 'Illustration · not run in the browser'), { a: 'e', ink: 'muted' })];
     out.push(...box('router', 110, 22, 120, 28, tr('Bộ định tuyến', 'Router'), step === 0 ? 'new' : 'cell'));
-    out.push(line('a0', 170, 53, 170, 63, { arrow: true, ink: step === 0 ? 'new' : 'edge' }));
+    out.push(line('a0', 170, 53, 170, 66, { arrow: true, ink: step === 0 ? 'new' : 'edge', to: { x: 60, y: 66, w: 220, h: 128 } }));
     out.push({ k: 'cat', t: 'r', x: 60, y: 66, w: 220, h: 128, tone: 'plain' });
     if (step === 5) {
       out.push(text('ch', 72, 82, tr('khóa bắt đầu bằng khách', 'keys start with the tenant'), { b: true, ink: 'muted' }));
@@ -116,9 +116,10 @@ define<PlacementModel>('pg-tenant-placement', PLACEMENT_SAMPLE, (m, tr) => {
     }
     if (step < 4) {
       const cx = SX[pick ? home(pick) : focusShards[0]] + SW / 2;
-      if (pick) out.push(line('a1', 170, 197, cx, 223, { arrow: true, ink: 'new' }));
+      if (pick) out.push(line('a1', 170, 197, cx, 226, { arrow: true, ink: 'new', to: { x: cx - SW / 2, y: 226, w: SW, h: 90 } }));
     } else {
-      out.push({ k: 'mv', t: 'p', d: `M${SX[from] + SW / 2} 223 C${SX[from] + 60} 204 ${SX[to] - 20} 204 ${SX[to] + SW / 2} 223`, ink: 'new', w: 1.8, arrow: true, dash: true });
+      const [ex, ey] = stopAt(SX[to] - 20, 204, SX[to] + SW / 2, 226, 1.8, { x: SX[to], y: 226, w: SW, h: 90 });
+      out.push({ k: 'mv', t: 'p', d: `M${SX[from] + SW / 2} 223 C${SX[from] + 60} 204 ${SX[to] - 20} 204 ${ex} ${ey}`, ink: 'new', w: 1.8, arrow: true, dash: true });
     }
     SX.forEach((x, s) => {
       const on = focusShards.includes(s);
@@ -171,7 +172,7 @@ define<RlsPathModel>('pg-rls-path', RLS_PATH_SAMPLE, (m, tr) => {
     ['Executor', tr('lọc dòng', 'filters rows')],
     ['COMMIT', tr('trả kết nối', 'returns it')],
   ];
-  const Y = (i: number) => 8 + i * 46; // E04: 12 units between boxes, so an arrowhead never meets a box edge
+  const Y = (i: number) => 8 + i * 48; // E04, v39 F3 (L621): 14 units between boxes, room for a 1.8 arrowhead (3 + 6·w)
   const X0 = 124;
   const BYPASS = 6;
   const draw = (at: number): Shape[] => {
@@ -179,9 +180,10 @@ define<RlsPathModel>('pg-rls-path', RLS_PATH_SAMPLE, (m, tr) => {
     STAGES.forEach(([label, sub], i) => {
       const tone: Tone = at === BYPASS ? (i === 3 ? 'dead' : i === 3 - 1 || i === 4 ? 'new' : 'cell') : i === at ? 'new' : i < at ? 'live' : 'cell';
       out.push(...box(`s${i}`, 10, Y(i), 104, 34, label, tone, sub));
-      if (i < STAGES.length - 1) out.push(line(`a${i}`, 62, Y(i) + 34, 62, Y(i + 1), { ink: at !== BYPASS && i < at ? 'new' : 'edge', arrow: true, w: at !== BYPASS && i < at ? 1.8 : 1.2, dash: at === BYPASS && (i === 2 || i === 3) }));
+      if (i < STAGES.length - 1) out.push(line(`a${i}`, 62, Y(i) + 34, 62, Y(i + 1), { ink: at !== BYPASS && i < at ? 'new' : 'edge', arrow: true, w: at !== BYPASS && i < at ? 1.8 : 1.2, dash: at === BYPASS && (i === 2 || i === 3), to: { x: 10, y: Y(i + 1), w: 104, h: 34 } }));
     });
-    if (at === BYPASS) out.push({ k: 'skip', t: 'p', d: `M114 ${Y(2) + 17} H120 V${Y(4) + 17} H116`, ink: 'dead', w: 1.8, arrow: true, dash: true });
+    // v39 F3: the bypass lane runs at 128 (the step's boxes start at 136), so the last leg holds the head, TIP short of Executor
+    if (at === BYPASS) out.push({ k: 'skip', t: 'p', d: `M114 ${Y(2) + 17} H128 V${Y(4) + 17} H${114 + TIP + 0.75 * 1.4}`, ink: 'dead', w: 1.4, arrow: true, dash: true });
     const head = [tr('Kết nối từ pool', 'A pooled connection'), tr('Trong transaction', 'Inside the transaction'), tr('Ứng dụng gửi', 'What the app sends'),
       tr('Sau rewriter', 'After the rewriter'), fill(tr('Executor đọc {n} dòng', 'The executor reads {n} rows'), { n: m.total }),
       tr('Sau COMMIT', 'After COMMIT'), tr('Ai bỏ qua policy', 'Who skips the policy')][at];
@@ -200,7 +202,7 @@ define<RlsPathModel>('pg-rls-path', RLS_PATH_SAMPLE, (m, tr) => {
     mono[at].forEach((s, i) => out.push(text(`q${i}`, X0, 38 + i * 18, s, { size: SM, mono: true })));
     if (at === BYPASS) {
       ['superuser', tr('vai trò BYPASSRLS', 'a BYPASSRLS role'), tr('chủ bảng, chưa FORCE', 'owner without FORCE')]
-        .forEach((s, i) => out.push(...box(`r${i}`, X0, 40 + i * 42, 206, 34, s, 'warm')));
+        .forEach((s, i) => out.push(...box(`r${i}`, X0 + 12, 40 + i * 42, 194, 34, s, 'warm')));
       return out;
     }
     out.push(text('gh', X0, 130, 'tenant_id', { size: SM, mono: true, ink: 'muted' }));
@@ -218,7 +220,7 @@ define<RlsPathModel>('pg-rls-path', RLS_PATH_SAMPLE, (m, tr) => {
   };
   const v = { t: m.tenant, n: m.total, k: m.owned, s: m.seen, d: m.owned - m.seen };
   return {
-    title: tr('Đường đi của một câu qua RLS', 'A query\'s path through RLS'), w: 340, h: 282,
+    title: tr('Đường đi của một câu qua RLS', 'A query\'s path through RLS'), w: 340, h: 292,
     frames: [
       { say: tr('Ứng dụng mượn một kết nối từ pool, chạy bằng vai trò app (không sở hữu bảng). Kết nối chưa biết khách nào.', 'The application borrows a pooled connection that runs as role app (not the table owner). The connection knows no tenant yet.'), nodes: draw(0) },
       { say: fill(tr('BEGIN rồi SET LOCAL app.tenant_id = \'{t}\': khách hiện tại chỉ sống trong transaction này.', 'BEGIN, then SET LOCAL app.tenant_id = \'{t}\': the current tenant lives only inside this transaction.'), v), nodes: draw(1) },

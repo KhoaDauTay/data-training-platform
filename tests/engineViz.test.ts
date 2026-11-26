@@ -72,6 +72,51 @@ function checkFrame(svg: SVGSVGElement, name: string, step: number): string[] {
   return bad;
 }
 
+/** The last point of an absolute M/L/H/V/Q/C path and the point its last segment comes from (control point for Q/C). */
+function pathEnd(d: string): [number, number, number, number] {
+  const tok = d.match(/[A-Za-z]|-?\d*\.?\d+(?:e-?\d+)?/g) ?? [];
+  const ARGS: Record<string, number> = { M: 2, L: 2, H: 1, V: 1, Q: 4, C: 6 };
+  let cmd = '', x = 0, y = 0, px = 0, py = 0;
+  for (let i = 0; i < tok.length;) {
+    if (/[A-Za-z]/.test(tok[i])) cmd = tok[i++];
+    const n = ARGS[cmd];
+    if (!n) throw new Error(`path command ${cmd} not handled: ${d}`);
+    const a = tok.slice(i, i + n).map(Number);
+    i += n;
+    [px, py] = cmd === 'Q' ? [a[0], a[1]] : cmd === 'C' ? [a[2], a[3]] : [x, y];
+    [x, y] = cmd === 'H' ? [a[0], y] : cmd === 'V' ? [x, a[0]] : [a[n - 2], a[n - 1]];
+  }
+  return [px, py, x, y];
+}
+/** v39 F3 (L623): every arrowhead's tip (0.75·w past the line's end) stays ≥ 2 units outside every box it does not start in. */
+function arrowTips(svg: SVGSVGElement, name: string, step: number): string[] {
+  const at = (el: Element, a: string) => Number(el.getAttribute(a));
+  const seen = (el: Element) => !el.closest('defs') && Number(el.getAttribute('opacity') ?? 1) > 0.05;
+  const boxes = [
+    ...[...svg.querySelectorAll('rect')].filter(seen).map((r) => ({ k: r.getAttribute('data-k'), x: at(r, 'x'), y: at(r, 'y'), w: at(r, 'width'), h: at(r, 'height') })),
+    ...[...svg.querySelectorAll('circle')].filter((c) => seen(c) && at(c, 'r') >= 4).map((c) => ({ k: c.getAttribute('data-k'), x: at(c, 'cx') - at(c, 'r'), y: at(c, 'cy') - at(c, 'r'), w: 2 * at(c, 'r'), h: 2 * at(c, 'r') })),
+  ];
+  const dist = (x: number, y: number, b: (typeof boxes)[number]) => {
+    const dx = Math.max(b.x - x, 0, x - (b.x + b.w)), dy = Math.max(b.y - y, 0, y - (b.y + b.h));
+    return dx || dy ? Math.hypot(dx, dy) : -Math.min(x - b.x, b.x + b.w - x, y - b.y, b.y + b.h - y);
+  };
+  const bad: string[] = [];
+  for (const el of svg.querySelectorAll('line[marker-end], path[marker-end]')) {
+    if (!seen(el)) continue;
+    const w = Number(/stroke-width:([\d.]+)/.exec(el.getAttribute('style') ?? '')?.[1] ?? 1);
+    const [px, py, x, y] = el.tagName === 'line' ? [at(el, 'x1'), at(el, 'y1'), at(el, 'x2'), at(el, 'y2')] : pathEnd(el.getAttribute('d')!);
+    const [sx, sy] = el.tagName === 'line' ? [px, py] : pathEnd(el.getAttribute('d')!.replace(/^(M[^A-Za-z]*).*$/, '$1')).slice(2);
+    const len = Math.hypot(x - px, y - py) || 1;
+    const tx = x + ((x - px) / len) * 0.75 * w, ty = y + ((y - py) / len) * 0.75 * w;
+    for (const b of boxes) {
+      if (dist(sx, sy, b) < 0) continue; // a box the arrow starts inside holds it (a panel), it is not its target
+      const g = dist(tx, ty, b);
+      if (g < 2) bad.push(`${name}#${step + 1} ${el.getAttribute('data-k')} tip ${g.toFixed(1)} from ${b.k}`);
+    }
+  }
+  return bad;
+}
+
 describe('engineViz registry', () => {
   it('registers every Postgres diagram (and the NoSQL ones done so far)', () => {
     expect(V.vizNames()).toEqual(expect.arrayContaining([...POSTGRES, ...NOSQL]));
@@ -102,7 +147,7 @@ describe('engineViz registry', () => {
           expect(fig.querySelector('li[aria-current=step]')?.textContent).toBe(v.texts[i]);
           expect(v.texts[i].length).toBeLessThan(420);
           if (lang === 'en') expect(v.texts[i]).not.toMatch(/[ăâđêôơưạảấầẩẫậắằẳẵặẹẻẽếềểễệỉịọỏốồổỗộớờởỡợụủứừửữựỳỵỷỹ]/i);
-          bad.push(...checkFrame(svg, name, i));
+          bad.push(...checkFrame(svg, name, i), ...arrowTips(svg, name, i));
         }
         expect(bad).toEqual([]);
         v.destroy();
