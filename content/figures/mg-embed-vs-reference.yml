@@ -2,29 +2,30 @@
 # Data: the lesson's own two cases: an order with a few lines (embed, order 1's lines p1 and p4 from the shared shop data);
 # a product with tens of thousands of reviews (reference, plus a small array of the latest reviews).
 # Deviation: the plan's question strip is in the caption (three questions do not fit 2 × 18). R2 lesson 1: the one arrow is
-# the reference, labelled product_id. Source: https://www.mongodb.com/docs/manual/reference/limits/#mongodb-limit-BSON-Document-Size
+# the reference, labelled product_id. R3 (E10): order 1 is a table whose rows are its embedded lines (documents inside the
+# document); the 16 MiB limit is the embed side's risk; p6's small array is labelled as a copy of the 3 newest reviews. Source: https://www.mongodb.com/docs/manual/reference/limits/#mongodb-limit-BSON-Document-Size
 title: { vi: "Nhúng hay tham chiếu", en: "Embed or reference" }
 caption:
   vi: "Chọn theo cách đọc, không theo luật cứng. Màn hình nào đọc dữ liệu này? Đọc bao nhiêu lần so với ghi? Phía \"nhiều\" lớn tới đâu sau một năm?"
   en: "Choose by how the data is read, not by a fixed rule. Which screen reads it? How often is it read compared with written? How big is the \"many\" side after a year?"
 alt:
-  vi: "Bên nhúng: tài liệu đơn 1 chứa luôn mảng lines với p1 và p4; đọc cùng nhau trong một lần, và một lần ghi trên một tài liệu là nguyên tử. Bên tham chiếu: tài liệu sản phẩm p6 chỉ giữ mảng latest_reviews gồm 3 đánh giá mới nhất; mọi đánh giá nằm trong collection reviews riêng, mỗi cái có product_id trỏ về p6; phía nhiều không giới hạn, và một tài liệu tối đa 16 MiB."
-  en: "Embed side: the document order 1 holds its lines array with p1 and p4; it is read together in one go, and one write on one document is atomic. Reference side: the product document p6 keeps only a latest_reviews array of the 3 newest reviews; every review lives in its own collection reviews, each with a product_id pointing back to p6; the many side is unbounded, and a document is at most 16 MiB."
+  vi: "Bên nhúng: tài liệu đơn 1 chứa luôn mảng lines, hai dòng p1 qty 2 và p4 qty 1 nằm ngay trong tài liệu; đọc cùng nhau trong một lần, một lần ghi trên một tài liệu là nguyên tử, nhưng một mảng không giới hạn sẽ chạm trần 16 MiB của một tài liệu. Bên tham chiếu: tài liệu sản phẩm p6 chỉ giữ một bản sao 3 đánh giá mới nhất; mọi đánh giá nằm trong collection reviews riêng, mỗi cái có product_id trỏ về p6, nên phía nhiều không giới hạn."
+  en: "Embed side: the document order 1 holds its lines array, the two lines p1 qty 2 and p4 qty 1 sit inside the document; it is read together in one go and one write on one document is atomic, but an unbounded array would hit the 16 MiB ceiling of one document. Reference side: the product document p6 keeps only a copy of the 3 newest reviews; every review lives in its own collection reviews, each with a product_id pointing back to p6, so the many side is unbounded."
 groups:
-  - { id: em, label: { vi: "Nhúng", en: "Embed" }, nodes: [od, e1, e2] }
-  - { id: rf, label: { vi: "Tham chiếu", en: "Reference" }, nodes: [pr, rv, r1, r2] }
+  - { id: em, label: { vi: "Nhúng", en: "Embed" }, nodes: [od, e1, e2, lim] }
+  - { id: rf, label: { vi: "Tham chiếu", en: "Reference" }, nodes: [pr, rv, r1] }
 nodes:
-  - { id: od, shape: doc, label: { vi: "đơn 1", en: "order 1" }, sub: "lines: [p1, p4]" }
+  - { id: od, shape: grid, label: { vi: "đơn 1: một tài liệu", en: "order 1: one doc" }, head: [lines.sku, qty], cells: [[p1, "2"], [p4, "1"]] }
   - { id: e1, shape: key, label: { vi: "đọc cùng nhau", en: "read together" }, tone: live }
-  - { id: e2, shape: key, label: { vi: "ghi nguyên tử 1 tài liệu", en: "atomic on one doc" }, tone: live }
-  - { id: pr, shape: doc, label: p6, sub: "latest_reviews: 3" }
+  - { id: e2, shape: key, label: { vi: "ghi nguyên tử", en: "atomic write" }, tone: live }
+  - { id: lim, shape: key, label: { vi: "trần 16 MiB", en: "16 MiB ceiling" }, tone: warm }
+  - { id: pr, shape: doc, label: p6, sub: { vi: "3 review mới nhất", en: "3 newest reviews" } }
   - { id: rv, shape: table, label: reviews, sub: "product_id: p6" }
   - { id: r1, shape: key, label: { vi: "nhiều vô hạn", en: "unbounded many" }, tone: warm }
-  - { id: r2, shape: key, label: { vi: "16 MiB / tài liệu", en: "16 MiB per doc" }, tone: warm }
 rows:
   - [od]
-  - [e1, e2]
+  - [e1, e2, lim]
   - [pr, rv]
-  - [r1, r2]
+  - [r1]
 edges:
   - { from: rv, to: pr, label: product_id }

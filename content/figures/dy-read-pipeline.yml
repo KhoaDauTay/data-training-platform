@@ -1,7 +1,8 @@
 # DY-2 (tools/v39/diagram-plan.md): key condition, then filter, then projection. Lessons: e-dy-l2-02 (Ý chính), e-dy-l2-13 (Ý chính).
 # Data (lab.setup of e-dy-l2-02, run on dynoxide): Query customerId = C-01, FilterExpression status = DELIVERED,
 # ProjectionExpression total → ScannedCount 4, Count 3 (O-101, O-102, O-104; totals 770000, 770000, 120000).
-# Deviation: the plan's funnel is a bar chart (bar = items at that step); the money chip is the first bar's note.
+# R3 (E7): the three steps are boxes with their counts in words (the old equal-width bars read as empty fields and hid 4 vs 3),
+# joined in order; the money note sits on the read step.
 # Sources: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.Pagination.html, …/read-write-operations.html
 title: { vi: "Ba bước của một Query", en: "The three steps of a Query" }
 caption:
@@ -12,18 +13,17 @@ alt:
   en: "A Query for customer C-01 goes through three steps. KeyCondition reads 4 items, and you pay for those 4. The filter status = DELIVERED drops 1 item it already read, leaving 3. The projection keeps only the attribute total of those 3. The response says ScannedCount 4, Count 3. Limit counts at step 1, the read step."
 nodes:
   - { id: q, label: Query, sub: "customerId = C-01" }
-  - id: f
-    shape: bars
-    label: { vi: "item qua từng bước", en: "items at each step" }
-    items:
-      - { label: KeyCondition, value: 4, note: { vi: "đọc 4, tính tiền", en: "reads 4, billed" }, tone: warm }
-      - { label: Filter, value: 3, note: { vi: "còn 3, đã đọc 4", en: "3 left, 4 read" } }
-      - { label: Projection, value: 3, note: { vi: "chỉ còn total", en: "total only" } }
+  - { id: kc, label: KeyCondition, sub: { vi: "đọc 4 · tính tiền", en: "reads 4 · billed" }, tone: warm }
+  - { id: fl, label: Filter, sub: { vi: "còn 3, bỏ 1 đã đọc", en: "3 left, 1 dropped" } }
+  - { id: pj, label: Projection, sub: { vi: "3 item, chỉ total", en: "3, total only" } }
   - { id: g, label: ScannedCount 4, sub: Count 3, tone: live }
   - { id: lim, shape: key, label: { vi: "Limit đếm ở bước 1", en: "Limit counts at step 1" } }
 rows:
   - [q]
-  - [f]
+  - [kc, fl, pj]
   - [g, lim]
 edges:
-  - { from: q, to: f }
+  - { from: q, to: kc }
+  - { from: kc, to: fl }
+  - { from: fl, to: pj }
+  - { from: pj, to: g }

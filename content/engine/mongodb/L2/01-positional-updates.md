@@ -50,11 +50,11 @@ lab:
     - task:
         vi: Giá sản phẩm `"p1"` được sửa thành `23000` trong mọi đơn có nó. Chỉ đổi các dòng `"p1"`.
         en: The price of product `"p1"` is corrected to `23000` in every order that has it. Change only the `"p1"` lines.
-      solution: 'db.orders.updateMany({ "lines.sku": "p1" }, { $set: { "lines.$[l].price": 23000 } }, { arrayFilters: [{ "l.sku": "p1" }] })'
+      solution: 'db.orders.updateMany({ "lines.sku": "p1" }, { $set: { "lines.$[elem].price": 23000 } }, { arrayFilters: [{ "elem.sku": "p1" }] })'
       check: doc
       hint:
-        vi: 'Đặt tên phần tử là `l` trong `"lines.$[l].price"`, rồi mô tả nó trong `arrayFilters: [{ "l.sku": "p1" }]`.'
-        en: 'Name the element `l` in `"lines.$[l].price"`, then describe it in `arrayFilters: [{ "l.sku": "p1" }]`.'
+        vi: 'Đặt tên phần tử là `elem` trong `"lines.$[elem].price"`, rồi mô tả nó trong `arrayFilters: [{ "elem.sku": "p1" }]`.'
+        en: 'Name the element `elem` in `"lines.$[elem].price"`, then describe it in `arrayFilters: [{ "elem.sku": "p1" }]`.'
     - task:
         vi: Đánh dấu `bulk` bằng `true` trên mọi dòng hàng có `qty` từ 4 trở lên, ở mọi đơn.
         en: Set `bulk` to `true` on every line with a `qty` of 4 or more, in every order.
@@ -116,7 +116,7 @@ Hình từng bước ở cuối mục này chạy ba cách trên đơn 5 của l
 ```text
 { $set: { "lines.$.qty": 4 } }            // first element matched by the filter
 { $set: { "lines.$[].qty": 4 } }          // every element
-{ $set: { "lines.$[l].qty": 4 } }, { arrayFilters: [{ "l.sku": "p1" }] }
+{ $set: { "lines.$[elem].qty": 4 } }, { arrayFilters: [{ "elem.sku": "p1" }] }
 ```
 
 - `$` cần một điều kiện trên `lines` trong filter.
@@ -155,7 +155,7 @@ db.orders.updateMany({ "lines.qty": { $gte: 2 } }, { $set: { "lines.$.bulk": tru
 
 ```js
 // FIX: arrayFilters marks every matching line
-db.orders.updateMany({ "lines.qty": { $gte: 2 } }, { $set: { "lines.$[l].bulk": true } }, { arrayFilters: [{ "l.qty": { $gte: 2 } }] })
+db.orders.updateMany({ "lines.qty": { $gte: 2 } }, { $set: { "lines.$[elem].bulk": true } }, { arrayFilters: [{ "elem.qty": { $gte: 2 } }] })
 ```
 
 Đơn 5 có hai dòng `qty` bằng 2: bản sai chỉ đánh dấu dòng đầu. Đơn 7 cũng vậy: `"p2"` (2) có cờ, `"p3"` (3) thì không. Lỗi này lặng lẽ, không có thông báo nào; chỉ đếm lại các dòng mới thấy. Khi một tài liệu có thể chứa nhiều phần tử khớp, dùng `$[<id>]`.
@@ -212,7 +212,7 @@ The step-through figure at the end of this section runs the three forms on the l
 ```text
 { $set: { "lines.$.qty": 4 } }            // first element matched by the filter
 { $set: { "lines.$[].qty": 4 } }          // every element
-{ $set: { "lines.$[l].qty": 4 } }, { arrayFilters: [{ "l.sku": "p1" }] }
+{ $set: { "lines.$[elem].qty": 4 } }, { arrayFilters: [{ "elem.sku": "p1" }] }
 ```
 
 - `$` needs a condition on `lines` in the filter.
@@ -251,7 +251,7 @@ db.orders.updateMany({ "lines.qty": { $gte: 2 } }, { $set: { "lines.$.bulk": tru
 
 ```js
 // FIX: arrayFilters marks every matching line
-db.orders.updateMany({ "lines.qty": { $gte: 2 } }, { $set: { "lines.$[l].bulk": true } }, { arrayFilters: [{ "l.qty": { $gte: 2 } }] })
+db.orders.updateMany({ "lines.qty": { $gte: 2 } }, { $set: { "lines.$[elem].bulk": true } }, { arrayFilters: [{ "elem.qty": { $gte: 2 } }] })
 ```
 
 Order 5 has two lines with `qty` equal to 2: the wrong version flags only the first. Order 7 is the same: `"p2"` (2) gets the flag, `"p3"` (3) does not. This mistake is silent, with no message; only counting the lines again shows it. When one document can hold several matching elements, use `$[<id>]`.

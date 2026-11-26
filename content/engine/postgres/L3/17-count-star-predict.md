@@ -8,7 +8,7 @@ title_en: "Predict: does count(*) read the primary key to be fast?"
 kind: predict
 runtime: browser
 minutes: 10
-figures: [{ name: pg-vacuum-flow, at: idea }, { name: pg-index-only-scan, at: idea, variant: vm }]
+figures: [{ name: pg-vacuum-flow, at: idea }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Đoán kế hoạch của `count(*)` trên bảng vừa nạp và trên bảng đã VACUUM

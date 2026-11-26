@@ -9,7 +9,7 @@ kind: lab
 runtime: browser
 minutes: 15
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
-figures: [{ name: pg-memory-two-kinds, at: idea, variant: hit }]
+figures: [{ name: pg-buffer-hit-read, at: idea }]
 objectives:
   - vi: Nối `shared hit` của một nút quét với số trang bảng và index
     en: Link the `shared hit` of a scan node to the page count of the table and index

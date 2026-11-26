@@ -1,21 +1,22 @@
-# PG-9 (tools/v39/diagram-plan.md): shared buffers vs work_mem. Lessons: e-pg-l3-14 (Ý chính), e-pg-l3-18 variant `hit`.
+# PG-9 (tools/v39/diagram-plan.md): shared buffers vs work_mem. Lesson: e-pg-l3-14 (Ý chính); e-pg-l3-18 has its own pg-buffer-hit-read (R3 E12).
 # Data (lesson setup): big 20,000 rows; UPDATE big … WHERE id = 1 leaves page 0 dirty; sort_plan('64kB') spills (external
 # merge Disk), a larger work_mem sorts in memory; defaults shared_buffers 128 MB, work_mem 4 MB (lesson text).
 # The page cells are an illustration (6 pages). R2 lesson 5: the read path and the checkpoint are their own labelled keys in
 # the gap between memory and disk. Sources: https://www.postgresql.org/docs/current/runtime-config-resource.html,
-# https://www.postgresql.org/docs/current/wal-configuration.html
+# https://www.postgresql.org/docs/current/wal-configuration.html. R3 (E1/E14): stacked on a phone, read and checkpoint take lanes inside
+# the frame (read up the left, checkpoint down the right); the dirty page is a highlighted p0 named in the sub, so cells keep their width.
 title: { vi: "Hai loại bộ nhớ: shared buffers và work_mem", en: "Two kinds of memory: shared buffers and work_mem" }
 caption:
   vi: "Shared buffers là các trang 8 kB dùng chung cho mọi kết nối; mọi lần đọc ghi bảng đi qua đây, và checkpoint mới ghi trang bẩn xuống đĩa. work_mem là bộ nhớ riêng của từng nút sort hay hash; vượt quá thì tràn ra file tạm. Tăng shared_buffers không cứu được một sort tràn đĩa."
   en: "Shared buffers are 8 kB pages shared by every connection; every table read and write goes through them, and a checkpoint, not COMMIT, writes dirty pages to disk. work_mem is the private memory of each sort or hash node; past it, the node spills to temp files. Raising shared_buffers never fixes a spilling sort."
 alt:
-  vi: "Hai nhóm xếp dọc. Ở trên, bộ nhớ chung: shared_buffers 128 MB gồm các trang 8 kB (minh họa 6 trang), hai đường đọc và checkpoint nối nó với file bảng trên đĩa. Bên dưới, riêng từng kết nối: mỗi kết nối có work_mem 4 MB, và một Sort quá work_mem tràn ra file tạm."
+  vi: "Hai nhóm xếp dọc. Ở trên, bộ nhớ chung: shared_buffers 128 MB gồm các trang 8 kB (minh họa 6 trang; trang bẩn được tô và gọi tên), hai đường đọc và checkpoint nối nó với file bảng trên đĩa. Bên dưới, riêng từng kết nối: mỗi kết nối có work_mem 4 MB, và một Sort quá work_mem tràn ra file tạm."
   en: "Two groups, one above the other. At the top, shared memory: shared_buffers of 128 MB made of 8 kB pages (6 shown as an illustration), with the read path and the checkpoint linking it to the table files on disk. Below, per connection: each connection has 4 MB of work_mem, and a Sort larger than work_mem spills to temp files."
 groups:
   - { id: sh, label: { vi: "bộ nhớ chung", en: "shared memory" }, nodes: [sb, rd, ck] }
   - { id: pr, label: { vi: "riêng từng kết nối", en: "per connection" }, nodes: [c1, c2, srt] }
 nodes:
-  - { id: sb, shape: grid, label: shared_buffers, sub: { vi: "128 MB, 8 kB/ô", en: "128 MB, 8 kB/cell" }, cells: [[p0, p1, p2], [p3, p4, p5]] }
+  - { id: sb, shape: grid, label: shared_buffers, sub: { vi: "128 MB, minh họa 6 trang", en: "128 MB, 6 pages shown" }, cells: [[p0, p1, p2], [p3, p4, p5]] }
   - { id: rd, shape: key, label: { vi: "đọc: hit / read", en: "read: hit / read" }, tone: new }
   - { id: ck, shape: key, label: { vi: "checkpoint ghi", en: "checkpoint writes" }, tone: ghost }
   - { id: tf, shape: table, label: { vi: "file bảng", en: "table files" }, sub: { vi: "trên đĩa", en: "on disk" } }
@@ -41,25 +42,15 @@ steps:
   - say: { vi: "Mọi đọc ghi bảng đi qua shared buffers.", en: "Every table read and write goes through shared buffers." }
     alt: { vi: "Một lần đọc tìm trang trong shared buffers (hit) hoặc nạp nó từ file bảng trên đĩa (read).", en: "A read finds the page in shared buffers (hit) or loads it from the table files on disk (read)." }
   - say: { vi: "COMMIT không ghi trang; checkpoint mới ghi.", en: "COMMIT does not write the page; a checkpoint does." }
-    alt: { vi: "UPDATE big … WHERE id = 1 sửa trang p0 trong bộ nhớ: p0 thành trang bẩn D. COMMIT không ghi nó xuống đĩa; checkpoint mới ghi trang bẩn vào file bảng.", en: "UPDATE big … WHERE id = 1 changes page p0 in memory: p0 becomes dirty, D. COMMIT does not write it to disk; a checkpoint writes the dirty page to the table files." }
+    alt: { vi: "UPDATE big … WHERE id = 1 sửa trang p0 trong bộ nhớ: p0 thành trang bẩn. COMMIT không ghi nó xuống đĩa; checkpoint mới ghi trang bẩn vào file bảng.", en: "UPDATE big … WHERE id = 1 changes page p0 in memory: p0 becomes dirty. COMMIT does not write it to disk; a checkpoint writes the dirty page to the table files." }
     set:
       rd: { tone: plain }
       ck: { tone: new }
-      sb: { cells: [[p0 D, p1, p2], [p3, p4, p5]], cellTone: { "0:0": warm } }
+      sb: { sub: { vi: "p0 bẩn: sửa, chưa ghi", en: "p0 dirty: not written" }, cellTone: { "0:0": warm } }
   - say: { vi: "Sort dùng work_mem riêng, không dùng shared buffers.", en: "A sort uses private work_mem, not shared buffers." }
     alt: { vi: "Bên dưới, nhóm riêng: mỗi kết nối có work_mem 4 MB cho mỗi nút sort hay hash. Sort của kết nối 2 lớn hơn work_mem nên tràn ra file tạm trên đĩa (external merge Disk), không đụng tới shared buffers.", en: "Below, the private group: each connection has 4 MB of work_mem per sort or hash node. Connection 2's sort is larger than work_mem, so it spills to temp files on disk (external merge Disk) without touching shared buffers." }
     set:
       rd: { tone: plain }
-      sb: { cells: [[p0 D, p1, p2], [p3, p4, p5]], cellTone: { "0:0": warm } }
+      sb: { sub: { vi: "p0 bẩn: sửa, chưa ghi", en: "p0 dirty: not written" }, cellTone: { "0:0": warm } }
       c2: { tone: warm }
       srt: { tone: warm }
-variants:
-  hit:
-    step: 0
-    title: { vi: "Shared buffers: hit hay read", en: "Shared buffers: hit or read" }
-    caption:
-      vi: "Dòng Buffers của EXPLAIN đếm trang tìm thấy trong shared buffers (hit) và trang phải nạp từ đĩa (read)."
-      en: "EXPLAIN's Buffers line counts pages found in shared buffers (hit) and pages loaded from disk (read)."
-    alt:
-      vi: "Shared buffers là vùng chung 128 MB gồm các trang 8 kB (minh họa 6 trang). Một lần đọc tìm trang trong bộ nhớ, đếm là hit, hoặc nạp từ file bảng trên đĩa, đếm là read. Checkpoint ghi trang bẩn ngược xuống đĩa. Mỗi kết nối còn có work_mem 4 MB riêng cho sort."
-      en: "Shared buffers are one shared 128 MB area of 8 kB pages (6 pages shown as an illustration). A read finds the page in memory, counted as hit, or loads it from the table files on disk, counted as read. A checkpoint writes dirty pages back to disk. Each connection also has its own 4 MB of work_mem for sorts."

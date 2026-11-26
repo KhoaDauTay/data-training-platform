@@ -1,12 +1,13 @@
 # MG-3 (tools/v39/diagram-plan.md): $, $[], $[id] + arrayFilters. Lesson: e-mg-l2-01 (Ý chính).
 # Data (lab.setup, run on mingo, each from the pristine data): order 5 lines {p6, qty 2}, {p4, qty 2};
 # updateOne({_id: 5, "lines.qty": {$gte: 2}}, {$inc: {"lines.$.qty": 1}}) → 3, 2; {$inc: {"lines.$[].qty": 1}} → 3, 3;
-# {$inc: {"lines.$[l].qty": 1}}, {arrayFilters: [{"l.sku": "p4"}]} → 2, 3.
+# {$inc: {"lines.$[elem].qty": 1}}, {arrayFilters: [{"elem.sku": "p4"}]} → 2, 3.
+# R3 (E9): the filtered identifier is `elem` (the docs' name), in the figure and in the lesson's code alike; `l` read as 1 or I.
 # Sources: https://www.mongodb.com/docs/manual/reference/operator/update/positional/, …/positional-all/, …/positional-filtered/
-title: { vi: "$, $[] và $[l]: sửa phần tử nào", en: "$, $[] and $[l]: which element changes" }
+title: { vi: "$, $[] và $[elem]: sửa phần tử nào", en: "$, $[] and $[elem]: which element changes" }
 caption:
-  vi: "Cả ba lệnh tăng qty thêm 1 trong đơn 5. $ sửa phần tử đầu tiên khớp điều kiện mảng trong filter, $[] sửa mọi phần tử, $[l] sửa mọi phần tử thỏa điều kiện l trong arrayFilters. Ô tô màu là ô được sửa."
-  en: "All three commands add 1 to qty in order 5. $ changes the first element that matches the array condition in the filter, $[] changes every element, $[l] changes every element that meets condition l in arrayFilters. A tinted cell is a changed one."
+  vi: "Cả ba lệnh tăng qty thêm 1 trong đơn 5. $ sửa phần tử đầu tiên khớp điều kiện mảng trong filter, $[] sửa mọi phần tử, $[elem] sửa mọi phần tử thỏa điều kiện elem trong arrayFilters. Ô được tô màu là ô được sửa."
+  en: "All three commands add 1 to qty in order 5. $ changes the first element that matches the array condition in the filter, $[] changes every element, $[elem] changes every element that meets condition elem in arrayFilters. A tinted cell is a changed one."
 alt:
   vi: "Đơn 5 có hai dòng: p6 qty 2 và p4 qty 2. Một lệnh $inc tăng qty thêm 1, qua một trong ba dạng toán tử vị trí."
   en: "Order 5 has two lines: p6 qty 2 and p4 qty 2. One $inc command adds 1 to qty through one of the three positional forms."
@@ -28,9 +29,9 @@ steps:
       op: { label: "lines.$[].qty", sub: { vi: "mọi phần tử", en: "every element" } }
       f: { label: { vi: "không cần điều kiện", en: "no condition needed" }, tone: ghost }
       doc: { cells: [[p6, "2 → 3"], [p4, "2 → 3"]], cellTone: { "0:1": new, "1:1": new } }
-  - say: { vi: "$[l] với arrayFilters: mọi phần tử thỏa l.", en: "$[l] with arrayFilters: every element meeting l." }
-    alt: { vi: "Lệnh dùng lines.$[l].qty với arrayFilters l.sku = p4: chỉ dòng p4 thỏa l, nên p4 từ 2 thành 3, p6 giữ 2.", en: "The command uses lines.$[l].qty with arrayFilters l.sku = p4: only the p4 line meets l, so p4 goes from 2 to 3 and p6 stays 2." }
+  - say: { vi: "$[elem] với arrayFilters: mọi phần tử thỏa elem.", en: "$[elem] with arrayFilters: every element meeting elem." }
+    alt: { vi: "Lệnh dùng lines.$[elem].qty với arrayFilters elem.sku = p4: chỉ dòng p4 thỏa elem, nên p4 từ 2 thành 3, p6 giữ 2.", en: "The command uses lines.$[elem].qty with arrayFilters elem.sku = p4: only the p4 line meets elem, so p4 goes from 2 to 3 and p6 stays 2." }
     set:
-      op: { label: "lines.$[l].qty", sub: { vi: "mọi phần tử thỏa l", en: "each match of l" } }
-      f: { label: "arrayFilters: l.sku = p4" }
+      op: { label: "lines.$[elem].qty", sub: { vi: "thỏa elem", en: "each elem match" } }
+      f: { label: "arrayFilters: elem.sku = p4" }
       doc: { cells: [[p6, "2"], [p4, "2 → 3"]], cellTone: { "1:1": new } }

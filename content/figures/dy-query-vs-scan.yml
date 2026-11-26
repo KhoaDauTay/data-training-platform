@@ -2,7 +2,8 @@
 # Data (lab.setup, run on dynoxide): Orders has 120 items, 4 of them C-01 (2026-07-28#O-101, 08-28#O-102, 09-17#O-103,
 # 10-19#O-104); Query customerId = C-01 → ScannedCount 4, Count 4; Scan + Filter customerId = C-01 → ScannedCount 120, Count 4.
 # Deviation: the plan's four partition blocks are C-01's collection and one block for the other 116 items.
-# Source: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/read-write-operations.html
+# R3 (E2/E18): Scan reads the whole table, drawn as one arrow into the table's frame (Orders, 120 items), not two edges; C-01's rows stay
+# highlighted as the items returned in both steps. Source: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/read-write-operations.html
 title: { vi: "Query đọc một item collection, Scan đọc cả bảng", en: "Query reads one item collection, Scan reads the whole table" }
 caption:
   vi: "Bạn trả tiền theo ScannedCount, số item đã đọc, không theo Count, số item trả về. Query đi thẳng tới item collection của C-01 theo thứ tự sort key; Scan đọc cả 120 item rồi mới lọc."
@@ -13,17 +14,18 @@ alt:
 nodes:
   - { id: q, label: Query, sub: "customerId = C-01", tone: new }
   - { id: s, label: Scan + Filter, sub: "customerId = C-01", tone: warm }
-  - { id: c1, shape: grid, label: { vi: "C-01 (khóa phân vùng)", en: "C-01 (partition key)" }, head: [orderId (sort key)], cells: [["2026-07-28#O-101"], ["2026-08-28#O-102"], ["2026-09-17#O-103"], ["2026-10-19#O-104"]], tone: new }
+  - { id: c1, shape: grid, label: { vi: "C-01 (khóa phân vùng)", en: "C-01 (partition key)" }, head: [orderId (sort key)], cells: [["2026-07-28#O-101"], ["2026-08-28#O-102"], ["2026-09-17#O-103"], ["2026-10-19#O-104"]], sub: { vi: "4 item trả về", en: "4 items returned" }, tone: new }
   - { id: rest, label: C-02 … C-30, sub: { vi: "116 item khác", en: "116 other items" }, tone: ghost }
   - { id: cnt, label: ScannedCount 4, sub: Count 4, tone: live }
+groups:
+  - { id: tb, label: { vi: "Orders: 120 item", en: "Orders: 120 items" }, nodes: [c1, rest] }
 rows:
   - [q, s]
   - [c1, rest]
   - [cnt]
 edges:
   - { from: q, to: c1 }
-  - { from: s, to: c1 }
-  - { from: s, to: rest }
+  - { from: s, to: tb }
 steps:
   - say: { vi: "Query đi thẳng tới một item collection, theo thứ tự sort key.", en: "Query goes straight to one item collection, in sort-key order." }
     alt: { vi: "Query với customerId = C-01 chỉ đọc 4 item của C-01: ScannedCount 4, Count 4.", en: "A Query with customerId = C-01 reads only C-01's 4 items: ScannedCount 4, Count 4." }
@@ -32,7 +34,6 @@ steps:
     show: [s, c1, rest, cnt]
     alt: { vi: "Scan với bộ lọc customerId = C-01 đọc cả 120 item, gồm 116 item của khách khác, rồi bỏ chúng sau khi đọc. Kết quả vẫn là 4 đơn của C-01: ScannedCount 120, Count 4.", en: "A Scan with the filter customerId = C-01 reads all 120 items, including the 116 of other customers, and drops them after reading. The result is still C-01's 4 orders: ScannedCount 120, Count 4." }
     set:
-      c1: { tone: warm }
       rest: { sub: { vi: "116: đọc rồi bỏ", en: "116: read, dropped" }, tone: warm }
       cnt: { label: ScannedCount 120, tone: warm }
 variants:

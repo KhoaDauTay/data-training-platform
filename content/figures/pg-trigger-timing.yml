@@ -2,7 +2,8 @@
 # Data (lesson setup): products pen 10.00, book 50.00, bag 120.00; the lab's UPDATE products SET price = price + 1.00 touches
 # all 3 rows; audit table price_audit, statement log bulk_log reads the transition table.
 # The three AFTER ROW calls are drawn after the last row (the docs: row-level AFTER triggers fire at the end of the statement,
-# before statement-level AFTER triggers). Source: https://www.postgresql.org/docs/current/trigger-definition.html
+# before statement-level AFTER triggers). R3 (E6): the chain is continuous: into the BEFORE ROW frame, row to row, out of it.
+# Source: https://www.postgresql.org/docs/current/trigger-definition.html
 title: { vi: "Trigger nào chạy lúc nào, mấy lần", en: "Which trigger fires when, and how often" }
 caption:
   vi: "Một câu UPDATE trên 3 dòng: BEFORE STATEMENT một lần, BEFORE ROW trước mỗi dòng (sửa được NEW, hoặc RETURN NULL để bỏ dòng), rồi AFTER ROW ba lần sau dòng cuối (giá trị trả về bị bỏ qua), cuối cùng AFTER STATEMENT một lần."
@@ -31,4 +32,8 @@ rows:
   - [old, new]
 edges:
   - { from: st, to: bs }
+  - { from: bs, to: br }
+  - { from: r1, to: r2 }
+  - { from: r2, to: r3 }
+  - { from: br, to: ar }
   - { from: ar, to: as }

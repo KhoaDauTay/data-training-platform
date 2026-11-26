@@ -40,6 +40,8 @@ export interface FigSpec {
   title: Bi; caption: Bi; nodes: FigNode[]; rows: string[][]; edges?: FigEdge[]; steps?: FigStep[]; alt?: Bi; groups?: FigGroup[];
   /** R1 E16: consecutive rows of the same length (≥ 2) line up as columns; their boxes take the column's width */
   align?: boolean;
+  /** v41 R3: rows used instead when the default ones wrap (a phone), for a figure whose routing cannot stay clean stacked */
+  phone?: { rows: string[][] };
   /** P5: `set`/`show` change the static figure; `step: i` draws step i alone, static; `title`/`caption`/`alt` replace the spec's */
   variants?: Record<string, { set?: Patch; show?: string[]; step?: number; title?: Bi; caption?: Bi; alt?: Bi }>;
 }
@@ -203,6 +205,7 @@ export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): 
     pl = placeRows(spec, lang, W, new Map(dims), reserve, heads, co);
   }
   const { vrows, rowE, at, bands, H, CW } = pl;
+  if (spec.phone && pl.vrows.length > spec.rows.length) return layout({ ...spec, rows: spec.phone.rows, phone: undefined }, lang, W, variant);
 
   // routes: decided once from the geometry (the same for every frame)
   const lanes = new Map<number, number>();
@@ -270,13 +273,15 @@ export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): 
     const end = (x: number, from: number): number => (plain ? (down ? b.y : b.y + b.h) : stopAt(x, from, x, b.y + b.h / 2, STROKE, b)[1] + (down ? 2 : -2) - (down ? 1 : -1) * out(e.to)); // v41 R3 (E2): 8 clear of a table's title or sub
     const L = land(e);
     if (far(e)) {
-      if (label) fail(`${e.from}→${e.to}: nhãn trên làn bên chưa hỗ trợ`);
       // v41 R3 (E1/E2): a lane beside the rows in between when it fits (up on the left, down on the right), leaving and landing on that third; else the side lane at the right
       const key = [ra, rb].sort().join();
       const lx = localLane(spec, pl, e, near2.get(key) ?? 0);
       if (lx !== undefined) near2.set(key, (near2.get(key) ?? 0) + 1);
+      else if (label) fail(`${e.from}→${e.to}: nhãn trên làn bên chưa hỗ trợ`);
       const third = (r: Rect): number => Math.round(r.x + (r.w * (lx === undefined ? 1.5 : lx > r.x + r.w / 2 ? 2 : 1)) / 3);
-      return { e, d: laneRoute(third(a), y1, typeof L === 'number' ? L : third(b), ra, rb, lx ?? CW + 8 + 16 * laneNo++, nextLane, end) };
+      const d = laneRoute(third(a), y1, typeof L === 'number' ? L : third(b), ra, rb, lx ?? CW + 8 + 16 * laneNo++, nextLane, end);
+      const q = d.split(/[ ML]+/).filter(Boolean).map(Number), lft = q[4] < q[0]; // a label beside the lane's vertical run, on its outer side
+      return { e, d, lab: label ? { x: q[4] + (lft ? -6 : 6), y: (q[5] + q[7]) / 2, a: lft ? ('e' as const) : undefined, s: label } : undefined };
     }
     const lo = Math.max(a.x, b.x), hi = Math.min(a.x + a.w, b.x + b.w);
     const D = leave(e);
@@ -336,7 +341,7 @@ export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): 
   const parentOf = groupOf(spec);
   const groupBg = groupShapes(spec, lang, at, routes.flatMap((r) => (r ? [r.d] : [])));
   const frames: Frame[] = ps.map((p) => {
-    const shapes: Shape[] = [...groupBg]; // under everything: frame order is paint order
+    const shapes: Shape[] = groupBg.filter((s) => vis(p.show, s.k.split(/[:.]/)[1])); // under everything: frame order is paint order; v41 R3: a frame with nothing shown in it hides
     routes.forEach((r, i) => {
       if (!r || !vis(p.show, r.e.from) || !vis(p.show, r.e.to)) return;
       const k = `e:${i}`;
@@ -613,7 +618,7 @@ function draw(n: FigNode, r: Rect, lang: Lang, wide = false, parent?: string): S
   if (shape === 'box' || shape === 'key') {
     const ls = boxLines(n, lang);
     const cy = r.y + r.h / 2;
-    return [{ k, t: 'r', x: r.x, y: r.y, w: r.w, h: r.h, tone: n.tone ?? 'cell', rx: shape === 'key' ? r.h / 2 : 8, attrs },
+    return [{ k, t: 'r', x: r.x, y: r.y, w: r.w, h: r.h, tone: n.tone ?? 'cell', rx: shape === 'key' ? Math.min(r.h / 2, 14) : 8, attrs },
       // v40 R2 (E-03): a legend entry: its mark at the right of a short stem, as if the entity stood there
       ...(n.card ? crowMark(`${k}.m`, r.x + CARD_W + 6, cy, r.x, cy, n.card) : []),
       ...lines(`${k}.t`, ls, r.x + (r.w + (n.card ? CARD_W : 0)) / 2, mid(r.y, r.h, ls), { ink }, k)];

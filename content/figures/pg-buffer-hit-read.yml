@@ -1,0 +1,28 @@
+# PG-9b (R3 E12): the two ways a page reaches a plan node, for e-pg-l3-18 (Ý chính), which is about the Buffers line only
+# (pg-memory-two-kinds' `hit` variant showed work_mem too and one pill for both counts). Data (lesson lab): trips 30,000 rows =
+# 163 pages; SELECT sum(km) FROM trips → Seq Scan, Buffers: shared hit=163 (warm buffers in the lab). The 6 page cells are an
+# illustration. Sources: https://www.postgresql.org/docs/18/sql-explain.html, https://www.postgresql.org/docs/18/runtime-config-resource.html
+title: { vi: "Buffers: hit hay read", en: "Buffers: hit or read" }
+caption:
+  vi: "Mỗi trang một nút quét cần đi qua shared buffers. Có sẵn ở đó thì đếm là hit, không đụng đĩa; chưa có thì phải nạp từ ngoài vào (đĩa hoặc page cache của hệ điều hành) và đếm là read. Trong lab, Seq Scan trên trips ghi shared hit=163: cả 163 trang đều có sẵn."
+  en: "Every page a scan node needs goes through shared buffers. If it is already there it counts as hit, with no disk access; if not, it is brought in from outside (disk or the OS page cache) and counts as read. In the lab, the Seq Scan on trips shows shared hit=163: all 163 pages were already there."
+alt:
+  vi: "Hai đường tới shared buffers, vùng chung gồm các trang 8 kB (minh họa 6 trang). Bên trái, Seq Scan trên trips với shared hit=163 tìm thấy trang có sẵn: hit, không đụng đĩa. Bên phải, trang chưa có được nạp từ file bảng trên đĩa vào shared buffers: read."
+  en: "Two ways into shared buffers, the shared area of 8 kB pages (6 pages shown as an illustration). On the left, the Seq Scan on trips with shared hit=163 finds the page already there: hit, no disk access. On the right, a page that is not there is loaded from the table files on disk into shared buffers: read."
+nodes:
+  - { id: q, label: Seq Scan trips, sub: "shared hit=163" }
+  - { id: tf, shape: table, label: { vi: "file bảng", en: "table files" }, sub: { vi: "trên đĩa", en: "on disk" } }
+  - { id: hit, shape: key, label: { vi: "hit: có sẵn", en: "hit: already there" }, tone: live }
+  - { id: rd, shape: key, label: { vi: "read: nạp từ đĩa", en: "read: loaded" }, tone: warm }
+  - { id: sb, shape: grid, label: shared_buffers, sub: { vi: "minh họa: 6 trang 8 kB", en: "sample: 6 pages of 8 kB" }, cells: [[p0, p1, p2], [p3, p4, p5]] }
+rows:
+  - [q, tf]
+  - [hit, rd]
+  - [sb]
+phone:
+  rows: [[q], [hit], [sb], [rd], [tf]]
+edges:
+  - { from: q, to: hit }
+  - { from: hit, to: sb }
+  - { from: tf, to: rd }
+  - { from: rd, to: sb }

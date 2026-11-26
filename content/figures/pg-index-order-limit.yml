@@ -2,7 +2,8 @@
 # Data (PGlite, lesson setup): orders 20,000 rows, created_at = 2026-01-01 00:00 + g·7 min, so 01-01 00:07 … 04-08 05:20 (UTC);
 # index orders_created_idx; EXPLAIN … ORDER BY created_at DESC LIMIT 5 = Limit over Index Scan Backward.
 # Deviation: the plan's leaf strip is a column of entries (one row each; a strip of timestamps does not fit 280 wide), the
-# "…" row says how many entries it hides. Source: https://www.postgresql.org/docs/current/indexes-ordering.html
+# "…" row says how many entries it hides. R3 (E5): Seq Scan + Sort is a separate plan, in its own frame "Kế hoạch khác" under the
+# index (shown in step 3 only, the frame with it), never beside the index rows. Source: https://www.postgresql.org/docs/current/indexes-ordering.html
 title: { vi: "Đọc n mục đầu của index rồi dừng", en: "Read the first n index entries and stop" }
 caption:
   vi: "B-tree giữ created_at theo thứ tự, nên ORDER BY created_at DESC LIMIT 5 chỉ đọc ngược 5 mục cuối rồi dừng. Một index tăng dần đọc được cả hai chiều."
@@ -10,6 +11,8 @@ caption:
 alt:
   vi: "Index orders_created_idx giữ 20 000 mục created_at theo thứ tự tăng: 01-01 00:07, 01-01 00:14, rồi 19 993 mục nữa, rồi 04-08 04:52, 04:59, 05:06, 05:13 và cuối cùng 05:20."
   en: "Index orders_created_idx holds 20,000 created_at entries in ascending order: 01-01 00:07, 01-01 00:14, then 19,993 more, then 04-08 04:52, 04:59, 05:06, 05:13 and finally 05:20."
+groups:
+  - { id: other, label: { vi: "Kế hoạch khác", en: "Another plan" }, nodes: [alt] }
 nodes:
   - { id: lim, label: Limit 5, sub: { vi: "đủ 5 thì dừng", en: "stops at 5" }, tone: ghost }
   - { id: scan, label: Index Scan Backward, tone: ghost }
@@ -24,7 +27,8 @@ nodes:
 rows:
   - [lim]
   - [scan]
-  - [idx, alt]
+  - [idx]
+  - [alt]
 edges:
   - { from: scan, to: lim }
   - { from: idx, to: scan }
