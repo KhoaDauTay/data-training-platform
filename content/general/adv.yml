@@ -2063,5 +2063,5 @@
   why: { vi: "Mọi con số bạn báo đều đi qua một đường ống người khác dựng: đọc được nó, tin được nó, và bắt được khi nó sai.", en: "Every number you report passes through a pipeline someone else built: read it, trust it, and catch it when it is wrong." }
   needs: [d6]
   links:
-    - { title: { vi: "Thẻ Công cụ dữ liệu trong Database Engine (19 bài chạy trong trình duyệt)", en: "The Data stack card in Database Engine (19 lessons that run in the browser)" }, url: "#/engine/stack" }
+    - { title: { vi: "Thẻ Công cụ dữ liệu trong phần Cơ sở dữ liệu (các bài chạy trong trình duyệt)", en: "The Data stack card in the Databases area (lessons that run in the browser)" }, url: "#/engine/stack" }
     - { title: { vi: "dbt: Giới thiệu model", en: "dbt: About models" }, url: "https://docs.getdbt.com/docs/build/models" }
