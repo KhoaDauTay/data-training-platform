@@ -11,7 +11,7 @@ import { getLang, locale } from '../src/i18n';
 import { IV_DICT, ivText, type IvKey } from '../src/i18n/interview';
 import { buildInterview } from '../src/interview';
 import { elapsed, INTERVIEW_KEY, parseInterviewPrefs, passedTakeHomes, setPresence, TEXT_MAX } from '../src/interviewPrefs';
-import { drillHash, drillOfHash, hashOf, INTERVIEW_PAGE, isInterviewId, isInterviewPage, parseRoute, workspaceHash } from '../src/route';
+import { drillHash, drillOfHash, hashOf, INTERVIEW_PAGE, interviewTabHash, isInterviewId, isInterviewPage, parseRoute, workspaceHash } from '../src/route';
 import { emptySave, INTERVIEW_ID, parseSave, SAVE_VERSION, serializeSave, type Known } from '../src/save';
 import {
   activeStep, activeTicket, framePrice, generalHash, hintsShown, interviewClosed, ivHooks, ivItemId, keepsWork, payFrame, readDraft, schemaOf, session, today,
@@ -141,7 +141,7 @@ describe('một bộ đề và một take-home qua UI: Save không đổi, kết
       if (session.mode.kind === 'interview') view.pane(host, session.mode.run);
     };
     view.initInterview({
-      h, nodes, richText, announce: () => undefined, getLang, locale, app, actions, session, ivItemId, ivHooks, readDraft, today, readJson, writeJson, hashOf, drillHash,
+      h, nodes, richText, announce: () => undefined, getLang, locale, app, actions, session, ivItemId, ivHooks, readDraft, today, readJson, writeJson, hashOf, drillHash, interviewTabHash,
       SKILLS, knownSkills, loadTickets, showPane: () => undefined, prefs: { key: INTERVIEW_KEY, parse: parseInterviewPrefs, textMax: TEXT_MAX, elapsed, setPresence },
       enter: (r) => { session.mode = { kind: 'interview', run: r }; actions.rerender(); },
       openEditor: () => void editors++,

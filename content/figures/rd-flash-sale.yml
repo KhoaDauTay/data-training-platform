@@ -1,0 +1,25 @@
+# RD-13 (v47 R1, L959): the capstone's checkout flow. Lesson: e-rd-l2-06 (Ý chính).
+# Data = the lab: rl:k7:1000 99 → INCR 100 (allowed); cart:lily p05 1 → 2; WATCH stock:p05 3, MULTI, DECRBY 2, RPUSH o301,
+# EXEC → stock 1, orders:pack [o301]; ZINCRBY store:1 120 + 240 = 360 (top). The PostgreSQL write is the lesson's rule, not run.
+title: { vi: "Một lần mua trong đợt bán", en: "One purchase in the flash sale" }
+caption:
+  vi: "Mỗi bước một kiểu dữ liệu; chỉ thanh toán cần WATCH và MULTI/EXEC, vì hai lệnh phải đi cùng nhau."
+  en: "One data type per step; only the checkout needs WATCH and MULTI/EXEC, because two commands must go together."
+alt:
+  vi: "Luồng mua dùng đúng kiểu cho từng việc, và chỉ bước trừ kho cùng xếp đơn cần một giao dịch có WATCH để không bán lố. Kết quả: bộ đếm lên 100, giỏ có 2 chiếc p05, kho còn 1, o301 vào hàng đóng gói, store:1 lên đầu bảng với 360."
+  en: "The purchase uses the right type for each job, and only taking stock together with queueing the order needs a transaction with WATCH, so nothing is oversold. Result: the counter reaches 100, the cart has 2 p05, the stock is 1, o301 joins the packing queue, and store:1 tops the board with 360."
+nodes:
+  - { id: rl, mono: true, label: "INCR rl:k7:1000", sub: { vi: "100 · được qua", en: "100 · allowed" } }
+  - { id: cart, mono: true, label: "HINCRBY cart:lily", sub: "p05 → 2" }
+  - { id: tx, mono: true, label: "MULTI/EXEC", sub: { vi: "kho 3 → 1", en: "stock 3 → 1" }, tone: new }
+  - { id: q, mono: true, label: "orders:pack", sub: "o301" }
+  - { id: z, mono: true, label: "ZINCRBY sales", sub: { vi: "store:1 lên 360", en: "store:1 to 360" } }
+rows:
+  - [rl, cart]
+  - [tx]
+  - [q, z]
+edges:
+  - { from: rl, to: cart }
+  - { from: cart, to: tx }
+  - { from: tx, to: q }
+  - { from: tx, to: z }

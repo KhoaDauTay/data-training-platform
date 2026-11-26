@@ -1,0 +1,35 @@
+# RD-11 (v47 R1, L959): which of the shop's data lives in Redis and which in PostgreSQL. Lesson: e-rd-l2-04 (Ý chính).
+# Data = the lesson's split (sessions, caches, counters, leaderboards vs orders, payments, customers, stock).
+title: { vi: "Dữ liệu nằm ở đâu", en: "Where the data lives" }
+caption:
+  vi: "Redis giữ thứ mất được hoặc dựng lại được; PostgreSQL giữ thứ phải đúng và phải còn."
+  en: "Redis keeps what can be lost or rebuilt; PostgreSQL keeps what must be right and must stay."
+alt:
+  vi: "Redis nhanh vì nằm trong bộ nhớ nên hợp với dữ liệu tạm, còn PostgreSQL ghi xuống đĩa trước khi báo xong nên giữ dữ liệu phải còn. Kết quả: phiên, cache, bộ đếm, bảng xếp hạng ở Redis; đơn hàng, thanh toán, khách hàng, kho ở PostgreSQL."
+  en: "Redis is fast because it lives in memory, so it suits temporary data, while PostgreSQL writes to disk before it says done, so it keeps the data that must stay. Result: sessions, caches, counters and leaderboards in Redis; orders, payments, customers and stock in PostgreSQL."
+nodes:
+  - id: rd
+    shape: grid
+    label: Redis
+    sub: { vi: "trong bộ nhớ", en: "in memory" }
+    head: [{ vi: "dữ liệu", en: "data" }, { vi: "mất thì", en: "if lost" }]
+    cells:
+      - [{ vi: "phiên", en: "sessions" }, { vi: "đăng nhập lại", en: "log in again" }]
+      - [cache, { vi: "đọc PostgreSQL", en: "read PostgreSQL" }]
+      - [{ vi: "bộ đếm", en: "counters" }, { vi: "lệch chút", en: "slightly off" }]
+  - id: pg
+    shape: grid
+    label: PostgreSQL
+    sub: { vi: "ghi xuống đĩa (WAL)", en: "written to disk (WAL)" }
+    head: [{ vi: "dữ liệu", en: "data" }, { vi: "mất thì", en: "if lost" }]
+    cells:
+      - [{ vi: "đơn hàng", en: "orders" }, { vi: "mất tiền", en: "money lost" }]
+      - [{ vi: "thanh toán", en: "payments" }, { vi: "mất tiền", en: "money lost" }]
+      - [{ vi: "kho", en: "stock" }, { vi: "bán lố", en: "oversold" }]
+    rowTone: [warm, warm, warm]
+rows:
+  - [rd, pg]
+phone:
+  rows: [[rd], [pg]]
+edges:
+  - { from: "pg#0", to: "rd#1", dash: true }

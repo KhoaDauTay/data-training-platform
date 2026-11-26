@@ -118,7 +118,7 @@ function resume(id: string): void {
 export const resumeNow = (): Resume | undefined => resumeTarget(app.save.completed, nextTicket(app.tickets, done()), sqlOnly(), ROUTE_SKILLS.map((s) => s.id), readIntent()); // v25 R1: a last drill of a General-only skill resumes on its page; v47 S3: the welcome's goal
 /** v47 S3: product names are never translated; the two tracks are. */
 const engineName = (e: string): string =>
-  e === 'design' ? t('welcome.eng.design') : e === 'stack' ? t('welcome.eng.stack') : ({ postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB', olap: 'OLAP & ClickHouse' } as Record<string, string>)[e] ?? e;
+  e === 'design' ? t('welcome.eng.design') : e === 'stack' ? t('welcome.eng.stack') : ({ postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB', redis: 'Redis', olap: 'OLAP & ClickHouse' } as Record<string, string>)[e] ?? e;
 /** Its name: the task title, the skill, the Engine track (and level), or the learning path. */
 export const resumeName = (r: Resume): string =>
   r.kind === 'ticket' ? textOf(r.ticket, getLang()).title : r.kind === 'skill' ? SKILLS.find((s) => s.id === r.skill)!.label[getLang()]
@@ -631,8 +631,10 @@ function learnStep(): { title: string; up?: { href: string; text: string } } | u
     const node = generalNow()?.nodes.find((x) => x.id === adv); // the General chunk draws the page; until it is in, the id alone
     return { title: node ? `${adv.toUpperCase()} · ${node.title[lang]}` : adv.toUpperCase() };
   }
-  return isInterviewPage(hash) ? { title: t('prac.interview') } : undefined;
+  return isInterviewPage(hash) ? ivSub.of?.() ?? { title: t('prac.interview') } : undefined;
 }
+/** v47 S4 (L981): an engine bank's set or take-home inside the one room: its title and the room's tab (ui/engine.ts fills it). */
+export const ivSub: { of?: () => { title: string; up: { href: string; text: string } } | undefined } = {};
 
 /** Redrawn by rerender() (language switch, progress). Pure DOM from homeModel(); keeps no state of its own. */
 export function renderHome(host: HTMLElement): void {

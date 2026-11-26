@@ -33,7 +33,11 @@ export const domainHash = (id: DomainId): string => `#/d/${id}`;
 /** Hashes from before Plan 7 (#/play, #/data/<t>, #/dashboard) → the same page, tail kept. Kept forever (v5 §B.3). */
 export function canonicalHash(hash: string): string {
   const m = /^#\/?(play|data|dashboard)(?=$|[/?])(.*)$/.exec(hash);
-  return m ? `#/d/logistics/${m[1]}${m[2]}` : hash;
+  if (m) return `#/d/logistics/${m[1]}${m[2]}`;
+  // v47 S4 (L981): the Engine interview room merged into #/learn/interview; `#/engine/interview[/<set|take-home>]` kept forever
+  const iv = /^#\/?engine\/interview(?:\/([a-z0-9-]+))?(?=$|[/?])/.exec(hash);
+  if (!iv) return hash;
+  return ivRun(iv[1]) ? `${INTERVIEW_PAGE}/${iv[1]}` : interviewTabHash('pg'); // an unknown tail opened the room (then on PostgreSQL)
 }
 
 /** v15 Q1 (D-N2): a drill and a review of drills open the workspace here, outside every domain. */
@@ -110,7 +114,7 @@ export const learnAdvOf = (hash: string): string | undefined => /^#\/?learn\/adv
  * (either case) and lesson ids `e-…` pass; anything else is dropped (the page falls back to the engine or the overview).
  */
 export function engineRouteOf(hash: string): { engine?: string; level?: string; lesson?: string } {
-  const m = /^#\/?engine(?:\/(postgres|mongodb|dynamodb|design|stack|olap)(?:\/([lL][1-5]|ext)(?:\/(e-[a-z0-9-]+))?)?)?(?=$|[/?])/.exec(hash);
+  const m = /^#\/?engine(?:\/(postgres|mongodb|dynamodb|redis|design|stack|olap)(?:\/([lL][1-5]|ext)(?:\/(e-[a-z0-9-]+))?)?)?(?=$|[/?])/.exec(hash);
   if (m?.[2] === 'ext' && m[1] !== 'postgres') return { engine: m[1] }; // v43 (L720): the Extensions shelf is PostgreSQL's only
   return m ? { engine: m[1], level: m[2]?.toUpperCase(), lesson: m[3] } : {};
 }
@@ -129,27 +133,31 @@ export function engineTermsOf(hash: string): string | undefined {
   return m ? (m[1] ?? '') : undefined;
 }
 export const engineTermsHash = (id?: string): string => `#/engine/terms${id ? `/${id}` : ''}`;
-/**
- * v27 (L410): `#/engine/interview[/<set>|/<take-home id>]` → `{}` (the room), `{ set }` (`pg-mid-2`, or `again` for the
- * questions due for review) or `{ th }` (`e-iv-pg-th-1`); undefined elsewhere. An unknown tail opens the room.
- */
-export function engineInterviewOf(hash: string): { set?: string; th?: string } | undefined {
-  const m = /^#\/?engine\/interview(?:\/([a-z0-9-]+))?(?=$|[/?])/.exec(hash);
-  if (!m) return undefined;
-  const x = m[1] ?? '';
-  return /^(pg|mg|dy)-(junior|mid|senior|staff)-[1-3]$|^(mg|dy)-senior-4$|^again$/.test(x) ? { set: x } : /^e-iv-(pg|mg|dy)-th-[1-9]$/.test(x) ? { th: x } : {};
+/** An engine bank's set (`pg-mid-2`, `again` = the questions due for review) or take-home (`e-iv-pg-th-1`), else undefined. */
+function ivRun(x = ''): { set?: string; th?: string } | undefined {
+  return /^(pg|mg|dy)-(junior|mid|senior|staff)-[1-3]$|^(mg|dy)-senior-4$|^again$/.test(x) ? { set: x } : /^e-iv-(pg|mg|dy)-th-[1-9]$/.test(x) ? { th: x } : undefined;
 }
-export const engineInterviewHash = (x?: string): string => `#/engine/interview${x ? `/${x}` : ''}`;
+/**
+ * v47 S4 (I5, L980–L981): ONE interview room, `#/learn/interview`, with tabs SQL (no query) / PostgreSQL / MongoDB / DynamoDB
+ * (`?e=pg|mg|dy`). An engine bank's set run or take-home is `#/learn/interview/<set|take-home id>` → `{ set }` / `{ th }`;
+ * undefined elsewhere (an unknown tail draws the room). The v27 hashes `#/engine/interview…` are aliases (canonicalHash).
+ */
+export type IvTab = 'sql' | 'pg' | 'mg' | 'dy';
+export const engineInterviewOf = (hash: string): { set?: string; th?: string } | undefined => ivRun(/^#\/?learn\/interview\/([a-z0-9-]+)(?=$|[/?])/.exec(hash)?.[1]);
+export const interviewTabOf = (hash: string): IvTab => (/^#\/?learn\/interview\/?\?(?:.*&)?e=(pg|mg|dy)(?=$|&)/.exec(hash)?.[1] as IvTab | undefined) ?? 'sql';
+export const interviewTabHash = (tab: IvTab): string => (tab === 'sql' ? INTERVIEW_PAGE : `${INTERVIEW_PAGE}?e=${tab}`);
+/** A set run or take-home; no argument = the room on its PostgreSQL tab (the Databases hub and sidebar link there). */
+export const engineInterviewHash = (x?: string): string => (x ? `${INTERVIEW_PAGE}/${x}` : interviewTabHash('pg'));
 /** v28 (L430): `#/engine/compare` (the "Which engine?" page) → true; checked before engineRouteOf, which drops `compare`. */
 export const engineCompareOf = (hash: string): boolean => /^#\/?engine\/compare(?=$|[/?])/.test(hash);
 export const engineCompareHash = (): string => '#/engine/compare';
 /** The engine, level or lesson page's hash; level `EXT` = `#/engine/postgres/ext` (v43 L720: the Extensions shelf, kept forever). */
 export const engineHash = (engine: string, level?: string, lesson?: string): string =>
   `#/engine/${engine}${level ? `/${level === 'EXT' ? 'ext' : level}${lesson ? `/${lesson}` : ''}` : ''}`;
-const ENGINE_OF: Record<string, string> = { pg: 'postgres', mg: 'mongodb', dy: 'dynamodb', ds: 'design', st: 'stack', ol: 'olap' };
+const ENGINE_OF: Record<string, string> = { pg: 'postgres', mg: 'mongodb', dy: 'dynamodb', rd: 'redis', ds: 'design', st: 'stack', ol: 'olap' };
 /** L280: `#/engine/play/<lesson id>` (named by engine-ux-spec §5.1, never built) → that lesson's hash; undefined elsewhere. */
 export function enginePlayOf(hash: string): string | undefined {
-  const m = /^#\/?engine\/play\/(e-(pg|mg|dy|ds|st|ol)-l([1-5])-[a-z0-9-]+)(?=$|[/?])/.exec(hash);
+  const m = /^#\/?engine\/play\/(e-(pg|mg|dy|rd|ds|st|ol)-l([1-5])-[a-z0-9-]+)(?=$|[/?])/.exec(hash);
   return m ? engineHash(ENGINE_OF[m[2]], `L${m[3]}`, m[1]) : undefined;
 }
 

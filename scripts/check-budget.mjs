@@ -58,7 +58,8 @@ const GROUPS = [
   ['engineTerms', /^engineTermsSources-/, 50], // v27 (L412): content/engine/glossary.yml as JSON (296 terms, every field the page shows), lazy beside a lesson's chunk or on #/engine/terms: 46.2 KB gz (design-v27 §4.2 guessed 39 for 270)
   ['engineTermsUi', /^engineTerms-/, 8], // v27 (L412): src/ui/engineTerms.ts + src/engine/glossary.ts + src/i18n/engineTerms.ts (glossary page, term buttons and popovers): 4.7 KB gz
   ['engineIvBank', /^iv-(postgres|mongodb|dynamodb)-/, 48, 'each'], // v27 (L412): one interview bank per engine (content/engine/iv-<engine>.yml as JSON), fetched when the room shows that engine; per file: pg 44.1 (fixtures), mg 39.6, dy 39.0 KB gz
-  ['engineInterviewUi', /^engineInterview-/, 12], // v27 (L412): src/ui/engineInterview.ts + src/engine/{interviewBank,engineInterviewPrefs}.ts + src/i18n/engineInterview.ts, lazy on #/engine/interview: 10.1 KB gz
+  ['engineInterviewUi', /^engineInterview-/, 12], // v27 (L412): src/ui/engineInterview.ts + src/engine/{interviewBank,engineInterviewPrefs}.ts + src/i18n/engineInterview.ts, lazy on #/engine/interview: 10.1 KB gz; v47 S4 (L985): the PostgreSQL/MongoDB/DynamoDB tabs of the one room #/learn/interview, loaded by main's ui/engine.ts without engineView: 10.0 KB gz
+  ['ivTabs', /^ivTabs-/, 1], // v47 S4 (L982): src/ui/ivTabs.ts, the one interview room's tab bar, shared by the lazy 'interview' and 'engineInterview' chunks: 0.4 KB gz
   ['engineCompare', /^engineCompare-/, 18], // v28 E-CMP (L433): src/ui/engineCompare.ts + src/engine/compare.ts + src/i18n/engineCompare.ts ("Which engine?" #/engine/compare: nine axes, evidence lines, twelve scenarios, VI/EN), lazy from engineView: 15.1 KB gz
   ['engineDeep', /^deepLinks-/, 3], // v28 LINK (L433): src/engine/deepLinks.ts (skill/node → Engine lesson ids + their VI/EN titles for the "Đào sâu" chips), lazy from main's src/ui/deepDive.ts on the first skill page or drill brief: 2.2 KB gz
   ['engineCapstone', /^engineCapstone-/, 6], // v23 CAP (L257): src/ui/engineCapstone.ts (step bar, "Chấm bằng", before/after plans), lazy from engineView on a capstone; its own group since the v22 redesign left engineui no room for it (L296): 1.9 KB gz; engineui 18.7 KB after the move
@@ -91,6 +92,9 @@ const GROUPS = [
   // the Mongo engine (mingo + shell parser, engineMongo-*, loaded in its worker), its shop data and the NoSQL path dataset
   // (content/engine/mongodb/path/dataset.json, dataset-*): 75 KB gz at integration.
   ['engineLab', /^(runner|engineMongo|mongoSeed\w*|dataset)-[\w-]{8}\.js$/, 90],
+  // v47 R1 (L955): the Redis lab runner + BoonData's interpreter and parser (src/engine/redis/), lazy from LAB_RUNNERS.redis on
+  // the first Redis lab or example; main thread, no worker, no dependency. Spike measured 6.0 KB gz for the interpreter alone.
+  ['redis', /^redisLab-/, 10],
   // L248: the MongoDB path ("Lộ trình NoSQL"): 12 parts of skills, lessons and 168 drills (content/engine/mongodb/path/*.yml as
   // JSON) + the shell parser for its ESR/covered rules, lazy on the first path page: 72 KB gz at integration.
   ['enginePath', /^engineMongoPath-/, 80],

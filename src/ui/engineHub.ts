@@ -9,7 +9,7 @@ import type { EngineDeps } from './engineView';
 /**
  * v47 S1 (L900–L909): the #/engine landing page and the Engine sidebar, grouped by content type: Khóa học (the five tracks),
  * Chuyên đề (NoSQL path, Extensions shelf, the multi-tenant topic map) and Tham khảo (Best Practice, terms, "Which database?",
- * the interview banks until S4). Lazy chunk `engineHub` (budget `enginehub`), loaded with engineView; every value comes
+ * and since S4 (L983) a link to the one interview room under Học, on its PostgreSQL tab). Lazy chunk `engineHub` (budget `enginehub`), loaded with engineView; every value comes
  * through HubCtx (type-only imports, so no shared chunk is split out of engineView).
  */
 export interface HubCtx {
@@ -110,7 +110,7 @@ function topicRows(c: HubCtx, ok: Set<string>): HTMLElement[] {
   ].filter((x): x is HTMLLIElement => !!x);
 }
 
-/** The Tham khảo rows: Best Practice (its own chunk), terms, "Which database?", and the interview banks until S4 merges the rooms. */
+/** The Tham khảo rows: Best Practice (its own chunk), terms, "Which database?", and the one interview room (v47 S4, L983: #/learn/interview?e=pg). */
 function refRows(c: HubCtx): HTMLElement[] {
   const { d, et } = c;
   const row = (href: string, icon: Icons.IconName, title: string, sub: string): HTMLElement =>
@@ -184,6 +184,6 @@ export function sideRows(c: HubCtx, ui: Ui, bestRows: Node[]): (Node | null)[] {
   out.push(ui.group(ht(c, 'ref')), ...bestRows,
     ui.row({ key: 'e:terms', href: d.engineTermsHash(), lead: d.icon('bookIndex'), label: et('v27.terms'), current: d.engineTermsOf(location.hash) !== undefined }),
     ui.row({ key: 'e:cmp', href: d.engineCompareHash(), lead: d.icon('scale'), label: et('v28.compare'), current: d.engineCompareOf(location.hash) }),
-    ui.row({ key: 'e:iv', href: d.engineInterviewHash(), lead: d.icon('secPractice'), label: et('v27.interview'), current: !!d.engineInterviewOf(location.hash) }));
+    ui.row({ key: 'e:iv', href: d.engineInterviewHash(), lead: d.icon('secPractice'), label: et('v27.interview'), current: false })); // S4: the room is a Học page, never current here
   return out;
 }
