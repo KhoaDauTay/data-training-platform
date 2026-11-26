@@ -171,4 +171,6 @@ export const LAB_RUNNERS: Partial<Record<EngineId, (env: LabEnv) => Promise<LabR
   mongodb: async (env) => (await import('./mongo/runner')).mongoRunner(env),
   dynamodb: async (env) => (await import('./dynamo/runner')).dynamoRunner(env),
 };
-LAB_RUNNERS.design = LAB_RUNNERS.stack = LAB_RUNNERS.telemetry = LAB_RUNNERS.postgres; // v47 (L1031): telemetry too // v45 (L742): stack labs too // v28 R4 (L420): design labs are PostgreSQL labs (`lab` schema, or the lab runtime with `setup`)
+LAB_RUNNERS.design = LAB_RUNNERS.stack = LAB_RUNNERS.postgres; // v45 (L742): stack labs too // v28 R4 (L420): design labs are PostgreSQL labs (`lab` schema, or the lab runtime with `setup`)
+// v47 (L1037): telemetry labs are PostgreSQL labs; a `lang: promql` step goes to the PromQL simulation (lazy `promqlRunner` chunk)
+LAB_RUNNERS.telemetry = async (env) => (await import('./telemetry/promqlRunner')).tmRunner(env, await LAB_RUNNERS.postgres!(env));

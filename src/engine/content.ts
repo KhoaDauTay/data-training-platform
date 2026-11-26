@@ -53,6 +53,8 @@ export interface LabStep {
   after?: string;
   /** v45 (L742): a dbt-style model step (engine stack): the code is a Jinja SELECT compiled by src/engine/stack/dbt.ts; graded by `after`. */
   model?: ModelSpec;
+  /** v47 (L1037): `promql` = the code is PromQL, evaluated by the telemetry simulation (src/engine/telemetry/promql.ts) on the lab's `samples` table. */
+  lang?: 'promql';
 }
 export interface Lab { setup?: string; steps: LabStep[] }
 export interface Question { q: Bi; options: Bi[]; answer: number; why: Bi }
@@ -228,7 +230,7 @@ export function parseEngineLesson(source: string | LessonSource, path: string, y
         ...(s.name !== undefined ? { name: bi(s.name, `lab.steps[${i}].name`) } : {}),
         ...(s.perf !== undefined ? { perf: perfOf(s.perf, s.slow, `lab.steps[${i}]`) } : {}),
         ...(s.model !== undefined ? { model: modelOf(s.model, `lab.steps[${i}].model`) } : {}),
-        ...Object.fromEntries(['target', 'slow', 'rule', 'index', 'error', 'sql', 'after'].flatMap((k) => (typeof s[k] === 'string' && s[k] ? [[k, s[k].trim()]] : []))),
+        ...Object.fromEntries(['target', 'slow', 'rule', 'index', 'error', 'sql', 'after', 'lang'].flatMap((k) => (typeof s[k] === 'string' && s[k] ? [[k, s[k].trim()]] : []))),
       };
     });
     if (!steps.length) fail('lab cần ít nhất một bước');

@@ -711,6 +711,7 @@ function labView(l: EngineLesson, v: Visit): HTMLElement {
       live && onPg(l.engine) && /\bpostgis\b/i.test(l.lab!.setup ?? '') ? h('p', { class: 'm-0 text-muted', 'data-postgis-note': '' }, et('lab.postgisOnce')) : null,
       // v46 S-13 (L835): the dbt notice again where the Jinja is typed
       dbtLab(l) ? h('p', { class: 'm-0 text-muted', 'data-stack-sim-lab': '' }, et('stack.sim')) : null,
+      l.lab!.steps.some((s) => s.lang) ? h('p', { class: 'm-0 text-muted', 'data-tm-sim': '' }, et('tm.sim')) : null, // v47 (L1038): PromQL is simulated
       live && l.runtime !== 'docs' ? tablesPanel(l, v) : null),
     cap && cc ? cap.capChecks(cc) : null,
     h('ol', { class: 'm-0 list-none space-y-4 p-0' }, ...steps.map((s, i) => {
@@ -732,7 +733,7 @@ function labView(l: EngineLesson, v: Visit): HTMLElement {
             h('h3', { class: 'm-0 text-caption font-bold tracking-wider text-muted uppercase' }, et('lab.step', { i: i + 1, n: steps.length }),
               i === cur ? h('span', { class: 'ml-2 text-accent-ink' }, `· ${et('cap.current')}`) : null),
             h('p', { class: 'm-0' }, ...inline(s.task[lang()])), onPg(l.engine) ? pgBar(d, s) : N()?.stepTop(d, s))),
-        ed ? codeBox(`${key}-code`, v.code[i] ?? '', et('lab.code', { i: i + 1 }), onPg(l.engine), {
+        ed ? codeBox(`${key}-code`, v.code[i] ?? '', et('lab.code', { i: i + 1 }), onPg(l.engine) && !s.lang, {
           change: (x) => { v.code[i] = x; }, run: () => void labAction(l, v, i, false), submit: () => void labAction(l, v, i, true),
         }) : null,
         live && !ed ? h('div', { class: 'flex flex-wrap items-center gap-3' },
