@@ -37,8 +37,8 @@ Bên vận hành không đồng ý: "Hàng vỡ là do khâu giao, nhất là Ki
 Trong quý {{q}}, theo từng đơn vị giao hàng: tỷ lệ phần trăm trả vì hỏng của hàng shop Highland Gadget Hub, và của hàng các shop khác (làm tròn 1 chữ số thập phân). Tỷ lệ của một nhóm là số yêu cầu trả vì hỏng gửi trong quý chia cho số dòng hàng của nhóm đó thuộc các đơn đặt trong quý và đã giao xong; đơn vị giao của yêu cầu là đơn vị đã giao đơn đó. Chỉ xét đơn vị có ít nhất một yêu cầu như vậy; xếp theo tên đơn vị giao.
 
 ## Hints
-1. Hai bước có tên, mỗi bước gom theo đơn vị giao và đếm hai nhóm hàng cạnh nhau bằng điều kiện; rồi ghép và chia từng nhóm cho chính nó.
-2. Đơn vị giao nằm ở `deliveries`, ghép bằng `order_id`; hai nhóm là `count(*) FILTER (WHERE s.name = 'Highland Gadget Hub')` và `<>`.
+1. Hai bước có tên, mỗi bước gom theo đơn vị giao và đếm hai nhóm hàng cạnh nhau bằng điều kiện; rồi nối và chia từng nhóm cho chính nó.
+2. Đơn vị giao nằm ở `deliveries`, nối bằng `order_id`; hai nhóm là `count(*) FILTER (WHERE s.name = 'Highland Gadget Hub')` và `<>`.
 3. `SELECT sold.courier, ROUND(100.0 * broken.mine / sold.mine, 1), ROUND(100.0 * broken.other / sold.other, 1) FROM sold JOIN broken ON broken.courier = sold.courier ORDER BY sold.courier`
 
 ## Solution

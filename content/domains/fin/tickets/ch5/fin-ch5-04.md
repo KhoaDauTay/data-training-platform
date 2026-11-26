@@ -39,7 +39,7 @@ Tổng thực chi (chỉ khoản mục chi phí) quý {{q}}, tức từ tháng {
 
 ## Hints
 1. Gom theo vùng và chi nhánh, xin thêm tổng phụ theo vùng và tổng chung trong cùng một lần gom. Dòng tổng để trống cột đã gộp, nên khi sắp phải đẩy ô trống xuống cuối. Bài nâng cao "Tổng phụ" giải thích cách này.
-2. `GROUP BY ROLLUP (b.region, b.name)` thêm dòng tổng vùng và tổng chung. Sắp `ORDER BY b.region NULLS LAST, b.name NULLS LAST`. Ghép ba bảng: `gl_entries g`, `branches b`, `accounts a`.
+2. `GROUP BY ROLLUP (b.region, b.name)` thêm dòng tổng vùng và tổng chung. Sắp `ORDER BY b.region NULLS LAST, b.name NULLS LAST`. Nối ba bảng: `gl_entries g`, `branches b`, `accounts a`.
 3. `SELECT b.region, b.name, sum(g.amount) FROM gl_entries g JOIN branches b ON ... JOIN accounts a ON ... WHERE ... GROUP BY ROLLUP (b.region, b.name) ORDER BY b.region NULLS LAST, b.name NULLS LAST`
 
 ## Solution

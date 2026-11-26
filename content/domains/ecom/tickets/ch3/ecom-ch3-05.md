@@ -68,7 +68,7 @@ ORDER BY c.city
 
 ## Hints
 1. Bước 1 đi qua bốn bảng như bài doanh thu theo nhóm hàng, nhưng dừng ở shop. Bước 2 và 3 tìm thứ không có: giữ mọi sản phẩm (hay mọi đơn), gắn đánh giá (hay thanh toán) nếu có, rồi giữ dòng không gắn được gì.
-2. Bước 1: `JOIN sellers s ON s.id = p.seller_id`, gom theo `s.id, s.name`. Bước 2: điều kiện ngày đặt trong phần ghép `ON r.product_id = p.id AND r.created_on >= '2026-07-01'`, rồi lọc `r.id IS NULL`. Bước 3: `LEFT JOIN payments p ON p.order_id = o.id` và `p.id IS NULL`.
+2. Bước 1: `JOIN sellers s ON s.id = p.seller_id`, gom theo `s.id, s.name`. Bước 2: điều kiện ngày đặt trong phần nối `ON r.product_id = p.id AND r.created_on >= '2026-07-01'`, rồi lọc `r.id IS NULL`. Bước 3: `LEFT JOIN payments p ON p.order_id = o.id` và `p.id IS NULL`.
 3. `SELECT p.sku, p.name FROM products p LEFT JOIN reviews r ON ... WHERE r.id IS NULL AND p.is_active = true ORDER BY p.sku`
 
 # EN

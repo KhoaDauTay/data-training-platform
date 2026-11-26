@@ -59,7 +59,7 @@ Ví dụ: tháng 10/2026, kênh nào nhận hơn 100 hồ sơ?
 ③ Lọc trên con số đã đếm ở bước trước.
 
 ## Hints
-1. Bước một: với mỗi khoản vay, số ngày quá hạn lớn nhất qua mọi ảnh chụp. Bước hai: ghép các khoản giải ngân trong tháng với bước một (giữ cả khoản chưa có ảnh chụp nào) rồi đếm có điều kiện.
+1. Bước một: với mỗi khoản vay, số ngày quá hạn lớn nhất qua mọi ảnh chụp. Bước hai: nối các khoản giải ngân trong tháng với bước một (giữ cả khoản chưa có ảnh chụp nào) rồi đếm có điều kiện.
 2. `WITH worst AS (SELECT loan_id, max(dpd) AS max_dpd FROM loan_snapshots GROUP BY loan_id)`, rồi `FROM loans l LEFT JOIN worst w ON w.loan_id = l.id`. Đếm `count(*) FILTER (WHERE w.max_dpd > 30)`; tỷ lệ `round(100.0 * ... / count(*), 2)`.
 3. `WITH worst AS (...) SELECT count(*), count(*) FILTER (WHERE w.max_dpd > 30), round(100.0 * count(*) FILTER (WHERE w.max_dpd > 30) / count(*), 2) FROM loans l LEFT JOIN worst w ON ... WHERE ...`
 

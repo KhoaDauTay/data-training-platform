@@ -82,7 +82,7 @@ ORDER BY s.dpd DESC, l.code
 
 ## Hints
 1. Bước 1: một bước có tên tính tỷ lệ theo chi nhánh và tháng (tính cả cuối tháng 6), bước thứ hai lấy tháng trước của cùng chi nhánh, rồi mới bỏ tháng 6. Bước 2 xếp hạng trong từng vùng. Bước 3 là bài tìm khoản chưa ai gọi, thêm điều kiện về kênh và tháng giải ngân.
-2. Bước 1: `COALESCE(sum(s.outstanding) FILTER (WHERE s.dpd > 30), 0)`, `ratio - LAG(ratio) OVER (PARTITION BY name ORDER BY month_end)`. Bước 2: `RANK() OVER (PARTITION BY region ORDER BY ratio DESC)`. Bước 3: ghép `applications a` lấy `a.channel = 'partner'`, `LEFT JOIN collection_calls c ON ... AND c.called_on >= '2026-10-01' AND c.called_on < '2026-11-01'`, `c.id IS NULL`.
+2. Bước 1: `COALESCE(sum(s.outstanding) FILTER (WHERE s.dpd > 30), 0)`, `ratio - LAG(ratio) OVER (PARTITION BY name ORDER BY month_end)`. Bước 2: `RANK() OVER (PARTITION BY region ORDER BY ratio DESC)`. Bước 3: nối `applications a` lấy `a.channel = 'partner'`, `LEFT JOIN collection_calls c ON ... AND c.called_on >= '2026-10-01' AND c.called_on < '2026-11-01'`, `c.id IS NULL`.
 3. `WITH r AS (...), d AS (SELECT name, month_end, ratio, ratio - LAG(ratio) OVER (PARTITION BY name ORDER BY month_end) AS change FROM r) SELECT name, month_end, ratio, change FROM d WHERE ... ORDER BY name, month_end`
 
 # EN

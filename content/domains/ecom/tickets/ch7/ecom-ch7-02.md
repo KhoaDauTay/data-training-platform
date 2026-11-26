@@ -60,7 +60,7 @@ Khách chấm điểm thấp hay viết "hàng hỏng", nhưng shop bán nhiều
 Trong quý {{q}}: với mỗi shop, số dòng hàng thuộc các đơn đặt trong quý và đã giao xong, số yêu cầu trả hàng vì hỏng gửi trong quý, và tỷ lệ phần trăm của hai số đó (làm tròn 1 chữ số thập phân). Chỉ xét shop có ít nhất một yêu cầu như vậy. Gửi năm shop có tỷ lệ cao nhất, kèm tên shop; bằng nhau thì xếp theo tên shop.
 
 ## Hints
-1. Hai bước có tên: một bước đếm hàng đã bán của mỗi shop, một bước đếm yêu cầu trả vì hỏng, rồi ghép lại và chia.
+1. Hai bước có tên: một bước đếm hàng đã bán của mỗi shop, một bước đếm yêu cầu trả vì hỏng, rồi nối lại và chia.
 2. Lý do hỏng là `'damaged'`; chia cho `sold.lines`, nhân `100.0` để có số thập phân.
 3. `SELECT s.name, sold.lines, broken.n, ROUND(100.0 * broken.n / sold.lines, 1) AS pct FROM sold JOIN broken ... ORDER BY pct DESC, s.name LIMIT 5`
 

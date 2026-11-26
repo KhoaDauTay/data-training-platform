@@ -20,16 +20,16 @@ variants:
   - { from: "2026-04-01", to: "2026-07-01", q: "2/2026", q_en: "Q2 2026", d1: "01/04", d2: "30/06", d1_en: "1 April", d2_en: "30 June" }
   - { from: "2026-01-01", to: "2026-04-01", q: "1/2026", q_en: "Q1 2026", d1: "01/01", d2: "31/03", d1_en: "1 January", d2_en: "31 March" }
 reflect:
-  q: { vi: "Vì sao điều kiện lý do hỏng phải nằm trong điều kiện ghép với danh mục trả hàng?", en: "Why must the damaged-reason condition sit in the join with the returns list?" }
+  q: { vi: "Vì sao điều kiện lý do hỏng phải nằm trong điều kiện nối với danh mục trả hàng?", en: "Why must the damaged-reason condition sit in the join with the returns list?" }
   options:
     - { vi: "Đặt ở điều kiện lọc dòng thì mọi dòng hàng không bị trả sẽ bị loại, và tỷ lệ thành 100%", en: "In the row filter it would drop every order line that was not returned, and the rate would become 100%" }
     - { vi: "Để truy vấn chạy nhanh hơn", en: "To make the query faster" }
     - { vi: "Đặt ở đâu cũng như nhau", en: "Either place is the same" }
   answer: 0
-  why: { vi: "LEFT JOIN giữ mọi dòng hàng đã giao; điều kiện trong phần ghép chỉ quyết định dòng nào gắn được một lần trả vì hỏng.", en: "LEFT JOIN keeps every delivered order line; a condition inside the join only decides which lines get a damaged return attached." }
+  why: { vi: "LEFT JOIN giữ mọi dòng hàng đã giao; điều kiện trong phần nối chỉ quyết định dòng nào gắn được một lần trả vì hỏng.", en: "LEFT JOIN keeps every delivered order line; a condition inside the join only decides which lines get a damaged return attached." }
 wrong:
   - sql: "SELECT s.name, count(*), count(r.id), ROUND(100.0 * count(r.id) / count(*), 2) FROM order_items i JOIN deliveries d ON d.order_id = i.order_id JOIN products p ON p.id = i.product_id JOIN sellers s ON s.id = p.seller_id LEFT JOIN returns r ON r.order_id = i.order_id AND r.product_id = i.product_id WHERE d.delivered_on >= '{{from}}' AND d.delivered_on < '{{to}}' GROUP BY s.id, s.name HAVING count(*) >= 100 ORDER BY 4 DESC, s.name"
-    vi: "Bạn đang đếm mọi lần trả hàng, kể cả trả vì đổi ý hay giao nhầm. Đề chỉ đếm dòng hàng trả vì hỏng: thêm điều kiện lý do vào phần ghép."
+    vi: "Bạn đang đếm mọi lần trả hàng, kể cả trả vì đổi ý hay giao nhầm. Đề chỉ đếm dòng hàng trả vì hỏng: thêm điều kiện lý do vào phần nối."
     en: "You are counting every return, including changes of mind and wrong items. The request only counts order lines returned as damaged: add the reason condition to the join."
 ---
 Khách than nhận hàng điện tử bị hỏng. Trước khi làm việc với các shop, ngành hàng cần biết shop nào có tỷ lệ hàng hỏng bị trả về cao bất thường.
