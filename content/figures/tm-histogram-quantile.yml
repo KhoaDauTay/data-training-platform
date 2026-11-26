@@ -1,0 +1,38 @@
+# TM-12 (v47 Telemetry R1, L1042): histogram_quantile(0.95, sum by (le) (rate(…))) step by step. Lesson: e-tm-l3-03 (Ý chính).
+# Data = the lab: /track pods a and b, 5-minute increases 60, 180, 300, 400, 400 (rate = increase / 300); p95 = 0.5 + 0.5 × 80/100 = 0.9 s.
+# Sources: https://prometheus.io/docs/practices/histograms/ ; https://github.com/prometheus/prometheus/blob/v3.5.0/promql/quantile.go
+title: { vi: "p95 từ ngăn của hai pod", en: "p95 from two pods' buckets" }
+caption:
+  vi: "Số quan sát trong 5 phút (increase của từng ngăn); sum by (le) cộng hai pod, rồi histogram_quantile tìm hạng 380 trên 400 trong ngăn le=1 và nội suy."
+  en: "Observations in 5 minutes (each bucket's increase); sum by (le) adds the two pods, then histogram_quantile finds rank 380 of 400 in the le=1 bucket and interpolates."
+alt:
+  vi: "Phân vị của nhiều pod được tính bằng cách cộng ngăn của chúng theo le trước rồi mới nội suy, điều summary không làm được. Kết quả: hạng 380 rơi vào ngăn (0,5; 1], nên p95 = 0,5 + 0,5 × 80/100 = 0,9 giây; rate() chỉ chia mọi số cho 300 giây nên cho cùng kết quả."
+  en: "A quantile over several pods is computed by adding their buckets by le first and interpolating after, which a summary cannot do. Result: rank 380 falls in the (0.5, 1] bucket, so p95 = 0.5 + 0.5 × 80/100 = 0.9 seconds; rate() only divides every number by 300 seconds, so it gives the same result."
+nodes:
+  - id: a
+    shape: grid
+    mono: true
+    label: pod a
+    head: [le, "5m"]
+    cells: [["0.1", "40"], ["0.25", "100"], ["0.5", "160"], ["1", "200"], ["+Inf", "200"]]
+  - id: b
+    shape: grid
+    mono: true
+    label: pod b
+    head: [le, "5m"]
+    cells: [["0.1", "20"], ["0.25", "80"], ["0.5", "140"], ["1", "200"], ["+Inf", "200"]]
+  - id: sum
+    shape: grid
+    mono: true
+    label: sum by (le)
+    head: [le, "5m"]
+    cells: [["0.1", "60"], ["0.25", "180"], ["0.5", "300"], ["1", "400"], ["+Inf", "400"]]
+    rowTone: [null, null, null, new, null]
+  - { id: q, shape: note, label: { vi: "0,5 + 0,5 × 80/100 = 0,9 s", en: "0.5 + 0.5 × 80/100 = 0.9 s" } }
+rows:
+  - [a, b]
+  - [sum]
+  - [q]
+edges:
+  - { from: a, to: sum }
+  - { from: b, to: sum }

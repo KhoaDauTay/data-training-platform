@@ -34,6 +34,15 @@ describe('extrapolatedRate: pinned hand-worked values', () => {
   it('one sample: no result', () => expect(extrapolatedRate([[60 * S, 5]], 0, 60 * S, true)).toBeUndefined());
 });
 
+describe('e-tm-l2-01 quiz 2: rate() on the lesson data', () => {
+  it('rate(http_requests_total[2m]) at 10:02 = 228.57 / 120 = 1.905 (10:00 excluded, 15 s extrapolated); the SQL of step 3 gives 230 / 120', () => {
+    const v = [100, 130, 160, 190, 220, 20, 50, 80, 110];
+    const s = [ser({ __name__: 'http_requests_total', route: '/track' }, v.map((x, i) => [i * 15, x]))];
+    const r = runPromql('rate(http_requests_total[2m])', s, 120 * S).rows;
+    expect(r).toEqual([['{route="/track"}', expect.closeTo(200 * 120 / 105 / 120, 6)]]);
+    expect(Math.round((r[0][1] as number) * 100) / 100).toBe(1.9);
+  });
+});
 describe('histogram_quantile (classic buckets)', () => {
   const b = [{ le: 0.1, count: 50 }, { le: 0.25, count: 80 }, { le: 0.5, count: 95 }, { le: 1, count: 100 }, { le: Infinity, count: 100 }];
   it('p90 of 100: rank 90 in (0.25, 0.5], 10 of 15 → 0.41667; p50 lands on 0.1 exactly', () => {

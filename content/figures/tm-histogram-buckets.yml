@@ -1,0 +1,24 @@
+# TM-6 (v47 Telemetry R1, L1042): where rank 10 of 20 falls and how the bucket is interpolated. Lesson: e-tm-l2-02 (Ý chính).
+# Data = the lab: /track buckets 7 / 16 / 18 / 19 / 20 (per bucket 7, 9, 2, 1, 1); p50 from buckets 150, raw 135.
+# Sources: https://prometheus.io/docs/prometheus/latest/querying/functions/ (histogram_quantile) ; https://prometheus.io/docs/practices/histograms/
+title: { vi: "p50 từ các ngăn histogram", en: "p50 from histogram buckets" }
+caption:
+  vi: "Hạng 10 trong 20 request rơi vào ngăn 100–250 ms (request thứ 8 tới 16); nội suy đều trong ngăn cho 150 ms, giá trị thô là 135 ms."
+  en: "Rank 10 of 20 requests falls in the 100–250 ms bucket (requests 8 to 16); interpolating evenly inside it gives 150 ms, the raw value is 135 ms."
+alt:
+  vi: "Phân vị từ histogram tìm ngăn chứa hạng cần tìm rồi giả sử các request trải đều trong ngăn đó. Kết quả: p50 ước 100 + 150 × 3/9 = 150 ms, lệch 15 ms so với 135 ms của giá trị thô vì request trong ngăn dồn về phía dưới."
+  en: "A percentile from a histogram finds the bucket holding the wanted rank and assumes the requests are spread evenly inside it. Result: p50 is estimated as 100 + 150 × 3/9 = 150 ms, 15 ms off the raw 135 ms because the requests in that bucket lean toward its bottom."
+nodes:
+  - id: per
+    shape: bars
+    label: { vi: "request mỗi ngăn", en: "requests per bucket" }
+    items:
+      - { label: "≤ 100 ms", value: 7, note: "7" }
+      - { label: "100–250", value: 9, note: { vi: "9, có hạng 10", en: "9, holds rank 10" }, tone: new }
+      - { label: "250–500", value: 2, note: "2" }
+      - { label: "500–1000", value: 1, note: "1" }
+      - { label: "> 1000", value: 1, note: "1" }
+  - { id: calc, shape: note, label: { vi: "100 + 150 × 3/9 = 150 ms", en: "100 + 150 × 3/9 = 150 ms" } }
+rows:
+  - [per]
+  - [calc]

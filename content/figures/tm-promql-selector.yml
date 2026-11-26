@@ -1,0 +1,26 @@
+# TM-10 (v47 Telemetry R1, L1042): a selector picks series by label. Lesson: e-tm-l3-01 (Ý chính).
+# Data = the lab at the virtual clock 10:00: six series of http_requests_total (job api), values 600 60 240 20 120 0.
+# Source: https://prometheus.io/docs/prometheus/latest/querying/basics/
+title: { vi: "Selector chọn series theo nhãn", en: "A selector picks series by label" }
+caption:
+  vi: "Sáu series của http_requests_total lúc 10:00; route=\"/track\" chọn hai dòng, code=~\"5..\" chọn ba dòng lỗi."
+  en: "The six series of http_requests_total at 10:00; route=\"/track\" picks two rows, code=~\"5..\" picks the three error rows."
+alt:
+  vi: "Mỗi dòng là một series, tức một tổ hợp nhãn, và matcher giữ những series có nhãn khớp; regex khớp cả giá trị. Kết quả: route=\"/track\" cho 600 và 60, còn code=~\"5..\" cho ba series mã 500."
+  en: "Each row is a series, that is one label combination, and a matcher keeps the series whose labels match; a regex matches the whole value. Result: route=\"/track\" gives 600 and 60, while code=~\"5..\" gives the three code 500 series."
+nodes:
+  - id: all
+    shape: grid
+    mono: true
+    label: { vi: "series lúc 10:00", en: "series at 10:00" }
+    head: [route, code, value]
+    cells: [["/track", "200", "600"], ["/track", "500", "60"], ["/quote", "200", "240"], ["/quote", "500", "20"], ["/book", "200", "120"], ["/book", "500", "0"]]
+    rowTone: [new, new, null, null, null, null]
+  - { id: sel, shape: key, mono: true, label: 'route="/track"' }
+  - { id: out, shape: note, label: { vi: "giữ 2 trong 6 series", en: "keeps 2 of 6 series" } }
+rows:
+  - [sel]
+  - [all]
+  - [out]
+edges:
+  - { from: sel, to: all }
