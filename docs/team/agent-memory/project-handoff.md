@@ -1,17 +1,26 @@
 ---
 name: project-handoff
-description: "BoonData state: v44 live (2026-11-26 evening: 171 SVG figures, Extensions shelf, Data stack engine, explanation rewrites); start from docs/team/handoff-2026-11-26b.md"
+description: "BoonData state: v47 on main (2026-11-27: IA S1–S4, Practise sets, case studies, 8 new Engine tracks); start from docs/team/handoff-2026-11-27.md"
 metadata:
   node_type: memory
   type: project
   originSessionId: e927c5e6-22a4-40fa-bff6-3a9e8af9fcbc
-  modified: 2026-11-26T15:38:34.424Z
+  modified: 2026-11-26T21:36:30.818Z
 ---
 
-2026-11-26 evening: v44 is live. Since v41.1: ER mode + "Giải thích sơ đồ" (v42), titled id links (v42.1), figure batches 1–6 + quick-lesson and BP figure slots (171 specs), PostgreSQL Extensions shelf (14 lessons, PostGIS + pgvector, no XP), Data stack engine `stack` (19 lessons, dbt-style compiler), explanation rewrites across all areas, global timestamp display fix. Start from `docs/team/handoff-2026-11-26b.md`. Notes outside the repo: `bd-wt/tools/run-v41.md`, `bd-wt/tools/v42..v44/`. No plan after v44.
+2026-11-27: v47 is on main. It covers:
+- IA rework S1–S4: CSDL tab with three groups, track cards, welcome goal chooser, one interview room.
+- Practise sets: fix / explain / mixed.
+- Domain case studies.
+- Eight new Engine tracks: Redis, Time-series, OLAP & ClickHouse, Search & Elasticsearch, Telemetry (PromQL), Streaming & CDC, Graph.
 
-Lessons: read LIVE smoke before tagging (503 precache flakes → rerun); give each subagent its own decision-log range; content .md must not get CR CR LF (contentJson test); fresh eye reviews always found P2s the overlap checker missed.
+Tags: v45 (S1+S3); v46 at the first all-green CI from 9137da8. Start from `docs/team/handoff-2026-11-27.md`; notes outside the repo are in `bd-wt/tools/run-v47.md` and `bd-wt/tools/v47/`.
 
-**Why:** the next session must not re-plan finished work or trust a green run or the checker blindly.
+Lessons learned:
+- Merging many parallel tracks breaks tests that pin counts or lists. The coordinator fixes them on main (decision log L1100/L1101 raised the budgets once for all tracks).
+- Subagents must use headless Edge, never the Chrome extension.
+- A worktree add that gets interrupted leaves a half checkout.
 
-**How to apply:** new work needs the user's go; keep [[feedback-no-e2e-long-tests]] until lifted; see [[feedback-push-wip-backup]], [[reference-sql-knowledge]], [[project-freeze-v23]].
+**Why:** the next session must not re-plan finished work.
+
+**How to apply:** new work needs the user's go; see [[feedback-no-e2e-long-tests]], [[feedback-push-wip-backup]], [[project-freeze-v23]].

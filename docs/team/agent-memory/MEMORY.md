@@ -1,5 +1,5 @@
 - [Push wip backups](feedback-push-wip-backup.md) — commit + push work branches to origin wip/*; worktrees in Documents\study\bd-wt, not Temp
-- [Release gating](project-freeze-v23.md) — v24→v33 shipped; v34→v44 shipped 2026-11-25/26; after v44 needs a new go
-- [Handoff](project-handoff.md) — v44 live (171 figures, Extensions shelf, Data stack); start from docs/team/handoff-2026-11-26b.md; read live smoke; subagents use absolute paths
+- [Release gating](project-freeze-v23.md) — v24→v47 shipped; v47 (IA + new tracks) ran 2026-11-26/27 on the user's go; after v47 needs a new go
+- [Handoff](project-handoff.md) — v47 on main (IA + 8 new tracks); start from docs/team/handoff-2026-11-27.md; subagents headless Edge only
 - [SQL knowledge + skill](reference-sql-knowledge.md) — docs/knowledge/database is source of truth; ~/.claude/skills/sql copies it
 - [No e2e / long tests](feedback-no-e2e-long-tests.md) — 2026-11-24: skip e2e and long local test runs; tsc + targeted tests, CI does the rest
