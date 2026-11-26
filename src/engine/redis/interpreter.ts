@@ -4,7 +4,9 @@ import { parseLine } from './parse';
  * v47 spike: a Redis teaching subset in pure TS (no Node built-ins, no Date.now()). One in-memory keyspace, a virtual clock
  * (`now`, `advance(ms)`; expiry is lazy on access, like Redis' lazy path), several clients (`exec(line, client)`) so WATCH and
  * pub/sub can be shown. Replies are RESP2-shaped and `format()` prints them like redis-cli in a terminal.
- * Error texts are Redis/Valkey 7.x wording written from memory; LPOP's arity was checked against valkey t_list.c, the rest still needs a diff against a real server.
+ * v47 R1 (L951): error texts, reply shapes and the expiry rules were read against the Valkey 8.1 source (BSD-3, commit 38316e6c):
+ * server.c, networking.c, multi.c, expire.c, db.c, t_*.c, util.c d2string, sds.c, valkey-cli.c cliFormatReplyTTY. A source
+ * read, not a differential run against a live server (still owed).
  * ponytail: no Lua, no blocking (XREAD BLOCK returns at once), no keyspace events, SCAN returns everything with cursor 0,
  * KEYS/SMEMBERS/HGETALL come back in insertion order (Redis leaves it unspecified: grade those unordered).
  */
@@ -53,7 +55,7 @@ function toFloat(s: string, msg = NOT_FLOAT): number {
   return Number.isNaN(n) ? fail(msg) : n;
 }
 /** ponytail: JS shortest round-trip, close to Redis 7's fpconv_dtoa; differs only on exotic exponents. */
-const fmtScore = (n: number): string => (n === Infinity ? 'inf' : n === -Infinity ? '-inf' : String(n));
+const fmtScore = (n: number): string => (n === Infinity ? 'inf' : n === -Infinity ? '-inf' : Object.is(n, -0) ? '-0' : String(n)); // util.c d2string
 const bytes = (s: string): number => new TextEncoder().encode(s).length;
 
 /** LRANGE/ZRANGE index rules: negatives from the end, clamped; null = empty. */
@@ -106,6 +108,8 @@ function parseId(s: string, seqDefault: number): Id {
 }
 const byScore = (x: [string, number], y: [string, number]): number => (x[1] < y[1] ? -1 : x[1] > y[1] ? 1 : x[0] < y[0] ? -1 : x[0] > y[0] ? 1 : 0);
 const TX = new Set(['multi', 'exec', 'discard', 'watch']);
+/** Valkey flag NO_MULTI (commands/multi.json, watch.json): refused inside MULTI, which also dooms the EXEC (rejectCommand → flagTransaction). */
+const NO_MULTI = new Set(['multi', 'watch']);
 const IN_SUB = new Set(['subscribe', 'unsubscribe', 'psubscribe', 'punsubscribe', 'ping', 'quit', 'reset']);
 
 /** In-game "today" (CLAUDE.md: 2026-10-31), so stream ids and TTLs are the same on every run. */
@@ -159,15 +163,17 @@ export class RedisSim {
     const c = this.client(client);
     const name = args[0].toLowerCase();
     const spec = this.cmds[name];
-    if (c.subs.size && !IN_SUB.has(name)) {
-      return { t: 'err', v: `ERR Can't execute '${name}': only (P|S)SUBSCRIBE / (P|S)UNSUBSCRIBE / PING / QUIT / RESET are allowed in this context` };
-    }
     const refuse = (v: string): Reply => {
       if (c.multi) c.dirty = true;
       return { t: 'err', v };
     };
+    // server.c processCommand order: unknown command, arity, then the subscribe-mode and NO_MULTI refusals
     if (!spec) return refuse(`ERR unknown command '${args[0]}', with args beginning with: ${args.slice(1).map((a) => `'${a}' `).join('')}`);
     if (spec.arity > 0 ? args.length !== spec.arity : args.length < -spec.arity) return refuse(arity(name));
+    if (c.subs.size && !IN_SUB.has(name)) {
+      return refuse(`ERR Can't execute '${name}': only (P|S)SUBSCRIBE / (P|S)UNSUBSCRIBE / PING / QUIT / RESET are allowed in this context`);
+    }
+    if (c.multi && NO_MULTI.has(name)) return refuse('ERR Command not allowed inside a transaction');
     if (c.multi && !TX.has(name)) {
       c.multi.push(args);
       return status('QUEUED');
@@ -190,7 +196,7 @@ export class RedisSim {
   }
   private entry(key: string): Entry | undefined {
     const en = this.data.get(key);
-    if (en?.exp !== undefined && en.exp <= this.now) {
+    if (en?.exp !== undefined && en.exp < this.now) { // db.c keyIsExpired: now > when
       this.data.delete(key);
       this.touch(key);
       return undefined;
@@ -252,12 +258,13 @@ export class RedisSim {
     return n === undefined ? bulk(out[0]) : arr(out);
   }
   private zrange(a: string[], rev: boolean): Reply {
+    // ZRANGE takes REV (6.2+); ponytail: no BYSCORE/BYLEX/LIMIT forms (ZRANGEBYSCORE covers scores).
     const opts = a.slice(3).map((x) => x.toLowerCase());
-    if (opts.some((o) => o !== 'withscores')) fail(SYNTAX);
+    if (opts.some((o) => o !== 'withscores' && (o !== 'rev' || rev))) fail(SYNTAX);
     const z = this.zsorted(a[0]);
-    if (rev) z.reverse();
+    if (rev || opts.includes('rev')) z.reverse();
     const s = span(z.length, toInt(a[1]), toInt(a[2]));
-    return arr(s ? z.slice(s[0], s[1] + 1).flatMap(([m, sc]) => (opts.length ? [m, fmtScore(sc)] : [m])) : []);
+    return arr(s ? z.slice(s[0], s[1] + 1).flatMap(([m, sc]) => (opts.includes('withscores') ? [m, fmtScore(sc)] : [m])) : []);
   }
   private zrank(a: string[], rev: boolean): Reply {
     const z = this.zsorted(a[0]);
@@ -319,8 +326,8 @@ export class RedisSim {
       // keys
       del: { arity: -2, fn: (a) => int(a.filter((k) => { const had = !!this.entry(k); if (had) { this.data.delete(k); this.touch(k); } return had; }).length) },
       exists: { arity: -2, fn: (a) => int(a.filter((k) => this.entry(k)).length) },
-      expire: { arity: 3, fn: (a) => this.expire(a[0], toInt(a[1]) * 1000) },
-      pexpire: { arity: 3, fn: (a) => this.expire(a[0], toInt(a[1])) },
+      expire: { arity: -3, fn: (a) => this.expire(a, 1000) },
+      pexpire: { arity: -3, fn: (a) => this.expire(a, 1) },
       ttl: { arity: 2, fn: (a) => this.ttl(a[0], false) },
       pttl: { arity: 2, fn: (a) => this.ttl(a[0], true) },
       persist: { arity: 2, fn: (a) => { const en = this.entry(a[0]); if (en?.exp === undefined) return int(0); delete en.exp; this.touch(a[0]); return int(1); } },
@@ -406,17 +413,22 @@ export class RedisSim {
 
       // sorted sets
       zadd: { arity: -4, fn: (a) => {
-        let i = 1, nx = false, xx = false, ch = false;
+        // t_zset.c zaddGenericCommand: options, the pair count (syntax error), then incompatible options, then the scores.
+        // ponytail: no INCR option (ZINCRBY teaches it); `INCR` is read as a score and refused as a float.
+        let i = 1, nx = false, xx = false, ch = false, gt = false, lt = false;
         for (; i < a.length; i++) {
           const o = a[i].toLowerCase();
           if (o === 'nx') nx = true;
           else if (o === 'xx') xx = true;
           else if (o === 'ch') ch = true;
+          else if (o === 'gt') gt = true;
+          else if (o === 'lt') lt = true;
           else break;
         }
-        if (nx && xx) fail('ERR XX and NX options at the same time are not compatible');
         const rest = a.slice(i);
         if (!rest.length || rest.length % 2) fail(SYNTAX);
+        if (nx && xx) fail('ERR XX and NX options at the same time are not compatible');
+        if ((gt && nx) || (lt && nx) || (gt && lt)) fail('ERR GT, LT, and/or NX options at the same time are not compatible');
         const pairs: [number, string][] = [];
         for (let j = 0; j < rest.length; j += 2) pairs.push([toFloat(rest[j]), rest[j + 1]]);
         if (xx && !this.get(a[0], 'zset')) return int(0);
@@ -424,7 +436,7 @@ export class RedisSim {
         let added = 0, changed = 0;
         for (const [sc, m] of pairs) {
           const old = z.get(m);
-          if (old === undefined ? xx : nx) continue;
+          if (old === undefined ? xx : nx || (gt && sc <= old) || (lt && sc >= old)) continue;
           if (old === undefined) added++;
           else if (old !== sc) changed++;
           z.set(m, sc);
@@ -574,9 +586,25 @@ export class RedisSim {
     return T;
   }
 
-  private expire(key: string, ms: number): Reply {
+  /** expire.c expireGenericCommand + parseExtendedExpireArgumentsOrReply (options first, then the number). */
+  private expire(a: string[], unit: number): Reply {
+    let nx = false, xx = false, gt = false, lt = false;
+    for (const o of a.slice(2)) {
+      const l = o.toLowerCase();
+      if (l === 'nx') nx = true;
+      else if (l === 'xx') xx = true;
+      else if (l === 'gt') gt = true;
+      else if (l === 'lt') lt = true;
+      else fail(`ERR Unsupported option ${o}`);
+    }
+    if (nx && (xx || gt || lt)) fail('ERR NX and XX, GT or LT options at the same time are not compatible');
+    if (gt && lt) fail('ERR GT and LT options at the same time are not compatible');
+    const key = a[0];
+    const ms = toInt(a[1]) * unit;
     const en = this.entry(key);
     if (!en) return int(0);
+    const when = this.now + ms, cur = en.exp;
+    if ((nx && cur !== undefined) || (xx && cur === undefined) || (gt && (cur === undefined || when <= cur)) || (lt && cur !== undefined && when >= cur)) return int(0);
     if (ms <= 0) this.data.delete(key);
     else en.exp = this.now + ms;
     this.touch(key);

@@ -75,6 +75,8 @@ describe('keys and the virtual clock', () => {
     expect(r('TTL session')).toBe('(integer) 7');
     expect(r('PTTL session')).toBe('(integer) 6600');
     db.advance(6_600);
+    expect(r('PTTL session')).toBe('(integer) 0'); // db.c keyIsExpired: now > when, so the key still lives at its expiry
+    db.advance(1);
     expect(r('GET session')).toBe('(nil)');
     expect(r('TTL session')).toBe('(integer) -2');
     expect(r('EXISTS session')).toBe('(integer) 0');
@@ -94,7 +96,7 @@ describe('keys and the virtual clock', () => {
     r('SET hits 0');
     expect(r('TTL hits')).toBe('(integer) -1');
     r('PEXPIRE hits 100');
-    db.advance(100);
+    db.advance(101);
     expect(r('DBSIZE')).toBe('(integer) 0');
   });
   it('DEL/EXISTS/TYPE/KEYS/SCAN MATCH', () => {
@@ -209,7 +211,7 @@ describe('transactions', () => {
     expect(r('GET b')).toBe('(nil)');
     expect(r('EXEC')).toBe('(error) ERR EXEC without MULTI');
     r('MULTI');
-    expect(r('MULTI')).toBe('(error) ERR MULTI calls can not be nested');
+    expect(r('MULTI')).toBe('(error) ERR Command not allowed inside a transaction'); // Valkey 8.1: NO_MULTI flag
     expect(r('DISCARD')).toBe('OK');
     expect(r('FOO bar')).toBe("(error) ERR unknown command 'FOO', with args beginning with: 'bar' ");
   });
@@ -241,7 +243,7 @@ describe('transactions', () => {
     r('WATCH seat');
     r('MULTI');
     r('GET seat');
-    db.advance(5_000);
+    db.advance(5_001);
     expect(r('EXEC')).toBe('(nil)');
   });
 });
@@ -289,5 +291,55 @@ describe('format and dump', () => {
     r('SADD s b a');
     r('SET k v EX 10');
     expect(db.dump()).toEqual({ k: { type: 'string', value: 'v', pttl: 10_000 }, s: { type: 'set', value: ['a', 'b'], pttl: -1 } });
+  });
+});
+
+describe('v47 R1: checked against the Valkey 8.1 source (commit 38316e6c)', () => {
+  it('server.c: unknown command and arity come before the subscribe-mode refusal; NO_MULTI dooms the EXEC', () => {
+    const { r } = fresh();
+    r('SUBSCRIBE news', 1);
+    expect(r('FOO x', 1)).toBe("(error) ERR unknown command 'FOO', with args beginning with: 'x' ");
+    expect(r('GET', 1)).toBe("(error) ERR wrong number of arguments for 'get' command");
+    r('MULTI');
+    expect(r('WATCH k')).toBe('(error) ERR Command not allowed inside a transaction');
+    r('SET k 1');
+    expect(r('EXEC')).toBe('(error) EXECABORT Transaction discarded because of previous errors.');
+    expect(r('GET k')).toBe('(nil)');
+  });
+  it('expire.c: EXPIRE NX/XX/GT/LT, option errors before the number, a past time deletes', () => {
+    const { r } = fresh();
+    r('SET rl 1');
+    expect(r('EXPIRE rl 60 XX')).toBe('(integer) 0');
+    expect(r('EXPIRE rl 60 NX')).toBe('(integer) 1');
+    expect(r('EXPIRE rl 90 NX')).toBe('(integer) 0');
+    expect(r('EXPIRE rl 30 GT')).toBe('(integer) 0');
+    expect(r('EXPIRE rl 90 GT')).toBe('(integer) 1');
+    expect(r('EXPIRE rl 10 LT')).toBe('(integer) 1');
+    expect(r('TTL rl')).toBe('(integer) 10');
+    expect(r('EXPIRE rl abc FOO')).toBe('(error) ERR Unsupported option FOO');
+    expect(r('EXPIRE rl 5 NX XX')).toBe('(error) ERR NX and XX, GT or LT options at the same time are not compatible');
+    expect(r('EXPIRE rl 5 GT LT')).toBe('(error) ERR GT and LT options at the same time are not compatible');
+    expect(r('EXPIRE rl -1')).toBe('(integer) 1');
+    expect(r('EXISTS rl')).toBe('(integer) 0');
+  });
+  it('t_zset.c: pair count before NX+XX, GT/LT update only upward/downward, ZRANGE REV, d2string -0', () => {
+    const { r } = fresh();
+    expect(r('ZADD b NX XX 1')).toBe('(error) ERR syntax error');
+    expect(r('ZADD b GT NX 1 m')).toBe('(error) ERR GT, LT, and/or NX options at the same time are not compatible');
+    r('ZADD best 50 lily');
+    expect(r('ZADD best GT 40 lily 70 boon')).toBe('(integer) 1');
+    expect(r('ZADD best GT CH 60 lily')).toBe('(integer) 1');
+    expect(r('ZADD best LT 99 lily')).toBe('(integer) 0');
+    expect(r('ZRANGE best 0 0 REV WITHSCORES')).toBe('1) "boon"\n2) "70"');
+    expect(r('ZREVRANGE best 0 0 REV')).toBe('(error) ERR syntax error');
+    r('ZADD z -0 a');
+    expect(r('ZSCORE z a')).toBe('"-0"');
+  });
+  it('t_list.c: LPOP with count 0 is an empty array, a negative count is refused', () => {
+    const { r } = fresh();
+    r('RPUSH q a');
+    expect(r('LPOP q 0')).toBe('(empty array)');
+    expect(r('LPOP q -1')).toBe('(error) ERR value is out of range, must be positive');
+    expect(r('LPOP nope 2')).toBe('(nil)');
   });
 });
