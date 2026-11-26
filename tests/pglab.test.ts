@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { LabScript, StepResult } from '../src/engine/pglab/script';
 import { runCheck } from '../src/engine/pglab/check';
 import { EXTENSIONS, runLabScript, splitSql } from '../src/engine/pglab/session';
-import { pgScriptRunner } from '../src/engine/pglab/runner';
+import { extensionsOf, pgScriptRunner } from '../src/engine/pglab/runner';
 import { grade } from '../src/grader';
 import type { QueryResult } from '../src/db/run';
 import type { Lab, LabStep } from '../src/engine/content';
@@ -38,6 +38,28 @@ describe('pglab runtime', () => {
     });
     expect(okSteps(r).filter(([, s]) => s !== 'ok')).toEqual([]);
     expect(r.ok).toBe(true);
+  });
+
+  it('L711: PostGIS nạp được và tính khoảng cách địa lý thật (Đà Nẵng – TP.HCM ≈ 608 km)', async () => {
+    const r = await runLabScript({
+      extensions: ['postgis'],
+      steps: [
+        'CREATE EXTENSION IF NOT EXISTS postgis',
+        "SELECT round(ST_Distance('SRID=4326;POINT(108.2208 16.0544)'::geography, 'SRID=4326;POINT(106.7009 10.7769)'::geography) / 1000) AS km",
+        "SELECT ST_AsText(ST_Buffer('POINT(0 0)'::geometry, 1, 1)) LIKE 'POLYGON%' AS poly",
+      ],
+      checks: [],
+    }, );
+    expect(okSteps(r).filter(([, s]) => s !== 'ok')).toEqual([]);
+    const km = Number(r.steps[1].rows[0][0]);
+    expect(km).toBeGreaterThan(590);
+    expect(km).toBeLessThan(625);
+    expect(r.steps[2].rows[0][0]).toBe(true);
+  }, 120_000);
+
+  it('extensionsOf nhận PostGIS từ CREATE EXTENSION và từ hàm ST_*', () => {
+    expect(extensionsOf('CREATE EXTENSION postgis')).toEqual(['postgis']);
+    expect(extensionsOf("SELECT ST_Distance(a, b) FROM t")).toEqual(['postgis']);
   });
 
   it('kịch bản HOT + VACUUM + pageinspect + visibility map cho đúng sự thật catalog', async () => {

@@ -10,7 +10,8 @@ import type { GradeResult } from '../../grader';
 /** PGlite 0.5.16 contrib extensions a lab may load (db-engine-knowledge §1.2: each one measured to load and run). */
 export type PgExtension =
   | 'pageinspect' | 'pg_visibility' | 'amcheck' | 'pg_walinspect' | 'pg_buffercache' | 'pg_freespacemap'
-  | 'bloom' | 'btree_gin' | 'btree_gist' | 'pg_trgm' | 'pg_stat_statements' | 'ltree' | 'pgcrypto' | 'cube' | 'earthdistance';
+  | 'bloom' | 'btree_gin' | 'btree_gist' | 'pg_trgm' | 'pg_stat_statements' | 'ltree' | 'pgcrypto' | 'cube' | 'earthdistance'
+  | 'postgis'; // L711: from @electric-sql/pglite-postgis 0.2.16, not contrib
 
 /** One statement (PGlite runs exactly one per step). `expectError` = the SQLSTATE this step must fail with (e.g. 25001). */
 export type ScriptStep = string | { sql: string; expectError?: string };
