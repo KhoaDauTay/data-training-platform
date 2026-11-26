@@ -10,7 +10,7 @@ const GROUPS = [
   ['tickets', /^ticketSources-/, 110], // ticket markdown, lazy, fetched at boot (src/content.ts): 37 KB after ch1–6, 64 KB after ch7–9, 99 KB after ch10–12 (Plan 4 S7, L40 rule); V22-E (L201): ch1–8 only, frontmatter as JSON
   ['ticketLate', /^ticketLateSources-/, 50], // V22-E (L201): Logistics tickets of chapters 9–12 (src/ticketLateSources.ts), fetched in parallel with `tickets` by loadContent()
   ['lanes', /^laneSources-/, 20], // lane briefs and side tasks (content/lanes/), lazy, fetched at boot beside the tickets (Plan 5)
-  ['en', /^en-.*\.js$/, 20], // EN dictionary, lazy (Plan 5 T3): 11 KB, fetched at boot only when the player's language is EN
+  ['en', /^en-.*\.js$/, 22], // v47 (L914a): 20 -> 22 after S1 (CSDL names) + S3 (goal step) strings; EN dictionary, lazy (Plan 5 T3): 11 KB, fetched at boot only when the player's language is EN
   ['lessons', /^lessonSources-/, 35], // quick lessons (content/lessons.yml), lazy, fetched at boot beside the tickets (Plan 6): 8 KB for 11 lessons; Plan 8a: 38 lessons, ~0.75 KB each
   ['art', /^logistics-/, 20], // Plan 8b D8b-2: Tien Sa scene, route map and completion scenes, lazy (prefetched when idle after the first render): 7 KB, took 6 KB off main
   ['illustrations', /^illustrations-/, 15], // Plan 8b D8b-8: drawn illustrations (learning path, modules, empty states, Finance), lazy, fetched by the first page that shows one
@@ -27,7 +27,9 @@ const GROUPS = [
   ['fonts', /\.woff2$/, 60], // Plan 7 V2: Nunito variable, latin 39 KB + vietnamese 13 KB (woff2 is already compressed)
   ['general', /^generalSources-/, 40], // v19 L167: skill drills (content/general/sql.yml, 4 per skill since L168) + parsers, lazy: 31 KB gz after the split (was 68/70 with adv.yml, Plan 8a D8a-12)
   ['generalAdv', /^generalAdvSources-/, 50], // v19 L167: advanced DA track (content/general/adv.yml), its own lazy chunk: 46 KB gz (roadmap §2.6 guessed ≤ 15; adv.yml is the bigger file)
-  ['interview', /^interview(Sources|View)-/, 25], // v17 I5 (L144): 19 KB gz at T1 (content 12 + UI 7). The interview room, lazy: content/general/interview.yml + parser (interviewSources) and its UI + VI/EN text (interviewView), fetched only on #/learn/interview or a run
+  ['cases', /^caseSources-/, 20], // v47 D1/D2 (L930): content/cases/cases.yml + src/cases.ts (3 case studies + 6 asks), lazy on a domain Overview or an interview-room load: 17 KB gz at v47
+  ['practiceSets', /^practiceSources-/, 24], // v47 P2/P6 (L926): content/general/fix.yml + explain.yml (24 + 16 items as JSON, YAML only; parsers in `general`), lazy beside generalSources: 19 KB gz at v47
+  ['interview', /^interview(Sources|View)-/, 26], // v47 (L938): 25 → 26, the case clarify pane and labels put the group at 25 533 B gz (67 B under 25). v17 I5 (L144): 19 KB gz at T1 (content 12 + UI 7). The interview room, lazy: content/general/interview.yml + parser (interviewSources) and its UI + VI/EN text (interviewView), fetched only on #/learn/interview or a run
   ['learnui', /^(learnView|drillBrief)-/, 25], // v33 (L535): 24.2 → 18.4 KB gz, the full lesson page moved to `learnLesson`. Plan 8a D8a-12/13: General UI (drill workspace, learning path) and its VI/EN text, lazy
   ['learnLesson', /^lessonPage-/, 9], // v33 (L535): src/ui/lessonPage.ts + src/fullLesson.ts (the General full lesson page and its parser), split out of learnui; lazy beside the lesson's gl-<skill> chunk: 7.2 KB gz
   ['generalLesson', /^gl-[a-z0-9_]+-[\w-]{8}\.js$/, 8, 'each'], // v24 R0 (L337): one lazy chunk per General full lesson (content/general/lessons/<skill>.md as JSON; vite.config.ts names it gl-<skill>), fetched when its skill page opens; per file
@@ -51,6 +53,7 @@ const GROUPS = [
   ['engineLesson', /^\d\d-[a-z0-9-]+-[\w-]{8}\.js$/, 8, 'each'], // L248: one lazy chunk per lesson (content/engine/<engine>/L<n>/<NN>-<slug>.md as JSON), fetched when it opens; per file, 5.9 KB gz max at integration
   ['engineui', /^engineView-/, 22], // v45 (L759b): 21 → 22 after the merge with v43 (Extensions) + the stack card, i18n and fixes = 21.5 KB gz. v43 (L733): 20 → 21, the Extensions shelf (page, card, sidebar row, VI/EN text) = 20.7 KB gz. v33 (L537): 19.3 → 17.9 KB gz, the result extras moved to `engineResult`. ENG-CORE (L220): src/ui/engineView.ts + src/engine/{content,labs,vizRegistry,inside}.ts + src/i18n/engine.ts (pages, lesson viewer, graders, VI/EN text), lazy: 9.7 KB gz at T1
   ['enginehub', /^engineHub-/, 5], // v47 S1 (L902): src/ui/engineHub.ts + src/i18n/engineHub.ts (the #/engine landing in three groups and the grouped sidebar), lazy beside engineView; continue card, track cards and sidebar moved out of engineui
+  ['enginetrack', /^engineTrack-/, 5], // v47 S2 (L946): src/ui/engineTrack.ts + src/engine/tracks.ts + src/i18n/engineTrack.ts (track facts, level chooser, one primary "next" per page type, Luyện thêm / Đào sâu links), lazy beside engineView; engineui grows only by its call sites
   ['engineuiPath', /^enginePathView-/, 6], // L280: the NoSQL path pages (src/ui/enginePathView.ts), split out of engineView in the Engine redesign; lazy on the first #/engine/mongodb/path
   ['engineTerms', /^engineTermsSources-/, 50], // v27 (L412): content/engine/glossary.yml as JSON (296 terms, every field the page shows), lazy beside a lesson's chunk or on #/engine/terms: 46.2 KB gz (design-v27 §4.2 guessed 39 for 270)
   ['engineTermsUi', /^engineTerms-/, 8], // v27 (L412): src/ui/engineTerms.ts + src/engine/glossary.ts + src/i18n/engineTerms.ts (glossary page, term buttons and popovers): 4.7 KB gz

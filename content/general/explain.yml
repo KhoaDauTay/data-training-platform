@@ -1,0 +1,549 @@
+# Giải thích câu này / Explain this query (v47 P6, L924). Đọc `sql` (chạy trên `lab`), chọn phương án nói đúng nó trả về gì.
+# Mỗi phương án có `why` (tools/v44/explain-guide.md) và `sql` = câu đúng với điều phương án đó mô tả; `sql` chỉ để kiểm tra,
+# không hiện cho người học. tests/practiceSets.test.ts: sql của phương án đúng ra cùng kết quả với `sql` của mục, sql của mỗi
+# phương án sai chạy được và ra kết quả khác. Đúng 4 phương án; phương án đúng không dài nhất; code span VI = EN; EN không dấu.
+
+- id: x-01
+  sql: |
+    SELECT customer_id, count(*) AS orders
+    FROM orders
+    GROUP BY customer_id
+    ORDER BY count(*) DESC
+    LIMIT 1
+  q: { vi: "Câu này trả về dòng nào?", en: "Which row does this query return?" }
+  answer: 2
+  options:
+    - vi: "Khách hội viên có nhiều đơn nhất"
+      en: "The member customer with the most orders"
+      sql: "SELECT customer_id, count(*) AS orders FROM orders WHERE customer_id IS NOT NULL GROUP BY customer_id ORDER BY count(*) DESC, customer_id LIMIT 1"
+      why:
+        vi: "Sẽ đúng nếu có lọc `customer_id IS NOT NULL`. Ở đây không lọc, nên mọi đơn khách vãng lai (không có mã khách) gom chung thành một nhóm, và nhóm đó lớn hơn mọi hội viên."
+        en: "That needs a `customer_id IS NOT NULL` filter. Without it, every walk-in order (no customer id) falls into one shared group, and that group is bigger than any member."
+    - vi: "Số khách hội viên đã từng đặt đơn"
+      en: "How many member customers have ever ordered"
+      sql: "SELECT count(DISTINCT customer_id) AS customers FROM orders"
+      why:
+        vi: "`GROUP BY customer_id` cho một dòng mỗi khách, rồi `LIMIT 1` giữ một dòng: kết quả là một nhóm và số đơn của nó, không phải số khách."
+        en: "`GROUP BY customer_id` gives one row per customer, then `LIMIT 1` keeps one: the result is a group and its order count, not a number of customers."
+    - vi: "Nhóm 228 đơn không có mã khách"
+      en: "The 228 orders that have no customer id"
+      sql: "SELECT customer_id, count(*) AS orders FROM orders GROUP BY customer_id ORDER BY count(*) DESC LIMIT 1"
+      why:
+        vi: "`GROUP BY` coi mọi NULL là một nhóm, nên 228 đơn khách vãng lai thành một \"khách\" có `customer_id` trống, nhiều đơn hơn bất kỳ hội viên nào (nhiều nhất 14 đơn)."
+        en: "`GROUP BY` puts every NULL into one group, so the 228 walk-in orders become one \"customer\" with an empty `customer_id`, with more orders than any member (at most 14)."
+    - vi: "Ngày có nhiều đơn nhất"
+      en: "The single day with the most orders placed"
+      sql: "SELECT order_date, count(*) AS orders FROM orders GROUP BY order_date ORDER BY count(*) DESC, order_date LIMIT 1"
+      why:
+        vi: "Câu gom theo `customer_id`, không theo `order_date`, nên mỗi nhóm là một khách chứ không phải một ngày."
+        en: "The query groups by `customer_id`, not `order_date`, so each group is a customer, not a day."
+
+- id: x-02
+  sql: |
+    SELECT channel, count(customer_id) AS n
+    FROM orders
+    GROUP BY channel
+  q: { vi: "Cột `n` đếm gì?", en: "What does column `n` count?" }
+  answer: 0
+  options:
+    - vi: "Số đơn có mã khách hội viên, theo từng kênh"
+      en: "Orders that have a member customer id, per channel"
+      sql: "SELECT channel, count(*) AS n FROM orders WHERE customer_id IS NOT NULL GROUP BY channel"
+      why:
+        vi: "`count(customer_id)` bỏ qua dòng có `customer_id` là NULL, nên đơn khách vãng lai không được đếm; mỗi đơn của hội viên vẫn được đếm, kể cả khi một khách có nhiều đơn."
+        en: "`count(customer_id)` skips rows where `customer_id` is NULL, so walk-in orders are not counted; every member order still counts, even when one customer has several."
+    - vi: "Mọi đơn của từng kênh, kể cả đơn vãng lai"
+      en: "Every order of each channel, walk-ins included"
+      sql: "SELECT channel, count(*) AS n FROM orders GROUP BY channel"
+      why:
+        vi: "Đó là `count(*)`. `count(customer_id)` không đếm dòng có cột này là NULL, nên kênh STORE thiếu 228 đơn vãng lai."
+        en: "That is `count(*)`. `count(customer_id)` does not count rows where this column is NULL, so the STORE channel misses the 228 walk-in orders."
+    - vi: "Số khách hội viên khác nhau của từng kênh"
+      en: "The number of different member customers per channel"
+      sql: "SELECT channel, count(DISTINCT customer_id) AS n FROM orders GROUP BY channel"
+      why:
+        vi: "Muốn đếm người thì phải có `DISTINCT`. Không có nó, một khách có 5 đơn được đếm 5 lần."
+        en: "Counting people needs `DISTINCT`. Without it, a customer with 5 orders is counted 5 times."
+    - vi: "Số đơn vãng lai (không có mã khách) của từng kênh"
+      en: "The number of walk-in orders (no customer id) per channel"
+      sql: "SELECT channel, count(*) FILTER (WHERE customer_id IS NULL) AS n FROM orders GROUP BY channel"
+      why:
+        vi: "Ngược lại: `count(customer_id)` đếm dòng có mã khách và bỏ dòng không có."
+        en: "The opposite: `count(customer_id)` counts the rows that have a customer id and skips the rest."
+
+- id: x-03
+  sql: |
+    SELECT customer_id
+    FROM orders
+    WHERE status = 'CANCELLED'
+    GROUP BY customer_id
+    HAVING count(*) >= 2
+  q: { vi: "Câu này liệt kê những khách nào?", en: "Which customers does this query list?" }
+  answer: 3
+  options:
+    - vi: "Khách có từ 2 đơn trở lên, trong đó có ít nhất một đơn hủy"
+      en: "Customers with 2 or more orders, at least one of them cancelled"
+      sql: "SELECT customer_id FROM orders GROUP BY customer_id HAVING count(*) >= 2 AND bool_or(status = 'CANCELLED')"
+      why:
+        vi: "`WHERE status = 'CANCELLED'` bỏ mọi đơn không hủy trước khi gom nhóm, nên `count(*)` chỉ còn đếm đơn hủy, không đếm mọi đơn."
+        en: "`WHERE status = 'CANCELLED'` drops every non-cancelled order before grouping, so `count(*)` counts only cancelled orders, not all of them."
+    - vi: "Khách có từ 2 đơn trở lên, bất kể trạng thái"
+      en: "Customers with 2 or more orders, whatever their status"
+      sql: "SELECT customer_id FROM orders GROUP BY customer_id HAVING count(*) >= 2"
+      why:
+        vi: "`WHERE` chạy trước `GROUP BY` và chỉ giữ đơn hủy, nên đơn đã trả tiền không được đếm vào nhóm."
+        en: "`WHERE` runs before `GROUP BY` and keeps only cancelled orders, so paid orders never reach the count."
+    - vi: "Khách có ít nhất một đơn bị hủy"
+      en: "Customers with at least one cancelled order"
+      sql: "SELECT DISTINCT customer_id FROM orders WHERE status = 'CANCELLED'"
+      why:
+        vi: "Khách chỉ có 1 đơn hủy thì nhóm của họ có `count(*)` = 1, bị `HAVING count(*) >= 2` loại."
+        en: "A customer with only 1 cancelled order has a group with `count(*)` = 1, which `HAVING count(*) >= 2` removes."
+    - vi: "Khách có từ 2 đơn bị hủy trở lên"
+      en: "Customers with 2 or more cancelled orders"
+      sql: "SELECT customer_id FROM orders WHERE status = 'CANCELLED' GROUP BY customer_id HAVING count(*) >= 2"
+      why:
+        vi: "`WHERE` giữ lại đơn hủy, `GROUP BY` gom theo khách, rồi `HAVING` giữ nhóm có từ 2 đơn hủy."
+        en: "`WHERE` keeps the cancelled orders, `GROUP BY` groups them by customer, then `HAVING` keeps the groups with 2 or more."
+
+- id: x-04
+  sql: |
+    SELECT count(*) AS n
+    FROM customers
+    WHERE id NOT IN (SELECT customer_id FROM orders WHERE channel = 'STORE')
+  q: { vi: "Câu này ra số mấy?", en: "What number does this query return?" }
+  answer: 1
+  options:
+    - vi: "Số khách chưa từng mua tại quầy (8 người)"
+      en: "The number of customers who never bought at the counter (8 people)"
+      sql: "SELECT count(*) AS n FROM customers c WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id AND o.channel = 'STORE')"
+      why:
+        vi: "Đó là ý định, và `NOT EXISTS` làm được. Nhưng danh sách trong truy vấn con có NULL (đơn vãng lai), nên `NOT IN` không bao giờ ra đúng."
+        en: "That is the intent, and `NOT EXISTS` does it. But the subquery's list contains NULL (walk-in orders), so `NOT IN` is never true."
+    - vi: "0, dù có 8 khách chưa từng mua tại quầy"
+      en: "0, although 8 customers never bought at the counter"
+      sql: "SELECT count(*) AS n FROM customers WHERE id NOT IN (SELECT customer_id FROM orders WHERE channel = 'STORE')"
+      why:
+        vi: "Đơn vãng lai có `customer_id` là NULL. `id NOT IN (..., NULL)` nghĩa là khác mọi giá trị, mà khác NULL thì chưa biết, nên không khách nào lọt qua."
+        en: "Walk-in orders have a NULL `customer_id`. `id NOT IN (..., NULL)` means differs from every value, and differing from NULL is unknown, so no customer gets through."
+    - vi: "Số khách đã từng mua tại quầy"
+      en: "The number of customers who have bought at the counter"
+      sql: "SELECT count(*) AS n FROM customers WHERE id IN (SELECT customer_id FROM orders WHERE channel = 'STORE')"
+      why:
+        vi: "Đó là `IN`, không phải `NOT IN`; với `IN`, NULL trong danh sách không cản các khách khớp."
+        en: "That is `IN`, not `NOT IN`; with `IN`, a NULL in the list does not stop the matching customers."
+    - vi: "Số đơn tại quầy không có mã khách"
+      en: "The counter orders that have no customer id"
+      sql: "SELECT count(*) AS n FROM orders WHERE channel = 'STORE' AND customer_id IS NULL"
+      why:
+        vi: "Câu đếm dòng của `customers`, tức đếm khách; các đơn không mã khách chỉ nằm trong danh sách của truy vấn con."
+        en: "The query counts rows of `customers`, that is, customers; the orders without a customer id only sit in the subquery's list."
+
+- id: x-05
+  sql: |
+    SELECT DISTINCT ON (store_id) store_id, order_date, id
+    FROM orders
+    ORDER BY store_id, order_date DESC, id DESC
+  q: { vi: "Câu này trả về gì?", en: "What does this query return?" }
+  answer: 0
+  options:
+    - vi: "Đơn mới nhất của mỗi cửa hàng"
+      en: "Each store's newest order"
+      sql: "SELECT store_id, order_date, id FROM (SELECT store_id, order_date, id, row_number() OVER (PARTITION BY store_id ORDER BY order_date DESC, id DESC) AS r FROM orders) x WHERE r = 1"
+      why:
+        vi: "`DISTINCT ON (store_id)` giữ dòng đầu của mỗi cửa hàng theo `ORDER BY`, mà ngày giảm dần đặt đơn mới nhất lên đầu."
+        en: "`DISTINCT ON (store_id)` keeps the first row of each store in `ORDER BY` order, and descending date puts the newest order first."
+    - vi: "Đơn đầu tiên của mỗi cửa hàng"
+      en: "Each store's first order"
+      sql: "SELECT DISTINCT ON (store_id) store_id, order_date, id FROM orders ORDER BY store_id, order_date, id"
+      why:
+        vi: "Sẽ đúng nếu ngày sắp tăng dần. Ở đây là `order_date DESC`, nên dòng đầu mỗi nhóm là đơn mới nhất."
+        en: "That needs the date in ascending order. Here it is `order_date DESC`, so each group's first row is the newest order."
+    - vi: "Mọi đơn, sắp theo cửa hàng rồi mới trước"
+      en: "Every order, sorted by store, newest first"
+      sql: "SELECT store_id, order_date, id FROM orders ORDER BY store_id, order_date DESC, id DESC"
+      why:
+        vi: "`DISTINCT ON (store_id)` chỉ giữ một dòng cho mỗi cửa hàng, nên kết quả có 5 dòng, không phải mọi đơn."
+        en: "`DISTINCT ON (store_id)` keeps one row per store, so the result has 5 rows, not every order."
+    - vi: "5 đơn mới nhất của cả chuỗi"
+      en: "The 5 newest orders of the whole chain"
+      sql: "SELECT store_id, order_date, id FROM orders ORDER BY order_date DESC, id DESC LIMIT 5"
+      why:
+        vi: "Có 5 dòng vì có 5 cửa hàng, nhưng mỗi dòng là đơn mới nhất của một cửa hàng; 5 đơn mới nhất của cả chuỗi có thể cùng một cửa hàng."
+        en: "There are 5 rows because there are 5 stores, but each row is one store's newest order; the chain's 5 newest orders could all come from one store."
+
+- id: x-06
+  sql: |
+    SELECT order_date, count(*) AS orders,
+           sum(count(*)) OVER (ORDER BY order_date) AS so_far
+    FROM orders
+    WHERE order_date >= '2026-10-25'
+    GROUP BY order_date
+  q: { vi: "Cột `so_far` là gì?", en: "What is column `so_far`?" }
+  answer: 2
+  options:
+    - vi: "Số đơn cộng dồn từ ngày đầu tiên có dữ liệu"
+      en: "Orders added up since the first day of the data"
+      sql: "SELECT order_date, orders, so_far FROM (SELECT order_date, count(*) AS orders, sum(count(*)) OVER (ORDER BY order_date) AS so_far FROM orders GROUP BY order_date) x WHERE order_date >= '2026-10-25'"
+      why:
+        vi: "Hàm cửa sổ (window function) chạy sau `WHERE`, nên nó chỉ thấy các ngày từ 25/10; phép cộng dồn bắt đầu từ đó, không từ đầu dữ liệu."
+        en: "The window function runs after `WHERE`, so it only sees the days from 25 October; the running sum starts there, not at the start of the data."
+    - vi: "Tổng số đơn của cả giai đoạn, giống nhau ở mọi dòng"
+      en: "The total orders of the whole period, the same on every row"
+      sql: "SELECT order_date, count(*) AS orders, sum(count(*)) OVER () AS so_far FROM orders WHERE order_date >= '2026-10-25' GROUP BY order_date"
+      why:
+        vi: "Đó là `OVER ()`, cửa sổ không có thứ tự. Có `ORDER BY order_date` thì mỗi dòng chỉ cộng đến ngày của nó."
+        en: "That is `OVER ()`, a window with no order. With `ORDER BY order_date`, each row adds up only to its own day."
+    - vi: "Số đơn cộng dồn từ 25/10 đến ngày của dòng đó"
+      en: "Orders added up from 25 October to that row's day"
+      sql: "SELECT d.order_date, count(*) AS orders, (SELECT count(*) FROM orders o WHERE o.order_date >= '2026-10-25' AND o.order_date <= d.order_date) AS so_far FROM orders d WHERE d.order_date >= '2026-10-25' GROUP BY d.order_date"
+      why:
+        vi: "`WHERE` giữ các ngày từ 25/10, `GROUP BY` cho một dòng mỗi ngày, rồi `sum(count(*)) OVER (ORDER BY order_date)` cộng số đơn các ngày đến hết ngày đang xét."
+        en: "`WHERE` keeps the days from 25 October, `GROUP BY` gives one row per day, then `sum(count(*)) OVER (ORDER BY order_date)` adds the orders of every day up to the current one."
+    - vi: "Số đơn của 3 ngày gần nhất tính đến ngày đó"
+      en: "Orders of the last 3 days up to that day"
+      sql: "SELECT order_date, count(*) AS orders, sum(count(*)) OVER (ORDER BY order_date ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) AS so_far FROM orders WHERE order_date >= '2026-10-25' GROUP BY order_date"
+      why:
+        vi: "Cửa sổ không giới hạn số dòng (không có `ROWS BETWEEN ...`), nên nó cộng mọi ngày từ dòng đầu, không phải một khoảng trượt."
+        en: "The window sets no frame size (no `ROWS BETWEEN ...`), so it adds every day from the first row, not a sliding range."
+
+- id: x-07
+  sql: |
+    SELECT s.name, count(o.id) AS orders
+    FROM stores s
+    LEFT JOIN orders o ON o.store_id = s.id
+    WHERE o.order_date < '2025-09-01'
+    GROUP BY s.name
+  q: { vi: "Câu này ra mấy cửa hàng, với số đơn nào?", en: "How many stores does this return, with which counts?" }
+  answer: 1
+  options:
+    - vi: "Cả 5 cửa hàng, Thao Dien (mở 9/2025) với 0 đơn"
+      en: "All 5 stores, Thao Dien (opened 9/2025) with 0 orders"
+      sql: "SELECT s.name, count(o.id) AS orders FROM stores s LEFT JOIN orders o ON o.store_id = s.id AND o.order_date < '2025-09-01' GROUP BY s.name"
+      why:
+        vi: "Đó là khi điều kiện ngày nằm trong `ON`. Đặt ở `WHERE`, nó chạy sau phép nối và bỏ dòng Thao Dien có `order_date` là NULL."
+        en: "That is what you get with the date condition in `ON`. In `WHERE`, it runs after the join and drops Thao Dien's row, whose `order_date` is NULL."
+    - vi: "4 cửa hàng, mỗi cửa hàng với số đơn trước 9/2025"
+      en: "4 stores, each with its orders before 9/2025"
+      sql: "SELECT s.name, count(*) AS orders FROM stores s JOIN orders o ON o.store_id = s.id WHERE o.order_date < '2025-09-01' GROUP BY s.name"
+      why:
+        vi: "Thao Dien không có đơn trước 9/2025, nên sau phép nối trái nó có `order_date` NULL, và `WHERE` bỏ dòng đó. Phép nối trái hóa ra như nối trong (inner join)."
+        en: "Thao Dien has no order before 9/2025, so after the left join its `order_date` is NULL, and `WHERE` drops that row. The left join ends up acting as an inner join."
+    - vi: "4 cửa hàng, mỗi cửa hàng với mọi đơn từ trước tới nay"
+      en: "4 stores, each with all its orders ever"
+      sql: "SELECT s.name, count(o.id) AS orders FROM stores s JOIN orders o ON o.store_id = s.id WHERE s.id <> 4 GROUP BY s.name"
+      why:
+        vi: "Điều kiện `o.order_date < '2025-09-01'` lọc từng đơn, nên chỉ đơn trước 9/2025 được đếm."
+        en: "The condition `o.order_date < '2025-09-01'` filters each order, so only orders before 9/2025 are counted."
+    - vi: "Cả 5 cửa hàng, mỗi cửa hàng với mọi đơn từ trước tới nay"
+      en: "All 5 stores, each with all its orders ever"
+      sql: "SELECT s.name, count(o.id) AS orders FROM stores s LEFT JOIN orders o ON o.store_id = s.id GROUP BY s.name"
+      why:
+        vi: "Câu có lọc ngày, và lọc ở `WHERE` nên cửa hàng không có đơn trước 9/2025 bị bỏ hẳn."
+        en: "The query filters by date, and since the filter is in `WHERE`, a store with no order before 9/2025 disappears entirely."
+
+- id: x-08
+  sql: |
+    SELECT store_id,
+           count(*) FILTER (WHERE status = 'CANCELLED') * 100 / count(*) AS pct
+    FROM orders
+    GROUP BY store_id
+  q: { vi: "Cột `pct` là gì?", en: "What is column `pct`?" }
+  answer: 3
+  options:
+    - vi: "Tỉ lệ đơn hủy theo phần trăm, giữ 2 chữ số thập phân"
+      en: "The cancelled share in percent, with 2 decimals"
+      sql: "SELECT store_id, round(count(*) FILTER (WHERE status = 'CANCELLED') * 100.0 / count(*), 2) AS pct FROM orders GROUP BY store_id"
+      why:
+        vi: "Mọi số trong phép tính đều là số nguyên, nên phép chia là chia nguyên (integer division) và phần lẻ bị cắt bỏ."
+        en: "Every number in the formula is an integer, so the division is integer division and the fraction is cut off."
+    - vi: "0 ở mọi cửa hàng, vì chia nguyên ra 0"
+      en: "0 for every store, because integer division gives 0"
+      sql: "SELECT store_id, count(*) FILTER (WHERE status = 'CANCELLED') / count(*) * 100 AS pct FROM orders GROUP BY store_id"
+      why:
+        vi: "Sẽ đúng nếu chia trước rồi mới nhân 100. Ở đây nhân 100 trước, nên số bị chia đủ lớn và kết quả không về 0."
+        en: "That happens when you divide first and multiply by 100 after. Here the 100 comes first, so the dividend is big enough and the result is not 0."
+    - vi: "Số đơn bị hủy của mỗi cửa hàng"
+      en: "The number of cancelled orders per store"
+      sql: "SELECT store_id, count(*) FILTER (WHERE status = 'CANCELLED') AS pct FROM orders GROUP BY store_id"
+      why:
+        vi: "Số đơn hủy còn được nhân 100 rồi chia cho tổng số đơn, nên kết quả là tỉ lệ, không phải số đếm."
+        en: "The cancelled count is then multiplied by 100 and divided by all orders, so the result is a share, not a count."
+    - vi: "Phần trăm đơn hủy, làm tròn xuống số nguyên"
+      en: "Percent cancelled, rounded down to a whole number"
+      sql: "SELECT store_id, floor(count(*) FILTER (WHERE status = 'CANCELLED') * 100.0 / count(*))::int AS pct FROM orders GROUP BY store_id"
+      why:
+        vi: "Nhân 100 trước nên số bị chia đủ lớn, nhưng chia hai số nguyên vẫn cắt phần lẻ, ví dụ 7.9 thành 7."
+        en: "Multiplying by 100 first keeps the dividend big enough, but dividing two integers still cuts the fraction, e.g. 7.9 becomes 7."
+
+- id: x-09
+  sql: |
+    SELECT s.city, count(DISTINCT o.customer_id) AS n
+    FROM orders o
+    JOIN stores s ON s.id = o.store_id
+    GROUP BY s.city
+  q: { vi: "Cột `n` đếm gì?", en: "What does column `n` count?" }
+  answer: 2
+  options:
+    - vi: "Số đơn ở các cửa hàng của từng thành phố"
+      en: "The orders at each city's stores"
+      sql: "SELECT s.city, count(*) AS n FROM orders o JOIN stores s ON s.id = o.store_id GROUP BY s.city"
+      why:
+        vi: "`DISTINCT o.customer_id` đếm mỗi khách một lần, dù họ có bao nhiêu đơn, nên đây không phải số đơn."
+        en: "`DISTINCT o.customer_id` counts each customer once, however many orders they have, so this is not an order count."
+    - vi: "Số khách đang sống ở từng thành phố"
+      en: "The customers who live in each city"
+      sql: "SELECT city, count(*) AS n FROM customers WHERE city IN ('Da Nang', 'Ho Chi Minh City', 'Hanoi') GROUP BY city"
+      why:
+        vi: "Thành phố ở đây là `s.city`, thành phố của cửa hàng nơi mua, không phải `customers.city` nơi khách sống."
+        en: "The city here is `s.city`, the city of the store where they bought, not `customers.city` where they live."
+    - vi: "Số hội viên khác nhau đã mua ở mỗi thành phố"
+      en: "Different members who bought in each city"
+      sql: "SELECT s.city, count(DISTINCT o.customer_id) AS n FROM orders o JOIN stores s ON s.id = o.store_id WHERE o.customer_id IS NOT NULL GROUP BY s.city"
+      why:
+        vi: "`count(DISTINCT ...)` đếm mỗi mã khách một lần trong mỗi thành phố, và bỏ qua NULL, nên đơn vãng lai không thành một \"khách\"."
+        en: "`count(DISTINCT ...)` counts each customer id once per city and skips NULL, so walk-in orders do not become a \"customer\"."
+    - vi: "Số khách khác nhau, tính cả khách vãng lai như một người"
+      en: "The different customers, with walk-ins counted as one person"
+      sql: "SELECT s.city, count(DISTINCT coalesce(o.customer_id, 0)) AS n FROM orders o JOIN stores s ON s.id = o.store_id GROUP BY s.city"
+      why:
+        vi: "`count(DISTINCT ...)` bỏ qua NULL, nên đơn vãng lai không được tính là một khách nào cả."
+        en: "`count(DISTINCT ...)` skips NULL, so walk-in orders do not count as any customer at all."
+
+
+- id: x-10
+  sql: |
+    SELECT count(*) AS n
+    FROM (SELECT city FROM stores UNION SELECT city FROM customers) AS t
+  q: { vi: "Câu này ra số mấy?", en: "What number does this query return?" }
+  answer: 0
+  options:
+    - vi: "6: năm thành phố và một dòng trống"
+      en: "6: five cities plus one empty row"
+      sql: "SELECT count(*) AS n FROM (SELECT city FROM stores UNION SELECT city FROM customers) AS t"
+      why:
+        vi: "`UNION` bỏ dòng trùng, và khi so trùng nó coi hai NULL là giống nhau, nên 17 khách không có thành phố để lại đúng một dòng trống."
+        en: "`UNION` removes duplicate rows, and when comparing for duplicates it treats two NULLs as equal, so the 17 customers without a city leave exactly one empty row."
+    - vi: "5: chỉ những thành phố có tên rõ ràng"
+      en: "5: only the cities that have a name"
+      sql: "SELECT count(*) AS n FROM (SELECT city FROM stores UNION SELECT city FROM customers WHERE city IS NOT NULL) AS t"
+      why:
+        vi: "Không có lọc `city IS NOT NULL`, và `UNION` giữ lại một dòng NULL, nên dòng trống vẫn được đếm."
+        en: "There is no `city IS NOT NULL` filter, and `UNION` keeps one NULL row, so the empty row is counted too."
+    - vi: "305: mọi dòng của cả hai bảng cộng lại"
+      en: "305: every row of both tables added up"
+      sql: "SELECT count(*) AS n FROM (SELECT city FROM stores UNION ALL SELECT city FROM customers) AS t"
+      why:
+        vi: "Đó là `UNION ALL`. `UNION` bỏ dòng trùng, nên mỗi thành phố chỉ còn một dòng."
+        en: "That is `UNION ALL`. `UNION` removes duplicate rows, so each city is left only once."
+    - vi: "3: thành phố có cửa hàng"
+      en: "3: the cities that have a store"
+      sql: "SELECT count(DISTINCT city) AS n FROM stores"
+      why:
+        vi: "`UNION` gộp cả thành phố của khách, gồm Hue và Can Tho, nơi không có cửa hàng."
+        en: "`UNION` also brings in the customers' cities, including Hue and Can Tho, which have no store."
+
+- id: x-11
+  sql: |
+    SELECT count(*) AS n
+    FROM stores s
+    WHERE EXISTS (
+      SELECT 1 FROM store_targets t
+      WHERE t.store_id = s.id AND t.month = '2026-06-01'
+    )
+  q: { vi: "Câu này đếm gì?", en: "What does this query count?" }
+  answer: 3
+  options:
+    - vi: "Số cửa hàng có chỉ tiêu ở bất kỳ tháng nào"
+      en: "The stores that have a target in any month"
+      sql: "SELECT count(*) AS n FROM stores s WHERE EXISTS (SELECT 1 FROM store_targets t WHERE t.store_id = s.id)"
+      why:
+        vi: "Truy vấn con có điều kiện `t.month = '2026-06-01'`, nên chỉ chỉ tiêu tháng 6/2026 được tính."
+        en: "The subquery has the condition `t.month = '2026-06-01'`, so only June 2026 targets count."
+    - vi: "Số cửa hàng không có chỉ tiêu tháng 6/2026"
+      en: "The stores without a June 2026 target"
+      sql: "SELECT count(*) AS n FROM stores s WHERE NOT EXISTS (SELECT 1 FROM store_targets t WHERE t.store_id = s.id AND t.month = '2026-06-01')"
+      why:
+        vi: "Đó là `NOT EXISTS`. `EXISTS` giữ cửa hàng khi truy vấn con tìm được ít nhất một dòng."
+        en: "That is `NOT EXISTS`. `EXISTS` keeps a store when the subquery finds at least one row."
+    - vi: "Số dòng chỉ tiêu của mọi cửa hàng trong năm 2026"
+      en: "The target rows of every store in 2026"
+      sql: "SELECT count(*) AS n FROM store_targets"
+      why:
+        vi: "Câu đếm dòng của `stores`, mỗi cửa hàng nhiều nhất một lần; `EXISTS` chỉ hỏi có hay không, không đếm dòng của `store_targets`."
+        en: "The query counts rows of `stores`, each store at most once; `EXISTS` only asks yes or no and does not count `store_targets` rows."
+    - vi: "Số cửa hàng có chỉ tiêu tháng 6/2026"
+      en: "The stores that have a June 2026 target"
+      sql: "SELECT count(DISTINCT store_id) AS n FROM store_targets WHERE month = '2026-06-01'"
+      why:
+        vi: "Với mỗi cửa hàng, `EXISTS` hỏi có dòng chỉ tiêu tháng 6/2026 nào khớp không. Hoan Kiem thiếu chỉ tiêu tháng đó, nên ra 4 chứ không phải 5."
+        en: "For each store, `EXISTS` asks whether a June 2026 target row matches. Hoan Kiem has no target that month, so the answer is 4, not 5."
+
+- id: x-12
+  sql: |
+    SELECT CASE WHEN price_vnd >= 50000 THEN 'high'
+                WHEN price_vnd >= 100000 THEN 'premium'
+                ELSE 'low' END AS band,
+           count(*) AS products
+    FROM products
+    GROUP BY 1
+  q: { vi: "Kết quả có những nhóm giá nào?", en: "Which price bands does the result hold?" }
+  answer: 1
+  options:
+    - vi: "Ba nhóm: premium (từ 100 000), high (50 000–99 999) và low"
+      en: "Three bands: premium (100,000 and up), high (50,000-99,999) and low"
+      sql: "SELECT CASE WHEN price_vnd >= 100000 THEN 'premium' WHEN price_vnd >= 50000 THEN 'high' ELSE 'low' END AS band, count(*) AS products FROM products GROUP BY 1"
+      why:
+        vi: "Đó là khi nhánh `>= 100000` đứng trước. `CASE` dừng ở nhánh đúng đầu tiên, mà giá 129 000 đã khớp `>= 50000` rồi."
+        en: "That is what you get with the `>= 100000` branch first. `CASE` stops at the first true branch, and a price of 129,000 already matches `>= 50000`."
+    - vi: "Hai nhóm: high (từ 50 000) và low; không có premium"
+      en: "Two bands: high (50,000 and up) and low; no premium"
+      sql: "SELECT CASE WHEN price_vnd >= 50000 THEN 'high' ELSE 'low' END AS band, count(*) AS products FROM products GROUP BY 1"
+      why:
+        vi: "`CASE` chọn nhánh đúng đầu tiên. Mọi giá từ 100 000 cũng đã từ 50 000, nên rơi vào high, và nhánh premium không bao giờ tới lượt."
+        en: "`CASE` takes the first true branch. Every price of 100,000 or more is also 50,000 or more, so it lands in high, and the premium branch never gets its turn."
+    - vi: "Một dòng cho mỗi sản phẩm, kèm nhóm giá của nó"
+      en: "One row per product, with its price band"
+      sql: "SELECT CASE WHEN price_vnd >= 50000 THEN 'high' ELSE 'low' END AS band, 1 AS products FROM products"
+      why:
+        vi: "`GROUP BY 1` gom theo cột đầu là nhóm giá, nên mỗi nhóm một dòng, kèm số sản phẩm trong nhóm."
+        en: "`GROUP BY 1` groups by the first column, the band, so there is one row per band with its product count."
+    - vi: "Chỉ một nhóm high, vì mọi giá đều từ 50 000"
+      en: "Only a high band, because every price is 50,000 or more"
+      sql: "SELECT 'high' AS band, count(*) AS products FROM products"
+      why:
+        vi: "Phần lớn sản phẩm rẻ hơn 50 000 (nước, bánh, bút…), nên nhóm low có nhiều sản phẩm."
+        en: "Most products cost less than 50,000 (drinks, snacks, pens...), so the low band holds many products."
+
+- id: x-13
+  sql: |
+    SELECT round(avg(birth_year), 1) AS v
+    FROM customers
+  q: { vi: "`v` là trung bình của những gì?", en: "What is `v` the average of?" }
+  answer: 2
+  options:
+    - vi: "Năm sinh của cả 300 khách, ai không khai tính là 0"
+      en: "The birth years of all 300 customers, missing ones counted as 0"
+      sql: "SELECT round(avg(coalesce(birth_year, 0)), 1) AS v FROM customers"
+      why:
+        vi: "`avg` bỏ qua NULL, không đổi NULL thành 0. Muốn tính là 0 phải viết `coalesce(birth_year, 0)`, và kết quả sẽ thấp vô lý."
+        en: "`avg` skips NULL; it does not turn NULL into 0. Counting them as 0 needs `coalesce(birth_year, 0)`, and the result would be absurdly low."
+    - vi: "Các năm sinh khác nhau, mỗi năm tính một lần"
+      en: "The different birth years, each counted once"
+      sql: "SELECT round(avg(DISTINCT birth_year), 1) AS v FROM customers"
+      why:
+        vi: "Đó là `avg(DISTINCT birth_year)`. Không có `DISTINCT`, hai khách cùng sinh năm 1990 được tính hai lần."
+        en: "That is `avg(DISTINCT birth_year)`. Without `DISTINCT`, two customers born in 1990 count twice."
+    - vi: "Năm sinh của những khách có khai năm sinh"
+      en: "The birth years of the customers who gave one"
+      sql: "SELECT round(sum(birth_year)::numeric / count(birth_year), 1) AS v FROM customers"
+      why:
+        vi: "`avg` bỏ qua NULL: nó chia tổng năm sinh cho số khách có khai (273), không cho 300."
+        en: "`avg` skips NULL: it divides the sum of birth years by the customers who gave one (273), not by 300."
+    - vi: "Năm sinh nằm giữa khi xếp mọi khách theo tuổi"
+      en: "The middle birth year when all customers are lined up by age"
+      sql: "SELECT round(percentile_cont(0.5) WITHIN GROUP (ORDER BY birth_year)::numeric, 1) AS v FROM customers"
+      why:
+        vi: "Giá trị nằm giữa là trung vị (median), tính bằng `percentile_cont(0.5)`. `avg` là trung bình cộng."
+        en: "The middle value is the median, computed with `percentile_cont(0.5)`. `avg` is the arithmetic mean."
+
+- id: x-14
+  sql: |
+    SELECT count(*) AS n
+    FROM payments
+    WHERE paid_at BETWEEN '2026-09-01' AND '2026-09-30'
+  q: { vi: "Câu này đếm thanh toán của khoảng thời gian nào?", en: "Which period's payments does this query count?" }
+  answer: 0
+  options:
+    - vi: "Từ 1/9 đến hết 29/9"
+      en: "From 1 September through the 29th"
+      sql: "SELECT count(*) AS n FROM payments WHERE paid_at >= '2026-09-01' AND paid_at <= '2026-09-30 00:00'"
+      why:
+        vi: "`paid_at` có giờ phút, và `'2026-09-30'` nghĩa là 00:00 ngày 30/9. `BETWEEN` dừng đúng ở mốc đó, nên chỉ khoản trả đúng nửa đêm ngày 30 (nếu có) được tính."
+        en: "`paid_at` holds a time of day, and `'2026-09-30'` means 00:00 on 30 September. `BETWEEN` stops exactly there, so only a payment at midnight on the 30th (if any) is counted."
+    - vi: "Mọi thanh toán trong cả tháng 9/2026"
+      en: "Every payment made in September 2026"
+      sql: "SELECT count(*) AS n FROM payments WHERE paid_at >= '2026-09-01' AND paid_at < '2026-10-01'"
+      why:
+        vi: "Sẽ đúng nếu `paid_at` là ngày không có giờ. Vì có giờ, các khoản trả trong ngày 30/9 (8 khoản) nằm sau mốc 00:00 và bị bỏ."
+        en: "That would hold if `paid_at` were a plain date. Because it has a time, the payments made during 30 September (8 of them) fall after 00:00 and are left out."
+    - vi: "Từ 2/9 đến hết 30/9"
+      en: "From 2 September to the end of the 30th"
+      sql: "SELECT count(*) AS n FROM payments WHERE paid_at >= '2026-09-02' AND paid_at < '2026-10-01'"
+      why:
+        vi: "`BETWEEN` tính cả hai đầu, nên ngày 1/9 được lấy từ 00:00. Phía bị hụt là cuối khoảng, không phải đầu."
+        en: "`BETWEEN` includes both ends, so 1 September is taken from 00:00. The missing part is at the end of the range, not the start."
+    - vi: "Tháng 9 và cả ngày 1/10"
+      en: "September plus 1 October"
+      sql: "SELECT count(*) AS n FROM payments WHERE paid_at >= '2026-09-01' AND paid_at < '2026-10-02'"
+      why:
+        vi: "Mốc cuối là 30/9, nên không có gì của tháng 10 lọt vào."
+        en: "The end point is 30 September, so nothing from October gets in."
+
+- id: x-15
+  sql: |
+    SELECT m.name, count(*) AS n
+    FROM staff e
+    JOIN staff m ON m.id = e.manager_id
+    GROUP BY m.name
+  q: { vi: "Mỗi dòng cho biết gì?", en: "What does each row tell you?" }
+  answer: 3
+  options:
+    - vi: "Mỗi nhân viên và tên quản lý của họ"
+      en: "Each employee and their manager's name"
+      sql: "SELECT e.name, m.name AS n FROM staff e JOIN staff m ON m.id = e.manager_id"
+      why:
+        vi: "Câu gom theo `m.name` và đếm, nên mỗi dòng là một quản lý với một con số, không phải một cặp nhân viên và quản lý."
+        en: "The query groups by `m.name` and counts, so each row is one manager with a number, not an employee and manager pair."
+    - vi: "Mỗi người quản lý và số người dưới quyền ở mọi cấp"
+      en: "Each manager and the number of people under them at every level"
+      sql: "WITH RECURSIVE down AS (SELECT id AS top, id FROM staff UNION ALL SELECT d.top, s.id FROM down d JOIN staff s ON s.manager_id = d.id) SELECT m.name, count(*) - 1 AS n FROM down d JOIN staff m ON m.id = d.top GROUP BY m.name HAVING count(*) > 1"
+      why:
+        vi: "Phép nối chỉ đi một bậc: `m.id = e.manager_id` ghép mỗi người với quản lý trực tiếp. Đếm mọi cấp cần truy vấn đệ quy."
+        en: "The join goes one level only: `m.id = e.manager_id` pairs each person with their direct manager. Counting every level needs a recursive query."
+    - vi: "Mỗi nhân viên và số người quản lý họ"
+      en: "Each employee and how many people manage them"
+      sql: "SELECT e.name, count(*) AS n FROM staff e JOIN staff m ON m.id = e.manager_id GROUP BY e.name"
+      why:
+        vi: "Câu gom theo `m.name`, tên ở phía quản lý của phép nối, không theo `e.name`; và mỗi người chỉ có một `manager_id`."
+        en: "The query groups by `m.name`, the manager side of the join, not by `e.name`; and each person has only one `manager_id`."
+    - vi: "Mỗi quản lý và số người họ quản lý trực tiếp"
+      en: "Each manager and how many people they manage directly"
+      sql: "SELECT m.name, (SELECT count(*) FROM staff e WHERE e.manager_id = m.id) AS n FROM staff m WHERE EXISTS (SELECT 1 FROM staff e WHERE e.manager_id = m.id)"
+      why:
+        vi: "Mỗi nhân viên `e` được ghép với quản lý trực tiếp `m`, rồi `GROUP BY m.name` đếm số nhân viên của từng quản lý."
+        en: "Each employee `e` is paired with their direct manager `m`, then `GROUP BY m.name` counts the employees of each manager."
+
+- id: x-16
+  sql: |
+    SELECT count(*) AS n
+    FROM orders o
+    JOIN order_items i ON i.order_id = o.id
+    WHERE o.store_id = 2
+  q: { vi: "Câu này đếm gì?", en: "What does this query count?" }
+  answer: 1
+  options:
+    - vi: "Số đơn của cửa hàng 2"
+      en: "The orders of store 2"
+      sql: "SELECT count(*) AS n FROM orders WHERE store_id = 2 AND id IN (SELECT order_id FROM order_items)"
+      why:
+        vi: "Phép nối tạo một dòng cho mỗi dòng hàng, nên đơn có 3 dòng hàng được đếm 3 lần. Đếm đơn cần `count(DISTINCT o.id)`."
+        en: "The join makes one row per item line, so an order with 3 lines is counted 3 times. Counting orders needs `count(DISTINCT o.id)`."
+    - vi: "Số dòng hàng trong đơn của cửa hàng 2"
+      en: "The item lines in store 2's orders"
+      sql: "SELECT count(*) AS n FROM order_items WHERE order_id IN (SELECT id FROM orders WHERE store_id = 2)"
+      why:
+        vi: "Mỗi dòng sau phép nối là một dòng hàng (`order_items`) kèm đơn của nó, nên `count(*)` đếm dòng hàng."
+        en: "Each row after the join is one item line (`order_items`) with its order, so `count(*)` counts item lines."
+    - vi: "Số đơn vị hàng cửa hàng 2 đã bán"
+      en: "The units store 2 has sold"
+      sql: "SELECT sum(i.qty) AS n FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.store_id = 2"
+      why:
+        vi: "Số đơn vị là `sum(i.qty)`. `count(*)` đếm dòng, nên dòng có `qty` = 4 vẫn chỉ tính 1."
+        en: "Units are `sum(i.qty)`. `count(*)` counts rows, so a line with `qty` = 4 still counts as 1."
+    - vi: "Số sản phẩm khác nhau cửa hàng 2 đã bán"
+      en: "The different products store 2 has sold"
+      sql: "SELECT count(DISTINCT i.product_id) AS n FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.store_id = 2"
+      why:
+        vi: "Đếm sản phẩm khác nhau cần `count(DISTINCT i.product_id)`; ở đây một sản phẩm bán ở 10 dòng được đếm 10 lần."
+        en: "Different products need `count(DISTINCT i.product_id)`; here a product sold on 10 lines counts 10 times."

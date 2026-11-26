@@ -29,15 +29,31 @@ export const LEVELS = 5;
  * drill → that skill's page (`learn` for a node drill); a "SQL only" player who has opened no domain → the learning path;
  * else the open domain's next task (none once all are done). It never names a domain the player has not opened (v15 §5).
  */
-export type Resume = { kind: 'skill'; skill: string } | { kind: 'learn' } | { kind: 'ticket'; ticket: Ticket };
-export function resumeTarget(completed: readonly string[], next: Ticket | undefined, sqlOnly: boolean, skillIds: readonly string[]): Resume | undefined {
+export type Resume = { kind: 'skill'; skill: string } | { kind: 'learn' } | { kind: 'ticket'; ticket: Ticket } | { kind: 'engine'; engine: string; level?: number };
+/**
+ * v47 S3 (L912): `intent` = the welcome's goal (onboarding.ts). An Engine goal (internals, engineer) resumes at the level of
+ * the last Engine lesson passed when that was the last thing passed, or when nothing else is in progress (SQL only, or no
+ * task left); with none passed yet, at the goal's track (PostgreSQL, Data stack). Other goals: unchanged.
+ */
+export function resumeTarget(completed: readonly string[], next: Ticket | undefined, sqlOnly: boolean, skillIds: readonly string[], intent?: string): Resume | undefined {
   const last = completed.at(-1);
   if (last?.startsWith('g-')) {
     const skill = skillOfDrill(last, skillIds);
     return skill ? { kind: 'skill', skill } : { kind: 'learn' };
   }
+  if ((intent === 'internals' || intent === 'engineer') && (engineLevelOf(last ?? '') || sqlOnly || !next)) {
+    const lesson = [...completed].reverse().find((id) => engineLevelOf(id));
+    return lesson ? { kind: 'engine', ...engineLevelOf(lesson)! } : { kind: 'engine', engine: intent === 'engineer' ? 'stack' : 'postgres' };
+  }
   if (sqlOnly) return { kind: 'learn' };
   return next && { kind: 'ticket', ticket: next };
+}
+
+const ENGINE_OF: Record<string, string> = { pg: 'postgres', mg: 'mongodb', dy: 'dynamodb', ds: 'design', st: 'stack' };
+/** An Engine lesson id (`e-pg-l3-04`) → its engine and level; undefined for anything else (Best Practice cards, path drills). */
+export function engineLevelOf(id: string): { engine: string; level: number } | undefined {
+  const m = /^e-(pg|mg|dy|ds|st)-l([1-5])-/.exec(id);
+  return m ? { engine: ENGINE_OF[m[1]], level: Number(m[2]) } : undefined;
 }
 
 /**

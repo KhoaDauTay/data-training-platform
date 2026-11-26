@@ -19,6 +19,7 @@ import { localStore, readJson, writeJson } from './storage';
 import { domainOfHash, drillOfHash, isInterviewId, isSandboxHash, sandboxHash, sharedOf, type Route } from './route';
 import type { Ticket } from './tickets';
 import { bootGeneral, dropGeneral, initModes, interviewStep, ivPresence, onPracticeWrong, onSolved, openShared, renderLeft, renderReviewButton, reopenInterview, sandboxFromHash, startDrill, startLane } from './ui/modes';
+import './ui/caseCard'; // v47 D1/D2 (L930): the Overview's case studies and asks (content in the lazy `cases` chunk)
 import './ui/mapPage'; // V22-A: the Map page section (was routesSection in ui/homeView.ts)
 import './ui/me'; // v16 (L142): #/me nav item and page section; the page itself is the lazy meView chunk
 import './ui/engine'; // ENG-CORE (L220): #/engine nav item, page, sidebar rows and #/me block; the pages are the lazy engineView chunk
@@ -450,11 +451,12 @@ async function enterDomain(id: DomainId): Promise<void> {
  * v12.0 P2: a first visitor's choice in the welcome picker. Seeds only that data; "SQL only" seeds `lab` and opens the
  * learning path. Resolves false when the domain's content could not load (enterDomain shows the banner; the picker stays).
  */
-async function startWith(c: BootPick): Promise<boolean> {
+async function startWith(c: BootPick, to?: string): Promise<boolean> {
   if (c === 'general') {
     writeJson(DOMAIN_KEY, c);
     openSchema('lab');
-    if (currentRoute() !== 'engine') go('learn'); // v23 (L299): a first visit that lands on #/engine stays there
+    if (to) location.hash = to; // v47 S3 (L911): the welcome's goal names where it lands
+    else if (currentRoute() !== 'engine') go('learn'); // v23 (L299): a first visit that lands on #/engine stays there
     return true;
   }
   if (c !== activeDomain()) await enterDomain(c);

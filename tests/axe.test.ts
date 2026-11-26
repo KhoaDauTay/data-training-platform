@@ -25,9 +25,10 @@ const DIALOGS: [string, () => unknown][] = [
   ['map', () => document.querySelector<HTMLElement>('#map [data-nav=map]')!.click()],
   ['side drawer', () => byId('side-btn').click()],
   ['lesson', async () => (await import('../src/ui/lessonCard')).openLesson('select')],
-  ['welcome replay 1/3', () => byId('replay-btn').click()],
-  ['welcome replay 2/3', next],
-  ['welcome replay 3/3', next],
+  ['welcome replay 1/4', () => byId('replay-btn').click()],
+  ['welcome replay 2/4', next], // v47 S3: the goal step (cards; Next keeps the goal)
+  ['welcome replay 3/4', next],
+  ['welcome replay 4/4', next],
 ];
 
 describe('axe-core (v15 Q10)', () => {
@@ -36,6 +37,8 @@ describe('axe-core (v15 Q10)', () => {
     const modal = openModal();
     expect(modal?.id).toBe('welcome-dialog');
     const v = await problems();
+    next(); // v47 S3 (L910): the goal step
+    v.push(...await problems());
     modal!.dispatchEvent(new Event('cancel', { cancelable: true })); // Esc: Logistics, tour skipped
     modal!.close();
     expect(v).toEqual([]);
@@ -155,7 +158,7 @@ describe('axe-core (v15 Q10)', () => {
     await new Promise((r) => setTimeout(r, 100));
     expect(document.querySelector('dialog[open]')).not.toBeNull();
     const v = await problems();
-    if (!name.startsWith('welcome') || name.endsWith('3/3')) for (const d of document.querySelectorAll<HTMLDialogElement>('dialog[open]')) d.close();
+    if (!name.startsWith('welcome') || name.endsWith('4/4')) for (const d of document.querySelectorAll<HTMLDialogElement>('dialog[open]')) d.close();
     expect(v).toEqual([]);
   });
 });

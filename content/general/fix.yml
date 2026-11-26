@@ -1,0 +1,517 @@
+# Sửa câu lỗi / Fix the broken query (v47 P2, L921). Chạy trên schema `lab`, như drill.
+# Mỗi mục: `starter` = câu SQL có lỗi (người học sửa trong editor), `solution` = câu đúng, `bug` = loại lỗi,
+# `why` = giải thích lỗi (docs: tools/v44/explain-guide.md: nói lỗi cụ thể trong tình huống này, nguyên nhân, cách sửa).
+# Luật (tests/practiceSets.test.ts): starter chạy ra lỗi hoặc ra kết quả khác Solution; đề không nói từ khóa SQL ngoài backtick;
+# code span VI = EN; EN không dấu. Không đánh số lại id (không lưu gì vào Save, nhưng giữ id ổn định cho review).
+
+- id: g-fix-01
+  bug: join_key
+  task:
+    vi: "Đếm số đơn của từng cửa hàng: tên cửa hàng, số đơn. Câu bên dưới cho mỗi cửa hàng đúng 1 đơn, vô lý. Sửa nó."
+    en: "Count the orders of each store: store name, number of orders. The query below gives every store exactly 1 order, which cannot be right. Fix it."
+  starter: |
+    SELECT s.name, count(*) AS orders
+    FROM orders o
+    JOIN stores s ON s.id = o.id
+    GROUP BY s.name
+  solution: |
+    SELECT s.name, count(*) AS orders
+    FROM orders o
+    JOIN stores s ON s.id = o.store_id
+    GROUP BY s.name
+  hint:
+    vi: "Xem điều kiện nối: cột nào của `orders` trỏ tới cửa hàng?"
+    en: "Look at the join condition: which column of `orders` points to the store?"
+  why:
+    vi: "Câu lỗi nối `s.id = o.id`, tức so mã cửa hàng với mã đơn. Chỉ 5 đơn có mã 1–5 trùng với 5 mã cửa hàng, nên mỗi cửa hàng nhận đúng 1 đơn. Khóa ngoại (foreign key) của đơn trỏ tới cửa hàng là `o.store_id`; nối `s.id = o.store_id` thì mỗi đơn gắn đúng cửa hàng đã bán nó."
+    en: "The broken query joins on `s.id = o.id`, comparing a store id with an order id. Only the 5 orders with ids 1-5 match the 5 store ids, so each store gets exactly 1 order. The order's foreign key to the store is `o.store_id`; joining on `s.id = o.store_id` attaches each order to the store that sold it."
+
+- id: g-fix-02
+  bug: where_vs_having
+  task:
+    vi: "Tìm các cửa hàng có hơn 300 đơn: mã cửa hàng, số đơn. Câu bên dưới báo lỗi. Sửa nó."
+    en: "Find the stores with more than 300 orders: store id, number of orders. The query below fails. Fix it."
+  starter: |
+    SELECT store_id, count(*) AS orders
+    FROM orders
+    WHERE count(*) > 300
+    GROUP BY store_id
+  solution: |
+    SELECT store_id, count(*) AS orders
+    FROM orders
+    GROUP BY store_id
+    HAVING count(*) > 300
+  hint:
+    vi: "Điều kiện trên kết quả của hàm gộp phải đặt sau bước gom nhóm."
+    en: "A condition on an aggregate result must come after the grouping step."
+  why:
+    vi: "`WHERE` lọc từng dòng trước khi gom nhóm, lúc đó chưa có `count(*)` nào để so, nên Postgres báo lỗi 42803. Điều kiện trên số đơn của một nhóm phải nằm trong `HAVING`, chạy sau `GROUP BY`. Nhớ: `WHERE` chọn dòng, `HAVING` chọn nhóm."
+    en: "`WHERE` filters single rows before grouping, when no `count(*)` exists yet, so Postgres raises error 42803. A condition on a group's order count belongs in `HAVING`, which runs after `GROUP BY`. Rule of thumb: `WHERE` picks rows, `HAVING` picks groups."
+
+- id: g-fix-03
+  bug: null_compare
+  task:
+    vi: "Liệt kê khách chưa để lại email: mã, tên. Câu bên dưới ra 0 dòng, nhưng có 13 khách như vậy. Sửa nó."
+    en: "List the customers who left no email: id, name. The query below returns 0 rows, yet there are 13 such customers. Fix it."
+  starter: |
+    SELECT id, name
+    FROM customers
+    WHERE email = NULL
+  solution: |
+    SELECT id, name
+    FROM customers
+    WHERE email IS NULL
+  hint:
+    vi: "So sánh bằng với một giá trị chưa biết cho kết quả gì?"
+    en: "What does an equals comparison with an unknown value give?"
+  why:
+    vi: "`email = NULL` không bao giờ đúng: so với giá trị chưa biết (NULL) thì kết quả cũng là chưa biết, và `WHERE` bỏ mọi dòng không ra đúng. Vì vậy cả 13 khách thiếu email đều bị bỏ. Muốn hỏi \"có phải chưa biết không\" thì dùng `email IS NULL`."
+    en: "`email = NULL` is never true: comparing with an unknown value (NULL) gives unknown, and `WHERE` drops every row that is not true. That is why all 13 customers without an email vanish. To ask \"is it unknown?\", write `email IS NULL`."
+
+- id: g-fix-04
+  bug: integer_division
+  task:
+    vi: "Trung bình mỗi đơn có bao nhiêu sản phẩm (tổng `qty` chia số đơn trong `order_items`), làm tròn 2 chữ số. Câu bên dưới ra 9, thiếu phần lẻ. Sửa nó."
+    en: "On average, how many units does an order hold (total `qty` divided by the number of orders in `order_items`), rounded to 2 decimals. The query below gives 9 and loses the fraction. Fix it."
+  starter: |
+    SELECT round(sum(qty) / count(DISTINCT order_id), 2) AS units_per_order
+    FROM order_items
+  solution: |
+    SELECT round(sum(qty)::numeric / count(DISTINCT order_id), 2) AS units_per_order
+    FROM order_items
+  hint:
+    vi: "Hai số nguyên chia cho nhau thì phần lẻ đi đâu?"
+    en: "When two integers are divided, where does the fraction go?"
+  why:
+    vi: "`sum(qty)` và `count(...)` đều là số nguyên, nên phép chia là chia nguyên (integer division): Postgres cắt bỏ phần lẻ trước khi `round` kịp làm tròn, ra 9 thay vì 9.13. Ép một vế sang số thập phân, như `sum(qty)::numeric`, thì phép chia giữ phần lẻ."
+    en: "`sum(qty)` and `count(...)` are both integers, so the division is integer division: Postgres drops the fraction before `round` ever sees it, giving 9 instead of 9.13. Cast one side to a decimal type, as in `sum(qty)::numeric`, and the division keeps the fraction."
+
+- id: g-fix-05
+  bug: missing_group_by
+  task:
+    vi: "Đếm đơn theo cửa hàng và kênh bán: mã cửa hàng, kênh, số đơn. Câu bên dưới báo lỗi. Sửa nó."
+    en: "Count orders by store and sales channel: store id, channel, number of orders. The query below fails. Fix it."
+  starter: |
+    SELECT store_id, channel, count(*) AS orders
+    FROM orders
+    GROUP BY store_id
+  solution: |
+    SELECT store_id, channel, count(*) AS orders
+    FROM orders
+    GROUP BY store_id, channel
+  hint:
+    vi: "Mỗi cột không nằm trong hàm gộp phải có mặt ở đâu?"
+    en: "Where must every column outside an aggregate appear?"
+  why:
+    vi: "Câu lỗi gom theo `store_id` thôi, nên một nhóm (một cửa hàng) chứa cả đơn ONLINE lẫn STORE; Postgres không biết in `channel` nào cho nhóm đó và báo lỗi 42803. Mọi cột được chọn mà không nằm trong hàm gộp phải có trong `GROUP BY`. Thêm `channel` vào thì mỗi nhóm là một cặp cửa hàng và kênh."
+    en: "The broken query groups by `store_id` only, so one group (one store) holds both ONLINE and STORE orders; Postgres cannot tell which `channel` to print for it and raises error 42803. Every selected column outside an aggregate must be in `GROUP BY`. Add `channel` and each group becomes one store and channel pair."
+
+- id: g-fix-06
+  bug: fan_out
+  task:
+    vi: "Tổng tiền đã thu theo từng cửa hàng (cộng `amount_vnd` của `payments`): mã cửa hàng, tổng tiền. Câu bên dưới ra số lớn gấp mấy lần thực tế. Sửa nó."
+    en: "Total money collected per store (sum of `amount_vnd` in `payments`): store id, total. The query below gives several times the real figure. Fix it."
+  starter: |
+    SELECT o.store_id, sum(p.amount_vnd) AS collected
+    FROM orders o
+    JOIN order_items i ON i.order_id = o.id
+    JOIN payments p ON p.order_id = o.id
+    GROUP BY o.store_id
+  solution: |
+    SELECT o.store_id, sum(p.amount_vnd) AS collected
+    FROM orders o
+    JOIN payments p ON p.order_id = o.id
+    GROUP BY o.store_id
+  hint:
+    vi: "Một đơn có 3 dòng hàng thì mỗi khoản thanh toán của nó xuất hiện mấy lần sau phép nối?"
+    en: "If an order has 3 item lines, how many times does each of its payments appear after the join?"
+  why:
+    vi: "Phép nối với `order_items` nhân dòng (fan-out): một đơn có 3 dòng hàng thì mỗi khoản thanh toán của nó bị lặp 3 lần, và `sum` cộng cả 3. Câu hỏi không cần gì từ `order_items`, nên bỏ phép nối đó đi; tổng khi ấy cộng mỗi khoản thanh toán đúng một lần."
+    en: "Joining `order_items` multiplies rows (fan-out): an order with 3 item lines repeats each of its payments 3 times, and `sum` adds all 3. The question needs nothing from `order_items`, so drop that join; the total then adds each payment exactly once."
+
+- id: g-fix-07
+  bug: inclusive_end
+  task:
+    vi: "Số khoản thanh toán và tổng tiền trong cả tháng 9/2026 (theo `paid_at`): số khoản, tổng tiền. Câu bên dưới thiếu 8 khoản. Sửa nó."
+    en: "Number of payments and their total for the whole of September 2026 (by `paid_at`): count, total. The query below misses 8 payments. Fix it."
+  starter: |
+    SELECT count(*) AS payments, sum(amount_vnd) AS total
+    FROM payments
+    WHERE paid_at BETWEEN '2026-09-01' AND '2026-09-30'
+  solution: |
+    SELECT count(*) AS payments, sum(amount_vnd) AS total
+    FROM payments
+    WHERE paid_at >= '2026-09-01' AND paid_at < '2026-10-01'
+  hint:
+    vi: "`paid_at` có cả giờ. Mốc `'2026-09-30'` ứng với giờ nào?"
+    en: "`paid_at` holds a time of day. Which time does `'2026-09-30'` stand for?"
+  why:
+    vi: "`paid_at` là thời điểm có giờ phút, còn `'2026-09-30'` được hiểu là 00:00 ngày 30/9. `BETWEEN` lấy đến đúng mốc đó, nên mọi khoản trả sau nửa đêm ngày 30 bị bỏ: 158 khoản chỉ còn 150. Dùng khoảng nửa mở: `paid_at >= '2026-09-01' AND paid_at < '2026-10-01'` lấy trọn ngày cuối, giờ nào cũng được."
+    en: "`paid_at` is a timestamp with a time of day, while `'2026-09-30'` means midnight at the start of 30 September. `BETWEEN` stops exactly there, so every payment later on the 30th is dropped: 158 payments shrink to 150. Use a half-open range: `paid_at >= '2026-09-01' AND paid_at < '2026-10-01'` keeps the whole last day, whatever the time."
+
+- id: g-fix-08
+  bug: distinct_wrong_column
+  task:
+    vi: "Có bao nhiêu khách hội viên khác nhau từng mua ở cửa hàng tại Hanoi? Câu bên dưới đếm thiếu. Sửa nó."
+    en: "How many different member customers have bought at a store in Hanoi? The query below undercounts. Fix it."
+  starter: |
+    SELECT count(DISTINCT c.name) AS customers
+    FROM customers c
+    JOIN orders o ON o.customer_id = c.id
+    JOIN stores s ON s.id = o.store_id
+    WHERE s.city = 'Hanoi'
+  solution: |
+    SELECT count(DISTINCT c.id) AS customers
+    FROM customers c
+    JOIN orders o ON o.customer_id = c.id
+    JOIN stores s ON s.id = o.store_id
+    WHERE s.city = 'Hanoi'
+  hint:
+    vi: "Hai khách khác nhau có thể trùng tên không?"
+    en: "Can two different customers share a name?"
+  why:
+    vi: "`count(DISTINCT c.name)` gộp mọi khách trùng tên thành một, mà 300 khách ở đây chỉ dùng 16 họ tên khác nhau, nên rất nhiều người trùng tên. `DISTINCT` che lỗi: con số trông hợp lý nhưng đếm tên chứ không đếm người. Đếm theo khóa chính: `count(DISTINCT c.id)`."
+    en: "`count(DISTINCT c.name)` merges customers who share a name, and the 300 customers here use only 16 different names, so names repeat a lot. `DISTINCT` hides the bug: the number looks plausible, but it counts names, not people. Count the primary key: `count(DISTINCT c.id)`."
+
+- id: g-fix-09
+  bug: sum_distinct
+  task:
+    vi: "Tổng số đơn vị sản phẩm mã 9 (Cashew nuts) đã bán, cộng `qty` của mọi dòng hàng. Câu bên dưới ra số quá nhỏ. Sửa nó."
+    en: "Total units sold of product 9 (Cashew nuts), adding `qty` over every item line. The query below gives far too small a number. Fix it."
+  starter: |
+    SELECT sum(DISTINCT qty) AS units
+    FROM order_items
+    WHERE product_id = 9
+  solution: |
+    SELECT sum(qty) AS units
+    FROM order_items
+    WHERE product_id = 9
+  hint:
+    vi: "Hai dòng hàng cùng `qty` = 2 được cộng mấy lần?"
+    en: "Two item lines that both have `qty` = 2: how many times are they added?"
+  why:
+    vi: "`sum(DISTINCT qty)` chỉ cộng các giá trị khác nhau: `qty` ở đây chỉ từ 1 đến 6, nên kết quả không bao giờ vượt quá 1 + 2 + ... + 6 = 21, dù bán bao nhiêu dòng. Muốn tổng số đơn vị thì cộng mọi dòng: `sum(qty)`."
+    en: "`sum(DISTINCT qty)` adds each different value once: `qty` here is only 1 to 6, so the result can never exceed 1 + 2 + ... + 6 = 21, however many lines were sold. For the total units, add every line: `sum(qty)`."
+
+- id: g-fix-10
+  bug: left_join_where
+  task:
+    vi: "Mỗi cửa hàng có bao nhiêu đơn trong tháng 8/2025, kể cả cửa hàng 0 đơn: tên cửa hàng, số đơn. Câu bên dưới làm mất Thao Dien (chưa mở cửa). Sửa nó."
+    en: "How many orders did each store have in August 2025, including stores with 0: store name, number of orders. The query below loses Thao Dien (not open yet). Fix it."
+  starter: |
+    SELECT s.name, count(o.id) AS orders
+    FROM stores s
+    LEFT JOIN orders o ON o.store_id = s.id
+    WHERE o.order_date >= '2025-08-01' AND o.order_date < '2025-09-01'
+    GROUP BY s.name
+  solution: |
+    SELECT s.name, count(o.id) AS orders
+    FROM stores s
+    LEFT JOIN orders o ON o.store_id = s.id
+      AND o.order_date >= '2025-08-01' AND o.order_date < '2025-09-01'
+    GROUP BY s.name
+  hint:
+    vi: "Với Thao Dien, `o.order_date` sau phép nối trái là gì, và điều kiện lọc làm gì với dòng đó?"
+    en: "For Thao Dien, what is `o.order_date` after the left join, and what does the filter do with that row?"
+  why:
+    vi: "`LEFT JOIN` giữ Thao Dien với các cột của `orders` là NULL, nhưng `WHERE o.order_date >= ...` chạy sau phép nối và bỏ dòng đó, vì so NULL không ra đúng. Thế là phép nối trái thành nối trong (inner join). Đưa điều kiện ngày vào `ON`: nó chỉ chọn đơn nào được ghép, còn cửa hàng vẫn ở lại với `count(o.id)` = 0."
+    en: "`LEFT JOIN` keeps Thao Dien with NULL in every `orders` column, but `WHERE o.order_date >= ...` runs after the join and drops that row, because a comparison with NULL is not true. The left join has turned into an inner join. Move the date condition into `ON`: there it only decides which orders get matched, and the store stays with `count(o.id)` = 0."
+
+- id: g-fix-11
+  bug: order_by_in_subquery
+  task:
+    vi: "Lấy 5 đơn mới nhất (theo ngày, rồi mã đơn), nhưng in từ cũ đến mới: mã đơn, ngày đặt. Câu bên dưới in ngược. Sửa nó."
+    en: "Take the 5 newest orders (by date, then order id), but print them oldest first: order id, order date. The query below prints them the wrong way round. Fix it."
+  ordered: true
+  starter: |
+    SELECT id, order_date
+    FROM (
+      SELECT id, order_date
+      FROM orders
+      ORDER BY order_date DESC, id DESC
+      LIMIT 5
+    ) AS latest
+  solution: |
+    SELECT id, order_date
+    FROM (
+      SELECT id, order_date
+      FROM orders
+      ORDER BY order_date DESC, id DESC
+      LIMIT 5
+    ) AS latest
+    ORDER BY order_date, id
+  hint:
+    vi: "Thứ tự nào áp cho kết quả cuối: thứ tự trong truy vấn con hay của câu ngoài?"
+    en: "Which order applies to the final result: the subquery's or the outer query's?"
+  why:
+    vi: "`ORDER BY` trong truy vấn con chỉ có tác dụng để `LIMIT 5` chọn đúng 5 đơn mới nhất; nó không hứa gì về thứ tự câu ngoài in ra. Ở đây kết quả tình cờ giữ thứ tự mới trước, ngược với yêu cầu. Thứ tự hiển thị chỉ được bảo đảm bởi `ORDER BY` của câu ngoài cùng: thêm `ORDER BY order_date, id` ở cuối."
+    en: "The `ORDER BY` inside the subquery only lets `LIMIT 5` pick the right 5 newest orders; it promises nothing about the order the outer query prints. Here the rows happen to stay newest first, the opposite of the request. Only the outermost `ORDER BY` guarantees display order: add `ORDER BY order_date, id` at the end."
+
+- id: g-fix-12
+  bug: not_in_null
+  task:
+    vi: "Có bao nhiêu khách hội viên chưa từng mua tại quầy (kênh STORE)? Câu bên dưới ra 0, nhưng có 8 người như vậy. Sửa nó."
+    en: "How many member customers have never bought at the counter (channel STORE)? The query below gives 0, yet there are 8 such people. Fix it."
+  starter: |
+    SELECT count(*) AS customers
+    FROM customers
+    WHERE id NOT IN (SELECT customer_id FROM orders WHERE channel = 'STORE')
+  solution: |
+    SELECT count(*) AS customers
+    FROM customers c
+    WHERE NOT EXISTS (
+      SELECT 1 FROM orders o
+      WHERE o.customer_id = c.id AND o.channel = 'STORE'
+    )
+  hint:
+    vi: "Đơn của khách vãng lai có `customer_id` là gì, và nó làm gì với `NOT IN`?"
+    en: "What is `customer_id` on a walk-in order, and what does it do to `NOT IN`?"
+  why:
+    vi: "Đơn của khách vãng lai có `customer_id` là NULL, nên danh sách trong truy vấn con có NULL. `id NOT IN (..., NULL)` nghĩa là \"khác mọi giá trị\", mà khác NULL thì là chưa biết, nên không dòng nào ra đúng: 0 thay vì 8. `NOT EXISTS` chỉ hỏi \"có đơn STORE nào của khách này không\" và không vướng NULL."
+    en: "Walk-in orders have a NULL `customer_id`, so the subquery's list contains NULL. `id NOT IN (..., NULL)` means \"differs from every value\", and differing from NULL is unknown, so no row is ever true: 0 instead of 8. `NOT EXISTS` only asks \"does this customer have any STORE order?\" and is not tripped by NULL."
+
+- id: g-fix-13
+  bug: count_column
+  task:
+    vi: "Đếm mọi đơn theo kênh bán, kể cả đơn khách vãng lai: kênh, số đơn. Câu bên dưới đếm thiếu đơn tại quầy. Sửa nó."
+    en: "Count every order by sales channel, walk-in orders included: channel, number of orders. The query below undercounts counter orders. Fix it."
+  starter: |
+    SELECT channel, count(customer_id) AS orders
+    FROM orders
+    GROUP BY channel
+  solution: |
+    SELECT channel, count(*) AS orders
+    FROM orders
+    GROUP BY channel
+  hint:
+    vi: "Khi đếm theo một cột, `count` bỏ qua những dòng nào?"
+    en: "When it counts a column, which rows does `count` skip?"
+  why:
+    vi: "`count(customer_id)` chỉ đếm dòng có `customer_id` khác NULL, nên 228 đơn khách vãng lai (không có mã khách) bị bỏ khỏi kênh STORE. Muốn đếm mọi đơn thì dùng `count(*)`, đếm dòng bất kể cột nào là NULL."
+    en: "`count(customer_id)` only counts rows where `customer_id` is not NULL, so the 228 walk-in orders (no customer id) drop out of the STORE channel. To count every order, use `count(*)`, which counts rows whatever columns are NULL."
+
+- id: g-fix-14
+  bug: coalesce_in_average
+  task:
+    vi: "Năm sinh trung bình của các khách có khai năm sinh, làm tròn 1 chữ số. Câu bên dưới ra khoảng 1800, quá thấp. Sửa nó."
+    en: "Average birth year of the customers who gave one, rounded to 1 decimal. The query below gives about 1800, far too low. Fix it."
+  starter: |
+    SELECT round(avg(coalesce(birth_year, 0)), 1) AS avg_birth_year
+    FROM customers
+  solution: |
+    SELECT round(avg(birth_year), 1) AS avg_birth_year
+    FROM customers
+  hint:
+    vi: "Thay ô trống bằng 0 thì những người đó góp vào trung bình con số nào?"
+    en: "If an empty value becomes 0, what number do those people add to the average?"
+  why:
+    vi: "`coalesce(birth_year, 0)` biến 27 khách không khai năm sinh thành người sinh năm 0, và mỗi số 0 kéo trung bình xuống rất mạnh. `avg` vốn đã bỏ qua NULL, nên chỉ cần `avg(birth_year)`: trung bình chỉ tính trên những người có khai."
+    en: "`coalesce(birth_year, 0)` turns the 27 customers without a birth year into people born in year 0, and each 0 drags the average down hard. `avg` already skips NULL, so plain `avg(birth_year)` averages only the people who gave one."
+
+- id: g-fix-15
+  bug: and_or_precedence
+  task:
+    vi: "Đếm các đơn bị hủy (CANCELLED) ở cửa hàng 1 hoặc 2. Câu bên dưới ra 321, quá nhiều. Sửa nó."
+    en: "Count the cancelled orders (CANCELLED) at store 1 or 2. The query below gives 321, far too many. Fix it."
+  starter: |
+    SELECT count(*) AS orders
+    FROM orders
+    WHERE store_id = 1 OR store_id = 2 AND status = 'CANCELLED'
+  solution: |
+    SELECT count(*) AS orders
+    FROM orders
+    WHERE (store_id = 1 OR store_id = 2) AND status = 'CANCELLED'
+  hint:
+    vi: "Giữa `AND` và `OR`, cái nào được tính trước?"
+    en: "Between `AND` and `OR`, which one is evaluated first?"
+  why:
+    vi: "`AND` được tính trước `OR`, nên câu lỗi đọc thành: mọi đơn của cửa hàng 1, cộng thêm đơn hủy của cửa hàng 2. Vì vậy 321 gồm cả đơn đã trả tiền của cửa hàng 1. Đặt ngoặc `(store_id = 1 OR store_id = 2)` (hay `store_id IN (1, 2)`) để điều kiện hủy áp cho cả hai cửa hàng: còn 36."
+    en: "`AND` binds before `OR`, so the broken query reads: every order of store 1, plus the cancelled orders of store 2. That is why 321 includes store 1's paid orders. Bracket `(store_id = 1 OR store_id = 2)` (or write `store_id IN (1, 2)`) so the cancelled condition applies to both stores: 36 remain."
+
+- id: g-fix-16
+  bug: text_case
+  task:
+    vi: "Trong bảng đăng ký thô `raw_signups`, đếm số email ở gmail.com, kể cả email viết hoa hay dư khoảng trắng. Câu bên dưới đếm được 22, thiếu. Sửa nó."
+    en: "In the raw sign-up table `raw_signups`, count the emails at gmail.com, including ones written in capitals or with extra spaces. The query below finds 22, too few. Fix it."
+  starter: |
+    SELECT count(*) AS gmail
+    FROM raw_signups
+    WHERE email LIKE '%@gmail.com'
+  solution: |
+    SELECT count(*) AS gmail
+    FROM raw_signups
+    WHERE lower(trim(email)) LIKE '%@gmail.com'
+  hint:
+    vi: "So khớp chữ có phân biệt hoa thường không? Và khoảng trắng cuối chuỗi thì sao?"
+    en: "Is text matching case-sensitive? And what about a trailing space?"
+  why:
+    vi: "`LIKE` phân biệt hoa thường, nên `USER21@GMAIL.COM` không khớp `'%@gmail.com'`; email có dấu cách ở cuối cũng trượt vì mẫu đòi kết thúc bằng `.com`. Chuẩn hóa trước khi so: `lower(trim(email))` bỏ khoảng trắng hai đầu và đổi về chữ thường, đếm ra 39."
+    en: "`LIKE` is case-sensitive, so `USER21@GMAIL.COM` does not match `'%@gmail.com'`; an email with a trailing space also fails, because the pattern must end in `.com`. Normalise before comparing: `lower(trim(email))` strips the spaces at both ends and lowercases, and the count becomes 39."
+
+- id: g-fix-17
+  bug: self_join_direction
+  task:
+    vi: "Mỗi nhân viên kèm tên quản lý trực tiếp của họ: tên nhân viên, tên quản lý (bỏ người không có quản lý). Câu bên dưới ghép ngược chiều. Sửa nó."
+    en: "Each employee with the name of their direct manager: employee name, manager name (skip people without a manager). The query below pairs them the wrong way round. Fix it."
+  starter: |
+    SELECT e.name AS employee, m.name AS manager
+    FROM staff e
+    JOIN staff m ON e.id = m.manager_id
+  solution: |
+    SELECT e.name AS employee, m.name AS manager
+    FROM staff e
+    JOIN staff m ON m.id = e.manager_id
+  hint:
+    vi: "Cột `manager_id` nằm trên dòng của ai: nhân viên hay quản lý?"
+    en: "Whose row holds `manager_id`: the employee's or the manager's?"
+  why:
+    vi: "`manager_id` nằm trên dòng của nhân viên và trỏ tới quản lý. Câu lỗi nối `e.id = m.manager_id`, tức tìm những người mà `e` quản lý, nên cột \"manager\" lại chứa cấp dưới. Nối từ cột trỏ đi: `m.id = e.manager_id`, mỗi nhân viên ghép với đúng một quản lý."
+    en: "`manager_id` sits on the employee's row and points to the manager. The broken query joins `e.id = m.manager_id`, which finds the people `e` manages, so the \"manager\" column holds reports instead. Join from the pointing column: `m.id = e.manager_id`, and each employee meets exactly one manager."
+
+- id: g-fix-18
+  bug: scalar_subquery_rows
+  task:
+    vi: "Mỗi cửa hàng kèm tên quản lý cửa hàng (vai trò `Store manager`): tên cửa hàng, tên quản lý. Câu bên dưới báo lỗi. Sửa nó."
+    en: "Each store with the name of its store manager (role `Store manager`): store name, manager name. The query below fails. Fix it."
+  starter: |
+    SELECT s.name,
+           (SELECT f.name FROM staff f WHERE f.store_id = s.id) AS manager
+    FROM stores s
+  solution: |
+    SELECT s.name,
+           (SELECT f.name FROM staff f
+            WHERE f.store_id = s.id AND f.role = 'Store manager') AS manager
+    FROM stores s
+  hint:
+    vi: "Một cửa hàng có bao nhiêu nhân viên? Truy vấn con đặt ở chỗ một giá trị được trả về bao nhiêu dòng?"
+    en: "How many staff does a store have? How many rows may a subquery in place of one value return?"
+  why:
+    vi: "Truy vấn con đặt ở chỗ một cột (truy vấn con vô hướng, scalar subquery) chỉ được trả tối đa một dòng. Cửa hàng 1 có quản lý, hai thu ngân và một thủ kho, nên Postgres báo lỗi 21000 (more than one row). Thêm điều kiện `f.role = 'Store manager'` để mỗi cửa hàng còn đúng một người."
+    en: "A subquery in place of a column (a scalar subquery) may return at most one row. Store 1 has a manager, two cashiers and a stock clerk, so Postgres raises error 21000 (more than one row). Add `f.role = 'Store manager'` so each store leaves exactly one person."
+
+- id: g-fix-19
+  bug: month_without_year
+  task:
+    vi: "Đếm đơn theo từng tháng của lịch (tháng 1/2025 và tháng 1/2026 là hai tháng khác nhau): đầu tháng, số đơn. Câu bên dưới chỉ ra 12 dòng. Sửa nó."
+    en: "Count orders per calendar month (January 2025 and January 2026 are two different months): first day of the month, number of orders. The query below returns only 12 rows. Fix it."
+  starter: |
+    SELECT extract(month FROM order_date) AS month, count(*) AS orders
+    FROM orders
+    GROUP BY 1
+  solution: |
+    SELECT date_trunc('month', order_date)::date AS month, count(*) AS orders
+    FROM orders
+    GROUP BY 1
+  hint:
+    vi: "Số tháng 1 có cho biết là năm nào không?"
+    en: "Does the month number 1 tell you which year it is?"
+  why:
+    vi: "`extract(month ...)` chỉ lấy số tháng 1–12, bỏ năm, nên đơn tháng 1/2025 và tháng 1/2026 rơi vào cùng một nhóm: dữ liệu có 22 tháng mà chỉ ra 12 dòng. `date_trunc('month', order_date)` giữ cả năm và tháng (ngày đầu tháng), nên mỗi tháng của lịch là một nhóm riêng."
+    en: "`extract(month ...)` keeps only the month number 1-12 and drops the year, so January 2025 and January 2026 orders land in one group: the data spans 22 months but gives 12 rows. `date_trunc('month', order_date)` keeps year and month (the first day of the month), so each calendar month is its own group."
+
+- id: g-fix-20
+  bug: distinct_on_order
+  task:
+    vi: "Ngày đặt đơn gần nhất của mỗi khách hội viên: mã khách, ngày. Câu bên dưới lại ra đơn đầu tiên. Sửa nó."
+    en: "The latest order date of each member customer: customer id, date. The query below gives the first order instead. Fix it."
+  starter: |
+    SELECT DISTINCT ON (customer_id) customer_id, order_date
+    FROM orders
+    WHERE customer_id IS NOT NULL
+    ORDER BY customer_id, order_date
+  solution: |
+    SELECT DISTINCT ON (customer_id) customer_id, order_date
+    FROM orders
+    WHERE customer_id IS NOT NULL
+    ORDER BY customer_id, order_date DESC
+  hint:
+    vi: "`DISTINCT ON` giữ dòng nào trong mỗi nhóm?"
+    en: "Which row of each group does `DISTINCT ON` keep?"
+  why:
+    vi: "`DISTINCT ON (customer_id)` giữ dòng đầu tiên của mỗi khách theo thứ tự `ORDER BY`. Thứ tự `order_date` tăng dần đặt đơn cũ nhất lên đầu, nên câu lỗi ra đơn đầu tiên. Đảo thành `order_date DESC` để dòng đầu là đơn mới nhất."
+    en: "`DISTINCT ON (customer_id)` keeps the first row of each customer in `ORDER BY` order. Ascending `order_date` puts the oldest order first, so the broken query returns the first order. Flip it to `order_date DESC` and the first row is the latest order."
+
+- id: g-fix-21
+  bug: union_all_duplicates
+  task:
+    vi: "Danh sách các thành phố có cửa hàng hoặc có khách, mỗi thành phố một dòng (bỏ thành phố trống): thành phố. Câu bên dưới lặp mỗi thành phố rất nhiều lần. Sửa nó."
+    en: "The list of cities that have a store or a customer, one row per city (skip empty cities): city. The query below repeats each city many times. Fix it."
+  starter: |
+    SELECT city FROM stores
+    UNION ALL
+    SELECT city FROM customers WHERE city IS NOT NULL
+  solution: |
+    SELECT city FROM stores
+    UNION
+    SELECT city FROM customers WHERE city IS NOT NULL
+  hint:
+    vi: "Phép gộp tập hợp nào bỏ dòng trùng, phép nào giữ lại?"
+    en: "Which set operation removes duplicate rows, and which keeps them?"
+  why:
+    vi: "`UNION ALL` nối hai danh sách nguyên vẹn, nên mỗi khách góp một dòng thành phố: Da Nang xuất hiện hàng chục lần. Câu hỏi cần mỗi thành phố một lần, đúng việc của `UNION`, vốn bỏ dòng trùng sau khi gộp."
+    en: "`UNION ALL` appends both lists as they are, so every customer adds a city row: Da Nang appears dozens of times. The question wants each city once, which is exactly what `UNION` does, since it removes duplicate rows after combining."
+
+- id: g-fix-22
+  bug: missing_partition
+  task:
+    vi: "Đánh số các đơn của từng khách 1, 2, 3… theo ngày (rồi mã đơn), chỉ cho khách mã 1 đến 3: mã khách, mã đơn, số thứ tự. Câu bên dưới đánh số liên tục qua mọi khách. Sửa nó."
+    en: "Number each customer's orders 1, 2, 3... by date (then order id), for customers 1 to 3 only: customer id, order id, sequence number. The query below keeps counting across all customers. Fix it."
+  starter: |
+    SELECT customer_id, id,
+           row_number() OVER (ORDER BY order_date, id) AS nth
+    FROM orders
+    WHERE customer_id BETWEEN 1 AND 3
+  solution: |
+    SELECT customer_id, id,
+           row_number() OVER (PARTITION BY customer_id ORDER BY order_date, id) AS nth
+    FROM orders
+    WHERE customer_id BETWEEN 1 AND 3
+  hint:
+    vi: "Đếm lại từ 1 cho mỗi khách thì cửa sổ phải chia theo cột nào?"
+    en: "To restart at 1 for each customer, by which column must the window be split?"
+  why:
+    vi: "Không có `PARTITION BY`, cả kết quả là một cửa sổ (window) duy nhất, nên `row_number()` đếm liền một mạch qua đơn của mọi khách. `PARTITION BY customer_id` chia mỗi khách thành một cửa sổ riêng, và số thứ tự bắt đầu lại từ 1 cho từng người."
+    en: "Without `PARTITION BY`, the whole result is one single window, so `row_number()` counts straight through every customer's orders. `PARTITION BY customer_id` gives each customer a window of their own, and numbering restarts at 1 for each person."
+
+- id: g-fix-23
+  bug: lag_direction
+  task:
+    vi: "Với khách mã 5, mỗi đơn kèm ngày của đơn liền trước đó (đơn đầu tiên để trống): mã đơn, ngày đặt, ngày đơn trước. Câu bên dưới lại ra ngày đơn sau. Sửa nó."
+    en: "For customer 5, each order with the date of the order just before it (empty for the first one): order id, order date, previous order date. The query below gives the next order's date instead. Fix it."
+  starter: |
+    SELECT id, order_date,
+           lag(order_date) OVER (ORDER BY order_date DESC, id DESC) AS previous_date
+    FROM orders
+    WHERE customer_id = 5
+  solution: |
+    SELECT id, order_date,
+           lag(order_date) OVER (ORDER BY order_date, id) AS previous_date
+    FROM orders
+    WHERE customer_id = 5
+  hint:
+    vi: "`lag` lấy dòng đứng trước theo thứ tự nào: thứ tự trong cửa sổ hay thứ tự thời gian?"
+    en: "Which order does `lag` use to find the row before: the window's order or the calendar?"
+  why:
+    vi: "`lag` lấy dòng đứng trước theo thứ tự `ORDER BY` của chính cửa sổ. Thứ tự giảm dần đặt đơn mới lên trước, nên \"dòng trước\" lại là đơn đặt sau. Sắp tăng dần `ORDER BY order_date, id` thì dòng trước đúng là đơn liền trước theo thời gian."
+    en: "`lag` takes the row before in the window's own `ORDER BY` order. Descending order puts newer orders first, so the \"row before\" is the later order. Sort ascending with `ORDER BY order_date, id` and the row before is the previous order in time."
+
+- id: g-fix-24
+  bug: update_text_case
+  task:
+    vi: "Tăng giá mọi sản phẩm nhóm văn phòng phẩm (`Stationery`) thêm 10%. Câu bên dưới chạy xong mà không đổi giá nào. Sửa nó."
+    en: "Raise the price of every stationery product (`Stationery`) by 10%. The query below runs but changes no price. Fix it."
+  starter: |
+    UPDATE products
+    SET price_vnd = price_vnd * 1.1
+    WHERE category = 'stationery'
+  solution: |
+    UPDATE products
+    SET price_vnd = price_vnd * 1.1
+    WHERE category = 'Stationery'
+  check: "SELECT id, price_vnd FROM products WHERE category = 'Stationery' ORDER BY id"
+  hint:
+    vi: "Giá trị trong cột `category` được viết hoa thế nào?"
+    en: "How is the value in the `category` column capitalised?"
+  why:
+    vi: "So sánh chữ bằng `=` phân biệt hoa thường: `'stationery'` không bằng `'Stationery'`, nên `WHERE` không chọn dòng nào và câu `UPDATE` chạy xong với 0 dòng bị sửa, không báo lỗi gì. Viết đúng giá trị như trong bảng, `'Stationery'`; trước khi sửa dữ liệu, chạy thử một câu đọc với cùng điều kiện để xem số dòng."
+    en: "Text comparison with `=` is case-sensitive: `'stationery'` is not `'Stationery'`, so `WHERE` picks no row and the `UPDATE` finishes with 0 rows changed and no error. Write the value exactly as stored, `'Stationery'`; before changing data, run a read with the same condition to see how many rows it hits."

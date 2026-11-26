@@ -1,0 +1,363 @@
+# v47 D1/D2 (L930–L939): domain case studies and "Hỏi lại cho rõ" asks, played like an interview take-home
+# (src/cases.ts → takeHomeTicket, session mode `interview`, pref cargo-query/interview): 0 XP, nothing in the Save, never
+# in chapter progress. Ids `cs-<lg|ec|fn>-…` (not `g-…`), so the steps run on the open domain's schema (schemaOf).
+# kind: case = 4–5 SQL steps + written conclusion + rubric; ask = a vague request, a `clarify` choice that unlocks the
+# precise task, one SQL step, then a short written reply + rubric. `after: N` = opens once chapter N's review is passed
+# in that domain (tables and skills of every Solution are open by then: tests/cases.test.ts).
+# Prompts follow the ticket rules (no SQL words, no table/column names, no backticks, no coded values). "Today" = 2026-10-31.
+
+- id: cs-lg-1
+  domain: logistics
+  kind: case
+  after: 8
+  title: { vi: "Hai mươi khách hàng biến mất", en: "Twenty customers went quiet" }
+  brief:
+    vi: "Trưởng phòng kinh doanh để ý: từ tháng 3/2026 có những khách quen không còn đặt lô nào, nhưng không ai báo lý do. Chị cần biết đó là ai, có điểm chung gì, có phải vì mình phục vụ kém không, và công ty mất bao nhiêu hàng. \"Đặt lô\" tính theo ngày đặt, kể cả lô sau đó bị hủy, trừ khi bước nào nói khác. Làm năm bước rồi viết một đoạn ngắn gửi chị."
+    en: "The head of sales noticed that from March 2026 some regular customers stopped booking, and nobody said why. She needs to know who they are, what they have in common, whether poor service drove them away, and how much cargo the company lost. \"Booking\" goes by the booking date and includes shipments cancelled later, unless a step says otherwise. Do the five steps, then write her a short paragraph."
+  steps:
+    - title: { vi: "Khách đặt lô mỗi tháng", en: "Customers booking each month" }
+      task: { vi: "Mỗi tháng từ 9/2025 đến 10/2026: ngày đầu tháng, số khách có đặt ít nhất một lô trong tháng, và số lô đặt. Theo tháng tăng dần.", en: "Each month from September 2025 to October 2026: the first day of the month, the number of customers who booked at least one shipment that month, and the number of bookings. By month ascending." }
+      solution: "SELECT date_trunc('month', booking_date)::date AS month, COUNT(DISTINCT customer_id) AS customers, COUNT(*) AS bookings FROM shipments WHERE booking_date >= '2025-09-01' AND booking_date < '2026-11-01' GROUP BY 1 ORDER BY 1"
+      ordered: true
+      hint: { vi: "Cắt ngày đặt về đầu tháng; số khách là số mã khách khác nhau trong tháng, không phải số lô.", en: "Truncate the booking date to the month; the customer count is the number of different customer ids that month, not the number of bookings." }
+    - title: { vi: "Ai đã ngừng đặt", en: "Who stopped booking" }
+      task: { vi: "Khách có đặt ít nhất một lô từ 01/09/2025 đến hết 28/02/2026 nhưng không đặt lô nào từ 01/03/2026: mã khách, tên, ngành, ngày đặt lô cuối cùng, và số lô đã đặt từ 01/09/2025. Theo ngày đặt cuối tăng dần; cùng ngày thì theo mã khách tăng dần.", en: "Customers who booked at least one shipment from 2025-09-01 to 2026-02-28 but none from 2026-03-01: the customer id, the name, the industry, the date of the last booking, and the number of bookings since 2025-09-01. By last booking date ascending; on the same day, by customer id ascending." }
+      solution: "SELECT c.id, c.name, c.industry, MAX(s.booking_date) AS last_booking, COUNT(*) FILTER (WHERE s.booking_date >= '2025-09-01') AS bookings FROM customers c JOIN shipments s ON s.customer_id = c.id GROUP BY c.id, c.name, c.industry HAVING MAX(s.booking_date) >= '2025-09-01' AND MAX(s.booking_date) < '2026-03-01' ORDER BY last_booking, c.id"
+      ordered: true
+      hint: { vi: "Mỗi khách một dòng; ngày đặt cuối cùng là ngày lớn nhất, và điều kiện \"đã ngừng\" là điều kiện trên ngày đó, lọc sau khi gom.", en: "One row per customer; the last booking is the latest date, and \"stopped\" is a condition on that date, filtered after grouping." }
+    - title: { vi: "Ngành nào mất khách", en: "Which industries lost customers" }
+      task: { vi: "Mỗi ngành, tính trên mọi khách trong danh sách (kể cả khách chưa từng đặt): số khách, số khách đã ngừng đặt theo đúng định nghĩa ở bước 2, và tỷ lệ phần trăm khách đã ngừng (làm tròn 1 chữ số thập phân). Tỷ lệ cao nhất lên đầu; bằng nhau thì theo tên ngành từ A đến Z.", en: "Each industry, over every customer on file (including those who never booked): the number of customers, the number who stopped booking as defined in step 2, and the percentage who stopped (rounded to 1 decimal place). Highest percentage first; on a tie, by industry name from A to Z." }
+      solution: "WITH last AS (SELECT customer_id, MAX(booking_date) AS last_booking FROM shipments GROUP BY customer_id) SELECT c.industry, COUNT(*) AS customers, COUNT(*) FILTER (WHERE l.last_booking >= '2025-09-01' AND l.last_booking < '2026-03-01') AS stopped, ROUND(100.0 * COUNT(*) FILTER (WHERE l.last_booking >= '2025-09-01' AND l.last_booking < '2026-03-01') / COUNT(*), 1) AS pct FROM customers c LEFT JOIN last l ON l.customer_id = c.id GROUP BY c.industry ORDER BY pct DESC, c.industry"
+      ordered: true
+      hint: { vi: "Trước hết tìm ngày đặt cuối của từng khách trong một bảng tạm, rồi nối vào danh sách khách và đếm có điều kiện theo ngành.", en: "First find each customer's last booking date in a named sub-result, then join it to the customer list and count conditionally per industry." }
+    - title: { vi: "Có phải vì giao hàng trễ?", en: "Was it late delivery?" }
+      task: { vi: "Các lô đặt từ 01/09/2025 đến hết 28/02/2026 đã có ngày cập cảng thực tế, chia hai nhóm: lô của khách đã ngừng đặt (bước 2) và lô của mọi khách khác. Mỗi nhóm: đúng/sai \"là khách đã ngừng\", số lô, số ngày trễ trung bình so với ngày đến dự kiến (làm tròn 2 chữ số thập phân), và tỷ lệ phần trăm lô trễ hơn 2 ngày (làm tròn 1 chữ số thập phân). Nhóm khách khác trước, nhóm khách đã ngừng sau.", en: "Shipments booked from 2025-09-01 to 2026-02-28 that have an actual arrival date, in two groups: those of the customers who stopped booking (step 2) and those of every other customer. Per group: true/false \"is a customer who stopped\", the number of shipments, the average days late against the expected arrival date (rounded to 2 decimal places), and the percentage arriving more than 2 days late (rounded to 1 decimal place). The other customers first, the customers who stopped second." }
+      solution: "WITH gone AS (SELECT customer_id FROM shipments GROUP BY customer_id HAVING MAX(booking_date) >= '2025-09-01' AND MAX(booking_date) < '2026-03-01') SELECT (g.customer_id IS NOT NULL) AS stopped, COUNT(*) AS shipments, ROUND(AVG(s.ata - s.eta), 2) AS avg_late, ROUND(100.0 * COUNT(*) FILTER (WHERE s.ata - s.eta > 2) / COUNT(*), 1) AS pct_late FROM shipments s LEFT JOIN gone g ON g.customer_id = s.customer_id WHERE s.booking_date >= '2025-09-01' AND s.booking_date < '2026-03-01' AND s.ata IS NOT NULL GROUP BY 1 ORDER BY 1"
+      ordered: true
+      hint: { vi: "Giữ danh sách khách đã ngừng ở một bảng tạm và nối trái vào các lô: lô nào không khớp là của khách khác. Số ngày trễ là hiệu hai ngày.", en: "Keep the customers who stopped in a named sub-result and left-join it to the shipments: a shipment without a match belongs to another customer. Days late is the difference of two dates." }
+    - title: { vi: "Công ty mất bao nhiêu hàng", en: "How much cargo was lost" }
+      task: { vi: "Mỗi tháng từ 9/2025 đến 2/2026, chỉ tính lô không bị hủy: ngày đầu tháng, số TEU của khách đã ngừng đặt (bước 2), tổng TEU của cả công ty, và tỷ lệ phần trăm phần của khách đã ngừng (làm tròn 1 chữ số thập phân). Theo tháng tăng dần.", en: "Each month from September 2025 to February 2026, counting only shipments that were not cancelled: the first day of the month, the TEU of the customers who stopped booking (step 2), the company's total TEU, and the share of the customers who stopped, in percent (rounded to 1 decimal place). By month ascending." }
+      solution: "WITH gone AS (SELECT customer_id FROM shipments GROUP BY customer_id HAVING MAX(booking_date) >= '2025-09-01' AND MAX(booking_date) < '2026-03-01') SELECT date_trunc('month', s.booking_date)::date AS month, SUM(k.teu) FILTER (WHERE g.customer_id IS NOT NULL) AS teu_gone, SUM(k.teu) AS teu_all, ROUND(100.0 * SUM(k.teu) FILTER (WHERE g.customer_id IS NOT NULL) / SUM(k.teu), 1) AS pct FROM shipments s JOIN containers k ON k.shipment_id = s.id LEFT JOIN gone g ON g.customer_id = s.customer_id WHERE s.booking_date >= '2025-09-01' AND s.booking_date < '2026-03-01' AND s.status <> 'CANCELLED' GROUP BY 1 ORDER BY 1"
+      ordered: true
+      hint: { vi: "TEU nằm ở từng container của lô; dùng lại bảng tạm khách đã ngừng ở bước 4, rồi cộng có điều kiện.", en: "TEU sits on each container of a shipment; reuse the sub-result of customers who stopped from step 4, then sum conditionally." }
+  conclusion: { vi: "Viết 4–6 câu gửi trưởng phòng kinh doanh (người không đọc SQL): ai đã ngừng đặt và từ lúc nào, họ có điểm chung gì, dữ liệu có cho thấy lỗi phục vụ không, công ty mất bao nhiêu hàng, và bạn đề xuất làm gì tiếp.", en: "Write 4–6 sentences for the head of sales (who does not read SQL): who stopped booking and since when, what they have in common, whether the data points to poor service, how much cargo the company lost, and what you suggest doing next." }
+  rubric:
+    - { vi: "Nêu đúng con số: 20 khách ngừng đặt từ tháng 3/2026 (bước 2), khớp với cú giảm ở bước 1 (từ khoảng 185 khách mỗi tháng xuống khoảng 165).", en: "Gets the number right: 20 customers stopped from March 2026 (step 2), matching the drop in step 1 (from about 185 customers a month to about 165)." }
+    - { vi: "Chỉ ra điểm chung theo ngành: toàn bộ khách ngành nhựa và một nửa khách ngành thép, các ngành khác không mất ai.", en: "Names the pattern by industry: every plastics customer and half of the steel customers, no other industry lost anyone." }
+    - { vi: "Nói rõ dữ liệu giao hàng không giải thích được: lô của nhóm này không trễ hơn rõ rệt so với khách khác (dẫn một con số ở bước 4).", en: "Says the delivery data does not explain it: their shipments were not noticeably later than other customers' (quotes one number from step 4)." }
+    - { vi: "Đưa phần hàng bị mất về một con số dễ hiểu (khoảng 3–6% TEU mỗi tháng trước khi họ đi, theo bước 5).", en: "Puts the lost cargo into one plain figure (about 3–6% of the monthly TEU before they left, from step 5)." }
+    - { vi: "Đề xuất bước tiếp không đoán bừa: ví dụ gọi hỏi lý do vì nguyên nhân không nằm trong dữ liệu (đối thủ, thuế, nhu cầu ngành).", en: "Suggests a next step without guessing: for example calling them to ask, because the cause is not in the data (a competitor, a tariff, demand in the industry)." }
+
+- id: cs-ec-1
+  domain: ecommerce
+  kind: case
+  after: 5
+  title: { vi: "Kite Logistics ở miền Trung", en: "Kite Logistics in the central cities" }
+  brief:
+    vi: "Bộ phận chăm sóc khách hàng nhận nhiều phàn nàn \"giao trễ\" từ Đà Nẵng, Huế và Nha Trang từ tháng 9/2026. Trưởng bộ phận vận hành phải quyết định có đổi đơn vị giao hàng ở ba thành phố này không, nên cần biết: trễ là do một hãng hay do cả vùng, bắt đầu từ lúc nào, và trễ có làm khách chấm điểm thấp hay trả hàng không. Chỉ tính các kiện đã giao xong, trừ khi bước nào nói khác. Làm bốn bước rồi viết một đoạn ngắn gửi anh ấy."
+    en: "Customer care has had many \"late delivery\" complaints from Da Nang, Hue and Nha Trang since September 2026. The head of operations must decide whether to change the courier in these three cities, so he needs to know: is it one courier or the whole region, since when, and does lateness lead to low ratings or returns? Count only delivered parcels, unless a step says otherwise. Do the four steps, then write him a short paragraph."
+  steps:
+    - title: { vi: "Tỷ lệ trễ theo hãng và tháng", en: "Late share by courier and month" }
+      task: { vi: "Ở Đà Nẵng, Huế và Nha Trang, các kiện gửi đi từ 01/07/2026 đến hết 31/10/2026 đã giao xong: mỗi hãng giao hàng và mỗi tháng gửi đi (ngày đầu tháng): số kiện, số kiện giao sau ngày hẹn, và tỷ lệ phần trăm kiện trễ (làm tròn 1 chữ số thập phân). Theo tên hãng từ A đến Z, rồi theo tháng.", en: "In Da Nang, Hue and Nha Trang, parcels shipped from 2026-07-01 to 2026-10-31 that were delivered: per courier and month shipped (the first day of the month): the number of parcels, the number delivered after the promised date, and the late share in percent (rounded to 1 decimal place). By courier name from A to Z, then by month." }
+      solution: "SELECT courier, date_trunc('month', shipped_on)::date AS month, COUNT(*) AS parcels, COUNT(*) FILTER (WHERE delivered_on > promised_on) AS late, ROUND(100.0 * COUNT(*) FILTER (WHERE delivered_on > promised_on) / COUNT(*), 1) AS pct_late FROM deliveries WHERE city IN ('Da Nang', 'Hue', 'Nha Trang') AND shipped_on >= '2026-07-01' AND shipped_on < '2026-11-01' AND delivered_on IS NOT NULL GROUP BY courier, 2 ORDER BY courier, month"
+      ordered: true
+      hint: { vi: "Gom theo hãng và tháng gửi; đếm mọi kiện và đếm riêng kiện có ngày giao sau ngày hẹn.", en: "Group by courier and month shipped; count every parcel, and separately the ones delivered after the promised date." }
+    - title: { vi: "Hãng đó trễ ở đâu", en: "Where that courier is late" }
+      task: { vi: "Chỉ hãng Kite Logistics, các kiện gửi đi từ 01/09/2026 đã giao xong, chia hai nhóm: ba thành phố miền Trung ở trên và mọi thành phố khác. Mỗi nhóm: đúng/sai \"là miền Trung\", số kiện, số kiện trễ, tỷ lệ phần trăm kiện trễ (làm tròn 1 chữ số thập phân), và số ngày trễ trung bình của riêng các kiện trễ (làm tròn 1 chữ số thập phân). Nhóm thành phố khác trước.", en: "Kite Logistics only, parcels shipped from 2026-09-01 that were delivered, in two groups: the three central cities above and every other city. Per group: true/false \"is central\", the number of parcels, the number late, the late share in percent (rounded to 1 decimal place), and the average days late of the late parcels only (rounded to 1 decimal place). Other cities first." }
+      solution: "SELECT city IN ('Da Nang', 'Hue', 'Nha Trang') AS central, COUNT(*) AS parcels, COUNT(*) FILTER (WHERE delivered_on > promised_on) AS late, ROUND(100.0 * COUNT(*) FILTER (WHERE delivered_on > promised_on) / COUNT(*), 1) AS pct_late, ROUND(AVG(delivered_on - promised_on) FILTER (WHERE delivered_on > promised_on), 1) AS avg_days_late FROM deliveries WHERE courier = 'Kite Logistics' AND shipped_on >= '2026-09-01' AND delivered_on IS NOT NULL GROUP BY 1 ORDER BY 1"
+      ordered: true
+      hint: { vi: "Nhóm là một biểu thức đúng/sai trên thành phố; trung bình số ngày trễ chỉ lấy trên các kiện trễ.", en: "The group is a true/false expression on the city; the average days late only covers the late parcels." }
+    - title: { vi: "Trễ có làm điểm thấp?", en: "Does lateness bring low ratings?" }
+      task: { vi: "Các đánh giá của những đơn có kiện gửi tới ba thành phố miền Trung từ 01/09/2026 và đã giao xong: mỗi hãng giao hàng và mỗi trạng thái đúng/sai \"giao sau ngày hẹn\": số đánh giá và điểm trung bình (làm tròn 2 chữ số thập phân). Theo tên hãng từ A đến Z, rồi nhóm đúng hẹn trước.", en: "Reviews of the orders whose parcel went to the three central cities from 2026-09-01 and was delivered: per courier and per true/false \"delivered after the promised date\": the number of reviews and the average rating (rounded to 2 decimal places). By courier name from A to Z, then the on-time group first." }
+      solution: "SELECT d.courier, d.delivered_on > d.promised_on AS late, COUNT(*) AS reviews, ROUND(AVG(r.rating), 2) AS avg_rating FROM deliveries d JOIN reviews r ON r.order_id = d.order_id WHERE d.city IN ('Da Nang', 'Hue', 'Nha Trang') AND d.shipped_on >= '2026-09-01' AND d.delivered_on IS NOT NULL GROUP BY 1, 2 ORDER BY 1, 2"
+      ordered: true
+      hint: { vi: "Nối kiện giao với đánh giá qua mã đơn; gom theo hãng và theo biểu thức trễ.", en: "Join the parcels to the reviews through the order id; group by courier and by the lateness expression." }
+    - title: { vi: "Khách có trả hàng vì trễ?", en: "Do customers return items for lateness?" }
+      task: { vi: "Các đơn có kiện gửi tới ba thành phố miền Trung từ 01/09/2026 và đã giao xong, theo hãng giao hàng: số kiện, số yêu cầu trả hàng với lý do giao trễ, và tổng tiền hoàn của những yêu cầu đó đã được duyệt (0 nếu không có). Theo tên hãng từ A đến Z.", en: "Orders whose parcel went to the three central cities from 2026-09-01 and was delivered, per courier: the number of parcels, the number of return requests giving late delivery as the reason, and the total refund of those requests that were approved (0 when there are none). By courier name from A to Z." }
+      solution: "WITH lr AS (SELECT order_id, COUNT(*) AS n, SUM(refund) FILTER (WHERE status = 'approved') AS refunded FROM returns WHERE reason = 'late' GROUP BY order_id) SELECT d.courier, COUNT(*) AS parcels, COALESCE(SUM(lr.n), 0) AS late_returns, COALESCE(SUM(lr.refunded), 0) AS refunded FROM deliveries d LEFT JOIN lr ON lr.order_id = d.order_id WHERE d.city IN ('Da Nang', 'Hue', 'Nha Trang') AND d.shipped_on >= '2026-09-01' AND d.delivered_on IS NOT NULL GROUP BY d.courier ORDER BY d.courier"
+      ordered: true
+      hint: { vi: "Một đơn có thể có nhiều yêu cầu trả hàng: gom các yêu cầu vì giao trễ theo đơn trong một bảng tạm trước, rồi nối trái vào các kiện để không nhân đôi kiện nào.", en: "An order can have several return requests: first group the late-delivery requests per order in a named sub-result, then left-join it to the parcels so no parcel is counted twice." }
+  conclusion: { vi: "Viết 4–6 câu gửi trưởng bộ phận vận hành (người không đọc SQL): hãng nào trễ, ở đâu và từ lúc nào, trễ ảnh hưởng gì tới điểm đánh giá và trả hàng, và bạn khuyên có nên đổi hãng ở ba thành phố này không.", en: "Write 4–6 sentences for the head of operations (who does not read SQL): which courier is late, where and since when, what lateness does to ratings and returns, and whether you advise changing the courier in these three cities." }
+  rubric:
+    - { vi: "Chỉ đúng một hãng: Kite Logistics ở ba thành phố miền Trung, từ tháng 9/2026; các hãng khác ở đó giữ mức trễ như trước (dẫn số ở bước 1).", en: "Points at one courier: Kite Logistics in the three central cities, from September 2026; the other couriers there stay at their usual level (quotes step 1)." }
+    - { vi: "Tách được vùng khỏi hãng: cùng hãng đó ở các thành phố khác vẫn trễ ở mức bình thường (bước 2).", en: "Separates the courier from the region: the same courier elsewhere is late at its normal rate (step 2)." }
+    - { vi: "Nêu tác động lên khách bằng số: đơn Kite giao trễ được chấm thấp rõ hơn đơn đúng hẹn (bước 3) và Kite có nhiều yêu cầu trả hàng vì trễ hơn hẳn hai hãng kia (bước 4); với hãng khác, trễ ít ngày không kéo điểm xuống.", en: "States the impact on customers with numbers: late Kite orders get a clearly lower rating than on-time ones (step 3), and Kite has far more late-delivery returns than the other two (step 4); for the other couriers, a short delay does not pull ratings down." }
+    - { vi: "Đề xuất có điều kiện, ví dụ chuyển kiện miền Trung sang hãng khác trong lúc đòi Kite giải thích, và theo dõi lại sau một tháng.", en: "Makes a conditional suggestion, for example moving central parcels to another courier while asking Kite to explain, and checking again after a month." }
+    - { vi: "Viết cho người không biết SQL: không tên bảng, không tên cột, không quá 150 chữ.", en: "Written for someone who does not know SQL: no table names, no column names, at most 150 words." }
+
+- id: cs-fn-1
+  domain: finance
+  kind: case
+  after: 6
+  title: { vi: "Vì sao nợ quá hạn ở Quang Ngai tăng?", en: "Why are arrears rising in Quang Ngai?" }
+  brief:
+    vi: "Giám đốc khối rủi ro đã thấy chi nhánh Quang Ngai (mã chi nhánh 7) xấu đi trong báo cáo quý. Trước khi siết duyệt vay, anh muốn biết nguyên nhân: các khoản xấu đến từ lúc nào, từ kênh nào, có phải do điểm tín dụng thấp, đội nhắc nợ có theo kịp không, và bao nhiêu tiền đang bị đe dọa. \"Quá hạn trên 30 ngày\" đọc ở ảnh chụp cuối tháng. Làm năm bước rồi viết một đoạn ngắn gửi anh."
+    en: "The head of risk already saw the Quang Ngai branch (branch id 7) worsen in the quarterly report. Before tightening approvals he wants the cause: when the bad loans came from, through which channel, whether low credit scores explain it, whether collections keep up, and how much money is at risk. \"Over 30 days past due\" is read from the month-end snapshots. Do the five steps, then write him a short paragraph."
+  steps:
+    - title: { vi: "Quang Ngai so với phần còn lại", en: "Quang Ngai against the rest" }
+      task: { vi: "Ở mỗi cuối tháng từ 30/06/2026 đến 31/10/2026, chia hai nhóm: chi nhánh Quang Ngai và mọi chi nhánh khác gộp lại. Mỗi cuối tháng và mỗi nhóm: ngày cuối tháng, đúng/sai \"là Quang Ngai\", và tỷ lệ phần trăm dư nợ quá hạn trên 30 ngày trên tổng dư nợ của nhóm (làm tròn 2 chữ số thập phân; không có khoản quá hạn thì là 0). Theo cuối tháng, rồi nhóm các chi nhánh khác trước.", en: "At each month end from 2026-06-30 to 2026-10-31, in two groups: the Quang Ngai branch, and every other branch together. Per month end and group: the month-end date, true/false \"is Quang Ngai\", and the percentage of the group's outstanding balance that is over 30 days past due (rounded to 2 decimal places; 0 when nothing is overdue). By month end, then the other branches first." }
+      solution: "SELECT s.month_end, l.branch_id = 7 AS quang_ngai, ROUND(100.0 * COALESCE(SUM(s.outstanding) FILTER (WHERE s.dpd > 30), 0) / SUM(s.outstanding), 2) AS pct FROM loan_snapshots s JOIN loans l ON l.id = s.loan_id WHERE s.month_end >= '2026-06-30' GROUP BY 1, 2 ORDER BY 1, 2"
+      ordered: true
+      hint: { vi: "Nhóm là một biểu thức đúng/sai trên mã chi nhánh; tử số là tổng dư nợ có điều kiện, mẫu số là tổng dư nợ của nhóm.", en: "The group is a true/false expression on the branch id; the numerator is a conditional sum of the balance, the denominator the group's whole balance." }
+    - title: { vi: "Khoản xấu giải ngân lúc nào", en: "When the bad loans were paid out" }
+      task: { vi: "Các khoản Quang Ngai giải ngân từ 01/01/2026, theo tháng giải ngân (ngày đầu tháng): số khoản, số khoản có hồ sơ nộp qua kênh đối tác, và số khoản đang quá hạn trên 30 ngày ở cuối tháng 10/2026. Theo tháng tăng dần.", en: "Quang Ngai loans paid out from 2026-01-01, per month paid out (the first day of the month): the number of loans, the number whose application came through the partner channel, and the number over 30 days past due at the end of October 2026. By month ascending." }
+      solution: "SELECT date_trunc('month', l.disbursed_on)::date AS month, COUNT(*) AS loans, COUNT(*) FILTER (WHERE a.channel = 'partner') AS partner, COUNT(*) FILTER (WHERE s.dpd > 30) AS over30 FROM loans l JOIN applications a ON a.id = l.application_id LEFT JOIN loan_snapshots s ON s.loan_id = l.id AND s.month_end = '2026-10-31' WHERE l.branch_id = 7 AND l.disbursed_on >= '2026-01-01' GROUP BY 1 ORDER BY 1"
+      ordered: true
+      hint: { vi: "Kênh nằm ở hồ sơ vay; nối trái với ảnh chụp cuối tháng 10 (đặt ngày đó trong điều kiện nối) để giữ mọi khoản.", en: "The channel sits on the application; left-join the end-of-October snapshot (with that date in the join condition) to keep every loan." }
+    - title: { vi: "Kênh và điểm tín dụng", en: "Channel and credit score" }
+      task: { vi: "Các khoản Quang Ngai giải ngân từ 01/03/2026 đến hết 31/05/2026, theo kênh nộp hồ sơ và theo đúng/sai \"điểm tín dụng dưới 700\": số khoản, số khoản quá hạn trên 30 ngày ở cuối tháng 10/2026, và dư nợ của những khoản quá hạn đó (0 nếu không có). Theo kênh từ A đến Z, rồi nhóm điểm từ 700 trở lên trước.", en: "Quang Ngai loans paid out from 2026-03-01 to 2026-05-31, per application channel and per true/false \"credit score under 700\": the number of loans, the number over 30 days past due at the end of October 2026, and the outstanding balance of those overdue loans (0 when there are none). By channel from A to Z, then the 700-and-above group first." }
+      solution: "SELECT a.channel, a.score < 700 AS low_score, COUNT(*) AS loans, COUNT(*) FILTER (WHERE s.dpd > 30) AS over30, COALESCE(SUM(s.outstanding) FILTER (WHERE s.dpd > 30), 0) AS over30_vnd FROM loans l JOIN applications a ON a.id = l.application_id LEFT JOIN loan_snapshots s ON s.loan_id = l.id AND s.month_end = '2026-10-31' WHERE l.branch_id = 7 AND l.disbursed_on >= '2026-03-01' AND l.disbursed_on < '2026-06-01' GROUP BY 1, 2 ORDER BY 1, 2"
+      ordered: true
+      hint: { vi: "Dùng lại bước 2, gom theo kênh và theo biểu thức điểm; tổng có điều kiện trả rỗng khi không có khoản nào, nên đổi rỗng thành 0.", en: "Reuse step 2, group by channel and the score expression; a conditional sum is empty when no loan qualifies, so turn empty into 0." }
+    - title: { vi: "Đội nhắc nợ có theo kịp?", en: "Do collections keep up?" }
+      task: { vi: "Mỗi chi nhánh: số khoản đang quá hạn (ít nhất 1 ngày) ở cuối tháng 9/2026, số khoản trong đó được gọi nhắc nợ ít nhất một lần trong tháng 10/2026, và tỷ lệ phần trăm được gọi (làm tròn 1 chữ số thập phân). Tỷ lệ thấp nhất lên đầu; bằng nhau thì theo tên chi nhánh từ A đến Z.", en: "Each branch: the number of loans past due (by at least 1 day) at the end of September 2026, how many of them got at least one collection call in October 2026, and the percentage called (rounded to 1 decimal place). Lowest percentage first; on a tie, by branch name from A to Z." }
+      solution: "WITH od AS (SELECT l.id, l.branch_id FROM loan_snapshots s JOIN loans l ON l.id = s.loan_id WHERE s.month_end = '2026-09-30' AND s.dpd > 0), called AS (SELECT loan_id FROM collection_calls WHERE called_on >= '2026-10-01' AND called_on < '2026-11-01' GROUP BY loan_id) SELECT b.name, COUNT(*) AS overdue, COUNT(c.loan_id) AS called, ROUND(100.0 * COUNT(c.loan_id) / COUNT(*), 1) AS pct FROM od JOIN branches b ON b.id = od.branch_id LEFT JOIN called c ON c.loan_id = od.id GROUP BY b.name ORDER BY pct, b.name"
+      ordered: true
+      hint: { vi: "Hai bảng tạm: các khoản quá hạn cuối tháng 9, và các khoản được gọi trong tháng 10 (mỗi khoản một lần). Nối trái bảng thứ hai vào bảng thứ nhất.", en: "Two named sub-results: the loans past due at the end of September, and the loans called in October (each loan once). Left-join the second to the first." }
+    - title: { vi: "Bao nhiêu tiền đang bị đe dọa", en: "How much money is at risk" }
+      task: { vi: "Ở cuối tháng 10/2026, các khoản Quang Ngai quá hạn trên 30 ngày: tổng dư nợ, phần dư nợ đến từ nhóm ở bước 3 (giải ngân từ 01/03 đến 31/05/2026, qua kênh đối tác, điểm dưới 700), và tỷ lệ phần trăm của phần đó (làm tròn 1 chữ số thập phân). Một dòng.", en: "At the end of October 2026, the Quang Ngai loans over 30 days past due: the total outstanding balance, the part from the step 3 group (paid out from 2026-03-01 to 2026-05-31, partner channel, score under 700), and that part's percentage (rounded to 1 decimal place). One row." }
+      solution: "SELECT SUM(s.outstanding) AS over30_vnd, SUM(s.outstanding) FILTER (WHERE a.channel = 'partner' AND a.score < 700 AND l.disbursed_on >= '2026-03-01' AND l.disbursed_on < '2026-06-01') AS cohort_vnd, ROUND(100.0 * SUM(s.outstanding) FILTER (WHERE a.channel = 'partner' AND a.score < 700 AND l.disbursed_on >= '2026-03-01' AND l.disbursed_on < '2026-06-01') / SUM(s.outstanding), 1) AS pct FROM loan_snapshots s JOIN loans l ON l.id = s.loan_id JOIN applications a ON a.id = l.application_id WHERE s.month_end = '2026-10-31' AND s.dpd > 30 AND l.branch_id = 7"
+      hint: { vi: "Lọc các khoản quá hạn trên 30 ngày của Quang Ngai ở cuối tháng 10, rồi cộng hai lần: một lần tất cả, một lần có điều kiện của nhóm.", en: "Filter Quang Ngai's loans over 30 days past due at the end of October, then sum twice: once for all, once with the group's condition." }
+  conclusion: { vi: "Viết 4–6 câu gửi giám đốc khối rủi ro (người không đọc SQL): Quang Ngai khác phần còn lại thế nào, các khoản xấu đến từ đâu, đội nhắc nợ có theo kịp không, bao nhiêu tiền đang bị đe dọa, và bạn đề xuất siết ở đâu (thay vì siết cả công ty).", en: "Write 4–6 sentences for the head of risk (who does not read SQL): how Quang Ngai differs from the rest, where the bad loans come from, whether collections keep up, how much money is at risk, and where you suggest tightening (instead of tightening the whole company)." }
+  rubric:
+    - { vi: "Mô tả xu hướng bằng số: tỷ lệ của Quang Ngai tăng đều từ khoảng 4% (cuối tháng 6) lên khoảng 14% (cuối tháng 10), trong khi các chi nhánh khác gộp lại đi xuống từ khoảng 4% còn khoảng 2%.", en: "Describes the trend with numbers: Quang Ngai's share climbs from about 4% (end of June) to about 14% (end of October), while the other branches together fall from about 4% to about 2%." }
+    - { vi: "Khoanh đúng nguồn: chủ yếu là khoản giải ngân tháng 3–5/2026 qua kênh đối tác với điểm dưới 700 (bước 2 và 3), không phải mọi khoản của chi nhánh.", en: "Pins the source: mostly loans paid out March to May 2026 through the partner channel with a score under 700 (steps 2 and 3), not every loan of the branch." }
+    - { vi: "Nhắc đội nhắc nợ: Quang Ngai có nhiều khoản quá hạn nhất nhưng chỉ gọi được khoảng một phần năm, thấp thứ hai sau Hoi An (bước 4).", en: "Mentions collections: Quang Ngai has the most overdue loans but called only about one in five, the second lowest after Hoi An (step 4)." }
+    - { vi: "Đưa ra số tiền bị đe dọa và phần thuộc nhóm đó (bước 5).", en: "Gives the money at risk and the part from that group (step 5)." }
+    - { vi: "Đề xuất có trọng tâm: siết riêng kênh đối tác ở Quang Ngai với điểm dưới 700 và tăng nhắc nợ ở đó, kèm lưu ý điều gì chưa chắc.", en: "Makes a focused suggestion: tighten only the partner channel in Quang Ngai below a 700 score and step up collections there, with a note on what is still uncertain." }
+
+# ---- D2: "Hỏi lại cho rõ" ----
+
+- id: cs-lg-a1
+  domain: logistics
+  kind: ask
+  after: 3
+  title: { vi: "\"Tháng trước tàu chạy bao nhiêu lô?\"", en: "\"How many shipments sailed last month?\"" }
+  brief:
+    vi: "Tin nhắn từ trưởng phòng vận hành: \"Tháng trước tàu chạy bao nhiêu lô của mình, theo từng hãng tàu? Mình cần đối chiếu với hóa đơn cước các hãng gửi về.\" Hóa đơn cước của hãng tàu tính theo chuyến tàu đã thực sự rời cảng."
+    en: "A message from the head of operations: \"How many of our shipments sailed last month, per carrier? I need to check them against the freight invoices the carriers sent.\" A carrier's freight invoice counts the voyages that actually left port."
+  clarify:
+    q: { vi: "\"Lô tàu chạy tháng trước\" nên hiểu là lô nào?", en: "Which shipments does \"sailed last month\" mean?" }
+    answer: 1
+    options:
+      - vi: "Lô đặt trong tháng 10/2026"
+        en: "Shipments booked in October 2026"
+        why:
+          vi: "Ngày đặt là ngày khách giữ chỗ, thường trước ngày tàu chạy một đến vài tuần. Một lô đặt cuối tháng 9 có thể chạy giữa tháng 10, và một lô đặt tháng 10 có thể chạy tháng 11, nên số theo ngày đặt sẽ lệch với hóa đơn cước. Hãy dùng ngày tàu rời cảng thực tế."
+          en: "The booking date is when the customer reserved space, usually one to several weeks before sailing. A shipment booked in late September may sail in mid-October, and one booked in October may sail in November, so a count by booking date will not match the freight invoices. Use the actual departure date."
+      - vi: "Lô có ngày tàu rời cảng thực tế trong tháng 10/2026"
+        en: "Shipments whose actual departure date is in October 2026"
+        why:
+          vi: "Đúng. Hãng tàu tính cước cho chuyến đã thực sự rời cảng, nên đếm theo ngày rời cảng thực tế mới khớp được hóa đơn. Lô bị hủy hoặc chưa chạy không có ngày này nên tự nhiên bị loại."
+          en: "Right. A carrier bills for the voyage that actually left port, so only a count by actual departure date can match the invoices. Cancelled or not-yet-sailed shipments have no such date, so they drop out on their own."
+      - vi: "Lô có ngày tàu chạy theo kế hoạch lúc đặt chỗ trong tháng 10/2026"
+        en: "Shipments whose planned departure date is in October 2026"
+        why:
+          vi: "Ngày dự kiến là kế hoạch lúc đặt chỗ. Tàu hay trễ vài ngày, nên lô dự kiến chạy 30/10 có thể rời cảng ngày 2/11 và nằm trên hóa đơn tháng 11. Đối chiếu hóa đơn cần ngày tàu rời cảng thực tế, không phải ngày dự kiến."
+          en: "The planned date is the plan made at booking. Ships often slip a few days, so a shipment planned for 30 October may leave on 2 November and sit on November's invoice. Matching invoices needs the actual departure date, not the planned one."
+  steps:
+    - title: { vi: "Lô tàu chạy theo hãng", en: "Shipments sailed per carrier" }
+      task: { vi: "Các lô đi đường biển có ngày tàu rời cảng thực tế từ 01/10/2026 đến hết 31/10/2026: mỗi hãng tàu (gọi bằng tên) và số lô. Nhiều lô nhất lên đầu; bằng nhau thì theo tên hãng từ A đến Z.", en: "Sea shipments whose actual departure date is from 2026-10-01 to 2026-10-31: each carrier (by name) and the number of shipments. Most shipments first; on a tie, by carrier name from A to Z." }
+      solution: "SELECT ca.name, COUNT(*) AS shipments FROM shipments s JOIN carriers ca ON ca.id = s.carrier_id WHERE s.mode = 'SEA' AND s.atd >= '2026-10-01' AND s.atd < '2026-11-01' GROUP BY ca.name ORDER BY shipments DESC, ca.name"
+      ordered: true
+      hint: { vi: "Lọc theo ngày rời cảng thực tế trong tháng 10 và chỉ đường biển, nối với hãng tàu để lấy tên, rồi đếm theo hãng.", en: "Filter on the actual departure date in October and sea only, join the carriers for the name, then count per carrier." }
+  conclusion: { vi: "Viết 1–2 câu trả lời trưởng phòng vận hành: bạn đã đếm theo ngày nào và vì sao, và hãng nào nhiều lô nhất.", en: "Write 1–2 sentences back to the head of operations: which date you counted by and why, and which carrier had the most shipments." }
+  rubric:
+    - { vi: "Nói rõ đã đếm theo ngày tàu rời cảng thực tế, không phải ngày đặt hay ngày dự kiến.", en: "States the count is by actual departure date, not booking or planned date." }
+    - { vi: "Nêu phạm vi: chỉ đường biển, tháng 10/2026.", en: "States the scope: sea only, October 2026." }
+    - { vi: "Dẫn một con số cụ thể từ kết quả (hãng nhiều lô nhất và số lô).", en: "Quotes one concrete number from the result (the top carrier and its count)." }
+
+- id: cs-lg-a2
+  domain: logistics
+  kind: ask
+  after: 8
+  title: { vi: "\"Khách nào lớn nhất quý 3?\"", en: "\"Who were our biggest customers in Q3?\"" }
+  brief:
+    vi: "Tin nhắn từ kế toán trưởng: \"Cho chị năm khách lớn nhất quý 3 nhé. Chị đang xét lại hạn mức công nợ: mỗi khách được nợ mình tối đa bao nhiêu tiền.\""
+    en: "A message from the chief accountant: \"Send me our five biggest customers in Q3. I am reviewing credit limits: how much money each customer may owe us at most.\""
+  clarify:
+    q: { vi: "\"Lớn nhất\" ở đây nên đo bằng gì?", en: "What should \"biggest\" be measured by here?" }
+    answer: 2
+    options:
+      - vi: "Số lô hàng khách đặt với mình trong cả quý 3/2026"
+        en: "The number of shipments the customer booked in Q3 2026"
+        why:
+          vi: "Số lô cho biết khách bận đến đâu, nhưng một lô hàng lẻ vài khối và một lô mười container đều tính là một. Hạn mức công nợ là chuyện tiền khách nợ mình, nên cần đo bằng tiền đã xuất hóa đơn, không phải số lô."
+          en: "The number of shipments shows how busy a customer is, but a small part load and a ten-container shipment both count as one. A credit limit is about the money a customer owes us, so it must be measured by the amount invoiced, not by shipments."
+      - vi: "Số TEU khách gửi trong quý 3"
+        en: "The TEU shipped in Q3"
+        why:
+          vi: "TEU (đơn vị container 20 feet) đo khối lượng hàng, hợp cho việc giữ chỗ trên tàu. Nhưng giá mỗi TEU khác nhau theo tuyến, và hàng đi máy bay không có TEU, nên TEU không cho biết khách nợ mình bao nhiêu tiền. Hạn mức công nợ cần số tiền đã xuất hóa đơn."
+          en: "TEU (the twenty-foot container unit) measures cargo volume, which suits booking ship space. But the price per TEU differs by lane, and air cargo has no TEU, so TEU does not tell how much money a customer owes us. A credit limit needs the amount invoiced."
+      - vi: "Tổng tiền hóa đơn xuất cho khách trong quý 3"
+        en: "The total invoiced to the customer in Q3"
+        why:
+          vi: "Đúng. Hạn mức công nợ là số tiền khách được nợ, nên khách \"lớn\" ở đây là khách mình xuất hóa đơn nhiều tiền nhất. Tính theo ngày xuất hóa đơn trong quý 3, vì đó là lúc khoản nợ bắt đầu."
+          en: "Right. A credit limit is the amount a customer may owe, so the \"biggest\" customers here are the ones we invoiced the most. Go by the invoice date in Q3, since that is when the debt starts."
+  steps:
+    - title: { vi: "Năm khách xuất hóa đơn nhiều nhất", en: "Top five customers by invoiced amount" }
+      task: { vi: "Các hóa đơn xuất từ 01/07/2026 đến hết 30/09/2026: tên khách và tổng tiền hóa đơn (đồng). Năm khách có tổng lớn nhất, lớn nhất lên đầu; bằng nhau thì theo tên khách từ A đến Z.", en: "Invoices issued from 2026-07-01 to 2026-09-30: the customer name and the total invoiced (VND). The five customers with the largest totals, largest first; on a tie, by customer name from A to Z." }
+      solution: "SELECT c.name, SUM(i.amount_vnd) AS invoiced FROM invoices i JOIN customers c ON c.id = i.customer_id WHERE i.issue_date >= '2026-07-01' AND i.issue_date < '2026-10-01' GROUP BY c.id, c.name ORDER BY invoiced DESC, c.name LIMIT 5"
+      ordered: true
+      hint: { vi: "Cộng tiền hóa đơn theo khách trong khoảng ngày xuất của quý 3, xếp giảm dần rồi lấy năm dòng đầu.", en: "Sum the invoices per customer over the Q3 issue dates, sort descending and keep the first five rows." }
+  conclusion: { vi: "Viết 1–2 câu trả lời kế toán trưởng: bạn đo \"lớn nhất\" bằng gì và vì sao, và khách đứng đầu là ai.", en: "Write 1–2 sentences back to the chief accountant: what you measured \"biggest\" by and why, and who comes first." }
+  rubric:
+    - { vi: "Nói rõ đã đo bằng tổng tiền hóa đơn, gắn với lý do hạn mức công nợ.", en: "States the measure is the total invoiced, tied to the credit-limit purpose." }
+    - { vi: "Nêu phạm vi: hóa đơn xuất trong quý 3/2026 (tháng 7 đến tháng 9).", en: "States the scope: invoices issued in Q3 2026 (July to September)." }
+    - { vi: "Dẫn tên khách đứng đầu và số tiền.", en: "Quotes the top customer's name and amount." }
+
+- id: cs-ec-a1
+  domain: ecommerce
+  kind: ask
+  after: 2
+  title: { vi: "\"Doanh thu tháng 10 là bao nhiêu?\"", en: "\"What was October's revenue?\"" }
+  brief:
+    vi: "Tin nhắn từ kế toán: \"Doanh thu tháng 10 theo từng cách thanh toán là bao nhiêu? Mình cần khớp với sao kê ngân hàng và ví điện tử tháng 10.\" Sao kê chỉ ghi những khoản tiền đã thực sự về."
+    en: "A message from accounting: \"What was October's revenue per payment method? I need it to match the October bank and e-wallet statements.\" A statement only shows money that actually arrived."
+  clarify:
+    q: { vi: "\"Doanh thu tháng 10\" ở đây nên tính thế nào?", en: "How should \"October's revenue\" be counted here?" }
+    answer: 1
+    options:
+      - vi: "Tổng giá trị các đơn đặt trong tháng 10"
+        en: "The value of the orders placed in October"
+        why:
+          vi: "Đơn đặt tháng 10 có thể bị hủy, chưa trả tiền, hoặc trả tiền khi nhận hàng sang tháng 11. Sao kê chỉ ghi tiền đã về, nên tổng giá trị đơn đặt sẽ lớn hơn và không khớp. Cần đếm các khoản thanh toán thành công theo ngày tiền về."
+          en: "An October order may be cancelled, still unpaid, or paid on delivery in November. A statement only shows money received, so the value of orders placed will be larger and will not match. Count the successful payments by the day the money arrived."
+      - vi: "Các khoản thanh toán thành công trả trong tháng 10"
+        en: "The successful payments made in October"
+        why:
+          vi: "Đúng. Sao kê ghi tiền theo ngày tiền về, nên lấy khoản thanh toán thành công có thời điểm trả trong tháng 10 là khớp. Khoản thất bại chưa bao giờ về; khoản đã hoàn tiền thì tiền đã quay lại cho khách, nên cũng không tính."
+          en: "Right. A statement records money by the day it arrived, so the successful payments made in October match it. A failed payment never arrived; a refunded one went back to the customer, so it is left out too."
+      - vi: "Tổng giá trị các đơn đã giao tới tay khách trong tháng 10"
+        en: "The value of the orders delivered in October"
+        why:
+          vi: "Ngày giao là lúc hàng tới tay khách, không phải lúc tiền về: đơn trả bằng thẻ hay ví đã trả từ trước, có khi từ tháng 9. Vì vậy tổng theo ngày giao lệch với sao kê. Cần ngày tiền về của từng khoản thanh toán."
+          en: "The delivery date is when the goods reach the customer, not when money arrives: card and e-wallet orders were paid earlier, sometimes in September. So a total by delivery date drifts from the statements. You need the day each payment arrived."
+  steps:
+    - title: { vi: "Tiền về tháng 10 theo cách thanh toán", en: "October money in per payment method" }
+      task: { vi: "Các khoản thanh toán thành công có thời điểm trả từ 01/10/2026 đến hết 31/10/2026: mỗi cách thanh toán và tổng tiền. Theo tên cách thanh toán từ A đến Z.", en: "Successful payments made from 2026-10-01 to 2026-10-31: each payment method and the total amount. By payment method name from A to Z." }
+      solution: "SELECT method, SUM(amount) AS paid FROM payments WHERE status = 'paid' AND paid_at >= '2026-10-01' AND paid_at < '2026-11-01' GROUP BY method ORDER BY method"
+      ordered: true
+      hint: { vi: "Chỉ giữ khoản ở trạng thái đã trả, lọc theo thời điểm trả trong tháng 10, rồi cộng theo cách thanh toán.", en: "Keep only the payments in the paid state, filter on the payment time in October, then sum per method." }
+  conclusion: { vi: "Viết 1–2 câu trả lời kế toán: bạn đã tính doanh thu theo cách nào và vì sao nó khớp được sao kê, kèm tổng tiền.", en: "Write 1–2 sentences back to accounting: how you counted revenue and why it can match the statements, with the total." }
+  rubric:
+    - { vi: "Nói rõ chỉ tính khoản thanh toán thành công, theo thời điểm tiền về trong tháng 10.", en: "States that only successful payments count, by the time the money arrived in October." }
+    - { vi: "Nhắc rằng khoản thất bại và khoản đã hoàn tiền bị loại.", en: "Mentions that failed and refunded payments are left out." }
+    - { vi: "Dẫn ít nhất một con số từ kết quả.", en: "Quotes at least one number from the result." }
+
+- id: cs-ec-a2
+  domain: ecommerce
+  kind: ask
+  after: 5
+  title: { vi: "\"Tháng 10 có bao nhiêu khách mới?\"", en: "\"How many new customers did October bring?\"" }
+  brief:
+    vi: "Tin nhắn từ nhóm marketing: \"Tháng 10 có bao nhiêu khách mới, theo từng kênh khách tìm đến mình? Bọn mình muốn biết chiến dịch kéo được bao nhiêu người mua hàng lần đầu.\""
+    en: "A message from the marketing team: \"How many new customers did October bring, per channel they first came through? We want to know how many first-time buyers the campaign brought.\""
+  clarify:
+    q: { vi: "\"Khách mới tháng 10\" nên hiểu là ai?", en: "Who counts as an \"October new customer\"?" }
+    answer: 2
+    options:
+      - vi: "Khách mở tài khoản mới trên sàn trong tháng 10/2026"
+        en: "Customers who created a new account in October 2026"
+        why:
+          vi: "Tạo tài khoản chưa phải là mua: nhiều người đăng ký rồi không bao giờ đặt đơn, và có người đăng ký từ trước nhưng tháng 10 mới mua lần đầu. Nhóm marketing hỏi người mua hàng lần đầu, nên cần ngày của đơn đầu tiên."
+          en: "Signing up is not buying: many people sign up and never order, and some signed up earlier but bought for the first time in October. Marketing asked about first-time buyers, so you need the date of the first order."
+      - vi: "Mọi khách có đơn trong tháng 10"
+        en: "Every customer who placed at least one order in October 2026"
+        why:
+          vi: "Nhóm này gồm cả khách quen đã mua từ nhiều tháng trước. Chiến dịch muốn đo người mua lần đầu, nên khách cũ phải bị loại: chỉ tính khách có đơn đầu tiên rơi vào tháng 10."
+          en: "This group includes regulars who have bought for months. The campaign measures first-time buyers, so old customers must be left out: count only customers whose first order falls in October."
+      - vi: "Khách có đơn đầu tiên không bị hủy trong tháng 10"
+        en: "Customers whose first non-cancelled order was in October"
+        why:
+          vi: "Đúng. \"Mua lần đầu\" là đơn sớm nhất của khách, và đơn đã hủy không phải là mua. Tìm đơn đầu tiên không hủy của mỗi khách, rồi giữ những khách có đơn đó trong tháng 10."
+          en: "Right. \"Bought for the first time\" is the customer's earliest order, and a cancelled order is not a purchase. Find each customer's first order that was not cancelled, then keep the customers whose first order falls in October."
+  steps:
+    - title: { vi: "Người mua lần đầu tháng 10 theo kênh", en: "October first-time buyers per channel" }
+      task: { vi: "Với mỗi khách, đơn đầu tiên là đơn sớm nhất không bị hủy. Những khách có đơn đầu tiên đặt từ 01/10/2026 đến hết 31/10/2026: mỗi kênh khách tìm đến lần đầu và số khách. Theo tên kênh từ A đến Z.", en: "For each customer, the first order is the earliest order that was not cancelled. Customers whose first order was placed from 2026-10-01 to 2026-10-31: each channel they first came through and the number of customers. By channel name from A to Z." }
+      solution: "WITH firsts AS (SELECT customer_id, MIN(ordered_at) AS first_at FROM orders WHERE status <> 'cancelled' GROUP BY customer_id) SELECT c.channel, COUNT(*) AS new_buyers FROM firsts f JOIN customers c ON c.id = f.customer_id WHERE f.first_at >= '2026-10-01' AND f.first_at < '2026-11-01' GROUP BY c.channel ORDER BY c.channel"
+      ordered: true
+      hint: { vi: "Một bảng tạm giữ thời điểm đơn đầu tiên không hủy của mỗi khách; lọc tháng 10 trên bảng đó, nối với khách để lấy kênh, rồi đếm.", en: "A named sub-result keeps each customer's first non-cancelled order time; filter October on it, join the customers for the channel, then count." }
+  conclusion: { vi: "Viết 1–2 câu trả lời nhóm marketing: bạn đã đếm \"khách mới\" thế nào và kênh nào mang về nhiều người mua lần đầu nhất.", en: "Write 1–2 sentences back to marketing: how you counted \"new customers\" and which channel brought the most first-time buyers." }
+  rubric:
+    - { vi: "Nói rõ định nghĩa: đơn đầu tiên không bị hủy rơi vào tháng 10, không phải ngày tạo tài khoản.", en: "States the definition: the first non-cancelled order falls in October, not the sign-up date." }
+    - { vi: "Nêu kênh đứng đầu và số khách của kênh đó.", en: "Names the top channel and its count." }
+    - { vi: "Ngắn gọn, không tên bảng hay tên cột.", en: "Short, with no table or column names." }
+
+- id: cs-fn-a1
+  domain: finance
+  kind: ask
+  after: 3
+  title: { vi: "\"Tỷ lệ nợ xấu từng chi nhánh?\"", en: "\"Each branch's bad-debt ratio?\"" }
+  brief:
+    vi: "Tin nhắn từ phòng pháp chế: \"Ngân hàng Nhà nước yêu cầu báo tỷ lệ nợ xấu của từng chi nhánh ở cuối tháng 10. Em gửi chị số liệu nhé.\" Báo cáo cho cơ quan quản lý dùng định nghĩa nợ xấu chuẩn của ngành."
+    en: "A message from the legal team: \"The State Bank wants each branch's bad-debt ratio at the end of October. Please send me the figures.\" A report to the regulator uses the industry's standard definition of bad debt."
+  clarify:
+    q: { vi: "\"Tỷ lệ nợ xấu\" theo chuẩn báo cáo là gì?", en: "What is the \"bad-debt ratio\" in a regulatory report?" }
+    answer: 0
+    options:
+      - vi: "Phần dư nợ quá hạn trên 90 ngày chia cho tổng dư nợ"
+        en: "The balance more than 90 days past due over the total balance"
+        why:
+          vi: "Đúng. Nợ xấu (non-performing loan) là khoản quá hạn trên 90 ngày, và tỷ lệ được tính trên dư nợ (tiền gốc khách còn nợ), không phải trên số khoản. Vì vậy cộng dư nợ của khoản quá hạn trên 90 ngày rồi chia cho tổng dư nợ của chi nhánh, ở ảnh chụp cuối tháng 10."
+          en: "Right. Bad debt (a non-performing loan) is a loan more than 90 days past due, and the ratio is taken on the balance (the principal still owed), not on the number of loans. So add up the balance of loans over 90 days past due and divide by the branch's total balance, at the end-of-October snapshot."
+      - vi: "Số khoản đang quá hạn (từ 1 ngày) chia cho tổng số khoản"
+        en: "Loans past due (by 1 day or more) over all loans"
+        why:
+          vi: "Quá hạn 1 ngày thường chỉ là trả chậm, nhiều khách trả ngay tuần sau; nợ xấu theo chuẩn bắt đầu từ trên 90 ngày. Ngoài ra đếm số khoản coi một khoản 5 triệu bằng một khoản 50 triệu, trong khi rủi ro nằm ở số tiền. Cần tính theo dư nợ, ngưỡng trên 90 ngày."
+          en: "One day late is usually just a late payment, and many customers pay the next week; standard bad debt starts beyond 90 days. Counting loans also treats a 5-million loan like a 50-million one, while the risk lies in the money. Use the balance, with the over-90-days threshold."
+      - vi: "Phần dư nợ quá hạn trên 30 ngày chia cho tổng dư nợ"
+        en: "The balance more than 30 days past due over the total balance"
+        why:
+          vi: "Trên 30 ngày là chỉ số theo dõi sớm mà đội rủi ro hay dùng nội bộ, nên nghe rất hợp lý. Nhưng cơ quan quản lý gọi là nợ xấu khi quá hạn trên 90 ngày; dùng ngưỡng 30 sẽ làm tỷ lệ báo cáo cao hơn thực tế theo chuẩn. Giữ cách tính theo dư nợ, đổi ngưỡng thành trên 90 ngày."
+          en: "Over 30 days is an early-warning measure the risk team often uses internally, so it sounds right. But the regulator calls a loan bad debt only beyond 90 days past due; a 30-day threshold would report a higher ratio than the standard. Keep the balance-based ratio and change the threshold to over 90 days."
+  steps:
+    - title: { vi: "Tỷ lệ nợ xấu cuối tháng 10", en: "Bad-debt ratio at the end of October" }
+      task: { vi: "Ở ảnh chụp cuối tháng 10/2026, mỗi chi nhánh: tên và tỷ lệ phần trăm dư nợ quá hạn trên 90 ngày trên tổng dư nợ của chi nhánh (làm tròn 2 chữ số thập phân; không có thì là 0). Tỷ lệ cao nhất lên đầu; bằng nhau thì theo tên chi nhánh từ A đến Z.", en: "At the end-of-October 2026 snapshot, each branch: the name and the percentage of the branch's outstanding balance that is more than 90 days past due (rounded to 2 decimal places; 0 when there is none). Highest first; on a tie, by branch name from A to Z." }
+      solution: "SELECT b.name, ROUND(100.0 * COALESCE(SUM(s.outstanding) FILTER (WHERE s.dpd > 90), 0) / SUM(s.outstanding), 2) AS npl_pct FROM loan_snapshots s JOIN loans l ON l.id = s.loan_id JOIN branches b ON b.id = l.branch_id WHERE s.month_end = '2026-10-31' GROUP BY b.name ORDER BY npl_pct DESC, b.name"
+      ordered: true
+      hint: { vi: "Đi từ ảnh chụp cuối tháng 10 qua khoản vay tới chi nhánh; tử số là tổng dư nợ có điều kiện trên 90 ngày.", en: "Go from the end-of-October snapshot through the loan to the branch; the numerator is the balance summed only over 90 days past due." }
+  conclusion: { vi: "Viết 1–2 câu trả lời phòng pháp chế: bạn đã dùng định nghĩa nợ xấu nào, và chi nhánh nào có tỷ lệ cao nhất.", en: "Write 1–2 sentences back to the legal team: which definition of bad debt you used, and which branch has the highest ratio." }
+  rubric:
+    - { vi: "Nói rõ ngưỡng trên 90 ngày và cách tính trên dư nợ.", en: "States the over-90-days threshold and the balance-based ratio." }
+    - { vi: "Nêu thời điểm: ảnh chụp cuối tháng 10/2026.", en: "States the point in time: the end-of-October 2026 snapshot." }
+    - { vi: "Dẫn chi nhánh đứng đầu và tỷ lệ của nó.", en: "Quotes the top branch and its ratio." }
+
+- id: cs-fn-a2
+  domain: finance
+  kind: ask
+  after: 3
+  title: { vi: "\"Chi nhánh nào đang cho vay nhiều nhất?\"", en: "\"Which branch lends the most?\"" }
+  brief:
+    vi: "Tin nhắn từ giám đốc tài chính: \"Chi nhánh nào đang cho vay nhiều nhất? Quý tới chị phân bổ vốn theo số tiền mỗi chi nhánh đang có ngoài thị trường.\""
+    en: "A message from the finance director: \"Which branch lends the most? Next quarter I will allocate capital by how much money each branch has out in the market.\""
+  clarify:
+    q: { vi: "\"Cho vay nhiều nhất\" nên đo bằng gì?", en: "What should \"lends the most\" be measured by?" }
+    answer: 1
+    options:
+      - vi: "Số khoản vay chi nhánh giải ngân trong năm 2026"
+        en: "The number of loans the branch paid out during 2026"
+        why:
+          vi: "Số khoản cho biết chi nhánh bận đến đâu, nhưng một khoản ứng lương vài triệu và một khoản mua xe máy vài chục triệu đều tính là một. Câu hỏi là tiền đang ở ngoài thị trường, nên cần dư nợ hiện tại, không phải số khoản."
+          en: "The number of loans shows how busy a branch is, but a salary advance of a few million and a motorbike loan of tens of millions both count as one. The question is about money out in the market, so it needs today's outstanding balance, not a count."
+      - vi: "Tổng dư nợ ở ảnh chụp cuối tháng 10/2026"
+        en: "The outstanding balance at the end of October 2026"
+        why:
+          vi: "Đúng. \"Tiền đang ở ngoài thị trường\" là dư nợ: phần gốc khách còn nợ tại một thời điểm. Ảnh chụp cuối tháng 10 là số mới nhất, nên cộng dư nợ theo chi nhánh ở ngày đó."
+          en: "Right. \"Money out in the market\" is the outstanding balance: the principal customers still owe at a point in time. The end-of-October snapshot is the latest, so add up the balance per branch on that date."
+      - vi: "Tổng số tiền giải ngân trong năm 2026"
+        en: "The total paid out in 2026"
+        why:
+          vi: "Tiền giải ngân là tiền đã đưa ra, nhưng khách trả dần mỗi tháng, và khoản ngắn hạn có thể đã trả xong. Một chi nhánh giải ngân nhiều khoản ngắn có thể đang giữ ít tiền ngoài thị trường hơn. Phân bổ vốn cần dư nợ hiện tại."
+          en: "The amount paid out is money that went out, but customers repay every month, and short loans may already be closed. A branch that paid out many short loans can hold less money in the market today. Capital allocation needs today's balance."
+  steps:
+    - title: { vi: "Dư nợ theo chi nhánh", en: "Outstanding balance per branch" }
+      task: { vi: "Ở ảnh chụp cuối tháng 10/2026, mỗi chi nhánh: tên và tổng dư nợ (đồng). Dư nợ lớn nhất lên đầu; bằng nhau thì theo tên chi nhánh từ A đến Z.", en: "At the end-of-October 2026 snapshot, each branch: the name and the total outstanding balance (VND). Largest first; on a tie, by branch name from A to Z." }
+      solution: "SELECT b.name, SUM(s.outstanding) AS outstanding FROM loan_snapshots s JOIN loans l ON l.id = s.loan_id JOIN branches b ON b.id = l.branch_id WHERE s.month_end = '2026-10-31' GROUP BY b.name ORDER BY outstanding DESC, b.name"
+      ordered: true
+      hint: { vi: "Lấy ảnh chụp cuối tháng 10, đi qua khoản vay tới chi nhánh, rồi cộng dư nợ theo chi nhánh.", en: "Take the end-of-October snapshot, go through the loan to the branch, then sum the balance per branch." }
+  conclusion: { vi: "Viết 1–2 câu trả lời giám đốc tài chính: bạn đã đo bằng gì và vì sao, và chi nhánh nào đứng đầu.", en: "Write 1–2 sentences back to the finance director: what you measured and why, and which branch comes first." }
+  rubric:
+    - { vi: "Nói rõ đã đo bằng dư nợ (tiền gốc khách còn nợ), không phải số khoản hay tiền giải ngân.", en: "States the measure is the outstanding balance (principal still owed), not a count or the amount paid out." }
+    - { vi: "Nêu thời điểm: ảnh chụp cuối tháng 10/2026.", en: "States the point in time: the end-of-October 2026 snapshot." }
+    - { vi: "Dẫn chi nhánh đứng đầu và số dư nợ.", en: "Quotes the top branch and its balance." }

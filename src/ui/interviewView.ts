@@ -89,7 +89,10 @@ function build(id: string, timer: boolean, fresh: boolean): InterviewRun {
   const set = setOf(id);
   const old = fresh ? undefined : read().live[id];
   if (old?.phase === 'work') d$.prefs.setPresence(old, true, Date.now()); // FIX-1: the time away (even a closed tab) is not counted
-  if (fresh) toldUp.delete(id);
+  if (fresh) {
+    toldUp.delete(id);
+    picks.delete(id); // v47: a fresh ask starts with no option pressed
+  }
   const live: LiveRun = old ?? {
     id, timer: !!set && timer, start: Date.now(), index: 0, step: 0, solved: [], drafts: {}, passed: {}, hints: [], phase: 'work', text: '', checks: [],
   };
@@ -123,6 +126,7 @@ export function reopen(item: string): void {
 
 /** The hash follows the question or step on screen (replaced, so Back leaves the run instead of walking its questions). */
 function syncHash(run: InterviewRun): void {
+  if (thOf(run.id)?.domain) return; // v47: a case runs on its domain's /play hash (a reload resumes from the Overview card)
   const to = d$.drillHash(d$.ivItemId(run));
   if (location.hash !== to) history.replaceState(history.state, '', to);
 }
@@ -310,6 +314,14 @@ function setSummary(run: InterviewRun, set: InterviewSet): HTMLElement {
       h('button', { type: 'button', onclick: () => d$.leave() }, it('iv.toRoom'))));
 }
 
+/** v47: a domain case or ask leaves to its Overview and reads its own data line; the room's take-homes keep their words. */
+const exitKey = (th: TakeHome): IvKey => (th.domain ? 'cs.exit' : 'iv.exit');
+const backKey = (th: TakeHome): IvKey => (th.domain ? 'cs.back' : 'iv.toRoom');
+/** v47 D2 (L931): the last option picked per ask, this page load only (a right pick is kept in the run, see pickMark). */
+const picks = new Map<string, number>();
+// ponytail: the right pick rides in run.hints (persisted with the run, ITEM_ID-shaped), so no new pref field.
+const pickMark = (run: InterviewRun): string => `${run.id}-pick`;
+
 function thPane(run: InterviewRun): HTMLElement {
   const { h, nodes } = d$;
   const lang = d$.getLang();
@@ -317,19 +329,57 @@ function thPane(run: InterviewRun): HTMLElement {
   const head = h('h2', TITLE, th.title[lang]);
   if (run.phase === 'write') return writePane(run, th, head);
   if (run.phase === 'done') return rubricPane(run, th, head);
+  const brief = h('section', { class: 'my-3 rounded-(--r-ctl) bg-accent-soft p-3', 'aria-labelledby': 'iv-brief' },
+    h('h3', { id: 'iv-brief', class: 'mt-0 mb-1 text-body font-bold' }, it('iv.brief')), d$.richText(th.brief[lang]));
+  const c = th.clarify;
+  if (c && !run.hints.includes(pickMark(run))) return clarifyPane(run, th, head, brief);
   const s = th.steps[run.step];
   return h('div', {}, ...nodes(
     h('header', {}, head, h('p', { class: 'mt-1 mb-0 text-body-sm text-muted' }, it('iv.step', { i: run.step + 1, n: th.steps.length, title: s.title[lang] }))),
-    h('section', { class: 'my-3 rounded-(--r-ctl) bg-accent-soft p-3', 'aria-labelledby': 'iv-brief' },
-      h('h3', { id: 'iv-brief', class: 'mt-0 mb-1 text-body font-bold' }, it('iv.brief')), d$.richText(th.brief[lang])),
+    brief,
+    c ? h('section', { class: 'my-3 rounded-(--r-ctl) bg-good-soft p-3 [&_p]:my-1', 'aria-label': it('cs.understood') },
+      h('p', { class: 'font-semibold' }, `${it('cs.understood')}: ${c.options[c.answer][lang]}`), d$.richText(c.options[c.answer].why[lang])) : null,
     h('ol', { class: 'my-2 space-y-1 pl-5 text-body-sm', 'aria-label': it('iv.steps') }, ...th.steps.map((x, i) => h('li', {
       class: i === run.step ? 'font-bold' : 'text-muted', 'aria-current': i === run.step ? 'step' : false,
     }, x.title[lang], run.solved.includes(x.id) ? h('span', { class: 'text-good' }, ' ✓') : null))),
-    h('h3', { id: 'brief-step', class: 'mb-1 text-body font-bold' }, s.title[lang]),
+    h('h3', { id: 'brief-step', tabindex: '-1', class: 'mb-1 text-body font-bold' }, s.title[lang]),
     h('div', { class: 'text-[15px] leading-relaxed' }, d$.richText(s.task[lang])),
-    h('p', { class: 'text-body-sm text-muted' }, it('iv.data')),
+    h('p', { class: 'text-body-sm text-muted' }, it(th.domain ? 'cs.data' : 'iv.data')),
     hintBox(run, s.hint[lang]),
-    h('div', { class: 'actions' }, h('button', { type: 'button', onclick: () => d$.leave() }, it('iv.exit'))),
+    h('div', { class: 'actions' }, h('button', { type: 'button', onclick: () => d$.leave() }, it(exitKey(th)))),
+  ));
+}
+
+/** v47 D2 (L931): the vague request, then one clarifying choice; each pick shows why, a right pick opens the step. */
+function clarifyPane(run: InterviewRun, th: TakeHome, head: HTMLElement, brief: HTMLElement): HTMLElement {
+  const { h, nodes } = d$;
+  const lang = d$.getLang();
+  const c = th.clarify!;
+  const picked = picks.get(run.id);
+  const pick = (i: number): void => {
+    picks.set(run.id, i);
+    if (i === c.answer) {
+      run.hints.push(pickMark(run));
+      saveLive();
+    }
+    d$.actions.rerender();
+    document.getElementById(i === c.answer ? 'brief-step' : 'cs-why')?.focus();
+  };
+  return h('div', {}, ...nodes(
+    h('header', {}, head),
+    brief,
+    h('section', { class: 'my-3', 'aria-labelledby': 'cs-clarify' },
+      h('h3', { id: 'cs-clarify', class: 'mt-0 mb-1 text-body font-bold' }, it('cs.clarify')),
+      h('p', { class: 'mt-0 text-body-sm text-muted' }, it('cs.clarifyHelp')),
+      h('p', { class: 'font-semibold' }, c.q[lang]),
+      h('div', { class: 'flex flex-col items-stretch gap-2' }, ...c.options.map((o, i) => h('button', {
+        type: 'button', class: 'min-h-11 text-left', 'aria-pressed': picked === i ? 'true' : 'false', onclick: () => pick(i),
+      }, o[lang])))),
+    picked !== undefined && picked !== c.answer
+      ? h('div', { id: 'cs-why', tabindex: '-1', role: 'status', class: 'my-3 rounded-(--r-ctl) bg-warn-soft p-3 [&_p]:my-1' },
+        h('p', { class: 'font-semibold' }, it('cs.notThis')), d$.richText(c.options[picked].why[lang]))
+      : null,
+    h('div', { class: 'actions' }, h('button', { type: 'button', onclick: () => d$.leave() }, it(exitKey(th)))),
   ));
 }
 
@@ -367,7 +417,7 @@ function writePane(run: InterviewRun, th: TakeHome, head: HTMLElement): HTMLElem
           document.getElementById('brief-title')?.focus();
         },
       }, it('iv.toRubric')),
-      h('button', { type: 'button', onclick: () => d$.leave() }, it('iv.exit'))));
+      h('button', { type: 'button', onclick: () => d$.leave() }, it(exitKey(th)))));
 }
 
 function rubricPane(run: InterviewRun, th: TakeHome, head: HTMLElement): HTMLElement {
@@ -405,7 +455,7 @@ function rubricPane(run: InterviewRun, th: TakeHome, head: HTMLElement): HTMLEle
           document.getElementById('iv-text')?.focus();
         },
       }, it('iv.edit')),
-      h('button', { type: 'button', class: 'primary', onclick: () => d$.leave() }, it('iv.toRoom'))));
+      h('button', { type: 'button', class: 'primary', onclick: () => d$.leave() }, it(backKey(th)))));
 }
 
 // ---- #/learn/interview ----
@@ -420,7 +470,8 @@ export function listPage(): HTMLElement {
   const resumable = (id: string): boolean => !!p.live[id] && p.live[id].phase !== 'done';
   // v21 U24 (v7 T1): one main button on the page: the run in progress, else the first set whose skills are all learned, else the first set.
   const ready = (modules: number[]): boolean => d$.SKILLS.filter((s) => modules.includes(s.chapter)).every((s) => known.has(s.id));
-  const all = [...c$.sets, ...c$.takeHomes];
+  const takeHomes = c$.takeHomes.filter((x) => !x.domain); // v47 (L82): domain cases live on their Overview, never here
+  const all = [...c$.sets, ...takeHomes];
   const main = (all.find((x) => resumable(x.id)) ?? c$.sets.find((x) => ready(x.modules)) ?? c$.sets[0])?.id;
   const actions = (id: string): HTMLElement => h('div', { class: 'actions mb-0 shrink-0' }, ...(resumable(id)
     ? [h('button', { type: 'button', class: id === main ? 'primary' : '', onclick: () => void d$.startRun(id, false, false) }, it('iv.resume')),
@@ -459,7 +510,7 @@ export function listPage(): HTMLElement {
     h('section', { class: 'flex flex-col gap-3', 'aria-labelledby': 'iv-th' },
       h('h2', { id: 'iv-th', class: 'm-0 text-title font-bold' }, it('iv.takeHomes')),
       h('p', { class: 'm-0 text-body-sm text-muted' }, it('iv.thIntro')),
-      h('ul', { class: 'm-0 flex list-none flex-col gap-3 p-0' }, ...c$.takeHomes.map((x) => {
+      h('ul', { class: 'm-0 flex list-none flex-col gap-3 p-0' }, ...takeHomes.map((x) => {
         const last = p.takeHomes[x.id];
         return h('li', { class: ROW }, h('div', { class: 'flex min-w-0 flex-1 flex-col gap-1' },
           h('h3', { class: 'm-0 text-body font-bold' }, x.title[lang]),

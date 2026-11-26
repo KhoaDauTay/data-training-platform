@@ -46,6 +46,29 @@ export function bootPick(hashDomain: DomainId | undefined, pref: unknown, firstV
 /** v15 §5: picked "SQL only" and has opened no domain since (a domain page overwrites the pref): nothing names Logistics. */
 export const sqlOnly = (storage: KV | undefined = localStore()): boolean => readJson<unknown>(DOMAIN_KEY, storage) === 'general';
 
+/**
+ * v47 S3 (I6, L910): the welcome dialog's "what do you want?" answer. Device pref, never in the Save. No pref, or anything
+ * unknown, reads as undefined = the analyst flow (the default; the step can be skipped).
+ */
+export const INTENT_KEY = 'cargo-query/goal-intent';
+export const INTENTS = ['analyst', 'sql', 'internals', 'engineer'] as const;
+export type Intent = typeof INTENTS[number];
+export const parseIntent = (v: unknown): Intent | undefined => INTENTS.find((x) => x === v);
+export const readIntent = (storage: KV | undefined = localStore()): Intent | undefined => parseIntent(readJson<unknown>(INTENT_KEY, storage));
+export const writeIntent = (x: Intent, storage?: KV): boolean => writeJson(INTENT_KEY, x, storage);
+
+/**
+ * L911: where a goal lands after the welcome. Analyst: undefined (the domain step, then ticket 1). "Knows SQL": the learning
+ * path, which holds the entry check. Internals: the PostgreSQL page (its L1–L5 rows are the level chooser). Data engineer:
+ * the Data stack track (Design is Home's second link).
+ */
+export function intentRoute(x: Intent | undefined): string | undefined {
+  if (x === 'sql') return '#/learn';
+  if (x === 'internals') return '#/engine/postgres';
+  if (x === 'engineer') return '#/engine/stack';
+  return undefined;
+}
+
 /** Progressive disclosure (v4 §B.2 layer 3) only for players who started on the welcome screen as beginners (V9). */
 export const gated = (tour: TourPref | undefined): boolean => tour !== undefined && !tour.knows;
 

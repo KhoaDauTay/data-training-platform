@@ -5,9 +5,11 @@ import { drillTicket, type Drill, type General } from '../general';
 import type * as Home from '../home';
 import type * as I18n from '../i18n';
 import { learnText, type LearnKey } from '../i18n/learn';
-import { learnPage as drawLearn } from './learnView';
+import { learnPage as drawLearn, placementOf } from './learnView';
 import { initGuides, type GuideDeps } from './guide';
 import { initGuideList, replayBtn } from './guideList';
+import { initSets } from './practiceSets';
+export { explainCard, fixCard, mixCard, setText } from './practiceSets';
 import { drillXp } from '../learn';
 import type * as Mastery from '../mastery';
 import type * as Practice from '../practice';
@@ -70,6 +72,8 @@ export interface DrillDeps extends GuideDeps {
   deepDive: (id: string) => HTMLElement | null;
   /** v39 (P1, L605): the SVG helper the figure builder draws with (with h/reducedMotion/gsap/getLang above = the figure's Deps). */
   s: typeof Svg.s;
+  /** v47 (L920): starts a Practise set (Fix, Mixed review) as a Practice run on `lab` (modes.ts startSet). */
+  startSet: typeof Modes.startSet;
 }
 
 let d$: DrillDeps;
@@ -87,6 +91,7 @@ export function initDrill(deps: DrillDeps): void {
   d$ = deps;
   initGuides(deps); // v13: Boon's guides (ui/guide.ts), in this chunk
   initGuideList(deps);
+  initSets(deps); // v47: the Practise sets (ui/practiceSets.ts, same chunk)
   deps.schemaHooks.only = () => (deps.activeSchema() === 'lab' ? labCols : undefined); // a drill, or a review drill in Practice
 }
 
@@ -151,15 +156,19 @@ export function drillPane(host: HTMLElement, m: DrillMode): void {
 export function reviewBody(host: HTMLElement, tk: Ticket): void {
   const g = d$.generalNow();
   const d = g?.byId.get(tk.id);
-  if (g && d) host.replaceChildren(...d$.nodes(...drillParts(g, d, tk)));
+  const m = d$.session.mode;
+  if (g && d) host.replaceChildren(...d$.nodes(...drillParts(g, d, tk, m.kind === 'practice' ? m.run : undefined)));
 }
 
-function drillParts(g: General, d: Drill, tk: Ticket): (Node | null | false | undefined)[] {
+/** `run`: the Practice run holding this drill (v47: a Mixed review hides hints until a wrong submit; a Fix item explains its bug once answered). */
+function drillParts(g: General, d: Drill, tk: Ticket, run?: Session.PracticeRun): (Node | null | false | undefined)[] {
   const { h, richText } = d$;
   const lang = d$.getLang();
   const group = groupOf(g, d);
   const what = nameOf(g, d);
-  const title = d.kind === 'challenge' ? lt('drill.challenge', { what }) : lt('drill.title', { what, i: group.findIndex((x) => x.id === d.id) + 1, n: group.length });
+  const fix = d.kind === 'fix';
+  const title = fix ? lt('sets.fixTitle') : d.kind === 'challenge' ? lt('drill.challenge', { what }) : lt('drill.title', { what, i: group.findIndex((x) => x.id === d.id) + 1, n: group.length });
+  const hintsLater = run?.set?.kind === 'mix' && run.wrong === 0 && !run.result;
   const node = d.node ? g.nodes.find((n) => n.id === d.node) : undefined;
   const lessonBtn = (open: () => void) => h('button', { type: 'button', class: 'px-2 py-0.5 text-body-sm', onclick: open }, lt('drill.openLesson'));
   const lesson = d.skill
@@ -168,7 +177,7 @@ function drillParts(g: General, d: Drill, tk: Ticket): (Node | null | false | un
   return [
     h('header', {},
       h('h2', TITLE, title),
-      h('p', { class: 'mt-1 mb-0 flex flex-wrap items-center gap-2 text-body-sm text-muted' }, lt(`drill.kind.${d.kind}`),
+      h('p', { class: 'mt-1 mb-0 flex flex-wrap items-center gap-2 text-body-sm text-muted' }, fix ? null : lt(`drill.kind.${d.kind}`),
         replayBtn(d$.session.mode.kind === 'drill' ? 'drill' : 'review'))),
     h('div', { class: 'mt-3 text-[15px] leading-relaxed' }, richText(d.task[lang])),
     d$.guideSlot('drill-brief'), // v13 G5/G7: under the task
@@ -176,7 +185,9 @@ function drillParts(g: General, d: Drill, tk: Ticket): (Node | null | false | un
     tk.steps[0].check ? h('p', { class: 'text-body-sm text-muted' }, richText(lt('drill.write'))) : null, // v26 R2: write-then-read grading
     d$.shapeCard(tk, 0),
     d$.tryPreview(tk.steps[0].solution, 'lab', tk.steps[0].check), // L84: the tables it reads and a sample of the expected result (practice, not story)
-    d$.hints(tk, d$.textOf(tk, lang), false),
+    fix && d.why && run?.result ? h('section', { class: 'my-3 rounded-(--r-ctl) bg-panel p-3 ring-1 ring-accent', 'aria-labelledby': 'fix-why' },
+      h('h3', { id: 'fix-why', class: 'mt-0' }, lt('sets.why')), h('div', { class: 'text-[15px] leading-relaxed' }, richText(d.why[lang]))) : null,
+    hintsLater ? h('p', { class: 'text-body-sm text-muted' }, lt('sets.hintLater')) : d$.hints(tk, d$.textOf(tk, lang), false),
     lesson ? h('p', { class: 'my-2 flex flex-wrap items-center gap-2 text-body-sm' }, h('span', {}, lt('drill.lesson', { name: what })), lesson) : null,
     d$.deepDive(d.skill ?? d.node ?? ''),
   ];
@@ -278,3 +289,5 @@ export function learnPage(): HTMLElement | undefined {
   const g = d$.generalNow();
   return g && drawLearn(d$, g);
 }
+/** v47 S3 (L911): the entry check's items (learnView placementOf). */
+export const placementList = (g: General): ReturnType<typeof placementOf> => placementOf(d$, g);
