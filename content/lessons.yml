@@ -660,6 +660,7 @@
   docs: https://www.postgresql.org/docs/current/tutorial-join.html
 
 - id: string_fn
+  figure: { name: sql-text-functions }
   cues:
     vi: ["viết hoa toàn bộ", "bỏ … ở đầu …", "ghép … thành …"]
     en: ["in capitals", "upper-cased", "without the … prefix"]
@@ -764,6 +765,7 @@
   docs: https://www.postgresql.org/docs/current/queries-select-lists.html#QUERIES-DISTINCT
 
 - id: cast
+  figure: { name: sql-int-division }
   cues:
     vi: ["tính bằng phần trăm", "làm tròn … chữ số", "tỷ lệ …"]
     en: ["as a percentage", "rounded to … decimals", "… rate …"]
@@ -1454,6 +1456,7 @@
   docs: https://www.postgresql.org/docs/current/tutorial-window.html
 
 - id: explain_read
+  figure: { name: sql-plan-tree }
   cues:
     vi: ["kế hoạch thực thi", "… qua chỉ mục …", "định làm gì"]
     en: ["execution plan", "through the … index", "what it plans to do"]

@@ -33,7 +33,7 @@ quiz:
     options:
       - { vi: "Không sao, bảng on-demand không có giới hạn nào", en: "Nothing, an on-demand table has no limit at all" }
       - { vi: "Phần vượt 1000 ghi mỗi giây có thể bị throttle, dù tổng capacity của bảng còn dư", en: "The part above 1000 writes per second can be throttled, even if the table's total capacity has room left" }
-      - { vi: "DynamoDB tự chuyển sang đọc nhất quán cuối cùng", en: "DynamoDB switches to eventually consistent reads by itself" }
+      - { vi: "DynamoDB tự chuyển sang đọc nhất quán cuối", en: "DynamoDB switches to eventually consistent reads by itself" }
     answer: 1
     trap: 0
     why: { vi: "On-demand tự co giãn theo tổng tải của bảng, nhưng mỗi partition vẫn có trần riêng 1000 WCU (write capacity unit, đơn vị ghi 1 KB) mỗi giây, ở mọi chế độ capacity. Item dưới 1 KB nên mỗi lần ghi tốn 1 WCU: 1200 × 1 = 1200 WCU, vượt 1000, nên khoảng 200 lần ghi mỗi giây có thể bị throttle (bị DynamoDB từ chối vì vượt mức) dù bảng còn dư. Còn kiểu nhất quán chỉ áp cho đọc và do request chọn, DynamoDB không tự đổi, và nó không giảm tải ghi.", en: "On-demand scales with the table's total load, but each partition still has its own ceiling of 1000 WCU (write capacity unit, 1 KB) per second, in every capacity mode. The items are under 1 KB, so each write costs 1 WCU: 1200 × 1 = 1200 WCU, above 1000, so about 200 writes per second can be throttled (refused by DynamoDB for going over the limit) even though the table has room left. Consistency applies only to reads and is chosen by the request; DynamoDB never switches it, and it would not reduce write load anyway." }

@@ -250,10 +250,18 @@ function bar(k: number, m: number): HTMLElement {
 }
 
 /** ui-ux-v6 S4: an advanced node's status icon beside its words (the icon is decorative). */
-const STATUS_ICON = { in: 'inApp', partial: 'partial', external: 'external' } as const;
-const statusLine = (x: AdvNode, rest: string): HTMLElement =>
-  d$.h('p', { class: 'm-0 flex items-start gap-1.5 text-body-sm text-muted' }, d$.icon(STATUS_ICON[x.status], 'mt-0.5 size-4 text-accent'),
-    d$.h('span', {}, `${lt(`adv.status.${x.status}`)}${rest}`));
+const STATUS_ICON = { in: 'inApp', partial: 'partial', external: 'external', mixed: 'external', engine: 'inApp' } as const;
+/** v47 (L1053): an external node whose links open Engine pages in place (d9, d6) says so instead of "external docs". */
+const statusOf = (x: AdvNode): keyof typeof STATUS_ICON => {
+  if (x.status !== 'external') return x.status;
+  const inApp = x.links.filter((l) => l.url.startsWith('#/engine')).length;
+  return !inApp ? 'external' : inApp === x.links.length ? 'engine' : 'mixed';
+};
+const statusLine = (x: AdvNode, rest: string): HTMLElement => {
+  const s = statusOf(x);
+  return d$.h('p', { class: 'm-0 flex items-start gap-1.5 text-body-sm text-muted' }, d$.icon(STATUS_ICON[s], 'mt-0.5 size-4 text-accent'),
+    d$.h('span', {}, `${lt(`adv.status.${s}`)}${rest}`));
+};
 
 const hideOnPhone = (el: HTMLElement): HTMLElement => {
   el.classList.add('max-sm:hidden');

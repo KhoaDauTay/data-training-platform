@@ -51,11 +51,11 @@ Trang khuyến mãi một ngày đọc cùng một sản phẩm 5.000 lần mỗ
 
 **DAX** (DynamoDB Accelerator) là một cụm bộ đệm trong bộ nhớ đặt trước bảng, API tương thích DynamoDB. Đọc trúng bộ đệm giảm từ vài mili giây xuống **micro giây**, và bớt RCU phải mua cho đọc lặp lại. Cụm chạy trong VPC và cần client DAX.
 
-DAX có hai bộ đệm **độc lập**. **Item cache** giữ kết quả `GetItem`, `BatchGetItem` theo khóa chính. **Query cache** giữ kết quả `Query`, `Scan` theo tham số request. Mỗi bộ đệm có TTL (item cache mặc định **5 phút**) và loại bớt theo LRU. Đọc mạnh (`ConsistentRead: true`) và `TransactGetItems` đi thẳng sang DynamoDB, không được lưu.
+DAX có hai bộ đệm **độc lập**. **Item cache** giữ kết quả `GetItem`, `BatchGetItem` theo khóa chính. **Query cache** giữ kết quả `Query`, `Scan` theo tham số request. Mỗi bộ đệm có TTL (item cache mặc định **5 phút**) và loại bớt theo LRU. Đọc nhất quán mạnh (`ConsistentRead: true`) và `TransactGetItems` đi thẳng sang DynamoDB, không được lưu.
 
 Nhiều người nghĩ write-through nghĩa là mọi kết quả đã lưu đều mới. Thật ra `PutItem`, `UpdateItem`, `DeleteItem`, `BatchWriteItem` qua DAX ghi vào DynamoDB rồi chỉ cập nhật **item cache**: query cache giữ kết quả cũ tới khi hết TTL. Ghi thẳng vào bảng (bỏ qua DAX) thì cả item cache cũng giữ bản cũ tới khi hết TTL.
 
-DAX hợp với đọc lặp lại trên ít khóa khi chấp nhận đọc cuối cùng; không hợp với ứng dụng cần đọc mạnh, ghi nhiều, hoặc ít đọc lặp lại. DAX chỉ có trên AWS thật, nên bài này chưa chạy được trong trình duyệt.
+DAX hợp với đọc lặp lại trên ít khóa khi chấp nhận đọc nhất quán cuối; không hợp với ứng dụng cần đọc nhất quán mạnh, ghi nhiều, hoặc ít đọc lặp lại. DAX chỉ có trên AWS thật, nên bài này chưa chạy được trong trình duyệt.
 
 ## Cú pháp
 
@@ -98,7 +98,7 @@ UpdateItem via DAX, then the same Query   -> old result until query-ttl-millis
 GetItem via DAX   -> new price from the item cache
 ```
 
-Đưa đọc mạnh qua DAX để "nhanh hơn":
+Đưa đọc nhất quán mạnh qua DAX để "nhanh hơn":
 
 ```text
 // WRONG: every balance read uses ConsistentRead: true through DAX
@@ -115,7 +115,7 @@ GetItem PRODUCT#P-01 (eventual) via DAX   -> microseconds from the item cache
 - DAX = bộ đệm trong bộ nhớ trước DynamoDB, đọc trúng tính bằng micro giây.
 - Item cache (`GetItem`, `BatchGetItem`) và query cache (`Query`, `Scan`) độc lập.
 - Ghi qua DAX chỉ cập nhật item cache; query cache giữ kết quả cũ tới hết TTL.
-- Đọc mạnh và `TransactGetItems` đi thẳng sang DynamoDB, không được lưu.
+- Đọc nhất quán mạnh và `TransactGetItems` đi thẳng sang DynamoDB, không được lưu.
 
 # EN
 

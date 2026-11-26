@@ -3,6 +3,7 @@ id: explain_read
 title: "Đọc kế hoạch thực thi: EXPLAIN"
 title_en: "Reading an execution plan: EXPLAIN"
 minutes: 25
+figures: [{ name: sql-plan-tree, at: idea }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Xem kế hoạch của một câu bằng `EXPLAIN` và đọc cây từ trong ra ngoài.

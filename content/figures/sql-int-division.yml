@@ -1,0 +1,27 @@
+# v47 open items (L1051): integer division drops the fraction; cast one side to numeric first. Lessons: cast (Ý chính) + its quick lesson.
+# Data (lab, checked in PGlite 2026-11-27): SELECT category, COUNT(*) FILTER (WHERE price_vnd >= 50000) * 100 / COUNT(*),
+# ROUND(COUNT(*) FILTER (WHERE price_vnd >= 50000)::numeric * 100 / COUNT(*), 2) FROM products GROUP BY category
+# → Drinks 0 / 0.00, Household 33 / 33.33, Personal care 50 / 50.00, Snacks 16 / 16.67, Stationery 33 / 33.33 (6 products each).
+# SELECT 1*100/6 → 16; SELECT 1::numeric*100/6 → 16.6666666666666667.
+# Source: https://www.postgresql.org/docs/current/functions-math.html (integer division truncates toward zero)
+title: { vi: "Chia số nguyên thì mất phần lẻ", en: "Integer division drops the fraction" }
+caption:
+  vi: "Snacks có 1 trên 6 món từ 50.000: chia hai số nguyên ra 16, đổi một vế sang numeric trước khi chia mới ra 16.67."
+  en: "Snacks has 1 of 6 products at 50,000 or more: dividing two integers gives 16, casting one side to numeric before dividing gives 16.67."
+alt:
+  vi: "Khi cả hai vế là số nguyên, Postgres trả số nguyên và bỏ phần lẻ, nên 1 * 100 / 6 ra 16. Đổi một vế sang numeric trước khi chia thì giữ được phần lẻ, rồi ROUND(x, 2) làm tròn 2 chữ số. Kết quả: Snacks 16.67, Household 33.33, Personal care 50.00."
+  en: "When both sides are integers, Postgres returns an integer and drops the fraction, so 1 * 100 / 6 gives 16. Casting one side to numeric before dividing keeps the fraction, and ROUND(x, 2) then rounds to 2 decimals. Result: Snacks 16.67, Household 33.33, Personal care 50.00."
+nodes:
+  - { id: int, shape: key, mono: true, label: "1 * 100 / 6", sub: { vi: "= 16, mất phần lẻ", en: "= 16, no fraction" }, tone: dead }
+  - { id: num, shape: key, mono: true, label: "1::numeric*100/6", sub: "= 16.666…", tone: live }
+  - id: res
+    shape: grid
+    label: { vi: "Tỷ lệ món đắt (%)", en: "Pricey share (%)" }
+    head: [category, int, numeric]
+    cells: [[Snacks, "16", "16.67"], [Household, "33", "33.33"], [Personal care, "50", "50.00"]]
+    colTone: [null, warm, new]
+  - { id: rule, shape: note, label: { vi: "đổi kiểu trước khi chia", en: "cast before you divide" } }
+rows:
+  - [int, num]
+  - [res]
+  - [rule]

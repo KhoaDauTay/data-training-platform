@@ -1,0 +1,38 @@
+# v47 open items (L1051): text functions return new text; the table stays as it is. Lessons: string_fn (Ý chính) + its quick lesson.
+# Data (lab, checked in PGlite 2026-11-27): SELECT name, upper(name), length(name), name || ' (' || city || ')' FROM stores ORDER BY id
+# → Hai Chau / HAI CHAU / 8 / Hai Chau (Da Nang); Son Tra / SON TRA / 7 / Son Tra (Da Nang); Ben Thanh / BEN THANH / 9;
+# Thao Dien / THAO DIEN / 9; Hoan Kiem / HOAN KIEM / 9 / Hoan Kiem (Hanoi). The figure draws stores 1, 2 and 5.
+# Source: https://www.postgresql.org/docs/current/functions-string.html
+title: { vi: "Hàm chữ trả về chữ mới", en: "Text functions return new text" }
+caption:
+  vi: "upper đổi sang chữ hoa, length đếm ký tự kể cả dấu cách, || ghép nhiều đoạn chữ thành một nhãn. Bảng stores không đổi."
+  en: "upper turns text into capitals, length counts characters including spaces, and || joins pieces of text into one label. The stores table is unchanged."
+alt:
+  vi: "Mỗi hàm chữ đọc giá trị của cột và trả một giá trị mới cho kết quả, còn dữ liệu trong bảng giữ nguyên. Kết quả: Hai Chau thành HAI CHAU với 8 ký tự, và nhãn ghép là Hai Chau (Da Nang)."
+  en: "Each text function reads the column's value and returns a new value for the result, while the data in the table stays as it is. Result: Hai Chau becomes HAI CHAU with 8 characters, and the joined label is Hai Chau (Da Nang)."
+nodes:
+  - id: src
+    shape: grid
+    label: stores
+    head: [name, city]
+    cells: [[Hai Chau, Da Nang], [Son Tra, Da Nang], [Hoan Kiem, Hanoi]]
+  - id: res
+    shape: grid
+    label: { vi: "upper và length", en: "upper and length" }
+    head: [name_caps, letters]
+    cells: [[HAI CHAU, "8"], [SON TRA, "7"], [HOAN KIEM, "9"]]
+    colTone: [new, new]
+  - id: cat
+    shape: grid
+    label: { vi: "Ghép bằng ||", en: "Joined with ||" }
+    head: [label]
+    cells: [[Hai Chau (Da Nang)], [Son Tra (Da Nang)], [Hoan Kiem (Hanoi)]]
+    colTone: [new]
+  - { id: rule, shape: note, label: { vi: "bảng gốc không đổi", en: "the table is unchanged" } }
+rows:
+  - [src]
+  - [res, cat]
+  - [rule]
+edges:
+  - { from: src, to: res }
+  - { from: src, to: cat }

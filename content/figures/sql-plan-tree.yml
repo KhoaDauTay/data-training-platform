@@ -1,0 +1,40 @@
+# v47 open items (L1051): an execution plan is a tree read from the bottom up. Lessons: explain_read (Ý chính) + its quick lesson.
+# Plan (lab, checked in PGlite 2026-11-27 with EXPLAIN): SELECT id, order_date, status FROM orders WHERE customer_id = 7
+# ORDER BY order_date, id → Sort (rows=4, Sort Key: order_date, id) ← Bitmap Heap Scan on orders (rows=4,
+# Recheck Cond: customer_id = 7) ← Bitmap Index Scan on orders_customer_id_idx (rows=4). orders holds 1,428 rows.
+# Source: https://www.postgresql.org/docs/current/using-explain.html
+title: { vi: "Kế hoạch là một cây, đọc từ dưới lên", en: "A plan is a tree, read from the bottom up" }
+caption:
+  vi: "Đơn của khách 7: chỉ mục theo khách tìm 4 đơn, Bitmap Heap Scan lấy 4 dòng đó từ bảng orders, Sort xếp chúng theo ngày."
+  en: "Customer 7's orders: the customer index finds 4 orders, the Bitmap Heap Scan fetches those 4 rows from orders, and Sort orders them by date."
+alt:
+  vi: "Mỗi nút của kế hoạch nhận dòng từ nút con bên dưới và đưa kết quả lên nút cha, nên đọc từ nút dưới cùng lên. Ở đây Postgres tra 4 đơn qua chỉ mục thay vì đọc cả 1.428 dòng của orders (Seq Scan)."
+  en: "Each plan node takes rows from the child below it and passes its result up to its parent, so read from the bottom node up. Here Postgres looks up 4 orders through the index instead of reading all 1,428 rows of orders (a Seq Scan)."
+nodes:
+  - { id: sort, shape: key, mono: true, label: Sort, sub: "order_date, id" }
+  - { id: heap, shape: key, mono: true, label: Bitmap Heap Scan, sub: { vi: "trên orders", en: "on orders" } }
+  - { id: idx, shape: key, mono: true, label: Bitmap Index Scan, sub: { vi: "chỉ mục khách", en: "customer index" } }
+  - { id: rule, shape: note, label: { vi: "đọc từ dưới lên", en: "read bottom up" } }
+rows:
+  - [sort]
+  - [heap]
+  - [idx]
+  - [rule]
+edges:
+  - { from: idx, to: heap, label: { vi: "4 dòng", en: "4 rows" } }
+  - { from: heap, to: sort, label: { vi: "4 dòng", en: "4 rows" } }
+steps:
+  - say: { vi: "Nút dưới cùng chạy trước: tra khách 7 qua chỉ mục.", en: "The bottom node runs first: look up customer 7 in the index." }
+    show: [idx, rule]
+    alt: { vi: "Bitmap Index Scan tìm trong chỉ mục orders_customer_id_idx những đơn có customer_id = 7 và ước tính được 4 dòng.", en: "The Bitmap Index Scan searches the orders_customer_id_idx index for orders with customer_id = 7 and estimates 4 rows." }
+    set:
+      idx: { tone: live }
+  - say: { vi: "Nút ở giữa mở bảng orders lấy đúng 4 dòng đó.", en: "The middle node opens orders to fetch just those 4 rows." }
+    show: [idx, heap, rule]
+    alt: { vi: "Bitmap Heap Scan chỉ mở những trang của orders có các đơn mà chỉ mục đã tìm, không đọc cả bảng.", en: "The Bitmap Heap Scan opens only the pages of orders that hold the orders the index found, not the whole table." }
+    set:
+      heap: { tone: live }
+  - say: { vi: "Nút trên cùng xếp 4 dòng theo ngày rồi trả kết quả.", en: "The top node sorts the 4 rows by date and returns the result." }
+    alt: { vi: "Sort xếp 4 dòng theo order_date rồi id, và kết quả của nút trên cùng là kết quả của cả câu.", en: "Sort orders the 4 rows by order_date, then id, and the top node's result is the whole query's result." }
+    set:
+      sort: { tone: live }

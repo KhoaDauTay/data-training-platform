@@ -70,8 +70,8 @@ lab:
     }}
   steps:
     - task:
-        vi: 'Chạy pipeline ở câu đoán, rồi sửa để `''c4''` vẫn có một dòng: mỗi cặp khách và đơn một tài liệu, khách chưa có đơn vẫn giữ lại. Trả `name` và `order` là `_id` của đơn.'
-        en: 'Run the pipeline from the prediction, then fix it so `''c4''` still gets a row: one document per customer and order pair, keeping customers with no order. Return `name` and `order`, the order''s `_id`.'
+        vi: 'Chạy pipeline ở câu đoán, rồi sửa để `''c4''` vẫn có một tài liệu: mỗi cặp khách và đơn một tài liệu, khách chưa có đơn vẫn giữ lại. Trả `name` và `order` là `_id` của đơn.'
+        en: 'Run the pipeline from the prediction, then fix it so `''c4''` still gets a document: one document per customer and order pair, keeping customers with no order. Return `name` and `order`, the order''s `_id`.'
       solution: "db.customers.aggregate([{ $lookup: { from: 'orders', localField: '_id', foreignField: 'customer', as: 'orders' } }, { $unwind: { path: '$orders', preserveNullAndEmptyArrays: true } }, { $project: { name: 1, order: '$orders._id' } }])"
       check: doc
       hint:
@@ -88,7 +88,7 @@ lab:
 ---
 ## Mở bài
 
-Bạn ghép khách với đơn rồi `$unwind` để có "mỗi dòng một đơn". Một khách biến mất khỏi báo cáo. Vì sao?
+Bạn ghép khách với đơn rồi `$unwind` để có "mỗi đơn một tài liệu". Một khách biến mất khỏi báo cáo. Vì sao?
 
 ## Ý chính
 
@@ -101,7 +101,7 @@ Nhiều người nghĩ `$lookup` giống hệt JOIN của SQL, nên viết `$loo
 
 Hai cách giữ đủ khách:
 
-- `{ $unwind: { path: '$orders', preserveNullAndEmptyArrays: true } }`, tương đương LEFT JOIN từng dòng;
+- `{ $unwind: { path: '$orders', preserveNullAndEmptyArrays: true } }`, tương đương LEFT JOIN, giữ cả tài liệu không có đơn;
 - không `$unwind`, đọc thẳng mảng (`$size`, `$sum` trên mảng).
 
 `$lookup` còn có giá: mỗi tài liệu bên trái phải tìm trong collection kia. Trên server thật, hãy có index trên trường `foreignField`. Nếu hai thứ luôn đọc cùng nhau, cân nhắc nhúng (bài "Nhúng hay tham chiếu").
@@ -167,7 +167,7 @@ Hai bước trên `customers` và `orders`. Khách `'c4'` chưa có đơn nào.
 
 ## Opening
 
-You join customers to orders and `$unwind` to get "one row per order". One customer disappears from the report. Why?
+You join customers to orders and `$unwind` to get "one document per order". One customer disappears from the report. Why?
 
 ## Key idea
 
@@ -180,7 +180,7 @@ Many people think `$lookup` is exactly an SQL JOIN, so they write `$lookup` + `$
 
 Two ways to keep every customer:
 
-- `{ $unwind: { path: '$orders', preserveNullAndEmptyArrays: true } }`, the row-by-row LEFT JOIN;
+- `{ $unwind: { path: '$orders', preserveNullAndEmptyArrays: true } }`, the LEFT JOIN equivalent that keeps documents with no order;
 - no `$unwind`, read the array directly (`$size`, `$sum` over the array).
 
 `$lookup` also has a cost: every document on the left searches the other collection. On a real server, have an index on the `foreignField`. If the two are always read together, consider embedding (the "Embed or reference" lesson).
