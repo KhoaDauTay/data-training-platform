@@ -22,7 +22,7 @@ nodes:
   - { id: rp, label: "PAID · 1298", tone: new }
   - { id: rc, label: "CANCELLED · 92", tone: dead }
   - { id: rr, label: "REFUNDED · 38", tone: warm }
-  - { id: sum, shape: note, label: "1298+92+38 = 1428" }
+  - { id: sum, shape: note, label: "1298 + 92 + 38 = 1428" }
 rows:
   - [all]
   - [gp, rp]

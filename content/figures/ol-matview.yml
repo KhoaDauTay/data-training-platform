@@ -1,0 +1,18 @@
+# OL-05 (v47 R1, L990): a matview holds the result of its last run; REFRESH reruns it. Lesson: e-ol-l2-02 (Ý chính).
+# Source: https://www.postgresql.org/docs/18/rules-materializedviews.html
+title: { vi: "Matview chỉ đúng tới lần làm mới cuối", en: "A matview is right as of its last refresh" }
+caption:
+  vi: "Báo cáo đọc daily_port, bảng nhỏ đã gộp sẵn; lô mới vào moves chỉ hiện sau REFRESH."
+  en: "Reports read daily_port, a small pre-aggregated table; a new shipment in moves shows only after REFRESH."
+alt:
+  vi: "Bảng moves có hàng nghìn dòng, matview daily_port giữ tổng theo ngày và cảng, và báo cáo chỉ đọc matview. Một lô mới chèn vào moves không đổi matview cho tới khi REFRESH chạy lại câu gộp."
+  en: "Table moves has thousands of rows, matview daily_port keeps totals by day and port, and reports read only the matview. A new shipment inserted into moves does not change the matview until REFRESH reruns the aggregate."
+nodes:
+  - { id: m, shape: table, label: moves, sub: { vi: "3.000 dòng", en: "3,000 rows" } }
+  - { id: v, shape: table, label: daily_port, sub: { vi: "93 dòng", en: "93 rows" }, tone: warm }
+  - { id: rep, label: { vi: "báo cáo", en: "report" }, sub: { vi: "đọc nhanh", en: "fast read" }, tone: new }
+rows:
+  - [m, v, rep]
+edges:
+  - { from: m, to: v, label: REFRESH }
+  - { from: v, to: rep }

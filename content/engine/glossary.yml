@@ -1487,7 +1487,7 @@
   vi_term: "nhất quán cuối / nhất quán mạnh"
   match: ["eventual consistency", "strong consistency"]
   avoid: "nhất quán sự kiện (event)"
-  vi: "Nhất quán cuối: đọc có thể chưa thấy lần ghi vừa xong, nhưng rồi sẽ thấy. Nhất quán mạnh: luôn thấy lần ghi đã thành công. Đọc mạnh trên DynamoDB tốn gấp đôi RCU; GSI chỉ có nhất quán cuối."
+  vi: "Nhất quán cuối: đọc có thể chưa thấy lần ghi vừa xong, nhưng rồi sẽ thấy. Nhất quán mạnh: luôn thấy lần ghi đã thành công. Đọc nhất quán mạnh trên DynamoDB tốn gấp đôi RCU; GSI chỉ có nhất quán cuối."
   en: "Eventual: a read may not yet see a just-finished write, but will. Strong: a read always sees every successful write. A strongly consistent DynamoDB read costs twice the RCU; GSIs are eventual only."
   doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ReadConsistency.html"
 - id: multi-document-transaction
@@ -1902,7 +1902,7 @@
   vi_term: "RCU / WCU"
   match: ["RCU", "WCU", "capacity unit"]
   avoid: "đơn vị tiền tệ"
-  vi: "1 RCU = 1 lần đọc mạnh hoặc 2 lần đọc cuối mỗi giây cho item ≤ 4 KB; 1 WCU = 1 lần ghi mỗi giây cho item ≤ 1 KB. Làm tròn lên theo cỡ item. dynoxide trả `ConsumedCapacity`."
+  vi: "1 RCU = 1 lần đọc nhất quán mạnh hoặc 2 lần đọc nhất quán cuối mỗi giây cho item ≤ 4 KB; 1 WCU = 1 lần ghi mỗi giây cho item ≤ 1 KB. Làm tròn lên theo cỡ item. dynoxide trả `ConsumedCapacity`."
   en: "1 RCU = one strongly consistent or two eventually consistent reads per second for an item up to 4 KB; 1 WCU = one write per second for an item up to 1 KB. Sizes round up. dynoxide returns `ConsumedCapacity`."
   doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/CapacityUnitCalculations.html"
 - id: item-size
@@ -1936,7 +1936,7 @@
   vi_term: "LSI"
   match: ["LSI", "local secondary index"]
   avoid: "index cục bộ trên máy"
-  vi: "Cùng partition key, sort key khác; chỉ tạo cùng lúc với bảng; đọc mạnh được; giới hạn 10 GB mỗi item collection. Tối đa 5 mỗi bảng."
+  vi: "Cùng partition key, sort key khác; chỉ tạo cùng lúc với bảng; đọc nhất quán mạnh được; giới hạn 10 GB mỗi item collection. Tối đa 5 mỗi bảng."
   en: "Same partition key, different sort key; created only with the table; supports strong reads; caps each item collection at 10 GB. Up to 5 per table."
   doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/LSI.html"
 - id: projection-dynamodb-index

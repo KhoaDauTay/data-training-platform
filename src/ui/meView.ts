@@ -179,12 +179,14 @@ function nextCard(x: Measured): HTMLElement {
 
 // ---------- v24 (L323): skill map and badges, derived on every draw ----------
 
-const ENGINES = ['postgres', 'mongodb', 'dynamodb', 'design', 'stack', 'graph'];
+const ENGINES = ['postgres', 'mongodb', 'dynamodb', 'redis', 'design', 'stack', 'olap', 'graph'];
 const LEVELS = ['L1', 'L2', 'L3', 'L4', 'L5'];
-const ENGINE_ICON: Record<string, Icons.IconName> = { postgres: 'engRelational', mongodb: 'engDocument', dynamodb: 'engKeyValue', design: 'engDesign', stack: 'engStack', graph: 'engGraph' };
+/** The levels a track has (mastery.ts levelsOf, inlined: this chunk takes no value from main): stack and olap L1–L3, redis L1–L2 (v47 L956, L990). */
+const TOP: Record<string, string> = { stack: 'L3', redis: 'L2', olap: 'L3', graph: 'L2' };
+const ENGINE_ICON: Record<string, Icons.IconName> = { postgres: 'engRelational', mongodb: 'engDocument', dynamodb: 'engKeyValue', redis: 'engRedis', design: 'engDesign', stack: 'engStack', olap: 'engOlap', graph: 'engGraph' };
 const DOMAIN_ICON: Record<string, Icons.IconName> = { logistics: 'anchor', ecommerce: 'box', finance: 'percent' };
-const ENGINE_NAME: Record<string, string> = { postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB' };
-const engineName = (e: string): string => ENGINE_NAME[e] ?? m(e === 'stack' ? 'eng.stack' : e === 'graph' ? 'eng.graph' : 'eng.design');
+const ENGINE_NAME: Record<string, string> = { postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB', redis: 'Redis', olap: 'OLAP & ClickHouse', graph: 'Graph' };
+const engineName = (e: string): string => ENGINE_NAME[e] ?? m(e === 'stack' ? 'eng.stack' : 'eng.design');
 const phone = (): boolean => typeof matchMedia === 'function' && !matchMedia('(min-width: 640px)').matches;
 
 /** Four dots, filled vs ring (shape, not colour alone); the words are in the row's label. */
@@ -287,7 +289,7 @@ function skillMapCard(x: Measured): HTMLElement {
       x.engines
         ? d.h('ul', { class: 'm-0 list-none space-y-2 p-0' }, ...ENGINES.map((e) => d.h('li', { class: 'flex flex-wrap items-center gap-2' },
           d.h('span', { class: 'flex w-40 items-center gap-2 text-body-sm font-semibold' }, d.icon(ENGINE_ICON[e], 'size-4 shrink-0 text-accent'), engineName(e)),
-          d.h('ol', { class: 'm-0 grid min-w-0 flex-1 list-none grid-cols-5 gap-1 p-0' }, ...LEVELS.filter((lv) => (e !== 'stack' || lv <= 'L3') && (e !== 'graph' || lv <= 'L2')).map((lv) => cell(e, lv))))))
+          d.h('ol', { class: 'm-0 grid min-w-0 flex-1 list-none grid-cols-5 gap-1 p-0' }, ...LEVELS.filter((lv) => lv <= (TOP[e] ?? 'L5')).map((lv) => cell(e, lv))))))
         : d.h('p', { class: 'm-0 text-body-sm text-muted', 'aria-live': 'polite' }, m('map.engineLoading')),
       extLine()));
 }

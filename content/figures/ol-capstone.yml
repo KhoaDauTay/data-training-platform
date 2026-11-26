@@ -1,0 +1,30 @@
+# OL-14 (v47 R1, L990): the capstone's fix: events → latest status per container → report. Lesson: e-ol-l3-07.
+# Data = the lab's container C003 (ver 4 arrived, resent once). Source:
+# https://clickhouse.com/docs/engines/table-engines/mergetree-family/replacingmergetree
+title: { vi: "Đếm container, không đếm sự kiện", en: "Count containers, not events" }
+caption:
+  vi: "C003 có hai sự kiện arrived; bảng trạng thái mới nhất giữ một dòng cho nó."
+  en: "C003 has two arrived events; the latest-status table keeps one row for it."
+alt:
+  vi: "Bảng sự kiện giữ mọi bản và các bản gửi trùng, nên đếm sự kiện arrived đếm container C003 hai lần. Bảng trạng thái mới nhất giữ một dòng cho mỗi container, nên báo cáo trên nó đếm C003 một lần."
+  en: "The events table keeps every version and the resent duplicates, so counting arrived events counts container C003 twice. The latest-status table keeps one row per container, so a report on it counts C003 once."
+nodes:
+  - id: ev
+    shape: grid
+    mono: true
+    label: container_events
+    head: [container, status, ver]
+    cells: [["C003", "sailed", "3"], ["C003", "arrived", "4"], ["C003", "arrived", "4"]]
+    rowTone: [dead, warm, warm]
+  - id: ls
+    shape: grid
+    mono: true
+    label: latest_status
+    head: [container, status]
+    cells: [["C003", "arrived"]]
+    rowTone: [new]
+rows:
+  - [ev]
+  - [ls]
+edges:
+  - { from: ev, to: ls, label: "DISTINCT ON" }

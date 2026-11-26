@@ -1,0 +1,20 @@
+# RD-5 (v47 R1, L958): two daily visitor sets and their intersection. Lesson: e-rd-l1-05 (Ý chính).
+# Data = the lab after step 1: visitors:2026-10-30 {lily, boon, an}, visitors:2026-10-31 {lily, minh, boon};
+# SINTER → {lily, boon}, SCARD of 31 Oct = 3. Members are drawn sorted; a set has no order.
+title: { vi: "Hai set khách và phần chung", en: "Two visitor sets and what they share" }
+caption:
+  vi: "Mỗi ngày một set; SINTER trả khách có mặt ở cả hai, không theo thứ tự nào."
+  en: "One set per day; SINTER returns the visitors found in both, in no particular order."
+alt:
+  vi: "Set giữ mỗi khách một lần, nên số khách khác nhau là SCARD, và khách quay lại là giao của hai set. Kết quả: ngày 30 có an, boon, lily; ngày 31 có boon, lily, minh; cả hai ngày là boon và lily."
+  en: "A set holds each visitor once, so the number of distinct visitors is SCARD, and returning visitors are the intersection of two sets. Result: 30 Oct has an, boon, lily; 31 Oct has boon, lily, minh; both days are boon and lily."
+nodes:
+  - { id: a, label: { vi: "khách 30/10", en: "visitors 30 Oct" }, sub: "an · boon · lily" }
+  - { id: b, label: { vi: "khách 31/10", en: "visitors 31 Oct" }, sub: "boon · lily · minh" }
+  - { id: i, mono: true, label: "SINTER", sub: "boon · lily", tone: new }
+rows:
+  - [a, b]
+  - [i]
+edges:
+  - { from: a, to: i }
+  - { from: b, to: i }
