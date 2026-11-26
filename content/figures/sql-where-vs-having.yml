@@ -15,7 +15,7 @@ nodes:
   - id: groups
     shape: bars
     label: { vi: "GROUP BY: món dưới 50k", en: "GROUP BY: items under 50k" }
-    sub: { vi: "HAVING ≥ 4: nét đứt", en: "HAVING ≥ 4: dashed line" }
+    sub: { vi: "nét đứt: HAVING ≥ 4", en: "dashed line: HAVING ≥ 4" }
     mark: 4
     items:
       - { label: Drinks, value: 6 }

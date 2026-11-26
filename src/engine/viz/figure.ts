@@ -232,7 +232,8 @@ export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): 
     const k = lanes.get(gap) ?? 0;
     lanes.set(gap, k + 1);
     const ym = Math.round((bands[gap][1] + bands[gap + 1][0]) / 2) + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * 8;
-    const ax = Math.round(a.x + a.w / 2), bx = Math.round(b.x + b.w / 2);
+    // the elbow lands on the part of b nearest the source, so two arrows into one box never share a tip
+    const ax = Math.round(a.x + a.w / 2), bx = Math.round(Math.min(b.x + b.w - 12, Math.max(b.x + 12, ax)));
     return { e, d: `M${ax} ${y1} L${ax} ${ym} L${bx} ${ym} L${bx} ${y2(bx, ym)}` };
   });
   /** A link end's y: a grid row's middle (`grid#2`), else the node's middle. */
