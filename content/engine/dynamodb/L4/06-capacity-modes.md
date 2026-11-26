@@ -24,7 +24,7 @@ quiz:
       - { vi: "Provisioned với 1 RCU và 1 WCU cho rẻ", en: "Provisioned with 1 RCU and 1 WCU to keep it cheap" }
     answer: 0
     trap: 2
-    why: { vi: "Đặt 1 RCU và 1 WCU nghe rẻ, nhưng provisioned trả theo phần đã đặt và từ chối phần vượt: ngày đông sẽ throttle. On-demand không cần dự báo capacity và tự co giãn; provisioned hợp khi tải đều, tăng trưởng dự đoán được.", en: "Setting 1 RCU and 1 WCU sounds cheap, but provisioned pays for what you set and refuses what goes over: busy days will throttle. On-demand needs no capacity forecast and scales by itself; provisioned fits steady load with predictable growth." }
+    why: { vi: "Đặt 1 RCU (read capacity unit) và 1 WCU (write capacity unit) nghe rẻ, nhưng chế độ provisioned chỉ cho dùng đúng phần đã đặt: request vượt mức bị throttle (DynamoDB từ chối và bắt gửi lại), nên ngày đông ứng dụng lỗi hàng loạt. Đặt mức cao nhất thì hết lỗi nhưng trả tiền cả những ngày vắng. On-demand trả theo từng request và tự co giãn, nên hợp với tải chưa biết trước; provisioned chỉ rẻ hơn khi tải đều và dự đoán được.", en: "Setting 1 RCU (read capacity unit) and 1 WCU (write capacity unit) sounds cheap, but provisioned mode lets you use only what you set: requests over it are throttled (DynamoDB refuses them and you must retry), so busy days fail in bulk. Setting the highest level ends the errors but you pay for the quiet days too. On-demand bills each request and scales by itself, so it fits unknown traffic; provisioned is cheaper only for steady, predictable load." }
   - q: { vi: "Mỗi giây: 200 lần ghi item 0,8 KB và 600 lần đọc nhất quán cuối cùng item 2 KB. Cần bao nhiêu WCU và RCU?", en: "Per second: 200 writes of a 0.8 KB item and 600 eventually consistent reads of a 2 KB item. How many WCU and RCU?" }
     options:
       - { vi: "200 WCU và 300 RCU", en: "200 WCU and 300 RCU" }
@@ -32,7 +32,7 @@ quiz:
       - { vi: "200 WCU và 600 RCU", en: "200 WCU and 600 RCU" }
     answer: 0
     trap: 1
-    why: { vi: "160 nghe hợp lý nếu tính theo đúng 0,8 KB, nhưng ghi làm tròn lên 1 KB: 200 × 1 = 200 WCU. Đọc làm tròn 2 KB lên 4 KB = 1 RCU nếu mạnh, nửa RCU nếu cuối cùng: 600 × 0,5 = 300 RCU.", en: "160 sounds right if you count exactly 0.8 KB, but writes round up to 1 KB: 200 × 1 = 200 WCU. Reads round 2 KB up to 4 KB = 1 RCU if strong, half if eventual: 600 × 0.5 = 300 RCU." }
+    why: { vi: "160 WCU là tính theo đúng 0,8 KB (200 × 0,8), nhưng ghi làm tròn lên bội 1 KB: 0,8 KB → 1 KB = 1 WCU (write capacity unit), 200 × 1 = 200 WCU. Đọc làm tròn lên bội 4 KB: 2 KB → 4 KB = 1 khối, tốn 1 RCU (read capacity unit) nếu nhất quán mạnh, 0,5 nếu nhất quán cuối. Đề cho nhất quán cuối nên 600 × 0,5 = 300 RCU; 600 RCU là quên chia đôi.", en: "160 WCU counts exactly 0.8 KB (200 × 0.8), but writes round up to a multiple of 1 KB: 0.8 KB → 1 KB = 1 WCU (write capacity unit), 200 × 1 = 200 WCU. Reads round up to a multiple of 4 KB: 2 KB → 4 KB = 1 block, 1 RCU (read capacity unit) if strongly consistent, 0.5 if eventually consistent. The reads are eventually consistent, so 600 × 0.5 = 300 RCU; 600 RCU forgets the halving." }
 ---
 ## Mở bài
 

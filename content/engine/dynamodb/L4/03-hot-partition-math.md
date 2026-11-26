@@ -22,14 +22,14 @@ quiz:
       - { vi: "4500 RCU, vượt trần 3000", en: "4500 RCU, over the 3000 ceiling" }
       - { vi: "3375 RCU, vượt trần 3000", en: "3375 RCU, over the 3000 ceiling" }
     answer: 1
-    why: { vi: "Đọc làm tròn lên bội 4 KB: 3 KB thành 4 KB = 1 RCU mỗi lần đọc mạnh. 4500 × 1 = 4500 RCU > 3000.", en: "Reads round up to a multiple of 4 KB: 3 KB becomes 4 KB = 1 RCU per strong read. 4500 × 1 = 4500 RCU > 3000." }
+    why: { vi: "Đọc làm tròn cỡ item lên bội 4 KB: 3 KB thành 4 KB = 1 khối, và mỗi khối đọc nhất quán mạnh tốn 1 RCU (read capacity unit, đơn vị đọc). 4500 lần × 1 RCU = 4500 RCU, vượt trần 3000 RCU mỗi giây của một partition. 2250 là giá đọc nhất quán cuối (nửa giá); 3375 là tính theo 3 KB thật (4500 × 3/4) mà quên làm tròn.", en: "Reads round the item size up to a multiple of 4 KB: 3 KB becomes 4 KB = 1 block, and each block read strongly consistent costs 1 RCU (read capacity unit). 4500 reads × 1 RCU = 4500 RCU, over the 3000 RCU per second ceiling of one partition. 2250 is the eventually consistent price (half); 3375 prices the real 3 KB (4500 × 3/4) and forgets the rounding." }
   - q: { vi: "Cùng tải đó nhưng đổi sang đọc nhất quán cuối cùng. Kết quả?", en: "Same load, but switched to eventually consistent reads. Result?" }
     options:
       - { vi: "2250 RCU, dưới trần 3000", en: "2250 RCU, under the 3000 ceiling" }
       - { vi: "Vẫn 4500 RCU", en: "Still 4500 RCU" }
       - { vi: "9000 RCU", en: "9000 RCU" }
     answer: 0
-    why: { vi: "Đọc nhất quán cuối cùng tốn nửa RCU: 4500 × 0,5 = 2250. Đây là cách rẻ nhất để hạ tải đọc nếu ứng dụng chấp nhận dữ liệu trễ chút ít.", en: "An eventually consistent read costs half an RCU: 4500 × 0.5 = 2250. It is the cheapest way to cut read load if the application accepts slightly stale data." }
+    why: { vi: "Đọc nhất quán cuối (eventually consistent) tốn nửa RCU mỗi khối 4 KB: 4500 × 0,5 = 2250 RCU, dưới trần 3000. Giá không giữ nguyên 4500 vì chỉ đọc nhất quán mạnh mới tốn trọn 1 RCU; 9000 là nhân đôi như đọc trong transaction. Đây là cách rẻ nhất để hạ tải đọc, nếu màn hình chấp nhận thấy dữ liệu cũ trong chốc lát.", en: "An eventually consistent read costs half an RCU per 4 KB block: 4500 × 0.5 = 2250 RCU, under the 3000 ceiling. It does not stay at 4500 because only a strongly consistent read costs a full RCU; 9000 doubles it like a transactional read. It is the cheapest way to cut read load, if the screen accepts slightly stale data for a moment." }
   - q: { vi: "Một khóa nhận 1800 lần ghi mỗi giây, item 1,5 KB. Rải đều qua N shard, N nhỏ nhất là bao nhiêu để mỗi shard dưới 1000 WCU?", en: "One key receives 1800 writes per second, item size 1.5 KB. Spread evenly over N shards, what is the smallest N that keeps each shard under 1000 WCU?" }
     options:
       - { vi: "2", en: "2" }
@@ -37,7 +37,7 @@ quiz:
       - { vi: "4", en: "4" }
     answer: 2
     trap: 0
-    why: { vi: "2 nghe hợp lý nếu coi mỗi lần ghi là 1 WCU (1800 / 2 = 900). Nhưng ghi làm tròn lên bội 1 KB: 1,5 KB thành 2 KB = 2 WCU. Tổng 1800 × 2 = 3600 WCU. 3 shard còn 1200 mỗi shard (vượt), 4 shard còn 900 (dưới 1000).", en: "2 sounds right if each write counts as 1 WCU (1800 / 2 = 900). But writes round up to a multiple of 1 KB: 1.5 KB becomes 2 KB = 2 WCU. Total 1800 × 2 = 3600 WCU. 3 shards leave 1200 each (over), 4 shards leave 900 (under 1000)." }
+    why: { vi: "2 nghe hợp lý nếu coi mỗi lần ghi là 1 WCU (write capacity unit, đơn vị ghi 1 KB): 1800 / 2 = 900. Nhưng ghi làm tròn lên bội 1 KB: 1,5 KB thành 2 KB = 2 WCU. Tổng 1800 × 2 = 3600 WCU. 3 shard còn 1200 mỗi shard (vượt), 4 shard còn 900 (dưới 1000).", en: "2 sounds right if each write counts as 1 WCU (write capacity unit, 1 KB): 1800 / 2 = 900. But writes round up to a multiple of 1 KB: 1.5 KB becomes 2 KB = 2 WCU. Total 1800 × 2 = 3600 WCU. 3 shards leave 1200 each (over), 4 shards leave 900 (under 1000)." }
   - q: { vi: "Một Query trả 10 item, tổng cỡ 40,8 KB, đọc nhất quán mạnh. Tốn bao nhiêu RCU?", en: "A Query returns 10 items totalling 40.8 KB, strongly consistent. How many RCU does it consume?" }
     options:
       - { vi: "10 RCU, mỗi item một RCU", en: "10 RCU, one per item" }
@@ -45,7 +45,7 @@ quiz:
       - { vi: "20 RCU", en: "20 RCU" }
     answer: 1
     trap: 0
-    why: { vi: "Mỗi item một RCU nghe hợp lý vì GetItem tính như vậy, nhưng Query cộng cỡ mọi item rồi mới làm tròn lên bội 4 KB: 40,8 KB thành 44 KB = 11 RCU. BatchGetItem thì làm tròn từng item trước khi cộng.", en: "One RCU per item sounds right because GetItem counts that way, but a Query adds up all item sizes and then rounds up to a multiple of 4 KB: 40.8 KB becomes 44 KB = 11 RCU. BatchGetItem rounds each item first, then adds." }
+    why: { vi: "Mỗi item một RCU nghe hợp lý vì GetItem một item nhỏ tốn như vậy, nhưng Query cộng cỡ mọi item rồi mới làm tròn lên bội 4 KB: 40,8 KB thành 44 KB = 11 khối, đọc nhất quán mạnh nên 11 RCU. 20 RCU là làm tròn từng item (mỗi item khoảng 4,08 KB → 8 KB = 2 khối, × 10), đó là cách BatchGetItem tính, không phải Query.", en: "One RCU per item sounds right because a GetItem of a small item costs that, but a Query adds up all item sizes and then rounds up to a multiple of 4 KB: 40.8 KB becomes 44 KB = 11 blocks, strongly consistent, so 11 RCU. 20 RCU rounds each item (about 4.08 KB → 8 KB = 2 blocks, × 10), which is how BatchGetItem counts, not a Query." }
 ---
 ## Mở bài
 

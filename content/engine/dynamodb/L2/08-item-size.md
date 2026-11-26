@@ -32,8 +32,8 @@ quiz:
         en: 119 bytes
     answer: 1
     why:
-      vi: 'isbn = 4 (tên) + 8 (giá trị) = 12. price = 5 (tên) + 1 byte cho 2 chữ số có nghĩa "88" (số 0 ở cuối bị bỏ) + 1 = 7. Tổng 19 byte.'
-      en: 'isbn = 4 (name) + 8 (value) = 12. price = 5 (name) + 1 byte for the 2 significant digits "88" (trailing zeros are trimmed) + 1 = 7. Total 19 bytes.'
+      vi: 'Cỡ item = tổng (độ dài tên + cỡ giá trị) của mỗi thuộc tính. isbn: tên 4 byte + chuỗi 8 byte = 12. price: tên 5 byte; số tính 1 byte cho mỗi 2 chữ số có nghĩa cộng 1 byte, và 88000 chỉ có 2 chữ số có nghĩa "88" (số 0 ở cuối bị bỏ), nên 1 + 1 = 2; cộng tên là 7. Tổng 12 + 7 = 19 byte. 119 là cộng thêm 100 byte phụ phí, phần chỉ dùng khi tính tiền lưu trữ.'
+      en: 'Item size = the sum of (name length + value size) over the attributes. isbn: a 4-byte name + an 8-byte string = 12. price: a 5-byte name; a number takes 1 byte per 2 significant digits plus 1 byte, and 88000 has only the 2 significant digits "88" (trailing zeros are trimmed), so 1 + 1 = 2; with the name, 7. Total 12 + 7 = 19 bytes. 119 adds the 100 bytes of overhead, which only count for storage billing.'
   - q:
       vi: 'Thuộc tính danh sách `"tags": ["nosql", "perf"]` nặng bao nhiêu byte?'
       en: 'How many bytes is the list attribute `"tags": ["nosql", "perf"]`?'
@@ -74,8 +74,8 @@ quiz:
         en: 4 bytes
     answer: 0
     why:
-      vi: Boolean và null là tên + 1 byte - 7 + 1 = 8.
-      en: A Boolean or null is the name + 1 byte - 7 + 1 = 8.
+      vi: 'Giá trị boolean (và null) luôn chiếm 1 byte, không phụ thuộc chữ "true" dài 4 ký tự. Tên `inStock` dài 7 byte, nên 7 + 1 = 8. Chọn 11 là đếm chữ "true" như chuỗi (7 + 4); chọn 4 là quên tên thuộc tính, mà mỗi item lưu tên kèm giá trị.'
+      en: 'A Boolean (or null) value always takes 1 byte, whatever the 4 letters of "true". The name `inStock` is 7 bytes, so 7 + 1 = 8. Picking 11 counts "true" as a string (7 + 4); picking 4 forgets the attribute name, which every item stores beside the value.'
   - q:
       vi: Một item 23 byte được tính bao nhiêu khi so với giới hạn 400 KB, và bao nhiêu khi tính tiền lưu trữ?
       en: A 23-byte item counts as how much against the 400 KB limit, and how much for storage billing?

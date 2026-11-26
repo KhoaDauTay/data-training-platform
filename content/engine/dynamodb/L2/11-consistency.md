@@ -52,8 +52,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: GSI cũng là index trên cùng bảng nên dễ nghĩ nó đọc như bảng. Nhưng GSI được cập nhật bất đồng bộ, nên chỉ có đọc nhất quán cuối. LSI thì đọc nhất quán mạnh được.
-      en: A GSI is an index on the same table, so it is easy to think it reads like the table. But a GSI is updated asynchronously, so it offers only eventually consistent reads. An LSI does support strong reads.
+      vi: 'GSI (global secondary index) là index trên cùng bảng nên dễ nghĩ nó đọc được như bảng. Nhưng DynamoDB chép thay đổi sang GSI bất đồng bộ, sau khi lần ghi vào bảng đã xong, nên GSI không có bản "chắc chắn mới nhất" để đọc nhất quán mạnh, và request bị từ chối bằng `ValidationException`. DynamoDB cũng không tự chuyển sang bảng gốc: muốn đọc nhất quán mạnh thì tự `GetItem` hoặc Query bảng, hoặc dùng LSI (local secondary index).'
+      en: 'A GSI (global secondary index) is an index on the same table, so it is easy to think it reads like the table. But DynamoDB copies changes to a GSI asynchronously, after the table write has finished, so a GSI has no "surely latest" version for a strongly consistent read, and the request is refused with `ValidationException`. DynamoDB does not switch to the base table either: for a strongly consistent read, `GetItem` or Query the table yourself, or use an LSI (local secondary index).'
 ---
 ## Mở bài
 

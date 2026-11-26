@@ -45,8 +45,8 @@ quiz:
         en: Each call returns at most 1 MB plus a `LastEvaluatedKey`; call again from that key.
     answer: 2
     why:
-      vi: Kết quả mỗi lần Query hoặc Scan tối đa 1 MB. Phần còn lại lấy bằng cách gửi `LastEvaluatedKey` vào `ExclusiveStartKey` của lần gọi sau.
-      en: Each Query or Scan call returns at most 1 MB. You get the rest by passing `LastEvaluatedKey` as the next call's `ExclusiveStartKey`.
+      vi: 'Mỗi lần gọi Query hoặc Scan đọc tối đa 1 MB rồi dừng. Đó không phải lỗi: phản hồi trả phần đã đọc kèm `LastEvaluatedKey`, khóa của item cuối cùng đã đọc. Gửi khóa đó vào `ExclusiveStartKey` của lần gọi sau để đọc tiếp; 3 MB cần ít nhất 3 lần gọi. DynamoDB không bao giờ trả cả 3 MB trong một phản hồi.'
+      en: 'Each Query or Scan call reads at most 1 MB and stops. That is not an error: the response holds what was read plus a `LastEvaluatedKey`, the key of the last item read. Pass that key as the next call''s `ExclusiveStartKey` to continue; 3 MB needs at least 3 calls. DynamoDB never returns all 3 MB in one response.'
   - q:
       vi: Trang báo cáo cần "doanh thu theo tháng của mọi khách". DynamoDB làm thế nào?
       en: A report page needs "revenue per month across all customers". How does DynamoDB do it?

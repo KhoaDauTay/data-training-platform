@@ -39,8 +39,8 @@ predict:
   answer: 2
   trap: 0
   why:
-    vi: Nghe hợp lý vì request chỉ gửi một thuộc tính, nhưng UpdateItem tính theo bản **lớn hơn** giữa trước (3,5 KB) và sau (4,2 KB), làm tròn lên bội số 1 KB - 5 KB = 5 WCU.
-    en: It sounds right because the request sends one attribute only, but UpdateItem is charged on the **larger** of the before (3.5 KB) and after (4.2 KB) images, rounded up to a multiple of 1 KB - 5 KB = 5 WCU.
+    vi: 'Request chỉ gửi một thuộc tính, nhưng DynamoDB ghi lại cả item, và UpdateItem tính theo bản **lớn hơn** giữa trước (3,5 KB) và sau (4,2 KB). Mỗi WCU (write capacity unit, đơn vị ghi) ghi được 1 KB, nên 4,2 KB làm tròn lên 5 KB = 5 WCU. Chọn 4 là lấy bản trước (3,5 KB → 4 KB); 8 là tính gấp đôi như transaction, mà request này không phải transaction.'
+    en: 'The request sends one attribute, but DynamoDB rewrites the whole item, and UpdateItem is charged on the **larger** of the before (3.5 KB) and after (4.2 KB) images. Each WCU (write capacity unit) writes 1 KB, so 4.2 KB rounds up to 5 KB = 5 WCU. Picking 4 uses the before image (3.5 KB → 4 KB); 8 doubles the price like a transaction, and this request is not one.'
 quiz:
   - q:
       vi: BatchWriteItem ghi hai item 500 byte và 3,5 KB. Tốn bao nhiêu WCU?
@@ -54,8 +54,8 @@ quiz:
         en: "2"
     answer: 1
     why:
-      vi: Mỗi item làm tròn riêng rồi cộng - 1 KB + 4 KB = 5 WCU, không phải 4 KB.
-      en: Each item is rounded on its own, then added - 1 KB + 4 KB = 5 WCU, not 4 KB.
+      vi: 'BatchWriteItem tính như từng PutItem riêng: mỗi item làm tròn lên bội số 1 KB rồi mới cộng. 500 byte → 1 KB = 1 WCU (write capacity unit); 3,5 KB → 4 KB = 4 WCU; tổng 5. Chọn 4 là cộng trước (0,5 + 3,5 = 4 KB) rồi mới làm tròn; chọn 2 là tính mỗi item 1 WCU bất kể cỡ.'
+      en: 'BatchWriteItem is billed like separate PutItems: each item is rounded up to a multiple of 1 KB before adding. 500 bytes → 1 KB = 1 WCU (write capacity unit); 3.5 KB → 4 KB = 4 WCU; 5 in all. Picking 4 adds first (0.5 + 3.5 = 4 KB) and rounds after; picking 2 charges 1 WCU per item whatever its size.'
   - q:
       vi: PutItem ghi item mới 0,5 KB lên khóa đang có item 2,5 KB. Tốn bao nhiêu WCU?
       en: PutItem writes a new 0.5 KB item over a key that holds a 2.5 KB item. How many WCU?
@@ -68,8 +68,8 @@ quiz:
         en: "4"
     answer: 1
     why:
-      vi: Khi PutItem thay item có sẵn, cỡ dùng để tính là bản lớn hơn của hai item - 2,5 KB thành 3 KB = 3 WCU.
-      en: When PutItem replaces an existing item, the size that counts is the larger of the two - 2.5 KB becomes 3 KB = 3 WCU.
+      vi: 'Item mới chỉ 0,5 KB, nhưng khi PutItem thay một item có sẵn, DynamoDB tính theo bản lớn hơn của hai item: bản cũ 2,5 KB, làm tròn lên 3 KB = 3 WCU (write capacity unit). Chọn 1 là chỉ nhìn item mới; chọn 4 là làm tròn lên bội số 4 KB như khi đọc, trong khi ghi làm tròn theo 1 KB.'
+      en: 'The new item is only 0.5 KB, but when PutItem replaces an existing item, DynamoDB charges the larger of the two: the old 2.5 KB one, rounded up to 3 KB = 3 WCU (write capacity unit). Picking 1 looks only at the new item; picking 4 rounds up to a multiple of 4 KB as reads do, while writes round to 1 KB.'
   - q:
       vi: Ghi một item 1 KB trong transaction (`ExecuteTransaction` hoặc `TransactWriteItems`) tốn bao nhiêu WCU?
       en: How many WCU does writing one 1 KB item in a transaction (`ExecuteTransaction` or `TransactWriteItems`) cost?
@@ -82,8 +82,8 @@ quiz:
         en: "0.5"
     answer: 1
     why:
-      vi: Transaction ghi hai lần ngầm (prepare và commit), nên item tới 1 KB tốn 2 WCU, kể cả khi transaction bị hủy.
-      en: A transaction performs two underlying writes (prepare and commit), so an item up to 1 KB costs 2 WCU, even when the transaction is cancelled.
+      vi: 'Ghi thường một item tới 1 KB tốn 1 WCU (write capacity unit), nên 1 là giá ngoài transaction. Trong transaction, DynamoDB ghi ngầm hai lần cho mỗi item, một lần chuẩn bị (prepare) và một lần xác nhận (commit), nên giá gấp đôi: 2 WCU, kể cả khi transaction bị hủy. 0,5 là nhầm với giá đọc nhất quán cuối; ghi không có mức nửa giá.'
+      en: 'A plain write of an item up to 1 KB costs 1 WCU (write capacity unit), so 1 is the price outside a transaction. Inside a transaction DynamoDB performs two underlying writes per item, a prepare and a commit, so the price doubles: 2 WCU, even when the transaction is cancelled. 0.5 confuses it with an eventually consistent read; writes have no half price.'
 ---
 
 ## Mở bài

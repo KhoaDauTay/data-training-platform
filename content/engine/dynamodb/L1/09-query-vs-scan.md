@@ -201,8 +201,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: 'Nghe hợp lý vì bạn chỉ nhận về 4 item, nhưng `Scan` đọc mọi item rồi mới áp `FilterExpression`. Giá tính theo `ScannedCount`, ở đây là 120.'
-      en: 'It sounds right because you only get 4 items back, but a `Scan` reads every item before it applies the `FilterExpression`. You pay by `ScannedCount`, here 120.'
+      vi: 'Bạn chỉ nhận về 4 item (`Count`), nhưng `Scan` đọc cả 120 item của bảng trước, rồi mới áp `FilterExpression` để bỏ những item không khớp. Giá tính theo phần đã đọc, tức `ScannedCount` = 120. Bộ lọc không chạy trước khi đọc, nên không có chuyện 0. Muốn chỉ trả cho 4 item thì đặt `customerId` làm partition key và dùng Query.'
+      en: 'You get only 4 items back (`Count`), but the `Scan` first reads all 120 items of the table, then applies the `FilterExpression` to drop those that do not match. You pay for what was read, `ScannedCount` = 120. The filter never runs before the read, so it cannot be 0. To pay for only 4 items, make `customerId` the partition key and use a Query.'
   - q:
       vi: 'Thêm `"Select": "COUNT"` vào một `Scan` có lọc. Giá thay đổi thế nào?'
       en: 'You add `"Select": "COUNT"` to a filtered `Scan`. How does the price change?'
