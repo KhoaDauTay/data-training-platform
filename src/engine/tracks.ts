@@ -19,6 +19,7 @@ export const PREREQS: Partial<Record<EngineId, Prereq[]>> = {
   olap: [{ sql: [1, 7] }, { engine: 'postgres', to: 'L1' }], // v47 (L991)
   search: [{ sql: [1, 4] }, { engine: 'postgres', to: 'L1' }], // v47 (L1018)
   timeseries: [{ sql: [1, 10] }], // v47 (L977): L2 uses window functions (Part 10)
+  telemetry: [{ sql: [1, 8] }, { engine: 'postgres', to: 'L1' }], // v47 (L1033): windows (lag), CTEs, JSONB
   graph: [{ sql: [1, 7] }], // v47 (L1080): joins, self-join, CTEs
 };
 

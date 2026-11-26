@@ -1,0 +1,31 @@
+# TM-9 (v47 Telemetry R1, L1042): the error budget spent day by day. Lesson: e-tm-l2-05 (Ý chính).
+# Data = the lab: errors 20 30 25 10 40 35 20 15 30 120 per 10,000 requests, budget 500 (bar = errors used so far / 50, mark = 500).
+# Source: https://grafana.com/docs/grafana-cloud/alerting-and-irm/slo/introduction/
+title: { vi: "Ngân sách lỗi bị tiêu dần", en: "The error budget, spent day by day" }
+caption:
+  vi: "Mỗi thanh là số lỗi cộng dồn tới ngày đó; vạch là ngân sách 500 lỗi của SLO 99,5% trên 100.000 request."
+  en: "Each bar is the errors used up to that day; the line is the 500-error budget of a 99.5% SLO over 100,000 requests."
+alt:
+  vi: "Ngân sách lỗi là số lỗi SLO cho phép trong cả khoảng, và mỗi ngày lỗi trừ dần vào nó; một ngày xấu tiêu nhiều ngày ngân sách. Kết quả: tới ngày 31 đã dùng 345 trong 500 lỗi, còn 31%, và riêng ngày 31 đốt nhanh gấp 2,4 lần."
+  en: "The error budget is the number of errors the SLO allows over the whole window, and each day's errors are taken from it; one bad day spends several days of budget. Result: by the 31st, 345 of 500 errors are used, 31% is left, and the 31st alone burned 2.4 times too fast."
+nodes:
+  - id: used
+    shape: bars
+    label: { vi: "lỗi cộng dồn", en: "errors so far" }
+    sub: { vi: "vạch: ngân sách 500", en: "line: budget 500" }
+    mark: 10
+    items:
+      - { label: "22/10", value: 0.4, note: "20" }
+      - { label: "23/10", value: 1, note: "50" }
+      - { label: "24/10", value: 1.5, note: "75" }
+      - { label: "25/10", value: 1.7, note: "85" }
+      - { label: "26/10", value: 2.5, note: "125" }
+      - { label: "27/10", value: 3.2, note: "160" }
+      - { label: "28/10", value: 3.6, note: "180" }
+      - { label: "29/10", value: 3.9, note: "195" }
+      - { label: "30/10", value: 4.5, note: "225" }
+      - { label: "31/10", value: 6.9, note: { vi: "345, +120", en: "345, +120" }, tone: warm }
+  - { id: left, shape: note, label: { vi: "còn 155 lỗi, tức 31%", en: "155 errors left, 31%" } }
+rows:
+  - [used]
+  - [left]

@@ -101,6 +101,7 @@ const GROUPS = [
   // L248: the MongoDB path ("Lộ trình NoSQL"): 12 parts of skills, lessons and 168 drills (content/engine/mongodb/path/*.yml as
   // JSON) + the shell parser for its ESR/covered rules, lazy on the first path page: 72 KB gz at integration.
   ['enginePath', /^engineMongoPath-/, 80],
+  ['promql', /^promqlRunner-/, 6], // v47 Telemetry R1 (L1039): src/engine/telemetry/{promqlRunner,promql}.ts, the PromQL simulation (parser, evaluator, runner), lazy on the first telemetry lab
   // BP-LINT (L273): Boon's best-practice tip (src/ui/bpTip.ts, 3.6 KB, lazy when the workspace mounts), the rules
   // (src/viz/bpLint.ts, 1.8) and libpg-query's JS on the main thread (named after its wasm/index.js, 14.8; the .wasm is the
   // worker's file, already in `parser`), both lazy on the first lintable run: 20.2 KB gz at integration. Main +0.1 KB.

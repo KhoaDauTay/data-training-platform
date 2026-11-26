@@ -1,0 +1,29 @@
+# TM-5 (v47 Telemetry R1, L1042): a counter falls to 0 on restart; the increase counts the new value. Lesson: e-tm-l2-01 (Ý chính).
+# Data = the lab: 100, 130, 160, 190, 220, 20, 50, 80, 110 every 15 s from 10:00; reset-aware increase 230 (bar length = value / 25).
+# Source: https://prometheus.io/docs/prometheus/latest/querying/functions/ (resets, rate)
+title: { vi: "Counter về 0 khi khởi động lại", en: "A counter returns to 0 on restart" }
+caption:
+  vi: "Từ 220 rơi về 20 không phải -200 request: tiến trình khởi động lại và đếm lại từ 0, nên khoảng đó có 20 request."
+  en: "Falling from 220 to 20 is not -200 requests: the process restarted and counted again from 0, so that interval had 20 requests."
+alt:
+  vi: "Một lần giảm giữa hai lần đọc counter là reset, nên mức tăng của khoảng đó là giá trị mới chứ không phải hiệu âm. Kết quả: tổng mức tăng là 4 × 30 + 20 + 3 × 30 = 230 request trong 2 phút."
+  en: "A decrease between two counter readings is a reset, so that interval's increase is the new value, not the negative difference. Result: the total increase is 4 × 30 + 20 + 3 × 30 = 230 requests in 2 minutes."
+nodes:
+  - id: raw
+    shape: bars
+    label: { vi: "counter request", en: "request counter" }
+    sub: { vi: "đọc mỗi 15 giây", en: "read every 15 s" }
+    items:
+      - { label: "10:00:00", value: 4, note: "100" }
+      - { label: "10:00:15", value: 5.2, note: "130" }
+      - { label: "10:00:30", value: 6.4, note: "160" }
+      - { label: "10:00:45", value: 7.6, note: "190" }
+      - { label: "10:01:00", value: 8.8, note: "220" }
+      - { label: "10:01:15", value: 0.8, note: { vi: "20, reset", en: "20, reset" }, tone: warm }
+      - { label: "10:01:30", value: 2, note: "50" }
+      - { label: "10:01:45", value: 3.2, note: "80" }
+      - { label: "10:02:00", value: 4.4, note: "110" }
+  - { id: sum, shape: note, label: { vi: "tổng mức tăng = 230", en: "total increase = 230" } }
+rows:
+  - [raw]
+  - [sum]
