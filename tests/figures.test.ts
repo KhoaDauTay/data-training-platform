@@ -94,6 +94,11 @@ describe('v39 figures: content links', () => {
     });
     expect(bad).toEqual([]);
   });
+  it('v42 (L696): không bài hay hình nào viết sơ đồ ER bằng ký tự (||--o{ …): vẽ bằng thực thể và chân chim', () => {
+    const raw = import.meta.glob<string>(['../content/engine/**/*.md', '../content/general/**/*.md', '../content/figures/*.yml'], { query: '?raw', import: 'default', eager: true });
+    expect(Object.keys(raw).length).toBeGreaterThan(100);
+    expect(Object.entries(raw).filter(([, s]) => /\|\|--|--o\{|\}o--|\|o--|--\|\{/.test(s)).map(([p]) => p)).toEqual([]);
+  });
 });
 
 describe.each(Object.keys(specs))('v39 figure %s', (name) => {
@@ -172,7 +177,7 @@ describe.each(Object.keys(specs))('v39 figure %s', (name) => {
           for (const e of spec.edges ?? []) if (e.link) { const k = [e.from, e.to].map((x) => x.split('#')[0]).sort().join('|'); pairs.set(k, (pairs.get(k) ?? 0) + 1); }
           for (const [k, lines] of pairs) {
             const [p, q] = k.split('|').map((id) => xs.get(id));
-            if (!p || !q || Math.min(p.y1, q.y1) <= Math.max(p.y0, q.y0)) continue; // stacked: no lines drawn
+            if (!p || !q || p === q || Math.min(p.y1, q.y1) <= Math.max(p.y0, q.y0)) continue; // stacked: no lines drawn; v42: a self loop
             const gap = Math.max(p.x0 - q.x1, q.x0 - p.x1);
             const row = [...xs.values()].filter((o) => Math.min(o.y1, p.y1) > Math.max(o.y0, p.y0));
             const span = Math.max(...row.map((o) => o.x1)) - Math.min(...row.map((o) => o.x0));
@@ -425,3 +430,88 @@ describe('v40 R2: edge kinds, cell anchors, crow\'s foot', () => {
 
 /** Rows are ≥ 36 apart; a node shorter than its row sits in the middle, so its own gap is never smaller. */
 const GAP_MIN_Y = 35.5;
+
+// v42 (L690–L697): ER mode. An entity (title band, attribute rows, PK / FK pills), relationship links anchored to attribute rows,
+// every crow's-foot kind at both ends, and a self loop, at 640/335/280 × VI/EN. Links carry no marker, so the checker never
+// treats them as arrows: here they are fed to analyze() as arrows too, and rules d (through a box or text) and h (parallel ≤ 8)
+// must stay clean; every end mark stays clear of every text.
+const CARDS = ['one', 'zero-one', 'many', 'one-many', 'zero-many'] as const;
+const ER = (c: (typeof CARDS)[number]): FigSpec => ({
+  title: 'v42 ER', caption: 'test',
+  nodes: [
+    { id: 'a', shape: 'entity', label: 'CUSTOMER', fields: [{ name: 'id', pk: true }, 'name'] },
+    { id: 'b', shape: 'entity', label: 'ORDER', fields: [{ name: 'id', pk: true }, { name: 'customer_id', fk: true }, 'ordered_at'] },
+    { id: 'c', shape: 'entity', label: 'ORDER_LINE', fields: [{ name: 'order_id', pk: true, fk: true }, 'qty'] },
+    { id: 'e', shape: 'entity', label: 'EMPLOYEE', fields: [{ name: 'id', pk: true }, 'name', { name: 'manager_id', fk: true }] },
+  ],
+  rows: [['a', 'b'], ['c', 'e']],
+  edges: [
+    { from: 'a#0', to: 'b#1', link: true, ends: [c, c], label: { vi: 'đặt', en: 'places' } },
+    { from: 'b#0', to: 'c#0', link: true, ends: [c, c], label: { vi: 'gồm', en: 'contains' } },
+    { from: 'e#0', to: 'e#2', link: true, ends: [c, c], label: { vi: 'quản lý', en: 'manages' } },
+  ],
+});
+/** Links (relationship lines) as arrows for the checker, and the d/h findings they give. */
+function linkFindings(f: { nodes: Shape[] }, W: number, H: number): string[] {
+  const m = model(f, W, H);
+  const links = f.nodes.filter((n): n is Extract<Shape, { t: 'p' }> => n.t === 'p' && !n.arrow && !n.tone && /^e:\d+$/.test(n.k));
+  m.arrows.push(...links.map((n) => { const pts = samplePath(n.d); return { k: n.k, pts, tip: pts[pts.length - 1] as [number, number] }; }));
+  return analyze(m, W).filter((x) => x.t === 'd' || x.t === 'h').map((x) => x.what);
+}
+/** Every crow's-foot mark point outside every text's ink. */
+function marksClear(f: { nodes: Shape[] }, at: string): void {
+  const m = model(f, 0, 0);
+  for (const n of f.nodes) if (n.t === 'p' && /^e:\d+\.m\d$/.test(n.k)) for (const [x, y] of samplePath(n.d)) for (const t of m.texts)
+    expect(x > t.x + 0.5 && x < t.x + t.w - 0.5 && y > t.y + t.size * 0.15 && y < t.y + t.h - t.size * 0.15, `${at}: ${n.k} on "${t.s}"`).toBe(false);
+}
+describe('v42 ER mode', () => {
+  for (const c of CARDS) for (const lang of LANGS) it.each(WIDTHS)(`${c} · ${lang} · W %i: thực thể, neo dòng, vòng tự nối, chân chim hai đầu`, (W) => {
+    const d = layout(ER(c), lang, W);
+    const f = d.frames[0];
+    const at = `er ${c} ${lang} W${W}`;
+    expect(analyze(model(f, d.w, d.h), W), at).toEqual([]);
+    expect(linkFindings(f, d.w, d.h), at).toEqual([]);
+    marksClear(f, at);
+    for (const n of f.nodes) if (n.t === 't') { expect(n.size ?? 0).toBeGreaterThanOrEqual(13); expect([...n.s].length).toBeLessThanOrEqual(18); }
+    for (const n of f.nodes) if (n.t === 'p' || n.t === 'r') for (const [x, y] of n.t === 'p' ? samplePath(n.d) : [[n.x, n.y], [n.x + n.w, n.y + n.h]]) expect(x >= 0 && y >= 0 && x <= d.w && y <= d.h, `${at}: ${n.k} hors viewBox`).toBe(true);
+    const k = (s: string) => f.nodes.find((n) => n.k === s);
+    const r = (s: string) => k(s) as Extract<Shape, { t: 'r' }>;
+    const mid = (s: string) => r(s).y + r(s).h / 2;
+    const pts = (s: string) => samplePath((k(s) as { d: string }).d);
+    // entity: box, title band, pills (PK, FK; both on order_id), names after the pill column
+    expect(k('n:c.b')?.t).toBe('p');
+    expect([k('n:c.k00.t'), k('n:c.k01.t')].map((t) => (t as { s: string }).s)).toEqual(['PK', 'FK']);
+    expect((k('n:b.f1') as { x: number }).x).toBe((k('n:b.f0') as { x: number }).x);
+    // every link has both marks; zero kinds add one hollow circle each
+    for (const i of [0, 1, 2]) {
+      expect(k(`e:${i}.m0`) && k(`e:${i}.m1`), `${at}: e:${i} marks`).toBeTruthy();
+      expect(f.nodes.filter((n) => n.t === 'c' && n.k.startsWith(`e:${i}.m`)).length).toBe(c.startsWith('zero') ? 2 : 0);
+    }
+    // row anchors: side by side, the line leaves CUSTOMER's id row and lands on ORDER's customer_id row (level legs, one step)
+    const p0 = pts('e:0');
+    if (r('n:a').y === r('n:b').y) {
+      expect(p0[0][1], `${at}: from a#0`).toBeCloseTo(mid('n:a.k00'), 0);
+      expect(p0.at(-1)![1], `${at}: to b#1`).toBeCloseTo(mid('n:b.k10'), 0);
+      for (const [p, q] of [[p0[0], p0[1]], [p0.at(-2)!, p0.at(-1)!]]) expect(p[1], `${at}: level end legs`).toBe(q[1]);
+    }
+    // self loop: out of EMPLOYEE's id row and back into its manager_id row, at the box's right, no arrowhead, the verb beside it
+    const loop = pts('e:2'), box = r('n:e');
+    expect((k('e:2') as { arrow?: boolean }).arrow).toBeFalsy();
+    expect(loop[0][0]).toBeCloseTo(box.x + box.w, 0);
+    expect(loop.at(-1)![0]).toBeCloseTo(box.x + box.w, 0);
+    expect(loop[0][1]).toBeCloseTo(mid('n:e.k00'), 0);
+    expect(loop.at(-1)![1]).toBeCloseTo(mid('n:e.k20'), 0);
+    expect((k('e:2.l') as { x: number }).x).toBeGreaterThan(Math.max(...loop.map(([x]) => x)));
+  });
+  // the content's ER figures: links clear of boxes, texts and each other at every width, step and variant
+  for (const name of ['ds-cardinality', 'ds-er-clinic', 'ds-er-to-tables']) for (const variant of [undefined, ...Object.keys(specs[name]?.variants ?? {})]) for (const lang of LANGS)
+    it.each(WIDTHS)(`${name} ${variant ?? ''} · ${lang} · W %i: đường quan hệ không cắt hộp, chữ; dấu không chạm chữ`, (W) => {
+      const d = layout(specs[name], lang, W, variant);
+      d.frames.forEach((f, i) => { const at = `${name} ${lang} W${W} ${i}`; expect(linkFindings(f, d.w, d.h), at).toEqual([]); marksClear(f, at); });
+      expect(d.frames.flatMap((f) => f.nodes).filter((n) => n.t === 't' && /\|\||o\{|\|\{|\}o/.test(n.s))).toEqual([]);
+    });
+  it('lỗi nội dung: vòng tự nối trên cùng một dòng', () => {
+    const s = ER('one');
+    expect(() => layout({ ...s, edges: [{ from: 'e#1', to: 'e#1', link: true, ends: ['one', 'many'] }] }, 'vi', 640)).toThrow(/vòng/);
+  });
+});

@@ -8,6 +8,7 @@ title_en: Designing an ERD for a real case - a clinic
 kind: lab
 runtime: browser
 minutes: 25
+figures: [{ name: ds-er-clinic, at: example }]
 objectives:
   - vi: Đi từ lời mô tả nghiệp vụ tới danh sách thực thể, mối quan hệ và luật.
     en: Go from a business description to a list of entities, relationships and rules.
@@ -128,13 +129,7 @@ CREATE TABLE appointments (
 
 ## Ví dụ
 
-Sơ đồ phòng khám, lối chân chim:
-
-```text
-SPECIALTY ||--o{ DOCTOR      : has
-DOCTOR    ||--o{ APPOINTMENT : sees
-PATIENT   ||--o{ APPOINTMENT : books
-```
+Hình cuối mục vẽ sơ đồ phòng khám theo lối chân chim: mỗi chuyên khoa có 0..n bác sĩ, mỗi bác sĩ thuộc đúng 1 chuyên khoa; mỗi bác sĩ khám 0..n lịch hẹn và mỗi bệnh nhân đặt 0..n lịch hẹn; mỗi lịch hẹn có đúng 1 bác sĩ và 1 bệnh nhân.
 
 Cùng mẫu đó cho phòng họp: phòng là "bác sĩ", lượt đặt là "lịch hẹn".
 
@@ -221,13 +216,7 @@ CREATE TABLE appointments (
 
 ## Example
 
-The clinic diagram in crow's foot style:
-
-```text
-SPECIALTY ||--o{ DOCTOR      : has
-DOCTOR    ||--o{ APPOINTMENT : sees
-PATIENT   ||--o{ APPOINTMENT : books
-```
+The figure at the end of this section draws the clinic diagram in crow's foot style: each specialty has 0..n doctors, each doctor belongs to exactly 1 specialty; each doctor sees 0..n appointments and each patient books 0..n appointments; each appointment has exactly 1 doctor and 1 patient.
 
 The same pattern for meeting rooms: the room plays the doctor, the booking the appointment.
 
