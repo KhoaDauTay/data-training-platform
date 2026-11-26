@@ -92,8 +92,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì nhiều người coi `RETURNING` như bản ghi lại dữ liệu bị thay, nhưng với `UPDATE` cột không tiền tố là giá trị mới. Muốn giá cũ, Postgres 18 cho viết `old.price`; muốn cả hai thì ghi `old.price, new.price`."
-      en: "It sounds right because many people treat `RETURNING` as a record of the data being replaced, but for `UPDATE` an unprefixed column is the new value. For the old price Postgres 18 lets you write `old.price`; for both, write `old.price, new.price`."
+      vi: "\"Giá cũ\" nghe hợp lý vì nhiều người coi `RETURNING` như bản ghi lại dữ liệu bị thay, nhưng với `UPDATE`, một cột viết trần (không có `old.` hay `new.` phía trước) là giá trị mới, tức giá đã nhân đôi. Muốn giá cũ, Postgres 18 cho viết `old.price`; muốn cả hai thì ghi `old.price, new.price`."
+      en: "\"The old price\" sounds right because many people treat `RETURNING` as a record of the data being replaced, but for `UPDATE` a bare column (no `old.` or `new.` in front) is the new value, the doubled price. For the old price Postgres 18 lets you write `old.price`; for both, write `old.price, new.price`."
   - q:
       vi: "Trong `UPDATE ... FROM`, hai dòng của bảng nguồn cùng khớp một dòng đích. Điều gì xảy ra?"
       en: "In an `UPDATE ... FROM`, two rows of the source table match the same target row. What happens?"
@@ -104,8 +104,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì `ON CONFLICT DO UPDATE` báo lỗi khi đụng một dòng hai lần, nhưng `UPDATE ... FROM` thì không: nó lặng lẽ dùng một dòng nguồn. Hãy thu bảng nguồn về một dòng cho mỗi khóa trước khi sửa."
-      en: "It sounds right because `ON CONFLICT DO UPDATE` errors when it touches a row twice, but `UPDATE ... FROM` does not: it silently uses one source row. Reduce the source to one row per key before the update."
+      vi: "\"Báo lỗi\" nghe hợp lý vì `ON CONFLICT DO UPDATE` báo lỗi khi đụng một dòng hai lần, nhưng `UPDATE ... FROM` thì không. Một câu lệnh chỉ sửa mỗi dòng đích một lần, nên nó không sửa hai lần; nó lặng lẽ lấy một trong hai dòng nguồn, và dòng nào được lấy tùy thứ tự đọc. Hãy thu bảng nguồn về một dòng cho mỗi khóa (ở đây là `sku`) trước khi sửa."
+      en: "\"An error\" sounds right because `ON CONFLICT DO UPDATE` errors when it touches a row twice, but `UPDATE ... FROM` does not. One statement updates each target row only once, so there is no second update; it silently takes one of the two source rows, and which one depends on read order. Reduce the source to one row per key (here `sku`) before the update."
 ---
 ## Mở bài
 

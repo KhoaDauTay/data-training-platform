@@ -39,8 +39,8 @@ lab:
         vi: "`count(*)` trên `pg_locks`, lọc theo `locktype`."
         en: "`count(*)` over `pg_locks`, filtered on `locktype`."
       fact:
-        vi: "Ra 0: bốn row lock không có dòng nào trong `pg_locks`. Postgres chỉ thêm lock `tuple` tạm khi có người phải chờ."
-        en: "It is 0: the four row locks have no row in `pg_locks`. Postgres adds a temporary `tuple` lock only while someone waits."
+        vi: "Ra 0: bốn row lock không có dòng nào trong `pg_locks`, vì Postgres ghi row lock vào header của chính dòng đó trên trang, không vào bảng lock trong bộ nhớ. Nó chỉ thêm một lock `tuple` tạm khi có transaction khác phải chờ dòng đó."
+        en: "It is 0: the four row locks have no row in `pg_locks`, because Postgres writes a row lock into that row's own header on the page, not into the in-memory lock table. It adds a temporary `tuple` lock only while another transaction waits for that row."
         probe: SELECT count(*) FROM pg_locks WHERE locktype = 'tuple'
         expect: [[0]]
     - task:
@@ -53,8 +53,8 @@ lab:
         vi: "`heap_page_items()` đọc trang thô mà `get_raw_page()` trả về."
         en: "`heap_page_items()` reads the raw page that `get_raw_page()` returns."
       fact:
-        vi: "Dòng 3 (FOR UPDATE) 448 và 8194, dòng 4 (FOR SHARE) 464, dòng 5 (FOR KEY SHARE) 400, dòng 6 (FOR NO KEY UPDATE) 448 và 2, dòng 7 2048 (không lock: chỉ bit `XMAX_INVALID`): bit `LOCK_ONLY` (128) cùng bit mức lock, ghi ngay trên trang."
-        en: "Row 3 (FOR UPDATE) 448 and 8194, row 4 (FOR SHARE) 464, row 5 (FOR KEY SHARE) 400, row 6 (FOR NO KEY UPDATE) 448 and 2, row 7 2048 (no lock: only the `XMAX_INVALID` bit): the `LOCK_ONLY` bit (128) plus the strength bits, written right on the page."
+        vi: "Mỗi số là tổng các bit. Dòng bị lock có 256 (xmin đã commit) + 128 (`LOCK_ONLY`: xmax chỉ giữ lock, không xóa dòng) + bit mức lock: 64 cho FOR UPDATE và FOR NO KEY UPDATE (dòng 3 và 6: 448), 64 + 16 cho FOR SHARE (dòng 4: 464), 16 cho FOR KEY SHARE (dòng 5: 400). Dòng 3 khác dòng 6 ở `t_infomask2`: 8194 = 8192 (bit `KEYS_UPDATED`, mức mạnh nhất) + 2 cột, còn dòng 6 chỉ có 2 cột. Dòng 7 không bị lock: 2048 = bit `XMAX_INVALID`. Lock được ghi ngay trên trang, không nằm trong bộ nhớ."
+        en: "Each number is a sum of bits. A locked row has 256 (xmin committed) + 128 (`LOCK_ONLY`: xmax only holds a lock, it does not delete the row) + the strength bits: 64 for FOR UPDATE and FOR NO KEY UPDATE (rows 3 and 6: 448), 64 + 16 for FOR SHARE (row 4: 464), 16 for FOR KEY SHARE (row 5: 400). Row 3 differs from row 6 in `t_infomask2`: 8194 = 8192 (the `KEYS_UPDATED` bit, the strongest level) + 2 columns, while row 6 only has the 2 columns. Row 7 is not locked: 2048 = the `XMAX_INVALID` bit. The locks are written right on the page, not kept in memory."
         probe: SELECT lp, t_infomask, t_infomask2 FROM heap_page_items(get_raw_page('acct', 0)) WHERE lp BETWEEN 3 AND 7 ORDER BY lp
         expect: [[3, 448, 8194], [4, 464, 2], [5, 400, 2], [6, 448, 2], [7, 2048, 2]]
 quiz:
@@ -65,7 +65,7 @@ quiz:
       - { vi: "Không, vì khóa ngoại không lấy lock nào cả", en: "No, because foreign keys lock nothing at all" }
     answer: 1
     trap: 0
-    why: { vi: "Nghe hợp lý vì A đúng là giữ một row lock trên dòng khách 42, nhưng đó là mức yếu nhất. `FOR KEY SHARE` chỉ xung đột với `FOR UPDATE` (xóa dòng hoặc đổi cột khóa). Nhờ vậy chèn dòng con không làm nghẽn việc sửa các cột thường của dòng cha.", en: "It sounds right because A does hold a row lock on customer 42, but it is the weakest level. `FOR KEY SHARE` only conflicts with `FOR UPDATE` (deleting the row or changing a key column). So inserting child rows does not jam updates to the parent's ordinary columns." }
+    why: { vi: "A đúng là giữ một row lock trên dòng khách 42 (nên \"khóa ngoại không lấy lock nào\" sai), nhưng đó là mức yếu nhất, `FOR KEY SHARE`: nó chỉ cần dòng cha không bị xóa và cột khóa không đổi trong lúc A chạy. `FOR KEY SHARE` chỉ xung đột với `FOR UPDATE`, mức mà Postgres lấy khi xóa dòng hoặc đổi cột khóa. Câu của B chỉ đổi `region`, nên lấy `FOR NO KEY UPDATE` và không phải chờ. Nhờ vậy chèn dòng con không làm nghẽn việc sửa các cột thường của dòng cha.", en: "A does hold a row lock on customer 42 (so \"foreign keys lock nothing\" is wrong), but it is the weakest level, `FOR KEY SHARE`: it only needs the parent row not to be deleted and its key not to change while A runs. `FOR KEY SHARE` only conflicts with `FOR UPDATE`, the level Postgres takes to delete a row or change a key column. B only changes `region`, so it takes `FOR NO KEY UPDATE` and does not wait. That is why inserting child rows does not jam updates to the parent's ordinary columns." }
   - q: { vi: "Một job giữ row lock trên 2 triệu dòng bằng `SELECT … FOR UPDATE`. Điều gì đúng?", en: "A job locks 2 million rows with `SELECT … FOR UPDATE`. What is true?" }
     options:
       - { vi: "Postgres hết bộ nhớ bảng lock và nâng lên lock trên bảng", en: "Postgres runs out of lock-table memory and escalates to a table lock" }
@@ -73,7 +73,7 @@ quiz:
       - { vi: "Chỉ 1000 dòng đầu bị giữ lock", en: "Only the first 1000 rows get locked" }
     answer: 1
     trap: 0
-    why: { vi: "Nghe hợp lý vì vài database khác nâng nhiều row lock thành một lock trên bảng, nhưng Postgres không có lock escalation. Docs chính thức: Postgres không nhớ trong bộ nhớ dòng nào bị sửa hay giữ lock, nên không giới hạn số dòng bị giữ lock, nhưng lấy lock một dòng có thể gây ghi đĩa.", en: "It sounds right because some other databases escalate many row locks into one table lock, but Postgres has no lock escalation. The docs: Postgres keeps no in-memory record of modified or locked rows, so there is no limit on how many rows are locked, but locking a row may cause a disk write." }
+    why: { vi: "Hết bộ nhớ rồi nâng lên lock bảng nghe hợp lý vì vài database khác làm vậy (lock escalation), nhưng Postgres không làm. Như bước 2 của lab cho thấy, row lock được ghi vào header của chính dòng đó trên trang, không vào bảng lock trong bộ nhớ, nên không có giới hạn số dòng, kể cả mức 1 000. Cái giá là mỗi dòng bị lock thành một lần sửa trang: trang thành trang bẩn phải ghi xuống đĩa, và có thêm bản ghi WAL (write-ahead log, nhật ký ghi trước).", en: "Running out of memory and escalating to a table lock sounds right because some other databases do that (lock escalation), but Postgres does not. As step 2 of the lab shows, a row lock is written into that row's own header on the page, not into the in-memory lock table, so there is no limit on the number of rows, 1,000 or otherwise. The price is that each locked row becomes a page change: the page is dirtied and must be written to disk, with an extra WAL (write-ahead log) record." }
 ---
 
 ## Mở bài
@@ -101,8 +101,8 @@ SELECT columns FROM table_name [ WHERE condition ]
 - `FOR UPDATE`: sắp xóa dòng hoặc đổi cột khóa.
 - `FOR NO KEY UPDATE`: sắp sửa cột thường; mức của `UPDATE` thường.
 - `FOR SHARE`: không ai được sửa dòng trong lúc mình dùng nó.
-- `FOR KEY SHARE`: chỉ giữ khóa; mức của kiểm tra khóa ngoại.
-- `OF`: chỉ khóa dòng của các bảng được nêu.
+- `FOR KEY SHARE`: chỉ giữ cho cột khóa không đổi và dòng không bị xóa; mức của kiểm tra khóa ngoại.
+- `OF`: chỉ lock dòng của các bảng được nêu.
 - `NOWAIT`: lỗi ngay thay vì chờ; `SKIP LOCKED`: bỏ qua dòng đang bị giữ.
 
 ## Ví dụ
@@ -229,7 +229,7 @@ SELECT columns FROM table_name [ WHERE condition ]
 - `FOR UPDATE`: about to delete the row or change a key column.
 - `FOR NO KEY UPDATE`: about to change ordinary columns; the strength of a plain `UPDATE`.
 - `FOR SHARE`: nobody may change the row while you use it.
-- `FOR KEY SHARE`: holds only the key; the strength of a foreign-key check.
+- `FOR KEY SHARE`: only keeps the key columns unchanged and the row undeleted; the strength of a foreign-key check.
 - `OF`: lock only the rows of the tables named.
 - `NOWAIT`: error at once instead of waiting; `SKIP LOCKED`: skip rows that are held.
 

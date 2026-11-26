@@ -63,8 +63,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì mặc định trông như \"giá trị dự phòng khi thiếu\", nhưng `DEFAULT` chỉ dùng khi câu `INSERT` không nhắc tới cột hoặc ghi từ khóa `DEFAULT`. Một NULL ghi rõ là một giá trị, nên nó được lưu nguyên. Muốn cấm NULL thì thêm `NOT NULL`."
-      en: "It sounds right because a default looks like \"a fallback when something is missing\", but `DEFAULT` is only used when the `INSERT` leaves the column out or writes the keyword `DEFAULT`. An explicit NULL is a value, so it is stored as is. To forbid NULL, add `NOT NULL`."
+      vi: "`'open'` nghe hợp lý vì giá trị mặc định trông như \"giá trị dự phòng khi thiếu\", nhưng `DEFAULT` chỉ dùng khi câu `INSERT` không nhắc tới cột hoặc ghi từ khóa `DEFAULT`. Ở đây câu ghi rõ NULL, nên NULL được lưu nguyên. Không báo lỗi vì cột không có `NOT NULL`; muốn cấm NULL thì thêm ràng buộc đó."
+      en: "`'open'` sounds right because a default looks like \"a fallback when something is missing\", but `DEFAULT` is only used when the `INSERT` leaves the column out or writes the keyword `DEFAULT`. Here the statement writes NULL explicitly, so NULL is stored as is. There is no error because the column has no `NOT NULL`; add that constraint to forbid NULL."
   - q:
       vi: "Cột `id` được khai báo `PRIMARY KEY`. Postgres cho bạn những gì?"
       en: "Column `id` is declared `PRIMARY KEY`. What does Postgres give you?"
@@ -75,8 +75,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì `UNIQUE` thường cho phép NULL, nhưng khóa chính là `UNIQUE` cộng `NOT NULL`, và Postgres tạo một index unique tên `..._pkey` để kiểm tra nhanh."
-      en: "It sounds right because `UNIQUE` usually allows NULLs, but a primary key is `UNIQUE` plus `NOT NULL`, and Postgres builds a unique index named `..._pkey` to check it quickly."
+      vi: "\"Chỉ chống trùng\" nghe hợp lý vì một cột `UNIQUE` thường vẫn nhận NULL, nhưng khóa chính (primary key) là `UNIQUE` cộng `NOT NULL`, nên `id` NULL bị từ chối. Để kiểm tra trùng nhanh, Postgres tạo một index unique tên `..._pkey`; index đó chính là thứ cấm trùng, nên \"vẫn cho trùng\" cũng sai."
+      en: "\"Only no duplicates\" sounds right because a `UNIQUE` column usually still accepts NULL, but a primary key is `UNIQUE` plus `NOT NULL`, so a NULL `id` is refused. To check duplicates quickly, Postgres builds a unique index named `..._pkey`; that index is what forbids duplicates, so \"duplicates are allowed\" is wrong too."
 ---
 ## Mở bài
 

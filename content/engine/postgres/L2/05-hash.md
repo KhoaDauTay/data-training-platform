@@ -58,8 +58,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì kiểm trùng chỉ cần so bằng, nhưng trong Postgres chỉ B-tree hỗ trợ unique index. `CREATE UNIQUE INDEX ... USING hash` báo lỗi `0A000`. Ràng buộc `UNIQUE` luôn dựng một B-tree."
-      en: "It sounds right because checking duplicates only needs equality, but in Postgres only B-tree supports unique indexes. `CREATE UNIQUE INDEX ... USING hash` fails with `0A000`. A `UNIQUE` constraint always builds a B-tree."
+      vi: "Kiểm trùng chỉ cần so bằng nên Hash nghe hợp, nhưng trong Postgres chỉ B-tree hỗ trợ unique index: `CREATE UNIQUE INDEX ... USING hash` báo lỗi `0A000` (tính năng không được hỗ trợ). `INCLUDE` không đổi được điều đó, vì nó chỉ thêm cột để trả về. Ràng buộc (constraint) `UNIQUE` luôn tự dựng một B-tree, nên đó là cách chặn trùng."
+      en: "Checking duplicates only needs equality, so Hash sounds fine, but in Postgres only B-tree supports unique indexes: `CREATE UNIQUE INDEX ... USING hash` fails with `0A000` (feature not supported). `INCLUDE` cannot change that, since it only adds columns to return. A `UNIQUE` constraint always builds its own B-tree, so that is how you block duplicates."
 predict:
   sql: SELECT user_id FROM sessions WHERE token BETWEEN 'a00' AND 'a01'
   expect: { node: Seq Scan, table: sessions }
@@ -73,8 +73,8 @@ predict:
   answer: 2
   trap: 0
   why:
-    vi: "Đi qua index nghe hợp lý vì câu chỉ khớp 6 dòng, mà câu chọn lọc thì thường dùng index; nhưng index Hash lưu mã băm 32 bit của giá trị, không lưu thứ tự. Nó trả lời được \"bằng đúng giá trị này\" nhưng không trả lời được \"nằm giữa a00 và a01\". Dù câu rất chọn lọc, planner vẫn phải Seq Scan. Một B-tree thì dùng được cho cả hai."
-    en: "Using the index is tempting because the query matches only 6 rows, and selective queries usually go through an index, but a Hash index stores a 32-bit hash of each value, not its order. It can answer \"equal to this value\" but not \"between a00 and a01\". However selective the query is, the planner must Seq Scan. A B-tree would serve both."
+    vi: "Đi qua index nghe hợp lý vì câu chỉ khớp vài dòng, mà câu khớp ít dòng thường dùng index. Nhưng index Hash chỉ lưu mã băm 32 bit của mỗi giá trị: hai token gần nhau như `a00…` và `a01…` có mã băm nằm ở hai chỗ bất kỳ, nên index không biết thứ tự. Nó trả lời được \"bằng đúng giá trị này\", không trả lời được \"nằm giữa a00 và a01\", nên cả Index Scan lẫn Bitmap Heap Scan qua nó đều không có. Planner phải Seq Scan; một B-tree thì phục vụ được cả bằng lẫn khoảng."
+    en: "Using the index sounds right because the query matches only a few rows, and such queries usually go through an index. But a Hash index stores only a 32-bit hash of each value: two close tokens like `a00…` and `a01…` hash to unrelated places, so the index knows no order. It can answer \"equal to this value\", not \"between a00 and a01\", so neither an Index Scan nor a Bitmap Heap Scan through it exists. The planner must Seq Scan; a B-tree would serve both equality and ranges."
 ---
 ## Mở bài
 

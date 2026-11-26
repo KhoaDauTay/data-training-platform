@@ -91,8 +91,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Tăng `shared_buffers` nghe hợp lý vì chữ \"Buffers\" nằm ngay trên dòng đó, nhưng phần shared đã toàn `hit` (163 trang đều có sẵn). Phần đắt là `temp`: sort tràn ra file tạm vì `work_mem` nhỏ, và với `'8MB'` nó biến mất. Tăng cho đúng câu cần, vì `work_mem` nhân lên theo mỗi nút sort/hash và mỗi kết nối."
-      en: "Raising `shared_buffers` sounds right because the word \"Buffers\" is on that very line, but the shared part is already all `hit` (all 163 pages were in memory). The costly part is `temp`: the sort spills to temporary files because `work_mem` is small, and with `'8MB'` it is gone. Raise it only for the query that needs it, since `work_mem` multiplies by every sort/hash node and every connection."
+      vi: "Tăng `shared_buffers` nghe hợp lý vì chữ \"Buffers\" nằm ngay trên dòng đó, nhưng phần shared đã toàn `hit` (163 trang đều có sẵn). Phần đắt là `temp`: sort tràn ra file tạm vì `work_mem` nhỏ, và với `'8MB'` nó biến mất. Tăng cho đúng câu cần, vì `work_mem` nhân lên theo mỗi nút sort/hash và mỗi kết nối. Index trên `km` không giúp \"mọi trường hợp\": câu này đọc cả bảng, và index nào cũng làm mọi lần ghi đắt thêm. `CHECKPOINT` chỉ ghi trang bẩn xuống đĩa, không đụng tới file tạm của sort."
+      en: "Raising `shared_buffers` sounds right because the word \"Buffers\" is on that very line, but the shared part is already all `hit` (all 163 pages were in memory). The costly part is `temp`: the sort spills to temporary files because `work_mem` is small, and with `'8MB'` it is gone. Raise it only for the query that needs it, since `work_mem` multiplies by every sort/hash node and every connection. An index on `km` does not help \"in every case\": this query reads the whole table, and every index makes every write dearer. `CHECKPOINT` only writes dirty pages to disk and never touches a sort's temporary files."
   - q:
       vi: "Trên server thật, cùng một câu chạy hai lần: lần đầu `shared read=163`, lần sau `shared hit=163`. Điều gì đúng?"
       en: "On a real server the same query runs twice: first `shared read=163`, then `shared hit=163`. What is true?"

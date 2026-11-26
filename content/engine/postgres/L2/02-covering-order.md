@@ -94,8 +94,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì `INCLUDE` không phải khóa của index, nhưng chính `INCLUDE` là để index-only scan có đủ cột mà khỏi về bảng. Thiếu ở đây là visibility map: bảng vừa nạp có `relallvisible = 0`, nên planner tính rằng dòng nào cũng phải về heap kiểm. Sau VACUUM, cùng câu đó thành Index Only Scan với `Heap Fetches: 0`."
-      en: "It sounds right because `INCLUDE` columns are not keys of the index, but `INCLUDE` exists precisely so an index-only scan has every column without visiting the table. What is missing is the visibility map: a freshly loaded table has `relallvisible = 0`, so the planner reckons every row must be checked in the heap. After VACUUM the same query becomes an Index Only Scan with `Heap Fetches: 0`."
+      vi: "Cột `INCLUDE` không dùng để tìm, nhưng nó vẫn nằm ở lá của index và index-only scan đọc được nó: `INCLUDE` có ra chính là để khỏi về bảng. Thứ còn thiếu là visibility map (bản đồ đánh dấu trang mà mọi dòng đều nhìn thấy được, do VACUUM bật): bảng vừa nạp có `relallvisible = 0`, nên planner tính rằng dòng nào cũng phải mở trang heap để kiểm. Index không hỏng, nên `REINDEX` không đổi gì. Sau VACUUM, cùng câu đó thành Index Only Scan với `Heap Fetches: 0`."
+      en: "An `INCLUDE` column is not used for searching, but it sits in the index leaves and an index-only scan can read it: avoiding the table is exactly why `INCLUDE` exists. What is missing is the visibility map (the map of pages whose rows are all visible, set by VACUUM): a freshly loaded table has `relallvisible = 0`, so the planner reckons every row needs a heap page visit to check it. The index is not broken, so `REINDEX` changes nothing. After VACUUM the same query becomes an Index Only Scan with `Heap Fetches: 0`."
   - q:
       vi: "Câu chạy nhiều nhất là `WHERE customer_id = $1 ORDER BY created_at DESC LIMIT 5`. Index nào phục vụ nó tốt nhất?"
       en: "The most frequent query is `WHERE customer_id = $1 ORDER BY created_at DESC LIMIT 5`. Which index serves it best?"
@@ -106,8 +106,8 @@ quiz:
     answer: 2
     trap: 0
     why:
-      vi: "Nghe hợp lý vì `INCLUDE` đưa `created_at` vào index, nhưng cột `INCLUDE` không được sắp xếp, nên vẫn cần Sort. `(created_at, customer_id)` có thứ tự thời gian nhưng phải đi qua đơn của mọi khách. `(customer_id, created_at)` đặt đơn của một khách liền nhau và đã xếp theo thời gian: đọc ngược 5 mục là xong."
-      en: "It sounds right because `INCLUDE` puts `created_at` in the index, but `INCLUDE` columns are not sorted, so a Sort is still needed. `(created_at, customer_id)` is in time order but walks through every customer's orders. `(customer_id, created_at)` keeps one customer's orders together, already in time order: reading 5 entries backwards is enough."
+      vi: "`INCLUDE` đưa `created_at` vào index, nhưng cột `INCLUDE` không được sắp xếp: Postgres vẫn lấy hết khoảng 60 đơn của khách (30.000 đơn ÷ 500 khách) rồi Sort. `(created_at, customer_id)` có thứ tự thời gian, nhưng đi ngược thời gian qua đơn của mọi khách để nhặt đơn của một khách. `(customer_id, created_at)` đặt đơn của một khách liền nhau và đã xếp theo thời gian: nhảy tới cuối đoạn đó, đọc ngược 5 mục là xong, không Sort."
+      en: "`INCLUDE` puts `created_at` in the index, but `INCLUDE` columns are not sorted: Postgres still fetches the customer's roughly 60 orders (30,000 orders ÷ 500 customers) and then Sorts them. `(created_at, customer_id)` is in time order, but walks back through every customer's orders to pick one customer's. `(customer_id, created_at)` keeps one customer's orders together, already in time order: jump to the end of that stretch and read 5 entries backwards, no Sort."
 ---
 ## Mở bài
 

@@ -83,8 +83,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì hai câu trả cùng dòng, nhưng index chỉ được dùng khi điều kiện có dạng cột, toán tử, hằng số, với toán tử thuộc operator class của index. Trong `'postgres' = ANY(tags)`, toán tử `=` so hai giá trị `text`, cột mảng nằm trong `ANY`, nên GIN không áp vào được và kế hoạch là Seq Scan."
-      en: "It sounds right because both queries return the same rows, but an index is used only when the condition has the shape column, operator, constant, with an operator of the index's operator class. In `'postgres' = ANY(tags)` the `=` compares two `text` values and the array column sits inside `ANY`, so GIN cannot apply and the plan is a Seq Scan."
+      vi: "Hai câu trả cùng dòng, nhưng index chỉ được dùng khi điều kiện có dạng \"cột, toán tử, hằng số\", với toán tử nằm trong operator class của index (danh sách toán tử mà index đó hiểu; với GIN trên mảng là `@>`, `<@`, `&&`, `=`). Trong `'postgres' = ANY(tags)`, toán tử `=` so hai giá trị `text`, còn cột mảng bị bọc trong `ANY`, nên GIN không áp vào được và kế hoạch là Seq Scan. Thêm `ORDER BY` chỉ đổi thứ tự trả về, không đổi được dạng điều kiện."
+      en: "Both queries return the same rows, but an index is used only when the condition has the shape \"column, operator, constant\", with an operator in the index's operator class (the list of operators that index understands; for GIN on arrays: `@>`, `<@`, `&&`, `=`). In `'postgres' = ANY(tags)` the `=` compares two `text` values and the array column is wrapped in `ANY`, so GIN cannot apply and the plan is a Seq Scan. Adding `ORDER BY` only changes the output order, not the shape of the condition."
   - q:
       vi: "Cần các bài có ít nhất một trong hai nhãn `sql`, `bi`. Điều kiện nào đúng?"
       en: "You need posts with at least one of the two tags `sql`, `bi`. Which condition is right?"

@@ -66,8 +66,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì 10 000 dòng có vẻ là bằng chứng mạnh, nhưng một phụ thuộc hàm là luật cho mọi dữ liệu có thể có, kể cả dòng ngày mai. Dữ liệu chỉ bác bỏ được (một phản ví dụ là đủ), không chứng minh được."
-      en: "It sounds right because 10,000 rows look like strong evidence, but a functional dependency is a rule for every possible state, tomorrow's rows included. Data can only refute one (a single counter-example is enough), never prove it."
+      vi: "\"Đã chứng minh\" nghe hợp lý vì 10 000 dòng có vẻ là bằng chứng mạnh, nhưng một phụ thuộc hàm (functional dependency) là luật cho mọi dữ liệu có thể có, kể cả dòng ghi ngày mai: chỉ cần một người đăng ký hai tài khoản cùng email là nó gãy. Dữ liệu chỉ bác bỏ được, một phản ví dụ (counter-example) là đủ. Ngược lại, \"phụ thuộc sai\" cũng vô căn cứ: không có phản ví dụ nào thì không bác được. Luật chỉ đến từ nghĩa nghiệp vụ: hệ thống có cho một email nhiều tài khoản không."
+      en: "\"Proven\" sounds right because 10,000 rows look like strong evidence, but a functional dependency is a rule for every possible state, tomorrow's rows included: one person signing up twice with the same email breaks it. Data can only refute one, and a single counter-example is enough. \"False\" has no ground either: with no counter-example, nothing refutes it. The rule only comes from the business meaning: does the system allow several accounts per email or not."
   - q:
       vi: "Biết `A → B` và `B → C`. Luật nào cho ra `A → C`?"
       en: "Given `A → B` and `B → C`. Which rule gives `A → C`?"
@@ -78,8 +78,8 @@ quiz:
     answer: 2
     trap: 1
     why:
-      vi: "Nhiều người nghĩ cứ \"thêm vào\" là tăng trưởng. Thật ra tăng trưởng thêm cùng một thuộc tính vào hai vế (`AZ → BZ`); nối hai phụ thuộc qua thuộc tính chung `B` là bắc cầu."
-      en: "Many people think any \"adding\" is augmentation. In fact augmentation adds the same attribute to both sides (`AZ → BZ`); chaining two dependencies through the shared attribute `B` is transitivity."
+      vi: "Nhiều người nghĩ cứ \"thêm vào\" là tăng trưởng (augmentation), nhưng tăng trưởng là thêm cùng một thuộc tính vào hai vế của một phụ thuộc (`AZ → BZ`), không nối hai phụ thuộc. Phản xạ (reflexivity) chỉ cho phụ thuộc tầm thường, khi vế phải nằm trong vế trái. Ở đây hai phụ thuộc nối nhau qua thuộc tính chung `B`: A quyết định B, B quyết định C, nên A quyết định C. Đó là bắc cầu (transitivity)."
+      en: "Many people think any \"adding\" is augmentation, but augmentation adds the same attribute to both sides of one dependency (`AZ → BZ`); it does not chain two. Reflexivity only gives trivial dependencies, where the right side is inside the left. Here two dependencies chain through the shared attribute `B`: A determines B, B determines C, so A determines C. That is transitivity."
 ---
 ## Mở bài
 

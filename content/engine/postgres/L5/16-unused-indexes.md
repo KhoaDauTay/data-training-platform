@@ -64,8 +64,8 @@ lab:
         vi: "`indexrelid` là oid của index."
         en: "`indexrelid` is the index's oid."
       fact:
-        vi: "Hai index không ai dùng chiếm 19 trang (10 + 9), trong tổng 63 trang index. Mỗi trang đó vẫn phải ghi, nằm trong bộ đệm, vào WAL và vào backup."
-        en: "The two unused indexes take 19 pages (10 + 9) out of 63 index pages in total. Every one of those pages is still written, cached, logged to WAL and backed up."
+        vi: "Hai index không ai dùng chiếm 19 trang (10 + 9), trong tổng 63 trang index. Mỗi trang đó vẫn phải ghi, chiếm chỗ trong bộ đệm, đi vào WAL (nhật ký ghi trước) và vào backup."
+        en: "The two unused indexes take 19 pages (10 + 9) out of 63 index pages in total. Every one of those pages is still written, takes room in the buffer cache, goes into the WAL (write-ahead log) and into backups."
         probe: SELECT indexrelname, pg_relation_size(indexrelid) / 8192 FROM pg_stat_user_indexes WHERE relname = 'tickets' ORDER BY indexrelname
         expect: [[tickets_customer_idx, 10], [tickets_opened_idx, 10], [tickets_pkey, 24], [tickets_status_idx, 9], [tickets_status_opened_idx, 10]]
     - task:
@@ -78,8 +78,8 @@ lab:
         vi: "`pg_stat_user_tables`, lọc hai tên bảng bằng `IN`."
         en: "`pg_stat_user_tables`, filter the two table names with `IN`."
       fact:
-        vi: "`tickets`: 40 UPDATE, 0 HOT. `tickets_lean`: 40 UPDATE, 40 HOT. Mỗi UPDATE trên `tickets` phải thêm mục vào cả 5 index, vì `status` có trong hai index của nó."
-        en: "`tickets`: 40 updates, 0 HOT. `tickets_lean`: 40 updates, 40 HOT. Every UPDATE on `tickets` must add entries to all 5 indexes, because `status` is in two of its indexes."
+        vi: "`tickets`: 40 UPDATE, 0 HOT. `tickets_lean`: 40 UPDATE, 40 HOT (heap-only tuple: bản dòng mới chỉ ghi vào bảng, không thêm mục index). HOT chỉ được khi không cột nào có index bị đổi; `status` nằm trong hai index của `tickets`, nên mỗi UPDATE ở đó phải thêm mục vào cả 5 index."
+        en: "`tickets`: 40 updates, 0 HOT. `tickets_lean`: 40 updates, 40 HOT (heap-only tuple: the new row version goes only into the table, with no new index entry). HOT is only possible when no indexed column changes; `status` is in two of `tickets`' indexes, so every UPDATE there must add entries to all 5 indexes."
         probe: SELECT relname, n_tup_upd, n_tup_hot_upd FROM pg_stat_user_tables WHERE relname IN ('tickets', 'tickets_lean') ORDER BY relname
         expect: [[tickets, 40, 0], [tickets_lean, 40, 40]]
 quiz:
@@ -93,8 +93,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Thêm index nghe hợp lý vì mỗi index đúng là làm nhanh một kiểu đọc, nhưng việc chậm ở đây là ghi: UPDATE dùng khóa chính để tìm phiếu, rồi phải sửa mọi index có `status`. Bước 3 đo cái giá đó: 0 HOT trên 40 UPDATE so với 40 HOT ở `tickets_lean`. Docs chính thức cũng nói index ít khi hoặc không bao giờ dùng thì nên bỏ."
-      en: "Adding an index sounds right because each index does speed up some kind of read, but the slow work here is writing: the UPDATE finds the ticket by primary key, then must change every index that holds `status`. Step 3 measures that cost: 0 HOT out of 40 UPDATEs against 40 HOT on `tickets_lean`. The official docs also say indexes that are seldom or never used should be removed."
+      vi: "Thêm index nghe hợp lý vì mỗi index làm nhanh một kiểu đọc, nhưng việc chậm ở đây là ghi. Câu đóng phiếu tìm phiếu bằng khóa chính rồi đổi `status`; vì `status` có index, UPDATE không thể là HOT (chỉ ghi bảng, không thêm mục index) và phải thêm mục vào cả 5 index. Bước 3 đo đúng cái giá đó: 0 HOT trên 40 UPDATE, so với 40 HOT ở `tickets_lean`. Index `(status, id)` lại thêm một index chứa `status`. `REINDEX` mỗi đêm chỉ làm gọn cây, không bớt số index phải ghi."
+      en: "Adding an index sounds right because each index speeds up some kind of read, but the slow work here is writing. Closing a ticket finds it by primary key, then changes `status`; because `status` is indexed, the UPDATE cannot be HOT (table only, no new index entry) and must add entries to all 5 indexes. Step 3 measures exactly that cost: 0 HOT out of 40 UPDATEs, against 40 HOT on `tickets_lean`. A `(status, id)` index adds one more index holding `status`. A nightly `REINDEX` only compacts the trees; it does not reduce the number of indexes to write."
   - q:
       vi: "`tickets_opened_idx` có `idx_scan` = 0. Có nên xóa ngay không?"
       en: "`tickets_opened_idx` has `idx_scan` = 0. Should you drop it right away?"
@@ -105,8 +105,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Con số 0 trông như bằng chứng cuối cùng, nhưng nó chỉ đúng cho khoảng thời gian bộ đếm ghi lại: lab này reset ngay trước một ngày tiêu biểu. Báo cáo cuối tháng hay câu chạy trên replica không hiện ở đây, và index UNIQUE vẫn làm việc khi ghi dù `idx_scan` = 0."
-      en: "Zero looks like final proof, but it only holds for the time the counters covered: this lab reset them right before one typical day. A month-end report or a query on a replica does not show up here, and a UNIQUE index still does its job on writes even with `idx_scan` = 0."
+      vi: "Con số 0 trông như bằng chứng cuối cùng, nhưng nó chỉ đúng cho khoảng thời gian bộ đếm ghi lại: lab này reset ngay trước một ngày tiêu biểu. Báo cáo cuối tháng hay câu chạy trên replica không hiện ở đây, và index giữ ràng buộc UNIQUE vẫn làm việc mỗi lần ghi dù `idx_scan` = 0. \"Không bao giờ xóa\" thì sai theo chiều ngược lại: index không dùng vẫn tốn chỗ và làm chậm mỗi lần ghi, như bước 2 và bước 3 đo được. Kiểm đủ rồi mới xóa."
+      en: "Zero looks like final proof, but it only holds for the time the counters covered: this lab reset them right before one typical day. A month-end report or a query on a replica does not show up here, and an index backing a UNIQUE constraint still works on every write even with `idx_scan` = 0. \"Never drop\" is wrong the other way: an unused index still takes space and slows every write, as steps 2 and 3 measured. Check fully, then drop."
 ---
 ## Mở bài
 

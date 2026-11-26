@@ -94,8 +94,8 @@ quiz:
     answer: 1
     trap: 2
     why:
-      vi: "Nghe hợp lý vì KNN hay được giới thiệu cùng `LIMIT`, nhưng điều kiện để dùng index là khoảng cách nằm trong `ORDER BY` với cột có index GiST. Bỏ `LIMIT`, Postgres vẫn có thể chọn Index Scan có `Order By`; nó chỉ phải đi hết cây. Chính `LIMIT` mới làm câu rẻ."
-      en: "It sounds right because KNN is usually shown with `LIMIT`, but what makes the index usable is the distance in `ORDER BY` on a GiST-indexed column. Without `LIMIT`, Postgres can still pick an Index Scan with `Order By`; it just walks the whole tree. The `LIMIT` is what makes the query cheap."
+      vi: "Không có lỗi nào: tìm k điểm gần nhất (KNN, k nearest neighbours) hay được giới thiệu cùng `LIMIT`, nhưng Postgres không bắt buộc nó. Điều kiện để dùng index GiST là khoảng cách nằm trong `ORDER BY`, một vế là cột có index, vế kia là hằng; bỏ `LIMIT` không đổi điều đó, nên index vẫn dùng được. Planner vẫn có thể chọn Index Scan có `Order By`, chỉ là phải đi hết cây để trả cả 30.000 điểm. `LIMIT` là thứ cho phép dừng sau vài điểm, nên chính nó làm câu rẻ."
+      en: "There is no error: a k-nearest-neighbours (KNN) search is usually shown with `LIMIT`, but Postgres does not require it. What makes the GiST index usable is the distance in `ORDER BY`, one side the indexed column, the other a constant; dropping `LIMIT` does not change that, so the index stays usable. The planner can still pick an Index Scan with `Order By`; it just walks the whole tree to return all 30,000 points. `LIMIT` is what lets it stop after a few points, so it is what makes the query cheap."
   - q:
       vi: "Cột `loc` kiểu `point` lưu (kinh độ, vĩ độ) theo độ. `loc <-> p` trả 0.22 giữa Da Nang và Hoi An. Đó là gì?"
       en: "Column `loc` of type `point` stores (longitude, latitude) in degrees. `loc <-> p` returns 0.22 between Da Nang and Hoi An. What is that?"
@@ -106,8 +106,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì hai thành phố gần nhau, nhưng `point` không biết đơn vị: nó tính Pythagoras trên đúng những con số bạn lưu. Một độ kinh tuyến lại dài khác nhau tùy vĩ độ. `earth_distance(ll_to_earth(...), ll_to_earth(...))` tính trên mặt cầu và trả mét: khoảng 24 km."
-      en: "It sounds right because the cities are close, but `point` knows no unit: it applies Pythagoras to exactly the numbers you stored. A degree of longitude also has a different length depending on latitude. `earth_distance(ll_to_earth(...), ll_to_earth(...))` works on a sphere and returns metres: about 24 km."
+      vi: "0,22 km hay 0,22 dặm nghe hợp lý vì hai thành phố gần nhau, nhưng `point` không biết đơn vị: nó tính Pythagoras trên đúng những con số bạn lưu, ở đây là độ. Một độ cũng không có độ dài cố định: một độ kinh tuyến ngắn dần khi đi về phía hai cực. `earth_distance(ll_to_earth(...), ll_to_earth(...))` tính trên mặt cầu và trả mét: Da Nang tới Hoi An khoảng 24 km, xa hơn 100 lần so với 0,22 km."
+      en: "0.22 km or 0.22 miles sounds right because the cities are close, but `point` knows no unit: it applies Pythagoras to exactly the numbers you stored, here degrees. A degree has no fixed length either: a degree of longitude gets shorter towards the poles. `earth_distance(ll_to_earth(...), ll_to_earth(...))` works on a sphere and returns metres: Da Nang to Hoi An is about 24 km, over 100 times the 0.22 km reading."
 ---
 ## Mở bài
 

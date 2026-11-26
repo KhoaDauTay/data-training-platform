@@ -53,8 +53,8 @@ lab:
       check: rows
       ordered: true
       hint:
-        vi: Như lab trước, đọc `heap_page_items()`.
-        en: As in the previous lab, read `heap_page_items()`.
+        vi: Đọc `heap_page_items()` của trang 0, như khi mở trang của bảng `notes`.
+        en: Read `heap_page_items()` of page 0, as when you opened the page of table `notes`.
       fact:
         vi: "Tuple của dòng 2 chỉ dài 46 byte trên trang: giá trị 6400 byte đã ra bảng TOAST, trên trang chỉ còn con trỏ 18 byte. Dòng 3 (1184 byte) vẫn ở trên trang vì bản nén đã đủ nhỏ."
         en: "Row 2's tuple is only 46 bytes on the page: the 6400-byte value moved to the TOAST table and only an 18-byte pointer stays. Row 3 (1184 bytes) stays on the page because the compressed value is small enough."
@@ -98,8 +98,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì giá trị lớn hơn hẳn một trang, nhưng Postgres nén trước rồi mới tính chuyện đẩy ra ngoài. Lab đo được 1156 byte cho đúng chuỗi này, đủ nhỏ để ở lại trang. `pg_column_size` đếm số byte lưu thật, nên nó cũng không trả 18 khi giá trị đã ra TOAST."
-      en: "It sounds right because the value is far bigger than a page, but Postgres compresses first and only then considers moving it out. The lab measures 1156 bytes for this very string, small enough to stay on the page. `pg_column_size` counts the bytes really stored, so it would not return 18 even for a value moved out to TOAST."
+      vi: "100.000 byte nghe hợp lý vì chuỗi lớn hơn hẳn một trang 8 KB, nhưng TOAST (The Oversized-Attribute Storage Technique, cách Postgres lưu giá trị quá lớn) nén giá trị trước, và chỉ đẩy ra bảng TOAST khi bản nén vẫn quá lớn. 100.000 chữ giống nhau nén còn 1156 byte (bước 1 của lab), đủ nhỏ để ở lại trang. 18 byte cũng sai: đó là cỡ con trỏ trên trang, còn `pg_column_size` đếm số byte giá trị chiếm thật; dòng 2 đã ra TOAST mà vẫn đo được 6400."
+      en: "100,000 bytes sounds right because the string is far bigger than an 8 KB page, but TOAST (The Oversized-Attribute Storage Technique, how Postgres stores values too large for a page) compresses the value first, and only moves it to the TOAST table when the compressed value is still too large. 100,000 identical letters compress to 1156 bytes (step 1 of the lab), small enough to stay on the page. 18 bytes is wrong too: that is the size of the pointer on the page, while `pg_column_size` counts the bytes the value really takes; row 2 has moved to TOAST and still measures 6400."
   - q:
       vi: "Bảng `doc` có cột `body` dài, phần lớn đã ra TOAST. Vì sao `SELECT id FROM doc` nhanh hơn hẳn `SELECT * FROM doc`?"
       en: "Table `doc` has a long `body` column, mostly moved out to TOAST. Why is `SELECT id FROM doc` much faster than `SELECT * FROM doc`?"
@@ -110,8 +110,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì ta hình dung một dòng nằm gọn trên trang, nhưng với giá trị đã ra TOAST, trên trang chỉ còn con trỏ. Câu không cần `body` thì không bao giờ đọc bảng TOAST hay giải nén; `SELECT *` thì phải ghép lại từng chunk."
-      en: "It sounds right because we picture a row sitting whole on its page, but for a value moved out to TOAST only a pointer stays on the page. A query that does not need `body` never reads the TOAST table or decompresses anything; `SELECT *` has to put every chunk back together."
+      vi: "\"Đọc cột nào cũng như nhau\" chỉ đúng khi cả dòng nằm gọn trên trang. Với giá trị đã ra bảng TOAST, trên trang chỉ còn con trỏ 18 byte. Câu không cần `body` thì không bao giờ đọc bảng TOAST hay giải nén; `SELECT *` thì phải đọc và ghép lại từng chunk. Index không giải thích được: bảng `doc` không có index nào."
+      en: "\"Any column costs the same\" is only true when the whole row sits on its page. For a value moved out to the TOAST table, only an 18-byte pointer stays on the page. A query that does not need `body` never reads the TOAST table or decompresses anything; `SELECT *` has to read and put every chunk back together. An index cannot explain it: table `doc` has no index at all."
 ---
 ## Mở bài
 

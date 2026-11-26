@@ -100,8 +100,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì mỗi dòng phải có giá trị của cột mới, nhưng từ Postgres 11 một DEFAULT hằng được lưu trong catalog và trả về cho dòng cũ khi đọc, nên lệnh chạy gần như tức thì. DEFAULT không ổn định như `random()` thì khác: bảng bị ghi lại."
-      en: "It sounds right because every row needs a value for the new column, but since Postgres 11 a constant DEFAULT is kept in the catalog and returned for old rows on read, so the command is almost instant. A volatile DEFAULT such as `random()` is different: the table is rewritten."
+      vi: "\"Ghi lại cả 50 triệu dòng\" nghe hợp lý vì mỗi dòng phải có giá trị của cột mới, nhưng từ Postgres 11 một DEFAULT hằng (như `'app'`) được lưu một lần trong catalog (bảng hệ thống mô tả bảng của bạn) và trả về cho dòng cũ khi đọc, nên lệnh chạy gần như tức thì. Cũng không lỗi `NOT NULL`, vì mọi dòng cũ đều đọc ra `'app'`. DEFAULT đổi giá trị mỗi lần gọi như `random()` thì khác: bảng bị ghi lại."
+      en: "\"Rewrites all 50 million rows\" sounds right because every row needs a value for the new column, but since Postgres 11 a constant DEFAULT (such as `'app'`) is stored once in the catalog (the system tables that describe your tables) and returned for old rows on read, so the command is almost instant. There is no `NOT NULL` error either, because every old row reads back `'app'`. A DEFAULT that changes on every call, such as `random()`, is different: the table is rewritten."
   - q:
       vi: "Thay đổi nào ghi lại toàn bộ bảng?"
       en: "Which change rewrites the whole table?"
@@ -120,7 +120,7 @@ Bảng `orders` đã có 20.000 dòng thì sếp muốn thêm trạng thái đơ
 
 ## Ý chính
 
-`ALTER TABLE` sửa một bảng đang có dữ liệu: thêm, xóa, đổi tên cột, đổi kiểu, thêm hoặc bỏ ràng buộc, đổi tên bảng. Phần lớn các dạng này khóa bảng ở mức cao nhất trong lúc chạy, nên lệnh nhanh hay chậm quyết định bảng bị đứng bao lâu.
+`ALTER TABLE` sửa một bảng đang có dữ liệu: thêm, xóa, đổi tên cột, đổi kiểu, thêm hoặc bỏ ràng buộc, đổi tên bảng. Phần lớn các dạng này giữ lock mạnh nhất trên bảng (chặn cả người đọc) trong lúc chạy, nên lệnh nhanh hay chậm quyết định bảng bị đứng bao lâu.
 
 Nhiều người nghĩ thêm cột có DEFAULT là phải ghi lại mọi dòng. Thật ra với giá trị hằng, Postgres lưu DEFAULT một lần trong catalog và trả nó cho dòng cũ khi đọc. Chỉ DEFAULT không ổn định như `random()` mới làm bảng bị ghi lại. `DROP COLUMN` cũng không ghi lại: cột chỉ bị ẩn.
 

@@ -65,8 +65,8 @@ lab:
         vi: "Câu con trong `NOT EXISTS` nối `closed_depts` với dòng `staff` bên ngoài qua `dept_id`."
         en: "The subquery inside `NOT EXISTS` links `closed_depts` to the outer `staff` row on `dept_id`."
       fact:
-        vi: "Ra 1, 2, 4: `NOT EXISTS` chỉ hỏi có dòng khớp hay không, nên một NULL không làm hỏng cả câu lọc. Nhân viên 2 (không có phòng) cũng được giữ."
-        en: "It is 1, 2, 4: `NOT EXISTS` only asks whether a matching row exists, so one NULL cannot spoil the whole filter. Staff 2 (no department) is kept too."
+        vi: "Ra 1, 2, 4: `NOT EXISTS` hỏi từng nhân viên \"có dòng nào trong `closed_depts` cùng phòng không\". Chỉ nhân viên 3 (phòng 20) có dòng khớp nên bị loại. Dòng NULL của `closed_depts` không khớp với ai, và nhân viên 2 (phòng NULL) cũng không khớp dòng nào, nên được giữ."
+        en: "It is 1, 2, 4: `NOT EXISTS` asks for each staff member \"is there a row in `closed_depts` with the same department?\". Only staff 3 (department 20) has a match, so it is dropped. The NULL row of `closed_depts` matches nobody, and staff 2 (department NULL) matches no row, so it is kept."
         probe: SELECT id FROM staff s WHERE NOT EXISTS (SELECT 1 FROM closed_depts c WHERE c.dept_id = s.dept_id) ORDER BY id
         expect: [[1], [2], [4]]
 quiz:
@@ -81,8 +81,8 @@ quiz:
     answer: 2
     trap: 0
     why:
-      vi: Nghe hợp lý vì một giá trị thì luôn bằng chính nó, nhưng NULL nghĩa là "không biết", và hai thứ không biết chưa chắc bằng nhau, nên so sánh thường với NULL luôn cho NULL. Muốn hỏi "có phải NULL không" thì dùng `IS NULL`.
-      en: It sounds right because a value always equals itself, but NULL means "unknown", and two unknowns are not known to be equal, so an ordinary comparison with NULL always yields NULL. To ask "is it NULL?" use `IS NULL`.
+      vi: "true nghe hợp lý vì một giá trị thì luôn bằng chính nó, nhưng NULL nghĩa là \"không biết\": hai thứ không biết thì không thể nói là bằng hay khác. Vì thế mọi phép so sánh thường với NULL (`=`, `<>`, `>`) đều cho NULL, không phải true hay false, và không báo lỗi. Muốn hỏi \"có phải NULL không\" thì dùng `IS NULL`."
+      en: "true sounds right because a value always equals itself, but NULL means \"unknown\": two unknowns cannot be called equal or different. So every ordinary comparison with NULL (`=`, `<>`, `>`) gives NULL, not true or false, and raises no error. To ask \"is it NULL?\" use `IS NULL`."
   - q:
       vi: "Cột `v` có ba dòng: 1, NULL, 3. `SELECT count(*), count(v)` cho ra gì?"
       en: "Column `v` has three rows: 1, NULL, 3. What does `SELECT count(*), count(v)` return?"
@@ -93,8 +93,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý nếu bạn nghĩ `count` nào cũng đếm số dòng, nhưng `count(*)` đếm dòng, còn `count(v)` chỉ đếm dòng có `v` khác NULL. `sum` và `avg` cũng bỏ qua NULL."
-      en: "It sounds right if you think every `count` counts rows, but `count(*)` counts rows while `count(v)` counts only rows where `v` is not NULL. `sum` and `avg` also skip NULLs."
+      vi: "\"3 và 3\" nghe hợp lý nếu bạn nghĩ `count` nào cũng đếm số dòng, nhưng `count(*)` đếm dòng (3), còn `count(v)` chỉ đếm dòng có `v` khác NULL (1 và 3, tức 2). \"2 và 2\" sai vì dòng NULL vẫn là một dòng. `sum` và `avg` cũng bỏ qua NULL."
+      en: "\"3 and 3\" sounds right if you think every `count` counts rows, but `count(*)` counts rows (3) while `count(v)` counts only rows where `v` is not NULL (1 and 3, so 2). \"2 and 2\" is wrong because the NULL row is still a row. `sum` and `avg` also skip NULLs."
   - q:
       vi: "Bảng có `x` = 2 và 3. `SELECT x FROM t WHERE x NOT IN (1, NULL)` trả về bao nhiêu dòng?"
       en: "A table holds `x` = 2 and 3. How many rows does `SELECT x FROM t WHERE x NOT IN (1, NULL)` return?"
@@ -105,8 +105,8 @@ quiz:
     answer: 2
     trap: 0
     why:
-      vi: "Nghe hợp lý vì cả 2 lẫn 3 đều không phải 1, còn NULL trông như một phần tử vô hại, nhưng `2 NOT IN (1, NULL)` nghĩa là `2 <> 1 AND 2 <> NULL`, tức true AND NULL = NULL. WHERE chỉ giữ dòng true, nên không còn dòng nào. `NOT EXISTS` không có bẫy này."
-      en: "It sounds right because neither 2 nor 3 is 1 and the NULL looks harmless, but `2 NOT IN (1, NULL)` means `2 <> 1 AND 2 <> NULL`, that is true AND NULL = NULL. WHERE keeps only true rows, so nothing is left. `NOT EXISTS` does not have this trap."
+      vi: "\"2 dòng\" nghe hợp lý vì cả 2 lẫn 3 đều không phải 1, còn NULL trông như một phần tử vô hại, nhưng `2 NOT IN (1, NULL)` nghĩa là `2 <> 1 AND 2 <> NULL`, tức true AND NULL = NULL. WHERE chỉ giữ dòng true, nên không còn dòng nào. `NOT EXISTS` không có bẫy này."
+      en: "\"2 rows\" sounds right because neither 2 nor 3 is 1 and the NULL looks harmless, but `2 NOT IN (1, NULL)` means `2 <> 1 AND 2 <> NULL`, that is true AND NULL = NULL. WHERE keeps only true rows, so nothing is left. `NOT EXISTS` does not have this trap."
   - q:
       vi: "Muốn tìm dòng mà `a` và `b` khác nhau, coi NULL như một giá trị bình thường (NULL với 5 là khác, NULL với NULL là giống). Viết thế nào?"
       en: "You want rows where `a` and `b` differ, treating NULL as an ordinary value (NULL vs 5 differ, NULL vs NULL are the same). What do you write?"
@@ -117,8 +117,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì `a <> b` là cách tự nhiên để hỏi \"khác nhau\", nhưng `<>` và `NOT (a = b)` cho NULL khi một bên là NULL, nên dòng bị bỏ. `IS DISTINCT FROM` không bao giờ trả NULL: NULL với 5 là true, NULL với NULL là false."
-      en: "It sounds right because `a <> b` is the natural way to ask \"different\", but `<>` and `NOT (a = b)` return NULL when either side is NULL, so the row is dropped. `IS DISTINCT FROM` never returns NULL: NULL vs 5 is true, NULL vs NULL is false."
+      vi: "`a <> b` nghe hợp lý vì đó là cách tự nhiên để hỏi \"khác nhau\", nhưng `<>` và `NOT (a = b)` cho NULL khi một bên là NULL, và WHERE bỏ mọi dòng không phải true, nên dòng NULL với 5 bị mất. `IS DISTINCT FROM` không bao giờ trả NULL: NULL với 5 là true, NULL với NULL là false."
+      en: "`a <> b` sounds right because it is the natural way to ask \"different\", but `<>` and `NOT (a = b)` return NULL when either side is NULL, and WHERE drops every row that is not true, so the NULL vs 5 row is lost. `IS DISTINCT FROM` never returns NULL: NULL vs 5 is true, NULL vs NULL is false."
   - q:
       vi: "Một ràng buộc `CHECK (qty > 0)` gặp dòng có `qty` là NULL. Chuyện gì xảy ra?"
       en: "A `CHECK (qty > 0)` constraint meets a row whose `qty` is NULL. What happens?"
@@ -129,8 +129,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì NULL đâu có lớn hơn 0, nhưng `CHECK` chỉ từ chối khi điều kiện là false, còn ở đây điều kiện là NULL. Muốn cấm NULL thì thêm `NOT NULL`."
-      en: "It sounds right because NULL is not greater than 0, but `CHECK` only rejects a row when the condition is false, and here the condition is NULL. To forbid NULL, add `NOT NULL`."
+      vi: "\"Dòng bị từ chối\" nghe hợp lý vì NULL đâu có lớn hơn 0, nhưng `NULL > 0` cho NULL, và `CHECK` chỉ từ chối khi điều kiện là false. Điều kiện NULL được cho qua, giá trị vẫn là NULL chứ không đổi thành 0. Muốn cấm NULL thì thêm `NOT NULL` bên cạnh `CHECK`."
+      en: "\"The row is rejected\" sounds right because NULL is not greater than 0, but `NULL > 0` gives NULL, and `CHECK` only rejects a row when the condition is false. A NULL condition passes, and the value stays NULL rather than becoming 0. To forbid NULL, add `NOT NULL` next to the `CHECK`."
 ---
 ## Mở bài
 

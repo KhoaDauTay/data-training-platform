@@ -47,8 +47,8 @@ lab:
       solution: SELECT s.id, s.name, s.dept_id FROM staff s WHERE NOT EXISTS (SELECT 1 FROM departments d WHERE d.id = s.dept_id)
       check: rows
       hint:
-        vi: "Phép phản nối: `WHERE NOT EXISTS (SELECT 1 FROM departments d WHERE d.id = s.dept_id)`."
-        en: "An anti-join: `WHERE NOT EXISTS (SELECT 1 FROM departments d WHERE d.id = s.dept_id)`."
+        vi: "Phép phản nối (anti-join), giữ dòng không có cặp bên kia: `WHERE NOT EXISTS (SELECT 1 FROM departments d WHERE d.id = s.dept_id)`."
+        en: "An anti-join, which keeps rows with no partner on the other side: `WHERE NOT EXISTS (SELECT 1 FROM departments d WHERE d.id = s.dept_id)`."
     - task:
         vi: "Phòng nhân sự xác nhận: người có mã phòng 9 thật ra thuộc phòng `it` (mã 3). Sửa dữ liệu đó."
         en: "HR confirms that the person with department id 9 actually belongs to `it` (id 3). Fix that data."
@@ -86,8 +86,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì hai ô trông giống hệt nhau, nhưng theo SQL, NULL là \"không biết\", nên hai NULL không được coi là trùng. Muốn chặn, dùng `UNIQUE NULLS NOT DISTINCT` hoặc thêm `NOT NULL`."
-      en: "It sounds right because the two cells look identical, but in SQL NULL means \"unknown\", so two NULLs are not duplicates. To forbid it, use `UNIQUE NULLS NOT DISTINCT` or add `NOT NULL`."
+      vi: "Lỗi 23505 (vi phạm UNIQUE) nghe hợp lý vì hai ô trông giống hệt nhau, nhưng trong SQL NULL nghĩa là \"không biết\": hai giá trị không biết thì không thể nói là bằng nhau, nên ràng buộc UNIQUE không coi chúng là trùng và nhận cả hai dòng. Postgres cũng không bao giờ tự đổi NULL thành chuỗi rỗng; đó là hai giá trị khác nhau. Muốn chặn hai NULL, dùng `UNIQUE NULLS NOT DISTINCT` hoặc thêm `NOT NULL`."
+      en: "Error 23505 (a UNIQUE violation) sounds right because the two cells look identical, but in SQL NULL means \"unknown\": two unknown values cannot be called equal, so the UNIQUE constraint does not count them as duplicates and accepts both rows. Postgres never turns NULL into an empty string either; they are different values. To forbid two NULLs, use `UNIQUE NULLS NOT DISTINCT` or add `NOT NULL`."
   - q:
       vi: "Theo Codd, một quan hệ là tập các bộ. Bảng SQL khác ở điểm nào?"
       en: "In Codd's model a relation is a set of tuples. Where does an SQL table differ?"
@@ -98,8 +98,8 @@ quiz:
     answer: 1
     trap: 2
     why:
-      vi: "Nhiều người nghĩ bảng nào cũng là tập. Thật ra SQL dùng đa tập: không có khóa thì hai dòng trùng vẫn nằm đó, và `SELECT` không tự bỏ trùng (phải `DISTINCT`). Khóa chính đưa bảng về đúng định nghĩa của Codd."
-      en: "Many people think every table is a set. In fact SQL uses multisets: without a key two equal rows can sit side by side, and `SELECT` does not remove duplicates by itself (that takes `DISTINCT`). A primary key brings the table back to Codd's definition."
+      vi: "Nhiều người nghĩ bảng nào cũng là tập, nhưng một tập không chứa hai phần tử giống nhau, còn bảng SQL là đa tập (multiset): không có khóa thì hai dòng trùng vẫn nằm cạnh nhau, và `SELECT` không tự bỏ trùng (phải viết `DISTINCT`). Bảng SQL vẫn có cột, như quan hệ có thuộc tính. Khóa chính (primary key) cấm hai dòng trùng, nên đưa bảng về đúng định nghĩa tập của Codd."
+      en: "Many people think every table is a set, but a set never holds two equal elements, while an SQL table is a multiset: without a key two equal rows can sit side by side, and `SELECT` does not remove duplicates by itself (that takes `DISTINCT`). An SQL table does have columns, as a relation has attributes. A primary key forbids two equal rows, which brings the table back to Codd's set definition."
 ---
 ## Mở bài
 

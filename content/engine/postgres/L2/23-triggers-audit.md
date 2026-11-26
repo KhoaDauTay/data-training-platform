@@ -120,8 +120,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì cùng đoạn code đó chạy đúng trong trigger BEFORE, nhưng trigger AFTER chạy khi dòng đã nằm trong bảng, và giá trị nó trả về bị bỏ qua. Muốn sửa dòng trước khi ghi thì dùng BEFORE."
-      en: "It sounds right because the same code works in a BEFORE trigger, but an AFTER trigger runs once the row is already in the table, and its return value is ignored. To change a row before it is stored, use BEFORE."
+      vi: "Cùng đoạn code đó chạy đúng trong trigger BEFORE, nhưng trigger AFTER chạy khi dòng đã nằm trong bảng, và giá trị nó trả về bị bỏ qua: tên vẫn như lúc INSERT. Postgres cũng không báo lỗi, vì trigger AFTER được đọc và gán `NEW`; việc gán chỉ không có tác dụng. Muốn sửa dòng trước khi ghi thì dùng BEFORE."
+      en: "The same code works in a BEFORE trigger, but an AFTER trigger runs once the row is already in the table, and its return value is ignored: the name stays as inserted. Postgres raises no error either, since an AFTER trigger may read and assign `NEW`; the assignment just has no effect. To change a row before it is stored, use BEFORE."
   - q:
       vi: "Một câu `UPDATE` sửa 0 dòng. Trigger nào vẫn chạy?"
       en: "An `UPDATE` statement changes 0 rows. Which trigger still fires?"
@@ -131,8 +131,8 @@ quiz:
       - { vi: "Không trigger nào", en: "No trigger" }
     answer: 1
     why:
-      vi: "Trigger STATEMENT chạy một lần cho mỗi câu lệnh, kể cả khi câu đó không đụng dòng nào; trigger ROW chạy một lần cho mỗi dòng nên ở đây chạy 0 lần."
-      en: "A STATEMENT trigger fires once per statement, even when the statement touches no row; a ROW trigger fires once per row, so here it fires 0 times."
+      vi: "Trigger `FOR EACH STATEMENT` chạy một lần cho mỗi câu lệnh, kể cả khi câu đó không đụng dòng nào, nên \"không trigger nào\" là sai. Trigger `FOR EACH ROW` chạy một lần cho mỗi dòng bị sửa, nên với 0 dòng nó chạy 0 lần."
+      en: "A `FOR EACH STATEMENT` trigger fires once per statement, even when the statement touches no row, so \"no trigger\" is wrong. A `FOR EACH ROW` trigger fires once per changed row, so with 0 rows it fires 0 times."
   - q:
       vi: "Bảng có hai trigger `BEFORE INSERT ... FOR EACH ROW` tên `b_trim` và `a_check`. Cái nào chạy trước?"
       en: "A table has two `BEFORE INSERT ... FOR EACH ROW` triggers named `b_trim` and `a_check`. Which one fires first?"
@@ -142,8 +142,8 @@ quiz:
       - { vi: "Ngẫu nhiên", en: "At random" }
     answer: 1
     why:
-      vi: "Các trigger cùng thời điểm và cùng sự kiện chạy theo thứ tự chữ cái của tên, không theo thứ tự tạo. Đặt tên có tiền tố khi thứ tự quan trọng."
-      en: "Triggers with the same timing and event fire in alphabetical order of their names, not in creation order. Use name prefixes when the order matters."
+      vi: "Thứ tự không ngẫu nhiên và không theo lúc tạo: các trigger cùng thời điểm (BEFORE) và cùng sự kiện (INSERT) chạy theo thứ tự chữ cái của tên, nên `a_check` chạy trước `b_trim`. Đặt tên có tiền tố khi thứ tự quan trọng."
+      en: "The order is neither random nor by creation time: triggers with the same timing (BEFORE) and event (INSERT) fire in alphabetical order of their names, so `a_check` fires before `b_trim`. Use name prefixes when the order matters."
 ---
 ## Mở bài
 

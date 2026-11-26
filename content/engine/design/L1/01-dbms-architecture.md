@@ -67,8 +67,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì vài hệ có gợi ý index trong câu, nhưng SQL mô tả kết quả, không mô tả đường đi. Đổi tầng trong (index, nơi lưu file) không đổi chữ của câu: đó là độc lập dữ liệu vật lý."
-      en: "It sounds right because some systems accept index hints in the query, but SQL describes the result, not the path. Changing the internal level (indexes, where files live) changes no query text: that is physical data independence."
+      vi: "Thêm tên index nghe hợp lý vì vài hệ khác cho gợi ý index trong câu, nhưng SQL chỉ mô tả kết quả cần lấy, không mô tả đường đi. Index nằm ở tầng trong (cách dữ liệu nằm trên đĩa); planner (bộ lập kế hoạch) tự xem index có giúp được câu này không. View cũng không cần tạo lại, vì view đọc bảng theo tên cột, không theo index. Đổi tầng trong mà chữ của câu giữ nguyên: đó là độc lập dữ liệu vật lý (physical data independence)."
+      en: "Adding the index name sounds right because some other systems accept index hints in the query, but SQL only describes the result, not the path. The index lives at the internal level (how data sits on disk); the planner decides by itself whether it helps this query. Views need no rebuild either, since a view reads the table by column names, not through an index. The internal level changes while the query text stays the same: that is physical data independence."
   - q:
       vi: "Việc nào dưới đây KHÔNG phải việc của hệ quản trị CSDL mà thuộc về ứng dụng?"
       en: "Which job below is NOT the database management system's but the application's?"
@@ -79,8 +79,8 @@ quiz:
     answer: 2
     trap: 1
     why:
-      vi: "Phục hồi sau sự cố và điều khiển đồng thời là hai việc cốt lõi của DBMS. Nhiều người nghĩ việc ghi đồng thời phải tự khóa trong code ứng dụng, thật ra database đã làm bằng transaction và khóa dòng. Giao diện mới là việc của ứng dụng."
-      en: "Crash recovery and concurrency control are two core DBMS jobs. Many people think concurrent writes need locks in application code; in fact the database does it with transactions and row locks. The screen is the application's job."
+      vi: "Hai lựa chọn đầu là việc của hệ quản trị CSDL (DBMS). Giữ dữ liệu đúng sau khi mất điện là phục hồi sau sự cố: Postgres ghi nhật ký WAL (write-ahead log) trước khi sửa dữ liệu, nên khởi động lại thì làm lại được phần đã commit. Cho hai người cùng ghi là điều khiển đồng thời: nhiều người tưởng phải tự viết code chặn trong ứng dụng, nhưng database đã làm bằng transaction và row lock (giữ riêng một dòng cho người đang ghi). Giao diện màn hình đơn hàng thì database không biết gì, nên đó là việc của ứng dụng."
+      en: "The first two choices are DBMS (database management system) jobs. Keeping data correct after a power cut is crash recovery: Postgres writes the WAL (write-ahead log) before changing data, so after a restart it can redo what was committed. Letting two people write at once is concurrency control: many people think they must write blocking code in the application, but the database already does it with transactions and row locks. The database knows nothing about the order screen, so that is the application's job."
 ---
 ## Mở bài
 
