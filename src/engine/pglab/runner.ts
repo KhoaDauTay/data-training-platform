@@ -18,7 +18,7 @@ interface Env {
   slow?: LabEnv['slow'];
 }
 
-const KNOWN: readonly PgExtension[] = ['pageinspect', 'pg_visibility', 'amcheck', 'pg_walinspect', 'pg_buffercache', 'pg_freespacemap', 'bloom', 'btree_gin', 'btree_gist', 'pg_trgm', 'pg_stat_statements', 'ltree', 'pgcrypto', 'cube', 'earthdistance'];
+const KNOWN: readonly PgExtension[] = ['pageinspect', 'pg_visibility', 'amcheck', 'pg_walinspect', 'pg_buffercache', 'pg_freespacemap', 'bloom', 'btree_gin', 'btree_gist', 'pg_trgm', 'pg_stat_statements', 'ltree', 'pgcrypto', 'cube', 'earthdistance', 'postgis'];
 /** Functions → the extension that defines them (a step may call one the setup did not create). */
 const BY_FUNCTION: [RegExp, PgExtension][] = [
   [/\b(get_raw_page|heap_page_items|heap_tuple_infomask_flags|page_header|bt_metap|bt_page_items|bt_page_stats|brin_page_items|brin_metapage_info|brin_revmap_data|gin_metapage_info|gin_page_opaque_info|gin_leafpage_items|hash_page_items|fsm_page_contents)\s*\(/i, 'pageinspect'],
@@ -28,6 +28,7 @@ const BY_FUNCTION: [RegExp, PgExtension][] = [
   [/\bpg_visibility(_map(_summary)?)?\s*\(/i, 'pg_visibility'],
   [/\bpg_buffercache\b/i, 'pg_buffercache'],
   [/\bpg_freespace\s*\(/i, 'pg_freespacemap'],
+  [/\bST_[A-Za-z0-9_]+\s*\(/i, 'postgis'],
 ];
 export function extensionsOf(...sql: (string | undefined)[]): PgExtension[] {
   const text = sql.filter(Boolean).join('\n');

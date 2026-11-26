@@ -69,6 +69,7 @@ const GROUPS = [
   ['pglab', /^pglabWorker-/, 150],
   ['pgext', /^(pageinspect|pg_visibility|amcheck|pg_walinspect|pg_buffercache|pg_freespacemap|bloom|btree_gin|btree_gist|pg_trgm|pg_stat_statements|ltree|cube|earthdistance)\.tar-.*\.gz$/, 160], // L248: + cube, earthdistance (L2 geo lesson)
   ['pgcrypto', /^pgcrypto\.tar-.*\.gz$/, 1160], // bundles OpenSSL: fetched only by a lab that names pgcrypto
+  ['postgis', /^postgis\.tar-.*\.gz$/, 20500], // L711: @electric-sql/pglite-postgis 0.2.16 (PostGIS + GEOS/PROJ/GDAL), ~20 MB; fetched only by a lab that names it, never precached
   ['why', /^(why|whyView)-/, 6], // V22-B (L206): "Vì sao?" under a result row: src/ui/whyView.ts (VI/EN inside) + src/viz/why.ts (worker, beside the steps chunk), lazy on the first click
   ['mapteach', /^mapTeach-/, 9], // L311 + L304: label placement (~0.6 KB) + beginner skill gate (~0.3 KB); V22-A (L203): src/ui/mapTeach.ts + src/viz/geo.ts + src/mapQueries.ts (result map: Map tab and Map page questions, VI/EN inside), lazy on the first Map page or Map tab
   ['engineVizNosql', /^engineVizNosql-/, 15], // ENG-VIZ (L236): MongoDB + DynamoDB diagrams (src/engine/viz/engineVizNosql.ts), lazy from engineViz's loadViz()
