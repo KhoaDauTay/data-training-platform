@@ -1,0 +1,25 @@
+# RD-6 (v47 R1, L958): a sorted set read as a leaderboard. Lesson: e-rd-l1-06 (Ý chính).
+# Data = the lab after step 2: sales:2026-10 store:2 340, store:3 310, store:1 120, store:4 105 (90 + ZINCRBY 15).
+# ZRANGE … REV ranks from the top; ZREVRANK store:1 = 2.
+title: { vi: "Bảng doanh số tháng 10", en: "October's sales board" }
+caption:
+  vi: "Redis giữ thứ tự theo điểm; ZRANGE … REV WITHSCORES đọc từ cao xuống, ZREVRANK store:1 trả 2."
+  en: "Redis keeps the order by score; ZRANGE … REV WITHSCORES reads from the top, ZREVRANK store:1 returns 2."
+alt:
+  vi: "Sorted set giữ mỗi cửa hàng một lần cùng doanh số của nó và luôn xếp theo doanh số, nên top 3 là một lệnh đọc. Kết quả: store:2 340, store:3 310, store:1 120, store:4 105 sau khi cộng 15."
+  en: "A sorted set keeps each store once with its sales and always keeps them ordered by sales, so the top 3 is one read. Result: store:2 340, store:3 310, store:1 120, store:4 105 after adding 15."
+nodes:
+  - { id: cmd, shape: key, mono: true, label: "ZRANGE … REV WITHSCORES" }
+  - id: z
+    shape: bars
+    label: "sales:2026-10"
+    items:
+      - { label: "store:2", value: 3.4, note: "340" }
+      - { label: "store:3", value: 3.1, note: "310" }
+      - { label: "store:1", value: 1.2, note: { vi: "120 · hạng 2", en: "120 · rank 2" }, tone: new }
+      - { label: "store:4", value: 1.05, note: "105" }
+rows:
+  - [cmd]
+  - [z]
+edges:
+  - { from: cmd, to: z }

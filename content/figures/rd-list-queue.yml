@@ -1,0 +1,27 @@
+# RD-4 (v47 R1, L958): a list used as a FIFO queue. Lesson: e-rd-l1-04 (Ý chính).
+# Data = the lab: orders:pack o101 o102 o103, RPUSH o104 joins on the right, LPOP takes o101 from the left.
+title: { vi: "Hàng đợi: vào phải, ra trái", en: "A queue: in on the right, out on the left" }
+caption:
+  vi: "RPUSH xếp đơn mới vào cuối, LPOP lấy đơn chờ lâu nhất ở đầu: vào trước ra trước."
+  en: "RPUSH puts a new order at the end, LPOP takes the order that waited longest from the front: first in, first out."
+alt:
+  vi: "Một list dùng làm hàng đợi khi đẩy vào một đầu và lấy ra ở đầu kia, nên đơn đến trước được đóng gói trước. Kết quả: RPUSH thêm o104 vào cuối, LPOP trả o101, còn lại o102, o103, o104."
+  en: "A list works as a queue when you push at one end and take from the other, so the order that came first is packed first. Result: RPUSH adds o104 at the end, LPOP returns o101, and o102, o103, o104 remain."
+nodes:
+  - { id: out, mono: true, label: "LPOP", sub: "\"o101\"", tone: new }
+  - id: q
+    shape: grid
+    mono: true
+    label: "orders:pack"
+    head: ["0", "1", "2", "3"]
+    cells:
+      - [o101, o102, o103, o104]
+    cellTone: { "0:0": dead, "0:3": new }
+  - { id: in, mono: true, label: "RPUSH … o104", sub: "(integer) 4", tone: new }
+rows:
+  - [out, q, in]
+phone:
+  rows: [[in], [q], [out]]
+edges:
+  - { from: q, to: out, label: { vi: "đầu", en: "head" } }
+  - { from: in, to: q, label: { vi: "cuối", en: "tail" } }

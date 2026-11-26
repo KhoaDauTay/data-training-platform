@@ -1,0 +1,23 @@
+# RD-10 (v47 R1, L959): WATCH aborts EXEC when another client writes the key. Lesson: e-rd-l2-03 (Ý chính).
+# Data = the lesson's second example: stock:p06 3; client 0 WATCH, MULTI, DECR (QUEUED); client 1 SET stock:p06 0; client 0 EXEC → (nil).
+# Rule: multi.c execCommand (dirty_cas → null array, RESP2 prints (nil)), Valkey 8.1.
+title: { vi: "WATCH: EXEC bỏ cuộc khi khóa đã đổi", en: "WATCH: EXEC gives up when the key changed" }
+caption:
+  vi: "Client 1 ghi stock:p06 giữa WATCH và EXEC của client 0, nên EXEC trả (nil) và DECR không chạy."
+  en: "Client 1 writes stock:p06 between client 0's WATCH and EXEC, so EXEC returns (nil) and the DECR never runs."
+alt:
+  vi: "WATCH là khóa lạc quan: không ai bị chặn, nhưng nếu khóa bị theo dõi đổi trước EXEC thì cả giao dịch không chạy, nên kho không bị bán lố. Kết quả: kho còn 0 do client 1 ghi, EXEC của client 0 trả (nil)."
+  en: "WATCH is optimistic locking: nobody is blocked, but if the watched key changes before EXEC the whole transaction does not run, so the stock is never oversold. Result: the stock stays at 0 as client 1 wrote it, and client 0's EXEC returns (nil)."
+nodes:
+  - { id: w, mono: true, label: "WATCH stock:p06", sub: { vi: "client 0 · kho 3", en: "client 0 · stock 3" } }
+  - { id: q, mono: true, label: "MULTI · DECR", sub: "QUEUED" }
+  - { id: s, mono: true, label: "SET stock:p06 0", sub: { vi: "client 1 ghi chen", en: "client 1 writes" }, tone: warm }
+  - { id: x, mono: true, label: "EXEC", sub: { vi: "(nil) · không chạy", en: "(nil), none ran" }, tone: dead }
+rows:
+  - [w, q]
+  - [s]
+  - [x]
+edges:
+  - { from: w, to: q }
+  - { from: q, to: s, dash: true }
+  - { from: s, to: x }
