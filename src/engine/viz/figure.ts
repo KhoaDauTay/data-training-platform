@@ -685,14 +685,21 @@ export function altText(spec: FigSpec, lang: Lang, variant?: string): string[] {
   const point = tr(v?.alt ?? spec.alt, lang);
   return v || !spec.steps?.length ? [point] : [point, ...spec.steps.map((s) => tr(s.alt ?? s.say, lang))];
 }
-/** The figure's grids as plain tables (caption = the grid's label or sub): the variant's or one-step frame's data, else the
- * figure before its first step; only grids some frame shows. */
+/** The figure's grids and bars as plain tables (caption = label, else sub), only those some frame shows. Each takes its most
+ * filled version: the figure before its steps (with the variant's patch), then each frame, the first with the fewest blank
+ * cells (a stepped figure that fills cells in gives its end state); a column blank in its header and every row is dropped. */
 export function altTables(spec: FigSpec, lang: Lang, variant?: string): FigTable[] {
   const ps = plans(spec, lang, variant);
-  const ns = (ps.length === 1 ? ps[0].nodes : merge(spec.nodes, variantOf(spec, variant)?.set)).filter((n) => (n.shape === 'grid' || n.shape === 'bars') && ps.some((p) => p.show.has(n.id)));
-  return ns.map((n, i) => ({ caption: tr(n.label, lang) || tr(n.sub, lang) || `${WORDS[lang].table}${ns.length > 1 ? ` ${i + 1}` : ''}`,
-    head: (n.head ?? []).map((c) => tr(c, lang)),
-    rows: n.cells?.map((r) => r.map((c) => tr(c, lang))) ?? (n.items ?? []).map((it) => [tr(it.label, lang), tr(it.note, lang) || String(it.value)]) })); // bars: label, value
+  const all = [merge(spec.nodes, variantOf(spec, variant)?.set), ...ps.map((p) => p.nodes)];
+  const blanks = (n: FigNode): number => (n.cells ?? []).flat().filter((c) => !tr(c, lang)).length;
+  const ns = all[0].filter((n) => (n.shape === 'grid' || n.shape === 'bars') && ps.some((p) => p.show.has(n.id)))
+    .map((n) => all.map((f) => f.find((m) => m.id === n.id)!).reduce((a, b) => (blanks(b) < blanks(a) ? b : a)));
+  return ns.map((n, i) => {
+    const head = (n.head ?? []).map((c) => tr(c, lang));
+    const rows = n.cells?.map((r) => r.map((c) => tr(c, lang))) ?? (n.items ?? []).map((it) => [tr(it.label, lang), tr(it.note, lang) || String(it.value)]); // bars: label, value
+    const keep = (_: unknown, c: number): boolean => !!head[c] || rows.some((r) => r[c]);
+    return { caption: tr(n.label, lang) || tr(n.sub, lang) || `${WORDS[lang].table}${ns.length > 1 ? ` ${i + 1}` : ''}`, head: head.filter(keep), rows: rows.map((r) => r.filter(keep)) };
+  });
 }
 // ── mounting ───────────────────────────────────────────────────────────────────────────────────────────────────
 const SPECS = import.meta.glob<FigSpec>('../../../content/figures/*.yml', { import: 'default' });
@@ -727,7 +734,7 @@ export async function mountFigure(host: HTMLElement, ref: FigRef, deps: Deps, en
     const open = [...host.querySelectorAll('details')].map((x) => x.open); // a width change keeps the explanation open
     v?.destroy();
     const a = altText(spec, lang, ref.variant);
-    v = mount(host, layout(spec, lang, W, ref.variant), lang, i, { name: ref.name, caption: tr(variantOf(spec, ref.variant)?.caption ?? spec.caption, lang), alt: a.slice(0, 1), steps: a.slice(1), tables: altTables(spec, lang, ref.variant), words: WORDS[lang] });
+    v = mount(host, layout(spec, lang, W, ref.variant), lang, i, { name: ref.name, caption: tr(variantOf(spec, ref.variant)?.caption ?? spec.caption, lang), alt: a[0].split(/ (?=(?:Kết quả|Result): )/), steps: a.slice(1), tables: altTables(spec, lang, ref.variant), words: WORDS[lang] });
     host.querySelectorAll('details').forEach((x, j) => (x.open = !!open[j]));
   };
   draw();

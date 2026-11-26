@@ -8,8 +8,8 @@ caption:
   vi: "Mỗi mũi tên là manager_id: nó trỏ về một dòng khác của chính bảng staff. Bí danh e (nhân viên) và m (quản lý) cho bảng đóng hai vai."
   en: "Every arrow is manager_id: it points back to another row of the same staff table. Aliases e (employee) and m (manager) let the table play both roles."
 alt:
-  vi: "Mỗi nhân viên trỏ tới quản lý của mình qua manager_id, và quản lý cũng là một dòng của chính bảng staff, nên cả cây nằm trong một bảng. Muốn ghép nhân viên với quản lý, ta gọi bảng hai lần với hai bí danh e và m rồi nối ON m.id = e.manager_id. CEO có manager_id là NULL, nên cần LEFT JOIN để không mất dòng này."
-  en: "Each employee points to their manager through manager_id, and the manager is also a row of the same staff table, so the whole tree lives in one table. To pair employees with managers, name the table twice with aliases e and m and join ON m.id = e.manager_id. The CEO's manager_id is NULL, so a LEFT JOIN is needed to keep that row."
+  vi: "Mỗi nhân viên trỏ tới quản lý của mình qua manager_id, và quản lý cũng là một dòng của chính bảng staff, nên cả cây nằm trong một bảng. Muốn ghép nhân viên với quản lý, ta gọi bảng hai lần với bí danh e và m rồi nối ON m.id = e.manager_id, và dùng LEFT JOIN vì CEO có manager_id là NULL."
+  en: "Each employee points to their manager through manager_id, and the manager is also a row of the same staff table, so the whole tree lives in one table. To pair employees with managers, name the table twice with aliases e and m, join ON m.id = e.manager_id, and use a LEFT JOIN because the CEO's manager_id is NULL."
 nodes:
   - { id: ha, label: Ha Minh, sub: CEO }
   - { id: nul, mono: true, label: "manager_id NULL", sub: { vi: "LEFT JOIN để giữ", en: "LEFT JOIN to keep" }, tone: warm }

@@ -207,8 +207,12 @@ describe.each(Object.keys(specs))('v39 figure %s', (name) => {
         for (const [i, t] of tables.entries()) {
           expect(t.caption, lang).not.toBe('');
           expect(t.rows.length, `${lang} ${t.caption}`).toBe(grids[i].cells?.length ?? grids[i].items?.length ?? 0);
+          expect(t.rows.flat().some(Boolean), `${lang} ${t.caption}: ô nào cũng trống`).toBe(true);
+          expect(t.head.every(Boolean), `${lang} ${t.caption}: tiêu đề cột trống`).toBe(true); // an empty th is an axe finding
         }
         if (PENDING.has(name)) continue; // rewritten by the v42 ER branch (coordinator passes the new alts on)
+        // the point: at most 2 sentences, plus an optional closing "Kết quả: …" / "Result: …" line (drawn as its own paragraph)
+        expect(sentences(point).filter((x, i, a) => !(i === a.length - 1 && /^(Kết quả|Result): /.test(x))).length, `${lang} ý chính > 2 câu: ${point}`).toBeLessThanOrEqual(2);
         for (const s of steps) expect(sentences(s), `${lang}: ${s}`).toHaveLength(1);
         for (const s of [point, ...steps]) {
           for (const x of sentences(s)) expect([...x].length, `${lang}: ${x}`).toBeLessThanOrEqual(MAX_SENTENCE);

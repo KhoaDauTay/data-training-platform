@@ -5,8 +5,8 @@ caption:
   vi: "NULL là “không biết”: so sánh với NULL cho ra NULL, và WHERE chỉ giữ dòng TRUE."
   en: "NULL means unknown: a comparison with NULL gives NULL, and WHERE keeps TRUE rows only."
 alt:
-  vi: "NULL nghĩa là “không biết”, nên mọi so sánh hay phép tính với NULL đều cho NULL, kể cả NULL = NULL; muốn hỏi một giá trị có trống không thì dùng IS NULL. Chỉ khi một vế đã quyết định kết quả thì NULL mới không lan ra: FALSE AND NULL là FALSE, TRUE OR NULL là TRUE. WHERE chỉ giữ dòng TRUE, nên dòng cho NULL cũng bị loại như dòng FALSE."
-  en: "NULL means unknown, so every comparison or calculation with NULL gives NULL, even NULL = NULL; to ask whether a value is empty, use IS NULL. NULL only stops spreading when one side already decides the answer: FALSE AND NULL is FALSE, TRUE OR NULL is TRUE. WHERE keeps TRUE rows only, so a row that gives NULL is dropped just like a FALSE one."
+  vi: "NULL nghĩa là “không biết”, nên mọi so sánh hay phép tính với NULL đều cho NULL, kể cả NULL = NULL; muốn hỏi một giá trị có trống không thì dùng IS NULL. WHERE chỉ giữ dòng TRUE, nên dòng cho NULL bị loại như dòng FALSE; NULL chỉ không lan ra khi một vế đã quyết định kết quả, như FALSE AND NULL là FALSE."
+  en: "NULL means unknown, so every comparison or calculation with NULL gives NULL, even NULL = NULL; to ask whether a value is empty, use IS NULL. WHERE keeps TRUE rows only, so a row that gives NULL is dropped like a FALSE one; NULL only stops spreading when one side already decides the answer, as in FALSE AND NULL is FALSE."
 nodes:
   - id: and
     shape: grid
