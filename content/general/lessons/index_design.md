@@ -130,7 +130,7 @@ Hình từng bước ở cuối mục này mở một đoạn của chỉ mục 
 
 ## Cú pháp
 
-Ở bài này bạn đọc kế hoạch của các chỉ mục có sẵn; tự tạo chỉ mục bằng `CREATE INDEX` rồi so kế hoạch trước và sau thì có ở khu Engine, phần PostgreSQL.
+Ở bài này bạn đọc kế hoạch của các chỉ mục có sẵn; tự tạo chỉ mục bằng `CREATE INDEX` rồi so kế hoạch trước và sau thì có ở khu CSDL, khóa PostgreSQL.
 
 # EN
 
@@ -148,4 +148,4 @@ The step-through figure at the end of this section opens a stretch of the index 
 
 ## Syntax
 
-In this lesson you read the plans of the existing indexes; creating your own with `CREATE INDEX` and comparing the plan before and after is in the Engine area, under PostgreSQL.
+In this lesson you read the plans of the existing indexes; creating your own with `CREATE INDEX` and comparing the plan before and after is in the Databases area, in the PostgreSQL course.

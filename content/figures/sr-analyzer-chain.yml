@@ -1,0 +1,32 @@
+# v47 R1 (L1019): the analyzer chain on the customer's text `NÓN, lá!` (standard analyzer). Lesson: e-sr-l1-02 (Ý chính).
+# Data = `GET shop/_analyze {"analyzer": "standard", "text": "NÓN, lá!"}` on the simulator: nón (0), lá (1).
+# Source: https://www.elastic.co/docs/manage-data/data-store/text-analysis/anatomy-of-an-analyzer
+title: { vi: "Ba phần của một analyzer", en: "The three parts of an analyzer" }
+caption:
+  vi: "Character filter sửa chuỗi thô, tokenizer cắt thành từ, token filter sửa từng từ; analyzer standard không có character filter."
+  en: "Character filters fix the raw string, the tokenizer cuts it into words, token filters fix each word; the standard analyzer has no character filter."
+alt:
+  vi: "Chữ khách gõ đi qua cùng dây chuyền với chữ đã lưu, nên chữ hoa và dấu câu không làm trượt kết quả. Kết quả: NÓN, lá! thành hai từ nón và lá."
+  en: "The typed text goes through the same chain as the stored text, so capitals and punctuation do not lose the match. Result: the typed text becomes two lower-case words at positions 0 and 1."
+nodes:
+  - { id: raw, shape: note, mono: true, label: "NÓN, lá!" }
+  - { id: cf, label: character filter, sub: { vi: "(không có)", en: "(none)" } }
+  - { id: tok, label: tokenizer, sub: standard, tone: warm }
+  - { id: tf, label: token filter, sub: lowercase, tone: warm }
+  - id: out
+    shape: grid
+    mono: true
+    label: { vi: "Từ trong chỉ mục", en: "Words in the index" }
+    head: [token, position]
+    cells: [[nón, "0"], [lá, "1"]]
+rows:
+  - [raw]
+  - [cf]
+  - [tok]
+  - [tf]
+  - [out]
+edges:
+  - { from: raw, to: cf }
+  - { from: cf, to: tok }
+  - { from: tok, to: tf }
+  - { from: tf, to: out }

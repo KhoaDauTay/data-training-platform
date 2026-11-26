@@ -7,6 +7,7 @@ import type { Lang, Params } from './index';
  */
 const vi = {
   'drill.title': 'Bài luyện · {what} · {i}/{n}',
+  'drill.titleRun': 'Bài luyện · {what}',
   'drill.challenge': 'Thử thách · {what}',
   'drill.kind.faded': 'Điền vào chỗ trống',
   'drill.kind.open': 'Tự làm',
@@ -232,6 +233,7 @@ export type LearnKey = keyof typeof vi;
 
 const en: Record<LearnKey, string> = {
   'drill.title': 'Drill · {what} · {i}/{n}',
+  'drill.titleRun': 'Drill · {what}',
   'drill.challenge': 'Challenge · {what}',
   'drill.kind.faded': 'Fill in the frame',
   'drill.kind.open': 'On your own',

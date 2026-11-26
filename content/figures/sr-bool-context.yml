@@ -1,0 +1,26 @@
+# v47 R1 (L1019): the four slots of a bool query, by whether they must match and whether they score. Lesson: e-sr-l2-03 (Ý chính).
+# Data = the bool query rules (Elasticsearch docs), as the simulator applies them (tests/searchEngine.test.ts "bool").
+# Sources: https://www.elastic.co/docs/reference/query-languages/query-dsl/query-dsl-bool-query
+title: { vi: "Bốn ngăn của bool", en: "The four slots of bool" }
+caption:
+  vi: "must và should ở ngữ cảnh truy vấn (tính điểm); filter và must_not ở ngữ cảnh lọc (không điểm, được cache)."
+  en: "must and should run in query context (scored); filter and must_not run in filter context (no score, cacheable)."
+alt:
+  vi: "Mỗi điều kiện của bool chọn hai việc: có bắt buộc khớp không, và có góp điểm không. Kết quả: giá, loại hàng và ngày nên vào filter, chữ khách gõ vào must hay should."
+  en: "Each bool clause decides two things: whether it must match, and whether it adds to the score. Result: price, category and dates belong in filter, the typed words in must or should."
+nodes:
+  - id: g
+    shape: grid
+    mono: true
+    label: bool
+    head: [{ vi: "ngăn", en: "slot" }, { vi: "phải khớp", en: "required" }, { vi: "tính điểm", en: "scores" }]
+    cells:
+      - [must, { vi: "có", en: "yes" }, { vi: "có", en: "yes" }]
+      - [should, { vi: "đôi khi", en: "sometimes" }, { vi: "có", en: "yes" }]
+      - [filter, { vi: "có", en: "yes" }, { vi: "không", en: "no" }]
+      - [must_not, { vi: "loại", en: "excludes" }, { vi: "không", en: "no" }]
+    rowTone: [warm, warm, null, null]
+  - { id: n, shape: note, label: { vi: "should một mình thì bắt buộc", en: "should is required when alone" } }
+rows:
+  - [g]
+  - [n]

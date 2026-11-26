@@ -1,0 +1,28 @@
+# v47 R1 (L1019): word positions of documents 3 and 1 and the phrase `lồng đèn`. Lesson: e-sr-l2-04 (Ý chính).
+# Data = `_analyze` with field `name` on both names; match_phrase "lồng đèn" → document 3 only (lab step 3).
+# Source: https://www.elastic.co/docs/reference/query-languages/query-dsl/query-dsl-match-query-phrase
+title: { vi: "Cùng hai từ, khác thứ tự", en: "The same two words, another order" }
+caption:
+  vi: "match_phrase lồng đèn cần lồng ở vị trí p và đèn ở p + 1: tài liệu 3 có, tài liệu 1 thì ngược lại."
+  en: "The phrase needs its first word at position p and the second at p + 1: document 3 has that order, document 1 the reverse."
+alt:
+  vi: "Hai tên có cùng hai từ nhưng thứ tự ngược nhau, và chỉ vị trí lưu trong chỉ mục mới tách được chúng. Kết quả: cụm lồng đèn khớp tài liệu 3, không khớp tài liệu 1."
+  en: "Two names hold the same two words in opposite orders, and only the positions stored in the index tell them apart. Result: the phrase matches document 3, not document 1."
+nodes:
+  - id: d3
+    shape: grid
+    mono: true
+    label: { vi: "tài liệu 3", en: "document 3" }
+    head: [token, position]
+    cells: [[lồng, "0"], [đèn, "1"], [giấy, "2"]]
+    rowTone: [live, live, null]
+  - id: d1
+    shape: grid
+    mono: true
+    label: { vi: "tài liệu 1", en: "document 1" }
+    head: [token, position]
+    cells: [[đèn, "0"], [lồng, "1"], [lụa, "2"]]
+  - { id: n, shape: note, label: { vi: "khớp tài liệu 3, không khớp 1", en: "matches 3, not 1" } }
+rows:
+  - [d3, d1]
+  - [n]

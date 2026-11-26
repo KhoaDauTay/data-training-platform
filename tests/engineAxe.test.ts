@@ -73,6 +73,7 @@ describe('Database Engine lesson pages (fixtures)', () => {
     expect(sourceTitle('https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-query-scan.html')).toBe('DynamoDB · Best practices: query scan');
     // v35 R1 (E09): the SaaS Lens is not DynamoDB
     expect(sourceTitle('https://docs.aws.amazon.com/wellarchitected/latest/saas-lens/silo-pool-and-bridge-models.html')).toBe('AWS SaaS Lens · Silo pool and bridge models');
+    expect(sourceTitle('https://www.postgresql.org/docs/18/ddl-constraints.html')).toBe('PostgreSQL · DDL constraints'); // L1098
     // v38 (L582): a content title replaces the slug; the site stays in front
     expect(sourceTitle('https://www.postgresql.org/docs/18/sql-createview.html', 'CREATE VIEW')).toBe('PostgreSQL · CREATE VIEW');
   });

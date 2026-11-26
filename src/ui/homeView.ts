@@ -1,6 +1,6 @@
 import { generalNow, loadTickets } from '../content';
 import { activeDomain, DOMAINS, domainText } from '../domains';
-import { homeModel, knownSkills, kpisOf, kpiTiles, reliesOn, resumeTarget, type ChapterCard, type HomeModel, type Resume } from '../home';
+import { homeModel, knownSkills, kpisOf, kpiTiles, reliesOn, resumeTarget, type ChapterCard, type HomeModel, type Resume, type SkillCard } from '../home';
 import { awayDays, readGoal, weekCount } from '../goal';
 import { loadHistory } from '../history';
 import { localStore, readJson } from '../storage';
@@ -21,7 +21,7 @@ import { relabelScene, teachScene } from './teachScene';
 import { currentRoute } from './router';
 import { actions, app, done } from '../state';
 import { earlyOffer } from './chapterView';
-import { BTN_GO, BTN_SECONDARY, CARD, CARD_ACTION, chapterColor, cx, DONE_PILL, PILL } from '../theme';
+import { BTN_GHOST, BTN_GO, BTN_SECONDARY, CARD, CARD_ACTION, chapterColor, cx, DONE_PILL, PILL } from '../theme';
 import { roleLine } from '../people';
 import { upsert } from '../registry';
 import { hashOf } from '../route';
@@ -118,7 +118,7 @@ function resume(id: string): void {
 export const resumeNow = (): Resume | undefined => resumeTarget(app.save.completed, nextTicket(app.tickets, done()), sqlOnly(), ROUTE_SKILLS.map((s) => s.id), readIntent()); // v25 R1: a last drill of a General-only skill resumes on its page; v47 S3: the welcome's goal
 /** v47 S3: product names are never translated; the two tracks are. */
 const engineName = (e: string): string =>
-  e === 'design' ? t('welcome.eng.design') : e === 'stack' ? t('welcome.eng.stack') : ({ postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB', redis: 'Redis', olap: 'OLAP & ClickHouse', telemetry: 'Telemetry & Observability' } as Record<string, string>)[e] ?? e;
+  e === 'design' ? t('welcome.eng.design') : e === 'stack' ? t('welcome.eng.stack') : ({ postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB', redis: 'Redis', olap: 'OLAP & ClickHouse', search: 'Elasticsearch', telemetry: 'Telemetry & Observability' } as Record<string, string>)[e] ?? e;
 /** Its name: the task title, the skill, the Engine track (and level), or the learning path. */
 export const resumeName = (r: Resume): string =>
   r.kind === 'ticket' ? textOf(r.ticket, getLang()).title : r.kind === 'skill' ? SKILLS.find((s) => s.id === r.skill)!.label[getLang()]
@@ -184,9 +184,10 @@ function continueCard(m: HomeModel): HTMLElement {
     h('div', { class: 'flex flex-wrap gap-2' },
       next ? h('button', { type: 'button', class: cx(BTN_GO, 'group flex items-center gap-2 px-4 py-2'), onclick: () => resume(next.id) },
         t('home.resume'), icon('arrowRight', 'size-4 transition group-hover:translate-x-0.5')) : null,
-      early ? h('button', { type: 'button', class: cx(BTN_SECONDARY, 'flex items-center gap-2 px-4 py-2'), title: t('early.intro', { n: early.chapter }), onclick: () => actions.selectTicket(early.id) },
-        icon('badge', 'size-4'), t('early.start')) : null,
-      h('button', { type: 'button', class: 'flex items-center gap-2 px-4 py-2 font-semibold', onclick: openInbox }, icon('inbox', 'size-4'), t('top.inbox'))));
+      h('button', { type: 'button', class: 'flex items-center gap-2 px-4 py-2 font-semibold', onclick: openInbox }, icon('inbox', 'size-4'), t('top.inbox'))),
+    // L1099 (eye E-15): the early review is a quiet link under the buttons, never beside the next task's main button
+    early ? h('button', { type: 'button', class: cx(BTN_GHOST, 'flex items-center gap-2 self-start px-3 py-1.5 text-body-sm'), title: t('early.intro', { n: early.chapter }), onclick: () => actions.selectTicket(early.id) },
+      icon('badge', 'size-4'), t('early.start')) : null);
 }
 
 /** Career path (L18 ★3, L19, L30): DA intern + the five ★ titles; the current one is marked, later ones say which review opens them. */
@@ -269,9 +270,13 @@ function skillsSection(m: HomeModel): HTMLElement {
   const lang = getLang();
   const onSkill = homeHooks.onSkill;
   // v24 (L335): grouped by the General route's Parts (content/general/route.yml), in route order
-  const groups = PARTS.map((p) => [p.n, p.skills.map((id) => m.skills.find((s) => s.skill.id === id)).filter((s): s is (typeof m.skills)[number] => !!s)] as const).filter(([, list]) => list.length > 0);
+  // L1094 (eye E-04): the General-only skills (Part 9's writes, cross_join, any_all) have no domain ticket, so m.skills lacks them;
+  // their row is learned once they hold a review card (passed drills), like the learning path
+  const card = (id: string): SkillCard | undefined => m.skills.find((s) => s.skill.id === id)
+    ?? ((sk) => sk && { skill: sk, state: app.save.review[id] ? 'learned' as const : 'open' as const, level: 0 })(ROUTE_SKILLS.find((s) => s.id === id));
+  const groups = PARTS.map((p) => [p.n, p.skills.map(card).filter((s): s is SkillCard => !!s)] as const).filter(([, list]) => list.length > 0);
   // v11 B6: a skill learned through its General drills (the Learning path's rule) says so, not just "Chapter N".
-  const known = knownSkills(app.save, loadTickets('logistics'), SKILLS.map((x) => x.id)); // same source as learnView's ctx()
+  const known = knownSkills(app.save, loadTickets('logistics'), ROUTE_SKILLS.map((x) => x.id)); // same source as learnView's ctx()
   return h('section', { class: 'space-y-10', 'aria-labelledby': 'skills-title' },
     h('h2', { id: 'skills-title', class: 'sr-only' }, t('home.skills')),
     ...groups.map(([n, list]) => h('div', { id: `skills-ch-${n}`, class: 'scroll-mt-4' },

@@ -1,5 +1,5 @@
 import {
-  blocksOf, docsNoteKey, ENGINES, engineXp, isRight, onPg, lessonPassed, parseEngineLesson, parseModules, partsOf, progressOf, treeOf,
+  blocksOf, docsNoteKey, ENGINES, engineXp, isEsLesson, isRight, onPg, lessonPassed, parseEngineLesson, parseModules, partsOf, progressOf, treeOf,
   type EngineId, type EngineLesson, type Kind, type LabStep, type LessonSource, type Level, type ModuleName, type Rung, type Question, type SectionId, type Tree,
 } from '../engine/content';
 import { gradable, honestOf, honestRow, LAB_RUNNERS, type Honest, type LabEnv, type LabOutput, type LabRunner, type LabVerdict } from '../engine/labs';
@@ -71,13 +71,13 @@ let lessons: EngineLesson[] = [];
 const trees = {} as Record<EngineId, Tree>;
 /** modules.yml names per engine (the Extensions shelf groups its lessons by these, v43 L720). */
 const modNames = {} as Record<EngineId, ModuleName[]>;
-const NAME: Record<Exclude<EngineId, 'design' | 'stack'>, string> = { postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB', redis: 'Redis', olap: 'OLAP & ClickHouse', telemetry: 'Telemetry & Observability' };
+const NAME: Record<Exclude<EngineId, 'design' | 'stack' | 'search'>, string> = { postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB', redis: 'Redis', olap: 'OLAP & ClickHouse', telemetry: 'Telemetry & Observability' };
 /** v28 R4 (L420): product names stay as they are; the design track's name is translated. */
 /** v46 (L839a): a lab whose learner types Jinja (a model step, or a ref()/source() Solution: dbt.ts isDbtLab, inlined) shows the dbt notice. */
 const dbtLab = (l: EngineLesson): boolean => !!l.lab?.steps.some((s) => s.model || /\{\{\s*(ref|source)\s*\(/.test(s.solution));
-const nameOf = (e: EngineId): string => (e === 'design' || e === 'stack' ? et(`name.${e}`) : NAME[e]);
+const nameOf = (e: EngineId): string => (e === 'design' || e === 'stack' || e === 'search' ? et(`name.${e}`) : NAME[e]);
 /** L280: one generic picture per engine (no logos): a table grid, a JSON document, a key and its values. */
-const ENGINE_ICON = { postgres: 'engRelational', mongodb: 'engDocument', dynamodb: 'engKeyValue', redis: 'engRedis', design: 'engDesign', stack: 'engStack', olap: 'engOlap', telemetry: 'engTelemetry' } as const satisfies Record<EngineId, Icons.IconName>;
+const ENGINE_ICON = { postgres: 'engRelational', mongodb: 'engDocument', dynamodb: 'engKeyValue', redis: 'engRedis', design: 'engDesign', stack: 'engStack', olap: 'engOlap', search: 'engSearch', telemetry: 'engTelemetry' } as const satisfies Record<EngineId, Icons.IconName>;
 const KIND_ICON = { concept: 'kindConcept', lab: 'kindLab', predict: 'kindPredict', quiz: 'kindQuiz', capstone: 'kindCapstone' } as const satisfies Record<Kind, Icons.IconName>;
 const et = (key: EngineKey, params?: I18n.Params): string => engineText(d.getLang(), d.locale(), key, params);
 
@@ -145,16 +145,16 @@ export function inline(text: string, marked = false): (Node | string)[] {
  * learner never reads `e-pg-l4-03`. The word before stays prose ("bài Thống kê nhiều cột ↗"); without a title (never for
  * shipped content: tests/engineBpLink.test.ts) the link says "bài liên quan" and swallows that word, so no "bài bài".
  */
-const ID = String.raw`e-(?:(?:pg|mg|dy|rd|ds|st|ol|tm)-(?:l[1-5]|ext)-|bp-[a-z])\d\d`; // v43: + the Extensions shelf (e-pg-ext-NN)
+const ID = String.raw`e-(?:(?:pg|mg|dy|rd|ds|st|ol|sr|tm)-(?:l[1-5]|ext)-|bp-[a-z])\d\d`; // v43: + the Extensions shelf (e-pg-ext-NN)
 const PRE = String.raw`(?:(?<=^|[\s(])(?:bài|thẻ|lab|lesson|card) )?`;
 const CODE = new RegExp(`(${PRE}\x60${ID}\x60|\x60[^\x60\n]+\x60)`);
 const BARE = new RegExp(String.raw`(${PRE}\b${ID}(?![\w-]))`);
-const SHORT = { pg: 'postgres', mg: 'mongodb', dy: 'dynamodb', rd: 'redis', ds: 'design', st: 'stack', ol: 'olap', tm: 'telemetry' } as const;
+const SHORT = { pg: 'postgres', mg: 'mongodb', dy: 'dynamodb', rd: 'redis', ds: 'design', st: 'stack', ol: 'olap', sr: 'search', tm: 'telemetry' } as const;
 let bpTitles: Record<string, { vi: string; en: string }> = {};
 function idRef(seg: string): (Node | string)[] {
   const word = /^\S+ /.exec(seg)?.[0] ?? '';
   const id = seg.slice(word.length).replace(/`/g, '');
-  const m = /^e-(pg|mg|dy|rd|ds|st|ol|tm)-(l[1-5]|ext)-/.exec(id);
+  const m = /^e-(pg|mg|dy|rd|ds|st|ol|sr|tm)-(l[1-5]|ext)-/.exec(id);
   const title = m ? lessons.find((x) => x.id === id)?.title : bpTitles[id];
   const href = m ? d.engineHash(SHORT[m[1] as keyof typeof SHORT], (m[2] === 'ext' ? 'EXT' : m[2].toUpperCase()) as Level, id) : bpHashOf(id);
   if (!href) return [seg]; // an e-bp code with no track letter: content tests keep this from shipping
@@ -312,7 +312,7 @@ function enginePg(e: EngineId): HTMLElement {
         return d.ui.listRow({
           lead: leadDisc(q.done === q.total ? 'done' : here ? 'current' : 'todo', lv.level),
           title: levelName(lv.level), sub: `${et(`ladder.${e}.${lv.level}`)} · ${et('progress', { k: q.done, n: q.total })}`,
-          action: rowLink(d.engineHash(e, lv.level), here ? et('row.next') : et('row.levelOpen'), here), current: here,
+          action: rowLink(d.engineHash(e, lv.level), et('row.levelOpen'), false), current: here, // L1093 (eye E-05): the hero holds the one primary
         });
       }))));
 }
@@ -336,7 +336,7 @@ function levelPage(e: EngineId, lv: Rung): HTMLElement {
         h('div', { class: 'flex items-baseline justify-between gap-3' },
           h('h2', { id: `mod-${m.id}`, class: 'm-0 text-title font-bold' }, m.name[lang()]),
           h('span', { class: 'text-body-sm tabular-nums text-muted' }, `${q.done}/${q.total}`)),
-        h('ul', { class: d.ui.LIST }, ...m.lessons.map((l) => lessonRow(l, ok, l === next))));
+        h('ul', { class: d.ui.LIST }, ...m.lessons.map((l) => lessonRow(l, ok, l === next, 'head'))));
     }));
 }
 
@@ -347,7 +347,7 @@ function extRow(ok: Set<string>): HTMLElement {
     d.h('h2', { id: 'engine-ext', class: d.ui.GROUP_TITLE }, et('level.EXT')),
     d.h('ul', { class: d.ui.LIST }, d.ui.listRow({
       lead: p.total && p.done === p.total ? leadDisc('done', '') : d.h('span', { class: 'grid size-10 place-items-center rounded-full bg-accent-soft text-accent' }, d.icon('puzzle', 'size-6')),
-      title: et('ext.title'), sub: `${et('ext.short')} · ${et('progress', { k: p.done, n: p.total })}`, action: rowLink(d.engineHash('postgres', 'EXT'), et('ext.go'), true),
+      title: et('ext.title'), sub: `${et('ext.short')} · ${et('progress', { k: p.done, n: p.total })}`, action: rowLink(d.engineHash('postgres', 'EXT'), et('ext.go'), false), // L1093: the hero holds the page's one primary
     })));
 }
 
@@ -371,19 +371,23 @@ function extPage(): HTMLElement {
         h('div', { class: 'flex items-baseline justify-between gap-3' },
           h('h2', { id: `mod-${m}`, class: 'm-0 text-title font-bold' }, moduleName('postgres', m)[lang()]),
           h('span', { class: 'text-body-sm tabular-nums text-muted' }, `${q.done}/${q.total}`)),
-        h('ul', { class: d.ui.LIST }, ...mine.map((l) => lessonRow(l, ok, l === next))));
+        h('ul', { class: d.ui.LIST }, ...mine.map((l) => lessonRow(l, ok, l === next, p.done ? 'next' : 'start'))));
     }));
 }
 
-/** One lesson row (engine-ux-spec §4.3): kind picture (✓ when done), title, "kind · minutes · runtime", one link. */
-function lessonRow(l: EngineLesson, ok: Set<string>, isNext: boolean): HTMLElement {
+/**
+ * One lesson row (engine-ux-spec §4.3): kind picture (✓ when done), title, "kind · minutes · runtime", one link. L1093 (eye E-05):
+ * the next row is the page's call only on the shelf ("Bắt đầu" at 0 done, else "Học tiếp"); on a level page the head's button
+ * is ('head'), so the row stays a plain "Mở" marked current.
+ */
+function lessonRow(l: EngineLesson, ok: Set<string>, isNext: boolean, call: 'head' | 'start' | 'next'): HTMLElement {
   const isDone = ok.has(l.id);
   const k = honestRow(l);
   return d.ui.listRow({
     lead: leadDisc(isDone ? 'done' : isNext ? 'current' : 'todo', d.icon(KIND_ICON[l.kind], 'size-5')),
     title: l.id === TOPIC_HUB ? d.h('span', {}, topicChip(), l.title[lang()]) : l.title[lang()],
     sub: `${et(`kind.${l.kind}`)} · ${et('minutes', { n: l.minutes })} · ${et(k === 'diagram' ? 'short.diagram' : k === 'docs' ? 'short.docs' : 'short.run')}`,
-    action: rowLink(lessonHash(l), isDone ? et('row.again') : isNext ? et('row.next') : et('row.open'), isNext),
+    action: rowLink(lessonHash(l), isDone ? et('row.again') : isNext && call !== 'head' ? et(call === 'start' ? 'row.start' : 'row.next') : et('row.open'), isNext && call !== 'head'),
     current: isNext,
   });
 }
@@ -706,7 +710,7 @@ function labView(l: EngineLesson, v: Visit): HTMLElement {
     cardHead(`${l.id}-lab`, 'kindLab', et('lab.title')),
     cap && cc ? cap.capBar(cc) : null,
     h('div', { class: 'flex flex-col gap-3 rounded-(--r-ctl) bg-info-soft p-4 text-body-sm ring-1 ring-info-line' },
-      h('p', { class: 'm-0' }, !live ? et('lab.noRunner') : l.engine === 'mongodb' ? et('lab.dataMongo') : l.engine === 'dynamodb' ? et('lab.dataDynamo') : l.engine === 'redis' ? et('lab.dataRedis') : l.lab!.setup ? et('lab.dataPg') : et('lab.data')),
+      h('p', { class: 'm-0' }, !live ? et('lab.noRunner') : l.engine === 'mongodb' ? et('lab.dataMongo') : l.engine === 'dynamodb' ? et('lab.dataDynamo') : l.engine === 'redis' ? et('lab.dataRedis') : isEsLesson(l) ? et('search.sim') : l.lab!.setup ? et('lab.dataPg') : et('lab.data')),
       // v43 (L726): the PostGIS tarball (~20 MB) is not precached; say so before the first Run
       live && onPg(l.engine) && /\bpostgis\b/i.test(l.lab!.setup ?? '') ? h('p', { class: 'm-0 text-muted', 'data-postgis-note': '' }, et('lab.postgisOnce')) : null,
       // v46 S-13 (L835): the dbt notice again where the Jinja is typed
@@ -733,7 +737,7 @@ function labView(l: EngineLesson, v: Visit): HTMLElement {
             h('h3', { class: 'm-0 text-caption font-bold tracking-wider text-muted uppercase' }, et('lab.step', { i: i + 1, n: steps.length }),
               i === cur ? h('span', { class: 'ml-2 text-accent-ink' }, `· ${et('cap.current')}`) : null),
             h('p', { class: 'm-0' }, ...inline(s.task[lang()])), onPg(l.engine) ? pgBar(d, s) : N()?.stepTop(d, s))),
-        ed ? codeBox(`${key}-code`, v.code[i] ?? '', et('lab.code', { i: i + 1 }), onPg(l.engine) && !s.lang, {
+        ed ? codeBox(`${key}-code`, v.code[i] ?? '', et('lab.code', { i: i + 1 }), onPg(l.engine) && !isEsLesson(l), {
           change: (x) => { v.code[i] = x; }, run: () => void labAction(l, v, i, false), submit: () => void labAction(l, v, i, true),
         }) : null,
         live && !ed ? h('div', { class: 'flex flex-wrap items-center gap-3' },
@@ -797,10 +801,10 @@ function vizSlot(slot: string, name: string | undefined, engine: EngineId, model
   }, () => { vizHosts.delete(slot); }); // a failed chunk leaves the slot empty; the next visit tries again
   return entry.host;
 }
-const SHORT_OF: Record<EngineId, 'pg' | 'mg' | 'dy'> = { postgres: 'pg', mongodb: 'mg', dynamodb: 'dy', redis: 'dy', design: 'pg', stack: 'pg', olap: 'pg', telemetry: 'pg' }; // design diagrams are Postgres ones; Redis has no live-model diagram (its figures are specs)
+const SHORT_OF: Record<EngineId, 'pg' | 'mg' | 'dy'> = { postgres: 'pg', mongodb: 'mg', dynamodb: 'dy', redis: 'dy', design: 'pg', stack: 'pg', olap: 'pg', search: 'pg', telemetry: 'pg' }; // design diagrams are Postgres ones; Redis has no live-model diagram (its figures are specs)
 
 const HONEST_CLS: Record<Honest, string> = {
-  pg: 'bg-good-soft text-ink', mingo: 'bg-good-soft text-ink', dynoxide: 'bg-good-soft text-ink', redis: 'bg-good-soft text-ink', diagram: 'bg-surface-2 text-muted', docs: 'bg-info-soft text-ink',
+  pg: 'bg-good-soft text-ink', mingo: 'bg-good-soft text-ink', dynoxide: 'bg-good-soft text-ink', redis: 'bg-good-soft text-ink', search: 'bg-good-soft text-ink', diagram: 'bg-surface-2 text-muted', docs: 'bg-info-soft text-ink',
 };
 /** The one honest runtime chip under the title (§3.6, checklist L1). */
 function honestChip(l: EngineLesson): HTMLElement {
@@ -849,6 +853,7 @@ function lessonBody(l: EngineLesson): HTMLElement {
         isDone ? h('span', { class: cls.cx(cls.PILL, cls.DONE_PILL) }, d.icon('check', 'size-4'), et('done')) : null),
       l.runtime === 'docs' ? h('p', { class: 'm-0 text-body-sm text-muted', 'data-runtime': 'docs' }, et(docsNoteKey(l) as EngineKey)) : null,
       dbtLab(l) ? h('p', { class: 'm-0 text-body-sm text-muted', 'data-stack-sim': '' }, et('stack.sim')) : null, // v45 (L743)
+      isEsLesson(l) ? h('p', { class: 'm-0 text-body-sm text-muted', 'data-search-sim': '' }, et('search.sim')) : null, // v47 (L1016)
       req.length ? h('p', { class: 'm-0 flex flex-wrap items-center gap-2 text-body-sm' }, h('span', { class: 'text-muted' }, `${et('requires')}:`),
         ...req.map((x) => h('a', { href: lessonHash(x), class: cls.cx(cls.PILL, 'min-h-6 bg-code text-ink no-underline hover:bg-accent-soft') }, x.title[lang()], tick(ok.has(x.id))))) : null),
     ...secs((id) => id === 'open'),
@@ -908,7 +913,9 @@ export function sourceTitle(u: string, title?: string): string {
   try { url = new URL(u); } catch { return u; }
   const dec = (x: string): string => { try { return decodeURIComponent(x); } catch { return x; } };
   // "HowItWorks.DataTypes" → "How It Works Data Types"; "bp-sort-keys" → "best practices: sort keys" (AWS's bp- pages, review v23 P3)
-  const words = (x: string): string => dec(x).replace(/\.html?$/, '').replace(/([a-z])([A-Z])/g, '$1 $2').replace(/[-_.]+/g, ' ').trim();
+  // L1098 (eye E-13): acronyms in a slug read as acronyms ("ddl constraints" → "DDL constraints")
+  const words = (x: string): string => dec(x).replace(/\.html?$/, '').replace(/([a-z])([A-Z])/g, '$1 $2').replace(/[-_.]+/g, ' ').trim()
+    .replace(/\b(ddl|dml|sql|jsonb?|mvcc|wal|gin|gist|brin|rls|ttl|gsi|lsi|cte|acid)\b/gi, (m) => m.toUpperCase());
   const seg = url.pathname.split('/').filter(Boolean).at(-1);
   const anchor = url.hash.length > 1 && words(url.hash.slice(1).replace(/\.([0-9A-F]{2})/g, '%$1')); // MediaWiki writes ' as .27
   const page = [seg && words(seg.replace(/^bp-/, 'best-practices: ')), anchor && (/[a-z]/.test(anchor) ? anchor : anchor.toLowerCase())].filter(Boolean).join(' › ');
