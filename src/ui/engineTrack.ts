@@ -66,7 +66,8 @@ export function levelHead(c: HubCtx, e: EngineId, lv: Level): HTMLElement {
   return h('div', { class: 'flex flex-col gap-3' },
     before.length ? line(c, tr(c, 'level.pre'), ...before.map((x) => chip(c, c.d.engineHash(e, x), c.levelName(x), levelDone(c, e, x, ok)))) : null,
     next ? h('div', {}, h('a', { href: c.lessonHash(next), 'data-next': 'level', class: cls.cx(cls.BTN_GO, 'inline-flex items-center gap-2 px-4 py-2 no-underline') },
-      tr(c, next.level === lv ? 'next.go' : 'next.level', { lv: next.level, title: next.title[c.lang()] }), c.d.icon('arrowRight', 'size-4'))) : null);
+      // L1093 (eye E-05): "Học tiếp" only once something of this level is done
+      tr(c, next.level !== lv ? 'next.level' : c.levelLessons(e, lv).some((x) => ok.has(x.id)) ? 'next.go' : 'next.start', { lv: next.level, title: next.title[c.lang()] }), c.d.icon('arrowRight', 'size-4'))) : null);
 }
 
 /** I7 lesson end, once the lesson is done: the primary button to afterLesson(), else back to the track (or the shelf). */

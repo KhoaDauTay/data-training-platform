@@ -84,7 +84,10 @@ function renderNav(): void {
     return merged.length ? { ...n, label: 'nav.learnBoth' as const, current: (r: Route) => n.current(r) || merged.some((m) => m.current(r)) } : n;
   });
   byId('bottom-nav').replaceChildren(
-    ...bottom.map((n) => navLink(n, route, BOTTOM_LINK, icon(n.icon, 'size-5'), h('span', {}, t(n.label)))),
+    // L1097 (eye E-12): below 360 px "Luyện SQL" took two lines in the five-item bar; there it is "Luyện"
+    ...bottom.map((n) => navLink(n, route, BOTTOM_LINK, icon(n.icon, 'size-5'), n.label === 'nav.practiceShort'
+      ? h('span', {}, h('span', { class: 'max-[359px]:hidden' }, t(n.label)), h('span', { class: 'hidden max-[359px]:inline' }, t('nav.practiceTiny')))
+      : h('span', {}, t(n.label)))),
     h('a', { href: hashOf('overview'), class: BOTTOM_LINK, 'aria-current': inDomain(route) && !(route === 'play' && generalWork()) ? 'page' : false },
       icon(none ? 'database' : live.icon, 'size-5'), h('span', {}, t(none ? 'home.domains' : live.name))));
 }

@@ -20,7 +20,7 @@ nodes:
     shape: grid
     label: { vi: "giá trị thay thế", en: "value placeholders" }
     head: [{ vi: "chỗ giữ", en: placeholder }, { vi: "giá trị", en: value }]
-    cells: [[":c", "S: C-02"], [":x", "N: 500000"]]
+    cells: [[":x", "N: 500000"]]
   - { id: ex, shape: key, mono: true, label: "#t > :x", sub: FilterExpression, tone: new }
   - { id: rd, label: { vi: "DynamoDB đọc là", en: "DynamoDB reads" }, sub: "total > 500000", tone: live }
   - { id: res, shape: key, label: Count 3, sub: ScannedCount 4, tone: live }
@@ -41,7 +41,7 @@ steps:
     alt: { vi: "Viết total > 500000 thẳng vào biểu thức thì DynamoDB từ chối cả request bằng ValidationException, vì số phải đi qua :x và total là từ dành riêng.", en: "Writing total > 500000 straight into the expression makes DynamoDB refuse the whole request with a ValidationException, since the number must go through :x and total is a reserved word." }
     set:
       nm: { rowTone: [ghost] }
-      vl: { rowTone: [ghost, ghost] }
+      vl: { rowTone: [ghost] }
       ex: { label: "total > 500000", sub: { vi: "viết thẳng", en: "written inline" }, tone: dead }
       rd: { label: { vi: "bị từ chối", en: "refused" }, sub: { vi: "không có # và :", en: "no # and no :" }, tone: dead }
       res: { label: { vi: "không đọc", en: "nothing read" }, sub: { vi: "không item nào", en: "no items" }, tone: ghost }

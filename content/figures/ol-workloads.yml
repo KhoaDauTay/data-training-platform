@@ -1,0 +1,25 @@
+# OL-01 (v47 R1, L990): the two workloads on one shipments table. Lesson: e-ol-l1-01 (Ý chính).
+# Source: https://clickhouse.com/docs/intro (column-oriented DBMS for OLAP).
+title: { vi: "Hai kiểu tải trên một bảng", en: "Two workloads on one table" }
+caption:
+  vi: "OLTP đọc vài dòng theo khóa, rất nhiều lần; OLAP quét mọi dòng nhưng chỉ cần vài cột."
+  en: "OLTP reads a few rows by key, very often; OLAP scans every row but needs only a few columns."
+alt:
+  vi: "Cùng một bảng lô hàng phục vụ hai kiểu câu lệnh: câu giao dịch đọc một dòng theo khóa, câu phân tích quét mọi dòng để gộp hai cột. Kết quả: kiểu tải tính theo hình dạng câu lệnh, không theo cỡ bảng."
+  en: "One shipments table serves two kinds of query: a transactional one reads one row by key, an analytical one scans every row to aggregate two columns. Result: the workload is about the shape of the query, not the table size."
+nodes:
+  - { id: oltp, label: "OLTP", sub: { vi: "id = 2041", en: "id = 2041" }, tone: new }
+  - { id: olap, label: "OLAP", sub: { vi: "sum(teu)", en: "sum(teu)" }, tone: warm }
+  - id: t
+    shape: grid
+    mono: true
+    label: shipments
+    head: [id, port, teu, notes]
+    cells: [["2040", "VNSGN", "1", "…"], ["2041", "VNHPH", "2", "…"], ["2042", "VNDAD", "3", "…"]]
+    cellTone: { "1:0": new, "0:1": warm, "0:2": warm, "1:1": warm, "1:2": warm, "2:1": warm, "2:2": warm }
+rows:
+  - [oltp, olap]
+  - [t]
+edges:
+  - { from: oltp, to: t }
+  - { from: olap, to: t }

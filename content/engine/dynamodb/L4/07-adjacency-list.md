@@ -99,7 +99,7 @@ Adjacency list lưu nút và cạnh trong cùng một bảng. Mỗi thực thể
 
 Mỗi chiều là đúng một Query: "khóa của một học viên" đọc partition của học viên; "học viên của một khóa" đọc partition của khóa trên GSI. Tiền tố thực thể (`STU#`, `CRS#`) cùng `begins_with` tách item mô tả khỏi các cạnh. Thuộc tính của quan hệ (ngày ghi danh) nằm ngay trên item cạnh.
 
-Nhiều người nghĩ phải ghi mỗi cạnh hai lần, một lần cho mỗi chiều. Thật ra ứng dụng ghi một item; DynamoDB tự chép nó sang GSI. Cái giá: GSI chỉ nhất quán cuối cùng, nên một lượt ghi danh vừa ghi có thể chưa hiện ở chiều ngược lại trong khoảnh khắc.
+Nhiều người nghĩ phải ghi mỗi cạnh hai lần, một lần cho mỗi chiều. Thật ra ứng dụng ghi một item; DynamoDB tự chép nó sang GSI. Cái giá: GSI chỉ nhất quán cuối, nên một lượt ghi danh vừa ghi có thể chưa hiện ở chiều ngược lại trong khoảnh khắc.
 
 Lab chạy bằng dynoxide trong trình duyệt.
 
@@ -171,7 +171,7 @@ Bảng có 6 học viên, 4 khóa học và 12 lượt ghi danh (22 item). Đọ
 - Nút: `pk = sk`; cạnh: `pk` = nút nguồn, `sk` = nút đích.
 - GSI đảo `sk`/`pk` cho chiều ngược lại; mỗi chiều là một Query.
 - `begins_with` trên tiền tố loại tách item mô tả khỏi cạnh.
-- Mỗi cạnh ghi một lần; GSI theo sau, nhất quán cuối cùng.
+- Mỗi cạnh ghi một lần; GSI theo sau, nhất quán cuối.
 
 # EN
 

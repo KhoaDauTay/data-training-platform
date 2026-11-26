@@ -1,0 +1,23 @@
+# RD-12 (v47 R1, L959): what a crash loses with RDB only vs AOF everysec. Lesson: e-rd-l2-05 (Ý chính).
+# Data = the lesson's quiz: last snapshot 10:00 with `save 300 100`, crash at 10:04:59; AOF fsync once a second.
+# Rules from the Valkey/Redis persistence docs (sources of the lesson); nothing measured here.
+title: { vi: "Sập lúc 10:04:59 thì mất gì", en: "What a crash at 10:04:59 loses" }
+caption:
+  vi: "RDB quay về ảnh chụp 10:00; AOF everysec chỉ mất khoảng một giây cuối."
+  en: "RDB goes back to the 10:00 snapshot; AOF everysec only loses about the last second."
+alt:
+  vi: "RDB chụp cả bộ nhớ theo lịch nên mất mọi lần ghi sau lần chụp cuối, còn AOF ghi từng lệnh và ép xuống đĩa mỗi giây nên mất rất ít. Kết quả: chỉ RDB mất gần 5 phút, AOF everysec mất khoảng 1 giây."
+  en: "RDB dumps the whole memory on a schedule, so it loses every write after the last snapshot, while AOF logs each command and flushes to disk every second, so it loses very little. Result: RDB alone loses almost 5 minutes, AOF everysec about 1 second."
+nodes:
+  - { id: rdb, shape: doc, mono: true, label: dump.rdb, sub: { vi: "ảnh chụp 10:00", en: "snapshot 10:00" } }
+  - { id: aof, shape: doc, mono: true, label: appendonly.aof, sub: { vi: "fsync mỗi giây", en: "fsync every second" } }
+  - { id: l1, label: { vi: "mất gần 5 phút", en: "loses ~5 minutes" }, tone: warm }
+  - { id: l2, label: { vi: "mất ~1 giây", en: "loses ~1 second" }, tone: live }
+rows:
+  - [rdb, aof]
+  - [l1, l2]
+phone:
+  rows: [[rdb], [l1], [aof], [l2]]
+edges:
+  - { from: rdb, to: l1 }
+  - { from: aof, to: l2 }

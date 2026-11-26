@@ -1,0 +1,25 @@
+# v47 R1 (L1019): the inverted index of the lesson's shop index, field `name` (standard analyzer). Lesson: e-sr-l1-01 (Ý chính).
+# Data = the lab's documents: `đèn` is in 1, 2, 3, 11; `lụa` in 1, 6, 7, 12 (checked by tests/engineSearch.test.ts runs).
+# Source: https://www.elastic.co/docs/manage-data/data-store/index-basics
+title: { vi: "Từ trỏ về tài liệu", en: "Words point back to documents" }
+caption:
+  vi: "Lúc ghi, analyzer cắt tên thành từ; chỉ mục đảo ghi cho mỗi từ danh sách tài liệu chứa nó."
+  en: "At write time the analyzer cuts each name into words; the inverted index keeps, for each word, the documents that hold it."
+alt:
+  vi: "Tìm theo chữ nhanh vì máy tra danh sách của từng từ thay vì đọc mọi tài liệu. Kết quả: tìm lụa chỉ đọc một danh sách gồm tài liệu 1, 6, 7 và 12."
+  en: "Text search is fast because the engine looks up each word's list instead of reading every document. Result: searching the word for silk reads one list, documents 1, 6, 7 and 12."
+nodes:
+  - { id: doc, shape: doc, label: Đèn lồng lụa đỏ, sub: { vi: "tài liệu 1", en: "document 1" } }
+  - { id: an, label: analyzer, sub: { vi: "tách từ, hạ chữ", en: "split, lower case" }, tone: warm }
+  - id: inv
+    shape: grid
+    label: { vi: "Chỉ mục đảo", en: "Inverted index" }
+    head: [{ vi: "từ", en: "word" }, { vi: "tài liệu", en: "documents" }]
+    cells: [[đèn, "1, 2, 3, 11"], [lồng, "1, 2, 3, 11"], [lụa, "1, 6, 7, 12"], [đỏ, "1, 7, 11"]]
+rows:
+  - [doc]
+  - [an]
+  - [inv]
+edges:
+  - { from: doc, to: an }
+  - { from: an, to: inv }

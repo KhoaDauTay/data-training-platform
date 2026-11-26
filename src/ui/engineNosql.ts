@@ -26,6 +26,12 @@ const json = (x: unknown): HTMLElement => d.h('pre', { tabindex: '0', class: 'sq
 export function tablesPanel(deps: EngineDeps, l: EngineLesson): HTMLElement | null {
   d = deps;
   const { h } = d;
+  // v47 (L954): a Redis lab's data is its setup, redis-cli lines (comments and runner directives left out)
+  if (l.engine === 'redis') {
+    const lines = (l.lab?.setup ?? '').split('\n').map((x) => x.trim()).filter((x) => x && !/^[#@]/.test(x));
+    return lines.length ? h('details', { class: 'space-y-1' }, h('summary', { class: 'cursor-pointer text-body-sm font-bold' }, nt('tables.redis')),
+      h('pre', { tabindex: '0', class: 'sql my-1 overflow-x-auto', lang: 'en' }, lines.join('\n'))) : null;
+  }
   let j: { collections?: Record<string, unknown[]>; tables?: { TableName?: string; KeySchema?: { AttributeName: string; KeyType: string }[] }[]; items?: Record<string, unknown[]> };
   try {
     j = JSON.parse(l.lab?.setup ?? '') as typeof j;
@@ -54,7 +60,7 @@ export function stepTop(deps: EngineDeps, s: LabStep): HTMLElement | null {
   if (!s.rule && !s.error && !cost) return null;
   return h('p', { class: 'm-0 flex flex-wrap items-center gap-2 text-body-sm', 'data-rule': s.rule ?? (cost ? 'cost' : 'error') },
     h('span', { class: cls.cx(cls.PILL, 'bg-sun text-sun-ink font-bold') }, ...inline(s.rule ? nt(`rule.${s.rule}`) : cost ? nt('rule.cost')
-      : nt(/Exception$/.test(s.error!) ? 'error.noteDy' : 'error.note', { code: s.error! }))),
+      : nt(/Exception$/.test(s.error!) ? 'error.noteDy' : /^[A-Z]+$/.test(s.error!) ? 'error.noteRd' : 'error.note', { code: s.error! }))), // v47: Redis codes are one upper-case word (WRONGTYPE, EXECABORT)
     s.rule || cost ? h('span', { class: 'text-muted' }, ...inline(nt(cost ? 'rule.costNote' : 'rule.note'))) : null);
 }
 

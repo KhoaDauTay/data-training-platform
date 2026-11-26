@@ -1,0 +1,20 @@
+# OL-12 (v47 R1, L990): exact vs approximate aggregates, with what each keeps in memory. Lesson: e-ol-l3-05.
+# Sources: https://clickhouse.com/docs/sql-reference/aggregate-functions/reference/uniq,
+# https://clickhouse.com/docs/sql-reference/aggregate-functions/reference/quantile
+title: { vi: "Chính xác hay xấp xỉ", en: "Exact or approximate" }
+caption:
+  vi: "Hàm xấp xỉ giữ một mẫu có giới hạn; hàm chính xác giữ mọi giá trị."
+  en: "An approximate function keeps a bounded sample; an exact one keeps every value."
+alt:
+  vi: "uniq giữ tối đa 65.536 giá trị băm và quantile giữ tối đa 8.192 giá trị mẫu, nên bộ nhớ có giới hạn dù dữ liệu lớn đến đâu. uniqExact và quantileExact giữ mọi giá trị, nên đúng tuyệt đối nhưng tốn bộ nhớ theo dữ liệu."
+  en: "uniq keeps up to 65,536 hash values and quantile up to 8,192 sample values, so memory stays bounded. uniqExact and quantileExact keep every value, so they are exact but their memory grows with the data."
+nodes:
+  - id: t
+    shape: grid
+    mono: true
+    label: { vi: "giữ gì trong bộ nhớ", en: "what is kept in memory" }
+    head: [{ vi: "hàm", en: "function" }, { vi: "giữ", en: "keeps" }]
+    cells: [["uniq", "≤ 65536 hash"], ["quantile", "≤ 8192"], ["uniqExact", { vi: "mọi giá trị", en: "every value" }], ["quantileExact", { vi: "mọi giá trị", en: "every value" }]]
+    rowTone: [new, new, warm, warm]
+rows:
+  - [t]

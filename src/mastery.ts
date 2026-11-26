@@ -97,10 +97,10 @@ export function engineLevels(tree: { levels: readonly { level: string; modules: 
 // ---------- badges: readable conditions, recomputed on every draw, lost and won back (L333) ----------
 
 /** Fixed order; an engine with no content yet (design, L322) keeps its five badges, never held. */
-export const BADGE_ENGINES = ['postgres', 'mongodb', 'dynamodb', 'design', 'stack', 'stream'] as const;
+export const BADGE_ENGINES = ['postgres', 'mongodb', 'dynamodb', 'redis', 'design', 'stack', 'olap', 'search', 'stream'] as const;
 export const ENGINE_LEVELS = ['L1', 'L2', 'L3', 'L4', 'L5'] as const;
-/** v45 (L745): the levels an engine has badges for; the data stack has three (no badge nobody can hold). */
-export const levelsOf = (e: string): readonly string[] => (e === 'stack' || e === 'stream' ? ENGINE_LEVELS.slice(0, 3) : ENGINE_LEVELS);
+/** v45 (L745): the levels an engine has badges for; the data stack has three, Redis R1 two (v47 L956): no badge nobody can hold. */
+export const levelsOf = (e: string): readonly string[] => (e === 'stack' || e === 'olap' || e === 'search' || e === 'stream' ? ENGINE_LEVELS.slice(0, 3) : e === 'redis' ? ENGINE_LEVELS.slice(0, 2) : ENGINE_LEVELS);
 
 export type Badge =
   | { kind: 'part'; id: string; have: boolean; n: number }

@@ -141,7 +141,7 @@ Bảng có 20 item: 3 khách, 6 giỏ, 7 đơn (4 đơn đang nấu) và 4 item 
 - Mỗi mẫu truy cập là một request: Query trên bảng, Query trên sparse GSI, `TransactGetItems`.
 - Item hết hạn và item bị lọc vẫn được đọc và tính tiền.
 - Đọc trong transaction tốn 2 RCU mỗi item tới 4 KB.
-- DAX cho đọc cuối cùng trên khóa nóng; Streams cho tổng hợp; PITR cho lỗi ghi.
+- DAX cho đọc nhất quán cuối trên khóa nóng; Streams cho tổng hợp; PITR cho lỗi ghi.
 
 # EN
 

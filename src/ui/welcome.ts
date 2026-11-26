@@ -4,7 +4,7 @@ import { DOMAINS } from '../domains';
 import { INTENTS, intentRoute, readIntent, readTour, startTour, TOUR_STEPS, welcomeNeeded, writeIntent, type BootPick, type Intent } from '../onboarding';
 import { actions, app, done } from '../state';
 import { writeJson } from '../storage';
-import { BTN_GO, cx } from '../theme';
+import { BTN_GHOST, BTN_GO, cx } from '../theme';
 import { COACH_KEY, coachDone, tourText } from './coach';
 import { byId, h, NO_LIGHT_DISMISS } from './dom';
 import { domainBadge, type IconName } from './icons';
@@ -168,7 +168,8 @@ function draw(): void {
       : step === 'check' ? [title(t('welcome.checkTitle')), h('p', { class: 'm-0' }, t('welcome.checkIntro')), h('p', { class: 'm-0 text-muted' }, t('welcome.checkLater'))]
       : step === 'loop' ? loop()
         : step === 'tour' ? [title(t('welcome.tourTitle')), h('ol', { class: 'm-0 space-y-1 text-body-sm' }, ...Array.from({ length: TOUR_STEPS }, (_, i) => h('li', {}, tourText(i + 1))))]
-          : [...loop(), h('p', { class: 'm-0 pt-2 text-title' }, t('welcome.ask'))];
+          // L1090 (eye E-03): only "knows SQL" is asked again here; the analyst answered it on the goal step
+          : readIntent() === 'sql' ? [...loop(), h('p', { class: 'm-0 pt-2 text-title' }, t('welcome.ask'))] : loop();
   // The scene stays in place across redraws (its loops and a focused Lily/Boon button survive a progress tick).
   if (frame.root.parentNode !== d) d.replaceChildren(frame.root);
   frame.body.replaceChildren(...body);
@@ -184,17 +185,19 @@ function draw(): void {
       : step === 'check' ? h('span', { class: 'flex flex-wrap justify-end gap-2 max-sm:basis-full max-sm:flex-col-reverse' },
         h('button', { type: 'button', 'data-w': 'skip', class: 'rounded-full px-4 py-2', onclick: () => go(panel + 1) }, t('welcome.checkSkip')),
         main({ 'data-w': 'check', onclick: takeCheck }, t('welcome.checkStart')))
-      : !last ? main({ 'data-w': 'next', onclick: () => go(panel + 1) }, t('welcome.next'))
+      // L1091 (eye E-08): on a phone the goal cards run below the fold, so Next with no card picked says what it means
+      : !last ? main({ 'data-w': 'next', onclick: () => go(panel + 1) }, t(step === 'goal' && !readIntent() ? 'welcome.goalSkip' : 'welcome.next'))
         : replay ? main({ 'data-w': 'close', onclick: () => d.close() }, t('app.close'))
           : readIntent() === 'sql' // L911: "knows SQL" skipped the check: its answer is the main button here
             ? h('span', { class: 'flex flex-wrap justify-end gap-2 max-sm:basis-full max-sm:flex-col-reverse' },
               h('button', { type: 'button', 'data-w': 'begin', class: 'rounded-full px-4 py-2', disabled: entering, onclick: () => choose(false) }, t('welcome.begin')),
               main({ 'data-w': 'knows', disabled: entering, onclick: () => choose(true) }, t('welcome.knows')))
-            : h('span', { class: 'flex flex-wrap justify-end gap-2 max-sm:basis-full max-sm:flex-col-reverse' },
-              h('button', { type: 'button', 'data-w': 'knows', class: 'rounded-full px-4 py-2', disabled: entering, onclick: () => choose(true) }, t('welcome.knows')),
+            // L1090 (eye E-03): the analyst is not asked "do you know SQL?" twice: one Start, and a quiet way back to the goals
+            : h('span', { class: 'flex flex-wrap items-center justify-end gap-2 max-sm:basis-full max-sm:flex-col-reverse' },
+              h('button', { type: 'button', 'data-w': 'regoal', class: cx(BTN_GHOST, 'px-3 py-2 text-body-sm'), disabled: entering, onclick: () => go(steps.indexOf('goal')) }, t('welcome.regoal')),
               // V22 BOOT (L247): open as soon as the domain is entered; the seed goes on behind ticket 1 (its "preparing"
               // banner, the top bar dot, Run queued with work.queued), so reading the task never waits for the data.
-              main({ 'data-w': 'begin', disabled: entering, onclick: () => choose(false) }, t('welcome.begin'))));
+              main({ 'data-w': 'begin', disabled: entering, onclick: () => choose(false) }, t('welcome.start'))));
   if (keep === 'title') byId('welcome-title').focus();
   else if (keep) d.querySelector<HTMLElement>(`[data-w="${keep}"]`)?.focus();
 }

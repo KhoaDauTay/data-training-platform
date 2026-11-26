@@ -13,9 +13,12 @@ export const PREREQS: Partial<Record<EngineId, Prereq[]>> = {
   postgres: [{ sql: [1, 2] }],
   mongodb: [],
   dynamodb: [],
+  redis: [], // v47 R1 (L965): no SQL needed; its L2 compares with PostgreSQL in words only
   design: [{ sql: [1, 3] }],
   stack: [{ sql: [1, 7] }, { engine: 'postgres', to: 'L1' }],
-  stream: [{ sql: [1, 10] }, { engine: 'postgres', to: 'L1' }],
+  olap: [{ sql: [1, 7] }, { engine: 'postgres', to: 'L1' }], // v47 (L991)
+  search: [{ sql: [1, 4] }, { engine: 'postgres', to: 'L1' }], // v47 (L1018)
+  stream: [{ sql: [1, 10] }, { engine: 'postgres', to: 'L1' }], // v47 (L1064)
 };
 
 /** Total minutes of a list of lessons (track card: "≈ N h"). */

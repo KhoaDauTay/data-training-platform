@@ -180,12 +180,12 @@ describe('honestOf: nhãn trung thực của mọi bài', () => {
   it.each(sets[0].map((l) => [l.id, l] as const))('%s', (_, l) => {
     const k = honestOf(l);
     expect(honestRow(l)).toBe(k); // L280: the lesson rows' chip, from the index fields only
-    if (k === 'pg' || k === 'mingo' || k === 'dynoxide') {
+    if (k === 'pg' || k === 'mingo' || k === 'dynoxide' || k === 'redis' || k === 'search') {
       // "runs" only when something executes here: a lab (its Run goes to the runner) or a Postgres predict's real plan.
       // L299: the two DynamoDB catalog labs (e-dy-l1-04, e-dy-l3-03) count as gradable now (dynoxide grades any check kind).
       expect(!!l.lab || (onPg(l.engine) && !!l.predict)).toBe(true);
       expect((l.lab?.steps ?? []).some((s) => gradable(l, s)) || (onPg(l.engine) && !!l.predict)).toBe(true);
-      expect(k).toBe({ postgres: 'pg', mongodb: 'mingo', dynamodb: 'dynoxide', design: 'pg', stack: 'pg', stream: 'pg' }[l.engine]);
+      expect(k).toBe({ postgres: 'pg', mongodb: 'mingo', dynamodb: 'dynoxide', redis: 'redis', design: 'pg', stack: 'pg', olap: 'pg', search: 'search', stream: 'pg' }[l.engine]);
     } else {
       expect(l.runtime).toBe('docs');
       expect(k).toBe(l.viz ? 'diagram' : 'docs');
@@ -247,7 +247,8 @@ describe('MongoDB v25: capstone, recorded, thanh quy tắc', () => {
     for (const l of sets[0]) for (const [i, s] of (l.lab?.steps ?? []).entries()) {
       const at = `${l.id} s${i + 1}`;
       if (s.rule) expect([at, l.engine]).toEqual([at, 'mongodb']);
-      if (s.error) expect([at, l.engine === 'mongodb' || (l.engine === 'dynamodb' && /^[A-Z]\w+Exception$/.test(s.error))]).toEqual([at, true]); // v26: Dynamo "mong lỗi" names the exception
+      // v26: Dynamo "mong lỗi" names the exception; v47 (L953): Redis names the error's first word (WRONGTYPE, EXECABORT, ERR)
+      if (s.error) expect([at, l.engine === 'mongodb' || (l.engine === 'dynamodb' && /^[A-Z]\w+Exception$/.test(s.error)) || (l.engine === 'redis' && /^[A-Z]+$/.test(s.error))]).toEqual([at, true]);
       if (s.perf && l.engine === 'dynamodb') expect([at, !!s.slow, s.check]).toEqual([at, true, 'doc']); // v26 R5 (L381): the cost bar needs its Scan answer
       if (s.rule) {
         expect([at, ['esr', 'covered', 'match-first'].includes(s.rule)]).toEqual([at, true]);

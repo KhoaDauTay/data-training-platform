@@ -1,0 +1,21 @@
+# OL-03 (v47 R1, L990): the lab's star schema, with the snowflake branch port → country. Lesson: e-ol-l1-03 (Ý chính).
+# Source: https://clickhouse.com/docs/data-modeling/schema-design
+title: { vi: "Một fact, các dimension quanh nó", en: "One fact, dimensions around it" }
+caption:
+  vi: "fact_moves giữ khóa và số đo; dim_port trỏ tiếp sang dim_country là nhánh bông tuyết."
+  en: "fact_moves holds keys and measures; dim_port pointing on to dim_country is the snowflake branch."
+alt:
+  vi: "Bảng fact ở giữa giữ khóa ngày và khóa cảng cùng các số đo, hai dimension mô tả ngày và cảng nằm hai bên. Cảng trỏ tiếp sang bảng quốc gia, nên báo cáo theo quốc gia cần hai phép nối."
+  en: "The fact table in the middle holds the date and port keys with the measures, and the two dimensions describing dates and ports sit on either side. Ports point on to the country table, so a report by country needs two joins."
+nodes:
+  - { id: dd, shape: table, label: dim_date, sub: { vi: "ngày → tháng", en: "day → month" } }
+  - { id: f, shape: table, label: fact_moves, sub: { vi: "teu, doanh thu", en: "teu, revenue" }, tone: warm }
+  - { id: dp, shape: table, label: dim_port, sub: { vi: "cảng", en: "port" } }
+  - { id: dc, shape: table, label: dim_country, sub: { vi: "quốc gia", en: "country" }, tone: new }
+rows:
+  - [dd, f, dp]
+  - [dc]
+edges:
+  - { from: f, to: dd }
+  - { from: f, to: dp }
+  - { from: dp, to: dc }

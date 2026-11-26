@@ -96,17 +96,17 @@ function engineCard(c: HubCtx, e: EngineId, ok: Set<string>): HTMLElement {
 const disc = (c: HubCtx, name: Icons.IconName): HTMLElement =>
   c.d.h('span', { class: 'grid size-10 place-items-center rounded-full bg-accent-soft text-accent' }, c.d.icon(name, 'size-6'));
 
-/** The Chuyên đề rows: NoSQL path, the Extensions shelf (never a level, I2), the multi-tenant topic map. */
+/** The Chuyên đề rows: NoSQL path, the Extensions shelf (never a level, I2), the multi-tenant topic map. Quiet links like Tham khảo (L1096, eye E-10). */
 function topicRows(c: HubCtx, ok: Set<string>): HTMLElement[] {
   const { d, et } = c;
   const ext = c.progressOf(c.extLessons(), ok);
   const hub = c.lessons().find((x) => x.id === TOPIC_HUB);
   return [
-    d.ui.listRow({ lead: disc(c, 'nosqlPath'), title: et('nosql.title'), sub: et('nosql.short'), action: c.rowLink(d.enginePathHash(), et('nosql.go'), true) }),
+    d.ui.listRow({ lead: disc(c, 'nosqlPath'), title: et('nosql.title'), sub: et('nosql.short'), action: c.rowLink(d.enginePathHash(), et('nosql.go'), false) }),
     ext.total ? d.ui.listRow({ lead: disc(c, 'puzzle'), title: d.h('span', {}, et('ext.title'), c.tick(ext.done === ext.total)),
-      sub: `${et('ext.short')} · ${et('progress', { k: ext.done, n: ext.total })}`, action: c.rowLink(d.engineHash('postgres', 'EXT'), et('ext.go'), true) }) : null,
+      sub: `${et('ext.short')} · ${et('progress', { k: ext.done, n: ext.total })}`, action: c.rowLink(d.engineHash('postgres', 'EXT'), et('ext.go'), false) }) : null,
     hub ? d.ui.listRow({ lead: disc(c, c.conceptIcon), title: d.h('span', {}, c.topicChip(), et('topic.tenancy'), c.tick(ok.has(hub.id))),
-      sub: et('topic.tenancyShort'), action: c.rowLink(c.lessonHash(hub), et('topic.go'), true) }) : null,
+      sub: et('topic.tenancyShort'), action: c.rowLink(c.lessonHash(hub), et('topic.go'), false) }) : null,
   ].filter((x): x is HTMLLIElement => !!x);
 }
 

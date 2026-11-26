@@ -78,10 +78,10 @@ export function observe(t: PlanNode | undefined, sql: string, x?: PredictExpect)
  * runs that query after the lab's setup and shows its rows, since its EXPLAIN would only show catalog views (blind-pg l3-08, L296).
  */
 export const readsCounters = (l: EngineLesson): boolean =>
-  (l.engine === 'postgres' || l.engine === 'design' || l.engine === 'stack' || l.engine === 'stream') && l.runtime !== 'docs' && !!l.predict && !l.predict.expect && !!l.lab?.setup && /\bpg_stat(io)?_/i.test(l.predict.sql);
+  (l.engine === 'postgres' || l.engine === 'design' || l.engine === 'stack' || l.engine === 'olap' || l.engine === 'stream') && l.runtime !== 'docs' && !!l.predict && !l.predict.expect && !!l.lab?.setup && /\bpg_stat(io)?_/i.test(l.predict.sql);
 /** A Postgres predict gets the real plan only where a plan is the answer: its own lab data (`setup`) or an `expect`. */
 export const hasRealPlan = (l: EngineLesson): boolean =>
-  (l.engine === 'postgres' || l.engine === 'design' || l.engine === 'stack' || l.engine === 'stream') && l.runtime !== 'docs' && !!l.predict && (!!l.lab?.setup || !!l.predict.expect) && !readsCounters(l);
+  (l.engine === 'postgres' || l.engine === 'design' || l.engine === 'stack' || l.engine === 'olap' || l.engine === 'stream') && l.runtime !== 'docs' && !!l.predict && (!!l.lab?.setup || !!l.predict.expect) && !readsCounters(l);
 /**
  * v25: a MongoDB predict on its own lab data whose answer is a result, not a plan (no `recorded`): "Xem thật" runs the question
  * on mingo and shows its documents (tests/engineIntegration.test.ts runs each one). mingo has no planner, so a plan question

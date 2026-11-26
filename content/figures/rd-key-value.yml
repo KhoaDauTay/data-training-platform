@@ -1,0 +1,26 @@
+# RD-1 (v47 R1, L958): Redis as a dictionary of keys pointing to string values. Lesson: e-rd-l1-01 (Ý chính).
+# Data = the lab's setup: price:p02 "120000", page:home:views 120 (121 after the INCR step), price:missing never written.
+# Replies as the interpreter prints them (Valkey 8.1 valkey-cli cliFormatReplyTTY).
+title: { vi: "Khóa trỏ tới giá trị", en: "Keys point to values" }
+caption:
+  vi: "GET trả chuỗi trong ngoặc kép, INCR trả số nguyên, khóa không có trả (nil)."
+  en: "GET returns a string in double quotes, INCR returns an integer, a missing key returns (nil)."
+alt:
+  vi: "Redis là một từ điển: mỗi khóa trỏ tới một giá trị chuỗi, và mỗi lệnh có một kiểu trả lời riêng. Kết quả: GET price:p02 in \"120000\", INCR page:home:views in (integer) 121, GET một khóa chưa ghi in (nil)."
+  en: "Redis is a dictionary: each key points to a string value, and each command has its own kind of reply. Result: GET price:p02 prints \"120000\", INCR page:home:views prints (integer) 121, GET on a key never written prints (nil)."
+nodes:
+  - { id: k1, shape: key, mono: true, label: "price:p02" }
+  - { id: k2, shape: key, mono: true, label: "page:home:views" }
+  - { id: k3, shape: key, mono: true, label: "shop:phone" }
+  - { id: v1, mono: true, label: "\"120000\"", sub: { vi: "chuỗi", en: "string" } }
+  - { id: v2, mono: true, label: "(integer) 121", sub: { vi: "sau INCR", en: "after INCR" }, tone: new }
+  - { id: v3, mono: true, label: "(nil)", sub: { vi: "chưa ghi", en: "never written" }, tone: ghost }
+rows:
+  - [k1, k2, k3]
+  - [v1, v2, v3]
+phone:
+  rows: [[k1, v1], [k2, v2], [k3, v3]]
+edges:
+  - { from: k1, to: v1, label: GET }
+  - { from: k2, to: v2, label: INCR }
+  - { from: k3, to: v3, label: GET }
