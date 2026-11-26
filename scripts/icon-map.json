@@ -12,6 +12,7 @@
     "engDesign": ["compass-tool", "Engine: database design (a drafting compass, no logo; v24 L322)"],
     "engTimeseries": ["wave-sine", "Engine: time-series (a sensor signal over time, no logo; v47 L970)"],
     "engOlap": ["cube", "Engine: OLAP and ClickHouse (a data cube, no logo; v47 L990)"],
+    "engSearch": ["binoculars", "Engine: search and Elasticsearch (looking for text in documents, no logo; v47 L1010)"],
     "engStack": ["flow-arrow", "Engine: the data stack (data flowing through a pipeline of stages, no logo; v45 L741)"],
     "engRedis": ["memory", "Engine: Redis, an in-memory key-value store (a memory chip, no logo; v47 L950)"],
     "skillMap": ["grid-four", "#/me skill map card (a grid of skill cells; v24 L323)"],

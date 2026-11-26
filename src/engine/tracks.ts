@@ -17,6 +17,7 @@ export const PREREQS: Partial<Record<EngineId, Prereq[]>> = {
   design: [{ sql: [1, 3] }],
   stack: [{ sql: [1, 7] }, { engine: 'postgres', to: 'L1' }],
   olap: [{ sql: [1, 7] }, { engine: 'postgres', to: 'L1' }], // v47 (L991)
+  search: [{ sql: [1, 4] }, { engine: 'postgres', to: 'L1' }], // v47 (L1018)
   timeseries: [{ sql: [1, 10] }], // v47 (L977): L2 uses window functions (Part 10)
 };
 

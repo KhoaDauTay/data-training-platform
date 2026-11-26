@@ -14,9 +14,9 @@ import type { PageSub } from './homeView';
  */
 let d: EngineDeps;
 let terms: Term[] = [];
-const NAME: Record<EngineId, string> = { postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB', redis: 'Redis', design: '', stack: '', olap: '', timeseries: '' };
+const NAME: Record<EngineId, string> = { postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB', redis: 'Redis', design: '', stack: '', olap: '', search: '', timeseries: '' };
 /** F15: design is never a glossary engine (glossary.ts ENG), so it gets no filter (it would match nothing); v47: Redis has no terms yet. */
-const TERM_ENGINES = ENGINES.filter((e) => e !== 'design' && e !== 'stack' && e !== 'redis' && e !== 'olap' && e !== 'timeseries');
+const TERM_ENGINES = ENGINES.filter((e) => e !== 'design' && e !== 'stack' && e !== 'redis' && e !== 'olap' && e !== 'search' && e !== 'timeseries');
 const tt = (key: TermsKey, params?: I18n.Params): string => termsText(d.getLang(), d.locale(), key, params);
 const lang = (): 'vi' | 'en' => d.getLang();
 
