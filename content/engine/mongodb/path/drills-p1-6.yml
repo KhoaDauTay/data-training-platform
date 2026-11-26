@@ -31,7 +31,7 @@
   solution: 'db.orders.find({ store_id: 4 })'
   hint: { vi: "Số viết không có nháy.", en: "Numbers are written without quotes." }
   wrong:
-    - { query: 'db.orders.find({ store_id: "4" })', vi: "`\"4\"` là chuỗi, còn `store_id` lưu số 4. MongoDB so cả kiểu, nên không đơn nào khớp: kết quả rỗng và không có lỗi nào báo. Viết số 4 không có nháy.", en: "`\"4\"` is a string while `store_id` holds the number 4. MongoDB compares types too, so no order matches: the result is empty and no error warns you. Write the number 4 without quotes." }
+    - { query: 'db.orders.find({ store_id: "4" })', vi: "`\"4\"` là chuỗi, còn `store_id` lưu số 4. MongoDB so cả kiểu, nên không đơn nào khớp: kết quả rỗng và không có lỗi nào báo.", en: "`\"4\"` is a string while `store_id` holds the number 4. MongoDB compares types too, so no order matches: the result is empty and no error warns you." }
 - id: e-mg-d-find-4
   skill: mg.find
   kind: review
@@ -89,7 +89,7 @@
   solution: 'db.products.find({ category: "Snacks", price_vnd: { $gt: 20000, $lt: 40000 } }, { _id: 0, name: 1, price_vnd: 1 })'
   hint: { vi: "Hai giới hạn của cùng một trường nằm chung một object: `{ $gt: …, $lt: … }`.", en: "Two bounds on one field share one object: `{ $gt: …, $lt: … }`." }
   wrong:
-    - { query: 'db.products.find({ category: "Snacks", price_vnd: { $gt: 20000 }, price_vnd: { $lt: 40000 } }, { _id: 0, name: 1, price_vnd: 1 })', vi: "Viết `price_vnd` hai lần: khóa sau đè khóa trước, nên chỉ còn điều kiện dưới 40000 và các món rẻ hơn 20000 cũng lọt vào. Gộp hai giới hạn vào cùng một object của `price_vnd`.", en: "`price_vnd` written twice: the second key replaces the first, so only the below-40000 condition is left and items under 20000 slip in. Put both bounds in one object under `price_vnd`." }
+    - { query: 'db.products.find({ category: "Snacks", price_vnd: { $gt: 20000 }, price_vnd: { $lt: 40000 } }, { _id: 0, name: 1, price_vnd: 1 })', vi: "Viết `price_vnd` hai lần: khóa sau đè khóa trước, nên chỉ còn điều kiện dưới 40000 và các món rẻ hơn 20000 cũng lọt vào.", en: "`price_vnd` written twice: the second key replaces the first, so only the below-40000 condition is left and items under 20000 slip in." }
 - id: e-mg-d-filter-4
   skill: mg.filter
   kind: review
@@ -154,7 +154,7 @@
   ordered: true
   hint: { vi: "Top N cần sắp xếp trước khi cắt.", en: "A top N needs a sort before the cut." }
   wrong:
-    - { query: 'db.products.find({ category: "Drinks" }, { _id: 0, name: 1, price_vnd: 1 }).limit(3)', vi: "Không sắp xếp: bạn nhận 3 đồ uống nằm đầu collection theo thứ tự lưu, không phải 3 cái đắt nhất. Sắp giá giảm dần trước, rồi mới cắt 3.", en: "No sort: you get the first 3 drinks in storage order, not the 3 most expensive. Sort by price descending first, then cut 3." }
+    - { query: 'db.products.find({ category: "Drinks" }, { _id: 0, name: 1, price_vnd: 1 }).limit(3)', vi: "Không sắp xếp: bạn nhận 3 đồ uống nằm đầu collection theo thứ tự lưu, không phải 3 cái đắt nhất.", en: "No sort: you get the first 3 drinks in storage order, not the 3 most expensive." }
     - { query: 'db.products.find({ category: "Drinks" }, { _id: 0, name: 1, price_vnd: 1 }).sort({ price_vnd: 1 }).limit(3)', vi: "`1` là tăng dần, nên 3 tài liệu được giữ là 3 đồ uống rẻ nhất. Đề cần đắt nhất trước: dùng `-1`.", en: "`1` is ascending, so the 3 documents kept are the 3 cheapest drinks. The question wants the most expensive first: use `-1`." }
 - id: e-mg-d-limit-4
   skill: mg.limit
@@ -185,7 +185,7 @@
   solution: 'db.orders.aggregate([{ $group: { _id: "$status", n: { $sum: 1 } } }])'
   hint: { vi: "Giá trị của trường cần `$` đứng trước tên trường.", en: "A field's value needs a `$` before its name." }
   wrong:
-    - { query: 'db.orders.aggregate([{ $group: { _id: "status", n: { $sum: 1 } } }])', vi: "Thiếu `$`: `\"status\"` là một chuỗi cố định chứ không phải giá trị của trường, nên cả 811 đơn rơi vào một nhóm duy nhất có `_id` là chữ `status`. Thêm `$` trước tên trường để mỗi trạng thái thành một nhóm.", en: "Missing `$`: `\"status\"` is a fixed string, not the field's value, so all 811 orders fall into one group whose `_id` is the text `status`. Add `$` before the field name so each status becomes a group." }
+    - { query: 'db.orders.aggregate([{ $group: { _id: "status", n: { $sum: 1 } } }])', vi: "Thiếu `$`: `\"status\"` là một chuỗi cố định chứ không phải giá trị của trường, nên cả 811 đơn rơi vào một nhóm duy nhất có `_id` là chữ `status`.", en: "Missing `$`: `\"status\"` is a fixed string, not the field's value, so all 811 orders fall into one group whose `_id` is the text `status`." }
 - id: e-mg-d-group-4
   skill: mg.group
   kind: review
@@ -214,8 +214,8 @@
   solution: 'db.orders.aggregate([{ $group: { _id: { store_id: "$store_id", status: "$status" }, n: { $sum: 1 } } }])'
   hint: { vi: "Cả hai trường phải nằm trong `_id`.", en: "Both fields must be inside `_id`." }
   wrong:
-    - { query: 'db.orders.aggregate([{ $group: { _id: "$store_id", n: { $sum: 1 } } }])', vi: "Khóa chỉ có cửa hàng: các trạng thái bị gộp chung, nên mỗi cửa hàng còn một tài liệu với tổng số đơn của mọi trạng thái. Đưa cả `store_id` lẫn `status` vào `_id` dạng object.", en: "Only the store in the key: the statuses are merged, so each store keeps one document with its order count over every status. Put both `store_id` and `status` in an object `_id`." }
-    - { query: 'db.orders.aggregate([{ $group: { _id: { store_id: "$store_id" }, n: { $sum: 1 } } }])', vi: "Khóa là object nhưng chỉ có `store_id`, thiếu `status`: kết quả giống gộp theo cửa hàng, các trạng thái vẫn bị gộp chung. Thêm `status` vào object `_id`.", en: "The key is an object but holds only `store_id`, no `status`: the result is the same as grouping by store, the statuses are still merged. Add `status` to the `_id` object." }
+    - { query: 'db.orders.aggregate([{ $group: { _id: "$store_id", n: { $sum: 1 } } }])', vi: "Khóa chỉ có cửa hàng: các trạng thái bị gộp chung, nên mỗi cửa hàng còn một tài liệu với tổng số đơn của mọi trạng thái.", en: "Only the store in the key: the statuses are merged, so each store keeps one document with its order count over every status." }
+    - { query: 'db.orders.aggregate([{ $group: { _id: { store_id: "$store_id" }, n: { $sum: 1 } } }])', vi: "Khóa là object nhưng chỉ có `store_id`, thiếu `status`: kết quả giống gộp theo cửa hàng, các trạng thái vẫn bị gộp chung.", en: "The key is an object but holds only `store_id`, no `status`: the result is the same as grouping by store, the statuses are still merged." }
 - id: e-mg-d-group-keys-4
   skill: mg.group_keys
   kind: review
@@ -274,7 +274,7 @@
   solution: 'db.orders.aggregate([{ $match: { status: "REFUNDED", channel: "ONLINE" } }, { $lookup: { from: "customers", localField: "customer_id", foreignField: "_id", as: "customer" } }, { $project: { "customer.name": 1 } }])'
   hint: { vi: "`localField` thuộc đơn (`customer_id`), `foreignField` thuộc khách (`_id`).", en: "`localField` belongs to the order (`customer_id`), `foreignField` to the customer (`_id`)." }
   wrong:
-    - { query: 'db.orders.aggregate([{ $match: { status: "REFUNDED", channel: "ONLINE" } }, { $lookup: { from: "customers", localField: "_id", foreignField: "customer_id", as: "customer" } }, { $project: { "customer.name": 1 } }])', vi: "Đảo hai trường: MongoDB tìm khách có `customer_id` bằng mã đơn, mà khách không có trường đó, nên mảng `customer` của mọi đơn rỗng. Trường của đơn vào `localField`, trường của khách vào `foreignField`.", en: "The two fields swapped: MongoDB looks for customers whose `customer_id` equals the order id, and customers have no such field, so `customer` is empty for every order. The order's field goes in `localField`, the customer's in `foreignField`." }
+    - { query: 'db.orders.aggregate([{ $match: { status: "REFUNDED", channel: "ONLINE" } }, { $lookup: { from: "customers", localField: "_id", foreignField: "customer_id", as: "customer" } }, { $project: { "customer.name": 1 } }])', vi: "Đảo hai trường: MongoDB tìm khách có `customer_id` bằng mã đơn, mà khách không có trường đó, nên mảng `customer` của mọi đơn rỗng.", en: "The two fields swapped: MongoDB looks for customers whose `customer_id` equals the order id, and customers have no such field, so `customer` is empty for every order." }
 - id: e-mg-d-lookup-4
   skill: mg.lookup
   kind: review
@@ -303,7 +303,7 @@
   solution: 'db.orders.aggregate([{ $unwind: "$items" }, { $match: { "items.product_id": 9 } }, { $group: { _id: "$store_id", units: { $sum: "$items.qty" } } }])'
   hint: { vi: "Lọc từng dòng hàng, nên lọc sau khi tách mảng.", en: "You filter single lines, so filter after splitting the array." }
   wrong:
-    - { query: 'db.orders.aggregate([{ $match: { "items.product_id": 9 } }, { $unwind: "$items" }, { $group: { _id: "$store_id", units: { $sum: "$items.qty" } } }])', vi: "Lọc trước khi tách: bạn giữ cả đơn có sản phẩm 9, rồi cộng số lượng của mọi dòng trong đơn đó, kể cả sản phẩm khác, nên `units` lớn hơn thực tế. Tách mảng trước, rồi mới lọc `items.product_id`.", en: "Filtering before splitting keeps whole orders that contain product 9, then adds the quantity of every line in them, other products included, so `units` comes out too large. Split the array first, then filter `items.product_id`." }
+    - { query: 'db.orders.aggregate([{ $match: { "items.product_id": 9 } }, { $unwind: "$items" }, { $group: { _id: "$store_id", units: { $sum: "$items.qty" } } }])', vi: "Lọc trước khi tách: bạn giữ cả đơn có sản phẩm 9, rồi cộng số lượng của mọi dòng trong đơn đó, kể cả sản phẩm khác, nên `units` lớn hơn thực tế.", en: "Filtering before splitting keeps whole orders that contain product 9, then adds the quantity of every line in them, other products included, so `units` comes out too large." }
 - id: e-mg-d-unwind-4
   skill: mg.unwind
   kind: review
@@ -332,7 +332,7 @@
   solution: 'db.orders.aggregate([{ $match: { store_id: 1, channel: "STORE", status: "PAID" } }, { $lookup: { from: "customers", localField: "customer_id", foreignField: "_id", as: "customer" } }, { $unwind: { path: "$customer", preserveNullAndEmptyArrays: true } }, { $project: { "customer.city": 1 } }])'
   hint: { vi: "Đơn vãng lai có mảng `customer` rỗng; tách mảng mà vẫn giữ chúng.", en: "Walk-in orders have an empty `customer` array; unwind while keeping them." }
   wrong:
-    - { query: 'db.orders.aggregate([{ $match: { store_id: 1, channel: "STORE", status: "PAID" } }, { $lookup: { from: "customers", localField: "customer_id", foreignField: "_id", as: "customer" } }, { $unwind: "$customer" }, { $project: { "customer.city": 1 } }])', vi: "`$unwind` thường bỏ tài liệu có mảng rỗng. Đơn vãng lai không có `customer_id`, nên mảng `customer` rỗng và các đơn đó biến mất. Dùng dạng object của `$unwind` với tùy chọn giữ mảng rỗng.", en: "A plain `$unwind` drops documents with an empty array. Walk-in orders have no `customer_id`, so `customer` is empty and those orders vanish. Use the object form of `$unwind` with the option that keeps empty arrays." }
+    - { query: 'db.orders.aggregate([{ $match: { store_id: 1, channel: "STORE", status: "PAID" } }, { $lookup: { from: "customers", localField: "customer_id", foreignField: "_id", as: "customer" } }, { $unwind: "$customer" }, { $project: { "customer.city": 1 } }])', vi: "`$unwind` thường bỏ tài liệu có mảng rỗng. Đơn vãng lai không có `customer_id`, nên mảng `customer` rỗng và các đơn đó biến mất.", en: "A plain `$unwind` drops documents with an empty array. Walk-in orders have no `customer_id`, so `customer` is empty and those orders vanish." }
 - id: e-mg-d-lookup-keep-4
   skill: mg.lookup_keep
   kind: review
@@ -390,7 +390,7 @@
   solution: 'db.orders.aggregate([{ $match: { store_id: 2, channel: "ONLINE", delivered_on: { $ne: null } } }, { $project: { days: { $dateDiff: { startDate: "$order_date", endDate: "$delivered_on", unit: "day" } } } }])'
   hint: { vi: "Có một toán tử đếm khoảng cách hai ngày theo đơn vị bạn chọn.", en: "One operator counts the gap between two dates in the unit you choose." }
   wrong:
-    - { query: 'db.orders.aggregate([{ $match: { store_id: 2, channel: "ONLINE", delivered_on: { $ne: null } } }, { $project: { days: { $subtract: ["$delivered_on", "$order_date"] } } }])', vi: "Trừ hai ngày cho ra mili giây (một ngày là 86400000), nên đơn giao sau 2 ngày có `days` là 172800000 thay vì 2. Dùng phép tính khoảng cách hai ngày có chọn đơn vị `day`.", en: "Subtracting two dates gives milliseconds (one day is 86400000), so an order delivered after 2 days gets `days` = 172800000 instead of 2. Use the date-gap operation that takes a unit, with `day`." }
+    - { query: 'db.orders.aggregate([{ $match: { store_id: 2, channel: "ONLINE", delivered_on: { $ne: null } } }, { $project: { days: { $subtract: ["$delivered_on", "$order_date"] } } }])', vi: "Trừ hai ngày cho ra mili giây (một ngày là 86400000), nên đơn giao sau 2 ngày có `days` là 172800000 thay vì 2.", en: "Subtracting two dates gives milliseconds (one day is 86400000), so an order delivered after 2 days gets `days` = 172800000 instead of 2." }
 - id: e-mg-d-date-math-4
   skill: mg.date_math
   kind: review
@@ -422,7 +422,7 @@
   ordered: true
   hint: { vi: "Cắt thời điểm về đầu tháng trước khi gộp.", en: "Cut each timestamp to the start of its month before grouping." }
   wrong:
-    - { query: 'db.reviews.aggregate([{ $match: { product_id: 4 } }, { $group: { _id: "$created_at", n: { $sum: 1 } } }, { $sort: { _id: 1 } }])', vi: "Gộp theo chính `created_at`: mỗi thời điểm là một nhóm, nên bạn có một tài liệu cho mỗi đánh giá và mọi `n` bằng 1. Cắt `created_at` về ngày đầu tháng rồi mới gộp.", en: "Grouping on `created_at` itself: each timestamp is a group, so you get one document per review and every `n` is 1. Cut `created_at` to the first day of its month, then group." }
+    - { query: 'db.reviews.aggregate([{ $match: { product_id: 4 } }, { $group: { _id: "$created_at", n: { $sum: 1 } } }, { $sort: { _id: 1 } }])', vi: "Gộp theo chính `created_at`: mỗi thời điểm là một nhóm, nên bạn có một tài liệu cho mỗi đánh giá và mọi `n` bằng 1.", en: "Grouping on `created_at` itself: each timestamp is a group, so you get one document per review and every `n` is 1." }
 - id: e-mg-d-date-bucket-4
   skill: mg.date_bucket
   kind: review
@@ -481,7 +481,7 @@
   solution: 'db.products.aggregate([{ $match: { category: "Household" } }, { $project: { _id: 0, name: 1, band: { $switch: { branches: [{ case: { $lt: ["$price_vnd", 30000] }, then: 1 }, { case: { $lt: ["$price_vnd", 60000] }, then: 2 }], default: 3 } } } }])'
   hint: { vi: "Nhánh được thử theo thứ tự; điều kiện hẹp đặt trước.", en: "Branches are tried in order; the narrow condition goes first." }
   wrong:
-    - { query: 'db.products.aggregate([{ $match: { category: "Household" } }, { $project: { _id: 0, name: 1, band: { $switch: { branches: [{ case: { $lt: ["$price_vnd", 60000] }, then: 2 }, { case: { $lt: ["$price_vnd", 30000] }, then: 1 }], default: 3 } } } }])', vi: "Nhánh \"dưới 60000\" đứng trước nên bắt luôn các món dưới 30000: chúng ra `band` 2 thay vì 1, vì nhánh 1 không bao giờ được tới. Đặt nhánh \"dưới 30000\" lên trước.", en: "The \"below 60000\" branch comes first and catches the items under 30000 too: they get `band` 2 instead of 1, because branch 1 is never reached. Put the \"below 30000\" branch first." }
+    - { query: 'db.products.aggregate([{ $match: { category: "Household" } }, { $project: { _id: 0, name: 1, band: { $switch: { branches: [{ case: { $lt: ["$price_vnd", 60000] }, then: 2 }, { case: { $lt: ["$price_vnd", 30000] }, then: 1 }], default: 3 } } } }])', vi: "Nhánh \"dưới 60000\" đứng trước nên bắt luôn các món dưới 30000: chúng ra `band` 2 thay vì 1, vì nhánh 1 không bao giờ được tới.", en: "The \"below 60000\" branch comes first and catches the items under 30000 too: they get `band` 2 instead of 1, because branch 1 is never reached." }
 - id: e-mg-d-cond-4
   skill: mg.cond
   kind: review
@@ -539,7 +539,7 @@
   solution: 'db.orders.aggregate([{ $match: { store_id: 1, channel: "ONLINE" } }, { $project: { last_seen: { $ifNull: ["$delivered_on", "$shipped_on", "$order_date"] } } }])'
   hint: { vi: "Có ba mức lùi: đưa cả ba trường, theo thứ tự ưu tiên.", en: "There are three levels: pass all three fields, in priority order." }
   wrong:
-    - { query: 'db.orders.aggregate([{ $match: { store_id: 1, channel: "ONLINE" } }, { $project: { last_seen: { $ifNull: ["$delivered_on", "$order_date"] } } }])', vi: "Bỏ `shipped_on`: đơn đã gửi mà chưa giao có `delivered_on` null, nên rơi thẳng về `order_date` và hiện ngày đặt thay vì ngày gửi. Đưa `shipped_on` vào giữa `delivered_on` và `order_date`.", en: "`shipped_on` left out: orders shipped but not delivered have a null `delivered_on`, so they fall straight back to `order_date` and show the order date instead of the ship date. Put `shipped_on` between `delivered_on` and `order_date`." }
+    - { query: 'db.orders.aggregate([{ $match: { store_id: 1, channel: "ONLINE" } }, { $project: { last_seen: { $ifNull: ["$delivered_on", "$order_date"] } } }])', vi: "Bỏ `shipped_on`: đơn đã gửi mà chưa giao có `delivered_on` null, nên rơi thẳng về `order_date` và hiện ngày đặt thay vì ngày gửi.", en: "`shipped_on` left out: orders shipped but not delivered have a null `delivered_on`, so they fall straight back to `order_date` and show the order date instead of the ship date." }
 - id: e-mg-d-if-null-4
   skill: mg.if_null
   kind: review
@@ -568,7 +568,7 @@
   solution: 'db.staff.aggregate([{ $match: { role: "Stock clerk" } }, { $lookup: { from: "staff", localField: "manager_id", foreignField: "_id", as: "m" } }, { $unwind: "$m" }, { $project: { _id: 0, name: 1, manager: "$m.name" } }])'
   hint: { vi: "Quản lý là người có `_id` bằng `manager_id` của mình.", en: "The manager is the person whose `_id` equals your `manager_id`." }
   wrong:
-    - { query: 'db.staff.aggregate([{ $match: { role: "Stock clerk" } }, { $lookup: { from: "staff", localField: "_id", foreignField: "manager_id", as: "m" } }, { $unwind: "$m" }, { $project: { _id: 0, name: 1, manager: "$m.name" } }])', vi: "Đi ngược chiều (`_id` sang `manager_id`) là tìm người dưới quyền. Nhân viên kho không có ai dưới quyền, nên mảng `m` rỗng, `$unwind` bỏ họ và kết quả rỗng. Đi từ `manager_id` của mình sang `_id` của quản lý.", en: "The reverse direction (`_id` to `manager_id`) finds reports. Stock clerks have no reports, so `m` is empty, `$unwind` drops them and the result is empty. Go from your own `manager_id` to the manager's `_id`." }
+    - { query: 'db.staff.aggregate([{ $match: { role: "Stock clerk" } }, { $lookup: { from: "staff", localField: "_id", foreignField: "manager_id", as: "m" } }, { $unwind: "$m" }, { $project: { _id: 0, name: 1, manager: "$m.name" } }])', vi: "Đi ngược chiều (`_id` sang `manager_id`) là tìm người dưới quyền. Nhân viên kho không có ai dưới quyền, nên mảng `m` rỗng, `$unwind` bỏ họ và kết quả rỗng.", en: "The reverse direction (`_id` to `manager_id`) finds reports. Stock clerks have no reports, so `m` is empty, `$unwind` drops them and the result is empty." }
 - id: e-mg-d-self-lookup-4
   skill: mg.self_lookup
   kind: review
@@ -655,7 +655,7 @@
   solution: 'db.orders.aggregate([{ $unwind: "$items" }, { $group: { _id: "$store_id", p: { $addToSet: "$items.product_id" } } }, { $project: { products: { $size: "$p" } } }])'
   hint: { vi: "`items.product_id` của một đơn là một mảng; tách dòng trước khi gom.", en: "An order's `items.product_id` is an array; split the lines before collecting." }
   wrong:
-    - { query: 'db.orders.aggregate([{ $group: { _id: "$store_id", p: { $addToSet: "$items.product_id" } } }, { $project: { products: { $size: "$p" } } }])', vi: "Không tách dòng: mỗi đơn góp cả mảng `product_id` làm một phần tử, nên bạn đếm số tổ hợp sản phẩm khác nhau, không phải số sản phẩm. Tách `items` trước, để mỗi `product_id` được gom riêng.", en: "No split: each order adds its whole `product_id` array as one element, so you count different product combinations, not products. Split `items` first so each `product_id` is collected on its own." }
+    - { query: 'db.orders.aggregate([{ $group: { _id: "$store_id", p: { $addToSet: "$items.product_id" } } }, { $project: { products: { $size: "$p" } } }])', vi: "Không tách dòng: mỗi đơn góp cả mảng `product_id` làm một phần tử, nên bạn đếm số tổ hợp sản phẩm khác nhau, không phải số sản phẩm.", en: "No split: each order adds its whole `product_id` array as one element, so you count different product combinations, not products." }
 - id: e-mg-d-distinct-4
   skill: mg.distinct
   kind: review
@@ -684,7 +684,7 @@
   solution: 'db.reviews.aggregate([{ $match: { source: "import", $expr: { $gte: [{ $toInt: "$legacy.stars" }, 4] } } }, { $project: { legacy: 1 } }])'
   hint: { vi: "Đổi chuỗi sang số trước khi so. So bằng biểu thức trong `$match` cần `$expr`.", en: "Convert the string to a number before comparing. Comparing with an expression inside `$match` needs `$expr`." }
   wrong:
-    - { query: 'db.reviews.aggregate([{ $match: { source: "import", "legacy.stars": { $gte: 4 } } }, { $project: { legacy: 1 } }])', vi: "`legacy.stars` là chuỗi, còn 4 là số. MongoDB không so chuỗi với số, nên không đánh giá nào khớp và kết quả rỗng. Đổi `legacy.stars` sang số trước, rồi so trong một biểu thức của `$match`.", en: "`legacy.stars` is a string while 4 is a number. MongoDB does not compare strings with numbers, so no review matches and the result is empty. Convert `legacy.stars` to a number first, then compare inside an expression in `$match`." }
+    - { query: 'db.reviews.aggregate([{ $match: { source: "import", "legacy.stars": { $gte: 4 } } }, { $project: { legacy: 1 } }])', vi: "`legacy.stars` là chuỗi, còn 4 là số. MongoDB không so chuỗi với số, nên không đánh giá nào khớp và kết quả rỗng.", en: "`legacy.stars` is a string while 4 is a number. MongoDB does not compare strings with numbers, so no review matches and the result is empty." }
 - id: e-mg-d-convert-4
   skill: mg.convert
   kind: review

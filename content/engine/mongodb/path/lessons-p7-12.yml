@@ -631,8 +631,8 @@
         { $lookup: { from: 'orders', localField: '_id', foreignField: 'customer_id', as: 'orders' } },
         { $limit: 1 }
       ])
-    vi: "Gắn toàn bộ đơn vào hồ sơ khách như thể nhúng: mảng `orders` lớn mãi theo thời gian; ghi thật như vậy sẽ chạm giới hạn 16 MiB."
-    en: "Attaching every order to the customer profile as if embedded: the `orders` array keeps growing; storing it that way would hit the 16 MiB limit."
+    vi: "Câu này trả một tài liệu khách mang mảng `orders` chứa mọi đơn của khách đó, như thể đơn được nhúng. Nếu lưu thật như vậy, mảng lớn thêm sau mỗi lần mua, mỗi lần mở hồ sơ phải đọc hết nó, và tới lúc chạm giới hạn 16 MiB thì không ghi được nữa."
+    en: "This returns one customer document carrying an `orders` array with every order of that customer, as if orders were embedded. Stored that way, the array grows with each purchase, every profile read loads all of it, and once it reaches the 16 MiB limit the write fails."
   try:
     format: choice
     task:
