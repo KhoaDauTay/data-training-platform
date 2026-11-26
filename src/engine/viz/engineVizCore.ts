@@ -177,10 +177,37 @@ const HOLD_MS = 2050; // the 0.55 s tween + 1.5 s rest (engine-ux-spec §6); 4 s
 
 /**
  * v39 figures (F1, L602): `fig` marks a figure built from a content spec (src/engine/viz/figure.ts): the root carries
- * `data-fig`, the caption follows the title, and the generated text alternative (every node and arrow) sits in a <details>.
+ * `data-fig`, the caption follows the title, and the explanation (v42: point, steps, data tables; `explain()`) sits in a <details>.
  * A figure with one frame is static (P3): no buttons, counter, status line or focus stop.
  */
-export interface FigOpts { name: string; caption: string; alt: string[]; altTitle: string; /** v40 R2 (E-16): each step in words, the numbered list (else the step sentences) */ steps?: string[] }
+export interface FigOpts {
+  name: string; caption: string;
+  /** v42 (L700): the point, 1–2 plain sentences (`alt`); `steps` = one sentence per step, the numbered list (else the step sentences) */
+  alt: string[]; steps?: string[];
+  /** v42 (L702): the sample data of the figure's grids, as real tables behind their own toggle (never prose) */
+  tables?: FigTable[];
+  /** labels: the block's summary, "the point", "step by step", "data in the figure" */
+  words: { alt: string; point: string; steps: string; data: string };
+}
+export interface FigTable { caption: string; head: string[]; rows: string[][] }
+const LABEL = 'm-0 text-caption font-bold uppercase tracking-wide text-muted';
+const CELL = 'border border-line px-2 py-1 text-left align-top whitespace-nowrap';
+/** v42 (L700–L703): "Giải thích sơ đồ": the point, then the steps (a real <ol>), then the data as small tables in a nested
+ * <details>, so the sentences are never interrupted by rows. `${id}-alt` is the point only (the svg's name, never the data). */
+function explain(id: string, fo: FigOpts, items?: HTMLElement[]): HTMLElement {
+  const w = fo.words, tables = fo.tables ?? [];
+  return D.h('details', { class: 'min-w-0 rounded-(--r-ctl) bg-surface-2 px-3 py-2 text-body-sm ring-1 ring-line', 'data-fig-alt': '' },
+    D.h('summary', { class: 'cursor-pointer font-bold text-muted' }, w.alt),
+    D.h('div', { class: 'mt-2 grid min-w-0 gap-3 leading-relaxed' },
+      D.h('div', {}, D.h('p', { class: LABEL }, w.point), D.h('div', { id: `${id}-alt`, class: 'mt-1 grid gap-1 text-body' }, ...fo.alt.map((p) => D.h('p', { class: 'm-0' }, p)))),
+      items?.length ? D.h('div', {}, D.h('p', { class: LABEL }, w.steps), D.h('ol', { class: 'm-0 mt-1 grid list-decimal gap-1.5 pl-5' }, ...items)) : '',
+      tables.length ? D.h('details', { class: 'min-w-0', 'data-fig-data': '' }, D.h('summary', { class: 'cursor-pointer font-bold text-muted' }, w.data),
+        ...tables.map((t) => D.h('div', { class: 'mt-2 max-w-full overflow-x-auto', tabindex: '0', role: 'group', 'aria-label': t.caption },
+          D.h('table', { class: 'w-auto border-collapse text-body-sm' },
+            D.h('caption', { class: 'pb-1 text-left font-bold' }, t.caption),
+            t.head.length ? D.h('thead', {}, D.h('tr', {}, ...t.head.map((c) => D.h('th', { scope: 'col', class: `${CELL} bg-panel font-bold` }, c)))) : '',
+            D.h('tbody', {}, ...t.rows.map((r) => D.h('tr', {}, ...r.map((c) => D.h('td', { class: CELL }, c))))))))) : ''));
+}
 let figs = 0;
 export function mount(host: HTMLElement, d: Diagram, lang: Lang, start = 0, fo?: FigOpts): VizHandle {
   const ui = UI[lang];
@@ -194,20 +221,20 @@ export function mount(host: HTMLElement, d: Diagram, lang: Lang, start = 0, fo?:
   const play = D.h('button', { type: 'button', class: BTN, 'aria-pressed': 'false' }, ui.play);
   const next = D.h('button', { type: 'button', class: BTN }, `${ui.next} ›`);
   const items = d.frames.map((f, i) => D.h('li', {}, fo?.steps?.[i] ?? f.say));
-  const alt = fo ? D.h('div', { id: `${id}-alt` }, ...fo.alt.map((p) => D.h('p', { class: 'm-0' }, p))) : null;
   if (one) st.svg.setAttribute('aria-labelledby', `${id}-cap ${id}-alt`);
+  else if (fo) st.svg.setAttribute('aria-describedby', `${id}-alt`);
   const fig = D.h('figure', one ? { class: 'm-0 grid gap-2', 'data-fig': fo!.name } : {
     class: 'm-0 grid gap-2', tabindex: '0', 'aria-roledescription': lang === 'vi' ? 'sơ đồ từng bước' : 'step-through diagram',
     'aria-label': `${d.title}. ${ui.keys}`, ...(fo ? { 'data-fig': fo!.name } : { 'data-viz': '' }),
   },
   D.h('figcaption', { id: `${id}-cap`, class: fo ? '' : 'font-bold' }, ...(fo ? [D.h('b', { class: 'block' }, d.title), fo.caption] : [d.title])), // R1 E12: the caption on its own line
   D.h('div', { class: 'overflow-hidden rounded-(--r-ctl) bg-panel p-2 ring-1 ring-line max-sm:p-1' }, st.svg),
-  ...(one ? [d.frames[0].say ? D.h('p', { class: 'm-0 text-body-sm' }, d.frames[0].say) : '', D.h('details', { class: 'text-body-sm' }, D.h('summary', {}, fo!.altTitle), alt)] : [
+  ...(one ? [d.frames[0].say ? D.h('p', { class: 'm-0 text-body-sm' }, d.frames[0].say) : '', explain(id, fo!)] : [
     // A5 (v31, L515): every step's sentence sits in the same grid cell, hidden but the shown one, so the cell is as tall as the
     // longest and the buttons below never move between steps
     D.h('div', { class: 'grid' }, say, ...d.frames.map((f) => D.h('p', { class: 'invisible m-0 text-body-sm [grid-area:1/1]', 'aria-hidden': 'true' }, f.say))),
     D.h('div', { class: 'flex flex-wrap items-center gap-2' }, back, play, next, counter),
-    D.h('details', { class: 'text-body-sm' }, D.h('summary', {}, ui.all), alt, D.h('ol', {}, ...items))]));
+    fo ? explain(id, fo, items) : D.h('details', { class: 'text-body-sm' }, D.h('summary', {}, ui.all), D.h('ol', {}, ...items))]));
   let at = -1;
   let timer: number | undefined;
   const halt = (): void => {

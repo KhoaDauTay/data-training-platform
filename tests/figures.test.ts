@@ -3,15 +3,15 @@
 // variant a lesson uses, then judged by the overlap checker's own pure rules (scripts/overlap-check.mjs analyze(), the same
 // code the browser run uses): text on text, text out of its box or the viewBox, box on box, arrow through a box or a label,
 // arrow tip < 2 from its target. On top, this file holds the builder's stricter promises: gaps ≥ 16 across and ≥ 36 down,
-// tips ≥ 3 short, every label ≥ 13 px and ≤ 18 characters × 2 lines, tokens only, a text alternative naming every node
-// and arrow. And the content links: every `figures:` name exists (a spec or a registry diagram), every spec is used.
+// tips ≥ 3 short, every label ≥ 13 px and ≤ 18 characters × 2 lines, tokens only, and (v42) an explanation: a point, one
+// sentence per step, no data dumped into sentences, the data as generated tables. And the content links: every `figures:` name exists (a spec or a registry diagram), every spec is used.
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 import { analyze, samplePath, type OverlapFrame } from '../scripts/overlap-check.mjs';
 import { parseEngineLesson, type EngineLesson } from '../src/engine/content';
 import type { Shape } from '../src/engine/viz/engineVizCore';
 import { resolveViz } from '../src/engine/viz/engineViz';
-import { altText, type FigRef, type FigSpec, layout, linkGap, MARGIN, NOTE_CH, textWidth, tr, WIDE } from '../src/engine/viz/figure';
+import { altTables, altText, type FigRef, type FigSpec, layout, linkGap, MARGIN, NOTE_CH, textWidth, tr, WIDE } from '../src/engine/viz/figure';
 import { GLYPHS } from '../src/engine/viz/glyphs';
 import { parseFullLesson } from '../src/fullLesson';
 import { fullLessons, lessonIdOf } from '../src/generalLessonSources';
@@ -190,32 +190,31 @@ describe.each(Object.keys(specs))('v39 figure %s', (name) => {
     }
     // v40 (R1 E8/E13): a figure whose text alternative is written by hand gives every variant it is shown with its own title
     if (variant && spec.alt) it(`${variant}: variant có tiêu đề riêng`, () => expect(spec.variants?.[variant]?.title).toBeTruthy());
-    it(`${variant ?? 'gốc'}: lời thay hình (R1 E11): bản sinh ra nêu mọi node, mọi mũi tên, mọi bước, bảng đọc theo dòng; bản viết tay (nếu có) đủ VI/EN`, () => {
+    it(`${variant ?? 'gốc'}: giải thích sơ đồ (v42, L700–L704): ý chính, mỗi bước một câu, câu ≤ 220 ký tự, không đổ dữ liệu, bảng dữ liệu sinh từ grid`, () => {
       for (const lang of LANGS) {
-        const gen = altText(spec, lang, variant, true).join(' ');
+        const [point, ...steps] = altText(spec, lang, variant);
+        expect(sentences(point).length, `${lang} ý chính`).toBeGreaterThanOrEqual(1);
+        // a stepped figure = the point, then each step once (the core's numbered list): no "Bước n" written in, no entry repeated
+        if (!variant && (spec.steps?.length ?? 0) > 1) {
+          expect(steps, lang).toHaveLength(spec.steps!.length);
+          expect(new Set([point, ...steps]).size, lang).toBe(steps.length + 1);
+        }
+        const tables = altTables(spec, lang, variant);
         const v = variant === undefined ? undefined : spec.variants?.[variant];
-        const shown = v?.step !== undefined ? new Set(spec.steps?.[v.step].show ?? spec.nodes.map((n) => n.id)) : undefined;
-        const patch = v?.step !== undefined ? spec.steps?.[v.step].set : v?.set;
-        for (const n of spec.nodes.filter((x) => !shown || shown.has(x.id)).map((x) => ({ ...x, ...patch?.[x.id] }))) {
-          const words = n.shape === 'grid' ? (n.cells ?? []).flat().map((c) => tr(c, lang)) : n.shape === 'bars' ? (n.items ?? []).map((i) => tr(i.label, lang)) : [tr(n.label, lang)];
-          for (const w of words.filter(Boolean)) expect(gen, `${lang} ${n.id}: ${w}`).toContain(w);
+        const shown = new Set(v?.step !== undefined ? spec.steps?.[v.step].show ?? spec.nodes.map((n) => n.id) : v?.show ?? spec.nodes.map((n) => n.id));
+        const grids = spec.nodes.filter((n) => n.shape === 'grid' && (v?.step !== undefined || v?.show ? shown.has(n.id) : true));
+        expect(tables.length, `${lang} bảng dữ liệu`).toBe(grids.length);
+        for (const [i, t] of tables.entries()) {
+          expect(t.caption, lang).not.toBe('');
+          expect(t.rows.length, `${lang} ${t.caption}`).toBe(grids[i].cells?.length ?? 0);
         }
-        // natural sentences: no kind tags, a table with a header reads "header: value" (R1 E11)
-        expect(gen).not.toMatch(/\((hộp|bảng|box|table|nhãn|label|ghi chú|note)\)/);
-        for (const n of spec.nodes.map((x) => ({ ...x, ...patch?.[x.id] }))) if (n.shape === 'grid' && n.head && n.head.length > 1 && n.cells?.length && tr(n.head[1], lang) && tr(n.cells[0][1], lang) && (!shown || shown.has(n.id)))
-          expect(gen, `${lang} ${n.id}`).toContain(`${tr(n.head[1], lang)}: ${tr(n.cells[0][1], lang)}`);
-        const verbs = (gen.match(/trỏ tới|points to|nối với|is linked to/g) ?? []).length;
-        if (!shown) expect(verbs).toBeGreaterThanOrEqual((spec.edges ?? []).length);
-        // v40 R2 (E-16): a stepped figure = the figure, then each step once (the core's numbered list replaces the sentences):
-        // no "Bước n" label written into the text, no entry repeated
-        if (!variant && (spec.steps?.length ?? 0) > 1) for (const a of [altText(spec, lang, variant, true), altText(spec, lang, variant)]) {
-          expect(a, lang).toHaveLength(spec.steps!.length + 1);
-          for (const s of a) expect(s, s).not.toMatch(/(Bước|Step) \d/);
-          expect(new Set(a).size, lang).toBe(a.length);
+        if (PENDING.has(name)) continue; // rewritten by the v42 ER branch (coordinator passes the new alts on)
+        for (const s of steps) expect(sentences(s), `${lang}: ${s}`).toHaveLength(1);
+        for (const s of [point, ...steps]) {
+          for (const x of sentences(s)) expect([...x].length, `${lang}: ${x}`).toBeLessThanOrEqual(MAX_SENTENCE);
+          expect(s, s).not.toMatch(/(Bước|Step) \d|\((hộp|bảng|box|table)\)|sáng lên|mờ đi|highlighted|fades?\b/);
+          expect(dumpedRows(s, spec, lang), `${lang} đổ dữ liệu: ${s}`).toBeLessThanOrEqual(3);
         }
-        const hand = altText(spec, lang, variant).join(' ');
-        expect(hand.trim(), lang).not.toBe('');
-        expect(hand).not.toMatch(/\((hộp|bảng|box|table)\)/);
       }
     });
   }
@@ -425,3 +424,51 @@ describe('v40 R2: edge kinds, cell anchors, crow\'s foot', () => {
 
 /** Rows are ≥ 36 apart; a node shorter than its row sits in the middle, so its own gap is never smaller. */
 const GAP_MIN_Y = 35.5;
+
+// ── v42 (L700–L704): "Giải thích sơ đồ" rules ─────────────────────────────────────────────────────────────────────
+/** Specs the v42 ER branch rewrites (bd-wt/v42-er): only the structure rules apply here until its merge. */
+const PENDING = new Set(['ds-er-to-tables', 'ds-cardinality']);
+const MAX_SENTENCE = 220;
+/** Sentences: a stop (. ! ? …) then a space and a capital or digit, so `o.order_date` and `IS NULL` never split one. */
+function sentences(s: string): string[] {
+  return s.trim().split(/(?<=[.!?…])\s+(?=[\p{Lu}\d"“(])/u).filter(Boolean);
+}
+/** Every grid row the spec can draw (base, step and variant patches), as its identifying cell texts: a value found in ≥ 3
+ * rows of its grid (TRUE, NULL, a status) is a category, not a row's identity, and is left out. */
+function gridRows(spec: FigSpec, lang: 'vi' | 'en'): string[][] {
+  const out = new Map<string, string[]>();
+  const add = (n: { shape?: string; cells?: unknown[][] } | undefined): void => {
+    const rows = (n?.cells ?? []).map((r) => r.map((c) => tr(c as never, lang)));
+    const common = (c: string): boolean => rows.filter((r) => r.includes(c)).length >= 3;
+    for (const r of rows) { const t = r.filter((c) => !common(c)); out.set(JSON.stringify(t), t); }
+  };
+  spec.nodes.forEach(add);
+  for (const set of [...(spec.steps ?? []).map((s) => s.set), ...Object.values(spec.variants ?? {}).map((v) => v.set)]) Object.values(set ?? {}).forEach((p) => add(p as never));
+  return [...out.values()];
+}
+/** L703: a data dump = a grid row written out: ≥ 2 of its values (≥ 2 characters) inside one clause (split at ";" and at
+ * sentence ends). An explanation may name up to 3 rows; more is an inventory that belongs in the data table. */
+function dumpedRows(s: string, spec: FigSpec, lang: 'vi' | 'en'): number {
+  const esc = (x: string): string => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const has = (seg: string, c: string): boolean => new RegExp(`(^|[^\\p{L}\\p{N}])${esc(c)}($|[^\\p{L}\\p{N}])`, 'u').test(seg);
+  const segs = sentences(s).flatMap((x) => x.split(';'));
+  return gridRows(spec, lang).filter((r) => segs.some((seg) => new Set(r.filter((c) => [...c].length >= 2 && has(seg, c))).size >= 2)).length;
+}
+
+describe('v42: giải thích sơ đồ, quy tắc tự kiểm', () => {
+  it('đoạn cũ người dùng dán (stores) bị chặn: câu > 220 ký tự và đổ > 3 dòng dữ liệu', () => {
+    const old = 'Bảng stores có 5 dòng và 4 cột id, name, city, opened_on: 1 Hai Chau, Da Nang, 2023-03-01; 2 Son Tra, Da Nang, 2024-06-15; 3 Ben Thanh, HCM City, 2022-11-20; 4 Thao Dien, HCM City, 2025-09-01; 5 Hoan Kiem, Hanoi, 2024-01-10. Hai cột name và city sáng lên: SELECT giữ chúng.';
+    expect(Math.max(...sentences(old).map((x) => [...x].length))).toBeGreaterThan(MAX_SENTENCE);
+    expect(dumpedRows(old, specs['sql-rows-columns'], 'vi')).toBeGreaterThan(3);
+  });
+  it('tách câu không cắt o.order_date, IS NULL, 5 dòng × 2 cột', () => {
+    expect(sentences('Điều kiện o.order_date nằm ở ON. Kết quả: 5 dòng × 2 cột.')).toHaveLength(2);
+    expect(sentences('WHERE o.id IS NULL giữ dòng không có cặp.')).toHaveLength(1);
+  });
+  it('bảng dữ liệu: sql-rows-columns (cols) cho bảng stores 5 dòng × 4 cột, có tiêu đề', () => {
+    const [t] = altTables(specs['sql-rows-columns'], 'vi', 'cols');
+    expect(t).toEqual({ caption: 'stores', head: ['id', 'name', 'city', 'opened_on'], rows: expect.any(Array) });
+    expect(t.rows).toHaveLength(5);
+    expect(t.rows[0]).toEqual(['1', 'Hai Chau', 'Da Nang', '2023-03-01']);
+  });
+});

@@ -1,4 +1,4 @@
-import { type Deps, type Diagram, type Frame, init, mount, type Shape, stopAt, type Tone } from './engineVizCore';
+import { type Deps, type Diagram, type FigTable, type Frame, init, mount, type Shape, stopAt, type Tone } from './engineVizCore';
 import { GLYPHS, W400, W700 } from './glyphs';
 import type { Lang } from './registry';
 
@@ -34,7 +34,8 @@ export interface FigEdge { from: string; to: string; label?: Bi; dash?: boolean;
 /** v40: a dashed frame around whole author rows (one level), its label in a band on top. */
 export interface FigGroup { id: string; label: Bi; nodes: string[] }
 type Patch = Record<string, Partial<FigNode>>;
-/** `alt` (v39 R1 E11, L628): a hand-written text alternative; it wins over the generated one (figure, step or variant). */
+/** `alt` (v42, L700): the figure's or variant's point (1–2 plain sentences, why, not an inventory), or a step's one sentence;
+ * the data is never written out: `altTables` reads it from the grids. */
 export interface FigStep { say: Bi; show?: string[]; set?: Patch; alt?: Bi }
 export interface FigSpec {
   title: Bi; caption: Bi; nodes: FigNode[]; rows: string[][]; edges?: FigEdge[]; steps?: FigStep[]; alt?: Bi; groups?: FigGroup[];
@@ -672,54 +673,25 @@ function draw(n: FigNode, r: Rect, lang: Lang, wide = false, parent?: string): S
   return out;
 }
 
-// ── text alternative (svg-system §6; R1 E11, L628): sentences, tables read row by row, every step; a hand-written `alt` wins ──
+// ── "Giải thích sơ đồ" (v42, L700–L704): the point, one sentence per step, the data as tables (never prose) ─────────
 const WORDS = {
-  vi: { alt: 'Sơ đồ bằng lời', has: 'Hình có', now: 'Lúc này', arrow: 'trỏ tới', link: 'nối với', dashed: 'nét đứt', struck: 'gạch bỏ', table: 'Bảng', mark: 'vạch ở' },
-  en: { alt: 'The figure in words', has: 'The figure shows', now: 'Now', arrow: 'points to', link: 'is linked to', dashed: 'dashed', struck: 'struck out', table: 'A table', mark: 'mark at' },
+  vi: { alt: 'Giải thích sơ đồ', point: 'Ý chính', steps: 'Từng bước', data: 'Dữ liệu trong hình', table: 'Bảng trong hình' },
+  en: { alt: 'Diagram explained', point: 'The point', steps: 'Step by step', data: 'Data in the figure', table: 'Table in the figure' },
 };
-const nameOf = (n: FigNode, lang: Lang): string => [tr(n.label, lang), tr(n.sub, lang)].filter(Boolean).join(', ');
-const cap = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1);
-/** One node in words: a box by its label and sub, a table as "first cell, header: value" per row, bars as "label value". */
-function said(n: FigNode, lang: Lang): string {
-  const w = WORDS[lang];
-  if (n.shape === 'grid') {
-    const head = (n.head ?? []).map((c) => tr(c, lang));
-    const rows = (n.cells ?? []).map((r, i) => r.map((c, j) => {
-      const v = tr(c, lang);
-      return !v ? '' : j && head[j] ? `${head[j]}: ${v}` : v;
-    }).filter(Boolean).join(', ') + (n.strike?.includes(i) ? ` (${w.struck})` : ''));
-    return `${nameOf(n, lang) || w.table}: ${rows.join('; ')}`;
-  }
-  if (n.shape === 'bars') return `${nameOf(n, lang)}: ${(n.items ?? []).map((i) => `${tr(i.label, lang)} ${tr(i.note, lang) || i.value}`).join('; ')}${n.mark === undefined ? '' : `; ${w.mark} ${n.mark}`}`;
-  return nameOf(n, lang);
-}
-/** The text alternative: hand-written `alt` (variant, figure, step) where given, else generated; a stepped figure describes every step. */
-export function altText(spec: FigSpec, lang: Lang, variant?: string, generated = false): string[] {
-  const w = WORDS[lang];
+/** [the point, then one sentence per step]: the point is the variant's `alt`, else the figure's (hand-written, required);
+ * a step is its `alt`, else its `say`. A variant draws one frame, so it has no steps. */
+export function altText(spec: FigSpec, lang: Lang, variant?: string): string[] {
   const v = variantOf(spec, variant);
-  if (v?.alt && !generated) return [tr(v.alt, lang)];
+  const point = tr(v?.alt ?? spec.alt, lang);
+  return v || !spec.steps?.length ? [point] : [point, ...spec.steps.map((s) => tr(s.alt ?? s.say, lang))];
+}
+/** The figure's grids as plain tables (caption = the grid's label or sub): the variant's or one-step frame's data, else the
+ * figure before its first step; only grids some frame shows. */
+export function altTables(spec: FigSpec, lang: Lang, variant?: string): FigTable[] {
   const ps = plans(spec, lang, variant);
-  const byId = new Map(ps[0].nodes.map((n) => [n.id, n]));
-  const end = (x: string): string => {
-    const [id, row] = cellOf(x);
-    const n = byId.get(id) ?? { id, label: spec.groups?.find((g) => g.id === id)?.label }; // v41 R3: a group end reads as its label
-    return row === undefined ? tr(n.label, lang) || id : `${tr(n.label, lang) || w.table} (${(n.cells?.[row] ?? []).map((c) => tr(c, lang)).filter(Boolean).join(', ')})`;
-  };
-  const parts = (ns: FigNode[]): string => ns.map((n) => said(n, lang)).filter(Boolean).join('; ');
-  const edges = (spec.edges ?? []).map((e) => `${end(e.from)} ${e.link ? w.link : w.arrow} ${end(e.to)}${e.label ? ` (${tr(e.label, lang)})` : ''}${e.dash ? ` (${w.dashed})` : ''}`);
-  // the spec's own alt describes the plain figure (step 1); a variant that draws another step alone is generated
-  const first = spec.alt && !generated && v?.step === undefined ? tr(spec.alt, lang)
-    : `${w.has}: ${parts(ps[0].nodes.filter((n) => ps[0].show.has(n.id)))}.${edges.length ? ` ${cap(edges.join('; '))}.` : ''}`;
-  if (ps.length < 2) return [first];
-  // v40 R2 (E-16): [the figure, then one entry per step]; the core shows the steps as its numbered list, each step read once:
-  // its own alt, else its sentence plus what changed
-  return [first, ...ps.map((p, j) => {
-    const own = !generated && spec.steps?.[j]?.alt;
-    if (own) return tr(own, lang);
-    const prev = ps[j - 1];
-    const changed = prev ? p.nodes.filter((n) => p.show.has(n.id) && (!prev.show.has(n.id) || JSON.stringify(n) !== JSON.stringify(prev.nodes.find((m) => m.id === n.id)))) : [];
-    return changed.length ? `${p.say} ${w.now}: ${parts(changed)}.` : p.say;
-  })];
+  const ns = (ps.length === 1 ? ps[0].nodes : merge(spec.nodes, variantOf(spec, variant)?.set)).filter((n) => n.shape === 'grid' && ps.some((p) => p.show.has(n.id)));
+  return ns.map((n, i) => ({ caption: tr(n.label, lang) || tr(n.sub, lang) || `${WORDS[lang].table}${ns.length > 1 ? ` ${i + 1}` : ''}`,
+    head: (n.head ?? []).map((c) => tr(c, lang)), rows: (n.cells ?? []).map((r) => r.map((c) => tr(c, lang))) }));
 }
 // ── mounting ───────────────────────────────────────────────────────────────────────────────────────────────────
 const SPECS = import.meta.glob<FigSpec>('../../../content/figures/*.yml', { import: 'default' });
@@ -751,9 +723,11 @@ export async function mountFigure(host: HTMLElement, ref: FigRef, deps: Deps, en
     if (v && w === W) return;
     W = w;
     const i = v?.index ?? step ?? ref.step ?? 0;
+    const open = [...host.querySelectorAll('details')].map((x) => x.open); // a width change keeps the explanation open
     v?.destroy();
     const a = altText(spec, lang, ref.variant);
-    v = mount(host, layout(spec, lang, W, ref.variant), lang, i, { name: ref.name, caption: tr(variantOf(spec, ref.variant)?.caption ?? spec.caption, lang), alt: a.slice(0, 1), steps: a.slice(1), altTitle: WORDS[lang].alt });
+    v = mount(host, layout(spec, lang, W, ref.variant), lang, i, { name: ref.name, caption: tr(variantOf(spec, ref.variant)?.caption ?? spec.caption, lang), alt: a.slice(0, 1), steps: a.slice(1), tables: altTables(spec, lang, ref.variant), words: WORDS[lang] });
+    host.querySelectorAll('details').forEach((x, j) => (x.open = !!open[j]));
   };
   draw();
   const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(() => draw()) : undefined;
