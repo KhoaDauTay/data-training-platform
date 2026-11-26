@@ -809,7 +809,7 @@ export const vi = {
   'home.pathSql': 'Lộ trình SQL',
   'search.open': 'Tìm bài và thuật ngữ', // F12 (L490); v42 (L710): the top-bar search box's tooltip
   'search.keys': '{mod}+K',
-  'search.box': 'Tìm bài, thuật ngữ…', // v42 (L710): the box's placeholder-like text (its accessible name) and the ⋯ phone copy
+  'search.box': 'Tìm kiếm…', // v42 (L710): the bar box's placeholder-like text (its accessible name) and the ⋯ phone copy; search.open is the tooltip
   'learn.module': 'Phần {n} · {title}',
   'lesson.drilled': 'Bạn đã luyện kỹ năng này ở Luyện SQL.',
   'learn.loading': 'Đang chuẩn bị lộ trình và dữ liệu luyện tập…',

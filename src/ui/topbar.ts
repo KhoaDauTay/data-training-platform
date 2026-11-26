@@ -122,7 +122,7 @@ function dbStatusView(): Node {
   const short = downloaded ? '' : known ? `${Math.round((p.loaded / p.total!) * 100)}%` : `${mb(p.loaded)} MB`;
   return h('span', { class: 'flex items-center gap-1.5 text-caption whitespace-nowrap text-muted', title: text },
     h('span', { class: 'size-2.5 animate-pulse rounded-full bg-warn', 'aria-hidden': 'true' }),
-    short ? h('span', { class: 'max-[1600px]:hidden', 'aria-hidden': 'true' }, short) : null, // L272: below 1600 px (where the action labels fold too) the banner's bar shows the download; the figure overflowed a badged bar (1024 EN)
+    short ? h('span', { class: 'max-[1920px]:hidden', 'aria-hidden': 'true' }, short) : null, // L272: below 1600 px (where the action labels fold too) the banner's bar shows the download; the figure overflowed a badged bar (1024 EN). v42 L710: below 1920 now, the search magnifier took its room (Finance VI 1600 overflowed by 9 px)
     h('span', { class: 'sr-only' }, text));
 }
 
