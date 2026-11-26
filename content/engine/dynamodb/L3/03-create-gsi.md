@@ -111,8 +111,8 @@ quiz:
       - { vi: "Không gì cả, phải tạo bảng mới", en: "Nothing, you must create a new table" }
     answer: 1
     why:
-      vi: LSI chỉ tạo cùng lúc tạo bảng. GSI thì thêm được bất cứ lúc nào, và được phép dùng chính partition key của bảng; đổi lại nó chỉ đọc eventually consistent.
-      en: An LSI can only be created with the table. A GSI can be added at any time and may reuse the table's own partition key; in exchange it only allows eventually consistent reads.
+      vi: 'LSI (local secondary index) có đúng khóa cần dùng, nhưng chỉ khai được lúc tạo bảng, nên `UpdateTable` không thêm được LSI. Không cần tạo bảng mới: GSI (global secondary index) thêm được bất cứ lúc nào qua `UpdateTable`, và được phép dùng lại partition key `customerId` của bảng với sort key `total`. Cái giá: GSI chỉ cho đọc nhất quán cuối (eventually consistent), vì nó được cập nhật bất đồng bộ sau lần ghi vào bảng.'
+      en: 'An LSI (local secondary index) has exactly the key you need, but it can only be declared when the table is created, so `UpdateTable` cannot add one. You do not need a new table: a GSI (global secondary index) can be added at any time through `UpdateTable`, and may reuse the table''s partition key `customerId` with `total` as its sort key. The price: a GSI allows only eventually consistent reads, because it is updated asynchronously after the table write.'
 ---
 ## Mở bài
 

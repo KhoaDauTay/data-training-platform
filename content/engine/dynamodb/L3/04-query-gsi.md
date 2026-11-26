@@ -206,8 +206,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: Nghe như GSI chỉ là một bảng khác nên đọc strong được như bảng gốc. Thật ra GSI cập nhật bất đồng bộ, nên DynamoDB từ chối `ConsistentRead`; bộ mô phỏng trả đúng lỗi này - "Consistent reads are not supported on global secondary indexes".
-      en: It sounds as if a GSI is just another table, so it should allow strong reads like the base table. In fact a GSI is updated asynchronously, so DynamoDB refuses `ConsistentRead`; the emulator returns exactly this error - "Consistent reads are not supported on global secondary indexes".
+      vi: 'Nghe như GSI (global secondary index) chỉ là một bảng khác nên đọc nhất quán mạnh được như bảng gốc, với giá gấp đôi. Thật ra DynamoDB chép thay đổi sang GSI bất đồng bộ, sau lần ghi vào bảng, nên GSI không có bản chắc chắn mới nhất để đọc nhất quán mạnh. DynamoDB không lặng lẽ bỏ qua `ConsistentRead` mà từ chối cả request; bộ mô phỏng trả đúng lỗi này - "Consistent reads are not supported on global secondary indexes".'
+      en: 'It sounds as if a GSI (global secondary index) is just another table, so it should allow strongly consistent reads like the base table, at twice the price. In fact DynamoDB copies changes to a GSI asynchronously, after the table write, so a GSI has no surely-latest version to read strongly consistent. DynamoDB does not quietly ignore `ConsistentRead`; it refuses the whole request, and the emulator returns exactly this error - "Consistent reads are not supported on global secondary indexes".'
   - q:
       vi: 'Query trên `byStatus` (project `INCLUDE` `total`) trả các đơn `NEW`. Trang cần thêm `city` của mỗi đơn. Làm sao?'
       en: 'A Query on `byStatus` (projecting `INCLUDE` `total`) returns the `NEW` orders. The page also needs each order''s `city`. How?'

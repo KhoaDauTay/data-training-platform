@@ -204,8 +204,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: Nghe hợp lý vì GSI thêm được bằng `UpdateTable`, nhưng LSI thì chỉ khai được lúc tạo bảng. Muốn LSI phải có bảng mới; GSI thêm được nhưng chỉ đọc eventually consistent.
-      en: It sounds right because a GSI can be added with `UpdateTable`, but an LSI can only be declared when the table is created. An LSI needs a new table; a GSI can be added but only reads eventually consistent.
+      vi: 'GSI (global secondary index) thêm được bằng `UpdateTable`, nên dễ nghĩ LSI (local secondary index) cũng vậy; nhưng LSI chỉ khai được lúc tạo bảng. Bạn cần đọc nhất quán mạnh, nên chỉ còn cách tạo bảng mới có LSI `byTotal` rồi chép dữ liệu sang. Thêm GSI rồi bật `ConsistentRead` không được: GSI chỉ cho đọc nhất quán cuối và từ chối request đó.'
+      en: 'A GSI (global secondary index) can be added with `UpdateTable`, so it is easy to think an LSI (local secondary index) can too; but an LSI can only be declared when the table is created. You need strongly consistent reads, so the only way is a new table with LSI `byTotal`, then copying the data over. Adding a GSI and turning on `ConsistentRead` does not work: a GSI allows only eventually consistent reads and refuses that request.'
   - q:
       vi: Bảng có LSI. Một khách lớn có rất nhiều đơn. Giới hạn nào có thể chạm tới?
       en: The table has an LSI. One big customer has a huge number of orders. Which limit can it reach?
@@ -215,8 +215,8 @@ quiz:
       - { vi: "Không giới hạn gì, LSI tự tách ra nhiều partition", en: "No limit at all, the LSI splits itself across partitions" }
     answer: 0
     why:
-      vi: Khi bảng có LSI, mọi item cùng partition key (cùng bản chiếu trong các LSI) phải nằm trong 10 GB. Chạm trần thì ghi thêm vào collection đó bị từ chối.
-      en: When a table has an LSI, every item with the same partition key (and its copies in the LSIs) must fit in 10 GB. At the cap, more writes to that collection are refused.
+      vi: 'LSI (local secondary index) nằm cùng partition với item gốc, nên khi bảng có LSI, item collection của một khách (mọi item cùng partition key, cộng bản sao của chúng trong mọi LSI) phải vừa 10 GB. Chạm trần thì ghi thêm vào collection đó bị từ chối. Không có trần 1.000 đơn, và LSI không tự tách sang nhiều partition, chính vì nó phải đi cùng item gốc.'
+      en: 'An LSI (local secondary index) lives in the same partition as the base items, so when a table has an LSI, one customer''s item collection (every item with that partition key, plus their copies in every LSI) must fit in 10 GB. At the cap, more writes to that collection are refused. There is no 1,000-order cap, and an LSI does not split itself across partitions, precisely because it must stay with the base items.'
 ---
 
 ## Mở bài

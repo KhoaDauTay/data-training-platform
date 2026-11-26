@@ -40,8 +40,8 @@ predict:
   answer: 1
   trap: 0
   why:
-    vi: 'Nhiều người nghĩ GSI chỉ là một bảng khác nên đọc mạnh được như bảng chính. Thật ra DynamoDB cập nhật GSI bất đồng bộ ("asynchronously, using an eventually consistent model", docs GSI), nên không có bản "chắc chắn mới nhất" để đọc mạnh. Request bị từ chối bằng một `ValidationException`, thông báo `Consistent reads are not supported on global secondary indexes`. Bước 1 cho bạn thấy thông báo này thật (trang chỉ hiện thông báo, không hiện tên loại lỗi).'
-    en: 'Many people think a GSI is just another table, so it allows strong reads like the base table. In fact DynamoDB updates a GSI asynchronously ("asynchronously, using an eventually consistent model", GSI docs), so there is no "surely latest" copy to read strongly. The request is refused with a `ValidationException`, message `Consistent reads are not supported on global secondary indexes`. Step 1 shows you this message for real (the page shows the message, not the error type name).'
+    vi: 'Nhiều người nghĩ GSI (global secondary index) chỉ là một bảng khác nên đọc nhất quán mạnh được như bảng chính. Thật ra DynamoDB cập nhật GSI bất đồng bộ ("asynchronously, using an eventually consistent model", docs GSI), nên không có bản "chắc chắn mới nhất" để đọc nhất quán mạnh, và DynamoDB cũng không lặng lẽ đổi sang đọc nhất quán cuối. Request bị từ chối bằng một `ValidationException`, thông báo `Consistent reads are not supported on global secondary indexes`. Bước 1 cho bạn thấy thông báo này thật (trang chỉ hiện thông báo, không hiện tên loại lỗi).'
+    en: 'Many people think a GSI (global secondary index) is just another table, so it allows strongly consistent reads like the base table. In fact DynamoDB updates a GSI asynchronously ("asynchronously, using an eventually consistent model", GSI docs), so there is no "surely latest" copy for a strongly consistent read, and DynamoDB does not quietly switch to an eventually consistent one either. The request is refused with a `ValidationException`, message `Consistent reads are not supported on global secondary indexes`. Step 1 shows you this message for real (the page shows the message, not the error type name).'
 quiz:
   - q:
       vi: 'Ứng dụng vừa `PutItem` một đơn `NEW` thành công. Ngay sau đó nó Query `byStatus = NEW`. Đơn mới có chắc nằm trong kết quả không?'
@@ -69,8 +69,8 @@ quiz:
         en: "3"
     answer: 0
     why:
-      vi: 'Chỉ bảng chính tốn 1 WCU. Thuộc tính không có trong GSI thì "no write capacity is consumed for that index" (docs GSI). Đổi `status` thì khác: GSI phải xóa mục cũ và ghi mục mới, nên tốn 2 WCU ở index, như bước 3. dynoxide trả đúng các số này.'
-      en: 'Only the base table pays 1 WCU. When the attribute is not in the GSI, "no write capacity is consumed for that index" (GSI docs). Changing `status` is different: the GSI must delete the old entry and write a new one, so the index pays 2 WCU, as in step 3. dynoxide reports these same numbers.'
+      vi: 'Item dưới 1 KB nên bảng chính tốn 1 WCU (write capacity unit, đơn vị ghi 1 KB), và chỉ có thế. `total` không phải khóa và không được project vào GSI, nên GSI không có gì để sửa: "no write capacity is consumed for that index" (docs GSI). Đổi `status` thì khác: GSI phải xóa mục cũ và ghi mục mới, nên tốn 2 WCU ở index, như bước 3. dynoxide trả đúng các số này.'
+      en: 'The item is under 1 KB, so the base table pays 1 WCU (write capacity unit, 1 KB), and that is all. `total` is not a key and is not projected into the GSI, so the GSI has nothing to change: "no write capacity is consumed for that index" (GSI docs). Changing `status` is different: the GSI must delete the old entry and write a new one, so the index pays 2 WCU, as in step 3. dynoxide reports these same numbers.'
 lab:
   setup: |
     {"tables": [{"TableName":"Orders","BillingMode":"PAY_PER_REQUEST","KeySchema":[{"AttributeName":"customerId","KeyType":"HASH"},{"AttributeName":"orderId","KeyType":"RANGE"}],"AttributeDefinitions":[{"AttributeName":"customerId","AttributeType":"S"},{"AttributeName":"orderId","AttributeType":"S"},{"AttributeName":"status","AttributeType":"S"}],"GlobalSecondaryIndexes":[{"IndexName":"byStatus","KeySchema":[{"AttributeName":"status","KeyType":"HASH"},{"AttributeName":"orderId","KeyType":"RANGE"}],"Projection":{"ProjectionType":"KEYS_ONLY"}}]}],
