@@ -120,6 +120,7 @@ export const en: Record<Key, Msg> = {
   'voice.rowsAndValues': 'Both the row count and some values are off. Could you check the filters?',
   'nav.practice': 'Practise SQL',
   'nav.practiceShort': 'Practise', // review v22 RC: the top bar has no room for "Practise SQL" at 1024 px in EN
+  'nav.practiceTiny': 'Practise', // L1097: the phone bar below 360 px
   'nav.engine': 'Databases', // v47 S1 (L900): was "Database Engine"
   'nav.engineShort': 'Databases', // v47 S1 (L900): the top-bar label (was "Engine")
   'deep.title': 'Go deeper in Databases:',
@@ -724,6 +725,9 @@ export const en: Record<Key, Msg> = {
   'welcome.tourTitle': 'The 8 tour steps',
   'welcome.back': 'Back',
   'welcome.next': 'Next',
+  'welcome.goalSkip': 'Skip: learn data analysis',
+  'welcome.start': 'Start',
+  'welcome.regoal': 'Know SQL already? Change your goal',
   'welcome.page': 'Step {i} of {n}',
   'welcome.dbReady': 'The data is ready!',
   'welcome.dbBar': 'Data download progress',
@@ -736,7 +740,7 @@ export const en: Record<Key, Msg> = {
   'welcome.entering': 'Opening the field you picked…',
   // v47 S3 (L910–L912)
   'welcome.goalTitle': 'What do you want to learn?',
-  'welcome.goalIntro': 'Pick one. Not sure? Press Next and start as a new data analyst. You can change it any time from the ⋯ menu.',
+  'welcome.goalIntro': 'Pick one. Not sure? Press Skip and start as a new data analyst. You can change it any time from the ⋯ menu.',
   'welcome.goalReplay': 'Pick your goal again. Home suggests your next step from it.',
   'welcome.goalLabel': 'Pick a goal',
   'welcome.goal.analyst': 'New to data analysis',
@@ -745,8 +749,8 @@ export const en: Record<Key, Msg> = {
   'welcome.goal.engineer': 'Data engineer',
   'welcome.goalShort.analyst': 'Pick a company and solve its tasks in SQL from step one',
   'welcome.goalShort.sql': 'Take the entry check and skip what you know',
-  'welcome.goalShort.internals': 'PostgreSQL, MongoDB, DynamoDB: pick a level L1–L5',
-  'welcome.goalShort.engineer': 'Data stack (dbt, Snowflake…) and database design',
+  'welcome.goalShort.internals': 'Start with PostgreSQL, pick a level L1–L5',
+  'welcome.goalShort.engineer': 'Data stack: dbt, Snowflake, Airflow…',
   'welcome.checkTitle': 'Entry check',
   'welcome.checkIntro': 'One short exercise per Part of the learning path. Each one you pass counts its Part as learned. A miss costs nothing, and there is no score.',
   'welcome.checkLater': 'You can skip it: the entry check stays on the Learning path page.',

@@ -11,7 +11,7 @@ const vi = {
   'topics': 'Chuyên đề',
   'topics.line': 'Lộ trình, kệ bài và bản đồ chủ đề đi ngang các khóa: học khi cần.',
   'ref': 'Tham khảo',
-  'ref.line': 'Tra nhanh khi đang học: thói quen tốt, thuật ngữ, so sánh các CSDL.',
+  'ref.line': 'Tra nhanh khi đang học: thực hành tốt, thuật ngữ, so sánh các CSDL.',
   'topic.side': 'Nhiều khách hàng',
 };
 export type HubKey = keyof typeof vi;
@@ -23,7 +23,7 @@ const en: Record<HubKey, string> = {
   'topics': 'Special topics',
   'topics.line': 'Paths, shelves and topic maps that cut across the courses: take them when you need them.',
   'ref': 'Reference',
-  'ref.line': 'Quick lookups while you learn: good habits, terms, how the databases compare.',
+  'ref.line': 'Quick lookups while you learn: good practice, terms, how the databases compare.',
   'topic.side': 'Multi-tenant',
 };
 

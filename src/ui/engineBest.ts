@@ -549,7 +549,7 @@ export function entry(engine?: string): HTMLElement | null {
   return d.ui.listRow({ // v47 S1 (L903): one row of the landing's Tham khảo list (src/ui/engineHub.ts)
     lead: lead(false), title: 'Best Practice',
     sub: bt('entry.sub', { n: index.length, k: index.filter((c) => ok.has(c.id)).length }),
-    action: linkBtn(rt.hash(), bt('entry.go'), true),
+    action: linkBtn(rt.hash(), bt('entry.go')), // L1096 (eye E-10): the same quiet link as the other Tham khảo rows
   });
 }
 

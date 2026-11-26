@@ -312,7 +312,7 @@ function enginePg(e: EngineId): HTMLElement {
         return d.ui.listRow({
           lead: leadDisc(q.done === q.total ? 'done' : here ? 'current' : 'todo', lv.level),
           title: levelName(lv.level), sub: `${et(`ladder.${e}.${lv.level}`)} · ${et('progress', { k: q.done, n: q.total })}`,
-          action: rowLink(d.engineHash(e, lv.level), here ? et('row.next') : et('row.levelOpen'), here), current: here,
+          action: rowLink(d.engineHash(e, lv.level), et('row.levelOpen'), false), current: here, // L1093 (eye E-05): the hero holds the one primary
         });
       }))));
 }
@@ -336,7 +336,7 @@ function levelPage(e: EngineId, lv: Rung): HTMLElement {
         h('div', { class: 'flex items-baseline justify-between gap-3' },
           h('h2', { id: `mod-${m.id}`, class: 'm-0 text-title font-bold' }, m.name[lang()]),
           h('span', { class: 'text-body-sm tabular-nums text-muted' }, `${q.done}/${q.total}`)),
-        h('ul', { class: d.ui.LIST }, ...m.lessons.map((l) => lessonRow(l, ok, l === next))));
+        h('ul', { class: d.ui.LIST }, ...m.lessons.map((l) => lessonRow(l, ok, l === next, 'head'))));
     }));
 }
 
@@ -347,7 +347,7 @@ function extRow(ok: Set<string>): HTMLElement {
     d.h('h2', { id: 'engine-ext', class: d.ui.GROUP_TITLE }, et('level.EXT')),
     d.h('ul', { class: d.ui.LIST }, d.ui.listRow({
       lead: p.total && p.done === p.total ? leadDisc('done', '') : d.h('span', { class: 'grid size-10 place-items-center rounded-full bg-accent-soft text-accent' }, d.icon('puzzle', 'size-6')),
-      title: et('ext.title'), sub: `${et('ext.short')} · ${et('progress', { k: p.done, n: p.total })}`, action: rowLink(d.engineHash('postgres', 'EXT'), et('ext.go'), true),
+      title: et('ext.title'), sub: `${et('ext.short')} · ${et('progress', { k: p.done, n: p.total })}`, action: rowLink(d.engineHash('postgres', 'EXT'), et('ext.go'), false), // L1093: the hero holds the page's one primary
     })));
 }
 
@@ -371,19 +371,23 @@ function extPage(): HTMLElement {
         h('div', { class: 'flex items-baseline justify-between gap-3' },
           h('h2', { id: `mod-${m}`, class: 'm-0 text-title font-bold' }, moduleName('postgres', m)[lang()]),
           h('span', { class: 'text-body-sm tabular-nums text-muted' }, `${q.done}/${q.total}`)),
-        h('ul', { class: d.ui.LIST }, ...mine.map((l) => lessonRow(l, ok, l === next))));
+        h('ul', { class: d.ui.LIST }, ...mine.map((l) => lessonRow(l, ok, l === next, p.done ? 'next' : 'start'))));
     }));
 }
 
-/** One lesson row (engine-ux-spec §4.3): kind picture (✓ when done), title, "kind · minutes · runtime", one link. */
-function lessonRow(l: EngineLesson, ok: Set<string>, isNext: boolean): HTMLElement {
+/**
+ * One lesson row (engine-ux-spec §4.3): kind picture (✓ when done), title, "kind · minutes · runtime", one link. L1093 (eye E-05):
+ * the next row is the page's call only on the shelf ("Bắt đầu" at 0 done, else "Học tiếp"); on a level page the head's button
+ * is ('head'), so the row stays a plain "Mở" marked current.
+ */
+function lessonRow(l: EngineLesson, ok: Set<string>, isNext: boolean, call: 'head' | 'start' | 'next'): HTMLElement {
   const isDone = ok.has(l.id);
   const k = honestRow(l);
   return d.ui.listRow({
     lead: leadDisc(isDone ? 'done' : isNext ? 'current' : 'todo', d.icon(KIND_ICON[l.kind], 'size-5')),
     title: l.id === TOPIC_HUB ? d.h('span', {}, topicChip(), l.title[lang()]) : l.title[lang()],
     sub: `${et(`kind.${l.kind}`)} · ${et('minutes', { n: l.minutes })} · ${et(k === 'diagram' ? 'short.diagram' : k === 'docs' ? 'short.docs' : 'short.run')}`,
-    action: rowLink(lessonHash(l), isDone ? et('row.again') : isNext ? et('row.next') : et('row.open'), isNext),
+    action: rowLink(lessonHash(l), isDone ? et('row.again') : isNext && call !== 'head' ? et(call === 'start' ? 'row.start' : 'row.next') : et('row.open'), isNext && call !== 'head'),
     current: isNext,
   });
 }
@@ -908,7 +912,9 @@ export function sourceTitle(u: string, title?: string): string {
   try { url = new URL(u); } catch { return u; }
   const dec = (x: string): string => { try { return decodeURIComponent(x); } catch { return x; } };
   // "HowItWorks.DataTypes" → "How It Works Data Types"; "bp-sort-keys" → "best practices: sort keys" (AWS's bp- pages, review v23 P3)
-  const words = (x: string): string => dec(x).replace(/\.html?$/, '').replace(/([a-z])([A-Z])/g, '$1 $2').replace(/[-_.]+/g, ' ').trim();
+  // L1098 (eye E-13): acronyms in a slug read as acronyms ("ddl constraints" → "DDL constraints")
+  const words = (x: string): string => dec(x).replace(/\.html?$/, '').replace(/([a-z])([A-Z])/g, '$1 $2').replace(/[-_.]+/g, ' ').trim()
+    .replace(/\b(ddl|dml|sql|jsonb?|mvcc|wal|gin|gist|brin|rls|ttl|gsi|lsi|cte|acid)\b/gi, (m) => m.toUpperCase());
   const seg = url.pathname.split('/').filter(Boolean).at(-1);
   const anchor = url.hash.length > 1 && words(url.hash.slice(1).replace(/\.([0-9A-F]{2})/g, '%$1')); // MediaWiki writes ' as .27
   const page = [seg && words(seg.replace(/^bp-/, 'best-practices: ')), anchor && (/[a-z]/.test(anchor) ? anchor : anchor.toLowerCase())].filter(Boolean).join(' › ');

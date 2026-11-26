@@ -50,6 +50,9 @@ describe('axe-core: a returning player, dark theme, 375 px (FIX-1)', () => {
     await visit('#/practice');
     expect(document.getElementById('home')!.textContent).not.toMatch(/Mức nhớ/);
     expect(document.getElementById('home')!.textContent).toMatch(/Lịch ôn: /);
+    // L1094 (eye E-04): every Part of the route is listed, Part 9 (General-only write skills) included
+    expect(document.querySelector('#skills-ch-9')?.querySelectorAll('li').length).toBe(3);
+    expect(document.querySelectorAll('#home [id^=skills-ch-] li').length).toBe(ROUTE_SKILLS.length);
     await visit('#/me');
     const home = document.getElementById('home')!;
     expect(home.textContent).not.toMatch(/Mức nhớ|Độ vững kỹ năng|\/5\)/);
