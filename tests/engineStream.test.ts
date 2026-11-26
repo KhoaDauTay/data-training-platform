@@ -44,7 +44,19 @@ const NEED: Partial<Record<EngineLesson['kind'], SectionId[]>> = {
 const OFFICIAL = /^https:\/\/(kafka\.apache\.org|debezium\.io|www\.postgresql\.org)\//;
 /** One plausible wrong answer per lab step (the non-idempotent, naive or order-blind version): it must be refused. */
 const WRONG: Record<string, string[]> = {
-  'e-sm-l2-04#1': ["INSERT INTO change_log (op, row_key) VALUES ('c', 'SHP-104') RETURNING lsn"],
+  'e-sm-l3-04#1': ["UPDATE shipments SET status = 'in_transit', version = version + 1 WHERE shipment_id = 'SHP-201' RETURNING shipment_id"],
+  'e-sm-l3-04#2': ['INSERT INTO topic (source_lsn, shipment_id, status, version) SELECT 10, shipment_id, status, version FROM shipments RETURNING seq, source_lsn'],
+  'e-sm-l3-04#3': ['SELECT shipment_id, count(*) AS copies FROM topic GROUP BY shipment_id HAVING count(*) > 1'],
+  'e-sm-l3-04#4': ['INSERT INTO current_status AS c SELECT DISTINCT ON (shipment_id) shipment_id, status, version FROM topic ORDER BY shipment_id, seq DESC ON CONFLICT (shipment_id) DO UPDATE SET status = EXCLUDED.status, version = EXCLUDED.version RETURNING shipment_id, status', 'INSERT INTO current_status SELECT DISTINCT ON (shipment_id) shipment_id, status, version FROM topic ORDER BY shipment_id, version DESC RETURNING shipment_id, status'],
+  'e-sm-l3-04#5': ['SELECT s.shipment_id, s.status, c.status AS consumer_status, c.version = s.version AS in_sync FROM shipments s JOIN current_status c USING (shipment_id) ORDER BY s.shipment_id'],  'e-sm-l3-01#1': ["SELECT date_trunc('hour', scanned_at) AS window_start, count(*) AS scans FROM scans GROUP BY 1 ORDER BY 1"],
+  'e-sm-l3-01#2': ["SELECT w.start AS window_start, count(s.scan_id) AS scans FROM generate_series(timestamp '2026-10-31 09:45', timestamp '2026-10-31 11:15', interval '15 minutes') AS w(start) LEFT JOIN scans s ON s.scanned_at >= w.start AND s.scanned_at <= w.start + interval '30 minutes' GROUP BY w.start ORDER BY w.start"],
+  'e-sm-l3-01#3': ["SELECT shipment_id, session_no, min(scanned_at) AS session_start, max(scanned_at) AS session_end, count(*) AS scans FROM (SELECT shipment_id, scanned_at, count(*) FILTER (WHERE gap IS NULL OR gap >= interval '20 minutes') OVER (PARTITION BY shipment_id ORDER BY scanned_at) AS session_no FROM (SELECT shipment_id, scanned_at, scanned_at - lag(scanned_at) OVER (PARTITION BY shipment_id ORDER BY scanned_at) AS gap FROM scans) g) s GROUP BY shipment_id, session_no"],
+  'e-sm-l3-02#1': ['SELECT seq, event_time, max(event_time) OVER () AS stream_time FROM arrivals'],
+  'e-sm-l3-02#2': ['SELECT seq, event_time FROM (SELECT seq, event_time, lag(event_time) OVER (ORDER BY seq) AS prev FROM arrivals) a WHERE event_time < prev'],
+  'e-sm-l3-02#3': ["SELECT seq, event_time FROM (SELECT seq, event_time, date_bin('10 minutes', event_time, timestamp '2026-10-31') + interval '10 minutes' AS window_end, max(event_time) OVER (ORDER BY seq ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING) AS seen FROM arrivals) a WHERE seen >= window_end"],
+  'e-sm-l3-02#4': ["SELECT date_bin('10 minutes', event_time, timestamp '2026-10-31') AS window_start, count(*) AS scans FROM arrivals GROUP BY 1 ORDER BY 1"],
+  'e-sm-l3-03#1': ['UPDATE revenue SET total_vnd = total_vnd + (SELECT sum(fee_vnd) FROM events WHERE msg_offset >= 2 AND msg_offset < 5) WHERE id = 1 RETURNING total_vnd'],
+  'e-sm-l3-03#2': ["SELECT msg_offset FROM events WHERE msg_offset > (SELECT next_offset FROM consumer_offsets WHERE group_id = 'billing') ORDER BY msg_offset"],  'e-sm-l2-04#1': ["INSERT INTO change_log (op, row_key) VALUES ('c', 'SHP-104') RETURNING lsn"],
   'e-sm-l2-04#2': ["UPDATE shipments SET status = 'delivered' RETURNING shipment_id, status"],
   'e-sm-l2-04#3': ["UPDATE shipments SET status = 'cancelled' WHERE shipment_id = 'SHP-103' RETURNING shipment_id"],
   'e-sm-l2-05#1': ["SELECT lsn, after->>'shipment_id' AS shipment_id FROM change_log WHERE op = 'd'"],

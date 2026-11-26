@@ -1,0 +1,25 @@
+# v47 SM: a late event arrives after its window closed (stream time + grace). Lesson: e-sm-l3-02 (Ý chính).
+# Data = the lab's arrivals: seq 6 (10:21) moves stream time to 10:21; the 10:00-10:10 window closed at 10:15 (5 minutes of grace);
+# seq 7 (event time 10:08) arrives next and is dropped.
+# Source: https://kafka.apache.org/41/streams/developer-guide/dsl-api/#windowing (grace period)
+title: { vi: "Một sự kiện đến quá trễ", en: "An event that arrives too late" }
+caption:
+  vi: "Stream time đã tới 10:21, quá giờ đóng 10:15 của cửa sổ 10:00-10:10, nên sự kiện 10:08 đến sau đó bị bỏ."
+  en: "Stream time has reached 10:21, past the 10:15 close of the 10:00-10:10 window, so the 10:08 event arriving after that is dropped."
+alt:
+  vi: "Cửa sổ đóng khi stream time vượt cuối cửa sổ cộng thời gian ân hạn, và sự kiện thuộc cửa sổ đó mà đến sau lúc ấy thì không được tính nữa. Kết quả: sự kiện seq 7 (10:08) bị bỏ, vì stream time đã là 10:21."
+  en: "A window closes when stream time passes its end plus the grace period, and an event of that window arriving afterwards is no longer counted. Result: event seq 7 (10:08) is dropped, because stream time is already 10:21."
+nodes:
+  - { id: st, label: "seq 6: 10:21", sub: { vi: "stream time 10:21", en: "stream time 10:21" } }
+  - { id: win, label: "10:00-10:10", sub: { vi: "đóng lúc 10:15", en: "closed at 10:15" }, tone: ghost }
+  - { id: late, label: "seq 7: 10:08", sub: { vi: "đến sau 10:21", en: "arrives after" }, tone: warm }
+  - { id: drop, label: { vi: "bị bỏ", en: "dropped" }, sub: { vi: "cửa sổ đã đóng", en: "window closed" }, tone: new }
+rows:
+  - [st]
+  - [win]
+  - [late]
+  - [drop]
+edges:
+  - { from: st, to: win }
+  - { from: win, to: late }
+  - { from: late, to: drop }

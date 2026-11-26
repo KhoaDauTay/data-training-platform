@@ -1,0 +1,25 @@
+# v47 SM: the capstone's whole path, shipments to current_status. Lesson: e-sm-l3-04 (Ý chính).
+# Data = the lab: one WITH statement writes shipments + outbox; the trigger copies outbox rows to change_log (lsn from 10);
+# the relay appends to topic, which already holds lsn 6 twice and SHP-202's version 3 before version 2; a versioned upsert fills current_status.
+# Sources: https://debezium.io/documentation/reference/stable/transformations/outbox-event-router.html ; https://debezium.io/documentation/faq/
+title: { vi: "Đường đi của trạng thái", en: "The status path" }
+caption:
+  vi: "Thay đổi và outbox commit cùng nhau; CDC và relay đưa chúng lên topic, nơi có bản trùng và sự kiện sai thứ tự; upsert theo version giữ current_status đúng."
+  en: "The change and the outbox commit together; CDC and the relay bring them onto the topic, which has duplicates and out-of-order events; a versioned upsert keeps current_status right."
+alt:
+  vi: "Mỗi chặng của đường đi dùng một kỹ thuật của khóa học, và chỉ chặng cuối phải chịu bản trùng cùng sự kiện sai thứ tự. Kết quả: current_status có SHP-201 in_transit, SHP-202 delivered, SHP-203 picked_up, khớp với nguồn."
+  en: "Each stage of the path uses one technique from the course, and only the last stage has to cope with duplicates and out-of-order events. Result: current_status holds SHP-201 in_transit, SHP-202 delivered, SHP-203 picked_up, matching the source."
+nodes:
+  - { id: src, shape: table, mono: true, label: "shipments + outbox", sub: { vi: "một transaction", en: "one transaction" } }
+  - { id: cl, shape: table, mono: true, label: change_log, sub: { vi: "trigger CDC", en: "CDC trigger" } }
+  - { id: topic, mono: true, label: topic, sub: { vi: "trùng, sai thứ tự", en: "dupes, reordered" }, tone: warm }
+  - { id: cs, shape: table, mono: true, label: current_status, sub: { vi: "upsert có version", en: "versioned upsert" }, tone: new }
+rows:
+  - [src]
+  - [cl]
+  - [topic]
+  - [cs]
+edges:
+  - { from: src, to: cl }
+  - { from: cl, to: topic }
+  - { from: topic, to: cs }

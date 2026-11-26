@@ -134,7 +134,7 @@ Debezium không gửi một dòng mà gửi một phong bì (envelope) cho mỗi
 
 **Các trường.** Theo tài liệu Debezium, giá trị của một sự kiện thay đổi có `before` (dòng trước, có thể không có), `after` (dòng sau, có thể không có), `source` (siêu dữ liệu, trong đó có vị trí trong nhật ký của database), `op` và `ts_ms`. `ts_ms` trong `source` là lúc thay đổi xảy ra ở database; `ts_ms` ở ngoài là lúc Debezium xử lý nó.
 
-**`op`.** `c` là thêm, `u` là sửa, `d` là xóa, `r` là đọc trong snapshot ban đầu, `t` là truncate. Sự kiện `c` và `r` không có `before`; sự kiện `d` có `after` là null, nên khóa phải lấy từ `before`.
+**Trường op.** `c` là thêm, `u` là sửa, `d` là xóa, `r` là đọc trong snapshot ban đầu, `t` là truncate. Sự kiện `c` và `r` không có `before`; sự kiện `d` có `after` là null, nên khóa phải lấy từ `before`.
 
 **REPLICA IDENTITY.** Với giá trị mặc định, `before` của sự kiện sửa và xóa chỉ mang cột khóa chính; `REPLICA IDENTITY FULL` cho mọi cột. Bảng `change_log` của lab giả định FULL, nên so được trạng thái cũ với mới.
 
@@ -255,7 +255,7 @@ Debezium does not send a row but an envelope for each change. This lesson reads 
 
 **The fields.** According to the Debezium docs, a change event's value has `before` (the row before, optional), `after` (the row after, optional), `source` (metadata, including the position in the database's log), `op` and `ts_ms`. The `ts_ms` inside `source` is when the change happened in the database; the outer `ts_ms` is when Debezium processed it.
 
-**`op`.** `c` is create, `u` is update, `d` is delete, `r` is a read in the initial snapshot, `t` is truncate. `c` and `r` events have no `before`; a `d` event has a null `after`, so its key must come from `before`.
+**The op field.** `c` is create, `u` is update, `d` is delete, `r` is a read in the initial snapshot, `t` is truncate. `c` and `r` events have no `before`; a `d` event has a null `after`, so its key must come from `before`.
 
 **REPLICA IDENTITY.** With the default setting, the `before` of update and delete events only carries the primary key columns; `REPLICA IDENTITY FULL` gives every column. The lab's `change_log` table assumes FULL, so old and new status can be compared.
 

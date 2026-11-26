@@ -1,0 +1,23 @@
+# v47 SM: where Kafka's exactly-once stops, and how a PostgreSQL sink gets effectively-once. Lesson: e-sm-l3-03 (Ý chính).
+# Data = the lab: revenue and consumer_offsets updated in one statement (total 270000, next_offset 5).
+# Sources: https://kafka.apache.org/41/design/design/ ; https://debezium.io/documentation/faq/ ;
+# https://www.postgresql.org/docs/18/logicaldecoding-explanation.html
+title: { vi: "Ba lời hứa khác nhau", en: "Three different promises" }
+caption:
+  vi: "Exactly-once của Kafka dừng ở biên Kafka; ra database đích là ít nhất một lần, nên PostgreSQL lưu kết quả và offset trong cùng một transaction."
+  en: "Kafka's exactly-once stops at Kafka's edge; writing to a target database is at least once, so PostgreSQL saves the result and the offset in one transaction."
+alt:
+  vi: "Kafka chỉ hứa đúng một lần cho đường từ Kafka tới Kafka; đường ra một database khác là ít nhất một lần khi có sự cố. Lưu kết quả và vị trí đọc trong cùng một transaction của PostgreSQL biến ít nhất một lần thành thực chất một lần. Kết quả: revenue là 270000 và next_offset là 5, đổi cùng nhau."
+  en: "Kafka only promises exactly once for the path from Kafka to Kafka; the path out to another database is at least once when things go wrong. Saving the result and the read position in one PostgreSQL transaction turns at least once into effectively once. Result: revenue is 270000 and next_offset is 5, changed together."
+nodes:
+  - { id: kk, label: { vi: "Kafka tới Kafka", en: "Kafka to Kafka" }, sub: exactly-once, tone: ghost }
+  - { id: ext, label: { vi: "ra database đích", en: "out to a database" }, sub: at-least-once, tone: warm }
+  - { id: sink, shape: table, label: PostgreSQL, sub: { vi: "kết quả + offset", en: "result + offset" }, tone: live }
+  - { id: res, label: effectively-once, sub: { vi: "chạy lại đúng chỗ", en: "reruns start right" }, tone: new }
+rows:
+  - [kk, ext]
+  - [sink]
+  - [res]
+edges:
+  - { from: ext, to: sink }
+  - { from: sink, to: res }

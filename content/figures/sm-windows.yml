@@ -1,0 +1,25 @@
+# v47 SM: three kinds of window and how many windows an event falls in. Lesson: e-sm-l3-01 (Ý chính).
+# Data = the lab: 15-minute tumbling, 30-minute hopping with a 15-minute hop, sessions closed by a gap over 20 minutes.
+# Source: https://kafka.apache.org/41/streams/developer-guide/dsl-api/#windowing
+title: { vi: "Ba loại cửa sổ", en: "Three kinds of window" }
+caption:
+  vi: "Tumbling cho mỗi sự kiện một cửa sổ; hopping 30 phút bước 15 cho mỗi sự kiện hai cửa sổ; session đặt biên theo khoảng lặng của từng lô."
+  en: "Tumbling gives each event one window; hopping 30 minutes with a 15-minute hop gives each event two; session puts bounds at each shipment's quiet gaps."
+alt:
+  vi: "Ba loại cửa sổ khác nhau ở chỗ cửa sổ có chồng lên nhau không và biên do đồng hồ hay do dữ liệu quyết định. Kết quả: lần quét lúc 10:20 thuộc một cửa sổ tumbling (10:15), hai cửa sổ hopping (10:00 và 10:15), và phiên đầu tiên của SHP-103."
+  en: "The three kinds of window differ in whether windows overlap and whether the clock or the data decides the bounds. Result: the 10:20 scan belongs to one tumbling window (10:15), two hopping windows (10:00 and 10:15), and SHP-103's first session."
+nodes:
+  - { id: tum, mono: true, label: tumbling, sub: { vi: "15 phút", en: "15 minutes" } }
+  - { id: tumr, label: { vi: "1 cửa sổ", en: "1 window" }, sub: { vi: "mỗi sự kiện", en: "per event" }, tone: live }
+  - { id: hop, mono: true, label: hopping, sub: { vi: "30 phút, bước 15", en: "30 min, hop 15" } }
+  - { id: hopr, label: { vi: "2 cửa sổ", en: "2 windows" }, sub: { vi: "mỗi sự kiện", en: "per event" }, tone: warm }
+  - { id: ses, mono: true, label: session, sub: { vi: "lặng > 20 phút", en: "gap > 20 min" } }
+  - { id: sesr, label: { vi: "biên theo dữ liệu", en: "data-driven bounds" }, tone: new }
+rows:
+  - [tum, tumr]
+  - [hop, hopr]
+  - [ses, sesr]
+edges:
+  - { from: tum, to: tumr }
+  - { from: hop, to: hopr }
+  - { from: ses, to: sesr }

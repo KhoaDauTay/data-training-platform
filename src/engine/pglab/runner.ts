@@ -67,7 +67,12 @@ export const loadOnlyOf = (lab: Lab): string[] => {
 };
 
 /** A statement that only reads (its replay would change nothing). */
-const reads = (sql: string): boolean => /^\s*(\(\s*)?(select|with|explain|table|values|show)\b/i.test(sql.replace(/^\s*(--[^\n]*\n\s*)*/, ''));
+// v47 (L1066): a WITH holding INSERT/UPDATE/DELETE/MERGE writes (the stream track's outbox and dedupe steps), so it is replayed;
+// a read that only names one of those words is replayed too, which is harmless
+const reads = (sql: string): boolean => {
+  const s = sql.replace(/^\s*(--[^\n]*\n\s*)*/, '');
+  return /^\s*(\(\s*)?(select|with|explain|table|values|show)\b/i.test(s) && !(/^\s*with\b/i.test(s) && /\b(insert|update|delete|merge)\b/i.test(s));
+};
 /** The earlier steps' solutions that change the database, in order (DDL, VACUUM, ANALYZE, DML). */
 export const replayOf = (lab: Lab, step: number | undefined): string[] =>
   (step === undefined ? [] : lab.steps.slice(0, step)).flatMap((s, j) =>
