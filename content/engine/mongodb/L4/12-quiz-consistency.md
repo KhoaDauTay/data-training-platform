@@ -8,6 +8,7 @@ title_en: "Check: consistency, transactions, change streams"
 kind: quiz
 minutes: 6
 runtime: docs
+figures: [{ name: mg-majority-psa, at: example }]
 objectives:
   - vi: "Chọn đúng cơ chế nhất quán cho từng tình huống"
     en: "Pick the right consistency mechanism for each situation"
@@ -62,12 +63,7 @@ Ba câu kiểm lại ba ý của module: write concern `majority` đếm thành 
 
 ## Ví dụ
 
-```text
-P-S-A, secondary down:   voting members 3, majority 2, data-bearing members up 1  -> w: "majority" cannot be acknowledged
-P-S-S, one secondary down: voting members 3, majority 2, data-bearing members up 2 -> w: "majority" is acknowledged
-```
-
-Bảng trên cho thấy vì sao docs khuyên P-S-S: mất một thành viên mang dữ liệu vẫn còn đủ đa số để xác nhận.
+Hai replica set ba thành viên, mỗi bên mất một secondary. Với P-S-A chỉ còn primary mang dữ liệu, nên `w: "majority"` không được xác nhận; với P-S-S còn hai thành viên mang dữ liệu, đủ đa số. Hình dưới cho thấy vì sao docs khuyên P-S-S.
 
 ## Tóm tắt
 
@@ -87,12 +83,7 @@ Three questions recheck three ideas of this module: write concern `majority` cou
 
 ## Example
 
-```text
-P-S-A, secondary down:   voting members 3, majority 2, data-bearing members up 1  -> w: "majority" cannot be acknowledged
-P-S-S, one secondary down: voting members 3, majority 2, data-bearing members up 2 -> w: "majority" is acknowledged
-```
-
-The table shows why the docs recommend P-S-S: losing one data-bearing member still leaves enough of a majority to acknowledge.
+Two three-member replica sets, each losing one secondary. In P-S-A only the primary still holds data, so `w: "majority"` is never acknowledged; in P-S-S two data-bearing members remain, a majority. The figure below shows why the docs recommend P-S-S.
 
 ## Recap
 

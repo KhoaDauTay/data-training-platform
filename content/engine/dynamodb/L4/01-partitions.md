@@ -19,7 +19,7 @@ sources:
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.Partitions.html
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/burst-adaptive-capacity.html
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-partition-key-design.html
-viz: dy-partitions
+figures: [{ name: dy-partitions, at: example }]
 quiz:
   - q: { vi: "Hai item có cùng partition key nhưng khác sort key. DynamoDB đặt chúng ở đâu?", en: "Two items share a partition key but have different sort keys. Where does DynamoDB put them?" }
     options:
@@ -68,25 +68,16 @@ item collection = all items with the same partition key, sorted by sort key
 
 ## Ví dụ
 
-Bảng `Votes` lưu phiếu theo ngày. Partition key là ngày thì mọi phiếu trong ngày vào một partition; 1500 phiếu mỗi giây, mỗi phiếu dưới 1 KB, là 1500 WCU, vượt 1000.
+Bảng `Votes` lưu phiếu theo ngày. Partition key là ngày thì mọi phiếu trong ngày vào một partition; 1500 phiếu mỗi giây, mỗi phiếu dưới 1 KB, là 1500 WCU, vượt 1000: cả 1500 lần ghi mỗi giây của `VOTE#2026-11-20` dồn vào một partition nóng.
 
 ```text
-hash("VOTE#2026-11-20")   -> partition 2   (1500 writes/s: hot)
-hash("VOTE#2026-11-20#0") -> partition 0
-hash("VOTE#2026-11-20#1") -> partition 3
+PK = "VOTE#2026-11-20"                       one value for the whole day
+PK = "VOTE#2026-11-20#0" ... "VOTE#2026-11-20#9"   ten values for the same day
 ```
 
-Thêm hậu tố sau ngày làm số giá trị partition key tăng lên, tải được rải ra. Bài 4 làm việc này trong lab chạy bằng dynoxide.
+Thêm hậu tố sau ngày (`VOTE#2026-11-20#0`, `VOTE#2026-11-20#1`…) làm số giá trị partition key tăng lên, mỗi giá trị được băm về một partition riêng, tải được rải ra. Bài 4 làm việc này trong lab chạy bằng dynoxide.
 
-Ngược lại, partition key là mã người dùng thì có hàng triệu giá trị, mỗi giá trị chỉ vài thao tác mỗi giây:
-
-```text
-hash("USER#u-0001") -> partition 1    (3 writes/s)
-hash("USER#u-0002") -> partition 0    (2 writes/s)
-hash("USER#u-0003") -> partition 3    (4 writes/s)
-```
-
-Không partition nào gần trần, nên bảng chịu được tổng tải lớn.
+Ngược lại, partition key là mã người dùng thì có hàng triệu giá trị, mỗi giá trị chỉ vài thao tác mỗi giây. Không partition nào gần trần, nên bảng chịu được tổng tải lớn. Sơ đồ dưới đi từng bước: băm khóa, tải đều, một khóa nóng, rồi rải khóa nóng bằng hậu tố.
 
 ## Lỗi hay gặp
 
@@ -152,25 +143,16 @@ item collection = all items with the same partition key, sorted by sort key
 
 ## Example
 
-The `Votes` table stores votes by day. With the date as partition key, every vote of the day goes to one partition; 1500 votes per second, each under 1 KB, is 1500 WCU, above 1000.
+The `Votes` table stores votes by day. With the date as partition key, every vote of the day goes to one partition; 1500 votes per second, each under 1 KB, is 1500 WCU, above 1000: all 1500 writes per second for `VOTE#2026-11-20` pile onto one hot partition.
 
 ```text
-hash("VOTE#2026-11-20")   -> partition 2   (1500 writes/s: hot)
-hash("VOTE#2026-11-20#0") -> partition 0
-hash("VOTE#2026-11-20#1") -> partition 3
+PK = "VOTE#2026-11-20"                       one value for the whole day
+PK = "VOTE#2026-11-20#0" ... "VOTE#2026-11-20#9"   ten values for the same day
 ```
 
-Adding a suffix after the date multiplies the partition key values and spreads the load. Lesson 4 does this in a lab that runs on dynoxide.
+Adding a suffix after the date (`VOTE#2026-11-20#0`, `VOTE#2026-11-20#1`…) multiplies the partition key values; each value is hashed to its own partition and the load spreads. Lesson 4 does this in a lab that runs on dynoxide.
 
-On the other hand, a user id as partition key has millions of values, each with only a few operations per second:
-
-```text
-hash("USER#u-0001") -> partition 1    (3 writes/s)
-hash("USER#u-0002") -> partition 0    (2 writes/s)
-hash("USER#u-0003") -> partition 3    (4 writes/s)
-```
-
-No partition comes near its ceiling, so the table can take a large total load.
+On the other hand, a user id as partition key has millions of values, each with only a few operations per second. No partition comes near its ceiling, so the table can take a large total load. The diagram below goes step by step: hashing the key, an even load, one hot key, then spreading the hot key with a suffix.
 
 ## Common mistakes
 

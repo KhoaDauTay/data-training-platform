@@ -200,22 +200,9 @@ function plans(spec: FigSpec, lang: Lang, variant?: string): Plan[] {
   return steps.map((st) => ({ say: tr(st.say, lang), show: new Set(st.show ?? v?.show ?? all), nodes: merge(nodes, st.set), edges: patchE(es, st.set) }));
 }
 
-/** v44 (L773): a figure drawn with only some of its nodes (a variant's `show` or one step) drops the nodes none of its frames
- * shows, with their edges, emptied rows and groups, so it keeps no empty slot or band; undefined when every node shows. */
-function unshownRows(spec: FigSpec, ps: Plan[]): FigSpec | undefined {
-  const ids = new Set(spec.nodes.map((n) => n.id).filter((id) => ps.some((p) => p.show.has(id))));
-  if (ids.size === spec.nodes.length) return undefined;
-  const keep = (rows: string[][]): string[][] => rows.map((r) => r.filter((id) => ids.has(id))).filter((r) => r.length);
-  const groups = spec.groups?.map((g) => ({ ...g, nodes: g.nodes.filter((n) => ids.has(n)) })).filter((g) => g.nodes.length);
-  const kept = (x: string): boolean => ids.has(base(x)) || !!groups?.some((g) => g.id === base(x));
-  return { ...spec, rows: keep(spec.rows), nodes: spec.nodes.filter((n) => ids.has(n.id)), groups,
-    edges: spec.edges?.filter((e) => kept(e.from) && kept(e.to)), phone: spec.phone && { rows: keep(spec.phone.rows) } };
-}
 /** Lays the spec out `W` units wide (W = the svg's own width in px, 280–640) and returns the renderer's Diagram. */
-export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): Diagram {
-  const ps = plans(spec, lang, variant);
-  const cut = unshownRows(spec, ps);
-  if (cut) return layout(cut, lang, W, variant);
+export function layout(spec0: FigSpec, lang: Lang, W: number, variant?: string): Diagram {
+  const [spec, ps] = shownOnly(spec0, plans(spec0, lang, variant));
   const byId = new Map(spec.nodes.map((n) => [n.id, n]));
   const wide = W >= WIDE;
   // every frame's version of a node gets the same box: the largest; a table's title height too, so tables in one row line up
@@ -232,7 +219,8 @@ export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): 
   }
   // v42: an edge a step patches (`id`) is placed and routed for its longest label; each frame draws its own ends and label
   const lw = (e: FigEdge): number => textWidth(tr(e.label, lang), SS);
-  const edges = (spec.edges ?? []).map((e, i) => ps.map((p) => p.edges[i]).reduce((a, b) => (lw(b) > lw(a) ? b : a), e));
+  // v44 (L761): starting from the first frame's version, so a variant's `set` may move an edge's ends (a row arrow to another row)
+  const edges = (spec.edges ?? []).map((_, i) => ps.map((p) => p.edges[i]).reduce((a, b) => (lw(b) > lw(a) ? b : a)));
   const sp: FigSpec = { ...spec, edges };
   // v42: an entity's self-relationship loop and its verb take room at its right (counted in its slot, not in its box)
   const loops = new Map<string, number>();
@@ -327,12 +315,14 @@ export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): 
     if (ra === rb && rowEnd(e)) return label ? fail(`${e.from}: dòng bảng, không nhãn`) : rowArrow(e, a, b);
     if (ra === rb) {
       if (Math.abs(vrows[ra].indexOf(base(e.from)) - vrows[ra].indexOf(base(e.to))) !== 1) fail(`${e.from}→${e.to}: cùng hàng nhưng không cạnh nhau`);
-      const cy = Math.round((Math.max(a.y, b.y) + Math.min(a.y + a.h, b.y + b.h)) / 2);
       const right = a.x < b.x;
+      const po = pairOff(e, edges, right); // v44 (L760): one of two opposite arrows between the same neighbours
+      const cy = Math.round((Math.max(a.y, b.y) + Math.min(a.y + a.h, b.y + b.h)) / 2) + po;
       const x1 = right ? a.x + a.w + 2 : a.x - 2;
       const [x2] = stopAt(x1, cy, b.x + b.w / 2, cy, STROKE, b); // the core's rule (L620): the tip stays 3 units outside b
-      return { e, d: `M${x1} ${cy} L${x2} ${cy}`, lab: label ? { x: (x1 + x2) / 2, y: cy - 6 - lineH(SS) / 2, a: 'm' as const, s: label } : undefined };
+      return { e, d: `M${x1} ${cy} L${x2} ${cy}`, lab: label ? { x: (x1 + x2) / 2, y: cy + (po > 0 ? 1 : -1) * (6 + lineH(SS) / 2), a: 'm' as const, s: label } : undefined };
     }
+    if (pairOff(e, edges, true)) fail(`${e.from}⇄${e.to}: cặp mũi tên ngược chiều chỉ vẽ cạnh nhau (dùng phone.rows)`);
     const down = rb > ra;
     const y1 = plain ? (down ? a.y + a.h : a.y) : down ? a.y + a.h + out(e.from) : a.y - out(e.from);
     const end = (x: number, from: number): number => (plain ? (down ? b.y : b.y + b.h) : stopAt(x, from, x, b.y + b.h / 2, STROKE, b)[1] + (down ? 2 : -2) - (down ? 1 : -1) * out(e.to)); // v41 R3 (E2): 8 clear of a table's title or sub
@@ -372,7 +362,7 @@ export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): 
     const s = a.x < b.x ? 1 : -1;
     /** the x where a node's cells end on the side facing (out = 1) or away from (out = -1) the other node */
     const edge = (end: string, r: Rect, out: number): number => {
-      const n = byId.get(base(end))!, gw = n.shape === 'grid' ? gridCols(n, lang).reduce((p, q) => p + q, 0) : r.w;
+      const n = drawnNode(ps, base(end)), gw = n.shape === 'grid' ? gridCols(n, lang).reduce((p, q) => p + q, 0) : r.w;
       return r.x + Math.round((r.w - gw) / 2) + (out * s > 0 ? gw : 0);
     };
     const y1 = anchorY(e.from, a, e), yb = e.to.includes('#') ? anchorY(e.to, b, e) : Math.min(b.y + b.h - 8, Math.max(b.y + 8, y1));
@@ -395,7 +385,7 @@ export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): 
   function anchorX(end: string, r: Rect, right: boolean): number {
     const [id, , col] = cellOf(end);
     if (col === undefined || byId.get(id)?.shape === 'entity') return r.x + (right ? r.w : 0);
-    const cols = gridCols(byId.get(id)!, lang);
+    const cols = gridCols(drawnNode(ps, id), lang);
     const sum = cols.reduce((a, b) => a + b, 0);
     if (col !== (right ? cols.length - 1 : 0)) fail(`${end}: ô không ở mép`);
     return r.x + Math.round((r.w - sum) / 2) + (right ? sum : 0);
@@ -407,14 +397,15 @@ export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): 
   const ends = (e: FigEdge): Record<string, string> => Object.fromEntries([['data-from', key(e.from)], ['data-to', key(e.to)]].filter(([, v]) => v));
   const parentOf = groupOf(spec);
   const groupBg = groupShapes(spec, lang, at, routes.flatMap((r) => (r ? [r.d] : [])));
+  const gated = gatedEdges(spec);
   const frames: Frame[] = ps.map((p, fi) => {
     const shapes: Shape[] = groupBg.filter((s) => vis(p.show, s.k.split(/[:.]/)[1])); // under everything: frame order is paint order; v41 R3: a frame with nothing shown in it hides
     routes.forEach((r, i) => {
-      if (!r || !vis(p.show, r.e.from) || !vis(p.show, r.e.to)) return;
-      const k = `e:${i}`, pe = p.edges[i]; // v42: this frame's ends and label
+      if (!r || !vis(p.show, r.e.from) || !vis(p.show, r.e.to) || !edgeShown(r.e, p.show, gated)) return;
+      const k = `e:${i}`, pe = p.edges[i]; // v42: this frame's ends and label; v44: and its dash
       shapes.push(r.e.link
-        ? { k, t: 'p', d: r.d, ink: pe.ends ? 'edge' : 'new', w: r.e.bold ? 3 : STROKE, dash: r.e.dash } // v44 (L780): `bold` = an identifying relationship
-        : { k, t: 'p', d: r.d, ink: 'edge', w: STROKE, arrow: true, dash: r.e.dash, attrs: ends(r.e) });
+        ? { k, t: 'p', d: r.d, ink: pe.ends ? 'edge' : 'new', w: r.e.bold ? 3 : STROKE, dash: pe.dash } // v44 (L780): `bold` = an identifying relationship
+        : { k, t: 'p', d: r.d, ink: 'edge', w: STROKE, arrow: true, dash: pe.dash, attrs: ends(r.e) });
       if (pe.ends) shapes.push(...crowEnds(k, r.d, pe.ends, !!r.rev));
       if (r.lab && pe.label) shapes.push({ k: `${k}.l`, t: 't', x: r.lab.x, y: r.lab.y, s: tr(pe.label, lang), size: SS, a: r.lab.a, ink: 'muted' });
     });
@@ -464,7 +455,7 @@ function placeRows(spec: FigSpec, lang: Lang, W: number, dims: Map<string, Sized
   const roomOf = (id: string): number => CW - MARGIN - (parentOf.has(id) ? 2 * GPAD : 0);
   const between = (a: string, b: string): FigEdge | undefined => edges.find((e) => (base(e.from) === a && base(e.to) === b) || (base(e.from) === b && base(e.to) === a));
   const gapOf = (a: string, b: string): number => {
-    const e = between(a, b);
+    const e = pairWidest(edges.filter((f) => !f.link && [base(f.from), base(f.to)].sort().join() === [a, b].sort().join()), lang) ?? between(a, b);
     return !e ? GAP_X : e.link ? Math.max(32, (e.label ? Math.ceil(textWidth(tr(e.label, lang), SS)) + 12 : 0) + (e.ends ? 2 * CROW + 12 : 0)) : Math.max(rowEnd(e) ? 40 : 24, e.label ? Math.ceil(textWidth(tr(e.label, lang), SS)) + 12 : 0); // v41: a row arrow may step in the gap
   };
   const links = (a: string, b: string): number => edges.filter((e) => e.link && [base(e.from), base(e.to)].sort().join() === [a, b].sort().join()).length;
@@ -633,6 +624,38 @@ function elbowLabel(s: string, ax: number, bx: number, ym: number, e: FigEdge): 
   if (Math.abs(bx - ax) < textWidth(s, SS) + 16) fail(`${e.from}→${e.to}: đoạn ngang quá ngắn cho nhãn "${s}"`);
   return { x: (ax + bx) / 2, y: ym - 6 - lineH(SS) / 2, a: 'm', s };
 }
+
+// ── v44 (L760–L761): opposite arrows as a pair, and edges a step shows by id ─────────────────────────────────────
+/** An arrow whose reverse also joins the same two nodes is drawn 7 off the middle (the rightward one above, its label above;
+ * the leftward one below, its label below), so the pair runs 14 apart and never meets head to head (checker rule j). */
+function pairOff(e: FigEdge, edges: FigEdge[], right: boolean): number {
+  if (e.link || !edges.some((f) => f !== e && !f.link && base(f.from) === base(e.to) && base(f.to) === base(e.from))) return 0;
+  return right ? -7 : 7;
+}
+/** Of the arrows between two neighbours, the one with the widest label when there are several (their gap fits both). */
+function pairWidest(es: FigEdge[], lang: Lang): FigEdge | undefined {
+  return es.length < 2 ? undefined : es.reduce((a, b) => (textWidth(tr(b.label, lang), SS) > textWidth(tr(a.label, lang), SS) ? b : a));
+}
+/** v44 (L762): a node no frame shows takes no slot (a variant drawn as one step leaves no blank row); edges to it go too. */
+function shownOnly(spec: FigSpec, ps: Plan[]): [FigSpec, Plan[]] {
+  const on = (id: string): boolean => ps.some((p) => p.show.has(id));
+  if (spec.nodes.every((n) => on(n.id))) return [spec, ps];
+  const keep = (rows: string[][]): string[][] => rows.map((r) => r.filter(on)).filter((r) => r.length);
+  const gs = (spec.groups ?? []).map((g) => ({ ...g, nodes: g.nodes.filter(on) })).filter((g) => g.nodes.length);
+  const end = (x: string): boolean => on(base(x)) || gs.some((g) => g.id === base(x));
+  const mask = (spec.edges ?? []).map((e) => end(e.from) && end(e.to)); // frames index their edges like the spec
+  return [{ ...spec, nodes: spec.nodes.filter((n) => on(n.id)), rows: keep(spec.rows), groups: gs, phone: spec.phone && { rows: keep(spec.phone.rows) },
+    edges: spec.edges?.filter((_, i) => mask[i]) }, ps.map((p) => ({ ...p, edges: p.edges.filter((_, i) => mask[i]) }))];
+}
+/** Edge ids some step or variant lists in `show`: such an edge is drawn only in the frames that list it (else whenever both
+ * ends show). */
+function gatedEdges(spec: FigSpec): Set<string> {
+  const ids = new Set((spec.edges ?? []).flatMap((e) => (e.id ? [e.id] : [])));
+  return new Set([...(spec.steps ?? []), ...Object.values(spec.variants ?? {})].flatMap((s) => s.show ?? []).filter((x) => ids.has(x)));
+}
+/** v44 (L761): a node as its first frame draws it (a variant's set may change a grid's cells, so its row anchors follow). */
+const drawnNode = (ps: Plan[], id: string): FigNode => ps[0].nodes.find((n) => n.id === id) ?? fail(`edge: không có node "${id}"`);
+const edgeShown = (e: FigEdge, show: Set<string>, gated: Set<string>): boolean => !e.id || !gated.has(e.id) || show.has(e.id);
 
 // ── v40 R2 (E-03): crow's-foot marks, drawn at a link's ends along its last segment (so they turn with a stacked link) ──
 /** The marks of a link with `ends` (from, to): the path's first and last points with their neighbours; `rev` = the path starts at `to`. */
