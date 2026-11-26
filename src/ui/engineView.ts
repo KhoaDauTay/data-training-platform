@@ -145,7 +145,7 @@ export function inline(text: string, marked = false): (Node | string)[] {
  * learner never reads `e-pg-l4-03`. The word before stays prose ("bài Thống kê nhiều cột ↗"); without a title (never for
  * shipped content: tests/engineBpLink.test.ts) the link says "bài liên quan" and swallows that word, so no "bài bài".
  */
-const ID = String.raw`e-(?:(?:pg|mg|dy|rd|ds|st|ol)-(?:l[1-5]|ext)-|bp-[a-z])\d\d`; // v43: + the Extensions shelf (e-pg-ext-NN)
+const ID = String.raw`e-(?:(?:pg|mg|dy|rd|ds|st|ol|gr)-(?:l[1-5]|ext)-|bp-[a-z])\d\d`; // v43: + the Extensions shelf (e-pg-ext-NN)
 const PRE = String.raw`(?:(?<=^|[\s(])(?:bài|thẻ|lab|lesson|card) )?`;
 const CODE = new RegExp(`(${PRE}\x60${ID}\x60|\x60[^\x60\n]+\x60)`);
 const BARE = new RegExp(String.raw`(${PRE}\b${ID}(?![\w-]))`);
@@ -154,7 +154,7 @@ let bpTitles: Record<string, { vi: string; en: string }> = {};
 function idRef(seg: string): (Node | string)[] {
   const word = /^\S+ /.exec(seg)?.[0] ?? '';
   const id = seg.slice(word.length).replace(/`/g, '');
-  const m = /^e-(pg|mg|dy|rd|ds|st|ol)-(l[1-5]|ext)-/.exec(id);
+  const m = /^e-(pg|mg|dy|rd|ds|st|ol|gr)-(l[1-5]|ext)-/.exec(id);
   const title = m ? lessons.find((x) => x.id === id)?.title : bpTitles[id];
   const href = m ? d.engineHash(SHORT[m[1] as keyof typeof SHORT], (m[2] === 'ext' ? 'EXT' : m[2].toUpperCase()) as Level, id) : bpHashOf(id);
   if (!href) return [seg]; // an e-bp code with no track letter: content tests keep this from shipping

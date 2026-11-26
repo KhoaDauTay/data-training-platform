@@ -157,7 +157,7 @@ export const engineHash = (engine: string, level?: string, lesson?: string): str
 const ENGINE_OF: Record<string, string> = { pg: 'postgres', mg: 'mongodb', dy: 'dynamodb', rd: 'redis', ds: 'design', st: 'stack', ol: 'olap', gr: 'graph' };
 /** L280: `#/engine/play/<lesson id>` (named by engine-ux-spec §5.1, never built) → that lesson's hash; undefined elsewhere. */
 export function enginePlayOf(hash: string): string | undefined {
-  const m = /^#\/?engine\/play\/(e-(pg|mg|dy|rd|ds|st|ol)-l([1-5])-[a-z0-9-]+)(?=$|[/?])/.exec(hash);
+  const m = /^#\/?engine\/play\/(e-(pg|mg|dy|rd|ds|st|ol|gr)-l([1-5])-[a-z0-9-]+)(?=$|[/?])/.exec(hash);
   return m ? engineHash(ENGINE_OF[m[2]], `L${m[3]}`, m[1]) : undefined;
 }
 
