@@ -21,18 +21,45 @@ sources:
   - { url: "https://docs.getdbt.com/docs/build/models", title: "dbt docs: About dbt models" }
   - { url: "https://fivetran.com/docs/core-concepts/system-columns-and-tables", title: "Fivetran docs: System columns and tables" }
   - { url: "https://docs.airbyte.com/platform/understanding-airbyte/airbyte-metadata-fields", title: "Airbyte docs: Airbyte metadata fields" }
-demo_setup: |
-  CREATE SCHEMA raw_shop;
-  CREATE TABLE raw_shop.orders (
-    order_id int, customer_id int, status text, amount_vnd int,
-    _fivetran_synced timestamp, _fivetran_deleted boolean
-  );
-  INSERT INTO raw_shop.orders VALUES
-    (1, 11, 'PAID', 250000, '2026-10-30 23:10', false),
-    (2, 12, 'paid', 120000, '2026-10-30 23:10', false),
-    (3, 13, 'Cancelled', 90000, '2026-10-30 23:10', false),
-    (4, 11, 'paid', 300000, '2026-10-31 01:05', true),
-    (5, 14, 'pending', 60000, '2026-10-31 01:05', false);
+lab:
+  setup: |
+    CREATE SCHEMA raw_shop;
+    CREATE TABLE raw_shop.orders (
+      order_id int, customer_id int, status text, amount_vnd int,
+      _fivetran_synced timestamp, _fivetran_deleted boolean
+    );
+    INSERT INTO raw_shop.orders VALUES
+      (1, 11, 'PAID', 250000, '2026-10-30 23:10', false),
+      (2, 12, 'paid', 120000, '2026-10-30 23:10', false),
+      (3, 13, 'Cancelled', 90000, '2026-10-30 23:10', false),
+      (4, 11, 'paid', 300000, '2026-10-31 01:05', true),
+      (5, 14, 'pending', 60000, '2026-10-31 01:05', false);
+  steps:
+    - task:
+        vi: "Doanh thu các đơn đã trả tiền còn ở nguồn, đọc thẳng bảng raw: trả một cột `revenue_vnd`. Trạng thái viết lẫn chữ hoa, chữ thường."
+        en: "Revenue of paid orders still at the source, read straight from the raw table: return one column `revenue_vnd`. The status mixes upper and lower case."
+      solution: |
+        SELECT sum(amount_vnd) AS revenue_vnd
+        FROM raw_shop.orders
+        WHERE NOT _fivetran_deleted
+          AND lower(status) = 'paid'
+      check: rows
+      hint:
+        vi: "Hai việc của tầng staging: `WHERE NOT _fivetran_deleted` và `lower(status) = 'paid'`."
+        en: "Two staging jobs: `WHERE NOT _fivetran_deleted` and `lower(status) = 'paid'`."
+    - task:
+        vi: "Số đơn theo trạng thái đã viết thường, bỏ dòng đã xóa ở nguồn: trả `status`, `orders`."
+        en: "Order count per lower-cased status, leaving out rows deleted at the source: return `status`, `orders`."
+      solution: |
+        SELECT lower(status) AS status,
+          count(*) AS orders
+        FROM raw_shop.orders
+        WHERE NOT _fivetran_deleted
+        GROUP BY 1
+      check: rows
+      hint:
+        vi: "`lower(status)` rồi `GROUP BY 1`."
+        en: "`lower(status)` then `GROUP BY 1`."
 quiz:
   - q:
       vi: "Trong mô hình ELT, việc làm sạch và tính toán dữ liệu diễn ra ở đâu?"

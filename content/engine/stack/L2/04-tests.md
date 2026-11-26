@@ -159,7 +159,8 @@ models:
       - name: status
         data_tests:
           - accepted_values:
-              values: [paid, pending]
+              arguments:
+                values: [paid, pending]
 ```
 
 ```sql
@@ -271,7 +272,8 @@ models:
       - name: status
         data_tests:
           - accepted_values:
-              values: [paid, pending]
+              arguments:
+                values: [paid, pending]
 ```
 
 ```sql
