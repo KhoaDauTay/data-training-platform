@@ -179,13 +179,13 @@ function nextCard(x: Measured): HTMLElement {
 
 // ---------- v24 (L323): skill map and badges, derived on every draw ----------
 
-const ENGINES = ['postgres', 'mongodb', 'dynamodb', 'redis', 'design', 'stack', 'olap', 'graph'];
+const ENGINES = ['postgres', 'mongodb', 'dynamodb', 'redis', 'design', 'stack', 'olap', 'search', 'graph'];
 const LEVELS = ['L1', 'L2', 'L3', 'L4', 'L5'];
 /** The levels a track has (mastery.ts levelsOf, inlined: this chunk takes no value from main): stack and olap L1–L3, redis L1–L2 (v47 L956, L990). */
-const TOP: Record<string, string> = { stack: 'L3', redis: 'L2', olap: 'L3', graph: 'L2' };
-const ENGINE_ICON: Record<string, Icons.IconName> = { postgres: 'engRelational', mongodb: 'engDocument', dynamodb: 'engKeyValue', redis: 'engRedis', design: 'engDesign', stack: 'engStack', olap: 'engOlap', graph: 'engGraph' };
+const TOP: Record<string, string> = { stack: 'L3', redis: 'L2', olap: 'L3', search: 'L3', graph: 'L2' };
+const ENGINE_ICON: Record<string, Icons.IconName> = { postgres: 'engRelational', mongodb: 'engDocument', dynamodb: 'engKeyValue', redis: 'engRedis', design: 'engDesign', stack: 'engStack', olap: 'engOlap', search: 'engSearch', graph: 'engGraph' };
 const DOMAIN_ICON: Record<string, Icons.IconName> = { logistics: 'anchor', ecommerce: 'box', finance: 'percent' };
-const ENGINE_NAME: Record<string, string> = { postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB', redis: 'Redis', olap: 'OLAP & ClickHouse', graph: 'Graph' };
+const ENGINE_NAME: Record<string, string> = { postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB', redis: 'Redis', olap: 'OLAP & ClickHouse', search: 'Elasticsearch', graph: 'Graph' };
 const engineName = (e: string): string => ENGINE_NAME[e] ?? m(e === 'stack' ? 'eng.stack' : 'eng.design');
 const phone = (): boolean => typeof matchMedia === 'function' && !matchMedia('(min-width: 640px)').matches;
 

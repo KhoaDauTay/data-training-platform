@@ -1,0 +1,15 @@
+- id: index
+  vi: Chỉ mục đảo và analyzer
+  en: The inverted index and analyzers
+- id: query
+  vi: Truy vấn và độ liên quan
+  en: Queries and relevance
+- id: facets
+  vi: Nhóm kết quả
+  en: Grouping results
+- id: postgres
+  vi: Tìm kiếm trên PostgreSQL
+  en: Search on PostgreSQL
+- id: capstone
+  vi: Bài tổng hợp
+  en: Capstone

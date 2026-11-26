@@ -180,12 +180,12 @@ describe('honestOf: nhãn trung thực của mọi bài', () => {
   it.each(sets[0].map((l) => [l.id, l] as const))('%s', (_, l) => {
     const k = honestOf(l);
     expect(honestRow(l)).toBe(k); // L280: the lesson rows' chip, from the index fields only
-    if (k === 'pg' || k === 'mingo' || k === 'dynoxide' || k === 'redis') {
+    if (k === 'pg' || k === 'mingo' || k === 'dynoxide' || k === 'redis' || k === 'search') {
       // "runs" only when something executes here: a lab (its Run goes to the runner) or a Postgres predict's real plan.
       // L299: the two DynamoDB catalog labs (e-dy-l1-04, e-dy-l3-03) count as gradable now (dynoxide grades any check kind).
       expect(!!l.lab || (onPg(l.engine) && !!l.predict)).toBe(true);
       expect((l.lab?.steps ?? []).some((s) => gradable(l, s)) || (onPg(l.engine) && !!l.predict)).toBe(true);
-      expect(k).toBe({ postgres: 'pg', mongodb: 'mingo', dynamodb: 'dynoxide', redis: 'redis', design: 'pg', stack: 'pg', olap: 'pg', graph: 'pg' }[l.engine]);
+      expect(k).toBe({ postgres: 'pg', mongodb: 'mingo', dynamodb: 'dynoxide', redis: 'redis', design: 'pg', stack: 'pg', olap: 'pg', search: 'search', graph: 'pg' }[l.engine]);
     } else {
       expect(l.runtime).toBe('docs');
       expect(k).toBe(l.viz ? 'diagram' : 'docs');

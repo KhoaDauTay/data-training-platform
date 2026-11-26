@@ -1,0 +1,21 @@
+# v47 R1 (L1019): what the standard and vi_fold analyzers store for four words of the shop. Lesson: e-sr-l1-03 (Ý chính).
+# Data = `_analyze` of each word with `standard` and with the index's `vi_fold` (standard + lowercase + asciifolding).
+# Source: https://www.elastic.co/docs/reference/text-analysis/analysis-asciifolding-tokenfilter
+title: { vi: "Bỏ dấu: dễ tìm, nhưng có từ trùng", en: "Folding: easier to find, but words collide" }
+caption:
+  vi: "vi_fold thêm asciifolding sau lowercase: khách gõ không dấu vẫn khớp, nhưng lồng và long thành cùng một từ."
+  en: "vi_fold adds asciifolding after lowercase: typing without accents still matches, but the words for lantern and oolong become the same word."
+alt:
+  vi: "Bỏ dấu giúp khách gõ không dấu vẫn tìm thấy hàng, nhưng làm hai từ khác nghĩa trùng nhau. Kết quả: tìm den long trên trường bỏ dấu ra cả trà ô long."
+  en: "Folding lets customers who type without accents find products, but it makes two different words collide. Result: a lamp search on the folded field also returns the oolong tea."
+nodes:
+  - id: g
+    shape: grid
+    label: { vi: "Từ được lưu", en: "Stored words" }
+    head: [{ vi: "chữ gốc", en: "text" }, standard, vi_fold]
+    cells: [[Đèn, đèn, den], [lồng, lồng, long], [long, long, long], [Đà, đà, da]]
+    cellTone: { "1:2": warm, "2:2": warm }
+  - { id: n, shape: note, label: { vi: "lồng và long trùng nhau", en: "two words now collide" } }
+rows:
+  - [g]
+  - [n]

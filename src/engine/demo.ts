@@ -24,13 +24,13 @@ export interface DemoBlock {
   mark?: 'error' | 'wrong' | 'fix';
 }
 
-export const RUN_LANG: Record<EngineId, readonly string[]> = { postgres: ['sql'], design: ['sql'], stack: ['sql'], olap: ['sql'], graph: ['sql'], mongodb: ['javascript', 'js'], dynamodb: ['json', 'partiql'], redis: ['redis'] };
+export const RUN_LANG: Record<EngineId, readonly string[]> = { postgres: ['sql'], design: ['sql'], stack: ['sql'], olap: ['sql'], search: ['sql', 'json'], graph: ['sql'], mongodb: ['javascript', 'js'], dynamodb: ['json', 'partiql'], redis: ['redis'] };
 export const DEMO_SECS: readonly SectionId[] = ['example', 'pitfalls'];
 
 /** One block of section text, classified (`lang` = the fence's info string). */
 export function demoBlock(engine: EngineId, sec: SectionId, lang: string, code: string): DemoBlock {
   const runs = RUN_LANG[engine].includes(lang);
-  if (onPg(engine)) {
+  if (onPg(engine) && lang !== 'json') { // v47 (L1013): a search lesson's ```json block is an Elasticsearch-style request (NoSQL markers)
     const error = /^--\s*ERROR\s+([0-9A-Z]{5})\b/m.exec(code)?.[1];
     const mark = /^--\s*ERROR\b/m.test(code) ? 'error' : /^--\s*WRONG\b/m.test(code) ? 'wrong' : /^--\s*FIX\b/m.test(code) ? 'fix' : undefined;
     return { sec, code, run: code, runs, ...(error !== undefined ? { error } : {}), ...(mark ? { mark } : {}) };

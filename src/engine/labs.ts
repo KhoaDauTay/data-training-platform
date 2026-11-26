@@ -139,8 +139,8 @@ export const gradable = (l: EngineLesson, step: LabStep): boolean =>
  * actually executes: a lesson that runs here (a lab, or a Postgres predict's real plan) names its runner; one that does
  * not is a diagram when it has one, else it is read from the official docs.
  */
-export type Honest = 'pg' | 'mingo' | 'dynoxide' | 'redis' | 'diagram' | 'docs';
-const RUNS: Record<EngineId, Honest> = { postgres: 'pg', mongodb: 'mingo', dynamodb: 'dynoxide', redis: 'redis', design: 'pg', stack: 'pg', olap: 'pg', graph: 'pg' };
+export type Honest = 'pg' | 'mingo' | 'dynoxide' | 'redis' | 'search' | 'diagram' | 'docs';
+const RUNS: Record<EngineId, Honest> = { postgres: 'pg', mongodb: 'mingo', dynamodb: 'dynoxide', redis: 'redis', design: 'pg', stack: 'pg', olap: 'pg', search: 'search', graph: 'pg' };
 export const honestOf = (l: Pick<EngineLesson, 'engine' | 'runtime' | 'viz' | 'lab' | 'predict'>): Honest =>
   l.runtime !== 'docs' && LAB_RUNNERS[l.engine] && (l.lab || (l.predict && onPg(l.engine))) ? RUNS[l.engine] : l.viz ? 'diagram' : 'docs';
 
@@ -172,5 +172,19 @@ export const LAB_RUNNERS: Partial<Record<EngineId, (env: LabEnv) => Promise<LabR
   dynamodb: async (env) => (await import('./dynamo/runner')).dynamoRunner(env),
   // v47 (L952): BoonData's Redis interpreter on the main thread, its own lazy chunk (budget `redis`)
   redis: async (env) => (await import('./redis/redisLab')).redisRunner(env),
+};
+// v47 (L1012): search = PostgreSQL full-text labs, or BoonData's Elasticsearch-style interpreter when the data is a JSON index
+// (isEsLesson; lazy chunk esLab, budget search)
+LAB_RUNNERS.search = async (env) => {
+  const pg = await LAB_RUNNERS.postgres!(env);
+  let es: Promise<LabRunner> | undefined;
+  const pick = (setup?: string): Promise<LabRunner> => (/^\s*\{/.test(setup ?? '') ? (es ??= import('./search/esLab').then((m) => m.esRunner(env)).catch((e: unknown) => { es = undefined; throw e; })) : Promise.resolve(pg));
+  return {
+    demo: async (setup, steps) => (await pick(setup)).demo!(setup, steps),
+    prepare: async (lab) => (await pick(lab.setup)).prepare(lab),
+    run: async (lab, code, step) => (await pick(lab.setup)).run(lab, code, step),
+    check: async (lab, step, code) => (await pick(lab.setup)).check(lab, step, code),
+    explain: async (lab, sql) => (await pick(lab.setup)).explain!(lab, sql),
+  };
 };
 LAB_RUNNERS.design = LAB_RUNNERS.stack = LAB_RUNNERS.olap = LAB_RUNNERS.graph = LAB_RUNNERS.postgres; // v47 (L1080): graph too // v47 (L990): olap too // v45 (L742): stack labs too // v28 R4 (L420): design labs are PostgreSQL labs (`lab` schema, or the lab runtime with `setup`)

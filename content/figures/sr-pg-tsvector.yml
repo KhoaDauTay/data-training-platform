@@ -1,0 +1,29 @@
+# v47 R1 (L1019): what to_tsvector('simple', f_unaccent(...)) stores for one name, and the GIN index on it. Lesson: e-sr-l3-02.
+# Data = PGlite: to_tsvector('simple', f_unaccent('Đèn lồng Hội An')) = 'an':4 'den':1 'hoi':3 'long':2 (example 1 of the lesson).
+# Sources: https://www.postgresql.org/docs/18/textsearch-controls.html ; https://www.postgresql.org/docs/18/textsearch-indexes.html
+title: { vi: "tsvector: chỉ mục đảo trong một cột", en: "tsvector: an inverted index in a column" }
+caption:
+  vi: "simple chỉ viết thường; f_unaccent bỏ dấu trước đó. Vị trí bắt đầu từ 1, và GIN là chỉ mục đảo trên cột này."
+  en: "simple only lower-cases; f_unaccent removes the accents before it. Positions start at 1, and GIN is the inverted index over this column."
+alt:
+  vi: "PostgreSQL lưu mỗi tên thành danh sách từ đã bỏ dấu kèm vị trí, giống chỉ mục đảo của Elasticsearch nhưng nằm ngay trong bảng. Kết quả: tên Đèn lồng Hội An thành bốn từ den, long, hoi, an."
+  en: "PostgreSQL stores each name as a list of accent-free words with positions, like Elasticsearch's inverted index but inside the table. Result: the name becomes four words, den, long, hoi and an."
+nodes:
+  - { id: doc, shape: doc, label: Đèn lồng Hội An, sub: { vi: "cột name", en: "column name" } }
+  - { id: fn, mono: true, label: to_tsvector, sub: "simple, f_unaccent", tone: warm }
+  - id: g
+    shape: grid
+    mono: true
+    label: { vi: "tsvector (cột doc)", en: "tsvector (column doc)" }
+    head: [lexeme, position]
+    cells: [[an, "4"], [den, "1"], [hoi, "3"], [long, "2"]]
+  - { id: gin, shape: table, label: GIN, sub: products_doc_idx }
+rows:
+  - [doc]
+  - [fn]
+  - [g]
+  - [gin]
+edges:
+  - { from: doc, to: fn }
+  - { from: fn, to: g }
+  - { from: g, to: gin }
