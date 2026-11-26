@@ -257,7 +257,8 @@ export function edits(a: string, b: string): number {
 
 class Searcher {
   approx = false;
-  constructor(private ix: EsIndex) {}
+  private ix: EsIndex;
+  constructor(ix: EsIndex) { this.ix = ix; }
   field(name: string): FieldIdx | undefined { return this.ix.fields.get(name); }
   termHits(fi: FieldIdx, term: string, boost: number, dfOverride?: number): Hits {
     const p = fi.post.get(term);

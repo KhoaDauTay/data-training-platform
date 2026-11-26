@@ -1,0 +1,30 @@
+# v47 R1 (L1019): one name stored two ways by dynamic mapping (`name` text, `name.keyword` keyword). Lesson: e-sr-l1-04 (Ý chính).
+# Data = `_analyze` of document 5's name with the field `name` (standard) and the keyword sub-field (the whole string).
+# Source: https://www.elastic.co/docs/manage-data/data-store/mapping/dynamic-field-mapping
+title: { vi: "Một chuỗi, hai cách lưu", en: "One string, stored two ways" }
+caption:
+  vi: "name (text) giữ từng từ đã viết thường để tìm; name.keyword giữ nguyên cả chuỗi để lọc, nhóm và sắp."
+  en: "name (text) keeps each lower-case word for search; name.keyword keeps the whole string for filters, grouping and sorting."
+alt:
+  vi: "Cùng một tên được lưu thành nhiều từ cho việc tìm và thành một giá trị nguyên cho việc lọc. Kết quả: term với chuỗi đầy đủ chỉ khớp trên name.keyword."
+  en: "The same name is stored as many words for search and as one whole value for filters. Result: a term query with the full string matches only on name.keyword."
+nodes:
+  - { id: doc, shape: doc, label: Nón lá trẻ em, sub: { vi: "tài liệu 5", en: "document 5" } }
+  - id: t
+    shape: grid
+    mono: true
+    label: name (text)
+    head: [token]
+    cells: [[nón], [lá], [trẻ], [em]]
+  - id: k
+    shape: grid
+    mono: true
+    label: name.keyword
+    head: [token]
+    cells: [[Nón lá trẻ em]]
+rows:
+  - [doc]
+  - [t, k]
+edges:
+  - { from: doc, to: t }
+  - { from: doc, to: k }
