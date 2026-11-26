@@ -52,8 +52,8 @@ quiz:
       - { vi: "Báo lỗi vì join mơ hồ", en: "An error, because the join is ambiguous" }
     answer: 1
     why:
-      vi: "Join với 3 dòng hàng tạo 3 dòng, mỗi dòng mang cùng khoản trả. `sum` cộng nó 3 lần. Gộp `payments` theo đơn trước, rồi mới join, thì mỗi đơn chỉ còn một dòng."
-      en: "Joining 3 lines makes 3 rows, each carrying the same payment. `sum` adds it 3 times. Aggregate `payments` per order first, then join, and each order has one row."
+      vi: "Join với 3 dòng hàng tạo 3 dòng, mỗi dòng mang cùng khoản trả 100.000, nên `sum` ra 3 × 100.000 = 300.000. Không có lỗi: join nhiều bảng là hợp lệ, chỉ số dòng bị nhân lên. Gộp `payments` theo đơn trước, rồi mới join, thì mỗi đơn chỉ còn một dòng."
+      en: "Joining 3 lines makes 3 rows, each carrying the same 100,000 payment, so `sum` gives 3 × 100,000 = 300,000. There is no error: joining several tables is valid, it just multiplies the rows. Aggregate `payments` per order first, then join, and each order has one row."
 ---
 
 ## Ý chính

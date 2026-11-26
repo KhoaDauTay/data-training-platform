@@ -25,21 +25,21 @@ quiz:
       - { vi: "Không có gì được bảo đảm", en: "Nothing is guaranteed" }
     answer: 1
     trap: 0
-    why: { vi: "Streams bảo đảm thứ tự theo khóa chính của từng item, không theo partition hay item collection. Phép cộng tổng không phụ thuộc thứ tự nên vẫn đúng.", en: "Streams guarantees order per item primary key, not per partition or item collection. A sum does not depend on order, so it stays correct." }
+    why: { vi: "\"Cùng cửa hàng\" chưa đủ: hai đơn là hai item với hai khóa chính khác nhau, mà Streams chỉ bảo đảm thứ tự giữa các thay đổi của cùng một khóa chính, không theo partition hay item collection. Nhưng không phải không có gì: mỗi bản ghi vẫn xuất hiện đúng một lần trong stream. Phép cộng tổng không phụ thuộc thứ tự nên vẫn đúng.", en: "\"Same store\" is not enough: the two orders are two items with two different primary keys, and Streams only guarantees order between changes to the same primary key, not per partition or item collection. But it is not \"nothing\" either: each record still appears exactly once in the stream. A sum does not depend on order, so it stays correct." }
   - q: { vi: "Một `TransactWriteItems` sửa ba item. Bộ xử lý Streams nhìn thấy gì?", en: "One `TransactWriteItems` changes three items. What does the Streams consumer see?" }
     options:
       - { vi: "Một bản ghi gộp cả ba item", en: "One record covering all three items" }
       - { vi: "Ba bản ghi, có thể đến vào các thời điểm khác nhau và xen với bản ghi của transaction khác", en: "Three records, possibly arriving at different times and interleaved with other transactions' records" }
       - { vi: "Không có bản ghi nào, transaction đi đường riêng", en: "No records, transactions take a separate path" }
     answer: 1
-    why: { vi: "Thay đổi của transaction lan sang Streams dần dần; bộ xử lý không được giả định tính nguyên khối hay thứ tự của transaction.", en: "A transaction's changes propagate to Streams gradually; consumers must not assume transaction atomicity or ordering." }
+    why: { vi: "Streams ghi theo từng item, nên ba item đổi là ba bản ghi, không có bản ghi gộp. Transaction cũng không đi đường riêng: mọi lần ghi làm đổi dữ liệu đều vào stream. Ba bản ghi lan sang Streams dần dần và có thể xen với bản ghi của transaction khác, nên bộ xử lý không được giả định cả ba đến cùng lúc hay theo thứ tự.", en: "Streams records per item, so three changed items make three records, never one combined record. Transactions do not take a separate path either: every write that changes data goes into the stream. The three records propagate gradually and may interleave with other transactions' records, so the consumer must not assume they arrive together or in order." }
   - q: { vi: "Bạn muốn biết số tiền cũ và mới mỗi khi một đơn bị sửa. Chọn view nào?", en: "You want both the old and the new amount whenever an order changes. Which view type?" }
     options:
       - { vi: "`KEYS_ONLY`", en: "`KEYS_ONLY`" }
       - { vi: "`NEW_IMAGE`", en: "`NEW_IMAGE`" }
       - { vi: "`NEW_AND_OLD_IMAGES`", en: "`NEW_AND_OLD_IMAGES`" }
     answer: 2
-    why: { vi: "Chỉ `NEW_AND_OLD_IMAGES` ghi cả item trước và sau khi sửa. View type không đổi được sau khi bật stream: phải tắt rồi tạo stream mới.", en: "Only `NEW_AND_OLD_IMAGES` records the item both before and after the change. The view type cannot be edited once the stream is set up: disable it and create a new one." }
+    why: { vi: "`KEYS_ONLY` chỉ ghi khóa của item, không có số tiền nào; `NEW_IMAGE` chỉ có item sau khi sửa, nên thiếu số tiền cũ. Chỉ `NEW_AND_OLD_IMAGES` ghi cả item trước và sau khi sửa. View type không đổi được sau khi bật stream: phải tắt rồi tạo stream mới.", en: "`KEYS_ONLY` records only the item's key, no amount at all; `NEW_IMAGE` holds only the item after the change, so the old amount is missing. Only `NEW_AND_OLD_IMAGES` records the item both before and after the change. The view type cannot be edited once the stream is set up: disable it and create a new one." }
 ---
 
 ## Mở bài
@@ -99,6 +99,8 @@ last_order[store] = record.NewImage.id
 // FIX: compare a value stored in the item itself
 if record.NewImage.created_at > last_order[store].created_at: last_order[store] = record.NewImage
 ```
+
+`o1` và `o2` là hai item khác khóa chính, nên Streams không hứa bản ghi của `o2` đến sau; so bằng một giá trị nằm trong chính item thì thứ tự đến không còn quan trọng.
 
 Chọn view thiếu dữ liệu cần dùng:
 
@@ -178,6 +180,8 @@ last_order[store] = record.NewImage.id
 // FIX: compare a value stored in the item itself
 if record.NewImage.created_at > last_order[store].created_at: last_order[store] = record.NewImage
 ```
+
+`o1` and `o2` are two items with different primary keys, so Streams does not promise that the record of `o2` comes later; comparing a value stored in the item itself makes arrival order irrelevant.
 
 Picking a view that lacks the data you need:
 

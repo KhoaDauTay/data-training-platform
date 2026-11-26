@@ -63,14 +63,14 @@ quiz:
       - { vi: "0, vì TTL miễn phí", en: "0, because TTL is free" }
     answer: 1
     trap: 0
-    why: { vi: "Bộ lọc chạy sau khi đọc. Item hết hạn còn nằm trong bảng tới khi tiến trình nền xóa nó, và vẫn tốn đọc lẫn lưu trữ.", en: "The filter runs after the read. An expired item stays in the table until the background process deletes it, and still costs reads and storage." }
+    why: { vi: "2 là số item còn lại sau `FilterExpression`, nhưng bộ lọc chạy sau khi đọc: Query đã đọc cả 6 phiên của `USER#u1` rồi mới bỏ 4 phiên hết hạn, và tiền đọc tính trên 6. TTL (time to live, hạn sống của item) chỉ miễn phí cho lần xóa; item hết hạn còn nằm trong bảng tới khi tiến trình nền xóa nó, nên vẫn tốn đọc lẫn lưu trữ.", en: "2 is the number of items left after the `FilterExpression`, but the filter runs after the read: the Query read all 6 sessions of `USER#u1` and only then dropped the 4 expired ones, and the read is billed on 6. TTL (time to live) is free only for the delete itself; an expired item stays in the table until the background process deletes it, so it still costs reads and storage." }
   - q: { vi: "TTL xóa một item. Điều gì đúng?", en: "TTL deletes an item. What is true?" }
     options:
       - { vi: "Lần xóa không tốn WCU, và hiện trong Streams như service deletion (`principalId` là `dynamodb.amazonaws.com`)", en: "The delete consumes no WCU, and appears in Streams as a service deletion (`principalId` is `dynamodb.amazonaws.com`)" }
       - { vi: "Tốn 1 WCU mỗi item như DeleteItem", en: "It costs 1 WCU per item like DeleteItem" }
       - { vi: "Không xuất hiện trong Streams", en: "It does not appear in Streams" }
     answer: 0
-    why: { vi: "TTL xóa không tốn throughput ghi ở Region nơi item hết hạn; bản ghi stream có `userIdentity` loại `Service`. Bộ xử lý dựa vào đó để tách xóa do hết hạn với xóa do người dùng.", en: "TTL deletes use no write throughput in the Region where the item expires; the stream record has a `userIdentity` of type `Service`. Consumers use that to tell expiry deletes from user deletes." }
+    why: { vi: "Lần xóa do TTL (time to live, hạn sống của item) là việc của tiến trình nền DynamoDB, không phải request `DeleteItem` của bạn, nên không tốn WCU (write capacity unit, đơn vị ghi) ở Region nơi item hết hạn. Nó vẫn vào Streams như mọi lần xóa khác, kèm `userIdentity` loại `Service`. Bộ xử lý dựa vào đó để tách xóa do hết hạn với xóa do người dùng.", en: "A TTL (time to live) delete is done by DynamoDB's background process, not by a `DeleteItem` request of yours, so it consumes no WCU (write capacity unit) in the Region where the item expires. It still reaches Streams like any other delete, with a `userIdentity` of type `Service`. Consumers use that to tell expiry deletes from user deletes." }
 ---
 
 ## Mở bài
@@ -151,7 +151,7 @@ So với thời điểm tính bằng mili giây:
 {"op": "Query", "input": {"TableName": "Sessions", "KeyConditionExpression": "pk = :u", "FilterExpression": "expires_at > :now", "ExpressionAttributeValues": {":u": {"S": "USER#u2"}, ":now": {"N": "1795132800"}}}}
 ```
 
-Câu sai ra 0 phiên mà không báo lỗi. Ngược lại, nếu lưu `expires_at` bằng mili giây, TTL coi đó là một thời điểm rất xa trong tương lai và không bao giờ xóa.
+Câu sai ra 0 phiên mà không báo lỗi: `1795132800000` lớn cỡ 1000 lần mọi `expires_at` tính bằng giây, nên `expires_at > :now` sai với mọi phiên. Ngược lại, nếu lưu `expires_at` bằng mili giây, TTL coi đó là một thời điểm rất xa trong tương lai và không bao giờ xóa.
 
 Lùi hạn một phiên đã hết hạn:
 
@@ -253,7 +253,7 @@ Comparing with a time in milliseconds:
 {"op": "Query", "input": {"TableName": "Sessions", "KeyConditionExpression": "pk = :u", "FilterExpression": "expires_at > :now", "ExpressionAttributeValues": {":u": {"S": "USER#u2"}, ":now": {"N": "1795132800"}}}}
 ```
 
-The wrong query returns 0 sessions with no error. The other way round, if you store `expires_at` in milliseconds, TTL reads it as a time far in the future and never deletes.
+The wrong query returns 0 sessions with no error: `1795132800000` is about 1000 times any `expires_at` in seconds, so `expires_at > :now` is false for every session. The other way round, if you store `expires_at` in milliseconds, TTL reads it as a time far in the future and never deletes.
 
 Pushing back an expired session:
 

@@ -65,8 +65,8 @@ lab:
         vi: "Equality trước (`store`, `status`), rồi trường sắp (`createdAt`), rồi trường khoảng (`total`)."
         en: "Equality first (`store`, `status`), then the sort field (`createdAt`), then the range field (`total`)."
       fact:
-        vi: "Docs chính thức (ESR): đặt trường sắp trước trường khoảng để tránh sắp trong bộ nhớ. Bước này chấm theo quy tắc, vì mingo không có index hay explain."
-        en: "The official docs (ESR): put the sort field before the range field to avoid an in-memory sort. This step is graded by rule, since mingo has no index or explain."
+        vi: "Docs chính thức nêu luật ESR (Equality, Sort, Range: trường so bằng, rồi trường sắp xếp, rồi trường so khoảng): đặt trường sắp trước trường khoảng để tránh sắp trong bộ nhớ. Bước này chỉ chấm thứ tự trường của index theo luật đó, vì mingo không có index hay explain."
+        en: "The official docs give the ESR rule (Equality, Sort, Range: equality fields, then sort fields, then range fields): put the sort field before the range field to avoid an in-memory sort. This step grades only the index's field order against that rule, since mingo has no index or explain."
     - name: { vi: "Truy vấn được phủ", en: "A covered query" }
       task:
         vi: "Đội kế toán đã có index `{ store: 1, status: 1, total: 1 }`. Lấy `store` và `total` của mọi đơn `paid` ở cửa hàng `S2`, viết sao cho index đó phủ được truy vấn (MongoDB không phải đọc tài liệu)."
@@ -103,8 +103,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì có `.sort()` thì phải sắp. Nhưng khi hai trường bằng đã cố định một khối, các khóa `createdAt` trong khối đã có thứ tự; docs chính thức nói kế hoạch không có stage `SORT` nghĩa là thứ tự lấy từ index."
-      en: "It sounds right that `.sort()` means sorting. But once the two equality fields fix one block, the `createdAt` keys inside it are already in order; the docs say a plan without a `SORT` stage means the order comes from the index."
+      vi: "Có `.sort()` chưa có nghĩa là có stage `SORT`. Với index bước 2, `store` S1 và `status` paid cố định một khối, và trong khối đó các khóa đã xếp theo `createdAt` giảm dần, vì `createdAt` đứng ngay sau hai trường bằng và trước `total`. MongoDB đọc khối theo thứ tự đó và chỉ lọc `total`; docs chính thức nói kế hoạch không có stage `SORT` nghĩa là thứ tự lấy từ index."
+      en: "A `.sort()` does not imply a `SORT` stage. With the step 2 index, `store` S1 and `status` paid fix one block, and inside it the keys are already ordered by `createdAt` descending, because `createdAt` sits right after the two equality fields and before `total`. MongoDB reads the block in that order and only filters on `total`; the docs say a plan without a `SORT` stage means the order comes from the index."
   - q:
       vi: "Kết luận: với truy vấn bước 3 trên `mongod` thật, `totalDocsExamined` trong explain bằng bao nhiêu?"
       en: "Conclusion: for the step 3 query on a real `mongod`, what is `totalDocsExamined` in the explain?"
@@ -114,8 +114,8 @@ quiz:
       - { vi: "Bằng số tài liệu của collection", en: "The number of documents in the collection" }
     answer: 0
     why:
-      vi: "Truy vấn được phủ trả kết quả chỉ từ index: `IXSCAN` không nằm dưới `FETCH`, nên không đọc tài liệu nào. Thiếu `_id: 0` thì MongoDB phải đọc tài liệu để lấy `_id`."
-      en: "A covered query answers from the index alone: the `IXSCAN` is not under a `FETCH`, so no document is read. Without `_id: 0`, MongoDB must read the documents to get `_id`."
+      vi: "Truy vấn được phủ trả kết quả chỉ từ index: `IXSCAN` không nằm dưới `FETCH`, nên không đọc tài liệu nào. \"Bằng số tài liệu trả về\" là con số của truy vấn chưa được phủ, ví dụ khi thiếu `_id: 0` thì MongoDB phải đọc từng tài liệu để lấy `_id`. \"Bằng số tài liệu của collection\" chỉ xảy ra khi quét cả collection, mà ở đây index lọc thẳng `store` và `status`."
+      en: "A covered query answers from the index alone: the `IXSCAN` is not under a `FETCH`, so no document is read. \"The number returned\" is what a query that is not covered shows, e.g. without `_id: 0` MongoDB must read each document to get `_id`. \"The number in the collection\" happens only with a whole-collection scan, while here the index filters `store` and `status` directly."
 ---
 ## Mở bài
 

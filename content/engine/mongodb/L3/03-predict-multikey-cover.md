@@ -38,8 +38,8 @@ predict:
   answer: 1
   trap: 0
   why:
-    vi: "Nghe hợp lý vì đó là luật phủ chung, nhưng index multikey chỉ giữ từng phần tử, không giữ cả mảng. Theo docs chính thức, nó phủ được truy vấn chỉ khi truy vấn không trả về trường mảng và không dùng `$elemMatch`. Projection ở đây trả `genres`, nên không phủ. Đổi thành `{ _id: 0, title: 1 }` thì được phủ."
-    en: "It sounds right because that is the general covering rule, but a multikey index holds single elements, not the whole array. Per the docs, it covers a query only when the query does not return the array field and does not use `$elemMatch`. This projection returns `genres`, so it is not covered. With `{ _id: 0, title: 1 }` it is covered."
+    vi: "\"Mọi trường đều nằm trong index\" là luật phủ chung (covered query: trả lời chỉ từ index, không mở tài liệu), nhưng index multikey giữ từng phần tử của `genres`, không giữ cả mảng. Projection ở đây trả `genres` là cả mảng, MongoDB không dựng lại được từ các khóa lẻ nên phải mở tài liệu. Nói multikey không bao giờ phủ được thì sai: đổi projection thành `{ _id: 0, title: 1 }`, không trả trường mảng và không dùng `$elemMatch`, thì truy vấn được phủ."
+    en: "\"Every field is in the index\" is the general covering rule (covered query: answered from the index alone, no document opened), but a multikey index holds single elements of `genres`, not the whole array. This projection returns `genres` as a whole array, which MongoDB cannot rebuild from the single keys, so it must open the documents. Saying multikey can never cover is wrong: with the projection `{ _id: 0, title: 1 }`, no array field returned and no `$elemMatch`, the query is covered."
   recorded:
     tier: docs
     server: MongoDB

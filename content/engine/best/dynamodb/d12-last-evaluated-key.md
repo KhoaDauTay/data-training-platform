@@ -57,8 +57,8 @@ quiz:
       - { vi: "Request bị lỗi", en: "The request failed" }
     answer: 1
     why:
-      vi: "`Limit` và giới hạn 1 MB áp lên item **đọc**, trước khi lọc. Một trang rỗng vẫn có thể còn trang sau; chỉ khi không còn `LastEvaluatedKey` mới là hết."
-      en: "`Limit` and the 1 MB cap apply to the items **read**, before the filter. An empty page can still have pages after it; only a missing `LastEvaluatedKey` means the end."
+      vi: "`Limit` và giới hạn 1 MB áp lên item **đọc**, trước khi lọc: DynamoDB đọc 3 item, cả 3 bị filter loại, nên `Count` 0. Request không lỗi, và chưa phải hết: còn `LastEvaluatedKey` (khóa để đọc trang tiếp) thì còn trang sau; chỉ khi không còn nó mới là hết."
+      en: "`Limit` and the 1 MB cap apply to the items **read**, before the filter: DynamoDB read 3 items, the filter dropped all 3, so `Count` is 0. The request did not fail, and this is not the end: a `LastEvaluatedKey` (the key to read the next page) means more pages; only its absence means the end."
 ---
 
 ## Ý chính

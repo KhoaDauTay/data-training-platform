@@ -82,8 +82,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: 'Nghe hợp lý vì `UPDATE` của SQL không tạo dòng, nhưng `UpdateItem` là upsert: khóa chưa có thì item được tạo với khóa đó cộng các thuộc tính trong `SET`. Muốn chặn, thêm điều kiện `attribute_exists` (L2).'
-      en: 'It sounds right because SQL `UPDATE` never creates a row, but `UpdateItem` is an upsert: a missing key creates an item with that key plus the attributes in `SET`. To prevent it, add an `attribute_exists` condition (L2).'
+      vi: 'Nghe hợp lý vì `UPDATE` của SQL không tạo dòng, nhưng `UpdateItem` là upsert (sửa nếu có, tạo nếu chưa): khóa `978-0-99` chưa có thì item được tạo với khóa đó cộng các thuộc tính trong `SET`. Không có `ValidationException` vì request hợp lệ: khóa đủ phần, đúng kiểu; DynamoDB không đòi khóa phải tồn tại trước. Muốn chặn, thêm điều kiện `attribute_exists` (L2).'
+      en: 'It sounds right because SQL `UPDATE` never creates a row, but `UpdateItem` is an upsert (update if present, create if not): key `978-0-99` does not exist, so an item is created with that key plus the attributes in `SET`. There is no `ValidationException` because the request is valid: the key is complete and correctly typed; DynamoDB does not require the key to exist first. To prevent it, add an `attribute_exists` condition (L2).'
   - q:
       vi: '`DeleteItem` một khóa không tồn tại. DynamoDB trả về gì?'
       en: '`DeleteItem` on a key that does not exist. What does DynamoDB return?'
@@ -97,8 +97,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: 'Nghe hợp lý vì xóa thứ không có trông như một lỗi, nhưng DynamoDB coi đó là thành công. Muốn biết item có thật bị xóa không, dùng `ReturnValues: "ALL_OLD"` hoặc một điều kiện.'
-      en: 'It sounds right because deleting something that is not there looks like a mistake, but DynamoDB treats it as a success. To know whether an item was really deleted, use `ReturnValues: "ALL_OLD"` or a condition.'
+      vi: 'Nghe hợp lý vì xóa thứ không có trông như một lỗi, nhưng DynamoDB coi đó là thành công: sau lệnh, khóa đó không có item, đúng như bạn muốn. Nó cũng không bao giờ xóa item gần nhất, vì `DeleteItem` so khóa đầy đủ, đúng từng ký tự. Muốn biết item có thật bị xóa không, dùng `ReturnValues: "ALL_OLD"` (phản hồi trống nghĩa là không có gì bị xóa) hoặc điều kiện `attribute_exists` để lệnh bị từ chối khi khóa không có.'
+      en: 'It sounds right because deleting something that is not there looks like a mistake, but DynamoDB treats it as a success: afterwards that key holds no item, which is what you asked for. It never deletes the closest item either, because `DeleteItem` matches the full key exactly. To know whether an item was really deleted, use `ReturnValues: "ALL_OLD"` (an empty response means nothing was deleted) or an `attribute_exists` condition so the command is refused when the key is missing.'
 ---
 ## Mở bài
 

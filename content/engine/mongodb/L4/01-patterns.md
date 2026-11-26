@@ -32,8 +32,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì bucket cũng chia nhỏ dữ liệu, nhưng vấn đề chỉ nằm ở vài sách bất thường. Outlier giữ dạng cũ cho số đông sách bình thường và chỉ tách phần dư của sách nổi tiếng, nên mã đọc sách thường không đổi."
-      en: "It sounds right because bucket also splits data, but the problem is only a few unusual books. Outlier keeps the usual shape for the many normal books and splits off only the popular book's overflow, so the code that reads normal books does not change."
+      vi: "Bucket cũng chia nhỏ dữ liệu nên nghe hợp lý, nhưng ở đây chỉ một cuốn sách quá to, các sách khác vẫn bình thường: gom đánh giá của mọi sách theo tháng sẽ đổi dạng tài liệu và mã đọc của tất cả sách. Outlier giữ dạng cũ cho số đông, gắn một cờ cho riêng cuốn sách đó và chuyển phần đánh giá dư sang tài liệu riêng, nên mã đọc sách thường không đổi. Archive chuyển dữ liệu cũ, ít ai đọc, đi chỗ khác; đánh giá của một sách mới đang được đọc nhiều, nên không hợp."
+      en: "Bucket also splits data, so it sounds right, but here only one book is too large and the others are normal: grouping the reviews of every book by month would change the document shape and the reading code of all books. Outlier keeps the usual shape for the many, sets a flag on that one book and moves its extra reviews to separate documents, so the code that reads normal books does not change. Archive moves old, rarely read data elsewhere; the reviews of a new book are read a lot, so it does not fit."
   - q:
       vi: "Dữ liệu cảm biến đo mỗi phút. Docs chính thức khuyên gì trước khi tự viết mẫu bucket?"
       en: "Sensor data arrives every minute. What do the docs suggest before hand-writing the bucket pattern?"
@@ -43,8 +43,8 @@ quiz:
       - { vi: "Dùng transaction cho mỗi phép đo", en: "Use a transaction for every measurement" }
     answer: 0
     why:
-      vi: "Trang Group Data ghi: collection time series áp dụng mẫu bucket tự động và hợp với hầu hết trường hợp dùng bucket."
-      en: "The Group Data page says time series collections apply the bucket pattern automatically and suit most bucket use cases."
+      vi: "Trang Group Data của docs ghi: collection time series tự gom các phép đo thành bucket bên trong, và hợp với hầu hết trường hợp bạn định tự viết bucket. Một tài liệu cho mỗi phép đo chính là dạng chưa gom: mỗi cảm biến sinh 60 × 24 = 1.440 tài liệu mỗi ngày. Transaction chỉ giúp nhiều lệnh ghi cùng thành công hoặc cùng thất bại; ghi một phép đo là ghi một tài liệu, vốn đã nguyên tử, nên transaction chỉ thêm chi phí."
+      en: "The Group Data page of the docs says a time series collection groups the readings into buckets internally and suits most cases where you would hand-write a bucket. One document per measurement is the ungrouped shape: each sensor makes 60 × 24 = 1,440 documents a day. A transaction only makes several writes succeed or fail together; recording one measurement writes one document, which is already atomic, so a transaction only adds cost."
 ---
 ## Mở bài
 

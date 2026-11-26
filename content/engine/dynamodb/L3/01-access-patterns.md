@@ -43,8 +43,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: Nghe hợp lý vì đó là cách làm quen với SQL, nhưng DynamoDB không có JOIN để ghép các bảng chuẩn hóa lúc đọc. AWS khuyên không thiết kế schema khi chưa biết những câu hỏi nó cần trả lời; mẫu truy cập quyết định khóa và index.
-      en: It sounds right because that is the familiar SQL way, but DynamoDB has no JOIN to put normalised tables back together at read time. AWS advises not to design the schema until you know the questions it must answer; access patterns decide the keys and indexes.
+      vi: 'Sơ đồ chuẩn hóa là cách quen với SQL, nhưng DynamoDB không có JOIN: năm bảng theo năm thực thể thì trang khách hàng phải gửi năm request. DynamoDB cũng không có khóa tự tăng, và index thêm sau vẫn phải chọn khóa theo một câu hỏi cụ thể. Vì vậy AWS bảo liệt kê mẫu truy cập (câu hỏi ứng dụng sẽ hỏi) trước; mỗi câu hỏi quyết định partition key, sort key và index để nó thành một `GetItem` hoặc một `Query`.'
+      en: 'A normalised diagram is the familiar SQL way, but DynamoDB has no JOIN: five tables for five entities means the customer page sends five requests. DynamoDB has no auto-increment key either, and an index added later still needs keys chosen for one specific question. So AWS says to list the access patterns (the questions the app will ask) first; each question decides the partition key, sort key and indexes so that it becomes one `GetItem` or one `Query`.'
   - q:
       vi: Partition key nào dễ gây partition nóng nhất cho bảng đơn hàng có hàng triệu đơn mỗi ngày?
       en: Which partition key is most likely to create a hot partition for an order table with millions of orders a day?
@@ -57,8 +57,8 @@ quiz:
         en: '`orderId`'
     answer: 1
     why:
-      vi: Mọi đơn của cùng một ngày dồn vào một giá trị partition key, nên một partition gánh toàn bộ lượt ghi của ngày đó. Khóa có nhiều giá trị khác nhau và được truy cập đều thì rải tải tốt hơn.
-      en: Every order of the same day lands on one partition key value, so one partition takes all of that day's writes. Keys with many distinct, evenly used values spread the load better.
+      vi: 'Với `orderDate`, hàng triệu đơn của ngày `2026-10-31` chung một giá trị partition key, nên cùng rơi vào một partition (phân vùng vật lý). Một partition chỉ ghi được khoảng 1 000 WCU (write capacity unit, đơn vị ghi) mỗi giây, nên phần vượt bị throttle (DynamoDB từ chối vì vượt mức) dù cả bảng còn dư capacity. `customerId` và `orderId` có hàng triệu giá trị, mỗi giá trị nhận ít lượt ghi, nên tải rải đều trên nhiều partition.'
+      en: 'With `orderDate`, the millions of orders of `2026-10-31` share one partition key value, so they all land on one partition. One partition can write only about 1,000 WCU (write capacity units) per second, so the rest is throttled (refused by DynamoDB for going over the limit) even when the table as a whole has capacity to spare. `customerId` and `orderId` have millions of values, each taking few writes, so the load spreads over many partitions.'
 ---
 ## Mở bài
 
@@ -137,7 +137,7 @@ PK = 2026-10-31   SK = ORDER#O-901
 PK = CUST#C-01    SK = ORDER#2026-10-31#O-901
 ```
 
-Mọi lượt ghi trong ngày dồn vào một partition và chạm trần của nó, dù cả bảng còn dư capacity.
+Mọi lượt ghi trong ngày dồn vào một partition (phân vùng vật lý) và chạm trần của nó (khoảng 1 000 WCU mỗi giây), nên bị throttle (DynamoDB từ chối vì vượt mức) dù cả bảng còn dư capacity. Đưa ngày vào sort key thì vẫn sắp theo ngày, còn tải rải theo khách.
 
 ## Tóm tắt
 
@@ -225,7 +225,7 @@ PK = 2026-10-31   SK = ORDER#O-901
 PK = CUST#C-01    SK = ORDER#2026-10-31#O-901
 ```
 
-Every write of the day lands on one partition and hits its ceiling, even when the table as a whole has capacity to spare.
+Every write of the day lands on one partition and hits its ceiling (about 1,000 WCU per second), so it is throttled (refused by DynamoDB for going over the limit) even when the table as a whole has capacity to spare. With the date in the sort key, orders still sort by date while the load spreads by customer.
 
 ## Recap
 

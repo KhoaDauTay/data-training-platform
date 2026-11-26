@@ -80,14 +80,14 @@ quiz:
       - { vi: "Không cần lưu, DynamoDB tự nối hai bảng", en: "No need, DynamoDB joins the two tables itself" }
     answer: 1
     trap: 0
-    why: { vi: "Hai item nghe hợp lý vì mỗi chiều là một Query riêng, nhưng ứng dụng chỉ ghi một item cạnh. GSI `ByTarget` đảo `pk` và `sk`, và DynamoDB tự cập nhật GSI (nhất quán cuối cùng) mỗi khi bảng đổi.", en: "Two items sounds right because each direction is its own Query, but the application writes one edge item only. The GSI `ByTarget` swaps `pk` and `sk`, and DynamoDB updates the GSI itself (eventually consistent) whenever the table changes." }
+    why: { vi: "Hai item nghe hợp lý vì mỗi chiều là một Query riêng, nhưng ghi hai lần thì phải giữ hai bản khớp nhau bằng tay. Ứng dụng chỉ ghi một item cạnh (`pk` = học viên, `sk` = khóa học); GSI (global secondary index, index phụ toàn bảng) `ByTarget` lấy `sk` làm partition key, và DynamoDB tự chép item sang GSI mỗi khi bảng đổi, theo kiểu nhất quán cuối (eventually consistent). DynamoDB không nối bảng như SQL, nên \"tự nối\" không có.", en: "Two items sounds right because each direction is its own Query, but writing twice means keeping two copies in sync by hand. The application writes one edge item (`pk` = student, `sk` = course); the GSI (global secondary index) `ByTarget` uses `sk` as its partition key, and DynamoDB copies the item to the GSI itself whenever the table changes, eventually consistent. DynamoDB has no SQL-style join, so \"joins by itself\" does not exist." }
   - q: { vi: "Query `pk = STU#s02` không có điều kiện trên sort key trả mấy item?", en: "How many items does a Query on `pk = STU#s02` with no sort key condition return?" }
     options:
       - { vi: "3, các khóa học", en: "3, the courses" }
       - { vi: "4: hồ sơ học viên cùng 3 cạnh, vì chúng chung partition key", en: "4: the student profile plus 3 edges, since they share the partition key" }
       - { vi: "22, cả bảng", en: "22, the whole table" }
     answer: 1
-    why: { vi: "Item mô tả nút có `pk = sk = STU#s02`, nằm chung item collection với các cạnh. Thêm `begins_with(sk, :c)` với `CRS#` để chỉ lấy cạnh.", en: "The node's describing item has `pk = sk = STU#s02` and sits in the same item collection as the edges. Add `begins_with(sk, :c)` with `CRS#` to get only the edges." }
+    why: { vi: "3 nghe hợp lý vì `STU#s02` ghi danh 3 khóa, nhưng item hồ sơ của học viên có `pk = sk = STU#s02`, nằm chung item collection (nhóm item cùng partition key) với 3 cạnh. Query không điều kiện sort key trả cả collection: 1 + 3 = 4. Nó không trả 22 item của cả bảng, vì Query chỉ đọc đúng một partition key. Thêm `begins_with(sk, :c)` với `CRS#` để chỉ lấy cạnh.", en: "3 sounds right because `STU#s02` is enrolled in 3 courses, but the student's profile item has `pk = sk = STU#s02` and sits in the same item collection (the items sharing a partition key) as the 3 edges. A Query with no sort key condition returns the whole collection: 1 + 3 = 4. It does not return the table's 22 items, because a Query reads exactly one partition key. Add `begins_with(sk, :c)` with `CRS#` to get only the edges." }
 ---
 ## Mở bài
 

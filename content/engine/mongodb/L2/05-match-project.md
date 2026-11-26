@@ -71,8 +71,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: 'Nghe hợp lý vì `$project` với một trường cho ra đúng như vậy, nhưng `$set` (hay `$addFields`) giữ mọi trường cũ và chỉ thêm hoặc ghi đè trường được nêu.'
-      en: 'It sounds right because a `$project` with one field gives exactly that, but `$set` (or `$addFields`) keeps every existing field and only adds or overwrites the ones it names.'
+      vi: '"Chỉ `_id` và `big`" là kết quả của `$project`, không phải `$set`: `$set` (hay `$addFields`) giữ mọi trường cũ và chỉ thêm hoặc ghi đè trường được nêu. Nó cũng không xét tài liệu đã có `big` hay chưa: giá trị `true` là hằng, nên mọi tài liệu đi qua stage đều nhận `big: true`; tài liệu đã có `big` thì bị ghi đè.'
+      en: '"Only `_id` and `big`" is what `$project` gives, not `$set`: `$set` (or `$addFields`) keeps every existing field and only adds or overwrites the ones it names. Nor does it check whether a document already has `big`: `true` is a constant, so every document passing the stage gets `big: true`; one that already had `big` is overwritten.'
   - q:
       vi: 'Stage `{ $project: { lines: 0 } }` trả về gì?'
       en: 'What does the stage `{ $project: { lines: 0 } }` return?'
@@ -85,8 +85,8 @@ quiz:
         en: A field `lines` equal to 0
     answer: 0
     why:
-      vi: '`0` (hoặc `false`) là loại trừ: giữ mọi trường khác. `1` là chọn: chỉ giữ các trường được nêu và `_id`.'
-      en: '`0` (or `false`) excludes: every other field stays. `1` includes: only the named fields and `_id` stay.'
+      vi: '`0` (hoặc `false`) là loại trừ: bỏ `lines`, giữ mọi trường khác như `customer`, `total`. "Chỉ `_id`" là cách đọc nhầm sang kiểu chọn, nơi `1` chỉ giữ các trường được nêu cộng `_id`. Muốn tạo trường có giá trị số 0 thì phải viết biểu thức `{ $literal: 0 }`; số `0` trần trong `$project` luôn là cờ loại trừ.'
+      en: '`0` (or `false`) excludes: `lines` is dropped and every other field, such as `customer` and `total`, stays. "Only `_id`" mixes it up with the include style, where `1` keeps only the named fields plus `_id`. To create a field holding the number 0 you write the expression `{ $literal: 0 }`; a bare `0` in `$project` is always the exclude flag.'
 ---
 ## Mở bài
 

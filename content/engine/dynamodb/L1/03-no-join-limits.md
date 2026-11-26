@@ -45,8 +45,8 @@ quiz:
         en: Each call returns at most 1 MB plus a `LastEvaluatedKey`; call again from that key.
     answer: 2
     why:
-      vi: Kết quả mỗi lần Query hoặc Scan tối đa 1 MB. Phần còn lại lấy bằng cách gửi `LastEvaluatedKey` vào `ExclusiveStartKey` của lần gọi sau.
-      en: Each Query or Scan call returns at most 1 MB. You get the rest by passing `LastEvaluatedKey` as the next call's `ExclusiveStartKey`.
+      vi: 'Mỗi lần gọi Query hoặc Scan đọc tối đa 1 MB rồi dừng. Đó không phải lỗi: phản hồi trả phần đã đọc kèm `LastEvaluatedKey`, khóa của item cuối cùng đã đọc. Gửi khóa đó vào `ExclusiveStartKey` của lần gọi sau để đọc tiếp; 3 MB cần ít nhất 3 lần gọi. DynamoDB không bao giờ trả cả 3 MB trong một phản hồi.'
+      en: 'Each Query or Scan call reads at most 1 MB and stops. That is not an error: the response holds what was read plus a `LastEvaluatedKey`, the key of the last item read. Pass that key as the next call''s `ExclusiveStartKey` to continue; 3 MB needs at least 3 calls. DynamoDB never returns all 3 MB in one response.'
   - q:
       vi: Trang báo cáo cần "doanh thu theo tháng của mọi khách". DynamoDB làm thế nào?
       en: A report page needs "revenue per month across all customers". How does DynamoDB do it?
@@ -60,8 +60,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: Nghe hợp lý vì PartiQL của DynamoDB trông giống SQL, nhưng DynamoDB không có JOIN hay GROUP BY phía server. Mô hình đúng là tính sẵn lúc ghi, hoặc phân tích ở nơi khác.
-      en: It sounds right because DynamoDB PartiQL looks like SQL, but DynamoDB has no server-side JOIN or GROUP BY. The right model is to precompute at write time, or analyse elsewhere.
+      vi: Nghe hợp lý vì PartiQL của DynamoDB trông giống SQL, nhưng DynamoDB không có JOIN hay GROUP BY phía server. Mỗi request chỉ chạm một item collection, còn "mọi khách" trải trên mọi item collection, nên server không gom được. Cách đúng là cộng sẵn lúc ghi vào một item tổng như `MONTH#2026-10`, rồi đọc nó bằng một GetItem; báo cáo lớn hơn thì xuất dữ liệu sang công cụ phân tích.
+      en: It sounds right because DynamoDB PartiQL looks like SQL, but DynamoDB has no server-side JOIN or GROUP BY. Each request touches only one item collection, while "all customers" spans every item collection, so the server cannot gather them. The right way is to add up at write time into a total item such as `MONTH#2026-10`, then read it with one GetItem; for bigger reports, export the data to an analytics tool.
 demo_setup: |
   {"tables": [{"TableName":"Shop","KeySchema":[{"AttributeName":"PK","KeyType":"HASH"},{"AttributeName":"SK","KeyType":"RANGE"}],"AttributeDefinitions":[{"AttributeName":"PK","AttributeType":"S"},{"AttributeName":"SK","AttributeType":"S"}],"BillingMode":"PAY_PER_REQUEST"}],
    "items": {"Shop": [
@@ -154,7 +154,7 @@ PartiQL của DynamoDB chỉ đọc một bảng (hoặc một index) mỗi câu
 {"op": "Query", "input": {"TableName": "Shop", "KeyConditionExpression": "PK = :pk", "ExpressionAttributeValues": {":pk": {"S": "CUST#C-01"}}}}
 ```
 
-Cùng ba item, nhưng `ScannedCount` của Scan là 6 (cả bảng), của Query là 3. Ở đây Scan tốn 0.5 RCU như Query, vì sáu item nhỏ nằm gọn trong một khối 4 KB; với bảng thật, số item Scan phải đọc tăng theo cả bảng, còn Query chỉ tăng theo một khách.
+Cùng ba item, nhưng `ScannedCount` của Scan là 6 (cả bảng), của Query là 3. Ở đây Scan tốn 0.5 RCU (read capacity unit, đơn vị đọc) như Query: sáu item nhỏ cộng lại vẫn nằm gọn trong một khối 4 KB, và đọc mặc định là nhất quán cuối (eventually consistent), nên 1 khối × 0.5 = 0.5 RCU. Với bảng thật, số item Scan phải đọc tăng theo cả bảng, còn Query chỉ tăng theo một khách.
 
 ## Tóm tắt
 
@@ -246,7 +246,7 @@ Reading the whole table and grouping in code instead of reading one item collect
 {"op": "Query", "input": {"TableName": "Shop", "KeyConditionExpression": "PK = :pk", "ExpressionAttributeValues": {":pk": {"S": "CUST#C-01"}}}}
 ```
 
-Same three items, but the Scan has a `ScannedCount` of 6 (the whole table) and the Query 3. Here the Scan costs 0.5 RCU like the Query, because six small items fit in one 4 KB block; on a real table the items a Scan reads grow with the whole table, while a Query grows only with one customer.
+Same three items, but the Scan has a `ScannedCount` of 6 (the whole table) and the Query 3. Here the Scan costs 0.5 RCU (read capacity unit) like the Query: the six small items added up still fit in one 4 KB block, and reads are eventually consistent by default, so 1 block × 0.5 = 0.5 RCU. On a real table the items a Scan reads grow with the whole table, while a Query grows only with one customer.
 
 ## Recap
 

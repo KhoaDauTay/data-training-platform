@@ -80,8 +80,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: 'Nghe hợp lý vì với ít nhóm, kết quả thường trông như đã sắp theo khóa, nhưng docs của `$group` nói rõ thứ tự ra không được bảo đảm. Báo cáo cần thứ tự thì thêm `$sort`, và sắp theo khóa không trùng.'
-      en: 'It sounds right because with few groups the output often looks sorted by key, but the `$group` docs state that its output order is not guaranteed. A report that needs an order adds `$sort`, on a unique key.'
+      vi: 'Với hai nhóm `S1`, `S2`, kết quả thường trông như đã sắp theo khóa, nhưng tài liệu của MongoDB nói rõ `$group` không bảo đảm thứ tự ra; lần chạy khác hoặc máy chủ khác có thể đảo. `$group` cũng không tự sắp theo `revenue`: nó chỉ tính tổng, không xếp hạng. Báo cáo cần thứ tự thì thêm `$sort` sau `$group`, trên một khóa không trùng như `_id`.'
+      en: 'With two groups `S1` and `S2` the output often looks sorted by key, but the MongoDB docs state that `$group` does not guarantee its output order; another run or another server may flip it. Nor does `$group` sort by `revenue`: it only computes the sums, it does not rank them. A report that needs an order adds `$sort` after `$group`, on a unique key such as `_id`.'
   - q:
       vi: 'Trong `$group`, `{ $sum: 1 }` và `{ $sum: "$total" }` khác nhau thế nào?'
       en: 'In `$group`, how do `{ $sum: 1 }` and `{ $sum: "$total" }` differ?'
@@ -94,8 +94,8 @@ quiz:
         en: 'The first adds up the first field of each document'
     answer: 0
     why:
-      vi: '`$sum` cộng giá trị biểu thức của từng tài liệu: hằng `1` cho mỗi tài liệu thành phép đếm, `"$total"` cộng giá trị trường.'
-      en: '`$sum` adds up the expression for each document: the constant `1` per document becomes a count, `"$total"` adds the field values.'
+      vi: '`$sum` cộng giá trị biểu thức của từng tài liệu trong nhóm. Hằng `1` cho mỗi tài liệu 1, nên tổng là số tài liệu (cửa hàng `S1` có 4 đơn → 4); `"$total"` cộng giá trị trường (`S1` → 980000), nên hai cái không giống nhau. `1` là một số, không phải vị trí trường: MongoDB không có cách đọc "trường đầu tiên" trong `$sum`.'
+      en: '`$sum` adds up the expression for each document in the group. The constant `1` gives each document 1, so the sum is the number of documents (store `S1` has 4 orders → 4); `"$total"` adds the field values (`S1` → 980000), so the two differ. `1` is a number, not a field position: `$sum` has no way to read "the first field".'
 ---
 ## Mở bài
 

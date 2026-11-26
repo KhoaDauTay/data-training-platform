@@ -114,8 +114,8 @@ quiz:
         en: The write did not happen, so it cost nothing; ignore it and move on.
     answer: 1
     why:
-      vi: 'Một lỗi nghe như lỗi hệ thống nên dễ muốn gửi lại. Nhưng đây là optimistic locking làm đúng việc: điều kiện `price = :old` sai nghĩa là đồng nghiệp đã đổi giá. Gửi lại y hệt vẫn bị từ chối. Lần bị từ chối vẫn tốn WCU, nên cũng không phải "không tốn gì".'
-      en: 'An exception sounds like a system fault, so resending is tempting. But this is optimistic locking doing its job: a false `price = :old` means a colleague changed the price. Sending the same request again is rejected again. The rejected write still consumed WCU, so it is not free either.'
+      vi: 'Một lỗi nghe như lỗi hệ thống nên dễ muốn gửi lại. Nhưng đây là optimistic locking làm đúng việc: điều kiện `price = :old` sai nghĩa là đồng nghiệp đã đổi giá. Gửi lại y hệt vẫn bị từ chối, vì giá trong bảng không còn là `160000`. Lần bị từ chối vẫn tốn WCU (write capacity unit, đơn vị ghi) theo cỡ item đang có, tối thiểu 1, ở đây cuốn `978-0-07` dưới 1 KB nên là 1 WCU, nên cũng không phải "không tốn gì". Đọc lại giá mới rồi mới quyết định có hạ giá nữa không.'
+      en: 'An exception sounds like a system fault, so resending is tempting. But this is optimistic locking doing its job: a false `price = :old` means a colleague changed the price. Sending the same request again is rejected again, because the price in the table is no longer `160000`. The rejected write still consumed WCU (write capacity unit) by the size of the existing item, at least 1, here 1 WCU since book `978-0-07` is under 1 KB, so it is not free either. Read the new price, then decide whether to lower it at all.'
 ---
 
 ## Mở bài

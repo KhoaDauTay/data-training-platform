@@ -32,8 +32,8 @@ quiz:
     answer: 2
     trap: 1
     why:
-      vi: Nghe hợp lý nếu coi `orderId` là khóa riêng như cột `id` của SQL, nhưng với khóa kép, cặp (partition key, sort key) phải duy nhất. Ghi item thứ hai cùng cặp khóa sẽ thay item cũ.
-      en: It sounds right if `orderId` is a key on its own like an SQL `id` column, but with a composite key the pair (partition key, sort key) must be unique. Writing a second item with the same pair replaces the old one.
+      vi: Nghe hợp lý nếu coi `orderId` là khóa riêng như cột `id` của SQL, nhưng với khóa kép, chỉ cặp (partition key, sort key) phải duy nhất. Hai khách khác nhau có cùng `orderId` là hai cặp khác nhau, nên cùng tồn tại được; một khách có nhiều `orderId` cũng vậy, đó chính là item collection của khách đó. Chỉ khi trùng cả hai phần thì ghi item thứ hai sẽ thay item cũ.
+      en: It sounds right if `orderId` is a key on its own like an SQL `id` column, but with a composite key only the pair (partition key, sort key) must be unique. Two customers with the same `orderId` are two different pairs, so both can exist; one customer with many `orderId` values is fine too, that is the customer's item collection. Only when both parts match does writing a second item replace the old one.
   - q:
       vi: Vì sao mọi đơn của khách `C-07` đọc được trong một request, theo thứ tự `orderId`?
       en: Why can every order of customer `C-07` be read in one request, in `orderId` order?
@@ -47,8 +47,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: Nghe hợp lý vì kết quả ra đúng thứ tự, nhưng cả bảng không được sắp. Hàm băm trên partition key chọn partition. Trong partition, các item cùng partition key (một item collection) được sắp theo sort key. Cả bảng không có thứ tự chung.
-      en: It sounds right because the result comes back in order, but the table as a whole is not sorted. The hash of the partition key picks the partition. Inside it, items with the same partition key (one item collection) are sorted by sort key. The table as a whole has no order.
+      vi: 'Nghe hợp lý vì kết quả ra đúng thứ tự, nhưng cả bảng không được sắp. Hàm băm trên partition key chọn partition (phân vùng vật lý). Trong partition, các item cùng partition key `C-07` (một item collection) được lưu cạnh nhau và sắp theo sort key `orderId`, nên một Query đọc liền một mạch. DynamoDB cũng không tự tạo index trên mọi thuộc tính: ngoài khóa chính, chỉ có index bạn tự khai báo.'
+      en: 'It sounds right because the result comes back in order, but the table as a whole is not sorted. The hash of the partition key picks the partition. Inside it, the items with partition key `C-07` (one item collection) are stored next to each other and sorted by the sort key `orderId`, so one Query reads them in one run. DynamoDB does not index every attribute either: beyond the primary key, there are only the indexes you declare yourself.'
 demo_setup: |
   {"tables": [{"TableName":"Orders","KeySchema":[{"AttributeName":"customerId","KeyType":"HASH"},{"AttributeName":"orderId","KeyType":"RANGE"}],"AttributeDefinitions":[{"AttributeName":"customerId","AttributeType":"S"},{"AttributeName":"orderId","AttributeType":"S"}],"BillingMode":"PAY_PER_REQUEST"}],
    "items": {"Orders": [
@@ -131,7 +131,7 @@ Ghi đơn mới nhưng dùng lại một `orderId` đã có của khách:
 {"op": "PutItem", "input": {"TableName": "Orders", "Item": {"customerId": {"S": "C-02"}, "orderId": {"S": "2026-10-30#O-109"}, "total": {"N": "150000"}}}}
 ```
 
-Bản sai không báo lỗi; bảng vẫn còn 6 đơn và đơn `O-108` mất giá trị cũ. Bản sửa thêm đơn thứ bảy. Muốn DynamoDB từ chối thay vì ghi đè, thêm điều kiện ghi (L2).
+Bản sai không báo lỗi; bảng vẫn còn 6 đơn và đơn `O-108` mất giá trị cũ. Bản sửa thêm đơn thứ bảy. Muốn DynamoDB từ chối thay vì ghi đè, dùng conditional write (ghi kèm điều kiện, chẳng hạn "chỉ ghi khi khóa này chưa có"), học ở L2.
 
 ## Tóm tắt
 
@@ -213,7 +213,7 @@ Writing a new order that reuses one of the customer's existing `orderId` values:
 {"op": "PutItem", "input": {"TableName": "Orders", "Item": {"customerId": {"S": "C-02"}, "orderId": {"S": "2026-10-30#O-109"}, "total": {"N": "150000"}}}}
 ```
 
-The wrong version raises no error; the table still holds 6 orders and order `O-108` has lost its old values. The fix adds a seventh order. To make DynamoDB refuse instead of overwrite, add a write condition (L2).
+The wrong version raises no error; the table still holds 6 orders and order `O-108` has lost its old values. The fix adds a seventh order. To make DynamoDB refuse instead of overwrite, use a conditional write (a write with a condition, such as "only if this key does not exist yet"), taught in L2.
 
 ## Recap
 

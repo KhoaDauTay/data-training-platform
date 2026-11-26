@@ -32,8 +32,8 @@ predict:
   answer: 1
   trap: 0
   why:
-    vi: 'Nghe hợp lý vì chuỗi trông như dữ liệu thường, nhưng trong pipeline, `"$sale"` nghĩa là giá trị của trường `sale`. Trường đó không có nên biểu thức cho ra "thiếu", và `$set` không tạo trường. Ở update kiểu toán tử `{ $set: { label: "$sale" } }` thì chuỗi được ghi nguyên văn.'
-    en: 'It sounds right because the string looks like plain data, but in a pipeline, `"$sale"` means the value of field `sale`. That field is missing, so the expression yields "missing" and `$set` creates no field. In an operator-style update `{ $set: { label: "$sale" } }` the string is stored as written.'
+    vi: 'Chuỗi trông như dữ liệu thường, nhưng lệnh có dấu `[ ]` nên là update dạng pipeline, nơi `"$sale"` nghĩa là giá trị của trường `sale`. Sản phẩm `"p1"` không có trường `sale`, nên biểu thức cho ra "thiếu" (missing), và `$set` gặp giá trị thiếu thì không tạo trường. Không có lỗi cú pháp: đọc một trường không tồn tại là hợp lệ, nên lệnh chạy êm và lỗi khó thấy. Ở update kiểu toán tử `{ $set: { label: "$sale" } }` thì chuỗi được ghi nguyên văn.'
+    en: 'The string looks like plain data, but the command is wrapped in `[ ]`, so it is a pipeline update, where `"$sale"` means the value of field `sale`. Product `"p1"` has no `sale` field, so the expression yields "missing", and `$set` creates no field for a missing value. There is no syntax error: reading a field that does not exist is valid, so the command runs quietly and the mistake is easy to miss. In an operator-style update `{ $set: { label: "$sale" } }` the string is stored as written.'
 lab:
   setup: |
     {"collections": {"products": [
@@ -64,8 +64,8 @@ quiz:
     answer: 0
     trap: 1
     why:
-      vi: 'Nghe hợp lý sau câu dự đoán, nhưng luật đường dẫn trường chỉ áp cho biểu thức aggregation. Update kiểu toán tử (không có `[ ]`) coi giá trị là dữ liệu, nên chuỗi được ghi nguyên văn.'
-      en: 'It sounds right after the prediction, but the field-path rule only applies to aggregation expressions. An operator-style update (no `[ ]`) treats the value as data, so the string is stored as written.'
+      vi: 'Sau câu dự đoán, dễ nghĩ mọi chuỗi bắt đầu bằng `$` đều là đường dẫn trường, nhưng luật đó chỉ áp cho biểu thức aggregation. Lệnh này không có `[ ]`, nên là update kiểu toán tử: giá trị là dữ liệu, và `promo` của `"p2"` nhận đúng chuỗi `"$5 off"`. Cũng không có lỗi: MongoDB chỉ hạn chế `$` ở đầu tên trường, không hạn chế trong giá trị.'
+      en: 'After the prediction it is easy to think every string starting with `$` is a field path, but that rule only applies to aggregation expressions. This command has no `[ ]`, so it is an operator-style update: the value is data, and `promo` on `"p2"` gets exactly the string `"$5 off"`. There is no error either: MongoDB restricts `$` at the start of field names, not inside values.'
 ---
 ## Mở bài
 

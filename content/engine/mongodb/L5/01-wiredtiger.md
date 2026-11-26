@@ -31,8 +31,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "8 GB nghe hợp lý vì \"một nửa RAM\" dễ nhớ, nhưng công thức trừ 1 GB trước: giá trị lớn hơn giữa 50 % của (RAM trừ 1 GB) và 0,256 GB, tức 0,5 nhân 15 GB bằng 7,5 GB."
-      en: "8 GB sounds right because \"half the RAM\" is easy to remember, but the formula subtracts 1 GB first: the larger of 50% of (RAM minus 1 GB) and 0.256 GB, so 0.5 times 15 GB is 7.5 GB."
+      vi: "8 GB nghe hợp lý vì \"một nửa RAM\" dễ nhớ, nhưng công thức trừ 1 GB trước: giá trị lớn hơn giữa 50 % của (RAM trừ 1 GB) và 0,256 GB, tức 0,5 × (16 − 1) = 7,5 GB. 0,256 GB chỉ là mức sàn cho máy rất nhỏ (RAM dưới khoảng 1,5 GB); ở đây 7,5 GB lớn hơn nhiều nên sàn không có tác dụng."
+      en: "8 GB sounds right because \"half the RAM\" is easy to remember, but the formula subtracts 1 GB first: the larger of 50% of (RAM minus 1 GB) and 0.256 GB, so 0.5 × (16 − 1) = 7.5 GB. 0.256 GB is only the floor for very small machines (under about 1.5 GB of RAM); here 7.5 GB is far larger, so the floor plays no part."
   - q:
       vi: "`mongod` dừng đột ngột 40 giây sau checkpoint gần nhất. Khi khởi động lại, dữ liệu của 40 giây đó lấy từ đâu?"
       en: "`mongod` stops abruptly 40 seconds after the last checkpoint. On restart, where does the data of those 40 seconds come from?"
@@ -42,8 +42,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý nếu coi checkpoint là lần lưu duy nhất, nhưng journal giữ mọi thay đổi giữa hai checkpoint; khi khởi động lại, MongoDB phục hồi từ checkpoint hợp lệ cuối và phát lại journal."
-      en: "It sounds right if a checkpoint were the only save, but the journal holds every change between checkpoints; on restart MongoDB recovers from the last valid checkpoint and replays the journal."
+      vi: "Nghe hợp lý nếu coi checkpoint là lần lưu duy nhất, nhưng journal (nhật ký ghi trước, write-ahead log) ghi lại mọi thay đổi giữa hai checkpoint, kể cả 40 giây vừa qua. Khi khởi động lại, MongoDB mở checkpoint hợp lệ cuối rồi phát lại các thay đổi trong journal từ thời điểm đó, nên dữ liệu 40 giây quay lại."
+      en: "It sounds right if a checkpoint were the only save, but the journal (a write-ahead log) records every change between two checkpoints, including those 40 seconds. On restart MongoDB opens the last valid checkpoint and replays the journal's changes from that point, so the 40 seconds of data come back."
 ---
 ## Mở bài
 
@@ -103,7 +103,7 @@ mongod --dbpath /data/db
 mongod --dbpath /data/db --wiredTigerCacheSizeGB 1.5
 ```
 
-Không đặt thì cache có thể tính theo RAM của máy chủ, vượt giới hạn container và tiến trình bị hệ điều hành giết.
+Không đặt thì cache có thể tính theo RAM của máy chủ: 0,5 × (64 − 1) = 31,5 GB, gấp nhiều lần giới hạn 4 GB của container, và tiến trình bị hệ điều hành giết khi dùng quá giới hạn. Câu sửa tính theo 4 GB: 0,5 × (4 − 1) = 1,5 GB.
 
 Tăng cache bằng cả RAM:
 
@@ -181,7 +181,7 @@ mongod --dbpath /data/db
 mongod --dbpath /data/db --wiredTigerCacheSizeGB 1.5
 ```
 
-Without the setting the cache may be sized from the host's RAM, exceed the container limit, and the process gets killed by the operating system.
+Without the setting the cache may be sized from the host's RAM: 0.5 × (64 − 1) = 31.5 GB, many times the container's 4 GB limit, and the operating system kills the process once it goes over. The fix sizes it from 4 GB: 0.5 × (4 − 1) = 1.5 GB.
 
 Raising the cache to all of the RAM:
 

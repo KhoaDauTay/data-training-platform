@@ -71,8 +71,8 @@ lab:
           "ExpressionAttributeValues": {":new": {"N": "92000"}, ":old": {"N": "88000"}}}}
       check: doc
       hint:
-        vi: 'Đây là optimistic locking: điều kiện kiểm giá trị bạn đã đọc.'
-        en: 'This is optimistic locking: the condition checks the value you read.'
+        vi: 'Đây là optimistic locking (không giữ lock nào, chỉ kiểm lúc ghi rằng dữ liệu chưa bị người khác đổi): điều kiện kiểm giá trị bạn đã đọc.'
+        en: 'This is optimistic locking (no lock is held; the write only checks that nobody changed the data meanwhile): the condition checks the value you read.'
 quiz:
   - q:
       vi: Nếu bước 2 chạy khi `stock` chỉ còn 1, chuyện gì xảy ra?
@@ -87,8 +87,8 @@ quiz:
     answer: 1
     trap: 2
     why:
-      vi: Nghe hợp lý vì lần ghi không xảy ra, nhưng theo AWS, khi điều kiện sai DynamoDB vẫn tiêu thụ WCU theo cỡ item đang có (tối thiểu 1). Thêm `ReturnValuesOnConditionCheckFailure` là `ALL_OLD` để lấy item hiện tại trong lỗi mà không cần đọc lại.
-      en: It sounds right because the write never happened, but per AWS, when the condition is false DynamoDB still consumes WCU based on the existing item size (at least 1). Add `ReturnValuesOnConditionCheckFailure` set to `ALL_OLD` to get the current item inside the error without reading it again.
+      vi: Nghe hợp lý vì lần ghi không xảy ra, nhưng theo AWS, khi điều kiện sai DynamoDB vẫn tiêu thụ WCU (write capacity unit, đơn vị ghi) theo cỡ item đang có, tối thiểu 1, vì nó đã phải đọc item để kiểm điều kiện; cuốn `978-0-02` nhỏ hơn 1 KB nên tốn 1 WCU. Item cũng không bị trừ thành -1, vì `stock >= :q` (1 ≥ 2) sai nên DynamoDB không ghi gì. Thêm `ReturnValuesOnConditionCheckFailure` là `ALL_OLD` để lấy item hiện tại trong lỗi mà không cần đọc lại.
+      en: It sounds right because the write never happened, but per AWS, when the condition is false DynamoDB still consumes WCU (write capacity unit) based on the existing item size, at least 1, because it had to read the item to check the condition; book `978-0-02` is under 1 KB, so it costs 1 WCU. The item does not go down to -1 either, because `stock >= :q` (1 ≥ 2) is false, so DynamoDB writes nothing. Add `ReturnValuesOnConditionCheckFailure` set to `ALL_OLD` to get the current item inside the error without reading it again.
   - q:
       vi: '`PutItem` cuốn `978-0-01` (đã có) với `title` mới, không có `ConditionExpression`. DynamoDB làm gì?'
       en: '`PutItem` for book `978-0-01` (already there) with a new `title` and no `ConditionExpression`. What does DynamoDB do?'

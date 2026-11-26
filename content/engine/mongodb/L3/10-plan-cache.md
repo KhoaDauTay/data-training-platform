@@ -36,8 +36,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì cache thường chỉ đổi khi mục cũ hết hạn, nhưng mọi sự kiện DDL (xóa collection, tạo, xóa hay ẩn index) xóa plan cache của collection đó, để planner được xét lại với index mới. Plan cache cũng mất khi `mongod` khởi động lại."
-      en: "It sounds right because a cache usually changes only when an entry expires, but any DDL event (dropping a collection, creating, dropping or hiding an index) clears that collection's plan cache, so the planner can weigh the new index. The cache is also lost when `mongod` restarts."
+      vi: "Giữ nguyên nghe hợp lý vì cache thường chỉ đổi khi mục cũ hết hạn, nhưng tạo index là một sự kiện DDL (lệnh đổi cấu trúc: xóa collection, tạo, xóa hay ẩn index), và mọi sự kiện DDL xóa plan cache của collection đó. Nhờ vậy truy vấn đã chạy trước đây cũng được planner xét lại với index mới, thay vì dùng mãi kế hoạch cũ. Khởi động lại `mongod` cũng làm mất cache, nhưng không phải cách duy nhất: tạo index đã đủ."
+      en: "Staying sounds right because a cache usually changes only when an entry expires, but creating an index is a DDL event (a structure change: dropping a collection, creating, dropping or hiding an index), and any DDL event clears that collection's plan cache. That way queries that ran before are also re-planned with the new index instead of reusing the old plan forever. A `mongod` restart also loses the cache, but it is not the only way: creating the index is enough."
   - q:
       vi: "Bạn chạy `explain()` để xem kế hoạch của một truy vấn đang chậm. Explain có cho thấy kế hoạch trong plan cache không?"
       en: "You run `explain()` to see the plan of a slow query. Does explain show the plan in the plan cache?"
@@ -49,8 +49,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì explain nói về chính truy vấn đó, nhưng docs chính thức ghi: explain bỏ qua mọi mục trong plan cache và không tạo mục mới. Muốn xem cache thì dùng `$planCacheStats`."
-      en: "It sounds right because explain is about that very query, but the docs say explain ignores all plan cache entries and creates no new one. To see the cache, use `$planCacheStats`."
+      vi: "Explain nói về chính truy vấn đó, nhưng docs chính thức ghi: explain bỏ qua mọi mục trong plan cache, chọn lại kế hoạch từ đầu và không tạo mục mới. Vì vậy explain có thể cho kế hoạch tốt trong khi truy vấn đang chậm vẫn dùng một kế hoạch cũ trong cache. Muốn xem kế hoạch server dùng lại thì đọc cache bằng `$planCacheStats`."
+      en: "Explain is about that very query, but the docs say explain ignores all plan cache entries, plans from scratch and creates no new entry. So explain can show a good plan while the slow query still reuses an old plan from the cache. To see the plan the server reuses, read the cache with `$planCacheStats`."
 ---
 ## Mở bài
 
@@ -123,7 +123,7 @@ db.orders.find({ status: "paid" }).explain()
 db.orders.aggregate([ { $planCacheStats: {} } ])
 ```
 
-Explain có thể đẹp trong khi truy vấn thật vẫn theo một mục Active cũ.
+Explain chọn lại kế hoạch cho giá trị bạn vừa đưa vào nên có thể ra kế hoạch tốt, trong khi truy vấn thật vẫn theo một mục Active cũ, chọn trước đó với giá trị khác.
 
 Dùng index filter trên 8.0:
 
@@ -220,7 +220,7 @@ db.orders.find({ status: "paid" }).explain()
 db.orders.aggregate([ { $planCacheStats: {} } ])
 ```
 
-Explain can look fine while the real query still follows an old Active entry.
+Explain re-plans for the values you just gave it, so it can show a good plan while the real query still follows an old Active entry, chosen earlier for other values.
 
 Using index filters on 8.0:
 

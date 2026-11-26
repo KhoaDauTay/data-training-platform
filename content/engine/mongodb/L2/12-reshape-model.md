@@ -74,8 +74,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: 'Nghe hợp lý vì `total` được tính từ `lines`, nhưng giá trị tính sẵn chỉ là một trường bình thường, không phải công thức. Ai ghi `lines` thì phải cập nhật `total` trong cùng lệnh (một lệnh trên một tài liệu là nguyên tử).'
-      en: 'It sounds right because `total` was computed from `lines`, but a precomputed value is a plain field, not a formula. Whoever writes `lines` must update `total` in the same command (one command on one document is atomic).'
+      vi: '`total` được tính từ `lines` ở bước 1, nhưng MongoDB chỉ lưu kết quả 120000 như một trường bình thường, không lưu công thức, nên không tự tính lại. Nó cũng không xóa trường vì "không khớp": MongoDB không biết hai trường liên quan nhau, nên `total` cũ (sai) cứ nằm đó. Lệnh `$push` ghi vào `lines` phải tự cập nhật `total` trong cùng lệnh, ví dụ thêm `$inc` vào `total`; một lệnh trên một tài liệu là nguyên tử, nên hai trường không bao giờ lệch nhau giữa chừng.'
+      en: '`total` was computed from `lines` in step 1, but MongoDB stores only the result, 120000, as a plain field, not the formula, so it does not recompute it. Nor does it delete the field for "not matching": MongoDB does not know the two fields are related, so the old (wrong) `total` just stays. The `$push` that writes to `lines` must update `total` in the same command, for example with an `$inc` on `total`; one command on one document is atomic, so the two fields never disagree midway.'
   - q:
       vi: 'Bước 3 chép `name` và `city` của khách vào đơn dưới `buyer`. Sau đó khách `"c1"` chuyển tới Hue. `buyer.city` trong các đơn cũ của `"c1"` là gì?'
       en: 'Step 3 copies the customer''s `name` and `city` into the order under `buyer`. Later customer `"c1"` moves to Hue. What is `buyer.city` in the old orders of `"c1"`?'
@@ -86,8 +86,8 @@ quiz:
     answer: 0
     trap: 1
     why:
-      vi: 'Nghe hợp lý nếu coi bản chép như một tham chiếu, nhưng extended reference là bản chép thật: nó giữ giá trị lúc ghi. Với địa chỉ giao của một đơn cũ, đó thường là điều bạn muốn; nếu cần luôn mới thì phải tự cập nhật các bản chép.'
-      en: 'It sounds right if the copy is treated like a reference, but an extended reference is a real copy: it keeps the value at write time. For an old order''s shipping city that is usually what you want; if it must stay current, you update the copies yourself.'
+      vi: '`"Hue"` chỉ đúng nếu `buyer` là tham chiếu được đọc lại mỗi lần, nhưng extended reference là bản chép thật: đơn cũ giữ `"Da Nang"`, giá trị lúc ghi. Cũng không thành `null`: đổi tài liệu khách không chạm tới đơn nào, vì MongoDB không biết bản chép đến từ đâu. Với thành phố giao của một đơn cũ, giữ giá trị lúc ghi thường là điều bạn muốn; nếu cần luôn mới thì phải tự cập nhật các bản chép.'
+      en: '`"Hue"` would only be right if `buyer` were a reference read again each time, but an extended reference is a real copy: old orders keep `"Da Nang"`, the value at write time. Nor does it become `null`: changing the customer document touches no order, since MongoDB does not know where the copy came from. For an old order''s shipping city, keeping the value at write time is usually what you want; if it must stay current, you update the copies yourself.'
 ---
 ## Mở bài
 

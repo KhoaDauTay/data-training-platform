@@ -42,8 +42,8 @@ quiz:
       - { vi: "Chạy `VACUUM FULL` mỗi giờ", en: "Run `VACUUM FULL` every hour" }
     answer: 1
     why:
-      vi: "Chỉ VACUUM dọn được dead tuple để chỗ trống được dùng lại. Hạ ngưỡng cho bảng ghi nhiều để autovacuum chạy sớm hơn. `VACUUM FULL` viết lại cả bảng và giữ lock chặn mọi truy cập."
-      en: "Only VACUUM cleans dead tuples so their space can be reused. Lower the threshold on a write-heavy table so autovacuum runs sooner. `VACUUM FULL` rewrites the whole table and holds a lock that blocks all access."
+      vi: "Mỗi lần sửa để lại phiên bản dòng cũ (dead tuple); chỉ VACUUM dọn chúng để chỗ trống được dùng lại, nên tắt autovacuum làm bảng phình nhanh hơn. Hạ ngưỡng cho bảng ghi nhiều để autovacuum chạy sớm hơn. `VACUUM FULL` viết lại cả bảng và giữ lock chặn mọi truy cập."
+      en: "Every update leaves an old row version (dead tuple); only VACUUM cleans them so their space can be reused, so turning autovacuum off makes the table grow faster. Lower the threshold on a write-heavy table so autovacuum runs sooner. `VACUUM FULL` rewrites the whole table and holds a lock that blocks all access."
 ---
 
 ## Ý chính

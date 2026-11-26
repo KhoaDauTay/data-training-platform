@@ -52,8 +52,8 @@ quiz:
       - { vi: "Báo lỗi vì thiếu `PARTITION BY`", en: "An error, because `PARTITION BY` is missing" }
     answer: 1
     why:
-      vi: "Không có `PARTITION BY`, cả bảng là một partition. Dòng đứng trước đơn đầu của khách 2 là đơn cuối của khách 1, nên `lag` trả ngày đó. Câu vẫn chạy, không báo gì."
-      en: "With no `PARTITION BY`, the whole table is one partition. The row before customer 2's first order is customer 1's last order, so `lag` returns that date. The query still runs, with no warning."
+      vi: "Không có `PARTITION BY`, cả bảng là một partition. Dòng đứng trước đơn đầu của khách 2 là đơn cuối của khách 1, nên `lag` trả ngày đó, không phải NULL (NULL chỉ có ở dòng đầu tiên của cả bảng). Thiếu `PARTITION BY` vẫn là cú pháp hợp lệ, nên câu chạy mà không báo gì."
+      en: "With no `PARTITION BY`, the whole table is one partition. The row before customer 2's first order is customer 1's last order, so `lag` returns that date, not NULL (only the very first row of the table gets NULL). Leaving out `PARTITION BY` is valid syntax, so the query runs with no warning."
 ---
 
 ## Ý chính

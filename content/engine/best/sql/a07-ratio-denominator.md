@@ -44,8 +44,8 @@ quiz:
       - { vi: "90", en: "90" }
     answer: 1
     why:
-      vi: "Không có `ELSE`, 10 đơn chưa giao cho NULL. `avg` bỏ qua NULL, nên nó lấy trung bình của 90 số 1. Thêm `ELSE 0` hoặc dùng `FILTER` thì mẫu số là đủ 100 đơn."
-      en: "With no `ELSE`, the 10 undelivered orders give NULL. `avg` ignores NULLs, so it averages ninety 1s. Add `ELSE 0`, or use `FILTER`, and the denominator is all 100 orders."
+      vi: "Không có `ELSE`, 10 đơn chưa giao cho NULL. `avg` bỏ qua NULL, nên nó chia tổng 90 cho 90 giá trị còn lại: ra 1, không phải 0,9 (cũng không phải 90, vì `avg` chia chứ không chỉ cộng). Thêm `ELSE 0` hoặc dùng `FILTER` thì mẫu số là đủ 100 đơn."
+      en: "With no `ELSE`, the 10 undelivered orders give NULL. `avg` ignores NULLs, so it divides the sum 90 by the 90 values left: 1, not 0.9 (and not 90, since `avg` divides rather than just adds). Add `ELSE 0`, or use `FILTER`, and the denominator is all 100 orders."
 ---
 
 ## Ý chính

@@ -82,8 +82,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: Nghe hợp lý vì request báo thành công, nhưng lô chỉ lỗi khi mọi yêu cầu con đều lỗi. Phần chưa làm (ví dụ vì bị throttle, tức bị giới hạn tốc độ) nằm trong `UnprocessedItems` (hoặc `UnprocessedKeys` với `BatchGetItem`) và phải gửi lại.
-      en: It sounds right because the call reports success, but a batch fails only when every request in it fails. Whatever was not done (for example because of throttling) comes back in `UnprocessedItems` (or `UnprocessedKeys` for `BatchGetItem`) and must be sent again.
+      vi: 'Nghe hợp lý vì request báo thành công, nhưng lô chỉ lỗi khi mọi yêu cầu con đều lỗi. Phần chưa làm (ví dụ vì bị throttle, tức bị DynamoDB từ chối vì vượt mức) nằm trong `UnprocessedItems` (hoặc `UnprocessedKeys` với `BatchGetItem`); bỏ qua là mất dữ liệu. Gửi lại cả lô thì làm lại cả phần đã ghi xong, tốn thêm WCU (write capacity unit, đơn vị ghi) và dễ bị throttle tiếp. Chờ tăng dần (1, 2, 4… lần) giữa các lần gửi lại để bảng kịp hồi.'
+      en: 'It sounds right because the call reports success, but a batch fails only when every request in it fails. Whatever was not done (for example because of throttling, that is DynamoDB refusing requests over the limit) comes back in `UnprocessedItems` (or `UnprocessedKeys` for `BatchGetItem`); ignoring it loses data. Resending the whole batch redoes the part already written, costs extra WCU (write capacity units) and invites more throttling. Wait longer each time (1, 2, 4… units) between resends so the table can recover.'
   - q:
       vi: Bạn cần tăng `stock` của 30 cuốn sách. `BatchWriteItem` có làm được không?
       en: You need to increase `stock` on 30 books. Can `BatchWriteItem` do it?
@@ -96,8 +96,8 @@ quiz:
         en: Yes, if split into two batches of 15.
     answer: 1
     why:
-      vi: '`BatchWriteItem` không hỗ trợ Update và mỗi request tối đa 25 yêu cầu Put/Delete. Put trong lô sẽ thay cả item, không cộng dồn.'
-      en: '`BatchWriteItem` does not support updates and takes at most 25 Put/Delete requests. A Put in a batch replaces the whole item, it does not add.'
+      vi: '`BatchWriteItem` không hỗ trợ Update và mỗi request tối đa 25 yêu cầu Put/Delete. Chia hai lô 15 chỉ giải quyết con số 25, còn chuyện thiếu Update vẫn nguyên: Put trong lô sẽ thay cả item, không cộng dồn vào `stock`, nên các thuộc tính khác cũng mất. Cách đúng là 30 lần `UpdateItem` với `ADD` hoặc `SET stock = stock + :n`.'
+      en: '`BatchWriteItem` does not support updates and takes at most 25 Put/Delete requests. Splitting into two batches of 15 only solves the limit of 25; the missing Update remains: a Put in a batch replaces the whole item, it does not add to `stock`, so the other attributes are lost too. The right way is 30 `UpdateItem` calls with `ADD` or `SET stock = stock + :n`.'
 ---
 
 ## Mở bài

@@ -93,14 +93,14 @@ quiz:
       - { vi: "Thứ tự ghi vào bảng", en: "The order they were written" }
     answer: 1
     trap: 0
-    why: { vi: "Nghe hợp lý vì con người đọc số, nhưng sort key kiểu chuỗi so byte: `v10` có `1` ở vị trí thứ hai nên đứng trước `v2`. Đánh `v001`, `v002`, …, `v010` thì thứ tự chuỗi trùng thứ tự số.", en: "It sounds right because people read numbers, but a string sort key compares bytes: `v10` has `1` in second place, so it comes before `v2`. Numbering `v001`, `v002`, …, `v010` makes string order match numeric order." }
+    why: { vi: "Thứ tự số nghe hợp lý vì con người đọc số, nhưng sort key ở đây là chuỗi và DynamoDB so từng byte từ trái sang: `v10` và `v2` giống nhau ở `v`, rồi `1` nhỏ hơn `2`, nên `v10` đứng trước `v2`. Thứ tự ghi cũng sai: trong một partition key, item luôn được giữ theo sort key, không theo lúc ghi. Đánh `v001`, `v002`, …, `v010` (cùng độ dài) thì thứ tự chuỗi trùng thứ tự số.", en: "Numeric order sounds right because people read numbers, but this sort key is a string and DynamoDB compares it byte by byte from the left: `v10` and `v2` share `v`, then `1` is less than `2`, so `v10` comes before `v2`. Write order is wrong too: within one partition key, items are always kept in sort key order, not by when they were written. Numbering `v001`, `v002`, …, `v010` (all the same length) makes string order match numeric order." }
   - q: { vi: "Vì sao tiền tố `DN#` có dấu `#` ở cuối?", en: "Why does the prefix `DN#` end with a `#`?" }
     options:
       - { vi: "Để `begins_with` không khớp nhầm một thành phố khác có mã bắt đầu bằng `DN`", en: "So `begins_with` cannot also match another city whose code starts with `DN`" }
       - { vi: "DynamoDB bắt buộc sort key kết thúc bằng `#`", en: "DynamoDB requires sort keys to end with `#`" }
       - { vi: "Để Query nhất quán mạnh", en: "To make the Query strongly consistent" }
     answer: 0
-    why: { vi: "`begins_with(sk, 'DN')` cũng khớp một mã như `DNG#…`. Dấu phân cách cuối tiền tố giới hạn đúng một cấp.", en: "`begins_with(sk, 'DN')` would also match a code such as `DNG#…`. The separator at the end of the prefix limits it to exactly one level." }
+    why: { vi: "`begins_with(sk, 'DN')` cũng khớp một mã như `DNG#…`, vì so tiền tố chỉ nhìn từng ký tự, không biết đâu là hết tên thành phố. Thêm dấu phân cách `#` vào cuối tiền tố thì chỉ sort key có đúng cấp `DN` mới khớp. DynamoDB không bắt sort key kết thúc bằng `#`: đó là quy ước của thiết kế này. Còn nhất quán mạnh (strongly consistent) do tham số `ConsistentRead` của request quyết định, không do nội dung khóa.", en: "`begins_with(sk, 'DN')` would also match a code such as `DNG#…`, because a prefix match only looks at characters and cannot tell where the city name ends. With the separator `#` at the end of the prefix, only sort keys at exactly the `DN` level match. DynamoDB does not require sort keys to end with `#`: it is a convention of this design. And strong consistency is set by the request's `ConsistentRead` parameter, not by what the key contains." }
 ---
 ## Mở bài
 
@@ -110,7 +110,7 @@ Trang cửa hàng cần lọc theo thành phố, rồi theo quận; trang chính
 
 Sort key tốt gom dữ liệu liên quan vào một chỗ và cho phép đọc theo khoảng (`begins_with`, `BETWEEN`, `>`, `<`). Sort key phân cấp ghép các cấp từ to tới nhỏ, ví dụ `[city]#[district]#[store]` (thành phố, quận, cửa hàng). Một Query với tiền tố dài ngắn khác nhau trả về đúng một cấp; giữ dấu `#` cuối tiền tố để không khớp nhầm cấp khác.
 
-Item phiên bản: mỗi lần sửa, ghi một item mới với số phiên bản kế tiếp (`v001`, `v002`…) và chép nội dung mới vào item `v000`. Bản mới nhất là một GetItem; lịch sử là một Query `sk > v000`. Ghi phiên bản mới là hai lần ghi; muốn cả hai cùng thành công hoặc cùng không thì dùng transaction (bài 11).
+Item phiên bản: mỗi lần sửa, ghi một item mới với số phiên bản kế tiếp (`v001`, `v002`…) và chép nội dung mới vào item `v000`. Bản mới nhất là một GetItem; lịch sử là một Query `sk > v000`. Ghi phiên bản mới là hai lần ghi; muốn cả hai cùng thành công hoặc cùng không thì dùng transaction (bài "TransactWriteItems: tất cả hoặc không gì cả").
 
 Nhiều người nghĩ `v2` luôn đứng trước `v10`. Thật ra sort key là chuỗi, so từng byte: `v10` đứng trước `v2`. Đánh số có số 0 đứng trước (`v002`, `v010`) thì thứ tự chuỗi trùng thứ tự số.
 
@@ -170,7 +170,7 @@ Tiền tố thiếu dấu phân cách:
 {"op": "Query", "input": {"TableName": "Places", "KeyConditionExpression": "pk = :c AND begins_with(sk, :p)", "ExpressionAttributeValues": {":c": {"S": "COUNTRY#VN"}, ":p": {"S": "HUE#"}}}}
 ```
 
-Câu sai trả 6 cửa hàng ở ba thành phố; câu sửa chỉ 2 cửa hàng ở `HUE`.
+Câu sai trả 6 cửa hàng ở ba thành phố, vì `H` là tiền tố của cả `HN#`, `HUE#` và `HCM#`: 1 + 2 + 3 = 6. Câu sửa chỉ 2 cửa hàng ở `HUE`.
 
 Đọc lịch sử mà quên bỏ `v000`:
 
@@ -184,7 +184,7 @@ Câu sai trả 6 cửa hàng ở ba thành phố; câu sửa chỉ 2 cửa hàng
 {"op": "Query", "input": {"TableName": "Policies", "KeyConditionExpression": "pk = :p AND sk > :z", "ExpressionAttributeValues": {":p": {"S": "POLICY#refund"}, ":z": {"S": "v000"}}}}
 ```
 
-Câu sai trả 5 item, trong đó một bản là bản sao; câu sửa trả đúng 4 phiên bản.
+Câu sai trả 5 item: `v000` có sort key nhỏ nhất nên đứng đầu, và nó là bản sao của `v004`. Điều kiện `sk > v000` trên sort key bắt đầu đọc ngay sau bản sao, nên câu sửa trả đúng 4 phiên bản.
 
 ## Thực hành
 
@@ -207,7 +207,7 @@ The store page filters by city, then by district; the policy page needs the late
 
 A good sort key gathers related data in one place and allows range reads (`begins_with`, `BETWEEN`, `>`, `<`). A hierarchical sort key joins the levels from broad to narrow, for example `[city]#[district]#[store]`. A Query with a longer or shorter prefix returns exactly one level; keep the `#` at the end of the prefix so it cannot match another level.
 
-Version items: on each change, write a new item with the next version number (`v001`, `v002`…) and copy the new content into the `v000` item. The latest copy is one GetItem; the history is one Query with `sk > v000`. Writing a new version is two writes; to make both succeed or neither, use a transaction (lesson 11).
+Version items: on each change, write a new item with the next version number (`v001`, `v002`…) and copy the new content into the `v000` item. The latest copy is one GetItem; the history is one Query with `sk > v000`. Writing a new version is two writes; to make both succeed or neither, use a transaction (lesson "TransactWriteItems: all or nothing").
 
 Many people think `v2` always comes before `v10`. In fact the sort key is a string, compared byte by byte: `v10` comes before `v2`. Zero-padded numbers (`v002`, `v010`) make string order match numeric order.
 
@@ -267,7 +267,7 @@ A prefix without the separator:
 {"op": "Query", "input": {"TableName": "Places", "KeyConditionExpression": "pk = :c AND begins_with(sk, :p)", "ExpressionAttributeValues": {":c": {"S": "COUNTRY#VN"}, ":p": {"S": "HUE#"}}}}
 ```
 
-The wrong query returns 6 stores in three cities; the fix returns only the 2 stores in `HUE`.
+The wrong query returns 6 stores in three cities, because `H` is a prefix of `HN#`, `HUE#` and `HCM#` alike: 1 + 2 + 3 = 6. The fix returns only the 2 stores in `HUE`.
 
 Reading the history and forgetting to skip `v000`:
 
@@ -281,7 +281,7 @@ Reading the history and forgetting to skip `v000`:
 {"op": "Query", "input": {"TableName": "Policies", "KeyConditionExpression": "pk = :p AND sk > :z", "ExpressionAttributeValues": {":p": {"S": "POLICY#refund"}, ":z": {"S": "v000"}}}}
 ```
 
-The wrong query returns 5 items, one of them a copy; the fix returns exactly the 4 versions.
+The wrong query returns 5 items: `v000` has the smallest sort key so it comes first, and it is a copy of `v004`. The sort key condition `sk > v000` starts reading right after the copy, so the fix returns exactly the 4 versions.
 
 ## Practice
 

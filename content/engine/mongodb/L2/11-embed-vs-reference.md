@@ -34,8 +34,8 @@ quiz:
     answer: 0
     trap: 1
     why:
-      vi: 'Nghe hợp lý vì collection riêng giống bảng chi tiết đơn của SQL, nhưng khi đó mỗi lần xem đơn phải `$lookup`. Quan hệ "chứa", số lượng nhỏ, đọc và sửa cùng nhau: nhúng cho một lần đọc và một lần ghi nguyên tử (atomic).'
-      en: 'It sounds right because a separate collection mirrors an SQL order-lines table, but then every order view needs a `$lookup`. A "contains" relationship, few items, read and changed together: embedding gives one read and one atomic write.'
+      vi: 'Collection riêng giống bảng chi tiết đơn của SQL, nhưng ở đây mỗi lần xem đơn phải thêm `$lookup`, và sửa đơn cùng dòng hàng thành hai lần ghi trên hai tài liệu. Chuỗi JSON thì MongoDB chỉ thấy một chuỗi: không lọc, không sửa từng dòng hàng bằng `$` được. Quan hệ "chứa", vài dòng hàng, đọc và sửa cùng nhau: nhúng mảng `lines` cho một lần đọc và một lần ghi nguyên tử (atomic).'
+      en: 'A separate collection mirrors an SQL order-lines table, but here every order view needs an extra `$lookup`, and changing an order with its lines becomes two writes on two documents. A JSON string is just a string to MongoDB: you cannot filter on it or change one line with `$`. A "contains" relationship, a few lines, read and changed together: embedding a `lines` array gives one read and one atomic write.'
   - q:
       vi: Mỗi sản phẩm nhận đánh giá của khách, có sản phẩm hàng chục nghìn đánh giá và con số còn tăng mãi. Nên lưu đánh giá thế nào?
       en: Each product collects customer reviews; some products have tens of thousands and the number keeps growing. How should you store reviews?
@@ -48,8 +48,8 @@ quiz:
         en: One single document holding every review of the whole shop
     answer: 0
     why:
-      vi: 'Mảng lớn lên không giới hạn làm tài liệu phình ra (tối đa 16 MiB) và mỗi lần đọc sản phẩm phải kéo theo cả đống dữ liệu. Tham chiếu thì sản phẩm gọn; có thể nhúng thêm vài đánh giá mới nhất nếu trang sản phẩm cần.'
-      en: 'An array that grows without bound bloats the document (16 MiB at most) and every product read drags all of it along. Referencing keeps the product small; you can still embed the few latest reviews if the product page needs them.'
+      vi: 'Nhúng hàng chục nghìn đánh giá làm tài liệu sản phẩm phình mãi tới giới hạn 16 MiB, và mỗi lần mở trang sản phẩm kéo theo mọi đánh giá. Một tài liệu cho cả cửa hàng còn tệ hơn: chạm giới hạn sớm hơn, và mọi lần thêm đánh giá đều ghi vào cùng một tài liệu. Tham chiếu bằng `productId` giữ sản phẩm gọn, thêm đánh giá chỉ là một lần ghi vào `reviews`; có thể nhúng thêm vài đánh giá mới nhất nếu trang sản phẩm cần.'
+      en: 'Embedding tens of thousands of reviews makes the product document grow toward the 16 MiB limit, and every product page load drags along every review. One document for the whole shop is worse: it hits the limit sooner, and every new review writes to the same document. Referencing by `productId` keeps the product small, and adding a review is one write to `reviews`; you can still embed the few latest reviews if the product page needs them.'
   - q:
       vi: Đơn hàng chép sẵn `name` và địa chỉ giao hàng của khách lúc đặt. Khi khách đổi địa chỉ sau đó, điều gì đúng?
       en: Orders copy the customer's `name` and shipping address at order time. When the customer later moves, what is true?
@@ -62,8 +62,8 @@ quiz:
         en: Old orders break because the data no longer matches
     answer: 0
     why:
-      vi: Dữ liệu "theo thời điểm" như địa chỉ giao của một đơn nên được chép để giữ lịch sử. MongoDB không tự đồng bộ bản chép; dữ liệu hay đổi mà cần luôn mới thì nên tham chiếu.
-      en: Point-in-time data such as an order's shipping address should be copied to keep history. MongoDB does not sync copies for you; data that changes often and must stay current is better referenced.
+      vi: Địa chỉ giao của một đơn là dữ liệu "theo thời điểm" (hàng đã giao tới đó), nên đơn cũ giữ bản chép đó là đúng. MongoDB không tự cập nhật bản chép; muốn đổi thì ứng dụng phải tự ghi vào từng đơn. Đơn cũ cũng không lỗi, vì MongoDB không kiểm tra bản chép có khớp với khách hay không. Dữ liệu hay đổi mà luôn cần giá trị mới thì nên tham chiếu.
+      en: An order's shipping address is point-in-time data (the goods went there), so old orders keeping that copy is right. MongoDB does not update copies for you; to change them the application must write to each order itself. Old orders do not break either, since MongoDB never checks that a copy matches the customer. Data that changes often and must always be current is better referenced.
 ---
 ## Mở bài
 

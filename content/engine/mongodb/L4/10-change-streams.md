@@ -29,8 +29,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì token trông như một con trỏ bền, nhưng nó chỉ trỏ vào oplog, và oplog là collection có giới hạn, mục cũ bị ghi đè. Docs chính thức: oplog phải còn đủ lịch sử để tìm thao tác ứng với token. Ứng dụng phải chịu mất sự kiện hoặc đọc lại toàn bộ."
-      en: "It sounds right because a token looks like a durable pointer, but it only points into the oplog, a capped collection whose old entries are overwritten. The docs: the oplog must hold enough history to find the token's operation. The application must accept the gap or reload everything."
+      vi: "Token trông như một con trỏ bền, nhưng nó chỉ trỏ vào một mục trong oplog, mà oplog là collection có giới hạn kích thước (capped): mục cũ bị ghi đè khi có mục mới. Ứng dụng dừng 48 giờ, oplog chỉ giữ 24 giờ gần nhất, nên mục của token đã bị ghi đè từ khoảng 24 giờ trước và server báo lỗi thay vì tiếp tục. Ứng dụng phải chịu mất các sự kiện ở giữa hoặc đọc lại toàn bộ dữ liệu; muốn tránh thì cửa sổ oplog phải dài hơn thời gian dừng lâu nhất."
+      en: "A token looks like a durable pointer, but it only points at one entry in the oplog, and the oplog is a capped collection: old entries are overwritten as new ones arrive. The application was down 48 hours and the oplog keeps only the last 24, so the token's entry was overwritten about 24 hours ago and the server returns an error instead of resuming. The application must accept losing the events in between or reload all the data; to avoid that, the oplog window must be longer than the longest downtime."
   - q:
       vi: "Bạn cần cả tài liệu sau khi cập nhật, không chỉ phần thay đổi. Tùy chọn nào?"
       en: "You need the whole document after an update, not just the changed fields. Which option?"
@@ -39,8 +39,8 @@ quiz:
       - { vi: "`startAfter`", en: "`startAfter`" }
     answer: 0
     why:
-      vi: "Mặc định sự kiện update chỉ có phần thay đổi. `fullDocument: \"updateLookup\"` trả bản majority-committed mới nhất của tài liệu. `startAfter` dùng để mở stream mới sau một sự kiện invalidate."
-      en: "By default an update event holds only the delta. `fullDocument: \"updateLookup\"` returns the latest majority-committed version of the document. `startAfter` opens a new stream after an invalidate event."
+      vi: "Mặc định sự kiện update chỉ có phần thay đổi (các trường vừa đổi). `fullDocument: \"updateLookup\"` bảo server đọc thêm bản mới nhất của tài liệu mà đa số node đã xác nhận, rồi gắn vào sự kiện. `startAfter` không thêm dữ liệu nào vào sự kiện: nó chỉ chọn chỗ bắt đầu, sau một token, kể cả sau sự kiện invalidate (sự kiện đóng stream, ví dụ khi collection bị xóa hay đổi tên)."
+      en: "By default an update event holds only the delta (the fields that just changed). `fullDocument: \"updateLookup\"` tells the server to also read the latest version of the document that a majority of nodes acknowledged, and attach it to the event. `startAfter` adds no data to the event: it only picks where to start, after a token, even after an invalidate event (an event that closes the stream, such as a collection drop or rename)."
 ---
 ## Mở bài
 

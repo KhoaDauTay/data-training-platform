@@ -41,7 +41,7 @@ quiz:
       - { vi: "Gửi lại ngay cho tới khi thành công", en: "Resend right away until it succeeds" }
       - { vi: "Chạy riêng câu cộng tiền cho ví đích", en: "Run the credit statement for the target wallet on its own" }
     answer: 0
-    why: { vi: "Điều kiện sai sẽ sai lại y nguyên. Chỉ lý do tạm thời (xung đột với transaction khác, thiếu capacity) mới đáng gửi lại có backoff.", en: "A false condition fails again exactly the same way. Only temporary reasons (a conflict with another transaction, missing capacity) are worth a resend with backoff." }
+    why: { vi: "Gửi lại ngay vô ích: số dư của ví nguồn không tự tăng, nên điều kiện \"đủ tiền\" sẽ sai lại y nguyên. Chạy riêng câu cộng tiền thì ví đích nhận tiền mà ví nguồn không bị trừ, tức tạo ra tiền từ không khí, đúng chuyện transaction sinh ra để chặn. `ConditionalCheckFailed` là quy tắc nghiệp vụ, nên báo người dùng; chỉ lý do tạm thời (xung đột với transaction khác, thiếu capacity) mới đáng gửi lại sau một khoảng chờ tăng dần (backoff).", en: "Resending right away is useless: the source wallet's balance does not grow by itself, so the \"enough money\" condition fails again the same way. Running the credit alone gives the target wallet money that was never taken from the source, money out of thin air, the very thing the transaction exists to prevent. `ConditionalCheckFailed` is a business rule, so tell the user; only temporary reasons (a conflict with another transaction, missing capacity) are worth a resend after a growing wait (backoff)." }
 predict:
   sql: |
     {"op": "ExecuteTransaction", "input": {"TransactStatements": [{"Statement": "UPDATE \"Wallets\" SET amount = amount - 100000 WHERE pk = 'WALLET#w2' AND sk = 'BALANCE' AND amount >= 100000"}, {"Statement": "UPDATE \"Wallets\" SET amount = amount + 100000 WHERE pk = 'WALLET#w1' AND sk = 'BALANCE'"}]}}
@@ -52,7 +52,7 @@ predict:
     - { vi: "`w2` thành -50.000 đ và `w1` thành 400.000 đ", en: "`w2` becomes -50,000 VND and `w1` becomes 400,000 VND" }
   answer: 1
   trap: 0
-  why: { vi: "Đáp án ghi nửa chừng nghe hợp lý nếu nghĩ mỗi câu chạy riêng như `BatchWriteItem`. Nhưng điều kiện `amount >= 100000` của câu đầu sai, nên DynamoDB hủy cả transaction. Danh sách lý do theo thứ tự câu lệnh: câu 1 `ConditionalCheckFailed`, câu 2 `None`. Bộ máy trong trình duyệt cho đúng kết quả này; capacity của hai item vẫn bị tính trên AWS thật.", en: "A half write sounds right if each statement seems to run on its own, as in `BatchWriteItem`. But the first statement's condition `amount >= 100000` is false, so DynamoDB cancels the whole transaction. The reasons follow statement order: statement 1 `ConditionalCheckFailed`, statement 2 `None`. The in-browser engine gives exactly this result; on real AWS the capacity for both items is still charged." }
+  why: { vi: "Đáp án ghi nửa chừng nghe hợp lý nếu nghĩ mỗi câu chạy riêng như `BatchWriteItem`. Nhưng `w2` chỉ có 50.000 đ, nên điều kiện `amount >= 100000` của câu đầu sai, và DynamoDB hủy cả transaction: không câu nào được ghi. Số dư -50.000 đ cũng không thể xảy ra, vì chính điều kiện đó chặn lần trừ. Danh sách lý do theo thứ tự câu lệnh: câu 1 `ConditionalCheckFailed`, câu 2 `None`. Bộ máy trong trình duyệt cho đúng kết quả này; capacity của hai item vẫn bị tính trên AWS thật.", en: "A half write sounds right if each statement seems to run on its own, as in `BatchWriteItem`. But `w2` holds only 50,000 VND, so the first statement's condition `amount >= 100000` is false and DynamoDB cancels the whole transaction: nothing is written. A balance of -50,000 VND cannot happen either, since that same condition blocks the debit. The reasons follow statement order: statement 1 `ConditionalCheckFailed`, statement 2 `None`. The in-browser engine gives exactly this result; on real AWS the capacity for both items is still charged." }
 ---
 ## Mở bài
 
@@ -66,7 +66,7 @@ Một điều kiện sai thì cả transaction bị hủy với `TransactionCanc
 
 Nhiều người nghĩ mỗi câu trong transaction chạy riêng, như `BatchWriteItem`. Thật ra chỉ cần một câu có điều kiện sai là không câu nào được ghi; trên AWS thật, capacity của mọi item vẫn bị tính.
 
-Đây là cách tập transaction ghi chạy được trong trình duyệt, vì `TransactWriteItems` chưa có (bài 11). Đoán trước, rồi đọc lại số dư ở bước lab.
+Đây là cách tập transaction ghi chạy được trong trình duyệt, vì `TransactWriteItems` chưa có (bài "TransactWriteItems: tất cả hoặc không gì cả"). Đoán trước, rồi đọc lại số dư ở bước lab.
 
 Hình dưới vẽ transaction bị hủy vì câu đầu có điều kiện sai, cùng lý do theo thứ tự câu.
 
@@ -102,7 +102,7 @@ One false condition cancels the whole transaction with `TransactionCanceledExcep
 
 Many people think each statement in a transaction runs on its own, as in `BatchWriteItem`. In fact one statement with a false condition means no statement is written; on real AWS, the capacity for every item is still charged.
 
-This is the way to practise write transactions in the browser, since `TransactWriteItems` is not available yet (lesson 11). Guess first, then read the balances back in the lab step.
+This is the way to practise write transactions in the browser, since `TransactWriteItems` is not available yet (lesson "TransactWriteItems: all or nothing"). Guess first, then read the balances back in the lab step.
 
 The figure below draws the transaction cancelled by the first statement's failed condition, with reasons in statement order.
 

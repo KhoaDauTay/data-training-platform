@@ -34,8 +34,8 @@ predict:
   answer: 1
   trap: 0
   why:
-    vi: "Nghe hợp lý vì với index đầy đủ, `hint()` đúng là chỉ đổi đường đọc. Không có `hint()`, planner tự tránh index sparse khi kết quả sẽ thiếu; `hint()` bỏ qua kiểm tra đó, nên câu đếm chỉ thấy tài liệu có khóa trong index: 700. Muốn đếm đúng cả collection thì gọi `countDocuments()` không `hint()`."
-    en: "It sounds right because with a full index `hint()` does only change the read path. Without `hint()`, the planner avoids a sparse index when the result would be incomplete; `hint()` skips that check, so the count only sees documents that have a key in the index: 700. To count the whole collection correctly, call `countDocuments()` without `hint()`."
+    vi: "Với index đầy đủ, `hint()` đúng là chỉ đổi đường đọc, nhưng index sparse không có khóa cho 1000 − 700 = 300 phim thiếu `rated`. Không có `hint()`, planner tự tránh index sparse khi kết quả sẽ thiếu; `hint()` bỏ qua kiểm tra đó, nên câu đếm chỉ thấy tài liệu có khóa trong index: 700. MongoDB không báo lỗi: `hint()` một index sparse là hợp lệ, docs chỉ khuyên đừng làm vậy khi đếm. Muốn đếm đúng cả collection thì gọi `countDocuments()` không `hint()`."
+    en: "With a full index `hint()` does only change the read path, but the sparse index has no key for the 1000 - 700 = 300 movies without `rated`. Without `hint()`, the planner avoids a sparse index when the result would be incomplete; `hint()` skips that check, so the count only sees documents that have a key in the index: 700. MongoDB raises no error: a `hint()` on a sparse index is allowed, the docs only advise against it for counts. To count the whole collection correctly, call `countDocuments()` without `hint()`."
   recorded:
     tier: docs
     server: MongoDB
@@ -53,8 +53,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì đang có index sparse, nhưng index không đổi nghĩa của truy vấn. `{ rated: null }` khớp cả giá trị `null` lẫn trường thiếu; vì index sparse không có khóa cho phim thiếu trường, planner không dùng nó cho câu này."
-      en: "It sounds right because there is a sparse index, but an index never changes what a query means. `{ rated: null }` matches both a `null` value and a missing field; since the sparse index has no key for movies without the field, the planner does not use it for this query."
+      vi: "Có index sparse, nhưng không có `hint()` thì index không đổi nghĩa của truy vấn. `{ rated: null }` khớp cả giá trị `null` lẫn trường thiếu, nên trả các phim `rated: null` cộng 300 phim thiếu `rated`; vì index sparse không có khóa cho 300 phim đó, planner không dùng nó cho câu này. Index cũng có lưu `null`: phim có `rated: null` vẫn có khóa trong index sparse, chỉ phim thiếu hẳn trường mới bị bỏ."
+      en: "There is a sparse index, but without `hint()` an index never changes what a query means. `{ rated: null }` matches both a `null` value and a missing field, so it returns the `rated: null` movies plus the 300 movies without `rated`; since the sparse index has no key for those 300, the planner does not use it for this query. An index does store `null`: a movie with `rated: null` still has a key in the sparse index, only movies lacking the field are skipped."
 ---
 ## Mở bài
 

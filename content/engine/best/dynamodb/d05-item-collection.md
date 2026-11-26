@@ -116,8 +116,8 @@ quiz:
       - { vi: "Một `BatchGetItem` cho từng đơn", en: "One `BatchGetItem` per order" }
     answer: 0
     why:
-      vi: "Các item chung partition key là một item collection: nằm cạnh nhau, sắp theo sort key. Một `Query` lấy cả hồ sơ lẫn đơn. Đây là cách DynamoDB thay cho JOIN."
-      en: "Items that share a partition key form an item collection: stored together, sorted by the sort key. One `Query` fetches the profile and the orders. This is how DynamoDB replaces a JOIN."
+      vi: "Các item chung partition key `CUST#2` là một item collection: nằm cạnh nhau, sắp theo sort key, nên một `Query` lấy cả hồ sơ lẫn mọi đơn. `Scan` đọc cả bảng rồi mới lọc; `BatchGetItem` phải biết trước khóa của từng đơn. Đây là cách DynamoDB thay cho JOIN."
+      en: "Items that share the partition key `CUST#2` form an item collection: stored together, sorted by the sort key, so one `Query` fetches the profile and every order. A `Scan` reads the whole table before filtering; `BatchGetItem` needs each order's key up front. This is how DynamoDB replaces a JOIN."
 ---
 
 ## Ý chính

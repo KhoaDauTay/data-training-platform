@@ -84,8 +84,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: 'Nghe hợp lý vì chỉ `"c5"` thật sự lưu `null`, nhưng `{ email: null }` khớp cả trường bằng `null` lẫn trường không có. Chỉ muốn `null` thật thì dùng `{ email: { $type: "null" } }`.'
-      en: 'It sounds right because only `"c5"` really stores `null`, but `{ email: null }` matches both a field equal to `null` and a missing field. For a real `null` only, use `{ email: { $type: "null" } }`.'
+      vi: 'Nghe hợp lý vì chỉ `"c5"` thật sự lưu `null`, nhưng `{ email: null }` khớp cả trường bằng `null` lẫn trường không có, nên `"c3"` cũng được trả. "Không ai" là thói quen từ SQL, nơi `= NULL` không bao giờ đúng; trong MongoDB so bằng `null` là phép so hợp lệ. Chỉ muốn `null` thật thì dùng `{ email: { $type: "null" } }`.'
+      en: 'It sounds right because only `"c5"` really stores `null`, but `{ email: null }` matches both a field equal to `null` and a missing field, so `"c3"` comes back too. "Nobody" is a habit from SQL, where `= NULL` is never true; in MongoDB equality with `null` is a valid comparison. For a real `null` only, use `{ email: { $type: "null" } }`.'
   - q:
       vi: '`db.customers.find({ email: { $exists: true } })` có trả về `"c5"` (có `email: null`) không?'
       en: 'Does `db.customers.find({ email: { $exists: true } })` return `"c5"` (which has `email: null`)?'

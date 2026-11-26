@@ -79,8 +79,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: 'Nghe hợp lý nếu các lệnh chạy theo thứ tự viết, như một chuỗi bước. Nhưng cursor gom các tùy chọn lại, và MongoDB luôn áp `sort` trước, rồi `skip`, rồi `limit`.'
-      en: 'It sounds right if the calls run in the order written, like a chain of steps. But the cursor collects the options, and MongoDB always applies `sort` first, then `skip`, then `limit`.'
+      vi: 'Nghe hợp lý nếu các lệnh chạy theo thứ tự viết, như một chuỗi bước. Nhưng `find` chỉ tạo một cursor (con trỏ kết quả); `limit` và `sort` chỉ ghi thêm tùy chọn vào cursor, chưa chạy gì. Khi đọc kết quả, MongoDB luôn áp `sort` trước, rồi `skip`, rồi `limit`, nên ra `Tea set` rồi `Coffee beans`. Viết `sort` sau `limit` vì vậy cũng không lỗi.'
+      en: 'It sounds right if the calls run in the order written, like a chain of steps. But `find` only creates a cursor (a handle on the results); `limit` and `sort` just record options on it and run nothing yet. When the results are read, MongoDB always applies `sort` first, then `skip`, then `limit`, giving `Tea set` then `Coffee beans`. That is also why writing `sort` after `limit` is not an error.'
   - q:
       vi: 'Bạn phân trang bằng `sort({ category: 1 }).skip(2).limit(2)`, và nhiều sản phẩm cùng nhóm. Rủi ro là gì?'
       en: 'You page with `sort({ category: 1 }).skip(2).limit(2)`, and many products share a category. What is the risk?'
@@ -94,8 +94,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: 'Nghe hợp lý vì đã có `sort`, nhưng `sort` chỉ hứa thứ tự giữa các khóa khác nhau. Khi hòa, thứ tự có thể khác giữa hai lần gọi. Thêm `_id` làm khóa cuối: `sort({ category: 1, _id: 1 })`.'
-      en: 'It sounds right because there is a `sort`, but `sort` only promises an order between different keys. On a tie, the order may differ from one call to the next. Add `_id` as the last key: `sort({ category: 1, _id: 1 })`.'
+      vi: 'Nghe hợp lý vì đã có `sort`, nhưng `sort` chỉ hứa thứ tự giữa các khóa khác nhau. Các sản phẩm cùng `category` hòa nhau, và thứ tự giữa chúng có thể khác giữa lần đọc trang 1 và lần đọc trang 2. `skip` vẫn bỏ đúng 2 tài liệu, nhưng là 2 tài liệu đầu của thứ tự mới, nên một sản phẩm có thể lặp hoặc biến mất. Thêm `_id` (luôn duy nhất) làm khóa cuối để phá hòa: `sort({ category: 1, _id: 1 })`.'
+      en: 'It sounds right because there is a `sort`, but `sort` only promises an order between different keys. Products with the same `category` tie, and their order may differ between reading page 1 and reading page 2. `skip` still drops exactly 2 documents, but the first 2 of the new order, so a product can repeat or vanish. Add `_id` (always unique) as the last key to break ties: `sort({ category: 1, _id: 1 })`.'
 ---
 ## Mở bài
 

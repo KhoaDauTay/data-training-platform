@@ -101,8 +101,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: 'Nghe hợp lý vì SQL khai kiểu cho mọi cột, nhưng DynamoDB không có schema cho thuộc tính thường. `AttributeDefinitions` chỉ chứa khóa; khai thêm một thuộc tính không làm khóa cũng bị `ValidationException`.'
-      en: 'It sounds right because SQL declares a type for every column, but DynamoDB has no schema for ordinary attributes. `AttributeDefinitions` holds only keys; declaring an attribute that is not a key is also a `ValidationException`.'
+      vi: 'SQL khai kiểu cho mọi cột, nhưng DynamoDB không có schema cho thuộc tính thường: `total` ở đây chỉ được chép theo vào index, không dùng để sắp hay tìm, nên DynamoDB không cần biết kiểu của nó. `AttributeDefinitions` chỉ chứa thuộc tính làm khóa của bảng hoặc index; khai thêm `total` sẽ bị `ValidationException`. Kiểu số hay chuỗi không đổi gì: điều quyết định là `total` có làm khóa hay không.'
+      en: 'SQL declares a type for every column, but DynamoDB has no schema for ordinary attributes: `total` here is only copied into the index, never used to sort or find, so DynamoDB does not need its type. `AttributeDefinitions` holds only attributes used as keys of the table or an index; declaring `total` there gives a `ValidationException`. Number or string changes nothing: what decides is whether `total` is a key.'
   - q:
       vi: Bảng đã chạy, bạn cần thêm một cách sắp đơn theo `total` trong mỗi khách. Thêm gì được?
       en: The table is live and you need another way to sort each customer's orders by `total`. What can you add?
@@ -112,8 +112,8 @@ quiz:
       - { vi: "Không gì cả, phải tạo bảng mới", en: "Nothing, you must create a new table" }
     answer: 1
     why:
-      vi: LSI chỉ tạo cùng lúc tạo bảng. GSI thì thêm được bất cứ lúc nào, và được phép dùng chính partition key của bảng; đổi lại nó chỉ đọc eventually consistent.
-      en: An LSI can only be created with the table. A GSI can be added at any time and may reuse the table's own partition key; in exchange it only allows eventually consistent reads.
+      vi: 'LSI (local secondary index) có đúng khóa cần dùng, nhưng chỉ khai được lúc tạo bảng, nên `UpdateTable` không thêm được LSI. Không cần tạo bảng mới: GSI (global secondary index) thêm được bất cứ lúc nào qua `UpdateTable`, và được phép dùng lại partition key `customerId` của bảng với sort key `total`. Cái giá: GSI chỉ cho đọc nhất quán cuối (eventually consistent), vì nó được cập nhật bất đồng bộ sau lần ghi vào bảng.'
+      en: 'An LSI (local secondary index) has exactly the key you need, but it can only be declared when the table is created, so `UpdateTable` cannot add one. You do not need a new table: a GSI (global secondary index) can be added at any time through `UpdateTable`, and may reuse the table''s partition key `customerId` with `total` as its sort key. The price: a GSI allows only eventually consistent reads, because it is updated asynchronously after the table write.'
 ---
 ## Mở bài
 
@@ -180,7 +180,7 @@ Quên khai khóa của index:
 {"op": "CreateTable", "input": {"TableName": "Returns", "BillingMode": "PAY_PER_REQUEST", "KeySchema": [{"AttributeName": "orderId", "KeyType": "HASH"}], "AttributeDefinitions": [{"AttributeName": "orderId", "AttributeType": "S"}], "GlobalSecondaryIndexes": [{"IndexName": "byReason", "KeySchema": [{"AttributeName": "reason", "KeyType": "HASH"}], "Projection": {"ProjectionType": "KEYS_ONLY"}}]}}
 ```
 
-`reason` là khóa của `byReason` nên phải có trong `AttributeDefinitions`.
+`reason` là partition key của `byReason`: DynamoDB cần biết kiểu của nó (chuỗi, số hay nhị phân) để băm và sắp index, nên `reason` phải có trong `AttributeDefinitions`.
 
 Khai thêm một thuộc tính không làm khóa:
 
@@ -269,7 +269,7 @@ Forgetting to declare an index key:
 {"op": "CreateTable", "input": {"TableName": "Returns", "BillingMode": "PAY_PER_REQUEST", "KeySchema": [{"AttributeName": "orderId", "KeyType": "HASH"}], "AttributeDefinitions": [{"AttributeName": "orderId", "AttributeType": "S"}], "GlobalSecondaryIndexes": [{"IndexName": "byReason", "KeySchema": [{"AttributeName": "reason", "KeyType": "HASH"}], "Projection": {"ProjectionType": "KEYS_ONLY"}}]}}
 ```
 
-`reason` is a key of `byReason`, so it must be in `AttributeDefinitions`.
+`reason` is the partition key of `byReason`: DynamoDB needs its type (string, number or binary) to hash and sort the index, so `reason` must be in `AttributeDefinitions`.
 
 Declaring an attribute that is not a key:
 

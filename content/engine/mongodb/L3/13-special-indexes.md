@@ -36,8 +36,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì index text \"tìm được mọi thứ\", nhưng nó tìm từ trong chuỗi, không lọc theo giá trị của một thuộc tính. Index wildcard dành cho trường có tên không biết trước. Index hashed băm cả tài liệu nhúng thành một giá trị nên không lọc được từng trường con."
-      en: "It sounds right because a text index \"finds anything\", but it searches words in strings, it does not filter on one attribute's value. A wildcard index is for fields whose names are not known in advance. A hashed index hashes the whole embedded document as one value, so it cannot filter on each subfield."
+      vi: "Index text nghe như \"tìm được mọi thứ\", nhưng nó tìm từ trong chuỗi bằng `$text`, không lọc được kiểu `ram` bằng 16 hay `size` bằng M. Index wildcard `attributes.$**` tạo khóa riêng cho từng trường con (`size`, `ram`, `isbn`…), kể cả trường thêm sau này, nên lọc theo trường nào cũng dùng được. Index hashed băm cả tài liệu nhúng `attributes` thành một giá trị, nên không lọc được từng trường con."
+      en: "A text index sounds like it \"finds anything\", but it searches words in strings with `$text`; it cannot filter `ram` equal to 16 or `size` equal to M. The wildcard index `attributes.$**` makes a separate key for each subfield (`size`, `ram`, `isbn`...), including ones added later, so a filter on any of them can use it. A hashed index hashes the whole embedded document `attributes` as one value, so it cannot filter on each subfield."
   - q:
       vi: "Có index `{ customerId: \"hashed\" }` và không có index nào khác trên `customerId`. Truy vấn `{ customerId: { $gt: 1000 } }` dùng được index này không?"
       en: "There is an index `{ customerId: \"hashed\" }` and no other index on `customerId`. Can the query `{ customerId: { $gt: 1000 } }` use it?"
@@ -48,8 +48,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì index thường giữ thứ tự, nhưng hai giá trị gần nhau có hash cách xa nhau, nên index hashed không giữ thứ tự. Docs chính thức ghi rõ truy vấn khoảng không dùng được nó. Cần lọc khoảng thì thêm một index thường trên `customerId`."
-      en: "It sounds right because regular indexes keep order, but two close values get far-apart hashes, so a hashed index keeps no order. The docs state that range queries cannot use it. To filter by range, add a regular index on `customerId`."
+      vi: "Index thường giữ thứ tự, nhưng index hashed sắp theo hash: 1000 và 1001 có hash cách xa nhau, nên các `customerId` lớn hơn 1000 không nằm thành một đoạn liền để quét. Docs chính thức ghi rõ truy vấn khoảng không dùng được nó. Shard collection cũng không giúp index hashed lọc khoảng: shard theo hash chỉ rải dữ liệu, khoảng vẫn phải hỏi mọi shard. Cần lọc khoảng thì thêm một index thường trên `customerId`."
+      en: "Regular indexes keep order, but a hashed index is ordered by hash: 1000 and 1001 get far-apart hashes, so the `customerId` values above 1000 do not form one contiguous run to scan. The docs state that range queries cannot use it. Sharding the collection does not let a hashed index filter ranges: hashed sharding only spreads the data, and a range still has to ask every shard. To filter by range, add a regular index on `customerId`."
 ---
 ## Mở bài
 
@@ -124,7 +124,7 @@ db.stores.insertOne({ location: { type: "Point", coordinates: [16.07, 108.22] } 
 db.stores.insertOne({ location: { type: "Point", coordinates: [108.22, 16.07] } })
 ```
 
-Có index 2dsphere thì `mongod` từ chối bản ghi sai vì vĩ độ phải trong khoảng -90 đến 90; không có index thì nó vào, và mọi truy vấn gần nhất sau đó sai.
+Có index 2dsphere thì `mongod` từ chối tài liệu sai vì vĩ độ phải trong khoảng -90 đến 90; không có index thì nó vào, và mọi truy vấn gần nhất sau đó sai.
 
 Thêm index text thứ hai:
 

@@ -44,8 +44,8 @@ quiz:
       - { vi: "`WHERE delivered_on IS NOT NULL`", en: "`WHERE delivered_on IS NOT NULL`" }
     answer: 1
     why:
-      vi: "Planner chỉ dùng partial index khi điều kiện của truy vấn suy ra được điều kiện của index. Chỉ câu có `delivered_on IS NULL` mới chắc rằng mọi dòng cần tìm đều nằm trong index."
-      en: "The planner uses a partial index only when the query's condition implies the index's condition. Only the query with `delivered_on IS NULL` guarantees every wanted row is in the index."
+      vi: "Index này chỉ chứa đơn chưa giao. Planner chỉ dùng nó khi điều kiện của truy vấn bảo đảm mọi dòng cần tìm nằm trong đó, tức có `delivered_on IS NULL`. Câu chỉ có `customer_id = 40` cũng cần đơn đã giao, không có trong index; câu `IS NOT NULL` lại cần đúng các dòng index bỏ ra."
+      en: "This index holds only undelivered orders. The planner uses it only when the query's condition guarantees every wanted row is inside, which means it has `delivered_on IS NULL`. The query with only `customer_id = 40` also wants delivered orders, which are not in the index; the `IS NOT NULL` query wants exactly the rows the index leaves out."
 ---
 
 ## Ý chính

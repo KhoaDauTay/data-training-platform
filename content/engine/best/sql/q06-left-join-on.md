@@ -53,8 +53,8 @@ quiz:
       - { vi: "Trong `HAVING`", en: "In `HAVING`" }
     answer: 1
     why:
-      vi: "`WHERE` chạy sau join: dòng của cửa hàng không có đơn có `o.order_date` là NULL, điều kiện cho NULL, dòng bị bỏ. Trong `ON`, điều kiện chỉ quyết định đơn nào được ghép, cửa hàng vẫn ở lại với số 0."
-      en: "`WHERE` runs after the join: a store with no orders has `o.order_date` NULL, the condition is NULL, and the row is dropped. In `ON` the condition only decides which orders are matched, and the store stays with a 0."
+      vi: "`WHERE` chạy sau join: dòng của cửa hàng không có đơn có `o.order_date` là NULL, điều kiện cho NULL, dòng bị bỏ. Trong `ON`, điều kiện chỉ quyết định đơn nào được ghép, cửa hàng vẫn ở lại với số 0. `HAVING` lọc sau khi gom nhóm, lúc đó chỉ còn số đếm của cả cửa hàng, không còn ngày của từng đơn để lọc."
+      en: "`WHERE` runs after the join: a store with no orders has `o.order_date` NULL, the condition is NULL, and the row is dropped. In `ON` the condition only decides which orders are matched, and the store stays with a 0. `HAVING` filters after grouping, when only the store's count is left, not each order's date."
 ---
 
 ## Ý chính

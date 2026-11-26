@@ -33,8 +33,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì sắp theo đúng trường của index thường dùng index, nhưng truy vấn không lọc gì nên phải trả mọi phim. Index sparse không có khóa cho phim thiếu `plot`, nên MongoDB không dùng nó, trừ khi `hint()` ép dùng; khi đó kết quả chỉ còn phim có `plot`."
-      en: "It sounds right because sorting on an index's own field usually uses it, but the query has no filter, so it must return every movie. The sparse index has no key for movies without `plot`, so MongoDB does not use it unless `hint()` forces it; then only movies with `plot` come back."
+      vi: "Sắp theo đúng trường của index thường dùng được index, nhưng truy vấn không lọc gì nên phải trả mọi phim. Index sparse không có khóa cho phim thiếu `plot`, nên MongoDB không dùng nó, trừ khi `hint()` ép dùng; khi đó kết quả chỉ còn phim có `plot`. MongoDB không nối thêm phần thiếu: nó quét cả collection rồi sắp trong bộ nhớ."
+      en: "Sorting on an index's own field can usually use the index, but the query has no filter, so it must return every movie. The sparse index has no key for movies without `plot`, so MongoDB does not use it unless `hint()` forces it; then only movies with `plot` come back. MongoDB does not append the missing part: it scans the collection and sorts in memory."
   - q:
       vi: "Bạn ẩn index unique `{ email: 1 }` bằng `hideIndex`. Sau đó chèn một tài liệu có `email` đã tồn tại. Chuyện gì xảy ra?"
       en: "You hide the unique index `{ email: 1 }` with `hideIndex`. Then you insert a document whose `email` already exists. What happens?"
@@ -45,8 +45,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì \"ẩn\" giống \"tắt\", nhưng index ẩn chỉ ẩn khỏi planner. Nó vẫn được cập nhật mỗi lần ghi, vẫn giữ ràng buộc unique, index TTL ẩn vẫn xóa tài liệu hết hạn."
-      en: "It sounds right because \"hidden\" sounds like \"off\", but a hidden index is hidden only from the planner. It is still updated on every write, still enforces its unique constraint, and a hidden TTL index still expires documents."
+      vi: "\"Ẩn\" nghe giống \"tắt\", nhưng index ẩn chỉ ẩn khỏi planner khi chọn kế hoạch đọc. Nó vẫn được cập nhật mỗi lần ghi và vẫn giữ ràng buộc unique, nên lần chèn `email` trùng bị từ chối ngay (index TTL ẩn cũng vẫn xóa tài liệu hết hạn). Vì không bản trùng nào vào được, bỏ ẩn cũng không có gì để dọn; index unique không bao giờ tự xóa tài liệu."
+      en: "\"Hidden\" sounds like \"off\", but a hidden index is hidden only from the planner when it picks a read plan. It is still updated on every write and still enforces its unique constraint, so the insert with a duplicate `email` is rejected at once (a hidden TTL index still expires documents too). Since no duplicate gets in, there is nothing to clean up on unhiding; a unique index never deletes documents by itself."
   - q:
       vi: "Index `{ type: 1 }` tạo với `collation: { locale: \"en\", strength: 2 }`, collection không có collation mặc định. Truy vấn `db.fruit.find({ type: \"apple\" })` không ghi collation. Kết quả?"
       en: "The index `{ type: 1 }` was built with `collation: { locale: \"en\", strength: 2 }`, and the collection has no default collation. The query `db.fruit.find({ type: \"apple\" })` states no collation. What happens?"
@@ -56,8 +56,8 @@ quiz:
       - { vi: "Báo lỗi vì thiếu collation", en: "It fails because the collation is missing" }
     answer: 1
     why:
-      vi: "Muốn index có collation phục vụ so chuỗi, truy vấn phải ghi cùng collation. Không ghi thì truy vấn so nhị phân như thường, chỉ khớp `apple` viết thường, và không dùng index đó."
-      en: "For an index with a collation to serve string comparisons, the query must state the same collation. Without it the query compares as usual, matches only lowercase `apple`, and does not use that index."
+      vi: "Muốn index có collation phục vụ so chuỗi, truy vấn phải ghi cùng collation. Không ghi thì truy vấn dùng luật so mặc định của collection (ở đây không có, tức so từng ký tự, phân biệt hoa thường), chỉ khớp `apple` viết thường, và không dùng index đó. Thiếu collation cũng không phải lỗi: truy vấn vẫn chạy, chỉ là vẫn phân biệt hoa thường."
+      en: "For an index with a collation to serve string comparisons, the query must state the same collation. Without it the query uses the collection's default comparison (none here, so character by character, case-sensitive), matches only lowercase `apple`, and does not use that index. A missing collation is no error either: the query runs, just case-sensitively."
 ---
 ## Mở bài
 
@@ -131,7 +131,7 @@ db.movies.find({ rated: { $ne: null } })
 db.movies.find({ rated: { $exists: true } })
 ```
 
-Câu sai ra 2 phim, câu sửa ra 3.
+`$ne: null` bỏ cả phim thiếu trường lẫn phim `3` có `rated: null`, nên câu sai ra 2 phim; index sparse vẫn có khóa cho phim `3`, nên câu sửa ra 3.
 
 Có index collation mà truy vấn không ghi collation:
 
@@ -152,7 +152,7 @@ db.fruit.find({ type: "apple" }).collation({ locale: "en", strength: 2 })
 db.users.hideIndex("email_1")
 ```
 
-Ẩn chỉ đổi cách đọc. Muốn bỏ ràng buộc thì phải xóa index.
+Ẩn chỉ giấu index khỏi planner khi chọn kế hoạch đọc; mỗi lần ghi vẫn cập nhật index và kiểm unique trên nó. Muốn bỏ ràng buộc thì phải xóa index.
 
 ## Tóm tắt
 
@@ -235,7 +235,7 @@ db.movies.find({ rated: { $ne: null } })
 db.movies.find({ rated: { $exists: true } })
 ```
 
-The wrong query returns 2 movies, the fix returns 3.
+`$ne: null` drops both the movie without the field and movie `3` with `rated: null`, so the wrong query returns 2 movies; the sparse index still has a key for movie `3`, so the fix returns 3.
 
 A collation index, but a query without the collation:
 
@@ -256,7 +256,7 @@ Hiding a unique index and expecting duplicates to go in:
 db.users.hideIndex("email_1")
 ```
 
-Hiding only changes reads. To drop the constraint you must drop the index.
+Hiding only keeps the index out of the planner's read plans; every write still updates it and checks unique on it. To drop the constraint you must drop the index.
 
 ## Recap
 

@@ -56,8 +56,8 @@ lab:
         vi: "`tenantId` và `status` là hai phép bằng, `createdAt` là trường sắp xếp."
         en: "`tenantId` and `status` are two equalities, `createdAt` is the sort field."
       fact:
-        vi: "Bước này chấm theo quy tắc ESR, không đo trên `mongod`: mingo không có index. Quy tắc chấp nhận hai phép bằng theo thứ tự nào cũng được; đặt `tenantId` đầu tiên là quy ước của bài."
-        en: "This step is graded by the ESR rule, not measured on `mongod`: mingo has no indexes. The rule accepts the two equalities in either order; `tenantId` first is this lesson's convention."
+        vi: "Bước này chấm theo luật ESR (Equality, Sort, Range: trường so bằng, rồi trường sắp xếp, rồi trường so khoảng), không đo trên `mongod`: mingo không có index. Quy tắc chấp nhận hai phép bằng theo thứ tự nào cũng được; đặt `tenantId` đầu tiên là quy ước của bài."
+        en: "This step is graded by the ESR rule (Equality, Sort, Range: equality fields, then sort fields, then range fields), not measured on `mongod`: mingo has no indexes. The rule accepts the two equalities in either order; `tenantId` first is this lesson's convention."
     - name: { vi: "Báo cáo của một người bán", en: "One seller's report" }
       task:
         vi: "Số lượng đã bán theo mã hàng của người bán `S07`, chỉ tính đơn `paid`. Trả `_id` là `sku` và `qty` là tổng số lượng, xếp `_id` tăng dần."
@@ -104,8 +104,8 @@ quiz:
     answer: 2
     trap: 0
     why:
-      vi: "Nghe hợp lý khi chỉ có vài người bán. Nhưng đoạn `status: \"paid\"` của index chứa đơn đã trả của cả chợ, nên trang một người bán vẫn đi qua khóa của mọi người khác rồi lọc bỏ. Thêm `tenantId` đầu tiên thì đoạn quét chỉ còn đơn của người đó."
-      en: "It sounds right while there are only a few sellers. But the `status: \"paid\"` part of the index holds the whole market's paid orders, so one seller's page still walks everyone else's keys and filters them out. With `tenantId` first, the scanned range holds only that seller's orders."
+      vi: "\"Phần đọc thêm rất nhỏ\" nghe hợp lý khi chỉ có vài người bán. Nhưng đoạn `status: \"paid\"` của index chứa đơn đã trả của cả chợ, nên trang một người bán vẫn đi qua khóa của mọi người khác, mở từng tài liệu để xem `tenantId` rồi lọc bỏ. Phép `sort` không phải lý do: index cũ đã có `createdAt` ngay sau trường bằng `status`, nên thứ tự sắp đã lấy được từ index. Thêm `tenantId` đầu tiên thì đoạn quét chỉ còn đơn của người đó."
+      en: "\"The extra reading is tiny\" sounds right while there are only a few sellers. But the `status: \"paid\"` part of the index holds the whole market's paid orders, so one seller's page still walks everyone else's keys, opening each document to check `tenantId` and filtering it out. The `sort` is not the reason: the old index already has `createdAt` right after the equality field `status`, so the sort order already comes from the index. With `tenantId` first, the scanned range holds only that seller's orders."
   - q:
       vi: "Báo cáo của `S07` đặt `$unwind` trước rồi mới `$match: { tenantId: \"S07\" }`, và kết quả đúng. Điều gì đáng lo trên `mongod`?"
       en: "The `S07` report puts `$unwind` first and only then `$match: { tenantId: \"S07\" }`, and the result is right. What is the concern on `mongod`?"
@@ -116,8 +116,8 @@ quiz:
     answer: 0
     trap: 2
     why:
-      vi: "Nghe hợp lý vì trình tối ưu có dời `$match`, nhưng trang tối ưu pipeline không hứa dời qua `$unwind`. Tự đặt `$match` trên `tenantId` đầu tiên: stage đó dùng được index mở đầu bằng `tenantId`."
-      en: "It sounds right because the optimizer does move `$match`, but the pipeline optimization page promises no move across `$unwind`. Put the `$match` on `tenantId` first yourself: that stage can use an index that starts with `tenantId`."
+      vi: "\"Không gì\" nghe hợp lý vì trình tối ưu có dời `$match`, nhưng trang tối ưu pipeline không hứa dời qua `$unwind`. Khi đó `$unwind` tách mọi đơn của cả ba người bán thành từng dòng hàng, rồi `$match` mới bỏ phần của `S03` và `S12`. `allowDiskUse` không liên quan: `$unwind` xử lý từng tài liệu một, không gom cả tập vào bộ nhớ nên không phải ghi ra đĩa. Tự đặt `$match` trên `tenantId` đầu tiên: stage đó dùng được index mở đầu bằng `tenantId`."
+      en: "\"Nothing\" sounds right because the optimizer does move `$match`, but the pipeline optimization page promises no move across `$unwind`. Then `$unwind` splits every order of all three sellers into single lines, and only then does `$match` drop the `S03` and `S12` part. `allowDiskUse` is beside the point: `$unwind` handles one document at a time and never gathers the whole set in memory, so it does not spill to disk. Put the `$match` on `tenantId` first yourself: that stage can use an index that starts with `tenantId`."
 ---
 ## Mở bài
 

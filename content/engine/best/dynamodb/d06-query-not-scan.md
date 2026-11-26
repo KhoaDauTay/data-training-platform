@@ -94,8 +94,8 @@ quiz:
       - { vi: "0, vì filter chạy trước khi đọc", en: "0, because the filter runs before the read" }
     answer: 1
     why:
-      vi: "`FilterExpression` lọc **sau** khi đọc: `ScannedCount` là 48, `Count` là 8, và RCU tính theo 48 item đã đọc. `Query` theo partition key chỉ đọc item collection của khách đó."
-      en: "`FilterExpression` filters **after** the read: `ScannedCount` is 48, `Count` is 8, and RCU is charged for the 48 items read. A `Query` on the partition key reads only that customer's item collection."
+      vi: "Không phải 8, cũng không phải 0: `FilterExpression` lọc **sau** khi đọc. `Scan` đọc cả 48 item (`ScannedCount` là 48), bỏ 40, trả 8 (`Count` là 8), và RCU (read capacity unit, đơn vị đọc) tính theo 48 item đã đọc. `Query` theo partition key chỉ đọc item collection của khách đó."
+      en: "Not 8, and not 0: `FilterExpression` filters **after** the read. The `Scan` reads all 48 items (`ScannedCount` is 48), drops 40, returns 8 (`Count` is 8), and RCU (read capacity unit) is charged for the 48 items read. A `Query` on the partition key reads only that customer's item collection."
 ---
 
 ## Ý chính

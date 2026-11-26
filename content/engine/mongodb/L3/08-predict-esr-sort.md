@@ -37,8 +37,8 @@ predict:
   answer: 1
   trap: 0
   why:
-    vi: "Nghe hợp lý vì `year` có mặt trong index, nhưng có mặt chưa đủ: nó phải nằm liền thứ tự trong vùng quét. Trong khối `directors` cố định, khóa sắp theo `runtime` trước; đọc một khoảng `runtime` thì `year` nhảy lên xuống, nên MongoDB phải sắp trong bộ nhớ (stage `SORT`). Index ESR `{ directors: 1, year: 1, runtime: 1 }` không cần `SORT`."
-    en: "It sounds right because `year` is in the index, but being there is not enough: it must be in order across the scanned range. Inside the fixed `directors` block the keys are ordered by `runtime` first; reading a `runtime` range makes `year` jump up and down, so MongoDB must sort in memory (a `SORT` stage). The ESR index `{ directors: 1, year: 1, runtime: 1 }` needs no `SORT`."
+    vi: "`year` có mặt trong index chưa đủ: nó phải theo thứ tự suốt vùng quét. Trong khối `directors` cố định, khóa sắp theo `runtime` trước; đọc khoảng `runtime` dưới 130 thì `year` nhảy lên xuống (phim ngắn hơn chưa chắc cũ hơn), nên MongoDB phải sắp trong bộ nhớ (stage `SORT`). Không phải quét cả collection: `directors` là trường đầu và được so bằng, nên index vẫn được dùng (`IXSCAN`). Index theo luật ESR (Equality, Sort, Range: trường so bằng, rồi trường sắp xếp, rồi trường so khoảng) `{ directors: 1, year: 1, runtime: 1 }` không cần `SORT`."
+    en: "`year` being in the index is not enough: it must stay in order across the scanned range. Inside the fixed `directors` block the keys are ordered by `runtime` first; reading the `runtime` range below 130 makes `year` jump up and down (a shorter film is not always an older one), so MongoDB must sort in memory (a `SORT` stage). It is not a whole-collection scan: `directors` is the leading field and matched by equality, so the index is still used (`IXSCAN`). The index following the ESR rule (Equality, Sort, Range: equality fields, then sort fields, then range fields) `{ directors: 1, year: 1, runtime: 1 }` needs no `SORT`."
   recorded:
     tier: docs
     server: MongoDB
@@ -55,8 +55,8 @@ quiz:
       - { vi: "Không, vì `$lt` tự sắp kết quả", en: "No, because `$lt` sorts the result by itself" }
     answer: 1
     why:
-      vi: "Một index đọc được theo cả hai chiều. Với `directors` cố định, sắp theo một trường duy nhất `year` giảm dần chỉ là đọc ngược đoạn đó. Chiều chỉ quan trọng khi sắp theo nhiều trường với chiều khác nhau."
-      en: "An index can be read in both directions. With `directors` fixed, sorting on the single field `year` descending is just reading that part backwards. Direction matters only when sorting on several fields with mixed directions."
+      vi: "Index sắp `year` tăng dần là đúng, nhưng index đọc được theo cả hai chiều: với `directors` cố định, sắp một trường `year` giảm dần chỉ là đọc ngược đoạn đó, không cần `SORT`. `$lt` chỉ lọc `runtime`, không sắp gì; thứ tự đến từ vị trí của `year` ngay sau trường so bằng. Chiều chỉ quan trọng khi sắp theo nhiều trường với chiều trộn lẫn."
+      en: "The index does sort `year` ascending, but an index can be read in both directions: with `directors` fixed, sorting the single field `year` descending is just reading that part backwards, no `SORT` needed. `$lt` only filters `runtime` and sorts nothing; the order comes from `year` sitting right after the equality field. Direction matters only when sorting on several fields with mixed directions."
 ---
 ## Mở bài
 

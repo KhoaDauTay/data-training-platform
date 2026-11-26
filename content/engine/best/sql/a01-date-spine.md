@@ -51,8 +51,8 @@ quiz:
       - { vi: "6, các tháng trống có NULL", en: "6, with NULL for the empty months" }
     answer: 1
     why:
-      vi: "`GROUP BY` chỉ tạo nhóm từ dòng có thật. Tháng không có đơn nào thì không có nhóm. Trục ngày (`generate_series`) + `LEFT JOIN` + `count(o.id)` mới cho đủ 6 tháng với số 0."
-      en: "`GROUP BY` only builds groups from rows that exist. A month with no orders has no group. A date spine (`generate_series`) + `LEFT JOIN` + `count(o.id)` gives all 6 months, with 0s."
+      vi: "`GROUP BY` chỉ tạo nhóm từ dòng có thật. Tháng 6–8 không có đơn nào nên không có nhóm, không ra dòng nào, kể cả dòng 0 hay NULL: chỉ còn 3 dòng (tháng 9–11). Trục ngày (`generate_series`) + `LEFT JOIN` + `count(o.id)` mới cho đủ 6 tháng với số 0."
+      en: "`GROUP BY` only builds groups from rows that exist. June to August have no orders, so no group and no row at all, not even a 0 or NULL one: 3 rows remain (September to November). A date spine (`generate_series`) + `LEFT JOIN` + `count(o.id)` gives all 6 months, with 0s."
 ---
 
 ## Ý chính

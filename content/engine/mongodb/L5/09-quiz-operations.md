@@ -28,8 +28,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý nếu coi oplog là nhật ký đầy đủ, nhưng oplog là capped collection: mục cũ bị cắt khi đầy. Secondary chỉ đồng bộ lại bằng replication nếu kết nối lại trong cửa sổ oplog; 30 giờ dài hơn 24 giờ, nên nó phải initial sync."
-      en: "It sounds right if the oplog were a full log, but the oplog is a capped collection: old entries are cut when it is full. A secondary can catch up through replication only within the oplog window; 30 hours is longer than 24, so it needs an initial sync."
+      vi: "Nghe hợp lý nếu coi oplog là nhật ký đầy đủ, nhưng oplog là capped collection: mục cũ bị cắt khi đầy. Secondary chỉ đồng bộ lại bằng replication nếu kết nối lại trong cửa sổ oplog; 30 giờ dài hơn 24 giờ, nên 6 giờ thao tác đầu tiên nó cần đã bị cắt khỏi oplog. Nó phải initial sync: xóa dữ liệu của mình và chép lại toàn bộ từ một thành viên khác."
+      en: "It sounds right if the oplog were a full log, but the oplog is a capped collection: old entries are cut when it is full. A secondary can catch up through replication only within the oplog window; 30 hours is longer than 24, so the first 6 hours of operations it needs are already cut from the oplog. It needs an initial sync: drop its data and copy everything again from another member."
   - q:
       vi: "Range size mặc định 128 MB. Shard A giữ hơn shard B 300 MB của một collection. Balancer có di chuyển không?"
       en: "Default range size of 128 MB. Shard A holds 300 MB more of a collection than shard B. Does the balancer migrate?"
@@ -39,8 +39,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Chênh hơn một range nghe như đủ để chuyển, nhưng collection coi là cân bằng khi chênh lệch dưới ba lần range size đã cấu hình. Với 128 MB, ngưỡng là 384 MB."
-      en: "A gap larger than one range sounds like enough to move, but a collection counts as balanced while the difference is under three times the configured range size. With 128 MB the threshold is 384 MB."
+      vi: "Chênh hơn một range nghe như đủ để chuyển, nhưng collection coi là cân bằng khi chênh lệch dưới ba lần range size đã cấu hình. Với 128 MB, ngưỡng là 3 × 128 = 384 MB; chênh 300 MB còn dưới ngưỡng, nên balancer chưa chuyển gì. Ngưỡng này tránh việc chuyển dữ liệu qua lại vì những chênh lệch nhỏ."
+      en: "A gap larger than one range sounds like enough to move, but a collection counts as balanced while the difference is under three times the configured range size. With 128 MB the threshold is 3 × 128 = 384 MB; a 300 MB gap is below it, so the balancer moves nothing yet. The threshold avoids moving data back and forth over small gaps."
   - q:
       vi: "Thành viên nào không bao giờ thành primary?"
       en: "Which member never becomes primary?"

@@ -51,8 +51,8 @@ quiz:
       - { vi: "0, vì `ADD` không tính phí", en: "0, because `ADD` is free" }
     answer: 1
     why:
-      vi: "Ghi tính theo khối 1 KB của cỡ item, lấy cỡ lớn hơn giữa trước và sau khi sửa, kể cả khi chỉ sửa một thuộc tính. Đưa bộ đếm ra một item nhỏ riêng thì mỗi lần cộng còn 1 WCU."
-      en: "Writes are charged in 1 KB blocks of the item size, the larger of before and after the update, even when only one attribute changes. Moving the counter into its own small item brings each increment down to 1 WCU."
+      vi: "Không phải 1, cũng không phải 0: WCU (write capacity unit, đơn vị ghi) tính theo cỡ cả item, không theo phần bị sửa, và `ADD` cũng tính phí. 1 WCU ghi tối đa 1 KB, lấy cỡ lớn hơn giữa trước và sau khi sửa: 6 KB / 1 KB = 6 WCU, thành 7 nếu item vượt 6 KB. Đưa bộ đếm ra một item riêng dưới 1 KB thì mỗi lần cộng còn 1 WCU."
+      en: "Not 1, and not 0: WCU (write capacity unit) is charged on the whole item size, not the changed part, and `ADD` is billed too. 1 WCU writes up to 1 KB, taking the larger of the sizes before and after: 6 KB / 1 KB = 6 WCU, or 7 if the item grows past 6 KB. A counter in its own item under 1 KB costs 1 WCU per increment."
 ---
 
 ## Ý chính

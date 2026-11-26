@@ -102,8 +102,8 @@ quiz:
     answer: 0
     trap: 1
     why:
-      vi: Nghe hợp lý vì lệnh có hai toán tử như hai bước, nhưng một thao tác ghi trên một tài liệu là nguyên tử, kể cả khi nó sửa nhiều trường và tài liệu nhúng (embedded document). Cần nhiều tài liệu cùng đổi một lúc thì mới phải nghĩ tới transaction.
-      en: It sounds right because the command has two operators like two steps, but a write on a single document is atomic, even when it changes several fields and embedded documents. Only when several documents must change together do you need a transaction.
+      vi: Nghe hợp lý vì lệnh có hai toán tử như hai bước, nhưng một thao tác ghi trên một tài liệu là nguyên tử (atomic, hoặc xong trọn vẹn hoặc như chưa chạy), kể cả khi nó sửa nhiều trường và tài liệu nhúng (embedded document). Vì vậy không có trạng thái nửa chừng với `tier` mới mà chưa có nhãn. Mảng `tags` cũng không thể mất, vì cũng nhờ tính nguyên tử đó, bản cũ của tài liệu còn nguyên cho tới khi bản mới được ghi trọn. Cần nhiều tài liệu cùng đổi một lúc thì mới phải nghĩ tới transaction.
+      en: It sounds right because the command has two operators like two steps, but a write on a single document is atomic (it either completes in full or acts as if it never ran), even when it changes several fields and embedded documents. So there is no halfway state with the new `tier` but no tag. The `tags` array cannot be lost either, since by the same atomicity the old version of the document stays whole until the new one is fully written. Only when several documents must change together do you need a transaction.
   - q:
       vi: 'Ở bước 3, vì sao dùng `"lines.qty"` mà không cần `$elemMatch`?'
       en: 'In step 3, why is `"lines.qty"` enough, without `$elemMatch`?'
@@ -117,8 +117,8 @@ quiz:
     answer: 0
     trap: 2
     why:
-      vi: 'Nghe hợp lý vì kết quả bước 3 đúng, nhưng dot notation không giữ các điều kiện trên cùng một phần tử. Ở đây chỉ có một điều kiện nên không sao; có hai điều kiện trên cùng một dòng thì cần `$elemMatch`.'
-      en: 'It sounds right because step 3 gives the right result, but dot notation does not keep conditions on the same element. Here there is only one condition, so it does not matter; with two conditions on the same line you need `$elemMatch`.'
+      vi: 'Nghe hợp lý vì kết quả bước 3 đúng, nhưng dot notation không giữ các điều kiện trên cùng một phần tử. Ở đây chỉ có một điều kiện (`qty` từ 4), nên phần tử nào thỏa nó cũng là một dòng hàng số lượng lớn, đúng như kho cần. Có hai điều kiện trên cùng một dòng thì mới cần `$elemMatch`, và `$elemMatch` dùng được cho mảng tài liệu như `lines`, không chỉ mảng giá trị đơn.'
+      en: 'It sounds right because step 3 gives the right result, but dot notation does not keep conditions on the same element. Here there is only one condition (`qty` of 4 or more), so any element that meets it is a bulk line, which is what the warehouse wants. Only two conditions on the same line need `$elemMatch`, and `$elemMatch` works on arrays of documents such as `lines`, not only on arrays of plain values.'
 ---
 ## Mở bài
 

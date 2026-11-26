@@ -39,8 +39,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì database riêng tách quyền tốt nhất trong một cụm. Nhưng trang của Atlas dành mô hình đó cho số tenant nhỏ và ổn định (tới vài trăm): mỗi collection và mỗi index là một tệp, Atlas khuyên dưới 1000 tệp dữ liệu mỗi nút. Số tenant tăng mãi, dạng dữ liệu giống nhau là trường hợp của collection chung."
-      en: "It sounds right because an own database splits access best inside one cluster. But the Atlas page keeps that model for a small, stable number of tenants (up to a few hundred): every collection and every index is a file, and Atlas advises under 1000 data files per node. An ever-growing number of tenants with the same data shape is the shared-collection case."
+      vi: "Nghe hợp lý vì database riêng tách quyền tốt nhất trong một cụm. Nhưng trang của Atlas dành mô hình đó cho số tenant nhỏ và ổn định (tới vài trăm): mỗi collection và mỗi index là một tệp, Atlas khuyên dưới 1000 tệp dữ liệu mỗi nút. Với 4.000 người bán, mỗi người ít nhất một collection `orders` và index `_id` của nó, đã là 4.000 × 2 = 8.000 tệp, gấp tám lần mức khuyên, và còn tăng mỗi tháng. Collection cho mỗi người bán trong một database gặp đúng giới hạn tệp đó, và trang này khuyên tránh vì mọi truy vấn phải ghép tên collection. Số tenant tăng mãi, dạng dữ liệu giống nhau là trường hợp của collection chung."
+      en: "It sounds right because an own database splits access best inside one cluster. But the Atlas page keeps that model for a small, stable number of tenants (up to a few hundred): every collection and every index is a file, and Atlas advises under 1000 data files per node. With 4,000 sellers, each with at least one `orders` collection and its `_id` index, that is already 4,000 × 2 = 8,000 files, eight times the advice, and growing every month. A collection per seller in one database hits the same file limit, and the page advises against it because every query has to build the collection name. An ever-growing number of tenants with the same data shape is the shared-collection case."
   - q:
       vi: "`orders` đã shard theo `{ tenantId: 1, createdAt: 1 }`. Bạn muốn đơn của người bán `S07` nằm trên shard phần cứng mạnh. Khoảng của zone viết thế nào?"
       en: "`orders` is sharded on `{ tenantId: 1, createdAt: 1 }`. You want seller `S07`'s orders on the powerful shard. How is the zone range written?"
@@ -51,8 +51,8 @@ quiz:
     answer: 2
     trap: 1
     why:
-      vi: "Nghe hợp lý vì tên gọi gợi tới địa lý, nhưng docs zone sharding nêu ba cách dùng: tách một phần dữ liệu lên shard chọn sẵn, đặt dữ liệu gần ứng dụng, và chia theo phần cứng. Với shard key kép, khoảng của zone phải chứa tiền tố của shard key, nên khoảng chỉ trên `createdAt` không viết được."
-      en: "It sounds right because the name hints at geography, but the zone sharding docs list three uses: isolate a subset of data on chosen shards, keep data close to the application, and split by hardware. With a compound shard key the zone range must include the shard key prefix, so a range on `createdAt` alone cannot be written."
+      vi: "Nghe hợp lý vì tên gọi gợi tới địa lý, nhưng docs zone sharding nêu ba cách dùng: tách một phần dữ liệu lên shard chọn sẵn, đặt dữ liệu gần ứng dụng, và chia theo phần cứng. Với shard key kép, khoảng của zone phải chứa tiền tố của shard key, nên khoảng chỉ trên `createdAt` không viết được: nó cũng sẽ gom đơn của mọi người bán trong khoảng thời gian đó. Khoảng đúng đi từ `tenantId` là `S07` với `createdAt` là `MinKey` tới `S07` với `MaxKey`, nên phủ mọi đơn của `S07` và không đơn nào của người khác."
+      en: "It sounds right because the name hints at geography, but the zone sharding docs list three uses: isolate a subset of data on chosen shards, keep data close to the application, and split by hardware. With a compound shard key the zone range must include the shard key prefix, so a range on `createdAt` alone cannot be written: it would also catch every seller's orders in that period. The right range runs from `tenantId` `S07` with `createdAt` `MinKey` to `S07` with `MaxKey`, so it covers every order of `S07` and none of anyone else's."
 ---
 ## Mở bài
 

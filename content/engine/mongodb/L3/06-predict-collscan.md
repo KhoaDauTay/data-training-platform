@@ -37,8 +37,8 @@ predict:
   answer: 1
   trap: 2
   why:
-    vi: "Nghe hợp lý vì chỉ 3809 tài liệu được trả, nhưng `totalDocsExamined` đếm mọi tài liệu đã đọc, không chỉ tài liệu khớp. Không có index trên `year`, nên planner quét cả collection: đọc 21.349 để trả 3809. `COLLSCAN` không đọc khóa index nên `totalKeysExamined` = 0."
-    en: "It sounds right because only 3809 documents are returned, but `totalDocsExamined` counts every document read, not only the matches. With no index on `year`, the planner scans the whole collection: it reads 21,349 to return 3809. A `COLLSCAN` reads no index keys, so `totalKeysExamined` = 0."
+    vi: "3809 là số tài liệu trả về, nhưng `totalDocsExamined` đếm mọi tài liệu đã đọc, khớp hay không. Không có index trên `year`, nên planner quét cả collection: đọc 21.349 để trả 3809. `COLLSCAN` không đọc khóa index nên `totalKeysExamined` = 0. Index `_id` không sắp theo `year` nên không giúp lọc, planner không quét nó; `FETCH` trên `IXSCAN` chỉ xuất hiện sau khi tạo `{ year: 1 }`."
+    en: "3809 is the number of documents returned, but `totalDocsExamined` counts every document read, matching or not. With no index on `year`, the planner scans the whole collection: it reads 21,349 to return 3809. A `COLLSCAN` reads no index keys, so `totalKeysExamined` = 0. The `_id` index is not ordered by `year`, so it cannot help the filter and the planner does not scan it; `FETCH` over `IXSCAN` appears only after creating `{ year: 1 }`."
   recorded:
     tier: docs
     server: MongoDB
@@ -66,8 +66,8 @@ quiz:
       - { vi: "Truy vấn được phủ, không đọc tài liệu nào", en: "The query is covered and reads no document" }
     answer: 0
     why:
-      vi: "Ba số bằng nhau nghĩa là không đọc thừa khóa hay tài liệu. Truy vấn không được phủ: `totalDocsExamined` khác 0 và kế hoạch có `FETCH`."
-      en: "Three equal numbers mean no extra keys or documents were read. The query is not covered: `totalDocsExamined` is not 0 and the plan has a `FETCH`."
+      vi: "Ba số bằng nhau nghĩa là index đọc 3809 khóa, mỗi khóa mở một tài liệu, và tài liệu nào mở cũng được trả: không đọc thừa. Không còn quét cả collection: khi đó `totalDocsExamined` sẽ là 21.349, không phải 3809. Truy vấn cũng không được phủ (trả lời chỉ từ index): `totalDocsExamined` khác 0 và kế hoạch có `FETCH`, tức vẫn mở tài liệu."
+      en: "Three equal numbers mean the index read 3809 keys, each key opened one document, and every opened document was returned: nothing extra was read. It no longer scans the whole collection: then `totalDocsExamined` would be 21,349, not 3809. Nor is the query covered (answered from the index alone): `totalDocsExamined` is not 0 and the plan has a `FETCH`, so documents are still opened."
 ---
 ## Mở bài
 

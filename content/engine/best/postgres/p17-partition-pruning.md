@@ -50,8 +50,8 @@ quiz:
       - { vi: "`extract(month FROM at) = 10`", en: "`extract(month FROM at) = 10`" }
     answer: 1
     why:
-      vi: "Partition pruning so điều kiện với biên của từng partition. Chỉ khi khóa đứng một mình, so với hằng số, planner mới biết partition nào không thể chứa dòng cần."
-      en: "Partition pruning compares the condition with each partition's bounds. Only when the key stands alone against constants can the planner tell which partitions cannot hold matching rows."
+      vi: "Partition pruning (bỏ qua partition không cần đọc) so điều kiện với biên của từng partition, ở đây là các mốc của cột `at`. Chỉ khi `at` đứng một mình so với hằng số, planner mới biết partition nào không thể chứa dòng cần. `date_trunc` và `extract` là biểu thức tính từ `at`, không so được với biên, nên mọi partition đều bị đọc."
+      en: "Partition pruning (skipping partitions that need no reading) compares the condition with each partition's bounds, here the boundaries of column `at`. Only when `at` stands alone against constants can the planner tell which partitions cannot hold matching rows. `date_trunc` and `extract` are expressions computed from `at` that cannot be compared with the bounds, so every partition is read."
 ---
 
 ## Ý chính
