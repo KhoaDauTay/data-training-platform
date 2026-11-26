@@ -14,10 +14,10 @@ nodes:
     shape: bars
     label: "sales:2026-10"
     items:
-      - { label: "store:2", value: 3.4, note: "340" }
-      - { label: "store:3", value: 3.1, note: "310" }
-      - { label: "store:1", value: 1.2, note: { vi: "120 · hạng 2", en: "120 · rank 2" }, tone: new }
-      - { label: "store:4", value: 1.05, note: "105" }
+      - { label: "store:2", value: 13.6, note: "340" }
+      - { label: "store:3", value: 12.4, note: "310" }
+      - { label: "store:1", value: 4.8, note: { vi: "120 · hạng 2", en: "120 · rank 2" }, tone: new }
+      - { label: "store:4", value: 4.2, note: "105" }
 rows:
   - [cmd]
   - [z]

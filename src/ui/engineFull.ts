@@ -149,7 +149,7 @@ export function sections(x: FullCtx, keep: (id: SectionId) => boolean): HTMLElem
     return h('section', { id: `ek-${s.id}`, 'data-sec': s.id, class: 'flex scroll-mt-4 flex-col gap-3', 'aria-labelledby': `ek-${s.id}-h` },
       head(`ek-${s.id}-h`, SEC_ICON[s.id], SECTIONS[s.id][c.lang === 'vi' ? 0 : 1],
         s.id === 'example' && n && c.make ? h('span', { class: 'text-body-sm text-muted tabular-nums' }, ft('run.ran', { k: ran, n })) : null),
-      s.id === 'example' && n && c.make ? h('p', { class: 'm-0 text-body-sm text-muted' }, ft('run.note', { rt: RT[l.engine] })) : null,
+      s.id === 'example' && n && c.make ? h('p', { class: 'm-0 text-body-sm text-muted' }, ft(l.engine === 'redis' ? 'run.noteSim' : 'run.note', { rt: RT[l.engine] })) : null,
       ...blocksOf(s.text[c.lang]).map((b) => b.kind === 'p' ? h('p', { class: 'm-0' }, ...c.inline(b.text, true))
         : b.kind === 'ul' ? h('ul', { class: 'm-0 list-disc space-y-1 pl-5' }, ...b.items.map((t) => h('li', {}, ...c.inline(t, true))))
           // v38 (R2 E10): a marked block that cannot run here (```text) still gets its Sai/Sửa card, without Run
