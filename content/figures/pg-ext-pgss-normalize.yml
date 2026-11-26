@@ -1,6 +1,6 @@
 # v43 R2 (extensions-plan §b, lesson e-pg-ext-11): pg_stat_statements folds calls that differ only in their constants into one
 # row; since PostgreSQL 18 it also folds IN lists that differ only in length. Data (lesson setup, checked in PGlite 0.5.16):
-# id = 1, 2, 3 → "… WHERE id = $1", calls 3; IN (1, 2) and IN (4, 5, 6, 7) → "… IN ($1 /*, ... */)", calls 2.
+# id = 1, 2, 3 → "… WHERE id = $1", calls 3; IN (1, 2) and IN (4, 5, 6, 7) → "IN ($1 /*, ... */)", calls 2.
 # Source: https://www.postgresql.org/docs/18/pgstatstatements.html
 title: { vi: "Ba lần gọi, một dòng thống kê", en: "Three calls, one statistics row" }
 caption:
@@ -35,4 +35,4 @@ steps:
     set:
       a: { label: "IN (1, 2)" }
       b: { label: "IN (4, 5, 6, 7)" }
-      row: { cells: [["… IN ($1 /*, ... */)", "2"]] }
+      row: { cells: [["IN ($1 /*, ... */)", "2"]] }

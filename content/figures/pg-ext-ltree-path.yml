@@ -16,10 +16,10 @@ nodes:
   - { id: lua, label: lua }
   - { id: giay, label: giay }
   - { id: path, shape: grid, label: category, sub: nlevel = 3, head: ["1", "2", "3"], cells: [[den_long, hoi_an, lua]] }
-  - { id: cond, shape: key, label: "<@ 'den_long.hoi_an'", sub: { vi: "3 món", en: "3 products" }, tone: ghost }
+  - { id: cond, shape: key, label: "<@ 'den_long.hoi_an'", tone: ghost }
 rows:
   - [root]
-  - [hoi, hue, tt]
+  - [hue, hoi, tt]
   - [lua, giay]
   - [path, cond]
 edges:
