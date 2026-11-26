@@ -427,6 +427,7 @@ function cardPage(c: BpCard): HTMLElement {
   const muted = c.lint ? tips().mute.includes(c.lint) : false;
   const res = typeof v.run === 'object' && 'v' in v.run ? v.run : undefined;
   const example = section('example', c);
+  const rel = d.track?.related(d, c.requires) ?? null;
   const lessonLink = (id: string): HTMLElement | null => {
     const fm = Object.values(lessonsMeta).map((x) => x.fm as { id?: string; engine?: string; level?: string; title?: string; title_en?: string }).find((x) => x.id === id);
     return fm?.engine && fm.level ? h('a', { href: d.engineHash(fm.engine, fm.level, id), class: cls.cx(cls.PILL, 'min-h-6 bg-code text-ink no-underline hover:bg-accent-soft') }, (lang() === 'vi' ? fm.title : fm.title_en) ?? id) : null;
@@ -485,8 +486,9 @@ function cardPage(c: BpCard): HTMLElement {
       h('ul', { class: 'm-0 list-none space-y-1 p-0 text-body-sm' }, ...c.sources.map((u) => h('li', {}, srcLink(u, c.sourceTitles?.[u])))),
       h('p', { class: 'm-0 text-caption text-muted' }, bt('verified', { version: c.verified.version, date: c.verified.date }))),
     h('nav', { class: cls.cx(cls.CARD, 'flex flex-wrap items-center justify-end gap-2 p-4'), 'aria-label': t.title[lang()] },
+      rel, // v47 S2 (I7): the related lesson is the card's one primary "next"
       prev ? h('a', { href: rt.hash(c.track, prev.id), class: cls.cx(cls.BTN_GHOST, 'inline-flex items-center gap-1 px-4 py-2 no-underline'), title: prev.title[lang()] }, d.icon('chevronLeft', 'size-4'), bt('prev')) : null,
-      next ? h('a', { href: rt.hash(c.track, next.id), class: cls.cx(isDone ? cls.BTN_GO : cls.BTN_SECONDARY, 'inline-flex items-center gap-1 px-4 py-2 no-underline'), title: next.title[lang()] }, bt('next'), d.icon('chevronRight', 'size-4')) : null));
+      next ? h('a', { href: rt.hash(c.track, next.id), class: cls.cx(isDone && !rel ? cls.BTN_GO : cls.BTN_SECONDARY, 'inline-flex items-center gap-1 px-4 py-2 no-underline'), title: next.title[lang()] }, bt('next'), d.icon('chevronRight', 'size-4')) : null));
 }
 
 /** #/engine/best/habits (catalogue §14.3): one row per habit; chips only for released cards. */

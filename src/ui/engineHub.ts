@@ -74,6 +74,7 @@ function engineCard(c: HubCtx, e: EngineId, ok: Set<string>): HTMLElement {
         h('h3', { class: 'm-0 text-title font-bold' }, h('a', { href: c.d.engineHash(e), class: 'text-ink no-underline after:absolute after:inset-0' }, c.nameOf(e))),
         h('p', { class: 'm-0 text-body-sm text-muted' }, c.et(`desc.${e}`)),
         e === 'design' ? h('p', { class: cls.cx(c.d.ui.ABOVE, 'm-0 text-caption text-muted') }, h('a', { href: c.d.engineHash('postgres', 'L3'), class: 'text-muted' }, c.et('design.deep'))) : null)),
+    c.d.track?.facts(c, e, true) ?? null, // v47 S2 (I4): who for, prerequisites, total time
     h('ol', { class: 'm-0 grid list-none grid-cols-5 gap-2 p-0', 'aria-label': c.et('levels') }, ...c.trees[e].levels.filter((lv) => lv.modules.length).map((lv) => {
       const q = c.progressOf(lv.modules.flatMap((m) => m.lessons), ok);
       const here = next?.level === lv.level;

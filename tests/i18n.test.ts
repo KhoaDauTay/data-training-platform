@@ -197,6 +197,21 @@ describe('chữ UI khu Database Engine (src/i18n/engine.ts, ENG-CORE L220)', () 
   });
 });
 
+describe('chữ UI khóa học CSDL (src/i18n/engineTrack.ts, v47 S2 L940)', () => {
+  it('placeholder khớp, EN khác VI, EN không dấu, không giọng game, có dòng "Dành cho" mỗi khóa', async () => {
+    const { TRACK_DICT } = await import('../src/i18n/engineTrack');
+    const { ENGINES } = await import('../src/engine/content');
+    for (const [k, v] of Object.entries(TRACK_DICT.vi)) {
+      const e = TRACK_DICT.en[k as keyof typeof TRACK_DICT.en];
+      expect([k, placeholders(e)]).toEqual([k, placeholders(v)]);
+      expect([k, e]).not.toEqual([k, v]);
+      expect([k, /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(e)]).toEqual([k, false]);
+      expect(`${v} ${e}`).not.toMatch(GAME_TONE);
+    }
+    for (const e of ENGINES) expect(TRACK_DICT.vi).toHaveProperty([`for.${e}`]);
+  });
+});
+
 describe('chữ UI bảng Partition / Chi phí (src/i18n/engineDynamo.ts, v26 L380)', () => {
   it('placeholder khớp, EN khác VI, EN không dấu, không giọng game, không "sắp có"', async () => {
     const { DY_DICT } = await import('../src/i18n/engineDynamo');
