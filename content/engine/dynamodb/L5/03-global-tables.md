@@ -10,7 +10,7 @@ runtime: docs
 minutes: 8
 figures: [{ name: dy-global-lww, at: example }]
 objectives:
-  - { vi: "Phân biệt nhất quán cuối cùng đa vùng (MREC, mặc định) và nhất quán mạnh đa vùng (MRSC)", en: "Tell multi-Region eventual consistency (MREC, the default) from multi-Region strong consistency (MRSC)" }
+  - { vi: "Phân biệt nhất quán cuối đa vùng (MREC, mặc định) và nhất quán mạnh đa vùng (MRSC)", en: "Tell multi-Region eventual consistency (MREC, the default) from multi-Region strong consistency (MRSC)" }
   - { vi: "Biết cách MREC giải xung đột (last writer wins) và các giới hạn của MRSC", en: "Know how MREC resolves conflicts (last writer wins) and the limits of MRSC" }
 requires: [e-dy-l4-11]
 sources:
@@ -41,11 +41,11 @@ quiz:
 
 **Global table** sao chép một bảng sang nhiều Region; mỗi Region giữ một bản sao (replica), đọc ghi được ở mọi bản sao. SLA 99,999 %, so với 99,99 % của bảng một vùng. Chế độ nhất quán chọn lúc tạo và **không đổi được** sau đó.
 
-**MREC** (mặc định): sao chép **bất đồng bộ**, thường dưới một giây. Xung đột trên cùng item giải bằng **last writer wins** theo dấu thời gian nội bộ. Đọc mạnh có thể thấy dữ liệu cũ nếu item vừa sửa ở vùng khác. RPO bằng độ trễ sao chép. Transaction chỉ nguyên khối trong Region gọi nó; vùng khác có thể thấy transaction xong một nửa.
+**MREC** (mặc định): sao chép **bất đồng bộ**, thường dưới một giây. Xung đột trên cùng item giải bằng **last writer wins** theo dấu thời gian nội bộ. Đọc nhất quán mạnh có thể thấy dữ liệu cũ nếu item vừa sửa ở vùng khác. RPO bằng độ trễ sao chép. Transaction chỉ nguyên khối trong Region gọi nó; vùng khác có thể thấy transaction xong một nửa.
 
-**MRSC**: mỗi lần ghi đồng bộ sang ít nhất một vùng khác trước khi trả về; đọc mạnh ở mọi bản sao thấy bản mới nhất; **RPO bằng 0**. Phải đúng **ba** vùng (ba bản sao, hoặc hai bản sao và một witness). Ghi va chạm bị từ chối với `ReplicatedWriteConflictException`. Không hỗ trợ TTL, LSI và transaction.
+**MRSC**: mỗi lần ghi đồng bộ sang ít nhất một vùng khác trước khi trả về; đọc nhất quán mạnh ở mọi bản sao thấy bản mới nhất; **RPO bằng 0**. Phải đúng **ba** vùng (ba bản sao, hoặc hai bản sao và một witness). Ghi va chạm bị từ chối với `ReplicatedWriteConflictException`. Không hỗ trợ TTL, LSI và transaction.
 
-Nhiều người nghĩ đọc mạnh (`ConsistentRead: true`) trên MREC thấy mọi lần ghi ở mọi vùng. Thật ra đọc mạnh chỉ mạnh trong Region đó; muốn thấy bản mới nhất ở mọi vùng thì cần MRSC.
+Nhiều người nghĩ đọc nhất quán mạnh (`ConsistentRead: true`) trên MREC thấy mọi lần ghi ở mọi vùng. Thật ra đọc nhất quán mạnh chỉ mạnh trong Region đó; muốn thấy bản mới nhất ở mọi vùng thì cần MRSC.
 
 Global table chỉ có trên AWS thật, nên bài này chưa chạy được trong trình duyệt.
 
@@ -106,7 +106,7 @@ new empty table: UpdateTable { ReplicaUpdates: [...], MultiRegionConsistency: ST
 
 - Global table = bản sao đọc ghi được ở nhiều Region, SLA 99,999 %.
 - MREC: bất đồng bộ, last writer wins, RPO bằng độ trễ sao chép.
-- MRSC: RPO 0 và đọc mạnh ở mọi vùng, cần đúng ba vùng, không TTL, LSI, transaction.
+- MRSC: RPO 0 và đọc nhất quán mạnh ở mọi vùng, cần đúng ba vùng, không TTL, LSI, transaction.
 - Chế độ chọn lúc tạo; ghi cùng item ở nhiều vùng trên MREC có thể mất một lần ghi.
 
 # EN

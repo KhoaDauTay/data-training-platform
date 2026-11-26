@@ -1,0 +1,21 @@
+# OL-11 (v47 R1, L990): an incremental matview runs on the inserted block only and writes to its target table.
+# Lesson: e-ol-l3-04. Source: https://clickhouse.com/docs/materialized-view/incremental-materialized-view
+title: { vi: "Matview chạy trên khối vừa chèn", en: "The matview runs on the inserted block" }
+caption:
+  vi: "Mỗi INSERT vào events đưa khối mới qua matview vào bảng daily; dữ liệu có sẵn không đi qua."
+  en: "Each INSERT into events sends the new block through the matview into table daily; existing data never passes through."
+alt:
+  vi: "Một lệnh chèn đưa khối dòng mới vào bảng nguồn, matview chạy câu gộp chỉ trên khối đó và ghi kết quả vào bảng đích. Dòng đã có trước khi tạo matview không bao giờ đi qua nó, nên phải nạp bù."
+  en: "An insert puts a block of new rows into the source table, the matview runs its aggregate on that block only and writes the result to the target table. Rows that existed before the matview was created never pass through it, so they must be backfilled."
+nodes:
+  - { id: ins, label: INSERT, sub: { vi: "khối 2 dòng", en: "block of 2 rows" }, tone: new }
+  - { id: ev, shape: table, label: events, sub: { vi: "600 dòng cũ", en: "600 old rows" } }
+  - { id: mv, label: { vi: "matview", en: "matview" }, sub: { vi: "chỉ khối mới", en: "new block only" }, tone: warm }
+  - { id: daily, shape: table, label: daily, sub: { vi: "bảng đích", en: "target table" } }
+rows:
+  - [ins, ev]
+  - [mv, daily]
+edges:
+  - { from: ins, to: ev }
+  - { from: ins, to: mv }
+  - { from: mv, to: daily }

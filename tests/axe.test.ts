@@ -10,7 +10,7 @@ class SilentWorker { onmessage = null; onerror = null; postMessage() {} terminat
 
 beforeAll(() => boot({ worker: SilentWorker }));
 
-const PAGES = ['#/', '#/learn', '#/learn/sql/1', '#/learn/skill/select', '#/learn/adv/a2', '#/learn/adv/d5', '#/learn/interview', '#/practice', '#/me',
+const PAGES = ['#/', '#/learn', '#/learn/sql/1', '#/learn/skill/select', '#/learn/adv/a2', '#/learn/adv/d5', '#/learn/interview', '#/learn/interview?e=dy', '#/practice', '#/me',
   '#/engine', '#/engine/postgres', '#/engine/mongodb', '#/engine/postgres/L1/e-pg-l1-01', // a lesson id with no file falls back to its engine page
   '#/engine/best/sql', '#/engine/best/sql/e-bp-q02', '#/engine/best/postgres/e-bp-i04', '#/engine/best/habits', '#/engine/best/dynamodb/e-bp-d06', // v24 BP-UI (L346); v26 the DynamoDB track (L383)
   '#/d/logistics', '#/d/logistics/play', '#/d/logistics/data/ports', '#/d/logistics/dashboard', '#/d/logistics/map',

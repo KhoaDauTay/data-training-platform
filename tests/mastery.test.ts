@@ -79,13 +79,15 @@ describe('engine levels and badges', () => {
     engines: {}, domains: [{ id: 'logistics', done: false }, { id: 'ecommerce', done: false }, { id: 'finance', done: true }],
   });
 
-  it('43 badges: 11 Parts, fast, foundation, 4 engines × 5 levels + the data stack × 3 (v45 L745) + search × 3 (v47 L1018), the NoSQL path, 3 domains', () => {
+  it('48 badges: 11 Parts, fast, foundation, 4 engines × 5 levels + the data stack, OLAP and search × 3 (v45 L745, v47 L990, L1018) + Redis × 2 (v47 L956), the NoSQL path, 3 domains', () => {
     const b = badges(input(save, '2026-11-20'));
     expect(parts).toHaveLength(11);
-    expect(b).toHaveLength(43);
-    expect(b.filter((x) => x.kind === 'engine')).toHaveLength((BADGE_ENGINES.length - 2) * 5 + 3 + 3);
+    expect(b).toHaveLength(48);
+    expect(b.filter((x) => x.kind === 'engine')).toHaveLength((BADGE_ENGINES.length - 4) * 5 + 3 * 3 + 2);
     expect(b.filter((x) => x.kind === 'engine' && x.engine === 'stack').map((x) => x.id)).toEqual(['stack-L1', 'stack-L2', 'stack-L3']);
-    expect(new Set(b.map((x) => x.id)).size).toBe(43);
+    expect(b.filter((x) => x.kind === 'engine' && x.engine === 'redis').map((x) => x.id)).toEqual(['redis-L1', 'redis-L2']);
+    expect(b.filter((x) => x.kind === 'engine' && x.engine === 'olap').map((x) => x.id)).toEqual(['olap-L1', 'olap-L2', 'olap-L3']);
+    expect(new Set(b.map((x) => x.id)).size).toBe(48);
   });
 
   it('same Save → same badges; an empty set never earns one (no perf drill, no design engine, no path list)', () => {

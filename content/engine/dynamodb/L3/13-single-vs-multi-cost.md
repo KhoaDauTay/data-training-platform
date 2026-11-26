@@ -195,7 +195,7 @@ Các số RCU ở đây do dynoxide trả trong `ConsumedCapacity`, và khớp l
 
 - Query tính RCU trên tổng cỡ item đã đọc, làm tròn một lần lên bội 4 KB.
 - Single-table rẻ hơn khi các item được đọc cùng nhau trong một Query.
-- Đọc mạnh tốn gấp đôi đọc nhất quán cuối.
+- Đọc nhất quán mạnh tốn gấp đôi đọc nhất quán cuối.
 - Dữ liệu không bao giờ đọc chung, hoặc cần backup hay lớp lưu trữ riêng, thì để bảng riêng.
 
 # EN

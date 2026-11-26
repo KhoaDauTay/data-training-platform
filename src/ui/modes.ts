@@ -8,7 +8,7 @@ import { getLang, isMac, keyLabels, locale, t } from '../i18n';
 import { LANE_XP } from '../lanes';
 import { applyResult, isSuccess, movedToday, nextCard, pickForSkill, retryItem, seedReview, type PracticeItem } from '../practice';
 import { CHAPTERS, chapterTitle, moduleTitle, nextTicket, PARTS, partOf, ROUTE_SKILLS, SKILLS } from '../progress';
-import { drillHash, hashOf, INTERVIEW_PAGE, isInterviewId, isInterviewPage, learnAdvOf, learnModuleOf, learnSkillOf, parseRoute, sandboxHash, SHARE_MAX, shareHash } from '../route';
+import { drillHash, engineInterviewOf, hashOf, INTERVIEW_PAGE, interviewTabHash, interviewTabOf, isInterviewId, isInterviewPage, learnAdvOf, learnModuleOf, learnSkillOf, parseRoute, sandboxHash, SHARE_MAX, shareHash } from '../route';
 import { activeDomain } from '../domains';
 import {
   activeSchema, activeStep, activeTicket, generalWork, hintsShown, interviewClosed, ivHooks, ivItemId, readDraft, isStory, markWarmupDone, practiceFinished, reviewCount, reviewedDrills, reviewToday, session, today, warmupToday, type Mode, type PracticeRun,
@@ -33,6 +33,7 @@ import { renderResult } from './resultTable';
 import { errorText, errorView } from './feedback';
 import { createEditor } from './editor';
 import { elapsed, INTERVIEW_KEY, parseInterviewPrefs, setPresence, TEXT_MAX } from '../interviewPrefs';
+import { engineIvPage } from './engine';
 import { homeHooks, learnTitles, openResume, registerHomeSection, registerMode, resumeLine, resumeName, resumeNow } from './homeView';
 import { PER_WEEK, readGoal, sessionPlan, showsSession, writeGoal, type Goal, type SessionItem } from '../goal';
 import { laneNote } from './lanePanel';
@@ -234,7 +235,7 @@ export const startDrillMode =(ticket: Ticket, drill: Drill): void => enter({ kin
 let ivUi: typeof import('./interviewView') | undefined;
 const loadIvUi = () => Promise.all([import('./interviewView'), loadInterview()]).then(([m, content]) => {
   if (!ivUi) m.initInterview({
-    h, nodes, richText, announce, getLang, locale, app, actions, session, ivItemId, ivHooks, readDraft, today, readJson, writeJson, hashOf, drillHash,
+    h, nodes, richText, announce, getLang, locale, app, actions, session, ivItemId, ivHooks, readDraft, today, readJson, writeJson, hashOf, drillHash, interviewTabHash,
     SKILLS, knownSkills, loadTickets, showPane, prefs: { key: INTERVIEW_KEY, parse: parseInterviewPrefs, textMax: TEXT_MAX, elapsed, setPresence }, enter: (run) => enter({ kind: 'interview', run }), leave: leaveGeneral, startRun: (id, timer, fresh) => void startInterview(id, timer, fresh),
     openEditor: (force) => {
       ctx?.work.setTicket(activeTicket(), activeStep(), force);
@@ -593,6 +594,9 @@ function loadLearn(): void {
 /** v17: #/learn/interview, drawn by the interview chunk from its content and the pref (no DB wait). */
 let ivLoad: 'idle' | 'loading' | 'failed' = 'idle';
 function interviewSection(): HTMLElement {
+  // v47 S4 (L980): one room; its PostgreSQL / MongoDB / DynamoDB tabs and their runs are the engine banks (no lab, no SQL chunk)
+  const tab = interviewTabOf(location.hash);
+  if (tab !== 'sql' || engineInterviewOf(location.hash)) return engineIvPage(tab);
   if (ivUi) return ivUi.listPage();
   if (ivLoad === 'idle') {
     ivLoad = 'loading';

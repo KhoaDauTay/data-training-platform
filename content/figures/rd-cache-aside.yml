@@ -1,0 +1,20 @@
+# RD-8 (v47 R1, L959): cache-aside, one missed read. Lesson: e-rd-l2-01 (Ý chính).
+# Data = the lab: GET cache:product:p01 → (nil), the price 45000 read from PostgreSQL (the lesson's story, not run here),
+# SET cache:product:p01 45000 EX 600 → OK; the next GET hits.
+title: { vi: "Cache-aside: một lần đọc trượt", en: "Cache-aside: one missed read" }
+caption:
+  vi: "Ứng dụng hỏi Redis trước; trượt thì đọc PostgreSQL rồi ghi bản sao kèm hạn 600 giây."
+  en: "The app asks Redis first; on a miss it reads PostgreSQL, then writes a copy with a 600-second expiry."
+alt:
+  vi: "Trong cache-aside, ứng dụng tự quản cache: Redis chỉ giữ bản sao có hạn, còn PostgreSQL vẫn là nguồn đúng, nên mất cache chỉ làm chậm. Kết quả: GET trả (nil), ứng dụng đọc 45000 từ PostgreSQL rồi ghi bản sao sống 600 giây vào Redis."
+  en: "In cache-aside the app manages the cache itself: Redis only keeps a copy with an expiry, while PostgreSQL stays the source of truth, so a lost cache only slows things down. Result: GET returns (nil), the app reads 45000 from PostgreSQL and writes a copy living 600 seconds into Redis."
+nodes:
+  - { id: app, label: { vi: "ứng dụng", en: "app" }, sub: { vi: "trang p01", en: "p01 page" } }
+  - { id: rd, shape: table, label: Redis, sub: { vi: "trượt · ghi EX 600", en: "miss · SET EX 600" } }
+  - { id: pg, shape: table, label: PostgreSQL, sub: { vi: "đọc 45000", en: "read 45000" } }
+rows:
+  - [app]
+  - [rd, pg]
+edges:
+  - { from: app, to: rd }
+  - { from: app, to: pg }

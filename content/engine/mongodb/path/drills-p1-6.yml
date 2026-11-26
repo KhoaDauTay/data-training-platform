@@ -336,7 +336,7 @@
 - id: e-mg-d-lookup-keep-4
   skill: mg.lookup_keep
   kind: review
-  task: { vi: "Khách ở `Hue` trong `customers` cùng các đơn của họ (từ `orders` theo `customer_id`, một object `o` mỗi dòng): giữ `name` và `o.store_id`, không `_id`; khách chưa có đơn vẫn có một dòng.", en: "Customers in `Hue` in `customers` with their orders (from `orders` by `customer_id`, one `o` object per row): keep `name` and `o.store_id`, no `_id`; a customer with no order still gets one row." }
+  task: { vi: "Khách ở `Hue` trong `customers` cùng các đơn của họ (từ `orders` theo `customer_id`, một object `o` mỗi tài liệu): giữ `name` và `o.store_id`, không `_id`; khách chưa có đơn vẫn có một tài liệu.", en: "Customers in `Hue` in `customers` with their orders (from `orders` by `customer_id`, one `o` object per document): keep `name` and `o.store_id`, no `_id`; a customer with no order still gets one document." }
   solution: 'db.customers.aggregate([{ $match: { city: "Hue" } }, { $lookup: { from: "orders", localField: "_id", foreignField: "customer_id", as: "o" } }, { $unwind: { path: "$o", preserveNullAndEmptyArrays: true } }, { $project: { _id: 0, name: 1, "o.store_id": 1 } }])'
   hint: { vi: "Nối `_id` của khách với `customer_id` của đơn, rồi tách mảng giữ cả mảng rỗng.", en: "Link the customer's `_id` to the order's `customer_id`, then unwind keeping empty arrays." }
 

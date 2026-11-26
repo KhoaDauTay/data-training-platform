@@ -1,0 +1,26 @@
+# OL-09 (v47 R1, L990): the same rows under two sorting keys; low cardinality first keeps each port together.
+# Lesson: e-ol-l3-02. Source: https://clickhouse.com/docs/data-modeling/schema-design (ascending cardinality).
+title: { vi: "Cột ít giá trị đứng trước", en: "Low cardinality first" }
+caption:
+  vi: "ORDER BY (port, ts) gom mỗi cảng thành một khoảng liền; (ts, port) cắt vụn nó."
+  en: "ORDER BY (port, ts) gathers each port into one stretch; (ts, port) chops it up."
+alt:
+  vi: "Với khóa thời gian trước, các cảng xen kẽ nên bộ lọc một cảng phải đọc gần như mọi granule. Với khóa cảng trước, mỗi cảng nằm liền một khoảng và thời gian vẫn tăng dần trong khoảng đó."
+  en: "With time first in the key, ports alternate, so a filter on one port reads almost every granule. With port first, each port sits in one stretch and time still ascends within it."
+nodes:
+  - id: a
+    shape: grid
+    mono: true
+    label: "ORDER BY (ts, port)"
+    head: [ts, port]
+    cells: [["08:00", "VNDAD"], ["08:10", "VNSGN"], ["08:20", "VNDAD"], ["08:30", "VNSGN"]]
+    rowTone: [null, warm, null, warm]
+  - id: b
+    shape: grid
+    mono: true
+    label: "ORDER BY (port, ts)"
+    head: [port, ts]
+    cells: [["VNDAD", "08:00"], ["VNDAD", "08:20"], ["VNSGN", "08:10"], ["VNSGN", "08:30"]]
+    rowTone: [null, null, new, new]
+rows:
+  - [a, b]

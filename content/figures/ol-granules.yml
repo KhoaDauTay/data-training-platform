@@ -1,0 +1,23 @@
+# OL-08 (v47 R1, L990): the sparse index of a MergeTree table sorted by (port, ts): one mark per granule of 8,192 rows.
+# Lesson: e-ol-l3-01. Source: https://clickhouse.com/docs/optimize/sparse-primary-indexes
+title: { vi: "Một mark cho mỗi 8.192 dòng", en: "One mark per 8,192 rows" }
+caption:
+  vi: "Lọc port = VNSGN: tìm nhị phân trên các mark, chỉ đọc các granule có thể khớp."
+  en: "Filtering port = VNSGN: a binary search over the marks, reading only the granules that could match."
+alt:
+  vi: "Bảng đã sắp theo cảng rồi thời gian được chia thành các granule 8.192 dòng, mỗi granule có một mark ghi khóa đầu tiên. Câu lọc một cảng chỉ đọc các granule mà khoảng khóa có thể chứa cảng đó."
+  en: "A table sorted by port then time is split into granules of 8,192 rows, each with one mark holding its first key. A filter on one port reads only the granules whose key span could hold that port."
+nodes:
+  - id: m
+    shape: grid
+    mono: true
+    label: { vi: "mark", en: "marks" }
+    head: [granule, { vi: "khóa đầu", en: "first key" }]
+    cells: [["0", "VNDAD"], ["2", "VNHPH"], ["4", "VNHPH"], ["5", "VNSGN"], ["7", "VNSGN"]]
+    rowTone: [dead, dead, warm, new, new]
+  - { id: q, mono: true, label: "port = VNSGN", sub: { vi: "đọc granule 4–7", en: "reads granules 4–7" }, tone: new }
+rows:
+  - [q]
+  - [m]
+edges:
+  - { from: q, to: m }

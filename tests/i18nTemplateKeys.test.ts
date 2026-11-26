@@ -4,6 +4,7 @@
 // in VALUES below, and checks each key exists in that dictionary's VI and EN.
 import { describe, expect, it } from 'vitest';
 import { parse as yaml } from 'yaml';
+import { ENGINES } from '../src/engine/content';
 
 const SRC = import.meta.glob<string>('../src/**/*.ts', { query: '?raw', import: 'default', eager: true });
 const I18N = import.meta.glob<Record<string, unknown>>('../src/i18n/*.ts', { eager: true });
@@ -19,6 +20,8 @@ const bestAreas = [
 const VALUES: Record<string, readonly (string | number)[]> = {
   'BestKey area.*': bestAreas,
   'LearnKey g.lesson.*': [1, 2, 3, 4], // guideList: the lesson guide's four steps
+  'LearnKey g.drill.*': ['faded', 'open', 'trap', 'review'], // guideList: the drill guide's kind step (v47: fix items never open in drill mode)
+  'TrackKey for.*': ENGINES, // engineTrack (v47 S2): "who it is for" per engine; a new engine needs its `for.<e>` line
 };
 
 interface Site { file: string; key: string; type: string; template: string }

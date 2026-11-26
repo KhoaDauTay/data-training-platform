@@ -1,0 +1,29 @@
+# RD-7 (v47 R1, L958): one flat keyspace, one type per key. Lesson: e-rd-l1-07 (Ý chính).
+# Data = the lab's setup; TYPE replies as the interpreter (and valkey type names) print them.
+title: { vi: "Một không gian khóa, mỗi khóa một kiểu", en: "One keyspace, one type per key" }
+caption:
+  vi: "TYPE trả tên kiểu; tên theo mẫu kind:id giúp SCAN 0 MATCH cache:* tìm cả nhóm."
+  en: "TYPE returns the type name; kind:id names let SCAN 0 MATCH cache:* find a whole group."
+alt:
+  vi: "Mọi khóa của Redis nằm chung một không gian phẳng và mỗi khóa giữ đúng một kiểu, nên tên khóa có hệ thống là cách duy nhất để nhóm chúng. Kết quả: cart:7 là hash, nên LPUSH cart:7 bị từ chối với WRONGTYPE."
+  en: "Every Redis key lives in one flat keyspace and each key holds exactly one type, so systematic key names are the only way to group them. Result: cart:7 is a hash, so LPUSH cart:7 is refused with WRONGTYPE."
+nodes:
+  - id: ks
+    shape: grid
+    mono: true
+    label: { vi: "không gian khóa", en: "keyspace" }
+    head: [key, TYPE]
+    cells:
+      - ["user:7:name", string]
+      - ["cart:7", hash]
+      - ["orders:pack", list]
+      - ["tags:p01", set]
+      - ["sales:2026-10", zset]
+    rowTone: [null, new, null, null, null]
+  - { id: bad, mono: true, label: "LPUSH cart:7 p09", sub: "(error) WRONGTYPE", tone: dead }
+rows:
+  - [ks, bad]
+phone:
+  rows: [[ks], [bad]]
+edges:
+  - { from: bad, to: "ks#1", dash: true }

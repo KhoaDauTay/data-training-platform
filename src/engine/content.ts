@@ -15,13 +15,13 @@ import { type FigRef, parseFigures } from './figureSlot';
 import { LAYERS, MATERIALIZED, type ModelSpec } from './stack/dbt';
 
 /** v28 R4 (L322, L420): `design` = database design and DBMS theory, the fourth card; its labs run on PostgreSQL (`onPg`). */
-export const ENGINES = ['postgres', 'mongodb', 'dynamodb', 'design', 'stack', 'search'] as const; // v45 (L740): + stack, the data stack (dbt, Fivetran, Snowflake); v47 (L1010): + search
+export const ENGINES = ['postgres', 'mongodb', 'dynamodb', 'redis', 'design', 'stack', 'olap', 'search'] as const; // v45 (L740): + stack, the data stack (dbt, Fivetran, Snowflake); v47 (L950): + redis, on BoonData's own interpreter; v47 (L990): + olap, OLAP & ClickHouse on PostgreSQL labs
 export type EngineId = (typeof ENGINES)[number];
 /** The three database products (the interview room and the glossary): every engine but the design track. */
-export type ProductEngine = Exclude<EngineId, 'design' | 'stack' | 'search'>;
-export const ENGINE_SHORT: Record<EngineId, 'pg' | 'mg' | 'dy' | 'ds' | 'st' | 'sr'> = { postgres: 'pg', mongodb: 'mg', dynamodb: 'dy', design: 'ds', stack: 'st', search: 'sr' };
+export type ProductEngine = Exclude<EngineId, 'design' | 'stack' | 'redis' | 'olap' | 'search'>; // v47 (L950): Redis has no interview bank or glossary terms yet
+export const ENGINE_SHORT: Record<EngineId, 'pg' | 'mg' | 'dy' | 'rd' | 'ds' | 'st' | 'ol' | 'sr'> = { postgres: 'pg', mongodb: 'mg', dynamodb: 'dy', redis: 'rd', design: 'ds', stack: 'st', olap: 'ol', search: 'sr' };
 /** The engines whose labs, predicts and plans run on PostgreSQL (PGlite): Postgres itself and the design track (L420). */
-export const onPg = (e: EngineId): boolean => e === 'postgres' || e === 'design' || e === 'stack' || e === 'search';
+export const onPg = (e: EngineId): boolean => e === 'postgres' || e === 'design' || e === 'stack' || e === 'olap' || e === 'search';
 /** v47 (L1012): a search lesson whose data (lab.setup, else demo_setup) is a JSON index runs on BoonData's Elasticsearch-style interpreter (src/engine/search/), not PostgreSQL. */
 export const isEsLesson = (l: { engine: EngineId; lab?: Lab; demoSetup?: string }): boolean => l.engine === 'search' && /^\s*\{/.test(l.lab?.setup ?? l.demoSetup ?? '');
 export const LEVELS = ['L1', 'L2', 'L3', 'L4', 'L5'] as const;
@@ -82,7 +82,7 @@ export type DocsWhy = (typeof DOCS_WHY)[number];
  */
 export function docsNoteKey(l: { engine: EngineId; docsWhy?: DocsWhy }): string {
   if (!l.docsWhy) return 'runtime.docs';
-  if (l.engine === 'mongodb' || l.engine === 'dynamodb') return l.docsWhy === 'server' ? `runtime.docs.server.${l.engine}` : 'runtime.docs';
+  if (l.engine === 'mongodb' || l.engine === 'dynamodb' || l.engine === 'redis') return l.docsWhy === 'server' ? `runtime.docs.server.${l.engine}` : 'runtime.docs';
   return `runtime.docs.${l.docsWhy}`;
 }
 /**
@@ -126,7 +126,7 @@ export interface EngineLesson {
 
 /** `e-pg-l1-01`: engine short name, level, the file's NN. */
 export const lessonIdFor = (engine: EngineId, level: Level, nn: string): string => `e-${ENGINE_SHORT[engine]}-${level.toLowerCase()}-${nn}`;
-const PATH_RE = /engine\/(postgres|mongodb|dynamodb|design|stack|search)\/(L[1-5]|ext)\/(\d{2})-[a-z0-9-]+\.md$/;
+const PATH_RE = /engine\/(postgres|mongodb|dynamodb|redis|design|stack|olap|search)\/(L[1-5]|ext)\/(\d{2})-[a-z0-9-]+\.md$/;
 const FM_RE = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/;
 const EN_RE = /^# EN[ \t]*$/m;
 
