@@ -13,8 +13,8 @@ nodes:
     shape: grid
     label: UNION ALL
     cells: [[Da Nang], [Da Nang], [Ho Chi Minh City], [Ho Chi Minh City], [Hanoi], [Da Nang], [Ho Chi Minh City], [Hanoi], [Hue], [Can Tho]]
-    sub: { vi: "giữ trùng · 288 dòng", en: "keeps repeats · 288 rows" }
-  - { id: u, shape: grid, label: UNION, cells: [[Can Tho], [Da Nang], [Hanoi], [Ho Chi Minh City], [Hue]], sub: { vi: "bỏ trùng · 5 dòng", en: "no repeats · 5 rows" } }
+    sub: { vi: "288 dòng, giữ trùng", en: "288 rows, repeats kept" }
+  - { id: u, shape: grid, label: UNION, cells: [[Can Tho], [Da Nang], [Hanoi], [Ho Chi Minh City], [Hue]], sub: { vi: "5 dòng, bỏ trùng", en: "5 rows, no repeats" } }
   - { id: ex, shape: grid, label: B EXCEPT A, cells: [[Can Tho], [Hue]], sub: { vi: "có ở B, không ở A", en: "in B, not in A" } }
   - { id: rule, shape: key, label: { vi: "cùng số cột, cùng kiểu", en: "same columns, same types" } }
 rows:

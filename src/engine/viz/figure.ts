@@ -155,17 +155,23 @@ export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): 
     const o = dims.get(n.id);
     dims.set(n.id, o ? { w: Math.max(o.w, s.w), h: Math.max(o.h, s.h) } : s);
   }
+  // a table's or chart's title height (the largest over the frames), so tables side by side can line up their first rows
+  const heads = new Map<string, number>();
+  for (const p of ps) for (const n of p.nodes) if (n.shape === 'grid' || n.shape === 'bars') {
+    const t = titleLines(n, lang, 'label');
+    heads.set(n.id, Math.max(heads.get(n.id) ?? 0, tall(t) + (t.length ? 4 : 0)));
+  }
   const edges = spec.edges ?? [];
   const gridLink = (e: FigEdge): boolean => !!e.link && (e.from.includes('#') || e.to.includes('#'));
   // v40: a side lane (16 units at the right) for every edge between rows that are not neighbours; reserving them can
   // change the wrapping, so lay out again until the count is stable
   let reserve = 0;
-  let pl = placeRows(spec, lang, W, dims, reserve);
+  let pl = placeRows(spec, lang, W, dims, reserve, heads);
   for (let i = 0; i < 3; i++) {
     const need = edges.filter((e) => !gridLink(e) && Math.abs(pl.rowOf.get(base(e.from))! - pl.rowOf.get(base(e.to))!) > 1).length;
     if (need <= reserve) break;
     reserve = need;
-    pl = placeRows(spec, lang, W, dims, reserve);
+    pl = placeRows(spec, lang, W, dims, reserve, heads);
   }
   const { vrows, rowOf, at, bands, H, CW } = pl;
 
@@ -267,7 +273,7 @@ function groupOf(spec: FigSpec): Map<string, string> {
 }
 /** Wraps the author rows into rows that fit, places them (a row with two or more tables or charts aligns their tops, R1 E3),
  * and leaves room for group bands and `reserve` side lanes at the right (CW = the width boxes may use). */
-function placeRows(spec: FigSpec, lang: Lang, W: number, dims: Map<string, Sized>, reserve: number) {
+function placeRows(spec: FigSpec, lang: Lang, W: number, dims: Map<string, Sized>, reserve: number, heads: Map<string, number>) {
   const CW = W - MARGIN - 16 * reserve; // boxes end before CW; lanes run at CW + 8, CW + 24…
   const edges = spec.edges ?? [];
   const parentOf = groupOf(spec);
@@ -318,15 +324,18 @@ function placeRows(spec: FigSpec, lang: Lang, W: number, dims: Map<string, Sized
   const bands: [number, number][] = [];
   vrows.forEach((r, i) => {
     if (vg[i] && vg[i] !== vg[i - 1]) y += GBAND + GPAD;
-    const hh = Math.max(...r.map((id) => dims.get(id)!.h));
+    const top = r.filter((id) => ['grid', 'bars'].includes(spec.nodes.find((n) => n.id === id)?.shape ?? '')).length >= 2;
+    // top-aligned tables also line up their first rows: a shorter title is pushed down to the tallest one
+    const lift = Math.max(0, ...r.map((id) => heads.get(id) ?? 0));
+    const off = (id: string): number => (top && heads.has(id) ? lift - heads.get(id)! : 0);
+    const hh = Math.max(...r.map((id) => dims.get(id)!.h + off(id)));
     const room = CW - MARGIN - (vg[i] ? 2 * GPAD : 0);
     const width = r.reduce((a, id, j) => a + dims.get(id)!.w + (j ? gapOf(r[j - 1], id, room) : 0), 0);
-    const top = r.filter((id) => ['grid', 'bars'].includes(spec.nodes.find((n) => n.id === id)?.shape ?? '')).length >= 2;
     let x = Math.round((CW + MARGIN - width) / 2);
     r.forEach((id, j) => {
       if (j) x += gapOf(r[j - 1], id, room);
       const d = dims.get(id)!;
-      at.set(id, { x, y: y + (top ? 0 : Math.round((hh - d.h) / 2)), w: d.w, h: d.h });
+      at.set(id, { x, y: y + (top ? off(id) : Math.round((hh - d.h) / 2)), w: d.w, h: d.h });
       x += d.w;
     });
     bands.push([y, y + hh]);

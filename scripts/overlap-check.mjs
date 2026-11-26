@@ -25,7 +25,10 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, '..');
 const BROWSER = process.env.BROWSER || 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
-const PORT = 5255;
+const flag = (k) => { const i = process.argv.indexOf(`--${k}`); return i > 0 ? process.argv[i + 1] : undefined; };
+// v40 (L645): --port / --profile (or OVERLAP_PORT / OVERLAP_PROFILE) so two checkers can run side by side
+const PORT = Number(flag('port') ?? process.env.OVERLAP_PORT ?? 5255);
+const PROFILE = flag('profile') ?? process.env.OVERLAP_PROFILE ?? 'bd-v39a-';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // ── pure rules ──────────────────────────────────────────────────────────────────────────────────────────────────
@@ -217,7 +220,7 @@ const STEP_ALL = (i) => `(async () => {
 
 // ── browser plumbing ────────────────────────────────────────────────────────────────────────────────────────────
 export async function openBrowser(tag) {
-  const profile = mkdtempSync(join(tmpdir(), `bd-v39a-${tag}-`));
+  const profile = mkdtempSync(join(tmpdir(), `${PROFILE}${tag}-`));
   const child = spawn(BROWSER, ['--headless=new', '--remote-debugging-port=0', `--user-data-dir=${profile}`, '--no-first-run', '--no-default-browser-check', '--disable-extensions', '--mute-audio', 'about:blank'], { stdio: 'ignore' });
   let port; for (let i = 0; i < 150 && !port; i++) { try { port = Number(readFileSync(join(profile, 'DevToolsActivePort'), 'utf8').split('\n')[0]); } catch { await sleep(200); } }
   let page; for (let i = 0; i < 50 && !page; i++) { try { page = (await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()).find((t) => t.type === 'page'); } catch {} if (!page) await sleep(200); }
