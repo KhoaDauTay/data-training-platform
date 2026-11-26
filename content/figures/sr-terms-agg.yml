@@ -1,0 +1,23 @@
+# v47 R1 (L1019): the buckets of a terms aggregation on `brand` over the whole shop. Lesson: e-sr-l3-01 (Ý chính).
+# Data = lab step 1 on the simulator: HoiAnLight 3, SilkHouse 3, HueHat 2, TeaLotus 2, BMTCoffee 1, SaiGonCraft 1.
+# Source: https://www.elastic.co/docs/reference/aggregations/search-aggregations-bucket-terms-aggregation
+title: { vi: "Sản phẩm theo thương hiệu", en: "Products per brand" }
+caption:
+  vi: "Aggregation terms trên brand: mỗi thanh là một nhóm, xếp theo số lượng giảm dần, bằng nhau thì theo tên."
+  en: "A terms aggregation on brand: one bar per bucket, ordered by count descending, ties by name."
+alt:
+  vi: "Aggregation terms làm việc của GROUP BY và count: chia tài liệu theo giá trị của một trường keyword rồi đếm từng nhóm. Kết quả: HoiAnLight và SilkHouse cùng 3 sản phẩm, đứng đầu."
+  en: "A terms aggregation does the work of GROUP BY and count: it splits documents by a keyword field's value and counts each group. Result: HoiAnLight and SilkHouse lead with 3 products each."
+nodes:
+  - id: b
+    shape: bars
+    label: { vi: "doc_count theo brand", en: "doc_count per brand" }
+    items:
+      - { label: HoiAnLight, value: 3 }
+      - { label: SilkHouse, value: 3 }
+      - { label: HueHat, value: 2 }
+      - { label: TeaLotus, value: 2 }
+      - { label: BMTCoffee, value: 1 }
+      - { label: SaiGonCraft, value: 1 }
+rows:
+  - [b]

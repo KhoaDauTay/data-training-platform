@@ -1,0 +1,22 @@
+# v47 R1 (L1019): the trigrams of `sen` and of the typo `sem`, and their similarity. Lesson: e-sr-l3-03 (Ý chính).
+# Data = PGlite pg_trgm: show_trgm('sen') = {"  s"," se","en ",sen}; show_trgm('sem') = {"  s"," se","em ",sem};
+# similarity('sen', 'sem') = 2 shared / 6 distinct = 0.33. Source: https://www.postgresql.org/docs/18/pgtrgm.html
+title: { vi: "Gõ sai một chữ, còn lại nửa số trigram", en: "One wrong letter, half the trigrams left" }
+caption:
+  vi: "Dấu _ là khoảng trắng đệm. Hai trigram đầu chung nhau, hai trigram cuối khác: similarity = 2 / 6 = 0,33."
+  en: "An _ is a padding space. The first two trigrams are shared, the last two differ: similarity = 2 / 6 = 0.33."
+alt:
+  vi: "Một chữ gõ sai chỉ làm hỏng các trigram chứa chữ đó, nên chuỗi gõ sai vẫn giống chuỗi đúng. Kết quả: sen và sem chung 2 trong 6 trigram, độ giống 0,33."
+  en: "A wrong letter breaks only the trigrams that hold it, so the mistyped string still resembles the right one. Result: the two words share 2 of 6 trigrams, a likeness of 0.33."
+nodes:
+  - id: g
+    shape: grid
+    mono: true
+    label: trigram
+    head: [trigram, sen, sem]
+    cells: [[__s, "✓", "✓"], [_se, "✓", "✓"], [sen, "✓", "-"], [en_, "✓", "-"], [sem, "-", "✓"], [em_, "-", "✓"]]
+    rowTone: [good, good, null, null, null, null]
+  - { id: n, shape: note, label: "similarity = 2 / 6 = 0.33" }
+rows:
+  - [g]
+  - [n]
