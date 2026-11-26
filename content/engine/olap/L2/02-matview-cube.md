@@ -114,7 +114,7 @@ Báo cáo TEU theo ngày và cảng của Cargo Query quét hết bảng `moves`
 
 **Materialized view** (matview) là một câu `SELECT` mà kết quả được lưu như một bảng. Đọc nó nhanh vì không gộp lại; đổi lại, nó chỉ đúng tới lần làm mới cuối. `WITH NO DATA` tạo định nghĩa mà chưa chạy; đọc nó lúc đó là lỗi.
 
-**`REFRESH MATERIALIZED VIEW`** chạy lại câu lệnh và thay toàn bộ nội dung, khóa người đọc trong lúc đó. Thêm **`CONCURRENTLY`** thì người đọc vẫn đọc được bản cũ; PostgreSQL so bản mới với bản cũ theo một **chỉ mục duy nhất** trên matview, nên chỉ mục đó là bắt buộc, và matview phải đã có dữ liệu.
+`REFRESH MATERIALIZED VIEW` chạy lại câu lệnh và thay toàn bộ nội dung, khóa người đọc trong lúc đó. Thêm `CONCURRENTLY` thì người đọc vẫn đọc được bản cũ; PostgreSQL so bản mới với bản cũ theo một **chỉ mục duy nhất** trên matview, nên chỉ mục đó là bắt buộc, và matview phải đã có dữ liệu.
 
 Đây là cách PostgreSQL làm "khối dữ liệu tính sẵn" của OLAP: gộp trước theo các chiều hay dùng, làm mới theo lịch. ClickHouse làm khác: matview của nó chạy mỗi lần chèn dữ liệu (bài cấp L3).
 
@@ -193,7 +193,7 @@ Cargo Query's TEU report by day and port scans the whole `moves` table each time
 
 A **materialized view** (matview) is a `SELECT` whose result is stored like a table. Reading it is fast because nothing is aggregated again; in exchange, it is only right as of its last refresh. `WITH NO DATA` creates the definition without running it; reading it then is an error.
 
-**`REFRESH MATERIALIZED VIEW`** reruns the query and replaces the whole content, blocking readers meanwhile. Add **`CONCURRENTLY`** and readers keep reading the old version; PostgreSQL compares the new version with the old one by a **unique index** on the matview, so that index is required, and the matview must already hold data.
+`REFRESH MATERIALIZED VIEW` reruns the query and replaces the whole content, blocking readers meanwhile. Add `CONCURRENTLY` and readers keep reading the old version; PostgreSQL compares the new version with the old one by a **unique index** on the matview, so that index is required, and the matview must already hold data.
 
 This is how PostgreSQL builds the "precomputed cube" of OLAP: aggregate in advance along the common dimensions, refresh on a schedule. ClickHouse does it differently: its matview runs on every insert (a lesson in level L3).
 

@@ -111,7 +111,7 @@ Hệ thống cảng gửi lại trạng thái container mỗi khi có thay đổ
 
 **ReplacingMergeTree** khác MergeTree ở chỗ bỏ các dòng có cùng giá trị khóa sắp xếp: tính duy nhất xét theo `ORDER BY`, không theo `PRIMARY KEY`. Theo tài liệu, việc bỏ dòng trùng **chỉ xảy ra khi gộp part**, ở nền, vào lúc không biết trước, và không bảo đảm hết trùng. Với tham số `ver`, bản có `ver` lớn nhất được giữ; không có `ver` thì bản chèn sau cùng được giữ.
 
-Muốn kết quả đúng ngay, thêm **`FINAL`** sau tên bảng: ClickHouse gộp đầy đủ dữ liệu trước khi trả kết quả. Tài liệu ghi truy vấn có `FINAL` chạy chậm hơn, vì phải gộp trong lúc chạy và có thể đọc thêm cột khóa chính.
+Muốn kết quả đúng ngay, thêm `FINAL` sau tên bảng: ClickHouse gộp đầy đủ dữ liệu trước khi trả kết quả. Tài liệu ghi truy vấn có `FINAL` chạy chậm hơn, vì phải gộp trong lúc chạy và có thể đọc thêm cột khóa chính.
 
 Trên PostgreSQL: bảng `status_events` là các part chưa gộp, `DISTINCT ON` là cách đọc như `FINAL`, và một bảng dựng từ câu đó là kết quả sau khi gộp.
 
@@ -215,7 +215,7 @@ The port system resends a container's status every time it changes, and sometime
 
 **ReplacingMergeTree** differs from MergeTree in that it removes rows with the same sorting key value: uniqueness is decided by `ORDER BY`, not `PRIMARY KEY`. According to the docs, duplicates are removed **only during a merge**, in the background, at an unknown time, with no guarantee that none remain. With the `ver` parameter, the row with the largest `ver` is kept; without `ver`, the last inserted row is kept.
 
-For a result that is right at once, add **`FINAL`** after the table name: ClickHouse fully merges the data before returning the result. The docs say queries with `FINAL` run slower, since the merge happens during the query and extra primary key columns may be read.
+For a result that is right at once, add `FINAL` after the table name: ClickHouse fully merges the data before returning the result. The docs say queries with `FINAL` run slower, since the merge happens during the query and extra primary key columns may be read.
 
 On PostgreSQL: table `status_events` is the unmerged parts, `DISTINCT ON` is the `FINAL`-style read, and a table built from that query is the result after the merge.
 

@@ -102,11 +102,11 @@ Bảng điều hành của Cargo Query cần TEU theo cảng và phương thức
 
 ## Ý chính
 
-**`GROUPING SETS`** liệt kê các nhóm cần tính trong một câu: `GROUPING SETS ((port), (mode), ())` cho tổng theo cảng, theo phương thức và tổng chung (nhóm rỗng `()`). Cột không có trong một nhóm thì là NULL ở các dòng của nhóm đó.
+`GROUPING SETS` liệt kê các nhóm cần tính trong một câu: `GROUPING SETS ((port), (mode), ())` cho tổng theo cảng, theo phương thức và tổng chung (nhóm rỗng `()`). Cột không có trong một nhóm thì là NULL ở các dòng của nhóm đó.
 
-**`ROLLUP (port, mode)`** là cách viết tắt cho các tầng từ chi tiết lên tổng: `(port, mode)`, `(port)`, `()`. **`CUBE (port, mode)`** là mọi tổ hợp: thêm cả `(mode)`. Đây là các phép toán của một khối dữ liệu (cube) trong OLAP.
+`ROLLUP (port, mode)` là cách viết tắt cho các tầng từ chi tiết lên tổng: `(port, mode)`, `(port)`, `()`. `CUBE (port, mode)` là mọi tổ hợp: thêm cả `(mode)`. Đây là các phép toán của một khối dữ liệu (cube) trong OLAP.
 
-Vì dòng tổng phụ dùng NULL, một NULL thật trong dữ liệu trông giống hệt. **`GROUPING(col)`** trả 1 khi dòng đã gộp qua cột đó, 0 khi không; với nhiều cột nó trả một số nhị phân, cột đầu là bit cao.
+Vì dòng tổng phụ dùng NULL, một NULL thật trong dữ liệu trông giống hệt. `GROUPING(col)` trả 1 khi dòng đã gộp qua cột đó, 0 khi không; với nhiều cột nó trả một số nhị phân, cột đầu là bit cao.
 
 ## Cú pháp
 
@@ -196,11 +196,11 @@ Cargo Query's operations board needs TEU by port and mode, plus a total per port
 
 ## Key idea
 
-**`GROUPING SETS`** lists the groupings to compute in one query: `GROUPING SETS ((port), (mode), ())` gives totals by port, by mode and the grand total (the empty grouping `()`). A column missing from a grouping is NULL in that grouping's rows.
+`GROUPING SETS` lists the groupings to compute in one query: `GROUPING SETS ((port), (mode), ())` gives totals by port, by mode and the grand total (the empty grouping `()`). A column missing from a grouping is NULL in that grouping's rows.
 
-**`ROLLUP (port, mode)`** is shorthand for the levels from detail up to total: `(port, mode)`, `(port)`, `()`. **`CUBE (port, mode)`** is every combination: it adds `(mode)` too. These are the operations of a data cube in OLAP.
+`ROLLUP (port, mode)` is shorthand for the levels from detail up to total: `(port, mode)`, `(port)`, `()`. `CUBE (port, mode)` is every combination: it adds `(mode)` too. These are the operations of a data cube in OLAP.
 
-Since subtotal rows use NULL, a real NULL in the data looks the same. **`GROUPING(col)`** returns 1 when the row has rolled up over that column, 0 when not; with several columns it returns a binary number, the first column being the high bit.
+Since subtotal rows use NULL, a real NULL in the data looks the same. `GROUPING(col)` returns 1 when the row has rolled up over that column, 0 when not; with several columns it returns a binary number, the first column being the high bit.
 
 ## Syntax
 

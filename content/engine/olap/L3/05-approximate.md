@@ -63,7 +63,7 @@ Bảng điều hành của Cargo Query hiển thị số container khác nhau v�
 
 ## Ý chính
 
-**`uniq(x)`** tính số giá trị khác nhau **xấp xỉ**: theo tài liệu, nó lấy mẫu thích ứng và giữ tối đa 65.536 giá trị băm, và được khuyên dùng trong hầu hết trường hợp. **`quantile(p)(x)`** tính phân vị xấp xỉ bằng lấy mẫu reservoir tối đa 8.192 giá trị; kết quả không tất định. Khi số phải khớp từng đơn vị (đối soát, hóa đơn), dùng `uniqExact` hoặc `quantileExact`.
+`uniq(x)` tính số giá trị khác nhau **xấp xỉ**: theo tài liệu, nó lấy mẫu thích ứng và giữ tối đa 65.536 giá trị băm, và được khuyên dùng trong hầu hết trường hợp. `quantile(p)(x)` tính phân vị xấp xỉ bằng lấy mẫu reservoir tối đa 8.192 giá trị; kết quả không tất định. Khi số phải khớp từng đơn vị (đối soát, hóa đơn), dùng `uniqExact` hoặc `quantileExact`.
 
 PostgreSQL chỉ có bản chính xác: `count(DISTINCT x)` và `percentile_cont(p) WITHIN GROUP (ORDER BY x)`. Để thấy ý lấy mẫu, dùng `TABLESAMPLE BERNOULLI (10) REPEATABLE (7)`: khoảng 10% số dòng, cùng mẫu mỗi lần nhờ hạt giống. Nhân 10 số dòng của mẫu cho ra gần đúng tổng số dòng; nhưng nhân 10 số giá trị khác nhau thì sai, vì một container lặp lại nhiều lần trong bảng chỉ xuất hiện một lần trong mẫu. Vì vậy `uniq` cần thuật toán riêng, không chỉ là lấy mẫu rồi nhân.
 
@@ -147,7 +147,7 @@ Cargo Query's dashboard shows the number of distinct containers and the median t
 
 ## Key idea
 
-**`uniq(x)`** computes an **approximate** number of distinct values: according to the docs, it uses adaptive sampling and keeps up to 65,536 hash values, and it is recommended in almost all scenarios. **`quantile(p)(x)`** computes an approximate quantile with reservoir sampling of up to 8,192 values; its result is not deterministic. When the number must match to the unit (reconciliation, invoices), use `uniqExact` or `quantileExact`.
+`uniq(x)` computes an **approximate** number of distinct values: according to the docs, it uses adaptive sampling and keeps up to 65,536 hash values, and it is recommended in almost all scenarios. `quantile(p)(x)` computes an approximate quantile with reservoir sampling of up to 8,192 values; its result is not deterministic. When the number must match to the unit (reconciliation, invoices), use `uniqExact` or `quantileExact`.
 
 PostgreSQL has only the exact versions: `count(DISTINCT x)` and `percentile_cont(p) WITHIN GROUP (ORDER BY x)`. To see the sampling idea, use `TABLESAMPLE BERNOULLI (10) REPEATABLE (7)`: about 10% of the rows, the same sample each time thanks to the seed. Multiplying the sample's row count by 10 gives roughly the total row count; but multiplying its distinct count by 10 is wrong, since a container repeated many times in the table appears only once in the sample. That is why `uniq` needs its own algorithm, not just sample-and-scale.
 

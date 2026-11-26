@@ -70,7 +70,7 @@ Kho lưu theo cột không chỉ đọc ít cột hơn: nó còn nén từng c�
 
 **Thực thi theo lô** (vectorized execution). Các toán tử của kế hoạch truyền dữ liệu cho nhau theo lô thay vì từng dòng; CPU dùng bộ nhớ đệm tốt hơn và lệnh SIMD xử lý nhiều giá trị trong một lệnh.
 
-**`SELECT *`** trên kho theo cột phải đọc, giải nén và ghép lại mọi cột, kể cả cột `notes` dài mà báo cáo không cần. Chọn đúng cột là cách rẻ nhất để báo cáo nhanh.
+`SELECT *` trên kho theo cột phải đọc, giải nén và ghép lại mọi cột, kể cả cột `notes` dài mà báo cáo không cần. Chọn đúng cột là cách rẻ nhất để báo cáo nhanh.
 
 ## Ví dụ
 
@@ -156,7 +156,7 @@ A column store does not just read fewer columns: it also compresses each column 
 
 **Vectorized execution.** The plan's operators pass data to each other in batches instead of single rows; the CPU uses its caches better and SIMD instructions handle several values per instruction.
 
-**`SELECT *`** on a column store has to read, decompress and put back together every column, including the long `notes` column the report does not need. Picking the right columns is the cheapest way to a fast report.
+`SELECT *` on a column store has to read, decompress and put back together every column, including the long `notes` column the report does not need. Picking the right columns is the cheapest way to a fast report.
 
 ## Example
 
