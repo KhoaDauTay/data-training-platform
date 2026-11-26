@@ -192,6 +192,7 @@ export interface FigOpts {
 export interface FigTable { caption: string; head: string[]; rows: string[][] }
 const LABEL = 'm-0 text-caption font-bold uppercase tracking-wide text-muted';
 const CELL = 'border border-line px-2 py-1 text-left align-top whitespace-nowrap';
+const HEAD = 'border border-line bg-panel px-2 py-1 text-left align-top font-bold whitespace-nowrap';
 /** v42 (L700–L703): "Giải thích sơ đồ": the point, then the steps (a real <ol>), then the data as small tables in a nested
  * <details>, so the sentences are never interrupted by rows. `${id}-alt` is the point only (the svg's name, never the data). */
 function explain(id: string, fo: FigOpts, items?: HTMLElement[]): HTMLElement {
@@ -205,7 +206,7 @@ function explain(id: string, fo: FigOpts, items?: HTMLElement[]): HTMLElement {
         ...tables.map((t) => D.h('div', { class: 'mt-2 max-w-full overflow-x-auto', tabindex: '0', role: 'group', 'aria-label': t.caption },
           D.h('table', { class: 'w-auto border-collapse text-body-sm' },
             D.h('caption', { class: 'pb-1 text-left font-bold' }, t.caption),
-            t.head.length ? D.h('thead', {}, D.h('tr', {}, ...t.head.map((c) => D.h('th', { scope: 'col', class: `${CELL} bg-panel font-bold` }, c)))) : '',
+            t.head.length ? D.h('thead', {}, D.h('tr', {}, ...t.head.map((c) => D.h('th', { scope: 'col', class: HEAD }, c)))) : '',
             D.h('tbody', {}, ...t.rows.map((r) => D.h('tr', {}, ...r.map((c) => D.h('td', { class: CELL }, c))))))))) : ''));
 }
 let figs = 0;
