@@ -57,7 +57,7 @@ const vi = {
   'tm.sim': 'PromQL mô phỏng: BoonData tự tính selector, rate, increase, sum/avg by và histogram_quantile theo tài liệu Prometheus; đây không phải Prometheus.',
   'ladder.telemetry.L1': 'Ba tín hiệu, loại metric, nhãn và cardinality, bảng hẹp và rộng',
   'ladder.telemetry.L2': 'Rate với lag, phân vị, log JSONB + GIN, span thành cây, SLO',
-  'ladder.telemetry.L3': 'PromQL mô phỏng và một sự cố thật',
+  'ladder.telemetry.L3': 'PromQL mô phỏng và một ca điều tra API chậm',
   'ladder.telemetry.L4': 'Thẻ này chỉ có ba cấp',
   'ladder.telemetry.L5': 'Thẻ này chỉ có ba cấp',
   // v47 R1 (L950–L957): Redis on BoonData's own interpreter
@@ -274,7 +274,7 @@ const en: Record<EngineKey, string> = {
   'tm.sim': 'Simulated PromQL: BoonData evaluates selectors, rate, increase, sum/avg by and histogram_quantile by the Prometheus docs; this is not Prometheus.',
   'ladder.telemetry.L1': 'Three signals, metric types, labels and cardinality, narrow and wide tables',
   'ladder.telemetry.L2': 'Rate with lag, percentiles, JSONB logs + GIN, spans as a tree, SLOs',
-  'ladder.telemetry.L3': 'Simulated PromQL and a real incident',
+  'ladder.telemetry.L3': 'Simulated PromQL and a slow-API investigation',
   'ladder.telemetry.L4': 'This card has three levels only',
   'ladder.telemetry.L5': 'This card has three levels only',
   'desc.redis': 'An in-memory key-value store: strings, hashes, lists, sets, sorted sets, time to live, caches and counters. Labs run on BoonData\'s Redis simulator.',

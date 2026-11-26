@@ -14,6 +14,13 @@ import type { ScriptStep } from '../src/engine/pglab/script';
 import { runPromql, seriesOf } from '../src/engine/telemetry/promql';
 import { SAMPLES_SQL, tmRunner } from '../src/engine/telemetry/promqlRunner';
 import { compareResults, grade } from '../src/grader';
+import v5 from './fixtures/save-v5.json?raw';
+import { ENGINE_XP, engineXp, lessonIdFor, onPg } from '../src/engine/content';
+import { LAB_RUNNERS } from '../src/engine/labs';
+import { PREREQS } from '../src/engine/tracks';
+import { badges, BADGE_ENGINES, levelsOf } from '../src/mastery';
+import { engineHash, enginePlayOf, engineRouteOf } from '../src/route';
+import { ENGINE_ID, parseSave, type Known } from '../src/save';
 
 const files = import.meta.glob<string>('../content/engine/telemetry/L*/*.md', { query: '?raw', import: 'default', eager: true });
 const moduleRaw = import.meta.glob<string>('../content/engine/telemetry/modules.yml', { query: '?raw', import: 'default', eager: true });
@@ -175,4 +182,38 @@ describe('Engine Telemetry: mọi bước lab qua bằng lời giải, không qu
       if (s.ordered && !s.lang) expect(s.solution).toMatch(/ORDER BY/i);
     }
   }, 120_000);
+});
+
+describe('Engine Telemetry: wiring (routes, Save ids, XP, badges, track facts, runner)', () => {
+  const known: Known = { ticketIds: new Set(['ch1-01']), laneIds: new Set(), skills: new Set(['select']) };
+  it('routes #/engine/telemetry[/L<n>[/<id>]] and #/engine/play/e-tm-…', () => {
+    expect(engineRouteOf('#/engine/telemetry')).toEqual({ engine: 'telemetry', level: undefined, lesson: undefined });
+    expect(engineRouteOf('#/engine/telemetry/l3/e-tm-l3-02')).toEqual({ engine: 'telemetry', level: 'L3', lesson: 'e-tm-l3-02' });
+    expect(enginePlayOf('#/engine/play/e-tm-l1-02')).toBe('#/engine/telemetry/L1/e-tm-l1-02');
+    expect(engineHash('telemetry', 'L2', 'e-tm-l2-01')).toBe('#/engine/telemetry/L2/e-tm-l2-01');
+    expect(engineRouteOf('#/engine/telemetrys').engine).toBeUndefined();
+  });
+  it('e-tm-… ids survive read → write → read, no Save bump', () => {
+    const raw = JSON.stringify({ ...JSON.parse(v5), completed: ['ch1-01', 'e-tm-l1-01', 'e-tm-l3-04'] });
+    const s = parseSave(raw, known);
+    expect(s.completed).toEqual(['ch1-01', 'e-tm-l1-01', 'e-tm-l3-04']);
+    expect(s.version).toBe(JSON.parse(v5).version);
+    expect(lessonIdFor('telemetry', 'L3', '04')).toBe('e-tm-l3-04');
+    expect(ENGINE_ID.test('e-tx-l1-01')).toBe(false);
+  });
+  it('labs run on the Postgres runtime (onPg) behind the PromQL wrapper, normal XP', () => {
+    const l = { engine: 'telemetry', runtime: 'browser', kind: 'lab', viz: undefined, lab: { setup: 'SELECT 1', steps: [] } } as unknown as EngineLesson;
+    expect(onPg('telemetry')).toBe(true);
+    expect(LAB_RUNNERS.telemetry).toBeTypeOf('function');
+    expect(LAB_RUNNERS.telemetry).not.toBe(LAB_RUNNERS.postgres);
+    expect(engineXp(l, false)).toBe(ENGINE_XP.lab);
+    expect(engineXp({ ...l, kind: 'capstone' }, false)).toBe(ENGINE_XP.capstone);
+  });
+  it('badges: telemetry L1–L3 only; prerequisites name SQL Parts and PostgreSQL L1', () => {
+    expect(BADGE_ENGINES).toContain('telemetry');
+    expect(levelsOf('telemetry')).toEqual(['L1', 'L2', 'L3']);
+    const b = badges({ parts: [], levels: new Map(), foundation: [], perf: [], completed: new Set(), engines: { telemetry: [{ level: 'L1', k: 1, n: 1, started: true, done: true }] }, domains: [] });
+    expect(b.filter((x) => x.kind === 'engine' && x.engine === 'telemetry').map((x) => [x.id, x.have])).toEqual([['telemetry-L1', true], ['telemetry-L2', false], ['telemetry-L3', false]]);
+    expect(PREREQS.telemetry).toEqual([{ sql: [1, 8] }, { engine: 'postgres', to: 'L1' }]);
+  });
 });

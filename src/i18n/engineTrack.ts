@@ -11,7 +11,7 @@ const vi = {
   'for.stack': 'Người làm data: dữ liệu vào kho thế nào, dbt, Snowflake và BigQuery.',
   'for.olap': 'Người làm báo cáo trên dữ liệu lớn: vì sao kho phân tích lưu theo cột, và khi nào dùng ClickHouse.',
   'for.redis': 'Người làm backend hoặc data muốn dùng Redis đúng chỗ: cache, phiên, bộ đếm, bảng xếp hạng, giới hạn tần suất.',
-  'for.telemetry': 'Người trực hệ thống hay phân tích sự cố: metrics, log, trace, SLO và PromQL.',
+  'for.telemetry': 'Người trực hệ thống hay điều tra lỗi: metrics, log, trace, SLO và PromQL.',
   'pre': 'Nên biết trước',
   'pre.none': 'không cần, bắt đầu từ đầu được',
   'pre.sql': 'SQL Phần {a}–{b}',

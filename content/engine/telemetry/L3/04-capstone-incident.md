@@ -3,14 +3,14 @@ id: e-tm-l3-04
 engine: telemetry
 level: L3
 module: promql
-title: "Tổng hợp: sự cố ở API theo dõi container"
+title: "Tổng hợp: API theo dõi container chậm bất thường"
 title_en: "Capstone: an incident at the tracking API"
 kind: capstone
 runtime: browser
 minutes: 40
 figures: [{ name: tm-incident-trace, at: idea }]
 objectives:
-  - vi: Đi đúng thứ tự metrics → log → trace để khoanh vùng một sự cố.
+  - vi: Đi đúng thứ tự metrics → log → trace để khoanh vùng một lần hệ thống chậm.
     en: Go in the right order, metrics → logs → traces, to narrow an incident down.
   - vi: Tìm endpoint chậm từ metrics, lý do từ log, và bước chậm từ trace.
     en: Find the slow endpoint from the metrics, the reason from the logs, and the slow step from a trace.
