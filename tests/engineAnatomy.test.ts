@@ -175,7 +175,9 @@ describe('Engine MongoDB/DynamoDB L1–L5: giải phẫu theo loại bài (R6, v
     expect(l.sources.some((u) => u.startsWith(home)), `nguồn chính thức ${home}`).toBe(true);
     if (l.kind === 'concept' || l.kind === 'lab') {
       const ex = nsBlocks(l, 'example').filter((b) => !isTrap(b));
-      expect(ex.length >= 2 && ex.length <= 6, `Ví dụ 2–6 khối (${ex.length})`).toBe(true);
+      // v44 (L766): a figure placed in Ví dụ replaced a text-drawn block, so it counts as one of the examples
+      const shown = ex.length + (l.figures ?? []).filter((f) => f.at === 'example').length;
+      expect(shown >= 2 && shown <= 6, `Ví dụ 2–6 khối hay hình (${shown})`).toBe(true);
       if (l.runtime !== 'docs') expect(ex.filter((b) => b.runs).length, 'bài chạy trong trình duyệt: ≥ 2 ví dụ chạy được').toBeGreaterThanOrEqual(2);
       const pit = nsBlocks(l, 'pitfalls').filter(isTrap);
       expect(pit.length >= 2 && pit.length <= 4, `Lỗi hay gặp 2–4 bẫy (${pit.length})`).toBe(true);

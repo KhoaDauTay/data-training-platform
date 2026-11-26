@@ -70,6 +70,11 @@ item collection = all items with the same partition key, sorted by sort key
 
 Bảng `Votes` lưu phiếu theo ngày. Partition key là ngày thì mọi phiếu trong ngày vào một partition; 1500 phiếu mỗi giây, mỗi phiếu dưới 1 KB, là 1500 WCU, vượt 1000: cả 1500 lần ghi mỗi giây của `VOTE#2026-11-20` dồn vào một partition nóng.
 
+```text
+PK = "VOTE#2026-11-20"                       one value for the whole day
+PK = "VOTE#2026-11-20#0" ... "VOTE#2026-11-20#9"   ten values for the same day
+```
+
 Thêm hậu tố sau ngày (`VOTE#2026-11-20#0`, `VOTE#2026-11-20#1`…) làm số giá trị partition key tăng lên, mỗi giá trị được băm về một partition riêng, tải được rải ra. Bài 4 làm việc này trong lab chạy bằng dynoxide.
 
 Ngược lại, partition key là mã người dùng thì có hàng triệu giá trị, mỗi giá trị chỉ vài thao tác mỗi giây. Không partition nào gần trần, nên bảng chịu được tổng tải lớn. Sơ đồ dưới đi từng bước: băm khóa, tải đều, một khóa nóng, rồi rải khóa nóng bằng hậu tố.
@@ -139,6 +144,11 @@ item collection = all items with the same partition key, sorted by sort key
 ## Example
 
 The `Votes` table stores votes by day. With the date as partition key, every vote of the day goes to one partition; 1500 votes per second, each under 1 KB, is 1500 WCU, above 1000: all 1500 writes per second for `VOTE#2026-11-20` pile onto one hot partition.
+
+```text
+PK = "VOTE#2026-11-20"                       one value for the whole day
+PK = "VOTE#2026-11-20#0" ... "VOTE#2026-11-20#9"   ten values for the same day
+```
 
 Adding a suffix after the date (`VOTE#2026-11-20#0`, `VOTE#2026-11-20#1`…) multiplies the partition key values; each value is hashed to its own partition and the load spreads. Lesson 4 does this in a lab that runs on dynoxide.
 

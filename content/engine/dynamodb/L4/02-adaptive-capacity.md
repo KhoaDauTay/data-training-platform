@@ -64,7 +64,15 @@ ceiling:   one primary key <= 3000 RCU and <= 1000 WCU per second
 
 ## Ví dụ
 
-Ví dụ trong docs AWS: bảng provisioned 400 WCU chia đều cho 4 partition, mỗi partition 100 WCU. Partition 1–3 nhận 50 WCU/giây, partition 4 nhận 150 WCU/giây. Partition 4 dùng burst trong lúc chờ, rồi adaptive capacity nâng nó lên đủ 150 WCU vì tổng của bảng (300) vẫn dưới 400.
+Ví dụ trong docs AWS: bảng provisioned 400 WCU chia đều cho 4 partition, mỗi partition 100 WCU. Partition 1–3 nhận 50 WCU/giây, partition 4 nhận 150 WCU/giây; sau đó cả tải dồn vào một item.
+
+```text
+table  provisioned 400 WCU, 4 partitions x 100 WCU
+load   P1 50, P2 50, P3 50, P4 150 WCU per second
+item   LIKES#post-1, 1500 writes per second
+```
+
+Partition 4 dùng burst trong lúc chờ, rồi adaptive capacity nâng nó lên đủ 150 WCU vì tổng của bảng (300) vẫn dưới 400.
 
 Cùng bảng, nhưng tải dồn vào một item `LIKES#post-1`, 1500 lần ghi mỗi giây: item được cô lập trong partition riêng, nhận 1000 WCU, 500 bị throttle. Cô lập không giúp gì thêm: một item không thể chia nhỏ hơn. Hình dưới vẽ cả hai trường hợp.
 
@@ -135,7 +143,15 @@ ceiling:   one primary key <= 3000 RCU and <= 1000 WCU per second
 
 ## Example
 
-The example in the AWS docs: a provisioned table with 400 WCU spread evenly over 4 partitions, 100 WCU each. Partitions 1 to 3 receive 50 WCU per second, partition 4 receives 150 WCU per second. Partition 4 lives on burst capacity for a while, then adaptive capacity raises it to the full 150 WCU because the table total (300) is still below 400.
+The example in the AWS docs: a provisioned table with 400 WCU spread evenly over 4 partitions, 100 WCU each. Partitions 1 to 3 receive 50 WCU per second, partition 4 receives 150 WCU per second; then the whole load piles onto one item.
+
+```text
+table  provisioned 400 WCU, 4 partitions x 100 WCU
+load   P1 50, P2 50, P3 50, P4 150 WCU per second
+item   LIKES#post-1, 1500 writes per second
+```
+
+Partition 4 lives on burst capacity for a while, then adaptive capacity raises it to the full 150 WCU because the table total (300) is still below 400.
 
 The same table, but the load piles onto one item, `LIKES#post-1`, at 1500 writes per second: the item is isolated in its own partition, 1000 WCU are accepted and 500 are throttled. Isolation does not help any further: one item cannot be split smaller. The figure below draws both cases.
 

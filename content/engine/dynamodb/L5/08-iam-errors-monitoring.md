@@ -101,7 +101,19 @@ Query Orders PK = "USER#b" with user A's credentials   -> returns B's orders
 Query Orders PK = "USER#b" with user A's credentials   -> AccessDeniedException
 ```
 
-Thử lại lỗi không tạm thời: gửi lại `ConditionalCheckFailedException` năm lần cho đúng lỗi đó năm lần. Chỉ thử lại throttle và 5xx; điều kiện sai thì đọc lại item (`GetItem`), quyết định, rồi ghi mới có điều kiện, như bước cuối của hình ở phần Ví dụ.
+Thử lại lỗi không tạm thời:
+
+```text
+// WRONG: retry every error the same way
+ConditionalCheckFailedException, sent 5 times: the same error 5 times
+```
+
+```text
+// FIX: retry only throttling and 5xx; re-read the item before a new conditional write
+ConditionalCheckFailedException: GetItem, decide, then a new conditional write
+```
+
+Bước cuối của hình ở phần Ví dụ vẽ cách sửa này.
 
 ## Tóm tắt
 
@@ -167,7 +179,19 @@ Query Orders PK = "USER#b" with user A's credentials   -> returns B's orders
 Query Orders PK = "USER#b" with user A's credentials   -> AccessDeniedException
 ```
 
-Retrying errors that are not temporary: sending a `ConditionalCheckFailedException` again five times gives the same error five times. Retry only throttling and 5xx; after a failed condition read the item again (`GetItem`), decide, then make a new conditional write, as in the last step of the figure in Example.
+Retrying errors that are not temporary:
+
+```text
+// WRONG: retry every error the same way
+ConditionalCheckFailedException, sent 5 times: the same error 5 times
+```
+
+```text
+// FIX: retry only throttling and 5xx; re-read the item before a new conditional write
+ConditionalCheckFailedException: GetItem, decide, then a new conditional write
+```
+
+The last step of the figure in Example draws this fix.
 
 ## Recap
 

@@ -77,6 +77,13 @@ record = { eventName: INSERT | MODIFY | REMOVE, dynamodb: { Keys, NewImage?, Old
 
 Một bộ xử lý (thường là Lambda) cộng doanh thu theo cửa hàng, chỉ dùng ảnh cũ và mới của chính item: đơn `ORDER#o1` của cửa hàng `S01` được tạo với tổng 200000, sửa thành 250000, rồi bị xóa, nên tổng của `S01` cộng 200000, cộng 50000, rồi trừ 250000.
 
+```text
+eventName           MODIFY
+dynamodb.Keys       { PK: ORDER#o1 }
+dynamodb.OldImage   { PK: ORDER#o1, store: S01, total: 200000 }
+dynamodb.NewImage   { PK: ORDER#o1, store: S01, total: 250000 }
+```
+
 Một `TransactWriteItems` chuyển tiền giữa hai ví thành hai bản ghi riêng, có thể xen với transaction khác. Hình dưới vẽ cả hai.
 
 ## Lỗi hay gặp
@@ -148,6 +155,13 @@ record = { eventName: INSERT | MODIFY | REMOVE, dynamodb: { Keys, NewImage?, Old
 ## Example
 
 A consumer (usually Lambda) adds up revenue per store, using only that item's own old and new images: order `ORDER#o1` of store `S01` is created with a total of 200000, changed to 250000, then deleted, so the `S01` total adds 200000, adds 50000, then subtracts 250000.
+
+```text
+eventName           MODIFY
+dynamodb.Keys       { PK: ORDER#o1 }
+dynamodb.OldImage   { PK: ORDER#o1, store: S01, total: 200000 }
+dynamodb.NewImage   { PK: ORDER#o1, store: S01, total: 250000 }
+```
 
 One `TransactWriteItems` moving money between two wallets becomes two separate records, possibly interleaved with another transaction. The figure below draws both.
 
