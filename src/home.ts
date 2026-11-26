@@ -52,7 +52,7 @@ export function resumeTarget(completed: readonly string[], next: Ticket | undefi
 const ENGINE_OF: Record<string, string> = { pg: 'postgres', mg: 'mongodb', dy: 'dynamodb', rd: 'redis', ds: 'design', st: 'stack', ol: 'olap', sr: 'search', ts: 'timeseries', tm: 'telemetry' };
 /** An Engine lesson id (`e-pg-l3-04`) → its engine and level; undefined for anything else (Best Practice cards, path drills). */
 export function engineLevelOf(id: string): { engine: string; level: number } | undefined {
-  const m = /^e-(pg|mg|dy|rd|ds|st|ol|sr|ts)-l([1-5])-/.exec(id);
+  const m = /^e-(pg|mg|dy|rd|ds|st|ol|sr|ts|tm)-l([1-5])-/.exec(id);
   return m ? { engine: ENGINE_OF[m[1]], level: Number(m[2]) } : undefined;
 }
 
