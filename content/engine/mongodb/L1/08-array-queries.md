@@ -34,8 +34,8 @@ predict:
   answer: 1
   trap: 0
   why:
-    vi: "Nghe hợp lý vì cả hai điều kiện nói về dòng hàng, nhưng không có `$elemMatch` thì mỗi điều kiện được thỏa bởi bất kỳ phần tử nào. Đơn 1 có một dòng `p4` (qty 1) và một dòng khác qty 2, nên vẫn khớp."
-    en: "It sounds right because both conditions talk about order lines, but without `$elemMatch` each condition can be met by any element. Order 1 has a `p4` line (qty 1) and a different line with qty 2, so it still matches."
+    vi: "Nghe hợp lý vì cả hai điều kiện nói về dòng hàng (một phần tử của mảng `lines`), nhưng không có `$elemMatch` thì mỗi điều kiện được thỏa bởi bất kỳ phần tử nào, không cần cùng một phần tử. Đơn 1 có dòng `p4` với qty 1 và dòng `p1` với qty 2: điều kiện `sku` khớp dòng `p4`, điều kiện `qty` khớp dòng `p1`, nên đơn 1 vẫn được trả. Đơn 5 có dòng `p4` với qty 2, đủ cả hai điều kiện, nên \"không đơn nào\" cũng sai."
+    en: "It sounds right because both conditions talk about order lines (elements of the `lines` array), but without `$elemMatch` each condition can be met by any element, not necessarily the same one. Order 1 has a `p4` line with qty 1 and a `p1` line with qty 2: the `sku` condition matches the `p4` line, the `qty` condition the `p1` line, so order 1 is still returned. Order 5 has a `p4` line with qty 2, meeting both conditions, so \"no order\" is wrong too."
 lab:
   setup: |
     {"collections": {
@@ -109,8 +109,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: 'Nghe hợp lý vì nhãn nào cũng có mặt, nhưng một mảng làm giá trị so bằng là so khớp chính xác, kể cả thứ tự. Không quan tâm thứ tự thì dùng `$all`.'
-      en: 'It sounds right because every tag is present, but an array used as an equality value is an exact match, order included. When order does not matter, use `$all`.'
+      vi: 'Nghe hợp lý vì nhãn nào cũng có mặt, nhưng một mảng làm giá trị so bằng là so khớp chính xác, kể cả thứ tự: `"p6"` lưu `"hot"` trước, filter ghi `"gift"` trước, nên không khớp. Không quan tâm thứ tự thì dùng `$all`, toán tử chỉ đòi mảng chứa đủ các giá trị.'
+      en: 'It sounds right because every tag is present, but an array used as an equality value is an exact match, order included: `"p6"` stores `"hot"` first while the filter puts `"gift"` first, so it does not match. When order does not matter, use `$all`, which only requires the array to hold every value.'
 ---
 ## Mở bài
 
