@@ -6,7 +6,7 @@ import type { Lang, Params } from './index';
  * ("tự chấm k/n", design-v27 §3): the room does not certify anything.
  */
 const vi = {
-  'intro': 'Luyện trả lời câu phỏng vấn về PostgreSQL, MongoDB và DynamoDB: mỗi bộ 5 câu. Viết câu trả lời của bạn trước, rồi mới xem đáp án mẫu đặt cạnh và tự tích rubric. Không có XP, không ghi vào tiến độ; kết quả chỉ lưu trên máy này và không đi theo khi xuất tiến độ.',
+  'intro': 'Câu hỏi phỏng vấn {name}: mỗi bộ 5 câu, xếp theo cấp Junior đến Staff. Viết câu trả lời của bạn trước, rồi mới xem đáp án mẫu đặt cạnh và tự tích rubric. Không có XP, không ghi vào tiến độ; kết quả chỉ lưu trên máy này và không đi theo khi xuất tiến độ.',
   'band.junior': 'Junior',
   'band.mid': 'Mid',
   'band.senior': 'Senior',
@@ -86,7 +86,7 @@ const vi = {
 export type IvKey = keyof typeof vi;
 
 const en: Record<IvKey, string> = {
-  'intro': 'Practise answering interview questions on PostgreSQL, MongoDB and DynamoDB: 5 questions per set. Write your own answer first, then see the model answer beside it and tick the rubric yourself. No XP, nothing in your progress; results stay on this device only and are not part of Export progress.',
+  'intro': '{name} interview questions: 5 per set, ordered by level from Junior to Staff. Write your own answer first, then see the model answer beside it and tick the rubric yourself. No XP, nothing in your progress; results stay on this device only and are not part of Export progress.',
   'band.junior': 'Junior level',
   'band.mid': 'Mid level',
   'band.senior': 'Senior level',

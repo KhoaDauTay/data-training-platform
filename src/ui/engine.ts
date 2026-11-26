@@ -10,7 +10,7 @@ import { illustration, loadedGsap, loadGsap } from '../art/load';
 import { readJson, writeJson } from '../storage';
 import { react } from './celebrate';
 import { mascot } from './mascots';
-import { announce, h, loader, reducedMotion } from './dom';
+import { announce, failBox, h, loader, reducedMotion } from './dom';
 import { s } from './svg';
 import { errorView } from './feedback';
 import { createEditor } from './editor';
@@ -72,8 +72,7 @@ const load = (): void => void engineChunk().then(() => actions.rerender(), () =>
 
 /** The loading line, or the failure with Retry (`retry` clears the failed state; the next draw loads again, never in a loop). */
 const waitView = (bad: boolean, retry: () => void): HTMLElement => (bad
-  ? h('div', { role: 'alert', class: 'space-y-2' }, h('p', { class: 'm-0' }, t('engine.failed')),
-    h('button', { type: 'button', onclick: () => { retry(); actions.rerender(); } }, t('data.retry')))
+  ? failBox(t('engine.failed'), () => { retry(); actions.rerender(); })
   : h('p', { class: 'm-0 flex min-h-40 items-start gap-2 text-muted', 'aria-live': 'polite' }, loader(), t('engine.loading')));
 
 function enginePage(): HTMLElement {

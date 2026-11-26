@@ -1,7 +1,7 @@
 import { t } from '../i18n';
 import { hashOf } from '../route';
 import { actions } from '../state';
-import { h, loader } from './dom';
+import { failBox, h, loader } from './dom';
 import { registerHomeSection } from './homeView';
 import { NAV_ICON } from './icons';
 import { meChunk, meView } from './meChunk';
@@ -13,8 +13,7 @@ function meSection(): HTMLElement {
   if (meView) return meView.mePage();
   if (!failed) void meChunk().then(() => actions.rerender(), () => { failed = true; actions.rerender(); }); // one promise while loading (meChunk)
   return failed
-    ? h('div', { role: 'alert', class: 'space-y-2' }, h('p', { class: 'm-0' }, t('me.failed')),
-      h('button', { type: 'button', onclick: () => { failed = false; actions.rerender(); } }, t('data.retry')))
+    ? failBox(t('me.failed'), () => { failed = false; actions.rerender(); })
     : h('p', { class: 'm-0 flex min-h-40 items-start gap-2 text-muted', 'aria-live': 'polite' }, loader(), t('me.loading'));
 }
 

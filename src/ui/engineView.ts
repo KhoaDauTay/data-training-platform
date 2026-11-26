@@ -735,6 +735,7 @@ function labView(l: EngineLesson, v: Visit): HTMLElement {
           leadDisc(passed ? 'done' : i === cur ? 'current' : 'todo', String(i + 1)),
           h('div', { class: 'min-w-0 flex-1 flex flex-col gap-1' },
             h('h3', { class: 'm-0 text-caption font-bold tracking-wider text-muted uppercase' }, et('lab.step', { i: i + 1, n: steps.length }),
+              h('span', { 'data-step-lang': '' }, ` · ${stepLang(l, s)}`),
               i === cur ? h('span', { class: 'ml-2 text-accent-ink' }, `· ${et('cap.current')}`) : null),
             h('p', { class: 'm-0' }, ...inline(s.task[lang()])), onPg(l.engine) ? pgBar(d, s) : N()?.stepTop(d, s))),
         ed ? codeBox(`${key}-code`, v.code[i] ?? '', et('lab.code', { i: i + 1 }), onPg(l.engine) && !isEsLesson(l), {
@@ -759,6 +760,10 @@ function labView(l: EngineLesson, v: Visit): HTMLElement {
     })),
     cap && cc ? cap.capPlans(cc) : null);
 }
+
+/** eye-v47b B-05 (L1113): the language a step's editor takes, on its card (product names: the same in VI and EN). */
+const stepLang = (l: EngineLesson, s: LabStep): string => (s.lang === 'promql' ? 'PromQL' : isEsLesson(l) ? 'Query DSL' : l.engine === 'redis' ? 'Redis'
+  : l.engine === 'mongodb' ? 'mongosh' : l.engine === 'dynamodb' ? 'JSON / PartiQL' : dbtLab(l) ? 'SQL + Jinja' : 'SQL');
 
 /** The capstone's finish card (nothing until it is done, or for another kind / a lab with no runner). */
 function capDoneView(l: EngineLesson, v: Visit): HTMLElement | null {
@@ -804,7 +809,7 @@ function vizSlot(slot: string, name: string | undefined, engine: EngineId, model
 const SHORT_OF: Record<EngineId, 'pg' | 'mg' | 'dy'> = { postgres: 'pg', mongodb: 'mg', dynamodb: 'dy', redis: 'dy', design: 'pg', stack: 'pg', olap: 'pg', search: 'pg', timeseries: 'pg', telemetry: 'pg', graph: 'pg', stream: 'pg' }; // design diagrams are Postgres ones; Redis has no live-model diagram (its figures are specs)
 
 const HONEST_CLS: Record<Honest, string> = {
-  pg: 'bg-good-soft text-ink', mingo: 'bg-good-soft text-ink', dynoxide: 'bg-good-soft text-ink', redis: 'bg-good-soft text-ink', search: 'bg-good-soft text-ink', diagram: 'bg-surface-2 text-muted', docs: 'bg-info-soft text-ink',
+  pg: 'bg-good-soft text-ink', mingo: 'bg-good-soft text-ink', dynoxide: 'bg-good-soft text-ink', redis: 'bg-good-soft text-ink', es: 'bg-good-soft text-ink', promql: 'bg-good-soft text-ink', diagram: 'bg-surface-2 text-muted', docs: 'bg-info-soft text-ink',
 };
 /** The one honest runtime chip under the title (§3.6, checklist L1). */
 function honestChip(l: EngineLesson): HTMLElement {

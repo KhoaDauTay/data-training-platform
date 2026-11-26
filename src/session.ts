@@ -55,7 +55,8 @@ export interface InterviewRun extends LiveRun {
   minutes: number;
 }
 /** Set by the interview chunk: called after every draft change, so a reload keeps the run's place and text. */
-export const ivHooks: { changed?(): void } = {};
+/** `blocked`: Submit waits (eye-v47b B-06, L1114: an ask's step before its reading is picked). */
+export const ivHooks: { changed?(): void; blocked?(): boolean } = {};
 /** The question or take-home step on screen (its id is the hash, the draft key and the `solved` entry). */
 export function ivItemId(run: InterviewRun): string {
   return run.kind === 'th' ? `${run.id}-${run.step + 1}` : run.tickets[run.index]?.id ?? '';

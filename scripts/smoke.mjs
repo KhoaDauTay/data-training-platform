@@ -604,10 +604,12 @@ try {
   await step(`engine ${ENGINE.predict.id}: predict answered, the real plan shows ${ENGINE.predict.predict.expect?.node}`, async () => {
     await openLesson(ENGINE.predict);
     const id = ENGINE.predict.id;
-    await ev(`document.querySelector('[data-ek="${id}-p-${ENGINE.predict.predict.answer}"]').click()`);
-    await ev(`document.querySelector('[data-ek="${id}-p-check"]').click()`);
-    await waitFor('"see the real plan"', `!!document.querySelector('[data-ek="${id}-plan"]')`, 10000);
-    await ev(`document.querySelector('[data-ek="${id}-plan"]').click()`);
+    // eye-v47b (L1119): the predict card and its "Xem thật" button can be redrawn after openLesson returns (lazy enginePredict),
+    // so each click waits until its button exists and clicks it in the same evaluation, like the quiz options above
+    const click = (what, sel, ms) => waitFor(what, `(b => !!b && (b.click(), true))(document.querySelector('${sel}'))`, ms);
+    await click(`predict option ${ENGINE.predict.predict.answer}`, `[data-ek="${id}-p-${ENGINE.predict.predict.answer}"]`, 15000);
+    await click('predict check', `[data-ek="${id}-p-check"]`, 15000);
+    await click('"see the real plan"', `[data-ek="${id}-plan"]`, 15000);
     await waitFor('the plan', `!!document.querySelector('[data-plan]')`, 90000);
     const plan = await ev(`document.querySelector('[data-plan]').textContent`);
     if (!plan.includes(ENGINE.predict.predict.expect.node)) fail(`plan has no ${ENGINE.predict.predict.expect.node}: ${plan}`);
@@ -736,7 +738,7 @@ try {
   await waitFor('about:blank', `location.href === 'about:blank'`, 10000);
   for (const lang of ['vi', 'en']) for (const [w, hgt] of [[1024, 700], [1280, 800], [1440, 900], [1920, 1000]]) {
     await size(w, hgt);
-    for (const hash of ['#/d/finance', '#/d/logistics/play']) {
+    for (const hash of ['#/d/finance', '#/d/ecommerce', '#/d/logistics/play']) { // eye-v47b B-09 (L1118): + E-commerce (EN 1280 cut ⋯)
       await step(`top bar ${w}px ${lang} ${hash}`, async () => {
         await go(base, hash);
         await waitFor(`<main id="${mainOf(hash)}"> with an h1`, `(m => m && !m.hidden && !!m.querySelector('h1'))(document.getElementById(${S(mainOf(hash))}))`, 30000);

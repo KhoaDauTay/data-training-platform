@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 import {
-  blocksOf, docsNoteKey, ENGINE_XP, engineXp, isRight, lessonPassed, lessonProblems, onPg, parseEngineLesson, parseModules, partsOf, progressOf, treeOf,
+  blocksOf, docsNoteKey, ENGINE_XP, engineXp, isEsLesson, isRight, lessonPassed, lessonProblems, onPg, parseEngineLesson, parseModules, partsOf, progressOf, treeOf,
   type EngineLesson,
 } from '../src/engine/content';
 import { compareResults } from '../src/grader';
@@ -180,12 +180,13 @@ describe('honestOf: nhãn trung thực của mọi bài', () => {
   it.each(sets[0].map((l) => [l.id, l] as const))('%s', (_, l) => {
     const k = honestOf(l);
     expect(honestRow(l)).toBe(k); // L280: the lesson rows' chip, from the index fields only
-    if (k === 'pg' || k === 'mingo' || k === 'dynoxide' || k === 'redis' || k === 'search') {
+    if (k === 'pg' || k === 'mingo' || k === 'dynoxide' || k === 'redis' || k === 'es' || k === 'promql') {
       // "runs" only when something executes here: a lab (its Run goes to the runner) or a Postgres predict's real plan.
       // L299: the two DynamoDB catalog labs (e-dy-l1-04, e-dy-l3-03) count as gradable now (dynoxide grades any check kind).
       expect(!!l.lab || (onPg(l.engine) && !!l.predict)).toBe(true);
       expect((l.lab?.steps ?? []).some((s) => gradable(l, s)) || (onPg(l.engine) && !!l.predict)).toBe(true);
-      expect(k).toBe({ postgres: 'pg', mongodb: 'mingo', dynamodb: 'dynoxide', redis: 'redis', design: 'pg', stack: 'pg', olap: 'pg', search: 'search', timeseries: 'pg', telemetry: 'pg', graph: 'pg', stream: 'pg' }[l.engine]);
+      // eye-v47b B-04 (L1112): search lessons on a JSON index say es, PromQL labs say promql (what their steps run on)
+      expect(k).toBe(isEsLesson(l) ? 'es' : l.lab?.steps.some((s) => s.lang === 'promql') ? 'promql' : { postgres: 'pg', mongodb: 'mingo', dynamodb: 'dynoxide', redis: 'redis', design: 'pg', stack: 'pg', olap: 'pg', search: 'pg', timeseries: 'pg', telemetry: 'pg', graph: 'pg', stream: 'pg' }[l.engine]);
     } else {
       expect(l.runtime).toBe('docs');
       expect(k).toBe(l.viz ? 'diagram' : 'docs');

@@ -10,7 +10,7 @@ import { checkLab, checkPlan, isCreateIndex, planLine, slowVerdict, type LabSpec
 import { getLang, isMac, t, type Key } from '../i18n';
 import { LANE_XP } from '../lanes';
 import { SKILLS, xpFor } from '../progress';
-import { isClosed, keepsWork, readDraft, schemaOf, session, workKey, writeDraft } from '../session';
+import { isClosed, ivHooks, keepsWork, readDraft, schemaOf, session, workKey, writeDraft } from '../session';
 import { app, done, editorSchema, initialDoc, persist, stepKey, type LastRun } from '../state';
 import { localStore } from '../storage';
 import { BTN_SECONDARY, BTN_SUBMIT, cx } from '../theme';
@@ -249,7 +249,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     explainBtn.disabled = busy;
     explainItem.disabled = busy;
     explainBtn.hidden = explainItem.hidden = !!ticket?.steps[stepIndex]?.lab; // a lab editor holds CREATE INDEX: Run already shows both plans
-    submitBtn.disabled = busy;
+    submitBtn.disabled = busy || !!ivHooks.blocked?.();
     submitBtn.hidden = !ticket || isClosed(ticket.id);
   }
 
@@ -385,7 +385,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
   }
 
   async function submit(): Promise<void> {
-    if (busy || !editor || !ticket || submitBtn.hidden) return;
+    if (busy || !editor || !ticket || submitBtn.hidden || ivHooks.blocked?.()) return;
     const ed = editor;
     const tk = ticket;
     const i = stepIndex;

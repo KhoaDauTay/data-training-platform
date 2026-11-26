@@ -10,7 +10,9 @@ import { ENGINE_ID, isWorkId, parseSave, type Known } from '../src/save';
 import { SKILLS } from '../src/progress';
 import { decodeInfomask, heapView } from '../src/engine/inside';
 import { gradable } from '../src/engine/labs';
-import type { EngineLesson, LabStep } from '../src/engine/content';
+import { ENGINES, type EngineLesson, type LabStep } from '../src/engine/content';
+import { KINDS } from '../src/ui/engineHub';
+import { HUB_DICT } from '../src/i18n/engineHub';
 
 const known: Known = { ticketIds: new Set(['ch1-01']), laneIds: new Set(), skills: new Set(['select']) };
 
@@ -127,5 +129,15 @@ describe('Bên trong: pageinspect → line pointer + cờ infomask (thuần)', (
       { lp: '1', flag: 'redirect', xmin: '', xmax: '', ctid: '', flags: [] },
       { lp: '2', flag: 'normal', xmin: '740', xmax: '0', ctid: '(0,2)', flags: ['XMIN_COMMITTED', 'XMAX_INVALID', 'HEAP_ONLY'] },
       { lp: '3', flag: 'dead', xmin: '', xmax: '', ctid: '', flags: [] }] });
+  });
+});
+
+// eye-v47b B-03 (L1117): the hub's Khóa học kinds hold every track exactly once, each kind named in VI and EN.
+describe('#/engine: Khóa học in kinds', () => {
+  it('every ENGINES id in exactly one kind', () => {
+    const all = KINDS.flatMap(([, es]) => es);
+    expect([...all].sort()).toEqual([...ENGINES].sort());
+    expect(new Set(all).size).toBe(all.length);
+    for (const [k] of KINDS) for (const lang of ['vi', 'en'] as const) expect(HUB_DICT[lang][`kind.${k}`]).toBeTruthy();
   });
 });

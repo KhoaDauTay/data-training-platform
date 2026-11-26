@@ -185,8 +185,8 @@ const LEVELS = ['L1', 'L2', 'L3', 'L4', 'L5'];
 const TOP: Record<string, string> = { stack: 'L3', redis: 'L2', olap: 'L3', search: 'L3', timeseries: 'L3', telemetry: 'L3', graph: 'L2', stream: 'L3' };
 const ENGINE_ICON: Record<string, Icons.IconName> = { postgres: 'engRelational', mongodb: 'engDocument', dynamodb: 'engKeyValue', redis: 'engRedis', design: 'engDesign', stack: 'engStack', olap: 'engOlap', search: 'engSearch', timeseries: 'engTimeseries', telemetry: 'engTelemetry', graph: 'engGraph', stream: 'engStream' };
 const DOMAIN_ICON: Record<string, Icons.IconName> = { logistics: 'anchor', ecommerce: 'box', finance: 'percent' };
-const ENGINE_NAME: Record<string, string> = { postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB', redis: 'Redis', olap: 'OLAP & ClickHouse', search: 'Elasticsearch', telemetry: 'Telemetry & Observability', graph: 'Graph', stream: 'Streaming & CDC' };
-const engineName = (e: string): string => ENGINE_NAME[e] ?? m(e === 'stack' ? 'eng.stack' : e === 'timeseries' ? 'eng.timeseries' : 'eng.design');
+const ENGINE_NAME: Record<string, string> = { postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB', redis: 'Redis', olap: 'OLAP & ClickHouse', telemetry: 'Telemetry & Observability', graph: 'Graph', stream: 'Streaming & CDC' };
+const engineName = (e: string): string => ENGINE_NAME[e] ?? m(e === 'stack' ? 'eng.stack' : e === 'timeseries' ? 'eng.timeseries' : e === 'search' ? 'eng.search' : 'eng.design');
 const phone = (): boolean => typeof matchMedia === 'function' && !matchMedia('(min-width: 640px)').matches;
 
 /** Four dots, filled vs ring (shape, not colour alone); the words are in the row's label. */

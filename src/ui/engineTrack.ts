@@ -46,7 +46,8 @@ export function chooser(c: HubCtx, e: EngineId): HTMLElement | null {
   const { h, cls } = c.d;
   const ok = c.done();
   const lvs = LV.filter((lv, i) => i > 0 && c.levelLessons(e, lv).length && !levelDone(c, e, lv, ok));
-  if (!lvs.length) return null;
+  // eye-v47b B-15 (L1119): a two-level track's one jump repeats the L2 row's link just below, so it shows none
+  if (!lvs.length || LV.filter((lv) => c.levelLessons(e, lv).length).length <= 2) return null;
   return h('section', { class: 'flex flex-col gap-2', 'aria-labelledby': 'engine-chooser', 'data-chooser': e },
     h('h2', { id: 'engine-chooser', class: c.d.ui.GROUP_TITLE }, tr(c, 'chooser')),
     h('p', { class: 'm-0 text-body-sm text-muted' }, tr(c, 'chooser.line')),

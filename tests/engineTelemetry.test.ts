@@ -7,7 +7,7 @@
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 import { blocksOf, lessonProblems, parseEngineLesson, parseModules, SECTIONS, type EngineLesson, type SectionId } from '../src/engine/content';
-import { gradable, honestOf } from '../src/engine/labs';
+import { gradable, honestOf, honestRow } from '../src/engine/labs';
 import { extensionsOf, pgScriptRunner } from '../src/engine/pglab/runner';
 import { runLabScript, splitSql } from '../src/engine/pglab/session';
 import type { ScriptStep } from '../src/engine/pglab/script';
@@ -68,7 +68,8 @@ describe('Engine Telemetry (v47 R1): bài, mô-đun, luật nội dung', () => {
   });
   it.each(all.map((x) => [x.l.id, x.l] as const))('%s: luật nội dung, nhãn chạy thật, một hình tm-, nguồn chính thức', (_, l) => {
     expect(lessonProblems(l, new Set([...ids, ...l.requires.filter((r) => /^e-pg-/.test(r))]))).toEqual([]);
-    expect(honestOf(l)).toBe('pg');
+    expect(honestOf(l)).toBe(l.lab!.steps.some((s) => s.lang === 'promql') ? 'promql' : 'pg'); // eye-v47b B-04 (L1112): PromQL labs say so
+    expect(honestRow(l)).toBe(honestOf(l));
     for (const s of l.lab?.steps ?? []) expect(gradable(l, s)).toBe(true);
     expect((l.figures ?? []).filter((f) => f.name.startsWith('tm-')).length).toBe(1);
     expect(l.sources.length).toBeGreaterThanOrEqual(1);

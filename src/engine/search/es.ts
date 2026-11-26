@@ -428,7 +428,8 @@ export function parseRequest(text: string): EsRequest {
   if (head) {
     lines.shift();
     method = head[1].toUpperCase();
-    if (method !== 'GET' && method !== 'POST') unsupported(`[${method}]: the simulation only reads (GET or POST)`);
+    // eye-v47b B-05 (L1113): one sentence, and a typed SQL statement is told this lab takes Elasticsearch requests
+    if (method !== 'GET' && method !== 'POST') fail('simulation_unsupported_exception', `[${method}] is not a request the simulation knows: it takes GET or POST <index>/_search (also _analyze and _mapping) with a JSON body${/^(SELECT|WITH|INSERT|UPDATE|DELETE|CREATE)$/.test(method) ? '. This lab takes Elasticsearch requests, not SQL' : ''}`);
     const m = /^\/?(?:([a-z0-9_.-]+)\/)?(_search|_analyze|_mapping)\/?$/.exec(head[2]);
     if (!m) return fail('illegal_argument_exception', `no handler found for uri [/${head[2].replace(/^\//, '')}] and method [${method}]`);
     [, index, api] = m;

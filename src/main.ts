@@ -575,15 +575,19 @@ byId('export-btn').addEventListener('click', () => {
 
 /** V16-OFFLINE: a new version is installed and waiting; its reload button lets it take over (every tab reloads). */
 function offerUpdate(apply: () => void): void {
-  if (app.notice && app.notice.key !== 'app.newVersion') return; // never replaces another banner; the next visit offers it again
+  // never replaces another banner (the next visit offers it again), except a failed chunk's: a waiting version explains it
+  if (app.notice && app.notice.key !== 'app.newVersion' && app.notice.key !== 'app.chunkFailed') return;
   app.notice = { key: 'app.newVersion', reload: true, apply };
   if (uiReady) renderTopbar();
 }
 
-// A lazy chunk (sql-formatter; Plan 1b: Mermaid, libpg-query) 404s after a deploy: offer a reload.
-window.addEventListener('vite:preloadError', () => {
+// A lazy chunk (sql-formatter; Plan 1b: Mermaid, libpg-query) failed to load: after a deploy (404) or on a bad network. eye-v47b
+// B-01 (L1110): that is not proof of a new version, so the banner says both and offers a reload; offerUpdate replaces it when a
+// new version really waits. The console says which case it looked like.
+window.addEventListener('vite:preloadError', (e) => {
+  console.warn('chunk load failed', navigator.onLine ? '(online: a 404 after a deploy, or a dropped request)' : '(offline)', (e as Event & { payload?: unknown }).payload);
   app.problem = { kind: 'chunk-load-failed' };
-  app.notice = { key: 'app.newVersion', reload: true };
+  if (app.notice?.key !== 'app.newVersion') app.notice = { key: 'app.chunkFailed', reload: true };
   renderTopbar();
 });
 

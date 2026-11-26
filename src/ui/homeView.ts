@@ -118,7 +118,7 @@ function resume(id: string): void {
 export const resumeNow = (): Resume | undefined => resumeTarget(app.save.completed, nextTicket(app.tickets, done()), sqlOnly(), ROUTE_SKILLS.map((s) => s.id), readIntent()); // v25 R1: a last drill of a General-only skill resumes on its page; v47 S3: the welcome's goal
 /** v47 S3: product names are never translated; the two tracks are. */
 const engineName = (e: string): string =>
-  e === 'design' ? t('welcome.eng.design') : e === 'stack' ? t('welcome.eng.stack') : e === 'timeseries' ? t('welcome.eng.timeseries') : ({ postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB', redis: 'Redis', olap: 'OLAP & ClickHouse', telemetry: 'Telemetry & Observability', search: 'Elasticsearch', graph: 'Graph', stream: 'Streaming & CDC' } as Record<string, string>)[e] ?? e;
+  e === 'design' ? t('welcome.eng.design') : e === 'stack' ? t('welcome.eng.stack') : e === 'timeseries' ? t('welcome.eng.timeseries') : e === 'search' ? t('welcome.eng.search') : ({ postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB', redis: 'Redis', olap: 'OLAP & ClickHouse', telemetry: 'Telemetry & Observability', graph: 'Graph', stream: 'Streaming & CDC' } as Record<string, string>)[e] ?? e;
 /** Its name: the task title, the skill, the Engine track (and level), or the learning path. */
 export const resumeName = (r: Resume): string =>
   r.kind === 'ticket' ? textOf(r.ticket, getLang()).title : r.kind === 'skill' ? SKILLS.find((s) => s.id === r.skill)!.label[getLang()]
@@ -230,7 +230,7 @@ function chapterRow(c: ChapterCard): HTMLLIElement {
   const ids = reliesOn(app.tickets, c.chapter);
   const known = knownSkills(app.save, app.tickets, SKILLS.map((s) => s.id));
   const skillLink = (id: string, i: number): (Node | string)[] => [i ? ', ' : '',
-    h('a', { href: `${hashOf('learn')}/skill/${id}`, class: cx(ABOVE, known.has(id) ? 'text-good' : 'text-muted') }, SKILLS.find((s) => s.id === id)?.label[lang] ?? id, known.has(id) ? ' ✓' : '')];
+    h('a', { href: `${hashOf('learn')}/skill/${id}`, class: cx(ABOVE, 'inline-block py-0.5', known.has(id) ? 'text-good' : 'text-muted') }, SKILLS.find((s) => s.id === id)?.label[lang] ?? id, known.has(id) ? ' ✓' : '')];
   const short = h('span', {}, t('home.reliesOn', { skills: '' }), ...ids.slice(0, 2).flatMap(skillLink),
     ids.length > 2 ? h('a', { href: `${hashOf('learn')}/skill/${ids[2]}`, class: cx(ABOVE, 'inline-block min-h-6 min-w-6 text-center text-muted') }, ` +${ids.length - 2}`) : null); // v24 (product §3.1.1): Part n is no longer chapter n
   // Plan 11 §1.4: the advanced nodes the chapter's tasks apply (Finance only: other domains have no adv:, so no General fetch).

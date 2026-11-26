@@ -20,7 +20,7 @@ import { BTN_GO, BTN_SECONDARY, CARD, cx } from '../theme';
 import { applyVariant } from '../variants';
 import { hints, renderBrief, shapeCard } from './brief';
 import { earlyCard, goalCard, optionalNote, skillChips, wrapUp } from './chapterView';
-import { announce, byId, h, loader, nodes, reducedMotion, richText } from './dom';
+import { announce, byId, failBox, h, loader, nodes, reducedMotion, richText } from './dom';
 import { s } from './svg';
 import { meChunk } from './meChunk';
 import { boonMark, coachDone, enterMark, escOwned, guideHooks, guideSlot } from './coach';
@@ -604,8 +604,7 @@ function interviewSection(): HTMLElement {
     loadIvUi().then(() => (ivLoad = 'idle'), () => (ivLoad = 'failed')).finally(() => ctx?.rerender());
   }
   return ivLoad === 'failed'
-    ? h('div', { role: 'alert', class: 'space-y-2' }, h('p', { class: 'm-0' }, t('learn.failed')),
-      h('button', { type: 'button', onclick: () => { ivLoad = 'idle'; ctx?.rerender(); } }, t('data.retry')))
+    ? failBox(t('learn.failed'), () => { ivLoad = 'idle'; ctx?.rerender(); })
     : h('p', { class: 'm-0 flex min-h-40 items-start gap-2 text-muted', 'aria-live': 'polite' }, loader(), t('learn.loading'));
 }
 function learnSection(): HTMLElement {
@@ -614,8 +613,7 @@ function learnSection(): HTMLElement {
   if (page) return page;
   if (learnLoad === 'idle') loadLearn();
   return learnLoad === 'failed'
-    ? h('div', { role: 'alert', class: 'space-y-2' }, h('p', { class: 'm-0' }, t('learn.failed')),
-      h('button', { type: 'button', onclick: () => { loadLearn(); ctx?.rerender(); } }, t('data.retry')))
+    ? failBox(t('learn.failed'), () => { loadLearn(); ctx?.rerender(); })
     : h('p', { class: 'm-0 flex min-h-40 items-start gap-2 text-muted', 'aria-live': 'polite' }, loader(), t('learn.loading'));
 }
 registerHomeSection({ id: 'module', order: 10, span: 'full', pages: ['learn'], render: learnSection });

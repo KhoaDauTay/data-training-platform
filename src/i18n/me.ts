@@ -83,6 +83,7 @@ const vi = {
   'eng.design': 'Thiết kế CSDL',
   'eng.stack': 'Công cụ dữ liệu',
   'eng.timeseries': 'Chuỗi thời gian',
+  'eng.search': 'Tìm kiếm & Elasticsearch', // eye-v47b B-12 (L1119): the hub's name.search
   'badge.title': 'Huy hiệu · {k}/{n}',
   'badge.note': 'Tự đo, không xác minh · mất khi mức tụt, lấy lại được.',
   'badge.sql': 'SQL',
@@ -187,6 +188,7 @@ const en: Record<MeKey, Msg> = {
   'eng.design': 'Database design',
   'eng.stack': 'Data stack',
   'eng.timeseries': 'Time-series',
+  'eng.search': 'Search & Elasticsearch',
   'badge.title': 'Badges · {k}/{n}',
   'badge.note': 'Self-measured, not verified · lost when a level drops, won back.',
   'badge.sql': 'SQL',

@@ -108,17 +108,23 @@ function room(e: EngineId): HTMLElement {
   const b = bankOf(e);
   return h('div', { class: 'flex flex-col gap-8' },
     ivTabs(h, TAB[e], d.interviewTabHash, lang()),
-    h('p', { class: 'm-0 text-muted' }, it('intro')),
+    h('p', { class: 'm-0 text-muted' }, it('intro', { name: NAME[e] })), // eye-v47b B-08 (L1116): the tab's own engine
     due.length ? card(h('h2', { class: 'm-0 text-title font-bold' }, it('again.card', { n: due.length })), h('p', { class: 'm-0 text-body-sm text-muted' }, it('again.line')),
       h('div', {}, h('a', { href: d.engineInterviewHash('again'), class: cls.cx(cls.BTN_GO, 'inline-flex px-4 py-2 no-underline') }, it('again.go')))) : null,
-    b === 'loading' ? loading() : b === 'failed' ? failed(e) : h('div', { class: 'flex flex-col gap-8' }, ...BANDS.map((band) => bandSection(b, e, band, p))));
+    b === 'loading' ? loading() : b === 'failed' ? failed(e) : h('div', { class: 'flex flex-col gap-8' }, ...BANDS.map((band) => bandSection(b, e, band, p, due.length ? undefined : mainSet(e, p)))));
 }
 
-function bandSection(b: Bank, e: EngineId, band: Band, p: IvPrefs): HTMLElement {
+/** eye-v47b B-08 (L1116): the tab's one main button, like the SQL tab: the set in progress, else the first not done (none while the again card shows). */
+const mainSet = (e: EngineId, p: IvPrefs): string | undefined => {
+  const all = BANDS.flatMap((band) => setsOf(e, band));
+  return all.find((s) => p.live[s]) ?? all.find((s) => !p.results[s]);
+};
+
+function bandSection(b: Bank, e: EngineId, band: Band, p: IvPrefs, main: string | undefined): HTMLElement {
   const { h } = d;
   const ths = b.takeHomes.filter((x) => x.band === band);
   return h('section', { class: 'flex flex-col gap-3', 'aria-labelledby': `iv-${band}` },
-    h('h2', { id: `iv-${band}`, class: d.ui.GROUP_TITLE }, `${NAME[e]} · ${bandName(band)}`),
+    h('h2', { id: `iv-${band}`, class: 'm-0 text-title font-bold' }, `${NAME[e]} · ${bandName(band)}`),
     h('ul', { class: d.ui.LIST }, ...setsOf(e, band).map((set, i) => {
       const qs = setQuestions(b, set);
       const res = p.results[set];
@@ -130,13 +136,13 @@ function bandSection(b: Bank, e: EngineId, band: Band, p: IvPrefs): HTMLElement 
       return d.ui.listRow({
         lead: h('span', { class: d.cls.cx('grid size-10 place-items-center rounded-full font-bold', res ? 'bg-good text-on-accent' : 'bg-code text-ink') }, res ? d.icon('check', 'size-5') : String(i + 1)),
         title: setName(set), sub,
-        action: h('a', { href: d.engineInterviewHash(set), class: d.cls.cx(live ? d.cls.BTN_SECONDARY : d.cls.BTN_GHOST, 'shrink-0 px-4 py-1.5 whitespace-nowrap no-underline') },
+        action: h('a', { href: d.engineInterviewHash(set), class: d.cls.cx(set === main ? d.cls.BTN_GO : d.cls.BTN_SECONDARY, 'shrink-0 px-4 py-1.5 whitespace-nowrap no-underline') },
           it(live ? 'set.resume' : res ? 'set.redo' : 'set.start')),
       });
     }), ...ths.map((th) => d.ui.listRow({
       lead: h('span', { class: 'grid size-10 place-items-center rounded-full bg-accent-soft text-accent' }, d.icon('secPractice', 'size-5')),
       title: h('span', {}, ...th.title[lang()].split(/`([^`]+)`/).map((x, i) => (i % 2 ? h('code', {}, x) : x))), sub: `${it('th')} · ${p.th[th.id]?.at ? it('th.done') : it('th.self')}`,
-      action: h('a', { href: d.engineInterviewHash(th.id), class: d.cls.cx(d.cls.BTN_GHOST, 'shrink-0 px-4 py-1.5 whitespace-nowrap no-underline') }, it('th.open')),
+      action: h('a', { href: d.engineInterviewHash(th.id), class: d.cls.cx(d.cls.BTN_SECONDARY, 'shrink-0 px-4 py-1.5 whitespace-nowrap no-underline') }, it('th.open')),
     }))));
 }
 

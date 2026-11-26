@@ -1,7 +1,7 @@
 import type { QueryResult } from '../db/run';
 import type { GradeResult } from '../grader';
 import type { slowVerdict } from '../planCheck';
-import { onPg, type EngineId, type EngineLesson, type Lab, type LabStep } from './content';
+import { isEsLesson, onPg, type EngineId, type EngineLesson, type Lab, type LabStep } from './content';
 import type { Capacity, ReadMode } from './dynamo/cost';
 import type { ScriptResult, ScriptStep } from './pglab/script';
 
@@ -139,17 +139,28 @@ export const gradable = (l: EngineLesson, step: LabStep): boolean =>
  * actually executes: a lesson that runs here (a lab, or a Postgres predict's real plan) names its runner; one that does
  * not is a diagram when it has one, else it is read from the official docs.
  */
-export type Honest = 'pg' | 'mingo' | 'dynoxide' | 'redis' | 'search' | 'diagram' | 'docs';
-const RUNS: Record<EngineId, Honest> = { postgres: 'pg', mongodb: 'mingo', dynamodb: 'dynoxide', redis: 'redis', design: 'pg', stack: 'pg', olap: 'pg', search: 'search', timeseries: 'pg', telemetry: 'pg', graph: 'pg', stream: 'pg' };
-export const honestOf = (l: Pick<EngineLesson, 'engine' | 'runtime' | 'viz' | 'lab' | 'predict'>): Honest =>
-  l.runtime !== 'docs' && LAB_RUNNERS[l.engine] && (l.lab || (l.predict && onPg(l.engine))) ? RUNS[l.engine] : l.viz ? 'diagram' : 'docs';
+export type Honest = 'pg' | 'mingo' | 'dynoxide' | 'redis' | 'es' | 'promql' | 'diagram' | 'docs';
+const RUNS: Record<EngineId, Honest> = { postgres: 'pg', mongodb: 'mingo', dynamodb: 'dynoxide', redis: 'redis', design: 'pg', stack: 'pg', olap: 'pg', search: 'pg', timeseries: 'pg', telemetry: 'pg', graph: 'pg', stream: 'pg' };
+/**
+ * eye-v47b B-04 (L1112): the chip names what this lesson's steps run on, not the track's default: a search lesson on a JSON
+ * index runs BoonData's Elasticsearch simulation (`es`), a telemetry lab whose steps are PromQL runs the PromQL simulation
+ * over a PGlite `samples` table (`promql`); the rest of both tracks is real PostgreSQL.
+ */
+const runOf = (l: Pick<EngineLesson, 'engine' | 'lab' | 'demoSetup'>): Honest =>
+  isEsLesson(l) ? 'es' : l.lab?.steps.some((s) => s.lang === 'promql') ? 'promql' : RUNS[l.engine];
+export const honestOf = (l: Pick<EngineLesson, 'engine' | 'runtime' | 'viz' | 'lab' | 'predict' | 'demoSetup'>): Honest =>
+  l.runtime !== 'docs' && LAB_RUNNERS[l.engine] && (l.lab || (l.predict && onPg(l.engine))) ? runOf(l) : l.viz ? 'diagram' : 'docs';
 
 /**
  * L280: the same label from the lesson index alone (no lab/predict in it), for lesson rows: a lesson runs here exactly when
- * it is not `runtime: docs` (tests/engineContent.test.ts checks both agree on every lesson).
+ * it is not `runtime: docs` (tests/engineContent.test.ts checks both agree on every lesson). B-04 (L1112): the index has no
+ * lab, so the two simulations are read from the module: search's `postgres` module is PostgreSQL, its others the ES
+ * simulation; telemetry's `promql` module is PromQL except its capstone (PostgreSQL).
  */
-export const honestRow = (l: Pick<EngineLesson, 'engine' | 'runtime' | 'viz'>): Honest =>
-  l.runtime !== 'docs' && LAB_RUNNERS[l.engine] ? RUNS[l.engine] : l.viz ? 'diagram' : 'docs';
+const rowRun = (l: Pick<EngineLesson, 'engine' | 'module' | 'kind'>): Honest =>
+  l.engine === 'search' ? (l.module === 'postgres' ? 'pg' : 'es') : l.engine === 'telemetry' && l.module === 'promql' && l.kind !== 'capstone' ? 'promql' : RUNS[l.engine];
+export const honestRow = (l: Pick<EngineLesson, 'engine' | 'runtime' | 'viz' | 'module' | 'kind'>): Honest =>
+  l.runtime !== 'docs' && LAB_RUNNERS[l.engine] ? rowRun(l) : l.viz ? 'diagram' : 'docs';
 
 /** Engine → its runner, loaded on the first lab of that engine. An engine without one shows its labs read-only. */
 export const LAB_RUNNERS: Partial<Record<EngineId, (env: LabEnv) => Promise<LabRunner>>> = {

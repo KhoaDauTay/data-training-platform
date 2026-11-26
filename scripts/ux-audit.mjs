@@ -54,7 +54,7 @@ const ALL_PAGES = ['#/', '#/learn', '#/learn/sql/1', '#/learn/skill/select', '#/
   // R2 T2-P-01 (L578e): the tenancy hub, the placement diagram, one NoSQL tenancy lesson per engine and the MongoDB card
   ...TENANCY_PAGES];
 const PAGES = process.env.UX_PAGES ? process.env.UX_PAGES.split(',') : ALL_PAGES;
-const TOPBAR_PAGES = ['#/d/finance', '#/d/logistics/play', '#/learn'];
+const TOPBAR_PAGES = ['#/d/finance', '#/d/ecommerce', '#/d/logistics/play', '#/learn']; // eye-v47b B-09 (L1118): + E-commerce (EN at 1280 cut ⋯)
 const mainOf = (hash) => (/\/play$/.test(hash) ? 'shell' : /\/data$/.test(hash) ? 'data' : /\/dashboard$/.test(hash) ? 'dashboard' : 'home');
 const routeOf = (hash) => {
   const d = /^#\/d\/\w+(\/(\w+))?/.exec(hash);

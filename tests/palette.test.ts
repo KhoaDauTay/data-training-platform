@@ -1,5 +1,6 @@
 // F12 (L490): the search palette's index (General skills, Engine lessons, glossary terms) and its routes; {mod}+K.
 import { describe, expect, it } from 'vitest';
+import { ENGINES } from '../src/engine/content';
 import { meta } from '../src/engineSources';
 import { glossary } from '../src/engineTermsSources';
 import { fold, paletteItems, search, type PaletteSources } from '../src/palette';
@@ -37,7 +38,7 @@ describe('search palette (F12)', () => {
   });
 
   it('v47 S4 (L984): the one interview room, one result per tab, found as "phong van" or "interview"', () => {
-    const all = paletteItems(src, 'vi', { ...hashes, interview: interviewTabHash }, 'Design', 'Data stack', 'Phòng phỏng vấn');
+    const all = paletteItems(src, 'vi', { ...hashes, interview: interviewTabHash }, 'Phòng phỏng vấn'); // B-02 (L1111): the track names live in palette.ts now
     const rooms = all.filter((x) => x.kind === 'page' && x.href.startsWith('#/learn/interview')); // L1092: other pages follow
     expect(rooms.map((x) => x.href)).toEqual(['#/learn/interview', '#/learn/interview?e=pg', '#/learn/interview?e=mg', '#/learn/interview?e=dy']);
     expect(rooms.map((x) => x.title)).toEqual(['Phòng phỏng vấn · SQL', 'Phòng phỏng vấn · PostgreSQL', 'Phòng phỏng vấn · MongoDB', 'Phòng phỏng vấn · DynamoDB']);
@@ -59,6 +60,25 @@ describe('search palette (F12)', () => {
     }
     expect(engineRouteOf('#/engine/postgres/ext').level).toBe('EXT');
     expect(engineTermsOf('#/engine/terms')).toBe('');
+  });
+
+  it('eye-v47b B-02 (L1111): every track page and its levels, product words, and the domain cases', () => {
+    for (const lang of ['vi', 'en'] as const) {
+      const all = paletteItems(src, lang, hashes);
+      const hit = (q: string) => search(all, q).filter((x) => x.kind === 'page').map((x) => x.href);
+      for (const e of ENGINES) {
+        const page = all.find((x) => x.kind === 'page' && x.href === `#/engine/${e}`);
+        expect(page && engineRouteOf(page.href).engine, e).toBe(e);
+        expect(all.some((x) => x.href === `#/engine/${e}/L1` && engineRouteOf(x.href).level === 'L1'), e).toBe(true);
+      }
+      for (const [q, e] of [['redis', 'redis'], ['kafka', 'stream'], ['debezium', 'stream'], ['clickhouse', 'olap'], ['elasticsearch', 'search'],
+        ['prometheus', 'telemetry'], ['promql', 'telemetry'], ['graph', 'graph'], ['neo4j', 'graph'], ['telemetry', 'telemetry'], ['opentelemetry', 'telemetry'], ['chuoi thoi gian', 'timeseries']])
+        expect(hit(q), q).toContain(`#/engine/${e}`);
+      expect(search(all, 'redis')[0].href).toBe('#/engine/redis'); // the page before its lessons
+      const redis = Object.values(meta).filter((x) => (x.fm as { engine?: string }).engine === 'redis').length;
+      expect(search(all, 'redis').filter((x) => x.kind === 'lesson')).toHaveLength(redis);
+      for (const q of ['tinh huong', 'case study']) expect(hit(q)).toEqual(expect.arrayContaining(['#/d/logistics', '#/d/ecommerce', '#/d/finance']));
+    }
   });
 
   it('{mod}+K opens it: Ctrl on Windows/Linux, ⌘ on macOS; never with Shift/Alt or a handled event', () => {

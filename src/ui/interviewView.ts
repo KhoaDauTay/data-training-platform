@@ -48,6 +48,8 @@ const it = (key: IvKey, params?: I18n.Params): string => ivText(d$.getLang(), d$
 /** v21 U24: a list row (text left, its button right from sm), not a tall card per set. */
 const ROW = 'flex flex-wrap items-center gap-x-4 gap-y-2 rounded-(--r-card) bg-panel px-5 py-3 ring-1 ring-line';
 const TITLE = { id: 'brief-title', tabindex: '-1', class: 'm-0 text-title font-bold' };
+/** eye-v47b B-08 (L1116): the numbered disc the engine tabs' rows start with (green once handed in), so all four tabs share one row. */
+const disc = (i: number, done: boolean): HTMLElement => d$.h('span', { class: done ? 'grid size-10 shrink-0 place-items-center rounded-full bg-good font-bold text-on-accent' : 'grid size-10 shrink-0 place-items-center rounded-full bg-code font-bold text-ink', 'aria-hidden': 'true' }, String(i + 1));
 /** "Run the timer" on the list page: off by default (D-N10), remembered for this page load only. */
 let timerPick = false;
 
@@ -56,6 +58,12 @@ export function initInterview(deps: InterviewDeps, content: InterviewContent): v
   d$ = deps;
   c$ = content;
   deps.ivHooks.changed = saveLive; // every draft change: a reload keeps the place and the text
+  // eye-v47b B-06 (L1114): an ask's Submit waits until the right reading is picked (the task it grades is not shown before)
+  deps.ivHooks.blocked = (): boolean => {
+    const m = d$.session.mode;
+    if (m.kind !== 'interview' || m.run.kind !== 'th' || m.run.phase !== 'work') return false;
+    return !!thOf(m.run.id)?.clarify && !m.run.hints.includes(pickMark(m.run));
+  };
 }
 
 const read = (): InterviewPrefs => d$.prefs.parse(d$.readJson<unknown>(d$.prefs.key));
@@ -499,9 +507,9 @@ export function listPage(): HTMLElement {
       h('h2', { id: 'iv-sets', class: 'm-0 text-title font-bold' }, it('iv.sets')),
       h('p', { class: 'm-0 text-body-sm text-muted' }, it('iv.setsIntro')),
       h('label', { class: 'flex min-h-6 items-center gap-2' }, pick, it('iv.timerPick')),
-      h('ul', { class: 'm-0 flex list-none flex-col gap-3 p-0' }, ...c$.sets.map((s) => {
+      h('ul', { class: 'm-0 flex list-none flex-col gap-3 p-0' }, ...c$.sets.map((s, i) => {
         const last = p.sets[s.id];
-        return h('li', { class: ROW }, h('div', { class: 'flex min-w-0 flex-1 flex-col gap-1' },
+        return h('li', { class: ROW }, disc(i, !!last), h('div', { class: 'flex min-w-0 flex-1 flex-col gap-1' },
           h('h3', { class: 'm-0 text-body font-bold' }, s.title[lang]),
           h('p', { class: 'm-0 text-body-sm text-muted' }, `${it(`iv.level.${s.level}`)} · ${it('iv.setLine', { ...range(s.modules), n: s.questions.length, min: s.minutes })}`),
           h('p', { class: 'm-0 text-body-sm' }, knownLine(s.modules)),
@@ -511,9 +519,9 @@ export function listPage(): HTMLElement {
     h('section', { class: 'flex flex-col gap-3', 'aria-labelledby': 'iv-th' },
       h('h2', { id: 'iv-th', class: 'm-0 text-title font-bold' }, it('iv.takeHomes')),
       h('p', { class: 'm-0 text-body-sm text-muted' }, it('iv.thIntro')),
-      h('ul', { class: 'm-0 flex list-none flex-col gap-3 p-0' }, ...takeHomes.map((x) => {
+      h('ul', { class: 'm-0 flex list-none flex-col gap-3 p-0' }, ...takeHomes.map((x, i) => {
         const last = p.takeHomes[x.id];
-        return h('li', { class: ROW }, h('div', { class: 'flex min-w-0 flex-1 flex-col gap-1' },
+        return h('li', { class: ROW }, disc(i, !!last), h('div', { class: 'flex min-w-0 flex-1 flex-col gap-1' },
           h('h3', { class: 'm-0 text-body font-bold' }, x.title[lang]),
           h('p', { class: 'm-0 text-body-sm text-muted' }, `${it('iv.thLine', { ...range(x.modules), n: x.steps.length })}`),
           h('p', { class: 'm-0 text-body-sm' }, knownLine(x.modules)),

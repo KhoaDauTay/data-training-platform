@@ -250,6 +250,7 @@
 @container (max-width: 120px) {
   .side-panel a, .side-panel button { position: relative; justify-content: center; padding-inline: 0; }
   .side-label, .side-group { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; opacity: 0; transition: none; }
+  .side-group + * { margin-top: 0.75rem; } /* eye-v47b B-03 (L1117): the hidden group labels still group the rail's icons, by a gap */
   .side-extra { display: none; }
   .side-toggle { align-self: stretch; }
   .side-badge { display: grid; }

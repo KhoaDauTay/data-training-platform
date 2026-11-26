@@ -25,7 +25,8 @@ function casesSection(): HTMLElement | null {
     return null;
   }
   const d = activeDomain();
-  const mine = all.filter((c) => c.domain === d);
+  // eye-v47b B-07 (L1115): soonest first (stable: same chapter keeps the content order)
+  const mine = all.filter((c) => c.domain === d).sort((a, b) => a.after - b.after);
   if (mine.length === 0) return null;
   const lang = getLang();
   const passed = passedChapters(loadTickets(d), done());
@@ -35,21 +36,24 @@ function casesSection(): HTMLElement | null {
   return h('section', { 'aria-labelledby': 'cases-title', class: 'flex flex-col gap-3' },
     h('h2', { id: 'cases-title', class: 'm-0 text-title font-bold' }, t('cases.title')),
     h('p', { class: 'm-0 text-body-sm text-muted' }, t('cases.intro')),
+    mine.some((c) => passed.has(c.after)) ? null : h('p', { class: 'm-0 text-body-sm' }, t('cases.allLocked', { n: mine[0].after })),
     h('ul', { class: 'm-0 flex list-none flex-col gap-3 p-0' }, ...mine.map((c) => {
       const open = passed.has(c.after);
       const live = p.live[c.id];
       const last = p.takeHomes[c.id];
       const going = !!live && live.phase !== 'done';
-      return h('li', { class: cx(CARD, 'flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3'), 'data-case': c.id },
-        h('div', { class: 'flex min-w-0 flex-1 flex-col gap-1' },
-          h('h3', { class: 'm-0 text-body font-bold' }, c.title[lang]),
+      // a locked row is quiet (dashed, no card shadow, muted title, the lock first), so it never reads as a button
+      return h('li', { class: open ? cx(CARD, 'flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3') : 'flex flex-wrap items-center gap-x-4 gap-y-2 rounded-(--r-card) border border-dashed border-line px-5 py-3', 'data-case': c.id, 'data-locked': open ? false : '' },
+        open ? null : icon('lock', 'size-5 shrink-0 text-muted'),
+        h('div', { class: 'flex min-w-0 flex-1 basis-56 flex-col gap-1' }, // basis: on a phone the lock line wraps under, never squeezes the title
+          h('h3', { class: open ? 'm-0 text-body font-bold' : 'm-0 text-body font-semibold text-muted' }, c.title[lang]),
           h('p', { class: 'm-0 text-body-sm text-muted' }, t(c.kind === 'case' ? 'cases.caseLine' : 'cases.askLine', { n: c.steps.length })),
           last ? h('p', { class: 'm-0 text-body-sm' }, t('cases.last', { day: last.at, k: last.checks.length, m: last.rubric })) : null),
         open
           ? h('div', { class: 'flex shrink-0 flex-wrap gap-2' }, ...(going
             ? [btn(BTN_SECONDARY, t('cases.resume'), c.id, false), btn(BTN_SECONDARY, t('cases.restart'), c.id, true)]
             : [btn(BTN_SECONDARY, t(last ? 'cases.again' : 'cases.start'), c.id, true)])) // one BTN_GO per region: the continue card's
-          : h('p', { class: 'm-0 flex shrink-0 items-center gap-1.5 text-body-sm text-muted' }, icon('lock', 'size-4'), t('cases.locked', { n: c.after })));
+          : h('p', { class: 'm-0 text-body-sm text-muted' }, t('cases.locked', { n: c.after })));
     })));
 }
 

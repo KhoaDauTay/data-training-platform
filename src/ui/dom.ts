@@ -1,4 +1,4 @@
-import { locale } from '../i18n';
+import { locale, t } from '../i18n';
 import { s } from './svg';
 
 type Child = Node | string | null | undefined | false;
@@ -66,6 +66,15 @@ export function clearAnnounce(): void {
 /** ui-ux-v5 A4: the shared loader (sprite symbol #cq-load), put before an existing waiting text. Decorative. */
 export const loader = (): SVGSVGElement =>
   s('svg', { class: 'inline-block size-6 shrink-0 align-middle', 'aria-hidden': 'true', focusable: 'false' }, s('use', { href: '#cq-load' }));
+
+/**
+ * eye-v47b B-01 (L1110): a lazy page that did not load. Retry, and Reload page: a browser keeps a failed module import until
+ * the page reloads, and after a deploy the old chunk is gone, so Retry alone can keep failing.
+ */
+export const failBox = (text: string, retry: () => void): HTMLElement =>
+  h('div', { role: 'alert', class: 'space-y-2' }, h('p', { class: 'm-0' }, text),
+    h('div', { class: 'flex flex-wrap gap-2' }, h('button', { type: 'button', onclick: retry }, t('data.retry')),
+      h('button', { type: 'button', onclick: () => location.reload() }, t('app.reload'))));
 
 /** ui-ux-v7 T1: the one shortcut chip (Run, Submit, Format, Esc). Hidden on touch screens by CSS; buttons keep aria-keyshortcuts. */
 export const kbd = (keys: string): HTMLElement => h('kbd', { class: 'kbd', 'aria-hidden': 'true' }, keys);

@@ -89,7 +89,9 @@ function renderNav(): void {
       ? h('span', {}, h('span', { class: 'max-[359px]:hidden' }, t(n.label)), h('span', { class: 'hidden max-[359px]:inline' }, t('nav.practiceTiny')))
       : h('span', {}, t(n.label)))),
     h('a', { href: hashOf('overview'), class: BOTTOM_LINK, 'aria-current': inDomain(route) && !(route === 'play' && generalWork()) ? 'page' : false },
-      icon(none ? 'database' : live.icon, 'size-5'), h('span', {}, t(none ? 'home.domains' : live.name))));
+      icon(none ? 'database' : live.icon, 'size-5'), !none && live.name === 'domain.ecommerce' // eye-v47b B-16 (L1119): "E-/commerce" wrapped at 320
+        ? h('span', {}, h('span', { class: 'max-[359px]:hidden' }, t(live.name)), h('span', { class: 'hidden max-[359px]:inline' }, t('domain.ecommerceTiny')))
+        : h('span', {}, t(none ? 'home.domains' : live.name))));
 }
 
 /** Domain switch (v5 §B.2): every domain with its progress line (Logistics: chapter · rank; the others: tasks done). */
@@ -97,7 +99,10 @@ function renderDomainMenu(): void {
   const menu = byId('domain-menu');
   const shown = DOMAINS.find((d) => d.id === activeDomain())!;
   const none = noDomain(); // v15: the chip names no domain, the menu still lists all
-  byId('domain-label').textContent = t(none ? 'home.domains' : shown.name);
+  // eye-v47b B-09 (L1118): from 1024 to 1279 px the chip also carries the chapter; there "E-commerce" is "E-com" (EN overflowed by 23 px)
+  byId('domain-label').replaceChildren(...(!none && shown.name === 'domain.ecommerce'
+    ? [h('span', { class: 'lg:max-xl:hidden' }, t(shown.name)), h('span', { class: 'hidden lg:max-xl:inline' }, t('domain.ecommerceTiny'))]
+    : [t(none ? 'home.domains' : shown.name)]));
   byId('domain-icon').replaceChildren(icon(none ? 'database' : shown.icon, 'size-4')); // U2: the chip shows the open domain's icon, not a fixed anchor
   menu.replaceChildren(h('div', { class: 'flex flex-col' }, ...DOMAINS.map((d) => h('a', {
     href: domainHash(d.id), class: MENU_ITEM, onclick: () => menu.hidePopover?.(), 'aria-current': !none && d.id === activeDomain() ? 'true' : false,
@@ -220,19 +225,21 @@ function renderNotice(domainChrome: boolean): void {
   const p = app.loadProgress;
   const bar = wait && downloading(p);
   // #notice is role=status: a download progress tick (renderTopbar) must not rebuild the same line, or it is read again each time.
-  const sig = [n, getLang(), bar]; // a new notice object (even the same text again) is drawn and read anew
+  const diag = !!app.problem && n.key !== 'domain.loading'; // eye-v47b B-01 (L1110): the fault's "Copy diagnostics" sits here, never in the bar
+  const sig = [n, getLang(), bar, diag]; // a new notice object (even the same text again) is drawn and read anew
   const shown = el.querySelector('progress');
   if (sig.every((x, i) => x === noticeSig[i])) {
     if (shown && bar) shown.value = p!.loaded;
     return;
   }
   noticeSig = sig;
-  el.classList.toggle('max-sm:flex-wrap', bar);
+  el.classList.toggle('max-sm:flex-wrap', bar || diag);
   el.replaceChildren(...nodes(
     wait && loader(),
     h('span', {}, t(n.key, n.params)),
     bar && h('progress', { class: 'h-1.5 w-40 accent-accent max-sm:order-last max-sm:w-full', 'aria-hidden': 'true', max: String(p!.total), value: String(p!.loaded) }),
     n.reload ? h('button', { type: 'button', onclick: () => (n.apply ? n.apply() : location.reload()) }, t('app.reload')) : null,
+    diag ? h('button', { type: 'button', onclick: () => actions.copyDiagnostics() }, t('diag.copy')) : null,
     h('button', { type: 'button', class: 'ml-auto', 'aria-label': t('app.dismiss'), onclick: () => { app.notice = undefined; renderNotice(domainChrome); } }, '×')));
 }
 
@@ -277,8 +284,10 @@ export function renderTopbar(): void {
     h('span', { class: 'font-semibold' }, t('top.chapterShort', { n: ch, total })));
   // Chapter and rank belong to the domain (v5 §B.2); the General workspace (#/learn/play) is not in it (L82, L93, v15 Q1).
   const domainChrome = inDomain(route) && !(route === 'play' && generalWork());
-  byId('domain-status').hidden = !domainChrome;
-  byId('domain-chapter').textContent = domainChrome ? t('top.chapterTiny', { n: ch }) : ''; // v21 U2: "Ch.4" in the chip below 1280 px (#domain-status shows from xl, never squeezed)
+  // eye-v47b B-06 (L1114): a domain case runs on the domain's data but is not story work, so no chapter chip (like a drill)
+  const story = domainChrome && session.mode.kind !== 'interview';
+  byId('domain-status').hidden = !story;
+  byId('domain-chapter').textContent = story ? t('top.chapterTiny', { n: ch }) : ''; // v21 U2: "Ch.4" in the chip below 1280 px (#domain-status shows from xl, never squeezed)
   const rank = byId('rank');
   rank.textContent = rankOf(app.tickets, done()).tier?.[lang] ?? t('career.intern'); // v21 U1: whole, from 1600 px only (never cut)
   drawXp();
@@ -287,9 +296,8 @@ export function renderTopbar(): void {
   menuPrefs?.classList.toggle('sm:max-lg:hidden', route !== 'play');
   menuPrefs?.classList.toggle('md:max-lg:hidden', route === 'play');
   renderSettings();
-  byId('db-status').replaceChildren(...nodes(
-    dbStatusView(),
-    app.problem ? h('button', { type: 'button', class: TOP_BTN, onclick: () => actions.copyDiagnostics() }, t('diag.copy')) : null));
+  // eye-v47b B-01 (L1110): "Copy diagnostics" never joins the bar (it pushed ⋯ off screen); it is in ⋯ and in the banner
+  byId('db-status').replaceChildren(dbStatusView());
   renderNav();
   renderDomainMenu();
   renderNotice(domainChrome);

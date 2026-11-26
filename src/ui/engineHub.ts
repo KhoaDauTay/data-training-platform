@@ -45,6 +45,22 @@ type Ui = { row: (r: Row) => HTMLElement; group: (text: string) => HTMLElement }
 const TOPIC_HUB = 'e-ds-l4-09';
 const ht = (c: HubCtx, key: HubKey): string => HUB_DICT[c.lang()][key];
 
+/**
+ * eye-v47b B-03 (L1117): Khóa học in four kinds, on the page and in the sidebar, so 12+ tracks stay scannable. Every track is in
+ * exactly one (tests/engineCore.test.ts); a track missing here still shows, after the last kind.
+ */
+export const KINDS: readonly (readonly ['rel' | 'nosql' | 'data' | 'ops', readonly EngineId[]])[] = [
+  ['rel', ['postgres', 'design']],
+  ['nosql', ['mongodb', 'dynamodb', 'redis', 'graph']],
+  ['data', ['stack', 'olap', 'timeseries', 'stream']],
+  ['ops', ['search', 'telemetry']],
+];
+const kindsOf = (c: HubCtx): [HubKey, EngineId[]][] => {
+  const out = KINDS.map(([k, es]): [HubKey, EngineId[]] => [`kind.${k}`, es.filter((e) => c.engines.includes(e))]);
+  out[out.length - 1][1].push(...c.engines.filter((e) => !KINDS.some(([, es]) => es.includes(e))));
+  return out.filter(([, es]) => es.length);
+};
+
 /** "Start here" / "Pick up where you left off": the first engine with unfinished progress (else PostgreSQL), its next lesson. */
 function continueCard(c: HubCtx, ok: Set<string>): HTMLElement | null {
   const { h, cls } = c.d;
@@ -68,14 +84,15 @@ function engineCard(c: HubCtx, e: EngineId, ok: Set<string>): HTMLElement {
   const all = c.flat(e);
   const p = c.progressOf(all, ok);
   const next = c.nextOf(all, ok);
-  return h('li', { class: 'relative cursor-pointer flex flex-col gap-4 rounded-(--r-card) bg-panel p-5 ring-1 ring-line hover:ring-accent max-sm:p-4' },
+  // B-03 (L1117): below 1024 px the card is compact: no facts, no level tiles (both are on the track page)
+  return h('li', { class: 'relative cursor-pointer flex flex-col gap-4 rounded-(--r-card) bg-panel p-5 ring-1 ring-line hover:ring-accent max-lg:gap-3 max-sm:p-4' },
     h('div', { class: 'flex items-start gap-4' }, c.engineBadge(e, true),
       h('div', { class: 'min-w-0 flex-1 flex flex-col gap-1' },
         h('h3', { class: 'm-0 text-title font-bold' }, h('a', { href: c.d.engineHash(e), class: 'text-ink no-underline after:absolute after:inset-0' }, c.nameOf(e))),
         h('p', { class: 'm-0 text-body-sm text-muted' }, c.et(`desc.${e}`)),
-        e === 'design' ? h('p', { class: cls.cx(c.d.ui.ABOVE, 'm-0 text-caption text-muted') }, h('a', { href: c.d.engineHash('postgres', 'L3'), class: 'text-muted' }, c.et('design.deep'))) : null)),
-    c.d.track?.facts(c, e, true) ?? null, // v47 S2 (I4): who for, prerequisites, total time
-    h('ol', { class: 'm-0 grid list-none grid-cols-5 gap-2 p-0', 'aria-label': c.et('levels') }, ...c.trees[e].levels.filter((lv) => lv.modules.length).map((lv) => {
+        e === 'design' ? h('p', { class: cls.cx(c.d.ui.ABOVE, 'm-0 text-caption text-muted') }, h('a', { href: c.d.engineHash('postgres', 'L3'), class: 'inline-flex min-h-6 items-center text-muted' }, c.et('design.deep'))) : null)),
+    c.d.track ? h('div', { class: 'max-lg:hidden' }, c.d.track.facts(c, e, true)) : null, // v47 S2 (I4): who for, prerequisites, total time
+    h('ol', { class: 'm-0 grid list-none grid-cols-5 gap-2 p-0 max-lg:hidden', 'aria-label': c.et('levels') }, ...c.trees[e].levels.filter((lv) => lv.modules.length).map((lv) => {
       const q = c.progressOf(lv.modules.flatMap((m) => m.lessons), ok);
       const here = next?.level === lv.level;
       return h('li', { class: 'min-w-0' }, h('a', {
@@ -125,13 +142,38 @@ const opened = new Set<string>();
 const phone = (): boolean => typeof matchMedia === 'function' && matchMedia('(max-width: 639px)').matches;
 function group(c: HubCtx, id: 'courses' | 'topics' | 'ref', body: HTMLElement, fold: boolean): HTMLElement {
   const { h } = c.d;
-  const title = h('h2', { id: `engine-${id}`, class: c.d.cls.cx(c.d.ui.GROUP_TITLE, 'mb-1') }, ht(c, id));
+  const title = h('h2', { id: `engine-${id}`, tabindex: '-1', class: c.d.cls.cx(c.d.ui.GROUP_TITLE, 'mb-1') }, ht(c, id));
   const line = h('span', { class: 'mb-3 block text-body-sm text-muted' }, ht(c, `${id}.line`));
   if (!fold) return h('section', { 'aria-labelledby': `engine-${id}`, 'data-group': id }, title, line, body);
+  // B-16 (L1119): the chevron leads a full-width row with a line under it, so the fold reads as one
   const box = h('details', { class: 'group', 'data-group': id, open: opened.has(id), ontoggle: () => void (box.open ? opened.add(id) : opened.delete(id)) },
-    h('summary', { class: 'flex min-h-11 cursor-pointer list-none flex-col justify-center [&::-webkit-details-marker]:hidden' },
-      h('span', { class: 'flex items-center gap-2' }, title, c.d.icon('chevronRight', 'mb-1 size-4 text-muted group-open:rotate-90')), line), body);
+    h('summary', { class: 'flex min-h-11 cursor-pointer list-none flex-col justify-center border-b border-line [&::-webkit-details-marker]:hidden' },
+      h('span', { class: 'flex items-center gap-2' }, c.d.icon('chevronRight', 'mb-1 size-5 text-ink group-open:rotate-90'), title), line), body);
   return box;
+}
+
+/** B-03 (L1117): Khóa học's kinds, each a small heading over its cards. */
+function courses(c: HubCtx, ok: Set<string>): HTMLElement {
+  const { h } = c.d;
+  return h('div', { class: 'flex flex-col gap-6' }, ...kindsOf(c).map(([k, es]) => h('section', { 'aria-labelledby': `engine-${k}`, 'data-kind': k.slice(5) },
+    h('h3', { id: `engine-${k}`, tabindex: '-1', class: 'm-0 mb-3 text-body font-bold' }, ht(c, k)),
+    h('ul', { class: 'm-0 grid list-none gap-4 p-0 md:max-lg:grid-cols-2 xl:grid-cols-2' }, ...es.map((e) => engineCard(c, e, ok))))));
+}
+
+/** B-03 (L1117): a jump row near the top: each kind, then Chuyên đề and Tham khảo (buttons: the router owns the hash). */
+function jumpRow(c: HubCtx): HTMLElement {
+  const { h } = c.d;
+  const go = (id: string): void => {
+    const el = document.getElementById(id);
+    const box = el?.closest('details');
+    if (box) box.open = true;
+    el?.scrollIntoView({ block: 'start' });
+    el?.focus({ preventScroll: true });
+  };
+  const targets: [string, string][] = [...kindsOf(c).map(([k]): [string, string] => [`engine-${k}`, ht(c, k)]), ['engine-topics', ht(c, 'topics')], ['engine-ref', ht(c, 'ref')]];
+  return h('nav', { 'aria-label': ht(c, 'jump'), 'data-jump': '', class: 'flex flex-wrap items-center gap-2' },
+    h('span', { class: 'text-body-sm text-muted' }, ht(c, 'jump')),
+    ...targets.map(([id, text]) => h('button', { type: 'button', class: 'min-h-9 rounded-full border-0 bg-panel px-3 text-body-sm text-ink ring-1 ring-line hover:bg-accent-soft', onclick: () => go(id) }, text)));
 }
 
 export function overview(c: HubCtx): HTMLElement {
@@ -140,8 +182,9 @@ export function overview(c: HubCtx): HTMLElement {
   const fold = phone();
   return h('div', { class: 'flex flex-col gap-8' },
     h('p', { class: 'm-0 text-muted' }, ht(c, 'intro')),
+    jumpRow(c),
     continueCard(c, ok),
-    group(c, 'courses', h('ul', { class: 'm-0 grid list-none gap-4 p-0 xl:grid-cols-2' }, ...c.engines.map((e) => engineCard(c, e, ok))), false),
+    group(c, 'courses', courses(c, ok), false),
     group(c, 'topics', h('ul', { class: c.d.ui.LIST }, ...topicRows(c, ok)), fold),
     group(c, 'ref', h('ul', { class: c.d.ui.LIST }, ...refRows(c)), fold));
 }
@@ -159,9 +202,10 @@ export function sideRows(c: HubCtx, ui: Ui, bestRows: Node[]): (Node | null)[] {
   const path = open === 'mongodb' && d.enginePathOf(location.hash) !== undefined;
   const out: (Node | null)[] = [
     ui.row({ key: 'e:all', href: d.hashOf('engine'), lead: d.icon('engine'), label: d.t('nav.engine'), current: !open && !c.refHere() }),
-    ui.group(ht(c, 'courses')),
   ];
-  for (const e of c.engines) {
+  // B-03 (L1117): the tracks under their kind's label (a gap between kinds in the rail, style.css)
+  for (const [k, es] of kindsOf(c)) for (const e of es) {
+    if (e === es[0]) out.push(ui.group(ht(c, k)));
     const p = c.progressOf(c.flat(e), ok);
     out.push(ui.row({ key: `e:${e}`, href: d.engineHash(e), lead: d.icon(c.engineIcon[e]), label: c.nameOf(e),
       sub: et('me.line', { k: p.done, n: p.total }), current: open === e && !r.level && !path }));

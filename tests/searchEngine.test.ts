@@ -136,6 +136,11 @@ describe('đầu vào là dữ liệu: không eval, lỗi có dạng Elasticsear
   ])('%s', (_, text, code) => {
     expect(err(() => run(i, text))).toBe(code);
   });
+  it('eye-v47b B-05 (L1113): a method the simulation does not know reads as one sentence; typed SQL is told the lab wants Elasticsearch requests', () => {
+    const msg = (text: string): string => { try { run(i, text); } catch (e) { return (e as Error).message; } return ''; };
+    expect(msg('PUT p/_doc/1\n{}')).toBe('[PUT] is not a request the simulation knows: it takes GET or POST <index>/_search (also _analyze and _mapping) with a JSON body');
+    expect(msg('SELECT 1')).toMatch(/^\[SELECT\] is not a request .*\. This lab takes Elasticsearch requests, not SQL$/);
+  });
   it('dòng chú thích # và // bị bỏ; không có dòng GET thì là _search', () => {
     expect(run(i, '# tìm\n// x\n{"query": {"match": {"n": "x"}}}').rows.length).toBe(1);
   });

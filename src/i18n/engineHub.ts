@@ -7,24 +7,35 @@ import type { Lang } from './index';
 const vi = {
   'intro': 'Nhìn vào bên trong cơ sở dữ liệu: dữ liệu nằm ở đâu, tìm bằng cách nào, nhiều người cùng ghi thì sao. Chọn một khóa rồi đi theo cấp, từ Nhập môn trở lên; mỗi bài ghi bài nên học trước, không cần học hết SQL mới vào.',
   'courses': 'Khóa học',
-  'courses.line': 'Mỗi khóa là một thang cấp L1, L2, L3…; lab chạy thật trong trình duyệt.',
+  'courses.line': 'Mỗi khóa là một thang cấp L1, L2, L3…; lab chạy ngay trong trình duyệt, xếp theo bốn nhóm.',
   'topics': 'Chuyên đề',
   'topics.line': 'Lộ trình, kệ bài và bản đồ chủ đề đi ngang các khóa: học khi cần.',
   'ref': 'Tham khảo',
   'ref.line': 'Tra nhanh khi đang học: thực hành tốt, thuật ngữ, so sánh các CSDL.',
   'topic.side': 'Nhiều khách hàng',
+  // eye-v47b B-03 (L1117): Khóa học's kinds and the jump row
+  'kind.rel': 'Quan hệ & thiết kế',
+  'kind.nosql': 'NoSQL & đồ thị',
+  'kind.data': 'Phân tích & kỹ sư dữ liệu',
+  'kind.ops': 'Tìm kiếm & vận hành',
+  'jump': 'Đi tới',
 };
 export type HubKey = keyof typeof vi;
 
 const en: Record<HubKey, string> = {
   'intro': 'Look inside the database: where data lives, how it is found, what happens when many people write at once. Pick a course and climb its levels from Intro up; each lesson lists what to learn before it, and you do not need to finish SQL first.',
   'courses': 'Courses',
-  'courses.line': 'Each course is a ladder of levels L1, L2, L3…; the labs run for real in your browser.',
+  'courses.line': 'Each course is a ladder of levels L1, L2, L3…; the labs run right in your browser, sorted into four groups.',
   'topics': 'Special topics',
   'topics.line': 'Paths, shelves and topic maps that cut across the courses: take them when you need them.',
   'ref': 'Reference',
   'ref.line': 'Quick lookups while you learn: good practice, terms, how the databases compare.',
   'topic.side': 'Multi-tenant',
+  'kind.rel': 'Relational & design',
+  'kind.nosql': 'NoSQL & graph',
+  'kind.data': 'Analytics & data engineering',
+  'kind.ops': 'Search & operations',
+  'jump': 'Jump to',
 };
 
 export const HUB_DICT = { vi: vi as Record<HubKey, string>, en };

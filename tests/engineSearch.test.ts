@@ -56,7 +56,7 @@ describe('Engine Tìm kiếm (v47 R1): bài, mô-đun, luật nội dung', () =>
   });
   it.each(all.map((x) => [x.l.id, x.l] as const))('%s: luật nội dung, nhãn chạy thật, một hình sr-', (_, l) => {
     expect(lessonProblems(l, new Set([...ids, ...l.requires.filter((r) => /^e-pg-/.test(r))]))).toEqual([]);
-    expect(honestOf(l)).toBe('search');
+    expect(honestOf(l)).toBe(isEsLesson(l) ? 'es' : 'pg'); // eye-v47b B-04 (L1112): what the lesson's steps run on
     for (const s of l.lab?.steps ?? []) expect(gradable(l, s)).toBe(true);
     expect((l.figures ?? []).filter((f) => f.name.startsWith('sr-')).length).toBe(1);
   });
