@@ -18,7 +18,7 @@ const q = <T extends Element = HTMLElement>(sel: string): T | null => document.q
 describe('#/engine/compare', () => {
   it('the page: h1 under the Engine trail, the label table, nine axes, twelve scenarios, the way back to the SQL path', async () => {
     await visit('#/engine/compare', () => expect(q('[data-cmp]')).not.toBeNull());
-    expect(byId('home-title').textContent).toBe('Chọn engine nào?');
+    expect(byId('home-title').textContent).toBe('Chọn CSDL nào?');
     expect([...document.querySelectorAll('#home nav[aria-label="Đường dẫn"] a')].map((a) => a.getAttribute('href'))).toEqual(['#/engine']);
     expect(document.querySelectorAll('[data-cmp-summary] tbody tr').length).toBe(9);
     expect(document.querySelectorAll('[data-cell]').length).toBe(27);

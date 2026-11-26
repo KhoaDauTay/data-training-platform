@@ -2,7 +2,7 @@ import { grade } from '../grader';
 import { slowVerdict } from '../planCheck';
 import { getLang, locale, t } from '../i18n';
 import { engineCompareHash, engineCompareOf, engineHash, engineInterviewHash, engineInterviewOf, enginePathHash, enginePathOf, enginePlayOf, engineRouteOf, engineTermsHash, engineTermsOf, hashOf } from '../route';
-import { SKILLS } from '../progress';
+import { ROUTE_SKILLS } from '../progress';
 import { actions, app, persist } from '../state';
 import { BTN_GHOST, BTN_GO, BTN_SECONDARY, CARD, cx, DONE_PILL, isDark, PILL } from '../theme';
 import { optionOrder } from '../tickets';
@@ -37,8 +37,8 @@ let best: BestView | undefined;
 const isBest = (): boolean => /^#\/?engine\/best(?=$|[/?])/.test(location.hash); // = src/engine/best.ts bestRouteOf(hash) !== undefined
 
 function engineChunk(): Promise<EngineView> {
-  pending ??= Promise.all([import('./engineView'), import('../engineSources'), import('./engineBest'), import('../bestSources'), import('../bestMongoIndex'), import('../bestDynamoIndex')])
-    .then(([m, src, b, bs, bm, bd]) => {
+  pending ??= Promise.all([import('./engineView'), import('../engineSources'), import('./engineBest'), import('../bestSources'), import('../bestMongoIndex'), import('../bestDynamoIndex'), import('./engineHub'), import('./engineTrack')])
+    .then(([m, src, b, bs, bm, bd, hub, track]) => {
       const deps: Parameters<EngineView['initEngine']>[0] = {
         h, icon, t, getLang, locale, app, persist, announce, loader, reducedMotion, isDark, renderResult, errorView, optionOrder,
         engineHash, engineRouteOf, enginePathOf, enginePathHash, hashOf, engineTermsOf, engineTermsHash, engineInterviewOf, engineInterviewHash, engineCompareOf, engineCompareHash, rerender: () => actions.rerender(), cls: { CARD, BTN_GO, BTN_SECONDARY, BTN_GHOST, PILL, DONE_PILL, cx },
@@ -48,10 +48,11 @@ function engineChunk(): Promise<EngineView> {
         prefs: { read: readJson, write: writeJson },
         cheer: { mascot, react, badge: () => illustration('aspect-square', (il) => il.doneBadge()) },
         best: (e) => b.entry(e),
+        track, skill: (id) => ROUTE_SKILLS.find((x) => x.id === id)?.label, // v47 S2 (L940)
       };
       const bpMeta = { ...bs.meta, ...bm.meta, ...bd.meta };
-      m.initEngine(deps, src, bpMeta); // v44 (L790): card titles for the id links
-      b.initBest(deps, { ...bs, meta: bpMeta }, src.meta, { skill: (id) => SKILLS.find((x) => x.id === id)?.label, sourceTitle: m.sourceTitle, inline: m.inline });
+      m.initEngine(deps, src, bpMeta, hub); // v44 (L790): card titles for the id links; v47 S1 (L902): the landing and sidebar chunk
+      b.initBest(deps, { ...bs, meta: bpMeta }, src.meta, { skill: (id) => ROUTE_SKILLS.find((x) => x.id === id)?.label, sourceTitle: m.sourceTitle, inline: m.inline });
       best = b;
       failed = false;
       return (view = m);
@@ -84,7 +85,7 @@ function learnSwitch(): HTMLElement | null {
     class: 'flex min-h-11 flex-1 items-center justify-center rounded-full px-3 font-bold text-muted no-underline aria-[current=page]:bg-panel aria-[current=page]:text-ink aria-[current=page]:shadow-(--shadow-1)',
   }, text);
   return h('nav', { 'aria-label': t('engine.switch'), class: 'flex gap-1 rounded-full bg-code p-1' },
-    link(hashOf('learn'), t('side.sqlTrack'), !engine), link(hashOf('engine'), t('nav.engine'), engine));
+    link(hashOf('learn'), t('side.sqlTrack'), !engine), link(hashOf('engine'), t('nav.engineShort'), engine)); // v47 S1: SQL / CSDL
 }
 
 registerHomeSection({ id: 'learnSwitch', order: 0, span: 'full', pages: ['learn', 'engine'], render: learnSwitch });
@@ -98,5 +99,5 @@ export function engineTrees(): ReturnType<EngineView['engineTrees']> | undefined
 export const engineExt = (): ReturnType<EngineView['extProgress']> | undefined => view?.extProgress();
 registerNav({ id: 'engine', area: 'top', order: 25, label: 'nav.engineShort', icon: NAV_ICON.engine, href: hashOf('engine'), current: (r) => r === 'engine', mergeInto: 'learn' });
 // On a Best Practice page the engine rows are drawn with no current row: the Best Practice row is the one (H2).
-registerSide('engine', (ui) => (view ? [...view.sideRows(isBest() ? { ...ui, row: (r) => ui.row({ ...r, current: false }) } : ui), ...best!.sideRows(ui)] : []));
+registerSide('engine', (ui) => (view ? view.sideRows(isBest() ? { ...ui, row: (r) => ui.row({ ...r, current: false }) } : ui, best!.sideRows(ui)) : []));
 pageSubs.engine = () => (isBest() ? best?.subOf() : view?.subOf()); // L280: the h1 = engine / level / lesson title under a trail; "Database Engine" until the chunk is in

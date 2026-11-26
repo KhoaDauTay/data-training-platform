@@ -1,5 +1,5 @@
 import { ENGINES, LEVELS, type EngineId, type Level } from '../engine/content';
-import { docFor, marker, parseGlossary, searchTerms, type Term } from '../engine/glossary';
+import { aliasesOf, docFor, marker, parseGlossary, searchTerms, type Term } from '../engine/glossary';
 import type * as I18n from '../i18n';
 import { termsText, type TermsKey } from '../i18n/engineTerms';
 import type { EngineDeps } from './engineView';
@@ -132,7 +132,8 @@ function entry(t: Term): HTMLElement {
     h('p', { class: 'm-0 flex flex-wrap items-center gap-2 text-body-sm' }, ...t.engines.map((e) => h('span', { class: d.cls.cx(d.cls.PILL, 'bg-accent-soft text-ink') }, NAME[e])), levelChip(t.level)),
     f.hide ? h('details', {}, h('summary', { class: 'cursor-pointer text-body-sm font-semibold text-accent-ink' }, tt('show')), text) : text,
     lang() === 'vi' && t.avoid ? h('p', { class: 'm-0 text-body-sm text-muted' }, tt('avoid', { x: t.avoid })) : null,
-    h('p', { class: 'm-0 text-body-sm' }, docLink(t)));
+    h('p', { class: 'm-0 flex flex-wrap items-center gap-x-4 gap-y-1 text-body-sm' }, docLink(t), // v47 S2 (I7): the term's lesson
+      d.track?.termLink(d, [t.term, ...aliasesOf(t)], t.engines, t.level, `${NAME[t.engines[0]] ?? ''} ${t.level}`.trim()) ?? null));
 }
 
 function list(): HTMLElement[] {

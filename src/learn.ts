@@ -104,3 +104,37 @@ export function placementItems(parts: readonly Part[], general: General, known: 
     return drill ? [{ ticketId: drill.id, variant: 0, skills: own }] : [];
   });
 }
+
+/** v47 P3 (L922): a mixed review of one Part holds MIX_MIN..MIX_MAX drills. */
+export const MIX_MIN = 6;
+export const MIX_MAX = 8;
+const shuffle = <T>(xs: readonly T[], rnd: () => number): T[] => {
+  const out = [...xs];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(rnd() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+};
+/**
+ * v47 P3 (L922): "Mixed review per Part": drills of every skill of the Part, interleaved (round-robin over the skills in a
+ * shuffled order, so two neighbours never share a skill while another skill has drills left), about 2 per skill, MIX_MIN..MIX_MAX items.
+ * Written-from-scratch kinds first (open, trap, review), faded last; each skill's drills are shuffled. `skills` with no drill are skipped.
+ */
+export function mixedSet(skills: readonly string[], bySkill: ReadonlyMap<string, readonly Drill[]>, rnd: () => number): PracticeItem[] {
+  const rank = (d: Drill): number => (d.kind === 'faded' ? 1 : 0);
+  const pools = shuffle(skills.filter((s) => bySkill.get(s)?.length), rnd)
+    .map((s) => ({ s, ds: shuffle(bySkill.get(s)!, rnd).sort((a, b) => rank(a) - rank(b)) }));
+  const size = Math.min(MIX_MAX, Math.max(MIX_MIN, 2 * pools.length), pools.reduce((n, p) => n + p.ds.length, 0));
+  const out: PracticeItem[] = [];
+  for (let round = 0; out.length < size; round++) {
+    for (const p of pools) if (out.length < size && p.ds[round]) out.push({ ticketId: p.ds[round].id, variant: 0, skills: [p.s] });
+  }
+  return out;
+}
+
+/** v47 P2/P6 (L921, L924): `n` items for a round, ones not seen this session first, in random order. */
+export function pickRound<T extends { id: string }>(items: readonly T[], n: number, seen: ReadonlySet<string>, rnd: () => number): T[] {
+  const fresh = shuffle(items.filter((x) => !seen.has(x.id)), rnd);
+  return [...fresh, ...shuffle(items.filter((x) => seen.has(x.id)), rnd)].slice(0, n);
+}

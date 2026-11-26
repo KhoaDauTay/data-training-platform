@@ -26,7 +26,7 @@ const GAME_TONE = /boss|sự cố/i;
 
 /** Keys whose EN text is intentionally the same as VI (SQL keywords, product names). */
 // Plan 7: product, domain and module names read the same in both languages.
-const SAME_OK = new Set<string>(['nav.engine', 'nav.engineShort', 'search.keys', 'work.runKeys', 'work.submitKeys', 'work.formatKeys', 'tab.explain', 'top.xp', 'nav.sandbox', 'top.chapterShort', 'top.chapterTiny', 'nav.task',
+const SAME_OK = new Set<string>(['search.keys', 'work.runKeys', 'work.submitKeys', 'work.formatKeys', 'tab.explain', 'top.xp', 'nav.sandbox', 'top.chapterShort', 'top.chapterTiny', 'nav.task',
   'app.name', 'domain.logistics', 'domain.finance', 'domain.ecommerce']);
 const placeholders = (s: string): string => [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort().join();
 
@@ -131,7 +131,7 @@ describe('chữ trang Tiến bộ của tôi (src/i18n/me.ts, v16 L142)', () => 
   it('placeholder khớp, EN khác VI, không giọng game; bản đồ kỹ năng và huy hiệu nói "không xác minh" (v24 L323)', async () => {
     const { ME_DICT } = await import('../src/i18n/me');
     const { EXPORT_DICT } = await import('../src/i18n/meExport'); // v33 (L536): the export text, its own chunk
-    const SAME = new Set(['badge.sql', 'badge.engine', 'badge.eng', 'badge.dom', 'eng.cell']); // names and placeholders only
+    const SAME = new Set(['badge.sql', 'badge.eng', 'badge.dom', 'eng.cell']); // names and placeholders only
     const vi: Record<string, unknown> = { ...ME_DICT.vi, ...EXPORT_DICT.vi };
     const en: Record<string, unknown> = { ...ME_DICT.en, ...EXPORT_DICT.en };
     expect(Object.keys(EXPORT_DICT.vi).filter((k) => k in ME_DICT.vi)).toEqual([]);
@@ -181,8 +181,9 @@ describe('chữ UI khu Database Engine (src/i18n/engine.ts, ENG-CORE L220)', () 
     const { NOSQL_DICT } = await import('../src/i18n/engineNosql'); // v25 NoSQL lab parts, its own chunk (L370)
     const { FULL_DICT } = await import('../src/i18n/engineFull'); // v30.1 full-lesson layout, its own chunk (L480)
     const { RESULT_DICT } = await import('../src/i18n/engineResult'); // v33 engine numbers + "Inside" under a result, its own chunk (L537)
-    const vi: Record<string, string> = { ...ENGINE_DICT.vi, ...PRED_DICT.vi, ...NOSQL_DICT.vi, ...FULL_DICT.vi, ...RESULT_DICT.vi };
-    const en: Record<string, string> = { ...ENGINE_DICT.en, ...PRED_DICT.en, ...NOSQL_DICT.en, ...FULL_DICT.en, ...RESULT_DICT.en };
+    const { HUB_DICT } = await import('../src/i18n/engineHub'); // v47 S1 landing + sidebar groups, its own chunk (L902)
+    const vi: Record<string, string> = { ...ENGINE_DICT.vi, ...PRED_DICT.vi, ...NOSQL_DICT.vi, ...FULL_DICT.vi, ...RESULT_DICT.vi, ...HUB_DICT.vi };
+    const en: Record<string, string> = { ...ENGINE_DICT.en, ...PRED_DICT.en, ...NOSQL_DICT.en, ...FULL_DICT.en, ...RESULT_DICT.en, ...HUB_DICT.en };
     expect(Object.keys(PRED_DICT.vi).filter((k) => k in ENGINE_DICT.vi)).toEqual([]);
     expect(Object.keys(NOSQL_DICT.vi).filter((k) => k in ENGINE_DICT.vi || k in PRED_DICT.vi)).toEqual([]);
     expect(Object.keys(FULL_DICT.vi).filter((k) => k in ENGINE_DICT.vi || k in PRED_DICT.vi || k in NOSQL_DICT.vi)).toEqual([]);
@@ -193,6 +194,21 @@ describe('chữ UI khu Database Engine (src/i18n/engine.ts, ENG-CORE L220)', () 
       expect(`${v} ${e}`).not.toMatch(GAME_TONE);
       expect(`${v} ${e}`).not.toMatch(/sắp có|coming soon/i);
     }
+  });
+});
+
+describe('chữ UI khóa học CSDL (src/i18n/engineTrack.ts, v47 S2 L940)', () => {
+  it('placeholder khớp, EN khác VI, EN không dấu, không giọng game, có dòng "Dành cho" mỗi khóa', async () => {
+    const { TRACK_DICT } = await import('../src/i18n/engineTrack');
+    const { ENGINES } = await import('../src/engine/content');
+    for (const [k, v] of Object.entries(TRACK_DICT.vi)) {
+      const e = TRACK_DICT.en[k as keyof typeof TRACK_DICT.en];
+      expect([k, placeholders(e)]).toEqual([k, placeholders(v)]);
+      expect([k, e]).not.toEqual([k, v]);
+      expect([k, /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(e)]).toEqual([k, false]);
+      expect(`${v} ${e}`).not.toMatch(GAME_TONE);
+    }
+    for (const e of ENGINES) expect(TRACK_DICT.vi).toHaveProperty([`for.${e}`]);
   });
 });
 

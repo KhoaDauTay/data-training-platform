@@ -16,7 +16,8 @@ describe('welcome dialog during the download', () => {
     app.save = emptySave();
     app.dbStatus = 'loading';
     openWelcome(false);
-    (d.querySelector('[data-w="next"]') as HTMLButtonElement).click(); // lang → start
+    (d.querySelector('[data-w="next"]') as HTMLButtonElement).click(); // lang → goal
+    (d.querySelector('[data-w="next"]') as HTMLButtonElement).click(); // goal skipped (v47 S3: the analyst default) → start
     const begin = d.querySelector('[data-w="begin"]');
     expect(begin).not.toBeNull();
     for (const loaded of [1e6, 2e6, 3e6]) {

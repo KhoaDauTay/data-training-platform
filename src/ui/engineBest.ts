@@ -427,6 +427,7 @@ function cardPage(c: BpCard): HTMLElement {
   const muted = c.lint ? tips().mute.includes(c.lint) : false;
   const res = typeof v.run === 'object' && 'v' in v.run ? v.run : undefined;
   const example = section('example', c);
+  const rel = d.track?.related(d, c.requires) ?? null;
   const lessonLink = (id: string): HTMLElement | null => {
     const fm = Object.values(lessonsMeta).map((x) => x.fm as { id?: string; engine?: string; level?: string; title?: string; title_en?: string }).find((x) => x.id === id);
     return fm?.engine && fm.level ? h('a', { href: d.engineHash(fm.engine, fm.level, id), class: cls.cx(cls.PILL, 'min-h-6 bg-code text-ink no-underline hover:bg-accent-soft') }, (lang() === 'vi' ? fm.title : fm.title_en) ?? id) : null;
@@ -485,8 +486,9 @@ function cardPage(c: BpCard): HTMLElement {
       h('ul', { class: 'm-0 list-none space-y-1 p-0 text-body-sm' }, ...c.sources.map((u) => h('li', {}, srcLink(u, c.sourceTitles?.[u])))),
       h('p', { class: 'm-0 text-caption text-muted' }, bt('verified', { version: c.verified.version, date: c.verified.date }))),
     h('nav', { class: cls.cx(cls.CARD, 'flex flex-wrap items-center justify-end gap-2 p-4'), 'aria-label': t.title[lang()] },
+      rel, // v47 S2 (I7): the related lesson is the card's one primary "next"
       prev ? h('a', { href: rt.hash(c.track, prev.id), class: cls.cx(cls.BTN_GHOST, 'inline-flex items-center gap-1 px-4 py-2 no-underline'), title: prev.title[lang()] }, d.icon('chevronLeft', 'size-4'), bt('prev')) : null,
-      next ? h('a', { href: rt.hash(c.track, next.id), class: cls.cx(isDone ? cls.BTN_GO : cls.BTN_SECONDARY, 'inline-flex items-center gap-1 px-4 py-2 no-underline'), title: next.title[lang()] }, bt('next'), d.icon('chevronRight', 'size-4')) : null));
+      next ? h('a', { href: rt.hash(c.track, next.id), class: cls.cx(isDone && !rel ? cls.BTN_GO : cls.BTN_SECONDARY, 'inline-flex items-center gap-1 px-4 py-2 no-underline'), title: next.title[lang()] }, bt('next'), d.icon('chevronRight', 'size-4')) : null));
 }
 
 /** #/engine/best/habits (catalogue §14.3): one row per habit; chips only for released cards. */
@@ -529,7 +531,7 @@ export function sideRows(ui: { row: (r: Row) => HTMLElement; group: (text: strin
   const r = rt.of(location.hash);
   const ok = done();
   // F10 (L489): one icon = one destination: one Best Practice row (its page has the track tabs), not four identical stars
-  return [ui.group(bt('side.group')),
+  return [ // v47 S1 (L903): drawn inside the Engine sidebar's Tham khảo group (src/ui/engineHub.ts), so no group of its own
     ui.row({ key: 'bp', href: rt.hash(), lead: d.icon(BP_ICON), label: 'Best Practice',
       sub: bt('progress', { k: index.filter((c) => ok.has(c.id)).length, n: index.length }), current: !!r && r.track !== 'habits' }),
     ui.row({ key: 'bp:habits', href: rt.hash('habits'), lead: d.icon('list'), label: bt('side.habits'), current: r?.track === 'habits' })];
@@ -544,12 +546,10 @@ export function entry(engine?: string): HTMLElement | null {
       d.icon(BP_ICON, 'size-4'), bt('entry.engine', { name: t.title[lang()] }), d.icon('chevronRight', 'size-4'))) : null;
   }
   const ok = done();
-  return h('section', { 'aria-labelledby': 'engine-best' },
-    h('h2', { id: 'engine-best', class: d.ui.GROUP_TITLE }, 'Best Practice'),
-    h('ul', { class: d.ui.LIST }, d.ui.listRow({
-      lead: lead(false), title: 'Best Practice',
-      sub: bt('entry.sub', { n: index.length, k: index.filter((c) => ok.has(c.id)).length }),
-      action: linkBtn(rt.hash(), bt('entry.go'), true),
-    })));
+  return d.ui.listRow({ // v47 S1 (L903): one row of the landing's Tham khảo list (src/ui/engineHub.ts)
+    lead: lead(false), title: 'Best Practice',
+    sub: bt('entry.sub', { n: index.length, k: index.filter((c) => ok.has(c.id)).length }),
+    action: linkBtn(rt.hash(), bt('entry.go'), true),
+  });
 }
 

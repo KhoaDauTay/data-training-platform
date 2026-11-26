@@ -451,11 +451,12 @@ async function enterDomain(id: DomainId): Promise<void> {
  * v12.0 P2: a first visitor's choice in the welcome picker. Seeds only that data; "SQL only" seeds `lab` and opens the
  * learning path. Resolves false when the domain's content could not load (enterDomain shows the banner; the picker stays).
  */
-async function startWith(c: BootPick): Promise<boolean> {
+async function startWith(c: BootPick, to?: string): Promise<boolean> {
   if (c === 'general') {
     writeJson(DOMAIN_KEY, c);
     openSchema('lab');
-    if (currentRoute() !== 'engine') go('learn'); // v23 (L299): a first visit that lands on #/engine stays there
+    if (to) location.hash = to; // v47 S3 (L911): the welcome's goal names where it lands
+    else if (currentRoute() !== 'engine') go('learn'); // v23 (L299): a first visit that lands on #/engine stays there
     return true;
   }
   if (c !== activeDomain()) await enterDomain(c);

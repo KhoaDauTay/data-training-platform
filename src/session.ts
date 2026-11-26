@@ -30,6 +30,11 @@ export interface PracticeRun {
   warmup?: boolean;
   /** v17 I4 (L145): the General entry check: a pass seeds the module's review cards, anything else writes nothing. */
   placement?: boolean;
+  /**
+   * v47 (L920): a Practise set on `lab`: Fix the broken query, or the mixed review of Part `part`. Writes nothing to the Save
+   * (no XP, no Leitner card, no practice totals); the score is `passed`. A mix opens hints only after a wrong submit.
+   */
+  set?: { kind: 'fix' | 'mix'; part?: number };
 }
 
 /** Modes inside the #/play route (not routes of their own). `lane`: a lane side task (Plan 5), outside chapter progress. */

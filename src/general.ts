@@ -23,8 +23,8 @@ export const bilingualOf = (v: unknown): Bilingual | undefined => {
   return b.vi && b.en ? b : undefined;
 };
 /** v19 V19-C (L168): `review` = a fourth skill drill for the Leitner review queue, written from scratch (no starter). */
-export type DrillKind = 'faded' | 'open' | 'trap' | 'review' | 'challenge';
-const KINDS: DrillKind[] = ['faded', 'open', 'trap', 'review', 'challenge'];
+export type DrillKind = 'faded' | 'open' | 'trap' | 'review' | 'challenge' | 'fix';
+const KINDS: DrillKind[] = ['faded', 'open', 'trap', 'review', 'challenge']; // v47 P2: `fix` only from fix.yml (parseFix)
 export interface Drill {
   id: string;
   /** Skill id (sql.yml) or node id (adv.yml): exactly one is set. */
@@ -47,6 +47,18 @@ export interface Drill {
    * their own BEGIN … ROLLBACK, followed there by this read; its rows are compared. Never reads a generated id.
    */
   check?: string;
+  /** v47 P2 (L921): a fix item's bug kind and the explanation shown once it passes. */
+  bug?: string;
+  why?: Bilingual;
+}
+/** v47 P6 (L924): "Explain this query": read `sql`, pick the option that says what it returns. Option `sql` is test-only. */
+export interface ExplainItem {
+  id: string;
+  sql: string;
+  q: Bilingual;
+  options: { text: Bilingual; why: Bilingual; sql: string }[];
+  answer: number;
+  ordered: boolean;
 }
 export type NodeStatus = 'in' | 'partial' | 'external';
 const STATUSES: NodeStatus[] = ['in', 'partial', 'external'];
@@ -67,7 +79,11 @@ export interface AdvNode {
   /** V20-A fallback (L173): short side-by-side readings on an `external` node; code is shown, never run. */
   readings: { title: Bilingual; body: Bilingual; sql: string; pandas: string }[];
 }
-export interface General { drills: Drill[]; nodes: AdvNode[]; bySkill: Map<string, Drill[]>; byId: Map<string, Drill> }
+/**
+ * `drills`/`bySkill` hold only sql.yml + adv.yml (the 4-per-skill pin, mastery, the hub). v47 P2/P6: `fix` items are in
+ * `byId` too (Practice runs look tickets up there), never in `drills`; `explain` items are not drills at all.
+ */
+export interface General { drills: Drill[]; nodes: AdvNode[]; bySkill: Map<string, Drill[]>; byId: Map<string, Drill>; fix: Drill[]; explain: ExplainItem[] }
 
 type Raw = Record<string, unknown>;
 const list = (data: unknown, origin: string): Raw[] => {
@@ -166,14 +182,53 @@ export function parseAdv(data: unknown, origin: string, parseLessonBody: LessonB
   return nodes;
 }
 
-/** Both files, indexed; a drill id used in both files throws. */
-export function buildGeneral(sqlData: unknown, advData: unknown, parseLessonBody: LessonBodyParser): General {
+/** v47 P2 (L921): content/general/fix.yml. Ids `g-fix-NN` (DRILL_ID, so they run on `lab`); the starter is the broken SQL. */
+export const FIX_ID = /^g-fix-\d{2}$/;
+export function parseFix(data: unknown, origin: string): Drill[] {
+  return unique(list(data, origin).map((o) => {
+    const fail = (what: string): never => {
+      throw new Error(`${origin}: ${String(o.id)} ${what}`);
+    };
+    if (typeof o.id !== 'string' || !FIX_ID.test(o.id)) fail(`id phải khớp ${FIX_ID}`);
+    if (typeof o.bug !== 'string' || !o.bug) fail('thiếu bug');
+    const why = bilingualOf(o.why) ?? fail('why cần { vi, en }');
+    const d = parseDrill({ ...o, kind: 'open' }, origin, {});
+    if (!d.starter || d.starter.includes(BLANK)) fail(`starter (câu lỗi) bắt buộc, không có ${BLANK}`);
+    return { ...d, kind: 'fix' as const, bug: o.bug as string, why };
+  }), origin);
+}
+
+/** v47 P6 (L924): content/general/explain.yml, 4 options each; `answer` = index of the right one. */
+export function parseExplain(data: unknown, origin: string): ExplainItem[] {
+  const seen = new Set<string>();
+  return list(data, origin).map((o) => {
+    const fail = (what: string): never => {
+      throw new Error(`${origin}: ${String(o.id)} ${what}`);
+    };
+    const id = typeof o.id === 'string' && /^x-\d{2}$/.test(o.id) && !seen.has(o.id) ? o.id : fail('id phải là x-NN, không trùng');
+    seen.add(id);
+    const sql = typeof o.sql === 'string' && o.sql.trim() ? o.sql.trim() : fail('thiếu sql');
+    const options = (Array.isArray(o.options) ? o.options as Raw[] : fail('options cần một danh sách')).map((x, i) => ({
+      text: bilingualOf(x) ?? fail(`option ${i} cần { vi, en }`),
+      why: bilingualOf(x.why) ?? fail(`option ${i} thiếu why`),
+      sql: typeof x.sql === 'string' && x.sql.trim() ? x.sql.trim() : fail(`option ${i} thiếu sql`),
+    }));
+    if (options.length !== 4) fail('cần đúng 4 options');
+    const answer = typeof o.answer === 'number' && Number.isInteger(o.answer) && o.answer >= 0 && o.answer < 4 ? o.answer : fail('answer phải là 0–3');
+    return { id, sql, q: bilingualOf(o.q) ?? fail('q cần { vi, en }'), options, answer, ordered: o.ordered === true };
+  });
+}
+
+/** Both files, indexed; a drill id used in both files throws. v47: `sets` = fix.yml + explain.yml (the practiceSources chunk). */
+export function buildGeneral(sqlData: unknown, advData: unknown, parseLessonBody: LessonBodyParser, sets?: { fix: unknown; explain: unknown }): General {
   const skillDrills = parseDrills(sqlData, 'general/sql.yml');
   const nodes = parseAdv(advData, 'general/adv.yml', parseLessonBody);
   const drills = unique([...skillDrills, ...nodes.flatMap((n) => n.drills)], 'general/sql.yml + adv.yml');
   const bySkill = new Map<string, Drill[]>();
   for (const d of skillDrills) bySkill.set(d.skill!, [...(bySkill.get(d.skill!) ?? []), d]);
-  return { drills, nodes, bySkill, byId: new Map(drills.map((d) => [d.id, d])) };
+  const fix = sets ? parseFix(sets.fix, 'general/fix.yml') : [];
+  const explain = sets ? parseExplain(sets.explain, 'general/explain.yml') : [];
+  return { drills, nodes, bySkill, byId: new Map([...drills, ...fix].map((d) => [d.id, d])), fix, explain };
 }
 
 /**
