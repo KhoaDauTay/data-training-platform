@@ -1,6 +1,6 @@
 # TS-2 (v47 L972): one timestamptz instant read on three wall clocks. Lesson: e-ts-l1-02 (Ý chính).
 # Data = the lab's gate time 2026-10-30 08:10+07 = 01:10 UTC = 09:10 in Singapore (+08).
-title: { vi: "Một thời điểm, ba đồng hồ", en: "One instant, three clocks" }
+title: { vi: "Một thời điểm, hai cách đọc", en: "One instant, two readings" }
 caption:
   vi: "timestamptz giữ thời điểm 01:10 UTC; AT TIME ZONE đọc nó thành 08:10 ở Đà Nẵng và 09:10 ở Singapore."
   en: "timestamptz keeps the instant 01:10 UTC; AT TIME ZONE reads it as 08:10 in Da Nang and 09:10 in Singapore."
