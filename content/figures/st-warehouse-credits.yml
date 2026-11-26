@@ -1,0 +1,27 @@
+# ST-14 (tools/v43/de-tools-plan.md §4): warehouse sizes as bars that double. Lesson: e-st-l3-01 (Ý chính).
+# Data = the documented credits per hour (Gen1 table, checked 2026-11-26): X-Small 1 … X-Large 16 drawn, 2X-Large 32 …
+# 6X-Large 512 left to the note (bars need room per value). Credits only, never a price.
+# Source: https://docs.snowflake.com/en/user-guide/warehouses-overview
+title: { vi: "Cỡ warehouse và credit mỗi giờ", en: "Warehouse sizes and credits per hour" }
+caption:
+  vi: "Mỗi cỡ lớn hơn dùng gấp đôi credit mỗi giờ; tiền tính theo giây, tối thiểu 60 giây mỗi lần khởi động."
+  en: "Each larger size uses twice the credits per hour; billing is per second, with 60 seconds minimum per start."
+alt:
+  vi: "Credit mỗi giờ gấp đôi theo từng cỡ warehouse, nên cùng một giờ chạy, cỡ X-Large tốn gấp 16 lần X-Small. Kết quả: chọn cỡ nhỏ nhất đủ nhanh, và để auto-suspend bật."
+  en: "Credits per hour double with each warehouse size, so for the same hour of running, X-Large costs 16 times X-Small. Result: pick the smallest size that is fast enough, and keep auto-suspend on."
+nodes:
+  - id: sizes
+    shape: bars
+    label: { vi: "credit mỗi giờ", en: "credits per hour" }
+    sub: { vi: "cỡ: credit", en: "size: credits" }
+    head: [{ vi: cỡ, en: size }, { vi: credit mỗi giờ, en: credits per hour }]
+    items:
+      - { label: X-Small, value: 1, note: "1" }
+      - { label: Small, value: 2, note: "2" }
+      - { label: Medium, value: 4, note: "4" }
+      - { label: Large, value: 8, note: "8" }
+      - { label: X-Large, value: 16, note: "16", tone: warm }
+  - { id: more, shape: note, label: { vi: "2X-Large 32 … 6X-Large 512", en: "2X-Large 32 … 6X-Large 512" } }
+rows:
+  - [sizes]
+  - [more]

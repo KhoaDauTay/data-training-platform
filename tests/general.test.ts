@@ -149,10 +149,10 @@ describe('nội dung: lộ trình DA nâng cao (content/general/adv.yml)', () =>
   const nodes = g.nodes;
   const withLesson = nodes.filter((n) => n.lesson);
   const IDS = [...Array.from({ length: 11 }, (_, i) => `a${i + 1}`), ...Array.from({ length: 7 }, (_, i) => `b${i + 1}`),
-    'c1', 'c2', 'c3', ...Array.from({ length: 8 }, (_, i) => `d${i + 1}`)];
+    'c1', 'c2', 'c3', ...Array.from({ length: 9 }, (_, i) => `d${i + 1}`)];
   const PARTIAL = ['a10', 'b5', 'b7', 'c2'];
 
-  it('đủ 29 nút đúng thứ tự và trạng thái của v5 §D.3 (v32 thêm a11)', () => {
+  it('đủ 30 nút đúng thứ tự và trạng thái của v5 §D.3 (v32 thêm a11, v46 thêm d9)', () => {
     expect(nodes.map((n) => n.id)).toEqual(IDS);
     for (const n of nodes) expect([n.id, n.status]).toEqual([n.id, n.id.startsWith('d') ? 'external' : PARTIAL.includes(n.id) ? 'partial' : 'in']);
     for (const n of nodes) expect(n.group).toBe(n.id[0].toUpperCase());

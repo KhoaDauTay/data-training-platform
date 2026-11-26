@@ -1,0 +1,32 @@
+# ST-11 (tools/v43/de-tools-plan.md §4): one snapshot run on customer 21, 2 steps. Lesson: e-st-l2-06 (Ý chính).
+# Data = the lab: customer 21 is silver in the snapshot from 2026-09-01; the source says gold from 2026-10-20.
+# Source: https://docs.getdbt.com/docs/build/snapshots
+title: { vi: "Một lần chạy snapshot", en: "One snapshot run" }
+caption:
+  vi: "Nguồn chỉ giữ hạng hiện tại; snapshot đóng bản cũ của khách 21 ở ngày đổi và thêm bản mới, nên lịch sử còn nguyên."
+  en: "The source keeps only the current tier; the snapshot closes customer 21's old version on the day it changed and adds a new one, so the history stays."
+alt:
+  vi: "Snapshot không ghi đè: khi nguồn đổi, bản cũ được đóng bằng dbt_valid_to và bản mới bắt đầu đúng ngày đó. Kết quả: khách 21 là bạc từ 01/09 tới 20/10, vàng từ 20/10."
+  en: "A snapshot never overwrites: when the source changes, the old version is closed with dbt_valid_to and the new one starts that same day. Result: customer 21 is silver from 1 Sep to 20 Oct, gold from 20 Oct."
+nodes:
+  - { id: src, shape: table, mono: true, label: raw_shop.customers, sub: { vi: "21: gold từ 20/10", en: "21: gold on 20/10" }, tone: warm }
+  - id: snap
+    shape: grid
+    mono: true
+    label: { vi: "snapshot, khách 21", en: "snapshot, customer 21" }
+    head: [tier, valid_from, valid_to]
+    cells: [["silver", "01/09", "–"]]
+rows:
+  - [src]
+  - [snap]
+edges:
+  - { from: src, to: snap, label: { vi: "so updated_at", en: "compare updated_at" } }
+steps:
+  - say: { vi: "Trước khi chạy: một bản hiện hành.", en: "Before the run: one current version." }
+    alt: { vi: "Snapshot có một bản của khách 21, hạng bạc từ 01/09, chưa đóng, trong khi nguồn đã ghi hạng vàng từ 20/10.", en: "The snapshot has one version of customer 21, silver from 1 Sep and still open, while the source already says gold from 20 Oct." }
+  - say: { vi: "Sau khi chạy: bản cũ đóng, bản mới mở.", en: "After the run: old version closed, new one open." }
+    alt: { vi: "Lần chạy đặt valid_to của bản bạc là 20/10 và thêm bản vàng từ 20/10 còn mở, nên một câu tại thời điểm vẫn đọc được hạng cũ.", en: "The run sets the silver version's valid_to to 20 Oct and adds an open gold version from 20 Oct, so an as-of query can still read the old tier." }
+    set:
+      snap:
+        cells: [["silver", "01/09", "20/10"], ["gold", "20/10", "–"]]
+        rowTone: [dead, new]

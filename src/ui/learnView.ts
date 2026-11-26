@@ -387,8 +387,9 @@ function advPage(c: LearnCtx, x: AdvNode): HTMLElement {
     x.links.length
       ? h('section', { class: 'space-y-1' }, h('h2', { class: 'm-0 text-body font-bold' }, lt('adv.links')),
         h('ul', { class: 'm-0 list-disc space-y-1 pl-5' }, ...x.links.map((l) => h('li', {},
-          h('a', { href: l.url, target: '_blank', rel: 'noopener noreferrer' }, l.title[lang], ' ↗',
-            h('span', { class: 'sr-only' }, ` (${lt('adv.newTab')})`))))))
+          l.url.startsWith('#') ? h('a', { href: l.url }, l.title[lang]) // v46 (L830): an in-app Engine page opens in place
+            : h('a', { href: l.url, target: '_blank', rel: 'noopener noreferrer' }, l.title[lang], ' ↗',
+              h('span', { class: 'sr-only' }, ` (${lt('adv.newTab')})`))))))
       : null,
     slot('adv-links'));
 }

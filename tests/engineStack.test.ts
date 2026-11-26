@@ -23,15 +23,18 @@ const all = Object.entries(files).map(([p, raw]) => {
 }).sort((a, b) => a.l.id.localeCompare(b.l.id));
 const ids = new Set(all.map((x) => x.l.id));
 
-/** de-tools-plan §4 / §7 R1: L1-01…05 and L2-01…04. */
+/** de-tools-plan §4 / §7: R1 L1-01…05 and L2-01…04; R2 (v46) L2-05…08 and L3-01…06 with the capstone. */
 const PLAN: Record<string, EngineLesson['kind'][]> = {
   L1: ['concept', 'lab', 'lab', 'concept', 'lab'],
-  L2: ['lab', 'lab', 'lab', 'lab'],
+  L2: ['lab', 'lab', 'lab', 'lab', 'lab', 'lab', 'concept', 'lab'],
+  L3: ['concept', 'lab', 'concept', 'concept', 'concept', 'capstone'],
 };
 const ORDER = Object.keys(SECTIONS) as SectionId[];
 const NEED: Partial<Record<EngineLesson['kind'], SectionId[]>> = {
   concept: ['open', 'idea', 'example', 'pitfalls', 'recap'],
   lab: ['open', 'idea', 'syntax', 'example', 'pitfalls', 'practice', 'recap'],
+  // v46 R2: the capstone keeps the full anatomy (the design capstones have three sections; this track asks for eight)
+  capstone: ['open', 'idea', 'syntax', 'example', 'pitfalls', 'practice', 'recap'],
 };
 const text = (l: EngineLesson, id: SectionId): { vi: string; en: string } | undefined => l.sections.find((s) => s.id === id)?.text;
 const sqlBlocks = (t: string | undefined): string[] => (t ? blocksOf(t).flatMap((b) => (b.kind === 'code' && b.lang === 'sql' ? [b.code] : [])) : []);
@@ -40,7 +43,7 @@ const isErr = (b: string): boolean => /^--\s*ERROR\b/m.test(b);
 const wordCountOf = (s: string): number => s.split(/\s+/).filter(Boolean).length;
 
 describe('Engine Công cụ dữ liệu (v45 R1): bài, mô-đun, luật nội dung', () => {
-  it('9 bài R1, đúng loại từng cấp, id e-st-', () => {
+  it('19 bài R1 + R2, đúng loại từng cấp, id e-st-', () => {
     const got = Object.fromEntries(Object.keys(PLAN).map((lv) => [lv, all.filter((x) => x.l.level === lv).sort((a, b) => a.l.order - b.l.order).map((x) => x.l.kind)]));
     expect(got).toEqual(PLAN);
     expect(all.every((x) => /^e-st-l[1-3]-\d\d$/.test(x.l.id) && x.l.engine === 'stack')).toBe(true);
@@ -90,7 +93,7 @@ describe('Engine Công cụ dữ liệu: giải phẫu 8 mục', () => {
     const pit = sqlBlocks(text(l, 'pitfalls')?.vi).filter((b) => isErr(b) || /^--\s*WRONG\b/m.test(b));
     expect(pit.length >= 2 && pit.length <= 4, `Lỗi hay gặp 2–4 bẫy (${pit.length})`).toBe(true);
     for (const b of [...sqlBlocks(text(l, 'example')?.vi), ...sqlBlocks(text(l, 'pitfalls')?.vi)]) expect(b, 'Jinja chỉ ở khối text').not.toMatch(/\{\{|\{%/);
-    if (l.kind === 'lab') expect(l.lab!.steps.length, 'lab 3–6 bước').toBeGreaterThanOrEqual(3);
+    if (l.kind === 'lab' || l.kind === 'capstone') expect(l.lab!.steps.length, 'lab 3–6 bước').toBeGreaterThanOrEqual(3);
     const qs = [...((fm.quiz as Record<string, unknown>[] | undefined) ?? []), ...(fm.predict ? [fm.predict as Record<string, unknown>] : [])];
     expect(qs.length, 'số câu hỏi').toBeGreaterThanOrEqual(2);
     for (const q of qs) if (q.trap !== undefined) {

@@ -1,0 +1,42 @@
+# ST-19 (tools/v43/de-tools-plan.md §4, the capstone): the revenue that doubled, traced from the mart back to raw, 3 steps.
+# Lesson: e-st-l3-06 (Ý chính). Data = the lab: 30 Oct revenue 1,600,000 before the fix, 650,000 after; the 02:00 sync resent
+# orders 1003–1005, 1005's resent row flagged deleted. Drawn as its own spec, not an st-dag variant (L823): the chain's nodes
+# differ from e-st-l2-02's models, and tests/engineStack.test.ts reads st-dag's edges.
+# Sources: https://fivetran.com/docs/core-concepts/system-columns-and-tables, https://docs.getdbt.com/docs/build/data-tests
+title: { vi: "Lần ngược một con số gấp đôi", en: "Tracing a doubled number back" }
+caption:
+  vi: "Đọc từ dưới lên: mart cộng gấp đôi, model trung gian có hai dòng mỗi đơn, staging đã mất bước bỏ trùng, raw nhận lại ba dòng lúc 02:00."
+  en: "Read bottom up: the mart sums twice, the intermediate model has two rows per order, staging lost its dedupe step, raw received three rows again at 02:00."
+alt:
+  vi: "Một con số sai trên mart được lần ngược qua từng model tới chỗ đầu tiên nó lệch, ở đây là staging đã mất bước bỏ trùng. Kết quả: sửa staging thì doanh thu 30/10 về 650.000."
+  en: "A wrong number on a mart is traced back through each model to the first place it drifts, here a staging model that lost its dedupe step. Result: fixing staging brings 30 Oct revenue to 650,000."
+nodes:
+  - { id: raw, shape: table, mono: true, label: raw_shop.orders, sub: { vi: "gửi lại lúc 02:00", en: "resent at 02:00" } }
+  - { id: stg, mono: true, label: stg_orders, sub: { vi: "chưa xét", en: "not checked yet" } }
+  - { id: mid, mono: true, label: int_orders, sub: { vi: "30/10: 6 dòng", en: "30/10: 6 rows" } }
+  - { id: mart, shape: table, mono: true, label: fct_revenue_daily, sub: { vi: "30/10: 1.600.000", en: "30/10: 1,600,000" }, tone: dead }
+rows:
+  - [raw]
+  - [stg]
+  - [mid]
+  - [mart]
+edges:
+  - { from: raw, to: stg }
+  - { from: stg, to: mid }
+  - { from: mid, to: mart }
+steps:
+  - say: { vi: "Mart: ngày 30/10 gấp đôi.", en: "Mart: 30 Oct has doubled." }
+    alt: { vi: "Mart cộng doanh thu ngày 30/10 thành 1.600.000, gấp đôi con số 800.000 hôm qua, nên phải đi ngược xem dòng nào bị cộng hai lần.", en: "The mart sums 30 Oct revenue to 1,600,000, twice yesterday's 800,000, so you walk back to see which rows were counted twice." }
+  - say: { vi: "Staging mất bước bỏ trùng.", en: "Staging lost its dedupe step." }
+    alt: { vi: "Model trung gian có sáu dòng cho ba đơn, và test unique trên staging trả ba đơn lặp, vì staging chép thẳng mọi bản từ raw.", en: "The intermediate model has six rows for three orders, and the unique test on staging returns three repeated orders, because staging copies every version straight from raw." }
+    set:
+      stg: { sub: { vi: "không bỏ trùng", en: "no dedupe" }, tone: dead }
+      mid: { tone: warm }
+      raw: { tone: warm }
+  - say: { vi: "Sửa staging: con số về 650.000.", en: "Fix staging: the number is 650,000." }
+    alt: { vi: "Staging giữ bản mới nhất của mỗi đơn rồi bỏ bản đã xóa của đơn 1005, nên model trung gian còn hai dòng và mart ghi 650.000.", en: "Staging keeps each order's newest version, then drops order 1005's deleted one, so the intermediate model has two rows and the mart shows 650,000." }
+    set:
+      stg: { sub: { vi: "bỏ trùng, bỏ xóa", en: "dedupe, no deleted" }, tone: new }
+      mid: { sub: { vi: "30/10: 2 dòng", en: "30/10: 2 rows" }, tone: new }
+      mart: { sub: { vi: "30/10: 650.000", en: "30/10: 650,000" }, tone: new }
+      raw: { tone: plain }

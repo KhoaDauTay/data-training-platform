@@ -190,8 +190,10 @@ export function pgScriptRunner(env: Env, client: Pick<PgLabClient, 'run' | 'rese
           const why = ref ? stackText(lang(), 'needRef', { name: ref }) : src ? stackText(lang(), 'needSource', { s: src.split('.')[0], t: src.split('.')[1] })
             : want.filter && !got.filter ? stackText(lang(), 'needFilter') : undefined;
           if (why) {
-            // the shape is checked only once the statement runs: a broken answer keeps its own error
-            try { await exec(lab, code, i, step.after); } catch (e) { return { ok: false, reason: 'error', message: e instanceof Error ? e.message : String(e) }; }
+            // v46 (L836): the rows first: a broken or wrong answer keeps its own verdict, and "the result is right, but…" is said
+            // only when it is (the text starts with those words)
+            const g = await env.grade((sql) => exec(lab, sql, i, step.after), step.solution, code, step.ordered);
+            if (!g.ok) return { ok: false, reason: g.reason === 'error' ? 'error' : 'wrong', message: env.verdict(g) };
             return { ok: false, reason: 'wrong', message: why };
           }
         }
