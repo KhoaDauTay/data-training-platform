@@ -1,0 +1,25 @@
+# v47 R1 (L1019): the same typed text through match and through term on the text field `name`. Lesson: e-sr-l2-02 (Ý chính).
+# Data = the simulator on the lab index: match "Nón lá" → documents 4, 5; term "Nón lá" → 0 hits.
+# Sources: https://www.elastic.co/docs/reference/query-languages/query-dsl/query-dsl-term-query
+title: { vi: "Một chuỗi, hai đường", en: "One string, two paths" }
+caption:
+  vi: "match cắt và viết thường chữ gõ như lúc lưu; term mang nguyên chuỗi đi tra một từ không có trong chỉ mục."
+  en: "match cuts and lower-cases the typed text as at write time; term looks up the whole string as one word the index does not hold."
+alt:
+  vi: "Truy vấn toàn văn biến chữ gõ thành đúng những từ chỉ mục đã lưu, còn truy vấn mức từ thì không. Kết quả: match tìm ra hai chiếc nón, term trên trường text trả 0 kết quả mà không báo lỗi."
+  en: "A full-text query turns the typed text into the very words the index stored, a term-level query does not. Result: match finds both hats, term on the text field returns 0 hits with no error."
+nodes:
+  - { id: in, shape: note, mono: true, label: "\"Nón lá\"" }
+  - { id: m, label: match, sub: { vi: "qua analyzer", en: "via the analyzer" }, tone: warm }
+  - { id: t, label: term, sub: { vi: "nguyên văn", en: "literal" } }
+  - { id: mr, mono: true, label: nón + lá, sub: { vi: "2 kết quả", en: "2 hits" }, tone: good }
+  - { id: tr, mono: true, label: Nón lá, sub: { vi: "0 kết quả", en: "0 hits" }, tone: bad }
+rows:
+  - [in]
+  - [m, t]
+  - [mr, tr]
+edges:
+  - { from: in, to: m }
+  - { from: in, to: t }
+  - { from: m, to: mr }
+  - { from: t, to: tr }

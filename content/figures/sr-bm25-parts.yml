@@ -1,0 +1,23 @@
+# v47 R1 (L1019): BM25 of the word `đỏ` in the three documents that hold it. Lesson: e-sr-l2-01 (Ý chính).
+# Data = the simulator on the lab index: N = 12, n = 3, avgdl = 58 / 12; scores 1.4117621, 1.2939335, 1.1942582 (pinned in
+# tests/engineSearch.test.ts through the lab's step 1). Source: Lucene BM25Similarity + Elasticsearch LegacyBM25Similarity.
+title: { vi: "Cùng một từ, ba điểm khác nhau", en: "One word, three different scores" }
+caption:
+  vi: "IDF của đỏ như nhau ở cả ba tài liệu; phần TF nhỏ dần khi tên dài hơn độ dài trung bình 4,83 từ."
+  en: "The IDF of the word is the same in all three documents; the TF part shrinks as the name grows past the 4.83-word average."
+alt:
+  vi: "Khi các tài liệu cùng chứa một từ đúng một lần, tài liệu ngắn hơn được điểm cao hơn vì từ đó chiếm phần lớn hơn của nó. Kết quả: tài liệu 1 có 4 từ được 1,4118, tài liệu 11 có 6 từ được 1,1943."
+  en: "When documents hold a word exactly once, the shorter one scores higher because the word is a larger part of it. Result: document 1 with 4 words gets 1.4118, document 11 with 6 words gets 1.1943."
+nodes:
+  - { id: idf, shape: note, label: { vi: "IDF = ln(1 + 9,5 / 3,5) = 1,3122", en: "IDF = ln(1 + 9.5 / 3.5) = 1.3122" } }
+  - id: g
+    shape: grid
+    mono: true
+    label: { vi: "Điểm của từ đỏ", en: "Scores of the word" }
+    head: [_id, dl, TF, _score]
+    cells: [["1", "4", "1.0759", "1.4118"], ["7", "5", "0.9861", "1.2939"], ["11", "6", "0.9101", "1.1943"]]
+rows:
+  - [idf]
+  - [g]
+edges:
+  - { from: idf, to: g }

@@ -1,0 +1,30 @@
+# v47 R1 (L1019): the prefixes the `name.ac` sub-field stores for `Đèn lồng`, and a half-typed search. Lesson: e-sr-l2-05 (Ý chính).
+# Data = `_analyze` with field `name.ac` (standard + lowercase + asciifolding + edge_ngram 2..10) on `Đèn lồng`.
+# Source: https://www.elastic.co/docs/reference/text-analysis/analysis-edgengram-tokenfilter
+title: { vi: "Lưu tiền tố để gợi ý khi gõ", en: "Store prefixes to suggest while typing" }
+caption:
+  vi: "Lúc lưu, mỗi từ thêm các tiền tố từ 2 chữ; lúc tìm, chữ khách gõ không bị cắt nên lon khớp thẳng một tiền tố."
+  en: "At write time each word adds its prefixes from 2 letters up; at search time the typed text is not cut, so lon hits one stored prefix directly."
+alt:
+  vi: "Tiền tố được tính sẵn lúc ghi, nên khách chưa gõ xong một từ đã có kết quả. Kết quả: gõ lon khớp tiền tố của long, tức chữ lồng sau khi bỏ dấu."
+  en: "Prefixes are computed ahead at write time, so a customer gets hits before finishing a word. Result: typing lon matches a prefix of the folded word long."
+nodes:
+  - { id: w, shape: doc, label: Đèn lồng, sub: { vi: "tài liệu 1", en: "document 1" } }
+  - { id: ac, label: edge_ngram, sub: { vi: "lúc lưu, 2 tới 10", en: "on write, 2 to 10" }, tone: warm }
+  - id: g
+    shape: grid
+    mono: true
+    label: { vi: "Từ lưu ở name.ac", en: "Words in name.ac" }
+    head: [token, position]
+    cells: [[de, "0"], [den, "0"], [lo, "1"], [lon, "1"], [long, "1"]]
+    rowTone: [null, null, null, good, null]
+  - { id: q, shape: note, mono: true, label: { vi: "khách gõ: lon", en: "typed: lon" } }
+rows:
+  - [w]
+  - [ac]
+  - [g]
+  - [q]
+edges:
+  - { from: w, to: ac }
+  - { from: ac, to: g }
+  - { from: q, to: g }
