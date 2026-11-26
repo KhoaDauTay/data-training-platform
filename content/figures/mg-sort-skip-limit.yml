@@ -6,8 +6,8 @@
 # Sources: https://www.mongodb.com/docs/manual/reference/method/cursor.sort/, …/cursor.skip/
 title: { vi: "sort trước, rồi skip, rồi limit", en: "sort first, then skip, then limit" }
 caption:
-  vi: "Bên trái là thứ tự lưu, bên phải là cùng sáu sản phẩm sau sort({ name: 1 }). Trang 2 với cỡ trang 2 là skip(2).limit(2): MongoDB luôn áp sort, rồi skip, rồi limit, dù bạn viết theo thứ tự nào. Dòng gạch là dòng bị skip."
-  en: "On the left the stored order, on the right the same six products after sort({ name: 1 }). Page 2 with a page size of 2 is skip(2).limit(2): MongoDB always applies sort, then skip, then limit, whatever order you write them in. A struck row is a skipped one."
+  vi: "Bảng \"không sort\" là thứ tự lưu, bảng \"sort({ name: 1 })\" là cùng sáu sản phẩm sau khi xếp. Trang 2 với cỡ trang 2 là skip(2).limit(2): MongoDB luôn áp sort, rồi skip, rồi limit, dù bạn viết theo thứ tự nào. Dòng gạch là dòng bị skip."
+  en: "The \"no sort\" table is the stored order, the \"sort({ name: 1 })\" table the same six products once sorted. Page 2 with a page size of 2 is skip(2).limit(2): MongoDB always applies sort, then skip, then limit, whatever order you write them in. A struck row is a skipped one."
 alt:
   vi: "Phân trang chỉ có nghĩa trên một thứ tự cố định: MongoDB xếp bằng sort trước, rồi mới bỏ bằng skip và cắt bằng limit. Không có sort, trang 2 lấy theo thứ tự lưu, thứ tự mà máy chủ không hứa giữ."
   en: "Paging only means something on a fixed order: MongoDB sorts first, and only then drops with skip and cuts with limit. Without a sort, page 2 follows the stored order, which the server does not promise to keep."
@@ -25,7 +25,7 @@ nodes:
 rows:
   - [st, so]
 edges:
-  - { from: st, to: so, label: { vi: "sort chạy trước", en: "sort runs first" } }
+  - { id: srt, from: st, to: so, label: { vi: "sort chạy trước", en: "sort runs first" } }
 steps:
   - say: { vi: "sort xếp lại cả sáu tài liệu theo name trước.", en: "sort reorders all six documents by name first." }
     alt: { vi: "Dù sort được viết ở đâu trong chuỗi, MongoDB xếp trước tiên: Coffee beans lên đầu, Tea set xuống cuối.", en: "Wherever sort is written in the chain, MongoDB sorts first: Coffee beans moves to the top, Tea set to the bottom." }
@@ -36,5 +36,6 @@ steps:
   - say: { vi: "Không sort, trang 2 theo thứ tự lưu, không được hứa.", en: "Without sort, page 2 follows the stored order, with no promise." }
     alt: { vi: "Bỏ sort đi thì skip(2).limit(2) chạy trên thứ tự lưu và trả Rice cracker, Dried mango, và máy chủ thật có thể đổi thứ tự đó sau một lần cập nhật.", en: "Drop the sort and skip(2).limit(2) runs on the stored order and returns Rice cracker and Dried mango, and a real server may change that order after an update." }
     set:
-      so: { strike: [0, 1], rowTone: [ghost, ghost, new, new, null, null], sub: { vi: "trang 2: Green tea, Lotus tea", en: "page 2: Green tea, Lotus tea" } }
+      so: { rowTone: [ghost, ghost, ghost, ghost, ghost, ghost], tone: ghost, sub: { vi: "không dùng", en: "not used" } }
+      srt: { kind: skip, label: { vi: "không sort", en: "no sort" } }
       st: { strike: [0, 1], rowTone: [ghost, ghost, warm, warm, null, null], sub: { vi: "trang 2 khác hẳn", en: "a different page 2" } }

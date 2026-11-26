@@ -6,13 +6,17 @@
 # kinds of row, not for real ids. Sources: https://www.postgresql.org/docs/18/bloom.html
 title: { vi: "Bloom: chữ ký bit của từng dòng", en: "Bloom: a bit signature per row" }
 caption:
-  vi: "Minh họa 8 bit; chữ ký thật dài 80 bit và mỗi cột bật 2 bit; hai cột có thể bật trùng một bit, như bit 5 ở đây. Số ứng viên và số dòng bị loại là của lab, câu b = 42 AND e = 7."
-  en: "An illustration with 8 bits; the real signature is 80 bits and each column sets 2; two columns can share a bit, like bit 5 here. The candidate and removed counts are the lab's, for b = 42 AND e = 7."
+  vi: "Minh họa 8 bit; chữ ký thật dài 80 bit và mỗi cột bật 2 bit; hai cột có thể bật trùng một bit: ở đây b bật bit 2 và 5, e bật bit 5 và 7. Số ứng viên và số dòng bị loại là của lab, câu b = 42 AND e = 7."
+  en: "An illustration with 8 bits; the real signature is 80 bits and each column sets 2; two columns can share a bit: here b sets bits 2 and 5, e sets bits 5 and 7. The candidate and removed counts are the lab's, for b = 42 AND e = 7."
 alt:
   vi: "Bloom lưu cho mỗi dòng một chữ ký bit và nhặt mọi dòng có đủ các bit của điều kiện, nên không bao giờ sót dòng khớp thật. Vì nhiều giá trị bật trùng bit, vài dòng sai lọt qua và phải kiểm lại trên bảng. Kết quả: 18 ứng viên, 17 bị loại, 1 dòng."
   en: "Bloom keeps a bit signature per row and picks every row that has all the condition's bits, so it never misses a real match. Because many values set the same bits, some wrong rows get through and are rechecked on the table. Result: 18 candidates, 17 removed, 1 row."
 nodes:
-  - { id: q, shape: key, label: "b = 42 AND e = 7", sub: { vi: "bật bit 2, 5, 7", en: "sets bits 2, 5, 7" }, tone: new }
+  - id: q
+    shape: grid
+    label: "b = 42 AND e = 7"
+    head: [{ vi: "cột", en: column }, { vi: "bật bit", en: sets bits }]
+    cells: [["b = 42", "2, 5"], ["e = 7", "5, 7"]]
   - id: sig
     shape: grid
     label: { vi: "chữ ký từng dòng", en: "signature per row" }
@@ -21,7 +25,7 @@ nodes:
     cells: [[A, "0", "1", "0", "1", "1", "0", "1", "0"], [B, "1", "1", "0", "0", "1", "0", "1", "1"], [C, "0", "1", "1", "0", "0", "0", "1", "0"]]
     colTone: [null, null, new, null, null, new, null, new, null]
   - { id: cand, label: Bitmap Index Scan, sub: { vi: "18 ứng viên", en: "18 candidates" }, tone: warm }
-  - { id: rc, label: Recheck Cond, sub: { vi: "17 loại, 1 dòng", en: "17 removed, 1 row" }, tone: live }
+  - { id: rc, label: Bitmap Heap Scan, sub: { vi: "kiểm lại: 1 dòng", en: "recheck: 1 row" }, tone: live }
 rows:
   - [q]
   - [sig]
@@ -32,16 +36,14 @@ edges:
   - { from: cand, to: rc }
 steps:
   - say: { vi: "Điều kiện thành một chữ ký: bit 2, 5, 7.", en: "The condition becomes a signature: bits 2, 5, 7." }
-    alt: { vi: "Mỗi cột trong điều kiện băm giá trị của nó và bật vài bit, nên b = 42 AND e = 7 thành một chữ ký với các bit 2, 5 và 7.", en: "Each column in the condition hashes its value and sets a few bits, so b = 42 AND e = 7 becomes a signature with bits 2, 5 and 7." }
-    set:
-      cand: { tone: ghost, sub: { vi: "chưa đọc", en: "not read yet" } }
-      rc: { tone: ghost, sub: { vi: "chưa đọc", en: "not read yet" } }
+    alt: { vi: "Mỗi cột trong điều kiện băm giá trị của nó và bật hai bit, b = 42 bật bit 2 và 5, e = 7 bật bit 5 và 7, nên chữ ký cần các bit 2, 5 và 7.", en: "Each column in the condition hashes its value and sets two bits, b = 42 sets bits 2 and 5, e = 7 sets bits 5 and 7, so the signature needs bits 2, 5 and 7." }
+    show: [q, sig]
   - say: { vi: "Đọc cả index, giữ dòng có đủ ba bit.", en: "Read the whole index, keep rows with all three bits." }
     alt: { vi: "Dòng A và B có đủ bit 2, 5, 7 nên thành ứng viên, dòng C thiếu bit 5 nên bị bỏ ngay, và trên cả bảng có 18 ứng viên.", en: "Rows A and B have bits 2, 5 and 7 so they become candidates, row C lacks bit 5 and is dropped at once, and across the table there are 18 candidates." }
+    show: [q, sig, cand]
     set:
-      sig: { rowTone: [warm, warm, ghost] }
-      rc: { tone: ghost, sub: { vi: "chưa đọc", en: "not read yet" } }
+      sig: { cellTone: { "0:0": warm, "1:0": warm, "2:0": dead, "2:5": dead } }
   - say: { vi: "Kiểm lại trên bảng: chỉ một dòng khớp thật.", en: "Recheck on the table: only one row really matches." }
     alt: { vi: "Bitmap Heap Scan đọc 18 dòng ứng viên và kiểm lại điều kiện, loại 17 dòng chỉ trùng bit, như dòng B, và giữ 1 dòng khớp thật.", en: "The Bitmap Heap Scan reads the 18 candidate rows and rechecks the condition, removing 17 that only shared bits, like row B, and keeping 1 real match." }
     set:
-      sig: { rowTone: [live, dead, ghost] }
+      sig: { cellTone: { "0:0": live, "1:0": dead, "2:0": dead, "2:5": dead } }

@@ -6,8 +6,8 @@
 # https://www.postgresql.org/docs/18/errcodes-appendix.html
 title: { vi: "Mỗi dòng ghi vào phải qua mọi ràng buộc", en: "Every row written passes every constraint" }
 caption:
-  vi: "Bảng stock của mục Lỗi hay gặp: id là khóa chính, qty có CHECK (qty >= 0). Một cửa từ chối là cả lệnh lỗi với mã SQLSTATE của cửa đó."
-  en: "The stock table from Common mistakes: id is the primary key, qty has CHECK (qty >= 0). One door saying no fails the whole statement with that door's SQLSTATE."
+  vi: "Bảng stock của mục Lỗi hay gặp: id là khóa chính, qty có CHECK (qty >= 0). Một cửa từ chối là cả lệnh lỗi với mã SQLSTATE của cửa đó. Đường đứt không mũi tên: dòng không đi tới đó; ô đứt: cửa chưa có hoặc không được kiểm."
+  en: "The stock table from Common mistakes: id is the primary key, qty has CHECK (qty >= 0). One door saying no fails the whole statement with that door's SQLSTATE. A dashed line without a head: the row never gets there; a dashed box: a door that does not exist or is never checked."
 alt:
   vi: "Ràng buộc là các cửa mà database tự kiểm ở mỗi lần ghi, nên dữ liệu sai không vào được dù ứng dụng nào ghi. CHECK chỉ chặn khi điều kiện là false, nên NULL lọt qua; muốn cấm NULL phải thêm NOT NULL."
   en: "Constraints are doors the database checks on every write, so bad data cannot get in whichever application writes it. CHECK only blocks when the condition is false, so NULL slips through; to forbid NULL you must add NOT NULL."
@@ -15,7 +15,7 @@ nodes:
   - { id: r, shape: key, label: { vi: "dòng mới", en: "new row" }, sub: "(1, -3)", tone: new }
   - { id: nn, label: NOT NULL qty, sub: { vi: "chưa có", en: "not there yet" }, tone: ghost }
   - { id: ck, label: CHECK qty >= 0, sub: { vi: "-3 >= 0: false", en: "-3 >= 0: false" }, tone: dead }
-  - { id: pk, label: PRIMARY KEY id, sub: { vi: "id không trùng", en: "id not taken" } }
+  - { id: pk, label: PRIMARY KEY id, sub: { vi: "không tới đây", en: "never reached" }, tone: ghost }
   - { id: t, shape: table, label: stock, sub: { vi: "từ chối: 23514", en: "refused: 23514" }, tone: dead }
 rows:
   - [r, nn, ck, pk]
@@ -23,10 +23,10 @@ rows:
 phone:
   rows: [[r], [nn], [ck], [pk], [t]]
 edges:
-  - { from: r, to: nn }
-  - { from: nn, to: ck }
-  - { from: ck, to: pk }
-  - { from: pk, to: t }
+  - { id: e1, from: r, to: nn }
+  - { id: e2, from: nn, to: ck }
+  - { id: e3, from: ck, to: pk, kind: skip }
+  - { id: e4, from: pk, to: t, kind: skip }
 steps:
   - say: { vi: "(1, -3): CHECK ra false, lệnh bị từ chối.", en: "(1, -3): CHECK is false, the statement is refused." }
     alt: { vi: "Với qty là -3, điều kiện qty >= 0 là false nên CHECK từ chối và lệnh lỗi với mã 23514, không dòng nào được ghi.", en: "With qty -3 the condition qty >= 0 is false, so CHECK refuses and the statement fails with code 23514, writing no row." }
@@ -35,7 +35,9 @@ steps:
     set:
       r: { sub: "(2, NULL)" }
       ck: { sub: "NULL >= 0: NULL", tone: warm }
-      pk: { tone: live }
+      pk: { tone: live, sub: { vi: "id không trùng", en: "id not taken" } }
+      e3: { kind: null }
+      e4: { kind: null }
       t: { sub: { vi: "đã nhận (2, NULL)", en: "took (2, NULL)" }, tone: warm }
   - say: { vi: "Thêm NOT NULL: NULL bị chặn ở cửa đầu.", en: "Add NOT NULL: NULL is stopped at the first door." }
     alt: { vi: "Sau khi xóa dòng NULL và thêm NOT NULL cho qty, dòng (3, NULL) bị chặn ngay cửa đầu với mã 23502.", en: "After deleting the NULL row and adding NOT NULL to qty, the row (3, NULL) is stopped at the first door with code 23502." }
@@ -45,3 +47,4 @@ steps:
       ck: { sub: { vi: "không tới đây", en: "never reached" }, tone: ghost }
       pk: { sub: { vi: "không tới đây", en: "never reached" }, tone: ghost }
       t: { sub: { vi: "từ chối: 23502", en: "refused: 23502" }, tone: dead }
+      e2: { kind: skip }

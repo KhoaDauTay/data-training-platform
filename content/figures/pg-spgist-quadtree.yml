@@ -39,12 +39,9 @@ edges:
 steps:
   - say: { vi: "Tầng gốc: hộp nằm trọn trong một phần tư.", en: "Root level: the box lies inside one quarter." }
     alt: { vi: "Hộp từ (700,200) tới (720,220) nằm trong phần x ≥ 500, y < 500, nên ba phần còn lại với khoảng 22500 cửa hàng bị bỏ qua.", en: "The box from (700,200) to (720,220) lies in the part x ≥ 500, y < 500, so the other three parts, about 22500 shops, are skipped." }
-    set:
-      l2: { tone: ghost, cellTone: {} }
-      res: { tone: ghost, sub: { vi: "chưa tới", en: "not yet" } }
+    show: [q, l1]
   - say: { vi: "Tầng sau: lại chia bốn, lại chỉ một phần.", en: "Next level: four again, one again." }
     alt: { vi: "Phần đó lại chia làm bốn và hộp chỉ rơi vào phần x < 750, y < 250 với 1841 cửa hàng, nên cây tiếp tục xuống đúng một nhánh.", en: "That part splits into four again and the box falls only into x < 750, y < 250 with 1841 shops, so the tree keeps going down a single branch." }
-    set:
-      res: { tone: ghost, sub: { vi: "chưa tới", en: "not yet" } }
+    show: [q, l1, l2]
   - say: { vi: "Đáy cây: 11 cửa hàng, không quét cả bảng.", en: "At the bottom: 11 shops, no full scan." }
     alt: { vi: "Ở các tầng dưới cùng, index trả 11 cửa hàng nằm trong hộp qua Bitmap Index Scan trên shops_loc_spgist.", en: "At the lowest levels the index returns the 11 shops inside the box through a Bitmap Index Scan on shops_loc_spgist." }

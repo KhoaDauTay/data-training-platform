@@ -131,6 +131,24 @@ describe('axe-core (v15 Q10)', () => {
     expect(v).toEqual([]);
   });
 
+  it('v46 (b56 eye, L857): a story ticket\'s quick lesson card in the brief mounts its figure too', async () => {
+    await visit('#/learn');
+    const stub = globalThis.IntersectionObserver;
+    vi.stubGlobal('IntersectionObserver', class {
+      constructor(private cb: (xs: { isIntersecting: boolean }[]) => void) {}
+      observe() { queueMicrotask(() => this.cb([{ isIntersecting: true }])); }
+      unobserve() {}
+      disconnect() {}
+    });
+    const host = (await import('../src/ui/lessonCard')).lessonSlot(['group_by'])!;
+    vi.stubGlobal('IntersectionObserver', stub);
+    document.body.append(host);
+    const fig = (): Element | null => host.querySelector('[data-fig-slot="sql-group-fold"] figure[data-fig] svg');
+    await vi.waitFor(() => expect(fig()).not.toBeNull(), { timeout: 20_000 });
+    expect(fig()!.closest('section')?.getAttribute('aria-label')).toBe('Ý chính');
+    host.remove();
+  });
+
   it.each(DIALOGS)('dialog: %s', async (name, open) => {
     if (location.hash !== '#/d/logistics/play') await visit('#/d/logistics/play');
     await open();

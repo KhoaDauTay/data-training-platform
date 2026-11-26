@@ -9,18 +9,18 @@
 # https://www.postgresql.org/docs/18/runtime-config-resource.html
 title: { vi: "Vòng tinh chỉnh: đo, sửa một chỗ, đo lại", en: "The tuning loop: measure, fix one thing, measure again" }
 caption:
-  vi: "Bảng orders 25000 dòng của lab. Mỗi ô kế hoạch là một lần đo bằng EXPLAIN, ô giữa hai lần đo là một lần sửa. Sửa theo thứ tự rẻ nhất: câu và index, rồi thống kê, cấu hình đứng cuối và chỉ cho phiên cần nó."
-  en: "The lab's 25000-row orders table. Each plan box is one measurement with EXPLAIN, the box between two measurements is one fix. Fix in order of cost: query and index, then statistics, with configuration last and only for the session that needs it."
+  vi: "Bảng orders 25000 dòng của lab. Mỗi ô kế hoạch là một lần đo bằng EXPLAIN, ô giữa hai lần đo là một lần sửa. Sửa theo thứ tự rẻ nhất: câu và index, rồi thống kê, cấu hình đứng cuối và chỉ cho phiên cần nó. Buffers là số lần đọc trang, cùng một đơn vị cho hai câu gom. Mũi tên quay về Seq Scan: vòng sau lại bắt đầu bằng một lần đo."
+  en: "The lab's 25000-row orders table. Each plan box is one measurement with EXPLAIN, the box between two measurements is one fix. Fix in order of cost: query and index, then statistics, with configuration last and only for the session that needs it. Buffers count page reads, one unit for both GROUP BY runs. The arrow back to Seq Scan: the next round starts with a measurement again."
 alt:
   vi: "Tinh chỉnh là vòng lặp: đo bằng EXPLAIN, sửa đúng một nguyên nhân rẻ nhất, rồi đo lại để thấy nó có tác dụng. Mỗi lần đo cho biết bước sửa tiếp theo, và cấu hình chỉ được đụng khi câu, index và thống kê đã ổn."
   en: "Tuning is a loop: measure with EXPLAIN, fix exactly one cheapest cause, then measure again to see that it worked. Each measurement points to the next fix, and configuration is touched only once query, index and statistics are right."
 nodes:
-  - { id: m1, label: Seq Scan, sub: { vi: "ước 86 dòng", en: "estimate: 86 rows" }, tone: warm }
+  - { id: m1, label: Seq Scan, sub: { vi: "ước 86, thật 13", en: "est. 86, real 13" }, tone: warm }
   - { id: f1, label: { vi: "index + ANALYZE", en: "index + ANALYZE" }, sub: customer_id, tone: new }
-  - { id: m2, label: Bitmap Index Scan, sub: { vi: "ước 13 dòng", en: "estimate: 13 rows" }, tone: live }
-  - { id: m3, label: GroupAggregate, sub: { vi: "25000 lần đọc", en: "25000 reads" }, tone: warm }
+  - { id: m2, label: Bitmap Index Scan, sub: { vi: "ước 13, thật 13", en: "est. 13, real 13" }, tone: live }
+  - { id: m3, label: GroupAggregate, sub: "Buffers ~25000", tone: warm }
   - { id: f2, label: "work_mem = 4MB", sub: { vi: "chỉ cho phiên", en: "this session only" }, tone: new }
-  - { id: m4, label: HashAggregate, sub: { vi: "161 trang", en: "161 pages" }, tone: live }
+  - { id: m4, label: HashAggregate, sub: "Buffers 161", tone: live }
 rows:
   - [m1, f1, m2]
   - [m4, f2, m3]
@@ -32,19 +32,13 @@ edges:
   - { from: m2, to: m3, label: { vi: "câu kế", en: "next query" } }
   - { from: m3, to: f2 }
   - { from: f2, to: m4 }
+  - { from: m4, to: m1 }
 steps:
-  - say: { vi: "Đo trước: không index, planner đoán 86 dòng.", en: "Measure first: no index, the planner guesses 86 rows." }
+  - say: { vi: "Đo trước: không index, planner đoán 86 dòng, thật 13.", en: "Measure first: no index, the planner guesses 86 rows, really 13." }
     alt: { vi: "Chưa có index và thống kê nên câu tìm khách 42 là Seq Scan với ước lượng mặc định 86 dòng, trong khi thật chỉ có 13.", en: "With no index and no statistics, the lookup for customer 42 is a Seq Scan with a default estimate of 86 rows, while there are really only 13." }
-    set:
-      m2: { tone: ghost, sub: { vi: "chưa đo", en: "not measured" } }
-      m3: { tone: ghost, sub: { vi: "chưa đo", en: "not measured" } }
-      f2: { tone: ghost }
-      m4: { tone: ghost, sub: { vi: "chưa đo", en: "not measured" } }
+    show: [m1, f1]
   - say: { vi: "Sửa rẻ nhất trước: index và thống kê.", en: "Cheapest fix first: index and statistics." }
     alt: { vi: "Sau CREATE INDEX và ANALYZE, đo lại cho Bitmap Index Scan trên orders_customer_id_idx với ước lượng 13, khớp số thật.", en: "After CREATE INDEX and ANALYZE, measuring again gives a Bitmap Index Scan on orders_customer_id_idx with an estimate of 13, matching the real count." }
-    set:
-      m3: { tone: ghost, sub: { vi: "chưa đo", en: "not measured" } }
-      f2: { tone: ghost }
-      m4: { tone: ghost, sub: { vi: "chưa đo", en: "not measured" } }
-  - say: { vi: "Cấu hình đứng cuối, và chỉ cho phiên cần nó.", en: "Configuration comes last, for the session that needs it." }
-    alt: { vi: "Với work_mem 64kB câu gom đọc 25000 dòng lần lượt qua index, còn nâng work_mem lên 4MB cho phiên thì HashAggregate chỉ đọc 161 trang.", en: "At a work_mem of 64kB the GROUP BY reads 25000 rows one by one through the index, while raising work_mem to 4MB for the session lets a HashAggregate read just 161 pages." }
+    show: [m1, f1, m2]
+  - say: { vi: "Cấu hình đứng cuối, rồi lại đo.", en: "Configuration comes last, then measure again." }
+    alt: { vi: "Với work_mem 64kB câu gom đọc khoảng 25000 trang qua index, còn nâng work_mem lên 4MB cho phiên thì HashAggregate chỉ đọc 161 trang, và vòng sau lại bắt đầu bằng một lần đo.", en: "At a work_mem of 64kB the GROUP BY reads about 25000 pages through the index, while raising work_mem to 4MB for the session lets a HashAggregate read just 161 pages, and the next round starts with a measurement again." }

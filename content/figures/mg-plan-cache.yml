@@ -3,8 +3,8 @@
 # Sources: https://www.mongodb.com/docs/manual/core/query-plans/, …/reference/operator/aggregation/planCacheStats/
 title: { vi: "Plan cache: ba trạng thái và explain đứng ngoài", en: "Plan cache: three states, explain stays outside" }
 caption:
-  vi: "Mỗi hình dạng truy vấn (cùng trường lọc, sắp, chiếu) có một mục trong plan cache. Mục đi từ Missing sang Inactive khi multi-planner chọn xong, sang Active khi lần sau kế hoạch tốn bằng hoặc ít hơn. explain() chọn lại từ đầu và không đọc, không ghi cache; $planCacheStats mới cho thấy mục thật."
-  en: "Each query shape (same filter, sort and projection fields) has one entry in the plan cache. The entry goes from Missing to Inactive once the multi-planner has chosen, and to Active when the plan costs the same or less next time. explain() plans afresh and neither reads nor writes the cache; $planCacheStats shows the real entries."
+  vi: "Mỗi hình dạng truy vấn (cùng trường lọc, sắp, chiếu) có một mục trong plan cache. Mục đi từ Missing sang Inactive khi multi-planner chọn xong, sang Active khi lần sau kế hoạch tốn bằng hoặc ít hơn. explain() chọn lại từ đầu và không đọc, không ghi cache; $planCacheStats mới cho thấy mục thật. Đường đứt không mũi tên: không xảy ra."
+  en: "Each query shape (same filter, sort and projection fields) has one entry in the plan cache. The entry goes from Missing to Inactive once the multi-planner has chosen, and to Active when the plan costs the same or less next time. explain() plans afresh and neither reads nor writes the cache; $planCacheStats shows the real entries. A dashed line without a head: it does not happen."
 alt:
   vi: "Kế hoạch thắng được cất theo hình dạng truy vấn và chỉ được dùng lại khi mục đã Active. explain() không nhìn vào cache, nên kế hoạch nó cho thấy có thể khác kế hoạch server đang dùng."
   en: "The winning plan is stored per query shape and reused only once its entry is Active. explain() never looks at the cache, so the plan it shows can differ from the one the server is using."
@@ -12,11 +12,11 @@ groups:
   - { id: cache, label: plan cache, nodes: [miss, ina, act] }
 nodes:
   - { id: q, shape: key, label: { vi: "hình dạng truy vấn", en: "query shape" }, sub: "status, store" }
-  - { id: miss, label: Missing, sub: { vi: "chưa có mục", en: "no entry yet" }, tone: new }
+  - { id: miss, label: Missing, sub: { vi: "chưa có mục", en: "no entry yet" } }
   - { id: ina, label: Inactive, sub: { vi: "chỉ giữ chỗ", en: "a placeholder" } }
-  - { id: act, label: Active, sub: { vi: "dùng lại kế hoạch", en: "plan reused" } }
-  - { id: ex, mono: true, label: "explain()", sub: { vi: "bỏ qua cache", en: "skips the cache" }, tone: ghost }
-  - { id: st, mono: true, label: "$planCacheStats", sub: { vi: "đọc các mục", en: "reads the entries" }, tone: ghost }
+  - { id: act, label: Active, sub: { vi: "tốn ≤: dùng lại", en: "cost ≤: reused" } }
+  - { id: ex, mono: true, label: "explain()", sub: { vi: "không đọc cache", en: "never reads cache" }, tone: warm }
+  - { id: st, mono: true, label: "$planCacheStats", sub: { vi: "đọc các mục", en: "reads the entries" }, tone: live }
 rows:
   - [q]
   - [miss, ina, act]
@@ -25,22 +25,20 @@ edges:
   - { from: q, to: miss }
   - { from: miss, to: ina, label: planner }
   - { from: ina, to: act }
-  - { from: ex, to: cache, dash: true }
+  - { from: ex, to: cache, kind: skip }
   - { from: st, to: cache }
 steps:
   - say: { vi: "Lần đầu: multi-planner chạy thử, mục mới là Inactive.", en: "First time: the multi-planner runs trials, the new entry is Inactive." }
     alt: { vi: "Chưa có mục cho hình dạng này, nên multi-planner cho các kế hoạch ứng viên chạy thử, chọn kế hoạch thắng và tạo một mục Inactive kèm lượng việc đã tốn.", en: "There is no entry for this shape, so the multi-planner runs the candidate plans briefly, picks the winner and creates an Inactive entry with the work it took." }
+    show: [q, miss, ina, act]
     set:
       ina: { tone: new }
   - say: { vi: "Lần sau tốn bằng hoặc ít hơn: mục thành Active.", en: "Same or less work next time: the entry turns Active." }
     alt: { vi: "Nếu lần sau kế hoạch tốn bằng hoặc ít hơn thì mục thành Active và được dùng lại; nếu một ngày nó không còn đạt, mục về lại Inactive.", en: "If the plan costs the same or less next time, the entry turns Active and is reused; if one day it stops measuring up, the entry drops back to Inactive." }
+    show: [q, miss, ina, act]
     set:
-      miss: { tone: plain }
       act: { tone: live }
   - say: { vi: "explain() đứng ngoài cache; $planCacheStats đọc nó.", en: "explain() stays outside the cache; $planCacheStats reads it." }
     alt: { vi: "explain() bỏ qua mọi mục và chọn lại từ đầu mà không ghi gì, nên muốn biết server đang dùng kế hoạch nào thì đọc $planCacheStats.", en: "explain() ignores every entry and plans afresh without writing anything, so to learn which plan the server is using, read $planCacheStats." }
     set:
-      miss: { tone: plain }
       act: { tone: live }
-      ex: { tone: warm }
-      st: { tone: live }

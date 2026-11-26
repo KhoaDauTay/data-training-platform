@@ -14,14 +14,14 @@ nodes:
     shape: bars
     label: { vi: "Giá đồ uống", en: "Drink prices" }
     items:
-      - { label: Mineral water, value: 1.8, note: "9000", tone: warm }
+      - { label: Mineral water, value: 1.8, note: "9000 (min)", tone: warm }
       - { label: Green tea, value: 2.4, note: "12000" }
       - { label: Iced coffee, value: 3.6, note: "18000" }
       - { label: Coconut water, value: 4.4, note: "22000" }
       - { label: Milk tea, value: 5, note: "25000" }
-      - { label: Orange juice, value: 7, note: "35000", tone: new }
-  - { id: any, shape: key, mono: true, label: "< ANY", sub: "< 35000 (max)", tone: new }
-  - { id: all, shape: key, mono: true, label: "< ALL", sub: "< 9000 (min)", tone: warm }
+      - { label: Orange juice, value: 7, note: "35000 (max)", tone: live }
+  - { id: any, shape: key, label: "< ANY", sub: "< 35000 (max)", tone: live }
+  - { id: all, shape: key, label: "< ALL", sub: "< 9000 (min)", tone: warm }
   - id: snacks
     shape: grid
     label: { vi: "Món ăn vặt", en: "Snacks" }
@@ -33,7 +33,7 @@ nodes:
       - ["28000", "true", "false"]
       - ["45000", "false", "false"]
       - ["89000", "false", "false"]
-    cellTone: { "0:1": new, "1:1": new, "2:1": new, "3:1": new }
+    cellTone: { "0:1": live, "1:1": live, "2:1": live, "3:1": live }
 rows:
   - [drinks]
   - [any, all]

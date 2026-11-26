@@ -6,8 +6,8 @@
 # https://www.postgresql.org/docs/18/sql-droptable.html
 title: { vi: "DELETE, TRUNCATE, DROP: còn lại gì", en: "DELETE, TRUNCATE, DROP: what is left" }
 caption:
-  vi: "Ba bảng của lab, mỗi bảng một lệnh. Bước 1 là trước, bước 2 là sau lệnh."
-  en: "Three of the lab's tables, one command each. Step 1 is before, step 2 after the command."
+  vi: "Ba bảng của lab, mỗi bảng một lệnh. Bước 1 là trước, bước 2 là sau lệnh, bước 3 là DROP chạy lại với CASCADE. Ô đứt là thứ không còn tồn tại."
+  en: "Three of the lab's tables, one command each. Step 1 is before, step 2 after the command, step 3 runs DROP again with CASCADE. A dashed box is something that no longer exists."
 alt:
   vi: "DELETE bỏ từng dòng khớp WHERE, TRUNCATE bỏ mọi dòng một lần nhưng giữ bảng và bộ đếm identity, còn DROP bỏ cả định nghĩa bảng và bị chặn khi còn view dựa vào. Chọn lệnh theo thứ bạn muốn giữ lại."
   en: "DELETE removes each row its WHERE matches, TRUNCATE removes every row at once but keeps the table and its identity counter, and DROP removes the table's definition too and is refused while a view depends on it. Pick the command by what you want to keep."
@@ -41,3 +41,10 @@ steps:
       o: { label: { vi: "orders: còn 4", en: "orders: 4 left" }, rowTone: [null, ghost, null, null, ghost, null], cells: [["1", paid], ["2", { vi: "(đã xóa)", en: "(deleted)" }], ["3", paid], ["4", paid], ["5", { vi: "(đã xóa)", en: "(deleted)" }], ["6", paid]] }
       ir: { sub: { vi: "0 dòng, id kế: 5", en: "0 rows, next id: 5" }, tone: warm }
       rp: { sub: { vi: "2BP01: còn view", en: "2BP01: a view" }, tone: dead }
+  - say: { vi: "DROP … CASCADE: bảng và view đều mất.", en: "DROP … CASCADE: the table and the view are both gone." }
+    alt: { vi: "Thêm CASCADE thì DROP chạy được và xóa cả định nghĩa bảng old_report lẫn view old_report_view, nên không còn gì để đọc hay ghi vào.", en: "With CASCADE, DROP runs and removes both the definition of old_report and the view old_report_view, so nothing is left to read or write." }
+    set:
+      o: { label: { vi: "orders: còn 4", en: "orders: 4 left" }, rowTone: [null, ghost, null, null, ghost, null], cells: [["1", paid], ["2", { vi: "(đã xóa)", en: "(deleted)" }], ["3", paid], ["4", paid], ["5", { vi: "(đã xóa)", en: "(deleted)" }], ["6", paid]] }
+      ir: { sub: { vi: "0 dòng, id kế: 5", en: "0 rows, next id: 5" }, tone: warm }
+      c3: { label: DROP … CASCADE }
+      rp: { sub: { vi: "không còn, cả view", en: "gone, view too" }, tone: ghost }

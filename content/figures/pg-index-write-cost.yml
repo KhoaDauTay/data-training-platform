@@ -15,8 +15,8 @@ alt:
 nodes:
   - id: rd
     shape: bars
-    label: { vi: "idx_scan: số lần đọc", en: "idx_scan: times read" }
-    sub: tickets
+    label: { vi: "tickets: số lần đọc", en: "tickets: times read" }
+    sub: idx_scan
     head: [index, idx_scan]
     items:
       - { label: customer, value: 2, note: "2", tone: live }
@@ -24,6 +24,7 @@ nodes:
       - { label: status_opened, value: 1, note: "1", tone: live }
       - { label: opened, value: 0, note: "0", tone: dead }
       - { label: status, value: 0, note: "0", tone: dead }
+  - { id: nt, shape: note, label: { vi: "status có trong 2 index của tickets", en: "status is in 2 of tickets' indexes" } }
   - { id: up, shape: key, label: UPDATE status, sub: { vi: "40 dòng", en: "40 rows" }, tone: new }
   - id: hot
     shape: bars
@@ -35,18 +36,14 @@ nodes:
       - { label: { vi: "lean, 2 index", en: "lean, 2 indexes" }, value: 8, note: "40 / 40", tone: live }
 rows:
   - [rd]
+  - [nt]
   - [up]
   - [hot]
 edges:
-  - { from: rd, to: up, label: { vi: "status có index", en: "status indexed" } }
   - { from: up, to: hot }
 steps:
   - say: { vi: "Hai index chưa từng được đọc.", en: "Two indexes were never read." }
     alt: { vi: "Từ lần reset bộ đếm, opened và status có idx_scan bằng 0, còn status_opened với cùng cột đầu đã phục vụ câu lọc theo status.", en: "Since the counters were reset, opened and status have an idx_scan of 0, while status_opened, with the same first column, served the query filtering on status." }
-    set:
-      hot:
-        items:
-          - { label: { vi: "tickets, 5 index", en: "tickets, 5 indexes" }, value: 0, note: "?", tone: ghost }
-          - { label: { vi: "lean, 2 index", en: "lean, 2 indexes" }, value: 0, note: "?", tone: ghost }
+    show: [rd, nt]
   - say: { vi: "Đổi status: tickets không được HOT lần nào.", en: "Changing status: tickets gets no HOT update." }
     alt: { vi: "status nằm trong hai index của tickets nên cả 40 UPDATE phải thêm mục vào mọi index, còn tickets_lean không có index trên status nên cả 40 lần đều là HOT.", en: "status sits in two of tickets' indexes, so all 40 UPDATEs must add entries to every index, while tickets_lean has no index on status, so all 40 are HOT." }

@@ -6,8 +6,8 @@
 # Sources: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.Other.html, …/read-write-operations.html
 title: { vi: "Ba cách đếm đơn của một cửa hàng", en: "Three ways to count one store's orders" }
 caption:
-  vi: "Câu hỏi: cửa hàng STORE#s2 có bao nhiêu đơn, trên bảng Shop 31 item. Cả ba cách đều ra 12, nhưng số item phải đọc khác hẳn: Scan đọc cả bảng, Query có Select COUNT đọc cả item collection, GetItem đọc một item STATS tính sẵn. Bảng này nhỏ nên mỗi lần đều 0.5 RCU; bảng lớn lên thì giá đi theo số item đã đọc."
-  en: "The question: how many orders does store STORE#s2 have, on the 31-item Shop table. All three ways say 12, but the items they must read differ widely: Scan reads the whole table, Query with Select COUNT reads the whole item collection, GetItem reads one precomputed STATS item. This table is small, so each call is 0.5 RCU; as the table grows, the price follows the items read."
+  vi: "Câu hỏi: cửa hàng STORE#s2 có bao nhiêu đơn, trên bảng Shop 31 item. Cả ba cách đều ra 12, nhưng số item phải đọc khác hẳn: Scan đọc cả bảng, Query có Select COUNT và begins_with đọc 12 đơn, GetItem đọc một item STATS tính sẵn. Bảng này nhỏ nên mỗi lần đều 0.5 RCU; bảng lớn lên thì giá đi theo số item đã đọc."
+  en: "The question: how many orders does store STORE#s2 have, on the 31-item Shop table. All three ways say 12, but the items they must read differ widely: Scan reads the whole table, Query with Select COUNT and begins_with reads the 12 orders, GetItem reads one precomputed STATS item. This table is small, so each call is 0.5 RCU; as the table grows, the price follows the items read."
 alt:
   vi: "DynamoDB không có COUNT(*) rẻ: đếm bằng Scan hay Query vẫn phải đọc từng item được đếm. Một item tổng tính sẵn biến câu hỏi thành một GetItem, bảng lớn bao nhiêu cũng vậy."
   en: "DynamoDB has no cheap COUNT(*): counting with a Scan or a Query still reads every item it counts. A precomputed total item turns the question into one GetItem, however big the table gets."

@@ -15,34 +15,28 @@ nodes:
   - id: q
     shape: bars
     label: { vi: "số câu, tháng 10", en: "queries, October" }
-    sub: { vi: "câu gửi tới", en: "queries sent" }
+    sub: { vi: "theo người bán", en: "by seller" }
     head: [{ vi: "người bán", en: seller }, { vi: "số câu", en: queries }]
     items:
-      - { label: "1", value: 7.0, note: "6975" }
-      - { label: "2", value: 7.3, note: "7285" }
-      - { label: "3", value: 7.6, note: "7595" }
-      - { label: "4", value: 7.9, note: "7905" }
+      - { label: "1", value: 7.0, note: { vi: "6.975", en: "6,975" } }
+      - { label: "2", value: 7.3, note: { vi: "7.285", en: "7,285" } }
+      - { label: "3", value: 7.6, note: { vi: "7.595", en: "7,595" } }
+      - { label: "4", value: 7.9, note: { vi: "7.905", en: "7,905" } }
   - id: r
     shape: bars
     label: { vi: "số dòng đọc, tháng 10", en: "rows read, October" }
-    sub: { vi: "dòng đọc", en: "rows read" }
+    sub: { vi: "theo người bán", en: "by seller" }
     head: [{ vi: "người bán", en: seller }, { vi: "dòng đọc", en: rows read }]
     items:
-      - { label: "1", value: 0.35, note: "697500" }
-      - { label: "2", value: 14.2, note: "28365000", tone: dead }
-      - { label: "3", value: 0.38, note: "759500" }
-      - { label: "4", value: 0.4, note: "790500" }
+      - { label: "1", value: 0.35, note: { vi: "697.500", en: "697,500" } }
+      - { label: "2", value: 14.2, note: { vi: "28.365.000", en: "28,365,000" }, tone: dead }
+      - { label: "3", value: 0.38, note: { vi: "759.500", en: "759,500" } }
+      - { label: "4", value: 0.4, note: { vi: "790.500", en: "790,500" } }
 rows:
   - [q, r]
 steps:
   - say: { vi: "Đếm số câu: bốn người bán gần như ngang nhau.", en: "Counting queries: the four sellers look alike." }
     alt: { vi: "Cả tháng mỗi người bán gửi từ 6975 tới 7905 câu, nên nhìn số câu thì không ai nổi bật.", en: "Over the month each seller sends between 6975 and 7905 queries, so by query count nobody stands out." }
-    set:
-      r:
-        items:
-          - { label: "1", value: 0, note: "?", tone: ghost }
-          - { label: "2", value: 0, note: "?", tone: ghost }
-          - { label: "3", value: 0, note: "?", tone: ghost }
-          - { label: "4", value: 0, note: "?", tone: ghost }
+    show: [q]
   - say: { vi: "Đếm dòng đọc: người bán 2 gấp 36–41 lần.", en: "Counting rows read: seller 2 is 36–41 times more." }
     alt: { vi: "Người bán 2 đọc 28365000 dòng trong khi những người khác đọc dưới 800000, nên chính họ là hàng xóm ồn ào dù số câu không hơn ai.", en: "Seller 2 reads 28365000 rows while the others read under 800000, so they are the noisy neighbour although they send no more queries than anyone." }

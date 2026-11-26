@@ -6,8 +6,8 @@
 # Sources: https://www.postgresql.org/docs/18/sql-reindex.html, https://www.postgresql.org/docs/18/indexes-index-only-scans.html
 title: { vi: "Tra index: đi xuống cây, rồi về bảng", en: "An index lookup: down the tree, then to the table" }
 caption:
-  vi: "Báo cáo tổng tiền của khách 100 tới 299 (2000 dòng) trên ba bảng giống nhau của lab. Số trang là Buffers và Heap Blocks của EXPLAIN (ANALYZE, BUFFERS)."
-  en: "The report summing customers 100 to 299 (2000 rows) on the lab's three identical tables. Page counts are the Buffers and Heap Blocks of EXPLAIN (ANALYZE, BUFFERS)."
+  vi: "Báo cáo tổng tiền của khách 100 tới 299 (2000 dòng) trên ba bảng giống nhau của lab. Số trang là Buffers và Heap Blocks của EXPLAIN (ANALYZE, BUFFERS). Đường đứt không mũi tên: bước đó không xảy ra."
+  en: "The report summing customers 100 to 299 (2000 rows) on the lab's three identical tables. Page counts are the Buffers and Heap Blocks of EXPLAIN (ANALYZE, BUFFERS). A dashed line without a head: that trip does not happen."
 alt:
   vi: "Một lần tra index gồm đi xuống cây (vài trang) và về bảng cho từng dòng tìm được; khi các dòng nằm rải khắp bảng, phần về bảng lấn át. REINDEX chỉ làm gọn cây, còn index phủ bỏ hẳn phần về bảng."
   en: "An index lookup is a walk down the tree (a few pages) plus a trip to the table for each row found; when the rows are spread over the table, the table part dominates. REINDEX only tidies the tree, while a covering index removes the table part."
@@ -51,7 +51,7 @@ steps:
     set:
       tr: { label: { vi: "index phủ", en: "covering index" }, sub: { vi: "9 trang", en: "9 pages" } }
       hp: { sub: { vi: "0 trang", en: "0 pages" }, tone: ghost }
-      trip: { dash: true, label: { vi: "không về bảng", en: "no table trip" } }
+      trip: { kind: skip, label: { vi: "không về bảng", en: "no table trip" } }
       b:
         items:
           - { label: { vi: "index lộn xộn", en: "messy index" }, value: 10, note: "370", tone: dead }

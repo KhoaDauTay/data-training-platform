@@ -6,8 +6,8 @@
 # Source: https://www.mongodb.com/docs/manual/reference/operator/aggregation/bucket/
 title: { vi: "$bucket chia đơn theo khoảng total", en: "$bucket splits orders by total range" }
 caption:
-  vi: "Tám đơn xếp theo total, cột nhóm là _id của khoảng mà đơn rơi vào. Mỗi khoảng [a, b) gồm cận dưới, không gồm cận trên, nên _id của nhóm là cận dưới. Giá trị ngoài mọi khoảng cần default, nếu không lệnh bị từ chối."
-  en: "Eight orders sorted by total; the bucket column is the _id of the range each order falls in. Each range [a, b) includes its lower bound and excludes its upper bound, so a bucket's _id is its lower bound. A value outside every range needs default, or the command is refused."
+  vi: "Tám đơn xếp theo total, cột nhóm là _id của khoảng mà đơn rơi vào. Mỗi khoảng [a, b) gồm cận dưới, không gồm cận trên, nên _id của nhóm là cận dưới. Giá trị ngoài mọi khoảng cần default, nếu không lệnh bị từ chối (mũi tên đỏ)."
+  en: "Eight orders sorted by total; the bucket column is the _id of the range each order falls in. Each range [a, b) includes its lower bound and excludes its upper bound, so a bucket's _id is its lower bound. A value outside every range needs default, or the command is refused (the red arrow)."
 alt:
   vi: "$bucket đặt mỗi tài liệu vào khoảng chứa giá trị của nó và đếm theo từng khoảng, như $group trên các khoảng giá trị. Một giá trị không thuộc khoảng nào phải có nhóm default để đi vào."
   en: "$bucket puts each document in the range that holds its value and counts per range, like a $group over value ranges. A value that fits no range needs a default bucket to go to."
@@ -30,7 +30,7 @@ rows:
   - [ord, bk, out]
 edges:
   - { from: ord, to: bk }
-  - { from: bk, to: out }
+  - { id: b2o, from: bk, to: out }
 steps:
   - say: { vi: "Mỗi khoảng gồm cận dưới, không gồm cận trên.", en: "Each range includes its lower bound, not its upper one." }
     alt: { vi: "Với các cận 0, 100000, 300000, 1000000, ba đơn dưới 100000 vào nhóm 0, bốn đơn tiếp theo vào nhóm 100000 và đơn 450000 vào nhóm 300000.", en: "With the bounds 0, 100000, 300000, 1000000, three orders under 100000 go to bucket 0, the next four to bucket 100000 and the 450000 order to bucket 300000." }
@@ -49,8 +49,9 @@ steps:
     set:
       bk: { label: { vi: "không default: lỗi", en: "no default: error" }, mono: false, tone: dead }
       ord: { cells: [["6", "25000", "0"], ["8", "60000", "0"], ["1", "95000", "0"], ["2", "120000", "100000"], ["4", "150000", "100000"], ["5", "210000", "100000"], ["7", "285000", "100000"], ["3", "450000", { vi: "không có", en: "none" }]], rowTone: [ghost, ghost, ghost, ghost, ghost, ghost, ghost, dead] }
+      b2o: { kind: error }
       out:
         items:
-          - { label: "_id 0", value: 3, note: "3", tone: ghost }
-          - { label: "_id 100000", value: 4, note: "4", tone: ghost }
-          - { label: { vi: "ngoài khoảng", en: "out of range" }, value: 1, note: "1", tone: dead }
+          - { label: "_id 0", value: 0, note: { vi: "không trả", en: "none returned" }, tone: ghost }
+          - { label: "_id 100000", value: 0, note: { vi: "không trả", en: "none returned" }, tone: ghost }
+          - { label: { vi: "ngoài khoảng", en: "out of range" }, value: 0, note: { vi: "lệnh lỗi", en: "command error" }, tone: dead }

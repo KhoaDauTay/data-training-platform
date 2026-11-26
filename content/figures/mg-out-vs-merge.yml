@@ -1,12 +1,12 @@
 # MG-B6-6 (v46 Batch 6, L850–L859): $out replaces the collection, $merge folds results in by _id. Lesson: e-mg-l2-14 (Ý chính).
 # Data (demo_setup, run on mingo): $match status ≠ cancelled + $group by store → S1 95000, S2 330000; store_revenue before:
-# S1 revenue 1 manager Lan, S3 50000 Hoa. $out → S1 95000, S2 330000 (S3 and manager gone); $merge (defaults) → S1 95000 Lan,
+# S1 revenue 80000 (eye MG3: was 1) manager Lan, S3 50000 Hoa. $out → S1 95000, S2 330000 (S3 and manager gone); $merge (defaults) → S1 95000 Lan,
 # S3 50000 Hoa, S2 330000; $merge whenMatched "replace" → S1 95000 (manager gone), S3 50000 Hoa, S2 330000. Rows in mingo's order.
 # Sources: https://www.mongodb.com/docs/manual/reference/operator/aggregation/out/, …/merge/
 title: { vi: "$out thay cả collection, $merge gộp vào", en: "$out replaces the collection, $merge folds in" }
 caption:
-  vi: "Cùng kết quả $group (doanh thu S1, S2) ghi vào store_revenue, nơi đã có S1 với số cũ và manager, và S3. $out thay cả collection; $merge mặc định (whenMatched \"merge\", whenNotMatched \"insert\") cập nhật S1, thêm S2, giữ S3; \"replace\" thay cả tài liệu S1. Ô trống là trường không còn."
-  en: "The same $group result (revenue of S1, S2) written to store_revenue, which already holds S1 with an old figure and a manager, and S3. $out replaces the whole collection; $merge with its defaults (whenMatched \"merge\", whenNotMatched \"insert\") updates S1, adds S2, keeps S3; \"replace\" swaps the whole S1 document. An empty cell is a field that is gone."
+  vi: "Cùng kết quả $group (doanh thu S1, S2) ghi vào store_revenue (hai mũi tên vào lệnh: kết quả và collection đích), nơi đã có S1 với số cũ và manager, và S3. $out thay cả collection; $merge mặc định (whenMatched \"merge\", whenNotMatched \"insert\") cập nhật S1, thêm S2, giữ S3; \"replace\" thay cả tài liệu S1. Ô \"(mất)\" là trường không còn."
+  en: "The same $group result (revenue of S1, S2) written to store_revenue (the two arrows into the stage: the result and the target collection), which already holds S1 with an old figure and a manager, and S3. $out replaces the whole collection; $merge with its defaults (whenMatched \"merge\", whenNotMatched \"insert\") updates S1, adds S2, keeps S3; \"replace\" swaps the whole S1 document. A \"(gone)\" cell is a field that is gone."
 alt:
   vi: "$out dựng lại collection đích từ đầu, nên mọi thứ pipeline không tính ra đều mất. $merge gộp theo _id: tài liệu khớp được cập nhật hoặc thay, tài liệu mới được thêm, tài liệu khác giữ nguyên."
   en: "$out rebuilds the target collection from scratch, so anything the pipeline did not compute is lost. $merge works by _id: matching documents are updated or replaced, new ones are inserted, the others stay."
@@ -20,7 +20,7 @@ nodes:
     shape: grid
     label: { vi: "store_revenue trước", en: "store_revenue before" }
     head: [_id, revenue, manager]
-    cells: [[S1, "1", Lan], [S3, "50000", Hoa]]
+    cells: [[S1, "80000", Lan], [S3, "50000", Hoa]]
   - { id: op, shape: key, mono: true, label: "$out", sub: { vi: "thay cả collection", en: "replaces it all" }, tone: dead }
   - id: after
     shape: grid
@@ -34,13 +34,13 @@ rows:
   - [after]
 edges:
   - { from: res, to: op }
-  - { from: old, to: op, dash: true }
+  - { from: old, to: op }
   - { from: op, to: after }
 steps:
   - say: { vi: "$out thay cả collection đích.", en: "$out replaces the whole target collection." }
     alt: { vi: "Sau $out, store_revenue chỉ còn đúng hai tài liệu pipeline tính ra, nên S3 và manager của S1 biến mất.", en: "After $out, store_revenue holds only the two documents the pipeline computed, so S3 and S1's manager are gone." }
     set:
-      after: { cells: [[S1, "95000", ""], [S2, "330000", ""]], sub: { vi: "S3 và manager mất", en: "S3 and manager gone" } }
+      after: { cells: [[S1, "95000", { vi: "(mất)", en: "(gone)" }], [S2, "330000", ""]], cellTone: { "0:2": dead }, sub: { vi: "S3 và manager mất", en: "S3 and manager gone" } }
   - say: { vi: "$merge mặc định: cập nhật tài liệu khớp, thêm tài liệu mới.", en: "$merge by default: update matches, insert new ones." }
     alt: { vi: "Với $merge mặc định, S1 nhận revenue mới mà giữ manager, S2 được thêm và S3 không bị đụng tới.", en: "With $merge's defaults, S1 gets the new revenue and keeps its manager, S2 is inserted and S3 is left alone." }
     set:
@@ -50,4 +50,4 @@ steps:
     alt: { vi: "Với whenMatched \"replace\", tài liệu S1 bị thay bằng tài liệu kết quả nên mất manager, còn S2 vẫn được thêm và S3 vẫn còn.", en: "With whenMatched \"replace\", the S1 document is swapped for the result document and loses its manager, while S2 is still inserted and S3 still stays." }
     set:
       op: { label: "$merge", sub: "replace", tone: warm }
-      after: { cells: [[S1, "95000", ""], [S3, "50000", Hoa], [S2, "330000", ""]], cellTone: { "0:1": warm, "0:2": warm, "2:0": new, "2:1": new }, sub: { vi: "S1 mất manager", en: "S1 loses manager" } }
+      after: { cells: [[S1, "95000", { vi: "(mất)", en: "(gone)" }], [S3, "50000", Hoa], [S2, "330000", ""]], cellTone: { "0:1": warm, "0:2": dead, "2:0": new, "2:1": new }, sub: { vi: "S1 mất manager", en: "S1 loses manager" } }

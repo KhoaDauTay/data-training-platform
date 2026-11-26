@@ -15,7 +15,7 @@ objectives:
   - vi: Đặt `whenMatched` và `whenNotMatched` của `$merge` cho một báo cáo cập nhật dần.
     en: Set `whenMatched` and `whenNotMatched` of `$merge` for an incrementally updated report.
 requires: [e-mg-l2-06]
-demo_setup: '{"collections": {"orders": [{"_id": 1, "store": "S1", "status": "paid", "total": 95000}, {"_id": 2, "store": "S2", "status": "shipped", "total": 120000}, {"_id": 3, "store": "S1", "status": "cancelled", "total": 150000}, {"_id": 4, "store": "S2", "status": "paid", "total": 210000}], "store_revenue": [{"_id": "S1", "revenue": 1, "manager": "Lan"}, {"_id": "S3", "revenue": 50000, "manager": "Hoa"}]}}'
+demo_setup: '{"collections": {"orders": [{"_id": 1, "store": "S1", "status": "paid", "total": 95000}, {"_id": 2, "store": "S2", "status": "shipped", "total": 120000}, {"_id": 3, "store": "S1", "status": "cancelled", "total": 150000}, {"_id": 4, "store": "S2", "status": "paid", "total": 210000}], "store_revenue": [{"_id": "S1", "revenue": 80000, "manager": "Lan"}, {"_id": "S3", "revenue": 50000, "manager": "Hoa"}]}}'
 sources:
   - https://www.mongodb.com/docs/manual/reference/operator/aggregation/merge/
   - https://www.mongodb.com/docs/manual/reference/operator/aggregation/out/

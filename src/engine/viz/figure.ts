@@ -37,7 +37,10 @@ export type Card = 'one' | 'zero-one' | 'many' | 'one-many' | 'zero-many';
  * a plain line (a `grid#row` link is drawn only side by side; a node-to-node link (v40) is routed like an arrow across rows,
  * without a head). v40 R2: `ends` = crow's-foot marks at the from/to ends of a node-to-node link; `near` = drawn only between
  * neighbouring rows or side by side (never on a side lane; the text alternative keeps it). */
-export interface FigEdge { id?: string; from: string; to: string; label?: Bi; dash?: boolean; link?: boolean; ends?: [Card | null, Card | null]; near?: boolean; bold?: boolean }
+/** v46 (L850, eye X2/X3): `kind` = the line language. Default: a solid arrow (happens, flows); a later step's node is a faded
+ * preview (comes later). `skip`: a dashed line without a head (does not happen, is skipped, does not exist; its label says so, e.g. "không về bảng"). `error`: a solid red arrow (the error path). A dashed frame is a group only. */
+export type EdgeKind = 'skip' | 'error';
+export interface FigEdge { id?: string; from: string; to: string; label?: Bi; dash?: boolean; link?: boolean; ends?: [Card | null, Card | null]; near?: boolean; bold?: boolean; kind?: EdgeKind }
 /** v40: a dashed frame around whole author rows (one level), its label in a band on top. */
 export interface FigGroup { id: string; label: Bi; nodes: string[] }
 /** v42: a key may also be an edge's `id` (a step changes its `ends` or `label`) */
@@ -407,7 +410,8 @@ export function layout(spec0: FigSpec, lang: Lang, W: number, variant?: string):
       const k = `e:${i}`, pe = p.edges[i]; // v42: this frame's ends and label; v44: and its dash
       shapes.push(r.e.link
         ? { k, t: 'p', d: r.d, ink: pe.ends ? 'edge' : 'new', w: pe.bold ? 3 : STROKE, dash: pe.dash } // v44 (L800): `bold` = an identifying relationship or total participation (a step may set it)
-        : { k, t: 'p', d: r.d, ink: 'edge', w: STROKE, arrow: true, dash: pe.dash, attrs: ends(r.e) });
+        : pe.kind === 'skip' ? { k, t: 'p', d: r.d, ink: 'muted', w: STROKE, dash: true, attrs: { ...ends(r.e), 'data-kind': 'skip' } } // v46 (L850): no head, the label says it does not happen
+          : { k, t: 'p', d: r.d, ink: pe.kind === 'error' ? 'dead' : 'edge', w: STROKE, arrow: true, dash: pe.kind === 'error' ? false : pe.dash, attrs: { ...ends(r.e), ...(pe.kind ? { 'data-kind': pe.kind } : {}) } });
       if (pe.ends) shapes.push(...crowEnds(k, r.d, pe.ends, !!r.rev));
       if (r.lab && pe.label) shapes.push({ k: `${k}.l`, t: 't', x: r.lab.x, y: r.lab.y, s: tr(pe.label, lang), size: SS, a: r.lab.a, ink: 'muted' });
     });
@@ -781,15 +785,18 @@ function draw(n: FigNode, r: Rect, lang: Lang, wide = false, parent?: string): S
     rows.forEach((row, i) => {
       const body = n.head ? i - 1 : i;
       const head = body < 0;
+      const filled = row.some((v) => !!cellText(n, v, lang));
       let x = x0;
       row.forEach((v, c) => {
         const s = cellText(n, v, lang);
         const ck = `${k}:${i}:${c}`;
         const hl = head ? undefined : n.cellTone?.[`${body}:${c}`];
         const tone: Tone = head ? 'cell' : hl ?? n.toneOf?.[s] ?? n.rowTone?.[body] ?? n.colTone?.[c] ?? n.tone ?? 'plain';
+        // v46 (L850, eye X1): an empty cell in a row that has text keeps its border and tone (no torn table, no lost highlight);
+        // a row with no text at all is a reserved slot and stays undrawn
+        if (s || filled) out.push({ k: ck, t: 'r', x, y, w: cols[c], h: ROW_H, tone, rx: 0, bold: !!hl, attrs }); // v40 R2: a grid in a group names it too
         if (s) {
-          out.push({ k: ck, t: 'r', x, y, w: cols[c], h: ROW_H, tone, rx: 0, bold: !!hl, attrs }, // v40 R2: a grid in a group names it too
-            { k: `${ck}.t`, t: 't', x: x + cols[c] / 2, y: y + ROW_H / 2, s, size: SS, b: head, mono: !!n.mono && !head, a: 'm', ink: tone === 'ghost' ? 'muted' : 'ink',
+          out.push({ k: `${ck}.t`, t: 't', x: x + cols[c] / 2, y: y + ROW_H / 2, s, size: SS, b: head, mono: !!n.mono && !head, a: 'm', ink: tone === 'ghost' ? 'muted' : 'ink',
               attrs: { 'data-owner': ck, ...(n.mono && !head ? { lang: 'en' } : {}) } });
         }
         x += cols[c];

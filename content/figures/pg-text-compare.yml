@@ -14,7 +14,7 @@ alt:
   en: "Text compares character by character from the left, so '500' sorts before '99' and a DD/MM/YYYY date range picks up other months. A wrong type does not just slow a query down, it gives a wrong answer."
 nodes:
   - { id: a, shape: grid, label: { vi: "sensor_id kiểu int", en: "sensor_id as int" }, sub: { vi: "sắp theo giá trị", en: "sorted by value" }, cells: [["42"], ["99"], ["500"]] }
-  - { id: b, shape: grid, label: { vi: "sensor_id kiểu text", en: "sensor_id as text" }, sub: { vi: "sắp theo ký tự", en: "sorted by character" }, cells: [["'42'"], ["'500'"], ["'99'"]] }
+  - { id: b, shape: grid, label: { vi: "sensor_id kiểu text", en: "sensor_id as text" }, sub: { vi: "sắp theo ký tự", en: "sorted by character" }, cells: [["'42'"], ["'500'"], ["'99'"]], toneOf: { "'500'": warm, "'99'": warm } }
   - { id: ra, label: sensor_id > 99, sub: { vi: "16040 dòng", en: "16040 rows" }, tone: live }
   - { id: rb, label: sensor_id > '99', sub: { vi: "0 dòng", en: "0 rows" }, tone: dead }
 rows:

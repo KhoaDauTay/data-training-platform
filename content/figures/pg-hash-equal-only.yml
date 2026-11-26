@@ -7,8 +7,8 @@
 # https://www.postgresql.org/docs/18/hash-index.html, https://www.postgresql.org/docs/18/indexes-types.html
 title: { vi: "Index Hash chỉ tìm được dấu bằng", en: "A Hash index finds equality only" }
 caption:
-  vi: "Sáu mục mẫu của sessions_token_hash, xếp theo mã băm. Cột chữ là vị trí của token theo thứ tự chữ trong khoảng 'c00' tới 'c01'."
-  en: "Six sample entries of sessions_token_hash, in hash-code order. The order column is the token's place in text order within 'c00' to 'c01'."
+  vi: "Sáu mục mẫu của sessions_token_hash, xếp theo mã băm. Cột thứ tự chữ là vị trí của token theo thứ tự chữ trong khoảng 'c00' tới 'c01'. Đường đứt không mũi tên: không dùng tới."
+  en: "Six sample entries of sessions_token_hash, in hash-code order. The text order column is the token's place in text order within 'c00' to 'c01'. A dashed line without a head: not used."
 alt:
   vi: "Index Hash xếp mục theo mã băm của giá trị chứ không theo giá trị, nên một dấu bằng tính ra đúng một mã và nhảy thẳng tới đó. Các giá trị kề nhau theo chữ lại có mã nằm rải khắp index, nên một khoảng không dùng được nó và phải quét cả bảng."
   en: "A Hash index orders entries by the hash code of the value, not the value, so an equality computes one code and jumps straight to it. Values that are neighbours in text order get codes spread across the index, so a range cannot use it and the whole table is scanned."
@@ -28,7 +28,7 @@ rows:
   - [res]
 edges:
   - { from: q, to: ix }
-  - { from: ix, to: res }
+  - { id: use, from: ix, to: res }
 steps:
   - say: { vi: "Dấu bằng: một mã, một chỗ trong index.", en: "Equality: one code, one place in the index." }
     alt: { vi: "Postgres băm md5('42') thành mã -164201981, tìm đúng mục có mã đó và đọc một dòng bằng Index Scan.", en: "Postgres hashes md5('42') into the code -164201981, finds the entry with that code and reads one row with an Index Scan." }
@@ -37,4 +37,5 @@ steps:
     set:
       q: { label: "token BETWEEN", sub: "'c00' AND 'c01'", tone: warm }
       ix: { cellTone: { "0:1": warm, "1:1": warm, "2:1": warm, "3:1": warm, "5:1": warm } }
+      use: { kind: skip, label: { vi: "không dùng index", en: "index not used" } }
       res: { label: Seq Scan, sub: { vi: "đọc 30000, khớp 5", en: "5 of 30000 match" }, tone: dead }

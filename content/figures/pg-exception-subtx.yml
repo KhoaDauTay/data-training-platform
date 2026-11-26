@@ -5,8 +5,8 @@
 # account 100 exists (id ≥ 100). Source: https://www.postgresql.org/docs/18/plpgsql-control-structures.html#PLPGSQL-ERROR-TRAPPING
 title: { vi: "Bắt lỗi = hoàn tác cả khối", en: "Catching an error undoes the whole block" }
 caption:
-  vi: "Hàm open_two('Kim') của mục Ví dụ. Khung đứt là khối BEGIN … EXCEPTION bên trong, chạy như một subtransaction."
-  en: "The Example's function open_two('Kim'). The dashed frame is the inner BEGIN … EXCEPTION block, run as a subtransaction."
+  vi: "Hàm open_two('Kim') của mục Ví dụ. Khung đứt là khối BEGIN … EXCEPTION bên trong, chạy như một subtransaction; mũi tên đỏ là đường lỗi."
+  en: "The Example's function open_two('Kim'). The dashed frame is the inner BEGIN … EXCEPTION block, run as a subtransaction; the red arrow is the error path."
 alt:
   vi: "Khối có EXCEPTION chạy trong một subtransaction: khi một lệnh trong khối lỗi, mọi thay đổi của khối bị hoàn tác trước khi nhánh bắt lỗi chạy, còn việc làm ngoài khối vẫn giữ. Kết quả: chỉ còn tài khoản 100."
   en: "A block with EXCEPTION runs in a subtransaction: when a statement inside it fails, all of the block's changes are undone before the handler runs, while work outside the block is kept. Result: only account 100 remains."
@@ -16,7 +16,7 @@ nodes:
   - { id: a, label: INSERT 100, sub: "'Kim A'", tone: live }
   - { id: b1, label: INSERT 101, sub: "'Kim B'", tone: live }
   - { id: b2, label: INSERT 1, sub: "'clash'", tone: new }
-  - { id: h, shape: key, label: EXCEPTION WHEN, sub: unique_violation, tone: ghost }
+  - { id: h, shape: key, label: EXCEPTION WHEN, sub: unique_violation, tone: warm }
   - id: t
     shape: grid
     label: { vi: "accounts, id ≥ 100", en: "accounts, id ≥ 100" }
@@ -27,20 +27,20 @@ rows:
   - [b1, b2]
   - [h]
   - [t]
+phone:
+  rows: [[a], [b1], [b2], [h], [t]]
 edges:
   - { from: a, to: b1 }
   - { from: b1, to: b2 }
-  - { id: err, from: b2, to: h, dash: true, label: { vi: "lỗi 23505", en: "error 23505" } }
+  - { from: b2, to: h, kind: error, label: { vi: "lỗi 23505", en: "error 23505" } }
   - { from: h, to: t }
 steps:
   - say: { vi: "Hai dòng mới đã ghi, một ngoài khối, một trong khối.", en: "Two new rows written, one outside the block, one inside." }
-    show: [a, b1, b2, h, t]
+    show: [a, b1, b2, t]
     alt: { vi: "Hàm ghi tài khoản 100 ở ngoài khối, rồi vào khối có EXCEPTION và ghi tài khoản 101, nên lúc này bảng có cả hai dòng.", en: "The function writes account 100 outside the block, then enters the block with EXCEPTION and writes account 101, so for now the table holds both rows." }
   - say: { vi: "id 1 đã có: lỗi 23505, cả khối bị hoàn tác.", en: "id 1 exists: error 23505, the whole block is undone." }
-    show: [a, b1, b2, h, t, err]
     alt: { vi: "Lệnh ghi id 1 trùng khóa chính nên lỗi 23505, và trước khi nhánh WHEN unique_violation chạy, subtransaction hoàn tác cả dòng 101 đã ghi trong khối.", en: "Writing id 1 hits the primary key, error 23505, and before the WHEN unique_violation handler runs, the subtransaction undoes row 101 that the block had written." }
     set:
-      b1: { sub: { vi: "đã hoàn tác", en: "undone" }, tone: ghost }
+      b1: { sub: { vi: "đã hoàn tác", en: "undone" }, tone: dead }
       b2: { sub: "23505", tone: dead }
-      h: { tone: warm }
-      t: { rowTone: [null, ghost], cells: [["100", Kim A], ["101", { vi: "(hoàn tác)", en: "(undone)" }]] }
+      t: { rowTone: [null, dead], cells: [["100", Kim A], ["101", { vi: "(hoàn tác)", en: "(undone)" }]] }

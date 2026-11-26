@@ -391,6 +391,24 @@ const SHAPES: FigSpec = {
     { from: 'pool', to: 'far' },
   ],
 };
+describe('v46 (L850, b56 eye X1–X3): the line language and empty cells', () => {
+  const SPEC = { title: 'k', caption: 'k', alt: 'k.', nodes: [{ id: 'a', label: 'A' }, { id: 'b', label: 'B' }, { id: 'c', label: 'C' },
+    { id: 'g', shape: 'grid', label: 'g', head: ['x', 'y'], cells: [['1', ''], ['', '']], cellTone: { '0:1': 'warm' } }],
+    rows: [['a', 'b', 'c'], ['g']], edges: [{ from: 'a', to: 'b', kind: 'skip', label: 'không' }, { from: 'b', to: 'c', kind: 'error' }, { from: 'c', to: 'g' }] } as unknown as Parameters<typeof layout>[0];
+  it('skip = dashed, no head; error = solid red arrow; a plain edge is a solid arrow', () => {
+    const f = layout(SPEC, 'vi', 640).frames[0];
+    const p = (i: number) => f.nodes.find((n) => n.k === `e:${i}`) as { arrow?: boolean; dash?: boolean; ink?: string };
+    expect([p(0).arrow, p(0).dash]).toEqual([undefined, true]);
+    expect([p(1).arrow, p(1).dash, p(1).ink]).toEqual([true, false, 'dead']);
+    expect([p(2).arrow, p(2).ink]).toEqual([true, 'edge']);
+  });
+  it('an empty cell in a row with text keeps its rect and tone; an all-empty row is not drawn', () => {
+    const f = layout(SPEC, 'vi', 640).frames[0];
+    const cell = (k: string) => f.nodes.find((n) => n.k === k) as { tone?: string } | undefined;
+    expect(cell('n:g:1:1')?.tone).toBe('warm');
+    expect(cell('n:g:2:0')).toBeUndefined();
+  });
+});
 describe('v40 builder shapes', () => {
   for (const lang of LANGS) it.each(WIDTHS)(`${lang} · W %i: nhóm, trụ, tài liệu, ô tô sáng, nhãn gấp khúc, đường nối, làn bên`, (W) => {
     const d = layout(SHAPES, lang, W);
