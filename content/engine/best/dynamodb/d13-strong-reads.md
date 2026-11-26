@@ -108,8 +108,8 @@ quiz:
       - { vi: "2 RCU", en: "2 RCU" }
     answer: 1
     why:
-      vi: "Đọc strongly consistent tính 1 RCU cho mỗi khối 4 KB; eventually consistent tính một nửa. Bật nó cho mọi lần đọc là trả gấp đôi."
-      en: "A strongly consistent read costs 1 RCU per 4 KB block; eventually consistent costs half. Turning it on for every read doubles the bill."
+      vi: "Item 3 KB làm tròn lên một khối 4 KB. RCU (read capacity unit, đơn vị đọc) tính mỗi khối 0,5 khi đọc nhất quán cuối (eventually consistent) và 1 khi đọc nhất quán mạnh (strongly consistent): 1 khối × 1 = 1 RCU. 0,5 là giá khi chưa bật nhất quán mạnh; 2 RCU là giá đọc trong transaction. Bật nhất quán mạnh cho mọi lần đọc là trả gấp đôi."
+      en: "A 3 KB item rounds up to one 4 KB block. RCU (read capacity unit) costs 0.5 per block for an eventually consistent read and 1 for a strongly consistent one: 1 block × 1 = 1 RCU. 0.5 is the price before strong reads are on; 2 RCU is a transactional read. Making every read strongly consistent doubles the bill."
 ---
 
 ## Ý chính
@@ -118,9 +118,9 @@ Mặc định đọc eventually consistent. Chỉ bật `ConsistentRead: true` k
 
 ## Vì sao
 
-- Đọc strongly consistent tốn gấp đôi RCU.
-- GSI không hỗ trợ đọc strongly consistent: request bị từ chối với `ValidationException`.
-- Phần lớn màn hình chịu được độ trễ rất ngắn của eventually consistent.
+- Đọc nhất quán mạnh tốn gấp đôi RCU.
+- GSI không hỗ trợ đọc nhất quán mạnh: request bị từ chối với `ValidationException`.
+- Phần lớn màn hình chịu được độ trễ rất ngắn của đọc nhất quán cuối.
 
 # EN
 

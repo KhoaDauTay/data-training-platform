@@ -108,8 +108,8 @@ quiz:
       - { vi: "Có, nhưng bị ẩn khi `Query`", en: "Yes, but hidden from `Query`" }
     answer: 1
     why:
-      vi: "Item chỉ xuất hiện trong index khi có đủ thuộc tính khóa của index. Index chỉ chứa một tập con như vậy gọi là sparse index: ở đây chỉ đơn đang chờ, nên `Query` đọc ít hơn."
-      en: "An item appears in an index only when it has every key attribute of that index. An index that holds such a subset is a sparse index: here only pending orders, so a `Query` reads less."
+      vi: "Item chỉ xuất hiện trong index khi có đủ thuộc tính khóa của index; đơn đã trả tiền không có `pendingAt`, nên không vào GSI, rỗng hay ẩn đều không có. Index chỉ chứa một tập con như vậy gọi là sparse index: ở đây chỉ đơn đang chờ, nên `Query` đọc ít hơn."
+      en: "An item appears in an index only when it has every key attribute of that index; a paid order has no `pendingAt`, so it is not in the GSI at all, neither empty nor hidden. An index that holds such a subset is a sparse index: here only pending orders, so a `Query` reads less."
 ---
 
 ## Ý chính
@@ -120,7 +120,7 @@ Mỗi GSI phục vụ một access pattern cụ thể. Chỉ chiếu (`Projectio
 
 - Mỗi lần ghi vào bảng cũng ghi vào mọi GSI chứa item đó, nên GSI thừa tốn ghi và lưu trữ.
 - `FilterExpression` lọc sau khi đọc: GSI rộng bắt bạn trả tiền cho item bị bỏ.
-- GSI chỉ đọc eventually consistent.
+- GSI chỉ đọc nhất quán cuối (eventually consistent).
 
 ## Ví dụ
 

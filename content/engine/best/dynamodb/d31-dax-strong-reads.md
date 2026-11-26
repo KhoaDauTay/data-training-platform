@@ -39,8 +39,8 @@ quiz:
       - { vi: "Từ chối request", en: "Rejects the request" }
     answer: 1
     why:
-      vi: "Docs: DAX chuyển đọc strongly consistent sang DynamoDB, trả kết quả cho client nhưng không cache. Lần đọc đó tốn RCU như đọc thẳng bảng."
-      en: "The docs: DAX passes strongly consistent reads to DynamoDB, returns the result to the client, but does not cache it. That read costs the same RCU as reading the table directly."
+      vi: "DAX (DynamoDB Accelerator, cache đặt trước bảng) chỉ cache đọc nhất quán cuối, vì bản trong cache có thể cũ. Đọc nhất quán mạnh (strongly consistent) được chuyển thẳng tới DynamoDB, trả cho client mà không cache, và không bị từ chối. Lần đọc đó tốn RCU (read capacity unit, đơn vị đọc) như đọc thẳng bảng."
+      en: "DAX (DynamoDB Accelerator, a cache in front of the table) only caches eventually consistent reads, since a cached copy may be stale. A strongly consistent read goes straight to DynamoDB, returns to the client without being cached, and is not rejected. That read costs the same RCU (read capacity unit) as reading the table directly."
 ---
 
 ## Ý chính
@@ -49,7 +49,7 @@ Dùng DAX cho đọc lặp lại, eventually consistent (danh mục, hồ sơ). 
 
 ## Vì sao
 
-- DAX chuyển đọc strongly consistent sang DynamoDB và không cache kết quả.
+- DAX chuyển đọc nhất quán mạnh sang DynamoDB và không cache kết quả.
 - Trả tiền cluster DAX cho tải toàn đọc mạnh là trả cho một lớp chỉ chuyển tiếp.
 
 ## Ví dụ

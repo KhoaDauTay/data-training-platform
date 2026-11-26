@@ -95,8 +95,8 @@ quiz:
       - { vi: "`orderId`", en: "`orderId`" }
     answer: 1
     why:
-      vi: "`status` chỉ có ba giá trị và phần lớn item là PAID, nên gần hết lượt ghi dồn vào một khóa. Mỗi partition có giới hạn riêng (khoảng 3000 RCU và 1000 WCU mỗi giây), nên khóa đó bị throttle trước."
-      en: "`status` has only three values and most items are PAID, so almost every write lands on one key. Each partition has its own limit (about 3000 RCU and 1000 WCU per second), so that key is throttled first."
+      vi: "`customerId` và `orderId` có rất nhiều giá trị nên lượt ghi rải đều. `status` chỉ có ba giá trị và phần lớn item là PAID, nên gần hết lượt ghi của GSI dồn vào một partition key. Mỗi partition (phân vùng vật lý) chịu khoảng 1000 WCU (write capacity unit, đơn vị ghi: một lần ghi item tới 1 KB) mỗi giây, nên khóa PAID bị throttle trước dù bảng còn dư."
+      en: "`customerId` and `orderId` have very many values, so writes spread evenly. `status` has only three values and most items are PAID, so almost every GSI write lands on one partition key. Each partition takes about 1000 WCU (write capacity unit: one write of an item up to 1 KB) per second, so the PAID key is throttled first while the table has room."
 ---
 
 ## Ý chính
