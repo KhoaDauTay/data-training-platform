@@ -45,7 +45,9 @@ describe('Thiết kế CSDL: thẻ thứ tư và trang bài', () => {
     await visit('#/engine/design/L4/e-ds-l4-09');
     for (const href of ['#/engine/design/L2/e-ds-l2-06', '#/engine/design/L4/e-ds-l4-11', '#/engine/best/postgres/e-bp-s10', '#/engine/design/L5/e-ds-l5-08', '#/engine/design/L5/e-ds-l5-11'])
       expect(document.querySelector(`#engine-page a[href="${href}"]`), href).not.toBeNull();
-    expect(document.querySelector('#engine-page a[href="#/engine/best/postgres/e-bp-s10"]')!.textContent).toBe('Best Practice · S10');
+    // v44 (L790): the link says the card's title, never its id
+    expect(document.querySelector('#engine-page a[href="#/engine/best/postgres/e-bp-s10"]')!.textContent).toBe('Multi-tenant: tenant_id mọi nơi và RLS có FORCE');
+    expect(byId('engine-page')!.textContent).not.toMatch(/\be-(pg|mg|dy|ds|bp)-[a-z0-9]/);
     // v38 (L582): a `{ url, title }` source shows its title, never the URL slug
     expect([...document.querySelectorAll('#e-ds-l4-09-src ~ ul a')].map((a) => a.textContent)).toEqual([
       'AWS SaaS Lens · Silo, Pool, and Bridge Models (mở trong tab mới)', 'PostgreSQL · Constraints › Foreign Keys (mở trong tab mới)',
