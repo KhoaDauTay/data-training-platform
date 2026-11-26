@@ -20,45 +20,109 @@ sources:
   - { url: "https://docs.getdbt.com/docs/build/exposures", title: "dbt docs: Add exposures to your DAG" }
   - https://www.postgresql.org/docs/18/infoschema-view-table-usage.html
   - https://www.postgresql.org/docs/18/infoschema-view-column-usage.html
-demo_setup: |
-  CREATE SCHEMA raw_shop;
-  CREATE SCHEMA staging;
-  CREATE SCHEMA marts;
-  CREATE TABLE raw_shop.orders (
-    id int, customer_id int, amount text,
-    _fivetran_deleted boolean
-  );
-  INSERT INTO raw_shop.orders VALUES
-    (701, 31, '250,000', false),
-    (702, 32, '120,000', false),
-    (703, 31, '90,000', true);
-  CREATE TABLE raw_shop.customers (
-    id int, tier text
-  );
-  INSERT INTO raw_shop.customers VALUES
-    (31, 'gold'), (32, 'silver');
-  CREATE VIEW staging.stg_orders AS
-    SELECT id AS order_id, customer_id,
-      replace(amount, ',', '')::int
-        AS amount_vnd
-    FROM raw_shop.orders
-    WHERE NOT _fivetran_deleted;
-  CREATE VIEW staging.stg_customers AS
-    SELECT id AS customer_id, tier
-    FROM raw_shop.customers;
-  CREATE VIEW marts.fct_orders AS
-    SELECT o.order_id, o.customer_id,
-      c.tier, o.amount_vnd
-    FROM staging.stg_orders o
-    JOIN staging.stg_customers c
-      ON c.customer_id = o.customer_id;
-  CREATE VIEW marts.revenue_by_tier AS
-    SELECT tier,
-      sum(amount_vnd) AS revenue_vnd
-    FROM marts.fct_orders
-    GROUP BY tier;
-  COMMENT ON COLUMN marts.fct_orders.amount_vnd
-    IS 'Order total in VND; deleted orders left out';
+lab:
+  setup: |
+    CREATE SCHEMA raw_shop;
+    CREATE SCHEMA staging;
+    CREATE SCHEMA marts;
+    CREATE TABLE raw_shop.orders (
+      id int, customer_id int, amount text,
+      _fivetran_deleted boolean
+    );
+    INSERT INTO raw_shop.orders VALUES
+      (701, 31, '250,000', false),
+      (702, 32, '120,000', false),
+      (703, 31, '90,000', true);
+    CREATE TABLE raw_shop.customers (
+      id int, tier text
+    );
+    INSERT INTO raw_shop.customers VALUES
+      (31, 'gold'), (32, 'silver');
+    CREATE VIEW staging.stg_orders AS
+      SELECT id AS order_id, customer_id,
+        replace(amount, ',', '')::int
+          AS amount_vnd
+      FROM raw_shop.orders
+      WHERE NOT _fivetran_deleted;
+    CREATE VIEW staging.stg_customers AS
+      SELECT id AS customer_id, tier
+      FROM raw_shop.customers;
+    CREATE VIEW marts.fct_orders AS
+      SELECT o.order_id, o.customer_id,
+        c.tier, o.amount_vnd
+      FROM staging.stg_orders o
+      JOIN staging.stg_customers c
+        ON c.customer_id = o.customer_id;
+    CREATE VIEW marts.revenue_by_tier AS
+      SELECT tier,
+        sum(amount_vnd) AS revenue_vnd
+      FROM marts.fct_orders
+      GROUP BY tier;
+    COMMENT ON COLUMN marts.fct_orders.amount_vnd
+      IS 'Order total in VND; deleted orders left out';
+  steps:
+    - task:
+        vi: "Cha trực tiếp của mart `revenue_by_tier`: trả `table_schema`, `table_name` của mọi bảng hay view mà nó đọc, từ `information_schema.view_table_usage`."
+        en: "The direct parents of the mart `revenue_by_tier`: return `table_schema`, `table_name` of every table or view it reads, from `information_schema.view_table_usage`."
+      solution: |
+        select table_schema, table_name
+        from information_schema
+          .view_table_usage
+        where view_schema = 'marts'
+          and view_name = 'revenue_by_tier'
+      check: rows
+      hint:
+        vi: "`where view_schema = 'marts' and view_name = 'revenue_by_tier'`."
+        en: "`where view_schema = 'marts' and view_name = 'revenue_by_tier'`."
+    - task:
+        vi: "Đi ngược hết lineage của `marts.revenue_by_tier` và trả các bảng raw ở gốc (schema `raw_shop`): `table_schema`, `table_name`, mỗi bảng một dòng."
+        en: "Walk all the way up the lineage of `marts.revenue_by_tier` and return the raw tables at the root (schema `raw_shop`): `table_schema`, `table_name`, one row per table."
+      solution: |
+        with recursive up as (
+          select table_schema as s,
+            table_name as t
+          from information_schema
+            .view_table_usage
+          where view_schema = 'marts'
+            and view_name = 'revenue_by_tier'
+          union
+          select u.table_schema, u.table_name
+          from information_schema
+            .view_table_usage u
+          join up on u.view_schema = up.s
+            and u.view_name = up.t)
+        select s as table_schema,
+          t as table_name
+        from up
+        where s = 'raw_shop'
+      check: rows
+      hint:
+        vi: "Một CTE `with recursive`: bắt đầu từ cha của `revenue_by_tier`, rồi nối `view_table_usage` với chính CTE theo `view_schema`, `view_name`; cuối cùng giữ `raw_shop`."
+        en: "A `with recursive` CTE: start from `revenue_by_tier`'s parents, then join `view_table_usage` to the CTE itself on `view_schema`, `view_name`; finally keep `raw_shop`."
+    - task:
+        vi: "Đi xuôi: mọi view đọc `staging.stg_customers`, trực tiếp hay gián tiếp. Trả `view_schema`, `view_name`, mỗi view một dòng."
+        en: "Downstream: every view that reads `staging.stg_customers`, directly or indirectly. Return `view_schema`, `view_name`, one row per view."
+      solution: |
+        with recursive down as (
+          select view_schema as s,
+            view_name as v
+          from information_schema
+            .view_table_usage
+          where table_schema = 'staging'
+            and table_name = 'stg_customers'
+          union
+          select u.view_schema, u.view_name
+          from information_schema
+            .view_table_usage u
+          join down on u.table_schema = down.s
+            and u.table_name = down.v)
+        select s as view_schema,
+          v as view_name
+        from down
+      check: rows
+      hint:
+        vi: "Như bước trước nhưng ngược chiều: bắt đầu từ các view đọc `stg_customers`, rồi tìm view đọc chúng."
+        en: "Like the step before, the other way round: start from the views reading `stg_customers`, then find the views reading those."
 quiz:
   - q:
       vi: "Dashboard \"Doanh thu theo hạng\" đọc `marts.revenue_by_tier`. Một người định đổi tên cột `tier` trong `stg_customers`. Điều gì cho bạn biết trước là dashboard sẽ hỏng?"
@@ -208,6 +272,10 @@ WHERE table_schema = 'marts'
   AND table_name = 'fct_orders';
 ```
 
+## Thực hành
+
+Ba bước đọc lineage từ catalog: cha trực tiếp của evenue_by_tier, các bảng raw ở gốc của nó, rồi mọi view đứng sau stg_customers, tức những gì hỏng nếu model đó đổi.
+
 ## Tóm tắt
 
 - Lineage dựng từ `ref()` và `source()`: đi ngược tới raw, đi xuôi tới người đọc.
@@ -339,6 +407,10 @@ FROM information_schema
 WHERE table_schema = 'marts'
   AND table_name = 'fct_orders';
 ```
+
+## Practice
+
+Three steps reading lineage from the catalog: the direct parents of evenue_by_tier, the raw tables at its root, then every view downstream of stg_customers, that is, what breaks if that model changes.
 
 ## Recap
 
