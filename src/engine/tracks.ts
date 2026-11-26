@@ -15,6 +15,7 @@ export const PREREQS: Partial<Record<EngineId, Prereq[]>> = {
   dynamodb: [],
   design: [{ sql: [1, 3] }],
   stack: [{ sql: [1, 7] }, { engine: 'postgres', to: 'L1' }],
+  telemetry: [{ sql: [1, 8] }, { engine: 'postgres', to: 'L1' }], // v47 (L1033): windows (lag), CTEs, JSONB
 };
 
 /** Total minutes of a list of lessons (track card: "≈ N h"). */
