@@ -1,0 +1,41 @@
+# B3-4 (tools/v42/diagram-plan-v42.md): a glued string becomes code; a parameter stays data. Lesson: e-pg-l2-25 (Ý chính).
+# Data (PGlite, lesson setup; tools/v42/b3check.log): find_unsafe('Binh') = 1 row; find_unsafe($$nobody' OR true --$$) = all 4 rows;
+# the built text is SELECT * FROM accounts WHERE owner = 'nobody' OR true --'; the same input as a value (owner = $1) = 0 rows.
+# Deviation: the plan's `val` key ("$1 = that text") is the sub of `bind`, and frame 2 keeps the glued path beside the bound one.
+# Source: https://www.postgresql.org/docs/18/plpgsql-statements.html#PLPGSQL-STATEMENTS-EXECUTING-DYN
+title: { vi: "Ghép chuỗi thành mã, tham số vẫn là dữ liệu", en: "Glued text becomes code, a parameter stays data" }
+caption:
+  vi: "Cùng một chuỗi gõ vào find_unsafe của lab. Ghép bằng || thì dấu nháy của nó đóng chuỗi của câu lệnh; truyền bằng $1 thì nó chỉ là một giá trị."
+  en: "The same typed string into the lab's find_unsafe. Glued with ||, its quote closes the statement's string; passed as $1, it is only a value."
+alt:
+  vi: "SQL injection xảy ra khi chữ người dùng gõ được ghép vào câu lệnh và Postgres đọc nó như mã, nên giá trị phải đi bằng tham số (USING, PREPARE) hoặc format('%L'), tên bằng %I. Kết quả: 4 dòng khi ghép, 0 dòng khi dùng tham số."
+  en: "SQL injection happens when user text is glued into a statement and Postgres reads it as code, so values must travel as parameters (USING, PREPARE) or format('%L'), names with %I. Result: 4 rows when glued, 0 rows with a parameter."
+nodes:
+  - { id: in, shape: key, mono: true, label: "nobody' OR true --", tone: warm }
+  - { id: glue, mono: true, label: "'…' || p || '…'", sub: { vi: "ghép chuỗi", en: "string glue" } }
+  - id: sql
+    shape: grid
+    label: { vi: "câu dựng ra", en: "built statement" }
+    cells: [["owner = 'nobody'"], ["OR true"], ["--'"]]
+    rowTone: [null, dead, ghost]
+  - { id: r1, shape: key, label: { vi: "4 dòng: mọi tài khoản", en: "4 rows: every account" }, tone: dead }
+  - { id: bind, mono: true, label: "owner = $1", sub: { vi: "$1 = chuỗi trên", en: "$1 = that text" } }
+  - { id: r2, shape: key, label: { vi: "0 dòng", en: "0 rows" }, tone: live }
+rows:
+  - [in]
+  - [glue, bind]
+  - [sql, r2]
+  - [r1]
+phone: { rows: [[in], [bind, r2], [glue], [sql], [r1]] }
+edges:
+  - { from: in, to: glue }
+  - { from: glue, to: sql }
+  - { from: sql, to: r1 }
+  - { from: in, to: bind }
+  - { from: bind, to: r2 }
+steps:
+  - say: { vi: "Ghép chuỗi: dấu nháy của người dùng đóng chuỗi của bạn.", en: "Glued: the user's quote closes your string." }
+    show: [in, glue, sql, r1]
+    alt: { vi: "Dấu nháy đơn trong chuỗi gõ vào kết thúc chuỗi của câu, nên OR true thành mã và -- nuốt phần còn lại.", en: "The single quote in the input ends the statement's string, so OR true becomes code and -- swallows the rest." }
+  - say: { vi: "Tham số: giá trị đi riêng, không bao giờ là mã.", en: "A parameter: the value travels apart, never as code." }
+    alt: { vi: "Với $1, Postgres phân tích câu trước rồi mới nhận giá trị, nên cả chuỗi tấn công chỉ là một tên chủ tài khoản không có thật.", en: "With $1, Postgres parses the statement before it gets the value, so the whole attack is just an owner name that does not exist." }

@@ -8,6 +8,7 @@ title_en: Altering tables safely
 kind: lab
 runtime: browser
 minutes: 15
+figures: [{ name: pg-alter-table-rewrite, at: idea }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Thêm, đổi tên, xóa cột và thêm ràng buộc cho một bảng đang có dữ liệu bằng `ALTER TABLE`.
@@ -128,6 +129,8 @@ Nhiều người nghĩ thêm cột có DEFAULT là phải ghi lại mọi dòng.
 
 Từ `text` sang số không có phép ép tự động, nên phải ghi `USING expression` (biểu thức tính giá trị mới). Một dòng không ép được là cả lệnh hỏng và bảng giữ nguyên. Cột lưu sai kiểu còn làm hỏng tốc độ: so sánh phải ép kiểu cột, và index thường trên cột không còn dùng được.
 
+Hình từng bước ở cuối mục này đặt ba lệnh của phần Ví dụ cạnh nhau: hai lệnh chỉ sửa catalog, một lệnh ghi cả bảng sang file mới.
+
 ## Cú pháp
 
 ```sql
@@ -240,6 +243,8 @@ Many people think adding a column with a DEFAULT must rewrite every row. In fact
 Changing a type depends. Widening `varchar(20)` to `varchar(50)` or `varchar` to `text` keeps the stored bytes, so there is no rewrite. `int` to `bigint` or `text` to a number does rewrite: every row goes to a new file and every index is rebuilt. You can see it with `pg_relation_filenode`, the number of the file that holds the table.
 
 There is no automatic cast from `text` to a number, so you must write `USING expression`. One row that cannot be cast fails the whole command and the table stays as it was. A column stored with the wrong type also hurts speed: comparisons must cast the column, and a plain index on it no longer helps.
+
+The step-through figure at the end of this section puts the three commands of the Example side by side: two only change the catalog, one writes the whole table to a new file.
 
 ## Syntax
 

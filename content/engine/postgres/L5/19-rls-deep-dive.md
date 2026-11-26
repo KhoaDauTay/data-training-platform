@@ -8,6 +8,7 @@ title_en: "RLS in depth: FORCE, RESTRICTIVE and safe views"
 kind: lab
 runtime: browser
 minutes: 25
+figures: [{ name: pg-rls-restrictive, at: idea }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-25" }
 objectives:
   - { vi: "Bắt cả chủ bảng theo policy bằng `FORCE ROW LEVEL SECURITY`", en: "Make the table owner follow the policies with `FORCE ROW LEVEL SECURITY`" }
@@ -110,6 +111,8 @@ Nhiều người nghĩ thêm policy là thêm giới hạn. Thật ra policy per
 `WITH CHECK` kiểm dòng mới. Bỏ trống thì Postgres dùng lại `USING`, nên một policy `FOR ALL` theo khách vẫn chặn được việc ghi sang khách khác. Lỗ thật là một policy `FOR INSERT` có `WITH CHECK (true)` hay không có điều kiện khách.
 
 View mặc định đọc bảng bằng quyền của chủ view, nên policy của người đọc không được áp. `WITH (security_invoker = true)` (từ PostgreSQL 15) bắt view kiểm quyền và policy theo người gọi.
+
+Hình từng bước ở cuối mục này đặt `OR` và `AND` vào đúng chỗ của chúng trên đường dòng đi tới vai trò `app`.
 
 ## Cú pháp
 
@@ -292,6 +295,8 @@ Many people think adding a policy adds a limit. In fact permissive policies (the
 `WITH CHECK` validates new rows. Left out, Postgres reuses `USING`, so a per-tenant `FOR ALL` policy still blocks writes into another tenant. The real hole is a `FOR INSERT` policy with `WITH CHECK (true)` or with no tenant condition.
 
 A default view reads its table with the view owner's rights, so the reader's policies are not applied. `WITH (security_invoker = true)` (since PostgreSQL 15) makes the view check rights and policies for the caller.
+
+The step-through figure at the end of this section puts `OR` and `AND` where they sit on the way rows travel to role `app`.
 
 ## Syntax
 

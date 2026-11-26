@@ -3,6 +3,7 @@ id: distinct_on
 title: "DISTINCT ON: dòng đầu tiên của mỗi nhóm"
 title_en: "DISTINCT ON: the first row of each group"
 minutes: 20
+figures: [{ name: sql-distinct-on, at: idea }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Lấy đúng một dòng cho mỗi nhóm, như đơn mới nhất của từng khách.
@@ -129,6 +130,8 @@ Chăm sóc khách hỏi: "Với mỗi khách, đơn gần nhất của họ là 
 
 Nhiều người nghĩ **Postgres tự biết "dòng đầu" là dòng mới nhất**. Thật ra "đầu" chỉ có nghĩa theo `ORDER BY` bạn viết. Không có cột chọn dòng thắng, hoặc có mà không có cột phân xử khi hòa, dòng được giữ là may rủi.
 
+Hình từng bước ở cuối mục này xếp các đơn của khách 5 rồi giữ dòng đầu của mỗi khách.
+
 ## Cú pháp
 
 `DISTINCT ON` là cú pháp riêng của Postgres; cách viết chuẩn dùng hàm cửa sổ (Phần 10).
@@ -144,6 +147,8 @@ Customer care asks: "For each customer, which is their latest order?" You need *
 `DISTINCT ON (customer_id)` keeps one row for each value of the bracketed column: the row that comes first in its group by the `ORDER BY`. So the `ORDER BY` does two jobs: it starts with the group column (so a group's rows sit together), then sorts inside the group so the row you want comes first.
 
 Many people think **Postgres knows that "first" means the newest**. In fact "first" only means first by the `ORDER BY` you wrote. With no column picking the winner, or one with no tie-breaker for ties, the kept row is luck.
+
+The step-through figure at the end of this section sorts customer 5's orders, then keeps the first row of each customer.
 
 ## Syntax
 

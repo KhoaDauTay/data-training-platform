@@ -1,0 +1,73 @@
+# B3-13 (tools/v42/diagram-plan-v42.md): (user_id, ts) makes one user's month a single stretch. Lessons: index_design (Ý chính),
+# e-pg-l2-26 (Ý chính, variant `tenant`). Data (lab, PGlite; tools/v42/b3check*.log): app_events 1928 rows, index
+# app_events_user_id_ts_idx (user_id, ts); user 77 has 7 events, 5 in September; the grid is the index's real run for users 77 and
+# 78 up to 78's first September event (78 also has two on 09-24, not drawn: the sub says excerpt). user_id = 77 AND September →
+# Bitmap Index Scan on the index; September alone (191 rows) → Seq Scan.
+# Variant `tenant` (e-pg-l2-26's lab after its step 1 index (tenant_id, created_at)): tenant 7 has 45 invoices in March 2026 (UTC),
+# 03-01 05:20 … 03-31 18:40, between 02-28 12:40 and 04-01 11:20; neighbours 6 | 10-05 17:00 and 8 | 01-01 11:00.
+# Deviations: the rows carry HH:MI (user 77 has four events on 09-05), the variant's head is [tenant_id, created_at] (the lesson's
+# index), not [tenant_id, id], and step 2 marks September (a run fact) rather than one day.
+# Source: https://www.postgresql.org/docs/current/indexes-multicolumn.html
+title: { vi: "Thứ tự cột trong chỉ mục nhiều cột", en: "Column order in a multi-column index" }
+caption:
+  vi: "Một đoạn của chỉ mục (user_id, ts) trên app_events: sắp theo user_id trước, rồi theo ts trong từng người dùng."
+  en: "A stretch of the index (user_id, ts) on app_events: sorted by user_id first, then by ts within each user."
+alt:
+  vi: "Index nhiều cột sắp theo cột đầu rồi mới tới cột sau, nên cột so bằng đứng trước và cột khoảng đứng sau. Câu không có cột đầu thì không dùng được thứ tự đó."
+  en: "A multicolumn index sorts by the first column, then the next, so the equality column goes first and the range column after. A query without the first column cannot use that order."
+nodes:
+  - { id: q1, shape: key, mono: true, label: "user_id = 77", sub: { vi: "tháng 9: 1 đoạn", en: "Sept: one stretch" }, tone: live }
+  - { id: q2, shape: key, label: { vi: "chỉ ts tháng 9", en: "only ts in Sept" }, sub: { vi: "rải khắp: Seq Scan", en: "spread: Seq Scan" }, tone: dead }
+  - id: ix
+    shape: grid
+    label: index (user_id, ts)
+    sub: { vi: "trích: người dùng 77, 78", en: "excerpt: users 77, 78" }
+    head: [user_id, ts]
+    cells:
+      - ["77", "08-16 12:38"]
+      - ["77", "08-16 12:43"]
+      - ["77", "09-05 12:31"]
+      - ["77", "09-05 12:33"]
+      - ["77", "09-05 12:35"]
+      - ["77", "09-05 12:37"]
+      - ["77", "09-30 08:23"]
+      - ["78", "08-12 17:23"]
+      - ["78", "08-12 17:24"]
+      - ["78", "09-08 08:22"]
+    rowTone: [null, null, live, live, live, live, live, null, null, null]
+rows:
+  - [q1, q2]
+  - [ix]
+steps:
+  - say: { vi: "Cột đầu bằng, cột sau là khoảng.", en: "Equality on the first column, a range on the next." }
+    show: [q1, ix]
+    alt: { vi: "Trong index, sự kiện của người dùng 77 nằm liền nhau và đã sắp theo ts, nên tháng 9 là một đoạn.", en: "In the index user 77's events sit together, sorted by ts, so September is one stretch." }
+  - say: { vi: "Bỏ cột đầu: đoạn vỡ thành nhiều mảnh.", en: "Drop the first column: the stretch breaks apart." }
+    show: [q1, q2, ix]
+    alt: { vi: "ts chỉ được sắp trong từng người dùng, nên tháng 9 của mọi người rải khắp index và Postgres đọc cả bảng.", en: "ts is sorted only within each user, so September for everyone is scattered and Postgres reads the whole table." }
+    set:
+      ix: { rowTone: [null, null, warm, warm, warm, warm, warm, null, null, warm] }
+variants:
+  tenant:
+    show: [q1, ix]
+    title: { vi: "tenant_id đứng đầu chỉ mục", en: "tenant_id leads the index" }
+    caption:
+      vi: "Một đoạn của index (tenant_id, created_at) trên invoices của lab: hóa đơn của một khách nằm liền nhau, đã xếp theo thời gian."
+      en: "A stretch of the index (tenant_id, created_at) on the lab's invoices: one tenant's invoices sit together, already in time order."
+    alt:
+      vi: "Đặt tenant_id đầu index giữ dữ liệu của một khách liền nhau, nên mọi câu có tenant_id đọc một đoạn."
+      en: "Leading with tenant_id keeps one tenant's rows together, so every query with tenant_id reads one stretch."
+    set:
+      q1: { label: "tenant_id = 7", sub: { vi: "tháng 3: 1 đoạn", en: "March: one stretch" } }
+      ix:
+        label: index (tenant_id, created_at)
+        sub: { vi: "trích: 2 trong 45 dòng tháng 3", en: "excerpt: 2 of March's 45 rows" }
+        head: [tenant_id, created_at]
+        cells:
+          - ["6", "10-05 17:00"]
+          - ["7", "02-28 12:40"]
+          - ["7", "03-01 05:20"]
+          - ["7", "03-31 18:40"]
+          - ["7", "04-01 11:20"]
+          - ["8", "01-01 11:00"]
+        rowTone: [null, null, live, live, null, null]

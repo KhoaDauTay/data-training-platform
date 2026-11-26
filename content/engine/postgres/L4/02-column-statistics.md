@@ -8,6 +8,7 @@ title_en: "Column statistics: MCV, histogram, correlation"
 kind: lab
 runtime: browser
 minutes: 15
+figures: [{ name: pg-stats-estimate, at: idea, variant: mcv }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - { vi: "Đọc `most_common_vals`, `most_common_freqs`, `n_distinct` và `correlation` trong `pg_stats`", en: "Read `most_common_vals`, `most_common_freqs`, `n_distinct` and `correlation` in `pg_stats`" }
@@ -80,6 +81,8 @@ MCV (`most_common_vals` cùng `most_common_freqs`) là danh sách giá trị g�
 Nhiều người nghĩ có index là Postgres sẽ dùng. Thật ra planner so chi phí: với giá trị chiếm 70 % bảng, nhảy qua index tới từng trang đắt hơn đọc tuần tự, nên Seq Scan thắng. Thống kê đúng là thứ giúp nó chọn đúng.
 
 Bọc cột trong một hàm, như `lower(status)`, làm planner mất thống kê của cột: nó quay về độ chọn lọc mặc định 0,5 % cho điều kiện bằng. Cột lệch mạnh hoặc có rất nhiều giá trị thì tăng mục tiêu riêng cho cột bằng `SET STATISTICS` (tối đa 10.000) rồi ANALYZE lại.
+
+Hình cuối mục này làm phép nhân đó với cột `status` của `parcels`: tần suất của `lost` nhân số dòng của bảng ra đúng số `rows` trong kế hoạch.
 
 ## Cú pháp
 
@@ -198,6 +201,8 @@ A positive `n_distinct` is the number of distinct values; a negative one is a fr
 Many people think that if an index exists, Postgres will use it. In fact the planner compares costs: for a value that is 70% of the table, jumping through the index to each page costs more than a sequential read, so the Seq Scan wins. Correct statistics are what let it choose well.
 
 Wrapping the column in a function, such as `lower(status)`, makes the planner lose the column's statistics: it falls back to a default selectivity of 0.5% for an equality. For a heavily skewed column, or one with very many values, raise its own target with `SET STATISTICS` (up to 10,000) and ANALYZE again.
+
+The figure at the end of this section does that multiplication with column `status` of `parcels`: the frequency of `lost` times the table's row count gives exactly the plan's `rows`.
 
 ## Syntax
 

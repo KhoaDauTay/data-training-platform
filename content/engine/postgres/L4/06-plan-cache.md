@@ -8,6 +8,7 @@ title_en: "Prepared statements: generic vs custom plans"
 kind: lab
 runtime: browser
 minutes: 15
+figures: [{ name: pg-generic-custom-plan, at: idea }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - { vi: "Giải thích luật 5 lần đầu dùng kế hoạch riêng (custom) rồi mới cân nhắc kế hoạch chung (generic)", en: "Explain the rule: the first five executions use custom plans before a generic plan is considered" }
@@ -86,6 +87,8 @@ Nhiều người nghĩ câu đã chuẩn bị luôn được lập kế hoạch 
 Bẫy nằm ở dữ liệu lệch. Năm lần đầu toàn giá trị đắt ('delivered', 70 % bảng) thì trung bình cao, kế hoạch chung qua index trông rẻ hơn và thắng. Từ đó mọi lần gọi, kể cả 'delivered', đều đi qua index, chậm hơn đọc tuần tự.
 
 Công cụ chẩn đoán: `pg_prepared_statements` đếm `generic_plans` và `custom_plans`; `EXPLAIN (GENERIC_PLAN)` (từ PostgreSQL 16) cho xem kế hoạch chung của một câu có `$1` mà không cần `PREPARE`; `plan_cache_mode` buộc một loại kế hoạch.
+
+Hình từng bước ở cuối mục này theo một câu đã chuẩn bị trên `parcels` qua hai loại kế hoạch, và chỉ ra lúc kế hoạch chung thôi nhìn giá trị.
 
 ## Cú pháp
 
@@ -188,6 +191,8 @@ Many people think a prepared query is always planned for the value passed in. In
 The trap is skewed data. If the first five runs all use an expensive value ('delivered', 70% of the table), the average is high, the generic index plan looks cheaper and wins. From then on every call, 'delivered' included, goes through the index, slower than a sequential read.
 
 Diagnostic tools: `pg_prepared_statements` counts `generic_plans` and `custom_plans`; `EXPLAIN (GENERIC_PLAN)` (since PostgreSQL 16) shows the generic plan of a query with `$1` without any `PREPARE`; `plan_cache_mode` forces one kind of plan.
+
+The step-through figure at the end of this section follows one prepared query on `parcels` through both kinds of plan, and shows when the generic plan stops looking at the value.
 
 ## Syntax
 

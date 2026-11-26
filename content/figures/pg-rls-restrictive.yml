@@ -1,0 +1,56 @@
+# B3-8 (tools/v42/diagram-plan-v42.md): permissive policies OR together; restrictive ones AND on top. Lesson: e-pg-l5-19 (Ý chính).
+# Data (PGlite, lesson setup, through the view tickets_as_app with app.tenant_id = 2; tools/v42/b3check.log): 30 tickets, 10 per
+# tenant, 2 archived per tenant; tenant_rows alone → 10; + support_read USING (true) (the lesson's quiz) → 30; tenant_rows +
+# live_only AS RESTRICTIVE (the lab's step) → 8 (with support_read also there it would be 24, so frame 3 drops it); FORCE → the
+# owner's view sees 0 with no policy for it.
+# Deviation: the AND box is drawn in every frame (with no restrictive policy it lets everything the OR gave through), so the
+# result is always one arrow away.
+# Source: https://www.postgresql.org/docs/18/sql-createpolicy.html
+title: { vi: "Permissive gộp OR, restrictive gộp AND", en: "Permissive policies OR, restrictive ones AND" }
+caption:
+  vi: "Vé mà vai trò app của khách 2 thấy, qua các policy của lab và câu hỏi trắc nghiệm của bài."
+  en: "The tickets tenant 2's app role sees, through the lab's policies and the lesson's quiz."
+alt:
+  vi: "Policy permissive cộng quyền (OR), restrictive trừ quyền (AND), và chủ bảng bỏ qua RLS trừ khi bảng có FORCE. Luật phải luôn đúng thì viết AS RESTRICTIVE."
+  en: "Permissive policies add access (OR), restrictive ones remove it (AND), and the table owner skips RLS unless the table is FORCEd. Write a must-hold rule AS RESTRICTIVE."
+nodes:
+  - id: t
+    shape: grid
+    label: { vi: "tickets, khách 2", en: "tickets, tenant 2" }
+    head: [archived, { vi: "số vé", en: count }]
+    cells: [["false", "8"], ["true", "2"]]
+  - { id: p1, shape: key, mono: true, label: tenant_rows, sub: permissive }
+  - { id: p2, shape: key, mono: true, label: support_read, sub: { vi: "permissive, rộng", en: "permissive, wide" }, tone: warm }
+  - { id: or, label: OR, sub: { vi: "qua một là đủ", en: "pass any one" } }
+  - { id: r, shape: key, mono: true, label: live_only, sub: restrictive, tone: new }
+  - { id: and, label: AND, sub: { vi: "chưa có luật nào", en: "no rule yet" } }
+  - { id: out, shape: key, label: { vi: "10 dòng", en: "10 rows" } }
+  - { id: force, shape: key, label: { vi: "FORCE: chủ bảng", en: "FORCE: the owner" }, sub: { vi: "cũng bị lọc", en: "is filtered too" } }
+rows:
+  - [t]
+  - [p1, p2]
+  - [or, r]
+  - [and]
+  - [out, force]
+edges:
+  - { from: p1, to: or }
+  - { from: p2, to: or }
+  - { from: or, to: and }
+  - { from: r, to: and }
+  - { from: and, to: out }
+steps:
+  - say: { vi: "Một policy theo khách: 10 vé.", en: "One tenant policy: 10 tickets." }
+    show: [t, p1, or, and, out]
+    alt: { vi: "Policy tenant_rows chỉ cho dòng của khách 2.", en: "The tenant_rows policy lets through only tenant 2's rows." }
+  - say: { vi: "Thêm một policy permissive rộng: OR mở hết.", en: "Add a wide permissive policy: OR opens everything." }
+    show: [t, p1, p2, or, and, out]
+    alt: { vi: "Policy permissive gộp bằng OR, nên một dòng chỉ cần qua một policy là thấy.", en: "Permissive policies combine with OR, so a row needs to pass only one." }
+    set:
+      out: { label: { vi: "30 dòng: mở toang", en: "30 rows: wide open" }, tone: dead }
+  - say: { vi: "Luật bắt buộc: AS RESTRICTIVE.", en: "A must-hold rule: AS RESTRICTIVE." }
+    show: [t, p1, or, r, and, out, force]
+    alt: { vi: "Policy restrictive gộp bằng AND lên kết quả, nên vé lưu trữ luôn bị ẩn với app dù thêm policy permissive nào.", en: "Restrictive policies AND onto the result, so archived tickets stay hidden from app whatever permissive policy is added." }
+    set:
+      and: { sub: { vi: "phải qua mọi luật", en: "pass every rule" } }
+      out: { label: { vi: "8 dòng", en: "8 rows" }, tone: live }
+      t: { rowTone: [null, ghost] }
