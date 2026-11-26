@@ -106,8 +106,10 @@ let generalLoading: Promise<General> | undefined;
 export function loadGeneral(): Promise<General> {
   // ponytail: both chunks are fetched together (in parallel), so a review or the practice hub also downloads adv.yml.
   // Fetching it only on adv pages needs callers that ask for drills alone (ui/modes.ts, ui/drillBrief.ts): add then (L167).
-  return (generalLoading ??= Promise.all([import('./generalSources'), import('./generalAdvSources')])
-    .then(([{ sqlDrills, buildGeneral }, { advNodes }]) => (general = buildGeneral(sqlDrills, advNodes, parseLessonBody)))
+  // v47 (L926): + the Practise sets (fix.yml, explain.yml), a third small chunk fetched alongside
+  return (generalLoading ??= Promise.all([import('./generalSources'), import('./generalAdvSources'), import('./practiceSources')])
+    .then(([{ sqlDrills, buildGeneral }, { advNodes }, { fixItems, explainItems }]) =>
+      (general = buildGeneral(sqlDrills, advNodes, parseLessonBody, { fix: fixItems, explain: explainItems })))
     .catch((e: unknown) => {
       generalLoading = undefined;
       throw e;

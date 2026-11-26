@@ -27,6 +27,7 @@ const GROUPS = [
   ['fonts', /\.woff2$/, 60], // Plan 7 V2: Nunito variable, latin 39 KB + vietnamese 13 KB (woff2 is already compressed)
   ['general', /^generalSources-/, 40], // v19 L167: skill drills (content/general/sql.yml, 4 per skill since L168) + parsers, lazy: 31 KB gz after the split (was 68/70 with adv.yml, Plan 8a D8a-12)
   ['generalAdv', /^generalAdvSources-/, 50], // v19 L167: advanced DA track (content/general/adv.yml), its own lazy chunk: 46 KB gz (roadmap §2.6 guessed ≤ 15; adv.yml is the bigger file)
+  ['practiceSets', /^practiceSources-/, 24], // v47 P2/P6 (L926): content/general/fix.yml + explain.yml (24 + 16 items as JSON, YAML only; parsers in `general`), lazy beside generalSources: 19 KB gz at v47
   ['interview', /^interview(Sources|View)-/, 25], // v17 I5 (L144): 19 KB gz at T1 (content 12 + UI 7). The interview room, lazy: content/general/interview.yml + parser (interviewSources) and its UI + VI/EN text (interviewView), fetched only on #/learn/interview or a run
   ['learnui', /^(learnView|drillBrief)-/, 25], // v33 (L535): 24.2 → 18.4 KB gz, the full lesson page moved to `learnLesson`. Plan 8a D8a-12/13: General UI (drill workspace, learning path) and its VI/EN text, lazy
   ['learnLesson', /^lessonPage-/, 9], // v33 (L535): src/ui/lessonPage.ts + src/fullLesson.ts (the General full lesson page and its parser), split out of learnui; lazy beside the lesson's gl-<skill> chunk: 7.2 KB gz
