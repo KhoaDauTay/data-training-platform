@@ -1,0 +1,9 @@
+- id: model
+  vi: Nút, cạnh và cách lưu
+  en: Nodes, edges and how to store them
+- id: traverse
+  vi: Duyệt đồ thị bằng SQL
+  en: Traversing a graph in SQL
+- id: choose
+  vi: Chọn công cụ và tổng hợp
+  en: Choosing the tool, and a capstone

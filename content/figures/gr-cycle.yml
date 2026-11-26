@@ -1,0 +1,34 @@
+# v47 Graph R1 (L1080–L1089): a cycle and the CYCLE clause's mark. Lesson: e-gr-l2-03 (Ý chính). Data: the lab's legs
+# VNDAD→HKHKG, HKHKG→SGSIN, SGSIN→VNDAD, SGSIN→NLRTM (HKHKG→KRPUS, a dead end, is left out of the drawing);
+# CYCLE code SET is_cycle USING path marks only the row VNDAD>HKHKG>SGSIN>VNDAD (PGlite 0.5.16, PostgreSQL 18.6).
+# Codes are shortened to three letters in the grid. Source: https://www.postgresql.org/docs/18/queries-with.html
+title: { vi: "Một vòng và dấu của CYCLE", en: "A loop and the CYCLE mark" }
+caption:
+  vi: "VNDAD, HKHKG, SGSIN rồi về VNDAD là một chu trình (chặng cụt HKHKG tới KRPUS không vẽ). CYCLE chỉ đánh dấu dòng mà cảng mới đã có trong path, và không đi tiếp từ dòng đó."
+  en: "VNDAD, HKHKG, SGSIN and back to VNDAD is a cycle (the dead-end leg from HKHKG to KRPUS is not drawn). CYCLE marks only the row whose new port is already in path, and goes no further from it."
+alt:
+  vi: "Trên một chu trình, đường đi luôn còn chặng để đi, nên câu đệ quy cần một điểm dừng. CYCLE so cảng mới với danh sách cảng đã qua và đánh dấu dòng lặp lại. Kết quả: chỉ đường VNDAD>HKHKG>SGSIN>VNDAD có is_cycle là true."
+  en: "On a cycle a route always has another leg to take, so the recursive query needs a stop. CYCLE compares the new port with the list of ports passed and marks the row that repeats one. Result: only the route VNDAD>HKHKG>SGSIN>VNDAD has is_cycle true."
+nodes:
+  - { id: dad, shape: key, label: VNDAD }
+  - { id: hkg, shape: key, label: HKHKG }
+  - { id: rtm, shape: key, label: NLRTM }
+  - { id: sin, shape: key, label: SGSIN }
+  - id: out
+    shape: grid
+    label: { vi: "kết quả", en: "result" }
+    head: [route, is_cycle]
+    cells:
+      - [DAD>HKG>SIN, "false"]
+      - [DAD>HKG>SIN>DAD, "true"]
+    cellTone: { "1:0": warm, "1:1": warm }
+rows:
+  - [dad]
+  - [sin, hkg]
+  - [rtm]
+  - [out]
+edges:
+  - { from: dad, to: hkg }
+  - { from: hkg, to: sin }
+  - { from: sin, to: dad }
+  - { from: sin, to: rtm }

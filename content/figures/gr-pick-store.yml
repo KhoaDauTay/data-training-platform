@@ -1,0 +1,34 @@
+# v47 Graph R1 (L1080–L1089): which tool for which graph question. Lesson: e-gr-l2-05 (Ý chính). No measured numbers: each
+# cell names the feature the lessons use. Sources: https://www.postgresql.org/docs/18/queries-with.html,
+# https://neo4j.com/docs/getting-started/graph-database/, https://neo4j.com/docs/cypher-manual/current/patterns/shortest-paths/
+title: { vi: "Câu hỏi nào, công cụ nào", en: "Which question, which tool" }
+caption:
+  vi: "Mỗi dòng là một kiểu câu hỏi đồ thị và cách mỗi bên trả lời. Độ sâu cố định là việc thường của SQL; duyệt sâu và thuật toán đồ thị là sở trường của CSDL đồ thị."
+  en: "Each row is a kind of graph question and how each side answers it. Fixed depth is everyday SQL; deep traversal and graph algorithms are where a graph database shines."
+alt:
+  vi: "PostgreSQL trả lời câu hỏi độ sâu cố định bằng JOIN và độ sâu thay đổi bằng WITH RECURSIVE; CSDL đồ thị viết cùng việc bằng mẫu Cypher và có sẵn SHORTEST cùng thư viện GDS. Chọn theo việc chính của hệ thống, không theo việc dữ liệu có quan hệ."
+  en: "PostgreSQL answers fixed-depth questions with JOINs and varying depth with WITH RECURSIVE; a graph database writes the same with Cypher patterns and has SHORTEST and the GDS library built in. Choose by the system's main job, not by whether the data has relationships."
+nodes:
+  - id: pg
+    shape: grid
+    label: PostgreSQL
+    head: [{ vi: "câu hỏi", en: question }, { vi: "cách", en: how }]
+    cells:
+      - [{ vi: "độ sâu cố định", en: fixed depth }, JOIN]
+      - [{ vi: "độ sâu thay đổi", en: varying depth }, WITH RECURSIVE]
+      - [{ vi: "ít bước nhất", en: fewest hops }, SEARCH]
+      - [{ vi: "có trọng số", en: weighted }, { vi: "tự cộng dồn", en: sum it }]
+      - [{ vi: "chung giao dịch", en: one transaction }, { vi: "có sẵn", en: built in }]
+  - id: gdb
+    shape: grid
+    label: { vi: "CSDL đồ thị", en: graph database }
+    head: [{ vi: "câu hỏi", en: question }, { vi: "cách", en: how }]
+    cells:
+      - [{ vi: "độ sâu cố định", en: fixed depth }, { vi: "mẫu Cypher", en: Cypher pattern }]
+      - [{ vi: "độ sâu thay đổi", en: varying depth }, "-[:LEG]->+"]
+      - [{ vi: "ít bước nhất", en: fewest hops }, SHORTEST]
+      - [{ vi: "có trọng số", en: weighted }, GDS]
+      - [{ vi: "chung giao dịch", en: one transaction }, { vi: "hệ thống riêng", en: separate system }]
+    colTone: [null, new]
+rows:
+  - [pg, gdb]

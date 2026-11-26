@@ -45,6 +45,7 @@ const vi = {
   'ladder.stack.L3': 'Kho dữ liệu và lịch chạy: Snowflake, BigQuery, Airflow',
   'ladder.stack.L4': 'Thẻ này chỉ có ba cấp',
   'ladder.stack.L5': 'Thẻ này chỉ có ba cấp',
+  'name.graph': 'Graph (đồ thị)', 'desc.graph': 'Nút, cạnh và duyệt đồ thị bằng CTE đệ quy; Cypher để so sánh. Lab chạy trên PostgreSQL (PGlite).', 'ladder.graph.L1': 'Nút và cạnh, danh sách kề, đồ thị thuộc tính', 'ladder.graph.L2': 'Duyệt, đường ngắn nhất, chu trình, bậc, khi nào cần CSDL đồ thị', 'ladder.graph.L3': 'Thẻ này chỉ có hai cấp', 'ladder.graph.L4': 'Thẻ này chỉ có hai cấp', 'ladder.graph.L5': 'Thẻ này chỉ có hai cấp', // v47 (L1080)
   'count': '{n} bài',
   'progress': '{k}/{n} bài xong',
   'noLessons': 'Chưa có bài ở cấp này.',
@@ -238,6 +239,7 @@ const en: Record<EngineKey, string> = {
   'ladder.stack.L3': 'The warehouse and the schedule: Snowflake, BigQuery, Airflow',
   'ladder.stack.L4': 'This card has three levels only',
   'ladder.stack.L5': 'This card has three levels only',
+  'name.graph': 'Graph', 'desc.graph': 'Nodes, edges and graph traversal with recursive CTEs; Cypher for comparison. Labs run on PostgreSQL (PGlite).', 'ladder.graph.L1': 'Nodes and edges, adjacency lists, the property graph', 'ladder.graph.L2': 'Traversal, shortest paths, cycles, degree, when a graph database pays off', 'ladder.graph.L3': 'This card has two levels only', 'ladder.graph.L4': 'This card has two levels only', 'ladder.graph.L5': 'This card has two levels only', // v47 (L1080)
   'count': '{n} lessons',
   'progress': '{k} of {n} lessons done',
   'noLessons': 'No lessons at this level yet.',

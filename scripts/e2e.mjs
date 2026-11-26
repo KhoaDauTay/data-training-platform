@@ -1007,14 +1007,14 @@ let playedSave;
 // ---- engine (L248): every Database Engine lesson in the real app, in file order. A lab types each gradable step's Solution
 // and waits for its green line; a quiz/predict picks the answers; a concept (or a lesson with nothing gradable) uses its
 // button. Then the NoSQL path: every drill's Solution (or answer). Each lesson is one check, so the report lists the failures.
-const ENGINE_LESSONS = ['postgres', 'mongodb', 'dynamodb', 'design', 'stack'].flatMap((e) => walk(`content/engine/${e}`).filter((f) => /\/L[1-5]\//.test(f)).sort().map((f) => {
+const ENGINE_LESSONS = ['postgres', 'mongodb', 'dynamodb', 'design', 'stack', 'graph'].flatMap((e) => walk(`content/engine/${e}`).filter((f) => /\/L[1-5]\//.test(f)).sort().map((f) => {
   const fm = parseYaml(/^---\r?\n([\s\S]*?)\r?\n---/.exec(readFileSync(join(ROOT, f), 'utf8'))[1]);
   return { ...fm, hash: `#/engine/${fm.engine}/${fm.level}/${fm.id}` };
 }));
 const PATH_FILES = yml('content/engine/mongodb/path/index.yml');
 const PATH_DRILLS = PATH_FILES.files.flatMap((f) => yml(`content/engine/mongodb/path/${f.drills}`));
 /** Same rule as src/engine/predict.ts hasRealPlan() (v23 PRED: the predict card with "Xem thật" and the plan tree). */
-const realPlan = (l) => (l.engine === 'postgres' || l.engine === 'design' || l.engine === 'stack') && l.runtime !== 'docs' && !!l.predict && (!!l.lab?.setup || !!l.predict.expect);
+const realPlan = (l) => (l.engine === 'postgres' || l.engine === 'design' || l.engine === 'stack' || l.engine === 'graph') && l.runtime !== 'docs' && !!l.predict && (!!l.lab?.setup || !!l.predict.expect);
 /** Same rule as src/engine/predict.ts readsCounters() (L296, blind-pg l3-08): "Xem thật" shows the query's rows, not a plan. */
 const readsCounters = (l) => realPlan(l) && !l.predict.expect && !!l.lab?.setup && /\bpg_stat(io)?_/i.test(l.predict.sql);
 /** Same rule as src/engine/predict.ts mongoRows() (v25): a MongoDB predict on a lab without `recorded` gets "Xem thật" with the real documents. */
@@ -1037,7 +1037,7 @@ function capstonePivot(lab) {
 /** v23 PG-C lessons (L268): VACUUM size, count(*) predict, Buffers line, unused indexes, REINDEX. */
 const NEW_V23 = ['e-pg-l3-16', 'e-pg-l3-17', 'e-pg-l3-18', 'e-pg-l5-16', 'e-pg-l5-17'];
 /** Same rule as src/engine/labs.ts gradable(). */
-const gradableStep = (l, st) => l.runtime !== 'docs' && ((l.engine === 'postgres' || l.engine === 'design' || l.engine === 'stack') ? st.check !== 'doc' && !(st.check === 'plan' && !l.lab?.setup) : st.check === 'doc' || (l.engine === 'dynamodb' && st.check === 'catalog')); // L299
+const gradableStep = (l, st) => l.runtime !== 'docs' && ((l.engine === 'postgres' || l.engine === 'design' || l.engine === 'stack' || l.engine === 'graph') ? st.check !== 'doc' && !(st.check === 'plan' && !l.lab?.setup) : st.check === 'doc' || (l.engine === 'dynamodb' && st.check === 'catalog')); // L299
 SECTIONS.engine = async () => {
   await shared();
   const counts = { lessons: 0, passed: 0, steps: 0, predicts: 0, capstones: 0, capPlans: 0, refused: 0, failedLessons: [] };
@@ -1074,7 +1074,7 @@ SECTIONS.engine = async () => {
         await waitFor('right after the real plan', `!!${status}?.classList.contains('good')`, 5000);
       } else if (l.predict) await pick('p', l.predict);
       const cap = l.kind === 'capstone' && !!l.lab && l.runtime !== 'docs';
-      const pivot = cap && (l.engine === 'postgres' || l.engine === 'design' || l.engine === 'stack') ? capstonePivot(l.lab) : undefined;
+      const pivot = cap && (l.engine === 'postgres' || l.engine === 'design' || l.engine === 'stack' || l.engine === 'graph') ? capstonePivot(l.lab) : undefined;
       if (cap && !(await ev(`!!document.querySelector('#engine-page [data-cap-bar]')`))) fail('no capstone step bar');
       for (const [i, st] of (l.lab?.steps ?? []).entries()) {
         if (!gradableStep(l, st)) continue;
