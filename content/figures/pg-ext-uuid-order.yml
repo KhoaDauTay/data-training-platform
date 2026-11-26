@@ -1,0 +1,31 @@
+# v43 R2 (extensions-plan §b, lesson e-pg-ext-08): where 8 new primary keys land in a B-tree. Random v4 ids spread over every
+# leaf page; time-ordered v7 ids all go to the rightmost leaf. Counts are an illustration of the mechanism, not measured.
+# Sources: https://www.postgresql.org/docs/18/functions-uuid.html , https://www.postgresql.org/docs/18/btree.html
+title: { vi: "Khóa mới rơi vào đâu trong index", en: "Where new keys land in the index" }
+caption:
+  vi: "Tám dòng mới. Với v4 ngẫu nhiên, mỗi trang lá đều bị ghi; với v7 theo thời gian, cả tám vào trang cuối."
+  en: "Eight new rows. With random v4, every leaf page gets written; with time-ordered v7, all eight go to the last page."
+alt:
+  vi: "UUID v4 là số ngẫu nhiên, nên dòng mới chen vào khắp các trang lá của index khóa chính; UUID v7 bắt đầu bằng thời điểm tạo, nên dòng mới luôn nối vào trang lá cuối cùng. Ít trang bị ghi hơn nghĩa là ít trang phải đọc vào bộ nhớ và ít trang phải tách."
+  en: "A v4 UUID is random, so new rows squeeze into leaf pages all over the primary key index; a v7 UUID starts with its creation time, so new rows always append to the last leaf page. Fewer pages written means fewer pages to read into memory and fewer pages to split."
+nodes:
+  - { id: ins, label: { vi: "8 dòng mới", en: "8 new rows" }, sub: gen_random_uuid() }
+  - id: leaves
+    shape: grid
+    label: bookings_pkey
+    sub: { vi: "các trang lá", en: "leaf pages" }
+    head: [{ vi: "trang", en: "page" }, { vi: "khóa mới", en: "new keys" }]
+    cells: [["1", "2"], ["2", "1"], ["3", "3"], ["4", "2"]]
+    cellTone: { "0:1": warm, "1:1": warm, "2:1": warm, "3:1": warm }
+rows:
+  - [ins, leaves]
+edges:
+  - { from: ins, to: leaves }
+steps:
+  - say: { vi: "v4: khóa ngẫu nhiên, mọi trang đều bị ghi.", en: "v4: random keys, every page gets written." }
+    alt: { vi: "Tám khóa v4 ngẫu nhiên rơi vào cả bốn trang lá, nên cả bốn trang phải nằm trong bộ nhớ và bị ghi.", en: "Eight random v4 keys land in all four leaf pages, so all four pages must be in memory and get written." }
+  - say: { vi: "v7: khóa tăng theo thời gian, chỉ trang cuối.", en: "v7: keys rise with time, only the last page." }
+    alt: { vi: "Tám khóa v7 tăng dần nên cùng nối vào trang lá 4, còn ba trang kia không bị đụng tới.", en: "Eight rising v7 keys all append to leaf page 4, and the other three pages are left alone." }
+    set:
+      ins: { sub: uuidv7() }
+      leaves: { cells: [["1", "0"], ["2", "0"], ["3", "0"], ["4", "8"]], cellTone: { "3:1": new } }
