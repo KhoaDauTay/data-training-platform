@@ -8,6 +8,7 @@ title_en: Tuple and domain relational calculus
 kind: concept
 runtime: browser
 minutes: 15
+figures: [{ name: ds-division, at: idea, variant: forall }]
 objectives:
   - vi: Đọc một biểu thức phép tính bộ {t | P(t)} và phép tính miền, rồi viết câu SQL tương ứng.
     en: Read a tuple calculus expression {t | P(t)} and a domain calculus one, then write the matching SQL.
@@ -88,6 +89,8 @@ SQL mượn trực tiếp: biến bộ là bí danh trong `FROM`, ∃ là `EXIST
 Một biểu thức có thể trả vô hạn bộ, ví dụ "mọi bộ không thuộc `students`". Biểu thức **an toàn** chỉ trả giá trị lấy từ các quan hệ có mặt trong nó. Codd chứng minh phép tính an toàn và đại số quan hệ có cùng sức biểu diễn: mọi câu viết được bằng cái này đều viết được bằng cái kia. Ngôn ngữ có sức mạnh đó gọi là **đầy đủ quan hệ**; SQL còn hơn thế nhờ gom nhóm, sắp xếp và đệ quy.
 
 Hai bẫy khi dịch ∀ sang SQL. Thứ nhất, ∀ trên tập rỗng luôn đúng: sinh viên chưa có điểm nào vẫn thỏa "mọi điểm đều ≥ 5", nên câu `NOT EXISTS` trả cả họ. Nếu yêu cầu ngầm hiểu "có điểm và mọi điểm đều ≥ 5" thì phải thêm một `EXISTS` nữa. Thứ hai, `NOT IN` không phải ¬∃: khi danh sách con có một NULL, `x NOT IN (…)` không bao giờ đúng, còn `NOT EXISTS` vẫn đúng như logic hai trị của phép tính. Vì vậy dịch phủ định theo phép tính thì dùng `NOT EXISTS`. Bài `e-pg-l4-18` cho thấy ba cách viết "không có" còn khác nhau cả ở kế hoạch.
+
+Hình cuối mục này dùng lại dữ liệu bài phép chia `e-ds-l5-02`: "học đủ mọi môn core" được đọc là "không có môn core nào chưa học".
 
 ## Ví dụ
 
@@ -174,6 +177,8 @@ SQL borrows directly: a tuple variable is an alias in `FROM`, ∃ is `EXISTS`. S
 An expression can return infinitely many tuples, for example "every tuple not in `students`". A **safe** expression returns only values taken from the relations it mentions. Codd proved that safe calculus and relational algebra have the same expressive power: anything written in one can be written in the other. A language with that power is called **relationally complete**; SQL goes further with grouping, ordering and recursion.
 
 Two traps when turning ∀ into SQL. First, ∀ over an empty set is always true: a student with no grades still satisfies "every grade is ≥ 5", so the `NOT EXISTS` query returns them too. If the request really means "has grades and every grade is ≥ 5", add one more `EXISTS`. Second, `NOT IN` is not ¬∃: when the subquery's list holds a NULL, `x NOT IN (…)` is never true, while `NOT EXISTS` stays true as in the calculus' two-valued logic. So to translate a negation from the calculus, use `NOT EXISTS`. Lesson `e-pg-l4-18` shows that the three ways to write "has none" also differ in their plans.
+
+The figure at the end of this section reuses the data of the division lesson `e-ds-l5-02`: "took every core course" is read as "no core course not taken".
 
 ## Example
 

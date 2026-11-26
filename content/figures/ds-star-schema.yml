@@ -1,0 +1,29 @@
+# B2-7 (tools/v42/diagram-plan-v42.md): one fact table, dimensions around it, one grain. Lesson: e-ds-l4-05 (Ý chính). Data: the
+# lab's sales / products / stores, run on PGlite (tools/v42/b2check.log): revenue = sum(qty × price) by city × category gives
+# Da Nang office 100, Da Nang travel 80, Hoi An travel 600, Hue office 50, Hue travel 300.
+# Source: https://www.postgresql.org/docs/18/rules-materializedviews.html (keeping a report copy)
+title: { vi: "Star schema: fact ở giữa, chiều quanh nó", en: "A star schema: the fact in the middle, dimensions around it" }
+caption:
+  vi: "Mỗi dòng SALES là một món bán ra (grain); báo cáo gom theo city của STORES và category của PRODUCTS."
+  en: "Each SALES row is one item sold (the grain); the report groups by STORES' city and PRODUCTS' category."
+alt:
+  vi: "Star schema đặt các sự kiện đo được vào một bảng fact ở giữa và mô tả vào các bảng chiều quanh nó. Mọi số đo phải cùng grain, nếu không phép cộng sẽ cộng lặp."
+  en: "A star schema puts measurable events in a central fact table and descriptions in dimension tables around it. Every measure must share one grain, or sums double-count."
+nodes:
+  - { id: p, shape: entity, label: PRODUCTS, fields: [{ name: id, pk: true }, name, category] }
+  - { id: f, shape: entity, label: SALES (fact), fields: [{ name: id, pk: true }, { name: product_id, fk: true }, { name: store_id, fk: true }, sold_on, qty, price] }
+  - { id: s, shape: entity, label: STORES, fields: [{ name: id, pk: true }, city] }
+  - { id: grain, shape: key, label: { vi: "1 dòng = 1 món bán", en: "one row = one sale" }, sub: grain, tone: warm }
+  - id: r
+    shape: grid
+    label: { vi: "doanh thu = sum(qty × price)", en: "revenue = sum(qty × price)" }
+    head: [city, category, revenue]
+    cells: [[Da Nang, office, "100.00"], [Da Nang, travel, "80.00"], [Hoi An, travel, "600.00"], [Hue, office, "50.00"], [Hue, travel, "300.00"]]
+rows:
+  - [p, f, s]
+  - [grain]
+  - [r]
+phone: { rows: [[p], [f], [s], [grain], [r]] }
+edges:
+  - { from: "p#0", to: "f#1", link: true, ends: [one, zero-many] }
+  - { from: "s#0", to: "f#2", link: true, ends: [one, zero-many] }

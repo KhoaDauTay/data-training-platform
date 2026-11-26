@@ -8,6 +8,7 @@ title_en: Multi-tenant - three layers of protection and the topic map
 kind: concept
 runtime: browser
 minutes: 12
+figures: [{ name: ds-tenant-layers, at: idea }]
 objectives:
   - vi: Kể ba lớp giữ dữ liệu các khách hàng tách nhau trong pool - câu lọc, khóa, chính sách - và lớp nào chặn lỗi nào.
     en: Name the three layers that keep tenants apart in a pool - query filters, keys, policies - and which mistake each one stops.
@@ -143,6 +144,8 @@ Bản đồ chủ đề: mỗi lớp một nhóm, mỗi dòng một bài đào s
 
 Nhiều người nghĩ có một lớp là đủ. Thật ra chúng không thay nhau được: chính sách không kiểm khóa ngoại trỏ đi đâu, kiểm duy nhất và khóa ngoại cũng không đi qua chính sách, còn khóa thì không ngăn một câu đọc thiếu điều kiện. Silo và bridge đẩy phần lớn việc cô lập xuống hạ tầng; pool đặt nó vào dữ liệu, nên cần đủ cả ba.
 
+Hình từng bước cuối mục này dựng ba lớp theo đúng thứ tự trên, mỗi lớp cạnh loại lỗi nó chặn.
+
 ## Ví dụ
 
 Mỗi người bán 4 hóa đơn trong cùng một bảng:
@@ -276,6 +279,8 @@ The topic map: one group per layer, one line per lesson that goes deep on it.
 - `e-ds-l5-11`
 
 Many people think one layer is enough. In fact they cannot replace each other: a policy does not check where a foreign key points, unique and foreign key checks do not go through the policy, and keys do not stop a query that reads without its condition. Silo and bridge push most isolation down into the infrastructure; a pool puts it into the data, so it needs all three.
+
+The step-through figure at the end of this section builds the three layers in that order, each beside the kind of mistake it stops.
 
 ## Example
 

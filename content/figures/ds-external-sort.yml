@@ -1,0 +1,42 @@
+# B2-10 (tools/v42/diagram-plan-v42.md): sort what fits, then merge the runs. Lesson: e-ds-l5-06 (Ý chính). Data: the lab's nums
+# (memory = 4 values), run on PGlite (tools/v42/b2check.log): by pos 42 7 19 3 | 88 15 61 2 | 30 9 77 50 (the plan had "9 30";
+# the lab is 30 9); runs [3 7 19 42], [2 15 61 88], [9 30 50 77]; merged 2 … 88. Drawn as three 4-wide grids (one row per memory
+# load, one row per run, the merge in reading order) instead of 12-cell strips, so nothing reflows at 280.
+# Source: https://www.postgresql.org/docs/18/using-explain.html
+title: { vi: "Sắp xếp ngoài: sắp từng phần, rồi trộn", en: "External sort: sort the pieces, then merge" }
+caption:
+  vi: "Bộ nhớ chứa 4 giá trị: mỗi lần đọc 4 số, sắp, ghi thành một run; rồi trộn ba run một lượt."
+  en: "Memory holds 4 values: read 4 numbers at a time, sort them, write a run; then merge the three runs in one pass."
+alt:
+  vi: "Sắp xếp ngoài chia dữ liệu lớn hơn bộ nhớ thành các run đã sắp rồi trộn chúng. Trong EXPLAIN của Postgres nó hiện là Sort Method: external merge."
+  en: "An external sort cuts data larger than memory into sorted runs, then merges them. In Postgres's EXPLAIN it shows as Sort Method: external merge."
+nodes:
+  - { id: mem, shape: key, label: { vi: "bộ nhớ: 4 giá trị", en: "memory: 4 values" }, tone: warm }
+  - id: in
+    shape: grid
+    label: { vi: "nums, mỗi dòng một lần đọc", en: "nums, one read per row" }
+    cells: [["42", "7", "19", "3"], ["88", "15", "61", "2"], ["30", "9", "77", "50"]]
+  - id: runs
+    shape: grid
+    label: { vi: "ba run, mỗi run đã sắp", en: "three runs, each sorted" }
+    cells: [[run 0, "3", "7", "19", "42"], [run 1, "2", "15", "61", "88"], [run 2, "9", "30", "50", "77"]]
+    colTone: [null, new, null, null, null]
+  - id: out
+    shape: grid
+    label: { vi: "trộn (đọc từ trái sang phải)", en: "merged (left to right)" }
+    cells: [["2", "3", "7", "9"], ["15", "19", "30", "42"], ["50", "61", "77", "88"]]
+    tone: live
+rows:
+  - [mem]
+  - [in]
+  - [runs]
+  - [out]
+edges:
+  - { from: in, to: runs, label: { vi: "sắp từng dòng", en: "sort each row" } }
+  - { from: runs, to: out, label: { vi: "so đầu các run", en: "compare heads" } }
+steps:
+  - say: { vi: "Mỗi lần đọc vừa bộ nhớ, sắp, ghi một run.", en: "Read what fits in memory, sort it, write a run." }
+    alt: { vi: "12 giá trị với bộ nhớ 4 cho ba run, mỗi run đã sắp.", en: "12 values with room for 4 make three runs, each sorted." }
+    show: [mem, in, runs]
+  - say: { vi: "Trộn các run một lượt.", en: "Merge the runs in one pass." }
+    alt: { vi: "Mỗi run đã sắp nên chỉ cần so đầu của các run để lấy giá trị nhỏ nhất kế tiếp.", en: "Each run is sorted, so comparing the run heads is enough to pick the next smallest value." }

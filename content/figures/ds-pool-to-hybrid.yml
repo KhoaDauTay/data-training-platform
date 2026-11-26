@@ -1,0 +1,44 @@
+# B2-13 (tools/v42/diagram-plan-v42.md): one heavy seller moves to its own shard. Lesson: e-ds-l5-11 (Thực hành: the capstone
+# has no Ý chính). Data: the lab, run on PGlite (tools/v42/b2check.log): 30000 orders over 50 sellers; seller 1 has 6000 (20%);
+# the next largest are sellers 5, 6 and 10 with 491 each (the plan named only 6 and 10), the other 46 hold 489–491 each; odd
+# sellers live on s1 (25 sellers, 17755 orders), even ones on s2 (25, 12245). Bars need ≥ 8 units per value, so values are
+# orders ÷ 600 and the note carries the real count (what the data table reads); the 46 others are one bar per seller's size,
+# not their sum (a 23018 bar would dwarf seller 1). Sources: https://www.postgresql.org/docs/18/ddl-rowsecurity.html,
+# https://docs.aws.amazon.com/wellarchitected/latest/saas-lens/silo-pool-and-bridge-models.html
+title: { vi: "Từ pool sang mô hình lai", en: "From a pool to a hybrid" }
+caption:
+  vi: "Người bán 1 có 6000 trong 30000 đơn; danh mục chuyển riêng họ từ s1 sang shard riêng s3, những người khác ở yên."
+  en: "Seller 1 has 6000 of 30000 orders; the directory moves just them from s1 to the dedicated shard s3, everyone else stays."
+alt:
+  vi: "Mô hình lai giữ khách nhỏ trong pool và đưa khách nặng sang shard riêng qua danh mục. Kết quả: người bán 1 (6000 đơn) sang s3, phiên bản 2."
+  en: "A hybrid keeps small tenants pooled and moves heavy ones to a dedicated shard through the directory. Result: seller 1 (6000 orders) moves to s3, version 2."
+nodes:
+  - id: b
+    shape: bars
+    label: { vi: "đơn theo người bán", en: "orders by seller" }
+    sub: { vi: "người bán: số đơn", en: "seller: orders" }
+    head: [{ vi: người bán, en: seller }, { vi: số đơn, en: orders }]
+    items:
+      - { label: { vi: "1 (ở s1)", en: "1 (on s1)" }, value: 10, note: "6000", tone: warm }
+      - { label: "5", value: 0.82, note: "491" }
+      - { label: "6", value: 0.82, note: "491" }
+      - { label: "10", value: 0.82, note: "491" }
+      - { label: { vi: "46 khác", en: "46 others" }, value: 0.82, note: { vi: "489–491 / người", en: "489–491 each" } }
+  - { id: s1, shape: table, label: "s1 (pool)", sub: { vi: "25 khách", en: "25 tenants" } }
+  - { id: s2, shape: table, label: "s2 (pool)", sub: { vi: "25 khách", en: "25 tenants" } }
+  - { id: s3, shape: table, label: { vi: "s3 (riêng)", en: "s3 (dedicated)" }, sub: { vi: "người bán 1", en: "seller 1" }, tone: live }
+  - { id: dir, shape: key, label: { vi: "danh mục: 1 → s3", en: "directory: 1 → s3" }, sub: { vi: phiên bản 2, en: version 2 }, tone: new }
+rows:
+  - [b]
+  - [s1, s2]
+  - [s3, dir]
+edges:
+  - { from: s1, to: s3, label: { vi: "chuyển 1", en: "move 1" } }
+steps:
+  - say: { vi: "Một người bán chiếm 20% đơn.", en: "One seller holds 20% of orders." }
+    alt: { vi: "Người bán 1 nặng gấp mười hai lần người kế tiếp, nên s1 chậm cho mọi khách chung shard.", en: "Seller 1 is twelve times the next one, so s1 is slow for every tenant on it." }
+    show: [b, s1, s2]
+  - say: { vi: "Chuyển đúng một dòng danh mục.", en: "Change exactly one directory row." }
+    alt: { vi: "Danh mục cho chuyển một khách sang shard riêng mà không ai khác đổi chỗ.", en: "The directory moves one tenant to a dedicated shard while nobody else changes place." }
+    set:
+      s1: { sub: { vi: "24 khách", en: "24 tenants" } }

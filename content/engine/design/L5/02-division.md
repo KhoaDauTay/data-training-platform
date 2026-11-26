@@ -8,6 +8,7 @@ title_en: Division - the "for all" question
 kind: lab
 runtime: browser
 minutes: 20
+figures: [{ name: ds-division, at: idea }]
 objectives:
   - vi: Nhận ra câu hỏi cần phép chia ÷ (ai làm đủ mọi thứ trong một danh sách).
     en: Spot a question that needs division ÷ (who did every item on a list).
@@ -93,6 +94,8 @@ Cho số bị chia R(học viên, khóa) và số chia S(khóa). R ÷ S là nh�
 SQL không có ∀, nhưng "với mọi x, P(x)" tương đương "không có x nào mà không P(x)". Vì vậy dạng chuẩn là hai lớp `NOT EXISTS`: không có khóa nào trong số chia mà không có lượt học tương ứng. Dạng thứ hai dùng `EXCEPT`: tập khóa cần học trừ tập khóa đã học phải rỗng. Dạng thứ ba đếm: số khóa khác nhau đã học trong số chia bằng số khóa của số chia.
 
 Ba dạng cho cùng kết quả trên dữ liệu thường nhưng khác ở hai góc. Số chia rỗng: hai dạng đầu trả mọi người (đúng theo logic), dạng đếm trả rỗng vì không có nhóm nào được tạo. Dòng trùng: dạng đếm phải dùng `count(DISTINCT …)`.
+
+Hình từng bước cuối mục này dựng mọi cặp học viên × môn core của lab, rồi loại những người còn thiếu cặp.
 
 ## Cú pháp
 
@@ -219,6 +222,8 @@ Take a dividend R(student, course) and a divisor S(course). R ÷ S is the studen
 SQL has no ∀, but "for every x, P(x)" is the same as "there is no x for which P(x) fails". So the standard form is two levels of `NOT EXISTS`: there is no course in the divisor without a matching take. The second form uses `EXCEPT`: the set of courses required minus the set taken must be empty. The third form counts: the number of distinct divisor courses taken equals the number of courses in the divisor.
 
 The three forms agree on ordinary data but differ in two corners. Empty divisor: the first two return everyone (logically right), the counting form returns nobody because no group is formed. Duplicate rows: the counting form needs `count(DISTINCT …)`.
+
+The step-through figure at the end of this section builds every student × core-course pair of the lab, then drops anyone still missing a pair.
 
 ## Syntax
 

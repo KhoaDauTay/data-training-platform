@@ -8,6 +8,7 @@ title_en: When to denormalise - grain, star schemas, controlled copies
 kind: concept
 runtime: browser
 minutes: 15
+figures: [{ name: ds-star-schema, at: idea }]
 objectives:
   - vi: Nói được vì sao bảng báo cáo hay bảng tài liệu cố ý lưu lặp, và cái giá phải trả khi ghi.
     en: Say why reporting tables and document tables repeat data on purpose, and what it costs on writes.
@@ -106,6 +107,8 @@ Ba cách giữ bản sao trong Postgres. **Materialized view**: lưu kết quả
 
 Khi nào đáng làm: đọc nhiều hơn ghi rất nhiều, phép nối hay phép gom đo được là chậm bằng `EXPLAIN ANALYZE` chứ không phải đoán, và người dùng chấp nhận số hơi cũ. Thử theo thứ tự rẻ trước: viết lại câu và thêm index, rồi materialized view, cuối cùng mới tới cột hay bảng bản sao giữ bằng trigger. Mỗi bản sao cần ba dòng ghi chú: nguồn là bảng nào, làm mới lúc nào, và trễ bao lâu thì chấp nhận được. Thiếu ba dòng đó, bản sao sớm muộn sẽ nói dối mà không ai biết. Vòng đo và sửa đó là bài `e-pg-l5-18`.
 
+Hình cuối mục này vẽ star schema của lab: `sales` ở giữa, `products` và `stores` quanh nó, và báo cáo doanh thu theo thành phố và loại hàng.
+
 ## Ví dụ
 
 Đọc star schema: fact `sales` nối hai chiều, gom theo thành phố và nhóm hàng.
@@ -193,6 +196,8 @@ Reporting uses a **star schema**: a **fact** table in the middle (each row a mea
 Three ways to keep copies in Postgres. **Materialized view**: stores a query's result, reads as fast as a table, stale until `REFRESH`. **Generated column**: computed from columns of the same row, updated by the database, never written by hand. **Trigger**: runs code whenever the source changes, the most powerful and the easiest to get wrong. For data always read as a whole, a `jsonb` document that gathers the parts is a sound form of denormalisation too.
 
 When it is worth it: reads far outnumber writes, the join or aggregation is measured as slow with `EXPLAIN ANALYZE` rather than guessed, and users accept slightly old numbers. Try the cheap things first: rewrite the query and add an index, then a materialized view, and only last a copied column or table kept by a trigger. Every copy needs three lines of notes: which table is its source, when it is refreshed, and how much delay is acceptable. Without those three lines a copy will sooner or later lie and nobody will notice. That measure-and-fix loop is lesson `e-pg-l5-18`.
+
+The figure at the end of this section draws the lab's star schema: `sales` in the middle, `products` and `stores` around it, and the revenue report by city and category.
 
 ## Example
 

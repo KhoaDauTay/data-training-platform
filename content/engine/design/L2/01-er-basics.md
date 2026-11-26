@@ -8,7 +8,7 @@ title_en: Entities, attributes, relationships and degree
 kind: concept
 runtime: browser
 minutes: 15
-figures: [{ name: ds-cardinality, at: example }]
+figures: [{ name: ds-er-attribute-kinds, at: idea }, { name: ds-cardinality, at: example }]
 objectives:
   - vi: Phân loại thuộc tính đơn, phức hợp, đa trị, dẫn xuất và thuộc tính khóa.
     en: Classify simple, composite, multivalued, derived and key attributes.
@@ -98,6 +98,8 @@ Trước khi viết một câu `CREATE TABLE`, người thiết kế cần một
 
 Có hai lối vẽ phổ biến. Lối Chen vẽ thực thể là hình chữ nhật, mối quan hệ là hình thoi, thuộc tính là hình bầu dục. Lối "chân chim" (crow's foot) gọn hơn: chỉ hộp và đường nối, đầu đường có ký hiệu một, nhiều, không hoặc một. Sơ đồ ER trong tab ER của BoonData dùng lối chân chim.
 
+Hình từng bước cuối mục này đặt bốn loại thuộc tính lên sơ đồ cửa hàng, rồi cho thấy thuộc tính đa trị thành bảng con `customer_phones` và thuộc tính dẫn xuất thành cột sinh.
+
 ## Ví dụ
 
 Thuộc tính phức hợp (họ tên, địa chỉ) lên bảng thành nhiều cột; ghép lại khi đọc.
@@ -175,6 +177,8 @@ An **entity** is a thing with its own identity: a customer, an order, a product.
 A **relationship** connects entities. Its **degree** is how many entity sets take part: unary (an employee manages employees), binary (a customer places orders), ternary (a doctor prescribes a drug to a patient). **Cardinality** says how many entities on one side link to one on the other: 1:1, 1:N, M:N. **Total participation** means every entity must appear in the relationship; partial means it may not.
 
 Two drawing styles are common. Chen's style draws entities as rectangles, relationships as diamonds and attributes as ovals. The "crow's foot" style is leaner: boxes and lines only, with marks for one, many, zero or one at the line ends. The ER tab in BoonData uses crow's foot.
+
+The step-through figure at the end of this section puts the four kinds of attribute on the shop's diagram, then shows the multivalued one becoming the child table `customer_phones` and the derived one a generated column.
 
 ## Example
 

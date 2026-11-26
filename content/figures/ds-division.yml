@@ -1,0 +1,50 @@
+# B2-9 (tools/v42/diagram-plan-v42.md): "took every core course" = nobody is missing a pair. Lessons: e-ds-l5-02 (Ý chính),
+# e-ds-l5-03 (Ý chính, variant `forall`: the same l5-02 data, ∀ read as "no missing course"). Data: the l5-02 lab, run on PGlite
+# (tools/v42/b2check.log): core = SQL, NOSQL, DESIGN; missing pairs Chi–DESIGN, Dung–DESIGN, Dung–NOSQL, Dung–SQL; division =
+# An, Binh. ÷ and ∀ are not in the glyph table (Batch 1's D2): drawn text says "chia" / "division" and "mọi" / "every".
+# Source: https://www.postgresql.org/docs/18/functions-subquery.html
+title: { vi: "Phép chia: ai học đủ mọi môn core", en: "Division: who took every core course" }
+caption:
+  vi: "took ÷ core: dựng mọi cặp học viên × môn core lẽ ra phải có; ai thiếu dù một cặp thì bị loại."
+  en: "took ÷ core: build every student × core-course pair that should exist; anyone missing even one pair is out."
+alt:
+  vi: "R ÷ S giữ những học viên đã học mọi môn trong S. SQL viết nó là hai lớp NOT EXISTS: không có môn nào mà học viên chưa học. Kết quả: An, Binh."
+  en: "R ÷ S keeps the students paired with every course in S. SQL writes it as two layers of NOT EXISTS: no course the student has not taken. Result: An, Binh."
+nodes:
+  - id: need
+    shape: grid
+    label: { vi: "học viên × môn core: đã học?", en: "student × core course: taken?" }
+    head: [{ vi: học viên, en: student }, SQL, NOSQL, DESIGN]
+    cells:
+      - [An, ✓, ✓, ✓]
+      - [Binh, ✓, ✓, ✓]
+      - [Chi, ✓, ✓, { vi: thiếu, en: missing }]
+      - [Dung, { vi: thiếu, en: missing }, { vi: thiếu, en: missing }, { vi: thiếu, en: missing }]
+    cellTone: { "2:3": dead, "3:1": dead, "3:2": dead, "3:3": dead }
+  - { id: core, shape: grid, label: { vi: "core (số chia)", en: "core (divisor)" }, head: [code], cells: [[SQL], [NOSQL], [DESIGN]], tone: new }
+  - { id: res, shape: key, label: "÷ core: An, Binh", sub: { vi: "đủ mọi môn core", en: "no course missing" }, tone: live }
+rows:
+  - [core, need]
+  - [res]
+edges:
+  - { from: need, to: res }
+steps:
+  - say: { vi: "Mọi cặp lẽ ra phải có.", en: "Every pair that should exist." }
+    alt: { vi: "Phép chia lấy học viên × môn cần học, rồi so với lượt học có thật.", en: "Division takes students × required courses, then compares with the enrolments that exist." }
+    show: [core, need]
+  - say: { vi: "Ai thiếu một cặp bị loại.", en: "Anyone missing a pair is out." }
+    alt: { vi: "Chi thiếu DESIGN và Dung thiếu cả ba, nên chỉ An và Binh không còn cặp nào thiếu.", en: "Chi lacks DESIGN and Dung lacks all three, so only An and Binh have no missing pair." }
+    set:
+      need: { rowTone: [null, null, ghost, ghost] }
+variants:
+  forall:
+    set:
+      need: { rowTone: [null, null, ghost, ghost] }
+      res: { sub: { vi: "∀ môn: đã học", en: "∀ course: taken" } }
+    title: { vi: "Với mọi môn = không có môn nào thiếu", en: "For every course = no course missing" }
+    caption:
+      vi: "SQL không có ∀: ∀ môn (đã học) viết thành ¬∃ môn (chưa học), tức hai lớp NOT EXISTS. Dữ liệu lấy từ bài trước, bài phép chia."
+      en: "SQL has no ∀: ∀ course (taken) becomes ¬∃ course (not taken), two layers of NOT EXISTS. The data comes from the previous lesson, on division."
+    alt:
+      vi: "SQL không có ∀, nên “với mọi môn” được viết là “không có môn nào chưa học”, tức hai lớp NOT EXISTS. Kết quả: An, Binh."
+      en: "SQL has no ∀, so “for every course” is written as “no course not taken”, two layers of NOT EXISTS. Result: An, Binh."
