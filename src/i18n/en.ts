@@ -808,6 +808,7 @@ export const en: Record<Key, Msg> = {
   'home.pathSql': 'SQL path',
   'search.open': 'Search lessons and terms',
   'search.keys': '{mod}+K',
+  'search.box': 'Search lessons, terms…',
   'learn.module': 'Module {n} · {title}',
   'lesson.drilled': 'You already practised this skill in Practise SQL.',
   'learn.loading': 'Preparing the learning path and the practice data…',

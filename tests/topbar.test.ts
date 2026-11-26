@@ -12,7 +12,7 @@ describe('U1 (v12.0): thanh trên một dòng dưới 640 px', () => {
   });
   it('menu ⋯ có bản sao Hộp thư/Ôn tập/Sổ tay, VI|EN và theme cho mobile', () => {
     const menu = html.slice(html.indexOf('id="more-menu"'), html.indexOf('id="domain-menu"'));
-    for (const id of ['inbox-btn', 'review-btn', 'notebook-btn']) expect(menu).toContain(`data-proxy="${id}"`);
+    for (const id of ['inbox-btn', 'review-btn', 'notebook-btn', 'search-btn']) expect(menu).toContain(`data-proxy="${id}"`);
     for (const a of ['data-lang="vi"', 'data-lang="en"', 'data-theme-pref="light"', 'data-theme-pref="system"', 'data-theme-pref="dark"']) expect(menu).toContain(a);
   });
 });
@@ -28,6 +28,20 @@ describe('F1 (ui-ux v6): thanh trên một dòng từ 1024 px', () => {
     expect(tag(/<span id="domain-chapter"[^>]*>/)).toContain('xl:hidden');
     expect(tag(/<span id="rank"[^>]*>/)).not.toContain('truncate');
     expect(html.slice(html.indexOf('<span id="domain-status"'), html.indexOf('<span id="rank"'))).toContain('max-[1600px]:hidden');
+  });
+  it('v42 (L710): ô tìm kiếm trên thanh, sau Sổ tay và trước VI|EN; chữ và phím tắt chỉ hiện từ 1920 px (1800–1919 không còn chỗ)', () => {
+    const btn = tag(/<button id="search-btn"[^>]*>[\s\S]*?<\/button>/);
+    expect(html.indexOf('id="notebook-btn"')).toBeLessThan(html.indexOf('id="search-btn"'));
+    expect(html.indexOf('id="search-btn"')).toBeLessThan(html.indexOf('class="top-prefs'));
+    expect(html.slice(html.indexOf('data-actions'), html.indexOf('class="top-prefs'))).toContain('id="search-btn"');
+    expect(btn).toContain('data-icon="search"');
+    expect(btn).toMatch(/data-label class="[^"]*max-\[1920px\]:sr-only/);
+    expect(btn).toMatch(/class="kbd[^"]*max-\[1920px\]:hidden/);
+    // 1024–1279 px (a badged EN bar is full) and phones: the box folds into ⋯, whose copy shows only there
+    expect(btn).toContain('lg:max-xl:hidden');
+    const copy = tag(/<button[^>]*data-proxy="search-btn"[^>]*>/);
+    expect(copy).toContain('sm:max-lg:hidden');
+    expect(copy).toContain('xl:hidden');
   });
   it('v21 U3: thanh dưới có đủ 5 cột cho 4 mục cấp 1 + lĩnh vực (một hàng)', () => {
     expect(tag(/<nav id="bottom-nav"[^>]*>/)).toContain('grid-cols-5');

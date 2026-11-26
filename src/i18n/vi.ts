@@ -807,8 +807,9 @@ export const vi = {
   'home.skillsTeaser': 'Kỹ năng SQL: đã học {n}/{total}',
   'home.pathTitle': 'Lộ trình học: SQL nền tảng, rồi Database Engine',
   'home.pathSql': 'Lộ trình SQL',
-  'search.open': 'Tìm bài và thuật ngữ', // F12 (L490): the ⋯ menu item that opens the search palette
+  'search.open': 'Tìm bài và thuật ngữ', // F12 (L490); v42 (L710): the top-bar search box's tooltip
   'search.keys': '{mod}+K',
+  'search.box': 'Tìm bài, thuật ngữ…', // v42 (L710): the box's placeholder-like text (its accessible name) and the ⋯ phone copy
   'learn.module': 'Phần {n} · {title}',
   'lesson.drilled': 'Bạn đã luyện kỹ năng này ở Luyện SQL.',
   'learn.loading': 'Đang chuẩn bị lộ trình và dữ liệu luyện tập…',

@@ -26,5 +26,7 @@ export function initSearch(): void {
     e.preventDefault();
     openSearch();
   });
-  document.getElementById('search-btn')?.addEventListener('click', openSearch);
+  const btn = document.getElementById('search-btn'); // v42 (L710): the top bar's search box; ⋯ holds a phone copy (data-proxy)
+  btn?.addEventListener('click', openSearch);
+  btn?.setAttribute('aria-keyshortcuts', isMac ? 'Meta+K' : 'Control+K');
 }
