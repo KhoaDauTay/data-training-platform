@@ -339,7 +339,7 @@ describe('v40 R2: edge kinds, cell anchors, crow\'s foot', () => {
       for (const [j, end] of [[0, line[0]], [1, line.at(-1)!]] as const) {
         const m = c.find((n) => n.k === `e:${i}.m${j}`);
         expect(m, `e:${i} mark ${j}`).toBeTruthy();
-        for (const [x, y] of pts(m!)) expect(Math.hypot(x - end[0], y - end[1]), `e:${i} mark ${j} near its end`).toBeLessThan(16);
+        for (const [x, y] of pts(m!)) expect(Math.hypot(x - end[0], y - end[1]), `e:${i} mark ${j} near its end`).toBeLessThan(28.5); // the stem lies on the line
       }
       const zeros = (e.ends ?? []).filter((k) => k?.startsWith('zero')).length;
       expect(c.filter((n) => n.t === 'c' && n.k.startsWith(`e:${i}.m`)).length, `e:${i} circles`).toBe(zeros);

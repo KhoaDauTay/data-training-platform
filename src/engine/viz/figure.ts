@@ -150,8 +150,7 @@ const base = (end: string): string => end.split('#')[0];
 /** An edge end `id`, `id#row` or (v40 R2) `id#row.col` → [id, row?, col?]. */
 const cellOf = (end: string): [string, number?, number?] => {
   const [id, rc] = end.split('#');
-  const [r, c] = (rc ?? '').split('.');
-  return [id, rc === undefined ? undefined : Number(r), c === undefined ? undefined : Number(c)];
+  return [id, ...(rc?.split('.').map(Number) ?? [])] as [string, number?, number?];
 };
 const merge = (nodes: FigNode[], set?: Patch): FigNode[] => nodes.map((n) => (set?.[n.id] ? { ...n, ...set[n.id] } : n));
 interface Plan { say: string; show: Set<string>; nodes: FigNode[] }
@@ -211,8 +210,8 @@ export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): 
   // v40: arrows on a side lane share the spread (they can land anywhere on the box), never the bus.
   const far = (e: FigEdge): boolean => Math.abs(rowOf.get(base(e.from))! - rowOf.get(base(e.to))!) > 1;
   const dropped = (e: FigEdge): boolean => !!e.near && far(e); // v40 R2: a `near` edge is not drawn on a side lane
-  /** v40 R2 (E-01): an arrow leaves a node whose text sits on its edge (a table's sub or title, a note) 8 units clear of it */
-  const out = (id: string): number => (['grid', 'bars', 'note'].includes(byId.get(base(id))?.shape ?? '') ? 8 : 2);
+  /** v40 R2 (E-01): an arrow leaves a node whose text sits on its edge (a table's sub or title) 8 units clear of it */
+  const out = (id: string): number => (['grid', 'bars'].includes(byId.get(base(id))?.shape ?? '') ? 8 : 2);
   const side = (e: FigEdge): string | undefined => {
     const ra = rowOf.get(base(e.from))!, rb = rowOf.get(base(e.to))!;
     return e.link || ra === rb || dropped(e) ? undefined : `${base(e.to)}|${rb > ra}`;
@@ -230,8 +229,7 @@ export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): 
    * so an elbow's first leg never runs beside a straight arrow and through its label; undefined = alone (it leaves the middle). */
   const leave = (e: FigEdge): number | undefined => {
     const dir = (f: FigEdge): number => Math.sign(rowOf.get(base(f.to))! - rowOf.get(base(f.from))!);
-    const tx = (f: FigEdge): number => { const b = at.get(base(f.to))!; return b.x + b.w / 2; };
-    const g = edges.filter((f) => !f.link && !far(f) && base(f.from) === base(e.from) && dir(f) && dir(f) === dir(e)).sort((p, q) => tx(p) - tx(q));
+    const g = edges.filter((f) => !f.link && !far(f) && base(f.from) === base(e.from) && dir(f) && dir(f) === dir(e)).sort((p, q) => at.get(base(p.to))!.x - at.get(base(q.to))!.x);
     const a = at.get(base(e.from))!;
     return g.length < 2 ? undefined : Math.round(a.x + (a.w * (g.indexOf(e) + 1)) / (g.length + 1));
   };
@@ -299,7 +297,7 @@ export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): 
     if (col === undefined) return r.x + (right ? r.w : 0);
     const cols = gridCols(byId.get(id)!, lang);
     const sum = cols.reduce((a, b) => a + b, 0);
-    if (col !== (right ? cols.length - 1 : 0)) fail(`${end}: ô không ở mép phía đường nối`);
+    if (col !== (right ? cols.length - 1 : 0)) fail(`${end}: ô không ở mép`);
     return r.x + Math.round((r.w - sum) / 2) + (right ? sum : 0);
   }
 
@@ -506,11 +504,12 @@ function crowEnds(k: string, d: string, ends: [Card | null, Card | null], rev: b
 /** One end mark at (x, y), the box edge, the line coming from (px, py): the outer mark (bar = 1, foot = many) touches the box, the
  * inner one (bar = at least 1, circle = may be 0) sits further out; the circle is hollow and painted over the line. */
 function crowMark(k: string, x: number, y: number, px: number, py: number, c: Card): Shape[] {
-  const l = Math.hypot(x - px, y - py) || 1, ux = (x - px) / l, uy = (y - py) / l;
-  const pt = (t: number, s: number): string => `${Math.round((x - ux * t - uy * s) * 10) / 10} ${Math.round((y - uy * t + ux * s) * 10) / 10}`;
+  const ux = Math.sign(x - px), uy = Math.sign(y - py); // links run at right angles
+  const pt = (t: number, s: number): string => `${x - ux * t - uy * s} ${y - uy * t + ux * s}`; // links run at right angles: ux, uy are 0 or ±1
   const bar = (t: number): string => `M${pt(t, -5)} L${pt(t, 5)}`;
   const many = c.endsWith('many'), zero = c.startsWith('zero');
-  const d = (many ? `M${pt(10, 0)} L${pt(0, -5)} M${pt(10, 0)} L${pt(0, 5)}` : bar(6)) + (zero ? '' : ` ${bar(many ? 14 : 12)}`);
+  // a stem first (on a link it lies on the line; a legend entry has no other line)
+  const d = `M${pt(0, 0)} L${pt(28, 0)} ` + (many ? `M${pt(10, 0)} L${pt(0, -5)} M${pt(10, 0)} L${pt(0, 5)}` : bar(6)) + (zero ? '' : ` ${bar(many ? 14 : 12)}`);
   const o = many ? 18 : 16;
   return [{ k, t: 'p', d, ink: 'edge', w: STROKE }, ...(zero ? [{ k: `${k}.o`, t: 'c', x: x - ux * o, y: y - uy * o, r: 3.5, tone: 'plain' } as Shape] : [])];
 }
@@ -554,10 +553,10 @@ function draw(n: FigNode, r: Rect, lang: Lang, wide = false, parent?: string): S
   const attrs = parent ? { 'data-parent': parent } : undefined;
   if (shape === 'box' || shape === 'key') {
     const ls = boxLines(n, lang);
-    const cy = r.y + r.h / 2, mx = r.x + CARD_W + 6;
+    const cy = r.y + r.h / 2;
     return [{ k, t: 'r', x: r.x, y: r.y, w: r.w, h: r.h, tone: n.tone ?? 'cell', rx: shape === 'key' ? r.h / 2 : 8, attrs },
-      // v40 R2 (E-03): a legend entry: a short line with its mark at the right, as if the entity stood there
-      ...(n.card ? [{ k: `${k}.c`, t: 'p', d: `M${r.x + 12} ${cy} L${mx} ${cy}`, ink: 'edge', w: STROKE } as Shape, ...crowMark(`${k}.m`, mx, cy, r.x + 12, cy, n.card)] : []),
+      // v40 R2 (E-03): a legend entry: its mark at the right of a short stem, as if the entity stood there
+      ...(n.card ? crowMark(`${k}.m`, r.x + CARD_W + 6, cy, r.x, cy, n.card) : []),
       ...lines(`${k}.t`, ls, r.x + (r.w + (n.card ? CARD_W : 0)) / 2, mid(r.y, r.h, ls), { ink }, k)];
   }
   if (shape === 'table' || shape === 'doc') return pageShapes(n, r, lang, attrs);
