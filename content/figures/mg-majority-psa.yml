@@ -1,0 +1,45 @@
+# B1-11 (tools/v42/diagram-plan-v42.md): an arbiter votes but holds no data. Lessons: e-mg-l4-12 (Ví dụ), replaces the P-S-A /
+# P-S-S text block; variant `pss` (step 2 alone) in e-mg-l4-07 (Ý chính). Data (quoted from the lesson): P-S-A with the
+# secondary down: 3 voters, majority 2, 1 data-bearing member up, so w: "majority" is never acknowledged; P-S-S with one
+# secondary down: 2 data-bearing members up, acknowledged. Deviation: the primary's arrow to the arbiter is a dashed
+# "heartbeat" (it gets no oplog), which becomes the oplog to a second secondary in step 2 (L761 edge id); the plan's `n` key is
+# kept, its result note says how many copies are left.
+# Source: https://www.mongodb.com/docs/manual/reference/write-concern/
+title: { vi: "Arbiter bỏ phiếu nhưng không giữ dữ liệu", en: "An arbiter votes but holds no data" }
+caption:
+  vi: "Write concern majority chỉ được xác nhận khi đa số thành viên mang dữ liệu đã ghi. Arbiter có phiếu bầu nhưng không có bản dữ liệu, nên với P-S-A, mất secondary là lần ghi majority chờ mãi."
+  en: "Write concern majority is acknowledged only once a majority of data-bearing members has the write. An arbiter has a vote but no copy of the data, so in P-S-A, losing the secondary leaves majority writes waiting forever."
+alt:
+  vi: "Write concern majority đếm thành viên mang dữ liệu, không đếm arbiter. Vì vậy docs khuyên P-S-S: mất một thành viên vẫn ghi an toàn được."
+  en: "Write concern majority counts data-bearing members, not arbiters. That is why the docs recommend P-S-S: losing one member still allows safe writes."
+nodes:
+  - { id: s, shape: table, label: secondary, sub: { vi: "hỏng", en: down }, tone: dead }
+  - { id: p, shape: table, label: primary, tone: live }
+  - { id: a, label: arbiter, sub: { vi: "bầu, không dữ liệu", en: "votes, no data" }, tone: ptr }
+  - { id: n, shape: key, label: { vi: "đa số: 2 bản dữ liệu", en: "majority: 2 data copies" } }
+  - { id: res, shape: note, label: { vi: "w: majority chờ mãi, còn 1 bản", en: "w: majority waits, 1 copy left" } }
+rows:
+  - [s, p, a]
+  - [n, res]
+phone:
+  rows: [[s, p], [n, a], [res]]
+edges:
+  - { from: p, to: s, label: oplog }
+  - { id: pa, from: p, to: a, dash: true, label: { vi: "nhịp tim", en: heartbeat } }
+steps:
+  - say: { vi: "P-S-A, secondary hỏng.", en: "P-S-A, secondary down." }
+    alt: { vi: "Đa số tính trên thành viên mang dữ liệu mà chỉ còn primary, nên lần ghi majority không được xác nhận.", en: "The majority counts data-bearing members and only the primary is left, so a majority write is never acknowledged." }
+  - say: { vi: "P-S-S: vẫn còn hai bản.", en: "P-S-S: two copies remain." }
+    alt: { vi: "Mất một secondary vẫn còn hai thành viên mang dữ liệu, đủ đa số để xác nhận.", en: "Losing one secondary still leaves two data-bearing members, enough for a majority." }
+    set:
+      a: { shape: table, label: secondary 2, sub: { vi: "chạy", en: up }, tone: live }
+      pa: { label: oplog, dash: false }
+      res: { label: { vi: "w: majority xác nhận, còn 2 bản", en: "w: majority acks, 2 copies left" } }
+variants:
+  pss:
+    step: 1
+    title: { vi: "P-S-S: mất một thành viên vẫn ghi được", en: "P-S-S: losing one member still allows writes" }
+    caption: { vi: "Ba thành viên mang dữ liệu: một secondary hỏng vẫn còn hai bản, đủ đa số cho write concern majority.", en: "Three data-bearing members: one secondary down still leaves two copies, a majority for write concern majority." }
+    alt:
+      vi: "Với ba thành viên mang dữ liệu, một secondary hỏng vẫn còn hai bản, đủ đa số để write concern majority xác nhận. Một arbiter ở chỗ secondary thứ hai thì không đếm được."
+      en: "With three data-bearing members, one secondary down still leaves two copies, a majority for write concern majority. An arbiter in the second secondary's place would not count."

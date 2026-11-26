@@ -91,8 +91,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Chuyện REINDEX nghe hợp lý vì index tách lộn xộn đúng là to hơn (37 so với 25 trang) và REINDEX đúng là làm nó gọn lại. Nhưng câu này chỉ đọc 6 trang index; 364 trang còn lại là bảng, vì 2000 dòng nằm rải trên mọi trang. Đó là thành phần thứ hai của một lần tra index chậm: truy cập bảng. Index phủ bỏ hẳn phần đó: 9 trang."
-      en: "The REINDEX story sounds right because the split index really is bigger (37 against 25 pages) and a REINDEX really does pack it again. But this query reads only 6 index pages; the other 364 are table pages, because the 2000 rows sit on every page. That is the second ingredient of a slow index lookup: the table access. A covering index removes that part entirely: 9 pages."
+      vi: "REINDEX nghe hợp lý vì index tách lộn xộn đúng là to hơn (37 so với 25 trang) và REINDEX đúng là làm nó gọn lại. Nhưng câu này đọc 370 trang mà chỉ 6 là trang index; 364 là trang bảng, vì 2000 dòng của khách 100–299 nằm rải trên mọi trang. REINDEX chỉ bớt 2 trang (370 → 368); DROP rồi CREATE cũng chỉ cho đúng index gọn đó, và REINDEX mỗi đêm là tốn công vô ích. Chỗ đắt là truy cập bảng: index phủ bỏ hẳn phần đó, còn 9 trang."
+      en: "A REINDEX sounds right because the split index really is bigger (37 against 25 pages) and a REINDEX really does pack it again. But this query reads 370 pages and only 6 are index pages; 364 are table pages, because the 2000 rows of customers 100–299 sit on every page. A REINDEX saves just 2 pages (370 → 368); DROP and CREATE give the same compact index, and a nightly REINDEX is wasted work. The expensive part is the table access: a covering index removes it entirely, leaving 9 pages."
   - q:
       vi: "Khi nào REINDEX thật sự đáng làm?"
       en: "When is a REINDEX really worth doing?"

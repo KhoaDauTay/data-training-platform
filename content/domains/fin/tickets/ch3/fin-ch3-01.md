@@ -58,8 +58,8 @@ Ví dụ: các hồ sơ nộp ngày 28/10/2026, xếp vào dải điểm thấp,
 ④ `END` đóng biểu thức; đặt tên cho cột mới bằng `AS`.
 
 ## Hints
-1. Đây là bài chia nhóm theo luật, như ví dụ mẫu: một biểu thức nhiều nhánh xét số ngày quá hạn từ nhỏ đến lớn. Mã khoản vay nằm ở sổ vay, nên ghép ảnh chụp với sổ vay.
-2. Ảnh chụp `loan_snapshots s` (cột `month_end`, `dpd`) ghép `loans l` qua `l.id = s.loan_id`. Nhóm nợ: `CASE WHEN s.dpd = 0 THEN 0 WHEN s.dpd <= 30 THEN 1 WHEN s.dpd <= 90 THEN 2 ELSE 3 END`.
+1. Đây là bài chia nhóm theo luật, như ví dụ mẫu: một biểu thức nhiều nhánh xét số ngày quá hạn từ nhỏ đến lớn. Mã khoản vay nằm ở sổ vay, nên nối ảnh chụp với sổ vay.
+2. Ảnh chụp `loan_snapshots s` (cột `month_end`, `dpd`) nối `loans l` qua `l.id = s.loan_id`. Nhóm nợ: `CASE WHEN s.dpd = 0 THEN 0 WHEN s.dpd <= 30 THEN 1 WHEN s.dpd <= 90 THEN 2 ELSE 3 END`.
 3. `SELECT l.code, s.dpd, CASE ... END FROM loan_snapshots s JOIN loans l ON ... WHERE s.month_end = '{{me}}' AND l.branch_id = {{id}} ORDER BY s.dpd DESC, l.code`
 
 ## Solution

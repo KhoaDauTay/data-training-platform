@@ -3,6 +3,7 @@ id: date_math
 title: "Tính toán với ngày: khoảng cách, cộng ngày và khoảng nửa mở"
 title_en: "Date arithmetic: gaps, adding days and half-open ranges"
 minutes: 25
+figures: [{ name: sql-half-open-range, at: idea }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Tính số ngày giữa hai ngày và cộng thêm ngày hay giờ vào một mốc.
@@ -126,6 +127,8 @@ Ngày và thời điểm cộng trừ được như số. Hai `date` trừ nhau 
 
 Nhiều người nghĩ **`'2026-10-31'` nghĩa là cả ngày 31**. Với cột `timestamp`, nó là một điểm: nửa đêm đầu ngày. Vì vậy `BETWEEN … AND '2026-10-31'` bỏ gần trọn ngày cuối, và `= '2026-10-30'` gần như không khớp gì. Khoảng nửa mở tránh được cả hai.
 
+Hình từng bước ở cuối mục này đặt năm khoản thanh toán ngày 31/10 cạnh hai cách viết mốc cuối tháng.
+
 ## Cú pháp
 
 Ngày viết dạng năm-tháng-ngày trong nháy đơn; Postgres tự hiểu là ngày khi so với cột ngày.
@@ -141,6 +144,8 @@ The delivery team asks: "How many days does an online order take to reach the cu
 Dates and timestamps can be added and subtracted like numbers. Two `date` values subtract into a number of days; a `date` plus a whole number is another date; a `timestamp` takes an `interval` (such as `interval '2 hours'`). To filter a period, write a **half-open** range: greater than or equal to the first day, less than the day right after the last day.
 
 Many people think **`'2026-10-31'` means the whole of the 31st**. On a `timestamp` column it is a point: midnight at the start of the day. That is why `BETWEEN … AND '2026-10-31'` drops almost all of the last day, and `= '2026-10-30'` matches almost nothing. The half-open range avoids both.
+
+The step-through figure at the end of this section puts the five payments of 31 October beside the two ways to write the month's end.
 
 ## Syntax
 

@@ -1,0 +1,35 @@
+# B1-7 (tools/v42/diagram-plan-v42.md): two Regions write one item, the later one wins. Lesson: e-dy-l5-03 (Ví dụ), replaces the
+# two-Region timeline text block (the "choose a mode" table above it is a 2B text table and stays). Data (quoted from the
+# lesson): 12:00:00.100 Singapore SET stock = 4; 12:00:00.180 Tokyo SET stock = 7; after replication every replica has 7.
+# Source: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/V2globaltables_HowItWorks.html
+title: { vi: "Hai vùng cùng ghi một item: lần ghi sau thắng", en: "Two Regions write one item: the later write wins" }
+caption:
+  vi: "Ở chế độ MREC mỗi vùng nhận ghi tại chỗ rồi sao chép bất đồng bộ. Hai lần ghi vào cùng một item không được gộp: lần có thời điểm sau thắng, lần kia mất mà không báo lỗi."
+  en: "In MREC mode each Region accepts writes locally and replicates them asynchronously. Two writes to the same item are not merged: the one with the later time wins and the other is lost without an error."
+alt:
+  vi: "Global table MREC giải xung đột bằng ghi sau thắng, nên khi hai vùng sửa cùng item thì một lần ghi mất. Gửi mọi lần ghi của một item tới một vùng, hoặc chọn MRSC khi cần RPO bằng 0."
+  en: "An MREC global table settles conflicts by last writer wins, so when two Regions change one item one write is lost. Send an item's writes to one Region, or choose MRSC when RPO must be zero."
+nodes:
+  - id: tl
+    shape: grid
+    label: { vi: "item stock, hai vùng", en: "the stock item, two Regions" }
+    head: [{ vi: "giờ", en: time }, Singapore, Tokyo]
+    cells:
+      - ["12:00:00.100", stock = 4, "·"]
+      - ["12:00:00.180", "·", stock = 7]
+      - [{ vi: "sau sao chép", en: replicated }, "7", "7"]
+  - { id: rule, shape: key, label: { vi: "ghi sau thắng", en: "last writer wins" }, tone: warm }
+  - { id: fix, shape: note, label: { vi: "cách tránh: một vùng mỗi item", en: "the fix: one Region per item" } }
+rows:
+  - [tl]
+  - [rule, fix]
+steps:
+  - say: { vi: "Hai vùng cùng sửa stock.", en: "Two Regions change stock." }
+    alt: { vi: "Ở MREC mỗi vùng nhận ghi tại chỗ rồi mới sao chép sang vùng kia, nên cả hai lần ghi đều được nhận.", en: "In MREC each Region accepts the write locally and only then replicates it, so both writes are accepted." }
+    show: [tl]
+    set:
+      tl: { cells: [["12:00:00.100", stock = 4, "·"], ["12:00:00.180", "·", stock = 7]] }
+  - say: { vi: "Ghi sau thắng, ghi của Singapore mất.", en: "The later write wins; Singapore's is lost." }
+    alt: { vi: "Xung đột được giải bằng thời điểm ghi, không gộp, nên lần ghi sớm hơn của Singapore biến mất không báo lỗi.", en: "The conflict is settled by write time, not merged, so Singapore's earlier write vanishes without an error." }
+    set:
+      tl: { strike: [0], cellTone: { "0:1": dead, "2:1": new, "2:2": new } }

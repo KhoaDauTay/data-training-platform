@@ -21,7 +21,7 @@ syntax: |-
   FROM step_name
   WHERE total > 100
 options:
-  - { code: "WITH name AS (…)", vi: "một bảng tạm có tên, chỉ sống trong câu này", en: "a named temporary result that lives only inside this query" }
+  - { code: "WITH name AS (…)", vi: "một kết quả tạm có tên, chỉ sống trong câu này", en: "a named temporary result that lives only inside this query" }
   - { code: "AS total", vi: "tên cột của CTE; bước sau gọi cột bằng tên này", en: "the CTE's column name; the next step calls the column by it" }
   - { code: "FROM name", vi: "dùng CTE như một bảng: lọc, nối, gộp tiếp", en: "use the CTE like a table: filter, join, aggregate again" }
   - { code: "WITH … SELECT …", vi: "`WITH` và `SELECT` chính là một câu, không có dấu `;` ở giữa", en: "`WITH` and the main `SELECT` are one statement, with no `;` between them" }
@@ -128,7 +128,7 @@ quiz:
     answer: 0
     trap: 1
     why:
-      vi: "Ở các bản Postgres cũ, CTE luôn được tính riêng và có thể chậm, nên tiếng \"CTE chậm\" còn lưu truyền. Từ Postgres 12, CTE dùng một lần được gộp vào câu như truy vấn con. Kết quả luôn như nhau."
+      vi: "Ở các bản Postgres cũ, CTE luôn được tính riêng và có thể chậm, nên tiếng \"CTE chậm\" còn lưu truyền. Từ Postgres 12, CTE chỉ dùng một lần được Postgres đưa thẳng vào câu chính như một truy vấn con. Kết quả luôn như nhau."
       en: "In old Postgres versions a CTE was always computed separately and could be slow, so the \"CTEs are slow\" rumour lives on. Since Postgres 12, a CTE used once is folded into the query like a subquery. The result is always the same."
 recap:
   - vi: "`WITH sales AS (…)` đặt tên cho một bước; câu chính dùng nó như một bảng."

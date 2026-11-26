@@ -9,6 +9,7 @@ kind: concept
 runtime: docs
 docs_why: server
 minutes: 10
+figures: [{ name: dy-retry-backoff, at: example }]
 objectives:
   - { vi: "Giới hạn một người dùng vào đúng item của họ bằng điều kiện IAM `dynamodb:LeadingKeys`", en: "Limit a user to their own items with the IAM condition `dynamodb:LeadingKeys`" }
   - { vi: "Chia lỗi DynamoDB thành lỗi nên thử lại (throttle, 5xx) và lỗi phải sửa request, và thử lại có backoff", en: "Split DynamoDB errors into ones to retry (throttling, 5xx) and ones that need a fixed request, and retry with backoff" }
@@ -84,14 +85,7 @@ Chính sách chỉ cho người gọi đọc item mang mã người dùng của 
 "Condition": {"ForAllValues:StringEquals": {"dynamodb:LeadingKeys": ["${www.amazon.com:user_id}"]}}
 ```
 
-Thử lại có backoff:
-
-```text
-attempt 1  ProvisionedThroughputExceededException  wait ~50 ms  + random
-attempt 2  ProvisionedThroughputExceededException  wait ~100 ms + random
-attempt 3  ok
-ValidationException on attempt 1  -> no retry, fix the request
-```
+Thử lại có backoff: lần 1 và lần 2 nhận `ProvisionedThroughputExceededException`, chờ khoảng 50 ms rồi khoảng 100 ms, cộng ngẫu nhiên; lần 3 thành công. `ValidationException` thì không thử lại: sửa request. Hình dưới vẽ ba loại lỗi.
 
 ## Lỗi hay gặp
 
@@ -111,13 +105,15 @@ Thử lại lỗi không tạm thời:
 
 ```text
 // WRONG: retry every error the same way
-ConditionalCheckFailedException -> retry x5 -> same error x5
+ConditionalCheckFailedException, sent 5 times: the same error 5 times
 ```
 
 ```text
 // FIX: retry only throttling and 5xx; re-read the item before a new conditional write
-ConditionalCheckFailedException -> GetItem -> decide -> new write
+ConditionalCheckFailedException: GetItem, decide, then a new conditional write
 ```
+
+Bước cuối của hình ở phần Ví dụ vẽ cách sửa này.
 
 ## Tóm tắt
 
@@ -167,14 +163,7 @@ A policy that lets callers read only the items carrying their own user id (short
 "Condition": {"ForAllValues:StringEquals": {"dynamodb:LeadingKeys": ["${www.amazon.com:user_id}"]}}
 ```
 
-Retry with backoff:
-
-```text
-attempt 1  ProvisionedThroughputExceededException  wait ~50 ms  + random
-attempt 2  ProvisionedThroughputExceededException  wait ~100 ms + random
-attempt 3  ok
-ValidationException on attempt 1  -> no retry, fix the request
-```
+Retry with backoff: attempts 1 and 2 get `ProvisionedThroughputExceededException` and wait about 50 ms, then about 100 ms, plus jitter; attempt 3 succeeds. A `ValidationException` gets no retry: fix the request. The figure below draws the three kinds of error.
 
 ## Common mistakes
 
@@ -194,13 +183,15 @@ Retrying errors that are not temporary:
 
 ```text
 // WRONG: retry every error the same way
-ConditionalCheckFailedException -> retry x5 -> same error x5
+ConditionalCheckFailedException, sent 5 times: the same error 5 times
 ```
 
 ```text
 // FIX: retry only throttling and 5xx; re-read the item before a new conditional write
-ConditionalCheckFailedException -> GetItem -> decide -> new write
+ConditionalCheckFailedException: GetItem, decide, then a new conditional write
 ```
+
+The last step of the figure in Example draws this fix.
 
 ## Recap
 

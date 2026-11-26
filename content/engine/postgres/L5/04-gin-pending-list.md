@@ -60,7 +60,7 @@ quiz:
       - { vi: "Chỉ khi REINDEX", en: "Only on REINDEX" }
     answer: 1
     trap: 0
-    why: { vi: "Nghe hợp lý vì index thường được cập nhật ngay, nhưng pending list sinh ra chính là để hoãn việc đó. Cái giá: mọi lần tìm phải quét cả pending list, và INSERT làm nó vượt ngưỡng sẽ tự dọn nên chậm hẳn.", en: "It sounds right because an index is usually updated at once, but the pending list exists precisely to defer that. The price: every search also scans the pending list, and the INSERT that pushes it past the limit does the cleanup and is much slower." }
+    why: { vi: "\"Sau mỗi INSERT\" nghe hợp lý vì index thường được cập nhật ngay, nhưng pending list (danh sách chờ, bật bằng `fastupdate`) sinh ra chính là để hoãn việc đó: một dòng mới có nhiều khóa (mỗi phần tử mảng một khóa), chèn từng khóa vào cây GIN rất tốn, nên Postgres gom lại rồi chuyển một lượt. \"Chỉ khi REINDEX\" cũng sai: có bốn lúc chuyển, như đáp án đúng liệt kê. Cái giá: mọi lần tìm phải quét thêm pending list, và INSERT làm nó vượt ngưỡng phải tự dọn nên chậm hẳn.", en: "\"After every INSERT\" sounds right because an index is usually updated at once, but the pending list (turned on by `fastupdate`) exists precisely to defer that: one new row has many keys (one per array element), inserting each into the GIN tree is costly, so Postgres collects them and moves them in one pass. \"Only on REINDEX\" is wrong too: there are four moments, as the right answer lists. The price: every search also scans the pending list, and the INSERT that pushes it past the limit must do the cleanup and is much slower." }
   - q: { vi: "Gọi `gin_clean_pending_list` trong một transaction rồi ROLLBACK. Pending list có quay lại không?", en: "You call `gin_clean_pending_list` inside a transaction, then ROLLBACK. Does the pending list come back?" }
     options:
       - { vi: "Có, ROLLBACK hoàn tác mọi thứ", en: "Yes, ROLLBACK undoes everything" }
@@ -68,7 +68,7 @@ quiz:
       - { vi: "Hàm báo lỗi trong transaction", en: "The function errors inside a transaction" }
     answer: 1
     trap: 0
-    why: { vi: "Nghe hợp lý vì ROLLBACK hoàn tác mọi thay đổi dữ liệu, nhưng việc dọn này không đổi dòng nào thấy được. Đo trên PGlite: gọi lại lần hai sau ROLLBACK trả 0. Vì thế bài lab dọn pending list trong phần dựng dữ liệu, không trong câu của bạn.", en: "It sounds right because ROLLBACK undoes every data change, but this flush changes no visible row. Measured on PGlite: a second call after the ROLLBACK returns 0. That is why the lab flushes the pending list in its setup, not in your statement." }
+    why: { vi: "ROLLBACK hoàn tác mọi thay đổi dữ liệu mà transaction làm ra, nhưng việc dọn này không thêm, sửa hay xóa dòng nào: nó chỉ chuyển các khóa đã có từ pending list sang cây chính. Hàm cũng không báo lỗi trong transaction. Đo trên PGlite: gọi hàm, ROLLBACK, rồi gọi lại lần hai thì trả 0, tức không còn gì để chuyển. Vì thế bài lab dọn pending list trong phần dựng dữ liệu, không trong câu của bạn.", en: "ROLLBACK undoes every data change the transaction made, but this flush inserts, updates or deletes no row: it only moves keys that already exist from the pending list into the main tree. The function does not error inside a transaction either. Measured on PGlite: call it, ROLLBACK, call it again and it returns 0, so nothing was left to move. That is why the lab flushes the pending list in its setup, not in your statement." }
   - q: { vi: "Một GIN trên `jsonb` chỉ phục vụ truy vấn `@>`. Opclass nào nhỏ và nhanh hơn?", en: "A GIN index on `jsonb` only serves `@>` queries. Which opclass is smaller and faster?" }
     options:
       - { vi: "`jsonb_ops` (mặc định)", en: "`jsonb_ops` (the default)" }
@@ -76,7 +76,7 @@ quiz:
       - { vi: "`gin_trgm_ops`", en: "`gin_trgm_ops`" }
     answer: 1
     trap: 0
-    why: { vi: "Nghe hợp lý vì mặc định phục vụ được nhiều toán tử hơn, nhưng ở đây chỉ cần `@>`. `jsonb_path_ops` băm cả đường dẫn thành một khóa, nên ít khóa hơn và chính xác hơn cho `@>`, đổi lại không hỗ trợ `?`, `?|`, `?&`.", en: "It sounds right because the default serves more operators, but only `@>` is needed here. `jsonb_path_ops` hashes the whole path into one key, so there are fewer keys and `@>` is more selective, at the cost of no `?`, `?|`, `?&`." }
+    why: { vi: "`jsonb_ops` nghe an toàn vì là mặc định và phục vụ nhiều toán tử hơn, nhưng nó tạo một khóa riêng cho mỗi tên trường và mỗi giá trị, nên index to và một tìm `@>` khớp nhiều dòng thừa phải kiểm lại. `jsonb_path_ops` băm cả đường dẫn tới giá trị thành một khóa: ít khóa hơn, khớp sát hơn cho `@>`, đổi lại không hỗ trợ `?`, `?|`, `?&`. `gin_trgm_ops` dành cho chuỗi `text` (tìm theo cụm 3 ký tự), không dùng cho `jsonb`.", en: "`jsonb_ops` sounds safe because it is the default and serves more operators, but it makes a separate key for every field name and every value, so the index is big and a `@>` search matches many extra rows that must be rechecked. `jsonb_path_ops` hashes the whole path to a value into one key: fewer keys and closer matches for `@>`, at the cost of no `?`, `?|`, `?&`. `gin_trgm_ops` is for `text` strings (search by 3-character groups), not for `jsonb`." }
 ---
 
 ## Mở bài

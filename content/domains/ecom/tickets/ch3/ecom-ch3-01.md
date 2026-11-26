@@ -20,13 +20,13 @@ variants:
   - { day: "9/9/2026", day_en: "9 September 2026", from: "2026-09-09", to: "2026-09-10" }
   - { day: "11/11/2025", day_en: "11 November 2025", from: "2025-11-11", to: "2025-11-12" }
 reflect:
-  q: { vi: "Điều kiện ghép sau chữ ON nói gì?", en: "What does the matching condition after ON say?" }
+  q: { vi: "Điều kiện nối sau chữ ON nói gì?", en: "What does the matching condition after ON say?" }
   options:
     - { vi: "Dòng nào của bảng này đi với dòng nào của bảng kia: mã khách trong đơn bằng mã của khách", en: "Which row of one table goes with which row of the other: the customer number on the order equals the customer's own number" }
     - { vi: "Chỉ giữ những đơn bị hủy", en: "Keep only the cancelled orders" }
     - { vi: "Sắp xếp hai bảng theo cùng một cột", en: "Sort both tables by the same column" }
   answer: 0
-  why: { vi: "ON ghép dòng theo khóa; lọc đơn bị hủy vẫn là việc của điều kiện lọc dòng.", en: "ON matches rows by key; keeping only cancelled orders is still the row filter's job." }
+  why: { vi: "ON nối dòng theo khóa; lọc đơn bị hủy vẫn là việc của điều kiện lọc dòng.", en: "ON matches rows by key; keeping only cancelled orders is still the row filter's job." }
 wrong:
   - sql: "SELECT o.code, c.full_name, c.city FROM orders o JOIN customers c ON c.id = o.customer_id WHERE o.ordered_at >= '{{from}}' AND o.ordered_at < '{{to}}' ORDER BY o.code"
     vi: "Danh sách đang có mọi đơn của ngày đó. Đề chỉ cần đơn bị hủy."
@@ -52,11 +52,11 @@ Ví dụ: những đánh giá 5 sao viết ngày 30/10/2026, kèm tên sản ph�
 
 ② Tên tắt đặt ngay sau tên bảng.
 
-③ Ghép dòng: mỗi đánh giá đi với đúng sản phẩm có mã bằng mã sản phẩm ghi trong đánh giá.
+③ Nối dòng: mỗi đánh giá đi với đúng sản phẩm có mã bằng mã sản phẩm ghi trong đánh giá.
 
 ## Hints
-1. Đơn hàng có mã khách; tên và thành phố nằm ở hồ sơ khách hàng. Ghép hai bảng theo mã khách, rồi lọc đơn bị hủy trong ngày đó.
-2. Bảng `orders` (cột `customer_id`, `status`, `ordered_at`) ghép với `customers` qua `c.id = o.customer_id`. Đơn bị hủy là `o.status = 'cancelled'`; ngày đó viết `o.ordered_at >= '{{from}}' AND o.ordered_at < '{{to}}'` vì cột có cả giờ.
+1. Đơn hàng có mã khách; tên và thành phố nằm ở hồ sơ khách hàng. Nối hai bảng theo mã khách, rồi lọc đơn bị hủy trong ngày đó.
+2. Bảng `orders` (cột `customer_id`, `status`, `ordered_at`) nối với `customers` qua `c.id = o.customer_id`. Đơn bị hủy là `o.status = 'cancelled'`; ngày đó viết `o.ordered_at >= '{{from}}' AND o.ordered_at < '{{to}}'` vì cột có cả giờ.
 3. `SELECT o.code, c.full_name, c.city FROM orders o JOIN customers c ON ... WHERE ... ORDER BY o.code`
 
 ## Solution

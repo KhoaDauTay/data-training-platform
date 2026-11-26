@@ -101,6 +101,51 @@ describe('v39 figures: content links', () => {
   });
 });
 
+// v44 (L766): diagrams drawn with characters are figures now (tools/v42/diagram-plan-v42.md §2A). A ```text block in a lesson
+// may not draw with box-drawing characters, arrowheads or `-->` at all, and a block of arrow lines (≥ 2 lines with -> / → / <- /
+// ←) must be one of the text tables, arithmetic chains, notation and real output that stay (§2B/§2C), listed here by file and
+// first line. A new one is a timeline or flow to draw as a figure, or a reviewed addition to this list.
+const ARROW_TEXT_OK: Record<string, string> = {
+  'design/L3/01-functional-dependency.md | X → Y     reflexivity': '2C: Armstrong axioms notation',
+  'design/L3/03-closure-keys.md | 1. split right sides': '2C: minimal cover steps',
+  'design/L3/04-level-check.md | R(A, B, C, D), F = {A → B': '2C: FD notation',
+  'dynamodb/L1/03-no-join-limits.md | SQL                          DynamoDB': '2B: SQL → DynamoDB table',
+  'dynamodb/L2/08-item-size.md | "shirt-color": "R"   -> 11 + 1': '2B: size arithmetic',
+  'dynamodb/L2/10-write-cost.md | PutItem 500 B           -> 1 WCU': '2B: cost arithmetic',
+  'dynamodb/L2/13-limit-filter.md | Limit 6, page 1  -> ScannedCount': '2B: page counts',
+  'dynamodb/L3/01-access-patterns.md | <access pattern>': '2C: access-pattern template',
+  'dynamodb/L3/01-access-patterns.md | 1. One customer profile': '2B: access patterns table',
+  'dynamodb/L3/06-sparse-index.md | {"op": "UpdateItem", "input": {..., "Upd': '2C: request sketch',
+  'dynamodb/L3/07-single-table.md | PK = <ENTITY>#<id>': '2C: key template',
+  'dynamodb/L3/07-single-table.md | // WRONG: one table per entity': '2C: WRONG/FIX code',
+  'dynamodb/L3/12-gsi-eventual.md | Query byStatus = NEW': '2B: read then strong read',
+  'dynamodb/L3/13-single-vs-multi-cost.md | Shop      Query PK = CUST#C-02': '2B: cost table',
+  'dynamodb/L4/03-hot-partition-math.md | 3 KB -> 4 KB = 1 RCU (strong)': '2B: rounding arithmetic',
+  'dynamodb/L4/03-hot-partition-math.md | 1.5 KB -> 2 KB = 2 WCU': '2B: rounding arithmetic',
+  'dynamodb/L4/03-hot-partition-math.md | Query:        40.8 KB -> 44 KB': '2B: rounding arithmetic',
+  'dynamodb/L4/06-capacity-modes.md | steady 280 WCU all day': '2B: mode choice table',
+  'dynamodb/L4/08-sparse-gsi.md | GSI key attributes present': '2C: rule lines',
+  'mongodb/L2/17-lookup-unwind.md | $lookup                          -> 4': '2B: stage counts',
+  'mongodb/L5/01-wiredtiger.md | RAM 4 GB   -> 0.5 x (4 - 1)': '2B: cache-size arithmetic',
+  'postgres/L4/15-parallel-query-jit.md | Finalize Aggregate': '2C: real EXPLAIN output',
+  'postgres/L4/16-capstone-slow-report.md | status MCV: {delivered,open,lost}': '2C: real pg_stats output',
+};
+describe('v44: no diagrams drawn with characters', () => {
+  const raw = import.meta.glob<string>(['../content/engine/**/*.md', '../content/general/**/*.md'], { query: '?raw', import: 'default', eager: true });
+  const blocks = Object.entries(raw).flatMap(([p, s]) => [...s.split(/\r?\n# EN\r?\n/)[0].matchAll(/```text\r?\n([\s\S]*?)```/g)]
+    .map((m) => ({ file: p.replace(/^.*content\/(engine|general)\//, ''), lines: m[1].split(/\r?\n/).filter(Boolean) })));
+  it('không ký tự khung, đầu mũi tên hay --> trong khối text', () => {
+    expect(blocks.length).toBeGreaterThan(100);
+    expect(blocks.filter((b) => b.lines.some((l) => /[─-╿▲-◄]|-->|<--|==>|\+--/.test(l))).map((b) => `${b.file} | ${b.lines[0]}`)).toEqual([]);
+  });
+  it('khối nhiều dòng mũi tên chỉ là bảng, phép tính, ký hiệu hay output thật đã duyệt (§2B/§2C)', () => {
+    const arrowy = blocks.filter((b) => b.lines.filter((l) => /->|→|<-|←/.test(l)).length >= 2).map((b) => `${b.file} | ${b.lines[0]}`);
+    const key = (s: string): string | undefined => Object.keys(ARROW_TEXT_OK).find((k) => s.startsWith(k));
+    expect(arrowy.filter((s) => !key(s))).toEqual([]);
+    expect(Object.keys(ARROW_TEXT_OK).filter((k) => !arrowy.some((s) => s.startsWith(k))), 'mục thừa').toEqual([]);
+  });
+});
+
 describe.each(Object.keys(specs))('v39 figure %s', (name) => {
   const spec = specs[name];
   it('giới hạn: ≤ 12 node, ≤ 14 mũi tên, ≤ 6 bước; tên file = [a-z0-9-]+; VI và EN đủ, EN không dấu', () => {
@@ -207,7 +252,9 @@ describe.each(Object.keys(specs))('v39 figure %s', (name) => {
         const tables = altTables(spec, lang, variant);
         const v = variant === undefined ? undefined : spec.variants?.[variant];
         const shown = new Set(v?.step !== undefined ? spec.steps?.[v.step].show ?? spec.nodes.map((n) => n.id) : v?.show ?? spec.nodes.map((n) => n.id));
-        const grids = spec.nodes.filter((n) => (n.shape === 'grid' || n.shape === 'bars') && (v?.step !== undefined || v?.show ? shown.has(n.id) : true));
+        // v44 (L784): a variant may patch a grid's rows or bars (another lesson's data), so count the patched node
+        const grids = spec.nodes.map((n) => ({ ...n, ...v?.set?.[n.id] }))
+          .filter((n) => (n.shape === 'grid' || n.shape === 'bars') && (v?.step !== undefined || v?.show ? shown.has(n.id) : true));
         expect(tables.length, `${lang} bảng dữ liệu`).toBe(grids.length);
         for (const [i, t] of tables.entries()) {
           expect(t.caption, lang).not.toBe('');
@@ -552,7 +599,9 @@ describe('v42 ER mode', () => {
     expect((k('e:2.l') as { x: number }).x).toBeGreaterThan(Math.max(...loop.map(([x]) => x)));
   });
   // the content's ER figures: links clear of boxes, texts and each other at every width, step and variant
-  for (const name of ['ds-cardinality', 'ds-er-clinic', 'ds-er-to-tables']) for (const variant of [undefined, ...Object.keys(specs[name]?.variants ?? {})]) for (const lang of LANGS)
+  // v44 (L785): every spec that draws an entity, not a hand-kept list
+  const ER_SPECS = Object.keys(specs).filter((n) => specs[n].nodes.some((x) => x.shape === 'entity'));
+  for (const name of ER_SPECS) for (const variant of [undefined, ...Object.keys(specs[name]?.variants ?? {})]) for (const lang of LANGS)
     it.each(WIDTHS)(`${name} ${variant ?? ''} · ${lang} · W %i: đường quan hệ không cắt hộp, chữ; dấu không chạm chữ`, (W) => {
       const d = layout(specs[name], lang, W, variant);
       d.frames.forEach((f, i) => { const at = `${name} ${lang} W${W} ${i}`; expect(linkFindings(f, d.w, d.h), at).toEqual([]); marksClear(f, at); });
@@ -560,7 +609,7 @@ describe('v42 ER mode', () => {
     });
   // hosts are any width 280–640 (390–430 px phones, tablets): partial wraps must route as cleanly as the three test widths
   const sweep: [string, FigSpec, string | undefined][] = [...CARDS.map((c): [string, FigSpec, undefined] => [`er ${c}`, ER(c), undefined]),
-    ...['ds-cardinality', 'ds-er-clinic', 'ds-er-to-tables'].flatMap((n) => [undefined, ...Object.keys(specs[n].variants ?? {})].map((v): [string, FigSpec, string | undefined] => [n, specs[n], v]))];
+    ...ER_SPECS.flatMap((n) => [undefined, ...Object.keys(specs[n].variants ?? {})].map((v): [string, FigSpec, string | undefined] => [n, specs[n], v]))];
   for (const [name, spec, v] of sweep) for (const lang of LANGS) it(`${name} ${v ?? ''} · ${lang} · mọi bề rộng 280–640 (bước 4): không lỗi dựng, analyze, đường quan hệ và dấu sạch`, () => {
     for (let W = 280; W <= 640; W += 4) {
       const d = layout(spec, lang, W, v);

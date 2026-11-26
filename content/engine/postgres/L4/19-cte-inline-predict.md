@@ -8,6 +8,7 @@ title_en: "Predict: is a CTE folded into the outer query or computed apart?"
 kind: predict
 runtime: browser
 minutes: 15
+figures: [{ name: pg-cte-inline, at: idea }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Đọc trong kế hoạch một CTE đã được gộp vào câu ngoài hay được tính riêng (`CTE Scan`)
@@ -93,8 +94,8 @@ quiz:
       - { vi: "Không đổi: planner bỏ qua `NOT MATERIALIZED` khi có `GROUP BY`", en: "No change: the planner ignores `NOT MATERIALIZED` when there is a `GROUP BY`" }
     answer: 0
     why:
-      vi: "\"Dùng hai lần thì thêm `NOT MATERIALIZED`\" nghe hợp lý sau bước 3, nơi nó giúp nhiều. Nhưng ở bước 3, gộp vào cho điều kiện cắt bớt phần phải đọc. Ở đây thân CTE là một phép gom trên cả bảng: gộp vào thì một chỗ dùng vẫn phải gom cả bảng, chỗ kia gom lại lần nữa, và kế hoạch đắt hơn. Gộp chỉ có lợi khi điều kiện bên ngoài cắt được nhiều hơn phần phải làm lại."
-      en: "\"Used twice, so add `NOT MATERIALIZED`\" sounds right after step 3, where it helped a lot. But in step 3 folding let the condition cut what had to be read. Here the CTE body groups the whole table: folded in, one use still groups the whole table and the other groups again, so the plan costs more. Folding pays only when the outer condition cuts more than the work that is repeated."
+      vi: "\"Dùng hai lần thì thêm `NOT MATERIALIZED`\" nghe hợp lý sau bước 3, nơi nó giúp nhiều. Nhưng ở bước 3, gộp vào cho điều kiện cắt bớt phần phải đọc. Ở đây thân CTE là một phép gom trên cả bảng: gộp vào thì một chỗ dùng vẫn phải gom cả bảng, chỗ kia gom lại lần nữa, và kế hoạch đắt hơn. Planner không bỏ qua `NOT MATERIALIZED` vì có `GROUP BY`; nó làm đúng điều bạn bảo, nên mới đắt hơn. Gộp chỉ có lợi khi điều kiện bên ngoài cắt được nhiều hơn phần phải làm lại."
+      en: "\"Used twice, so add `NOT MATERIALIZED`\" sounds right after step 3, where it helped a lot. But in step 3 folding let the condition cut what had to be read. Here the CTE body groups the whole table: folded in, one use still groups the whole table and the other groups again, so the plan costs more. The planner does not ignore `NOT MATERIALIZED` because of a `GROUP BY`; it does exactly what you asked, which is why it costs more. Folding pays only when the outer condition cuts more than the work that is repeated."
 ---
 
 ## Mở bài
@@ -107,6 +108,8 @@ Từ PostgreSQL 12, một CTE (`WITH`) không đệ quy, không có tác dụng 
 
 - `MATERIALIZED` buộc tính riêng; `NOT MATERIALIZED` buộc gộp vào.
 - Gộp vào nghĩa là chép thân CTE vào mỗi chỗ dùng. Có lợi khi điều kiện bên ngoài cắt được nhiều; có hại khi thân CTE là việc nặng bị làm lại.
+
+Hình từng bước ở cuối mục này vẽ hai cây kế hoạch của cùng một câu: CTE được gộp vào, rồi viết `MATERIALIZED`.
 
 ## Ví dụ
 
@@ -139,6 +142,8 @@ Since PostgreSQL 12, a CTE (`WITH`) that is not recursive, has no side effects a
 
 - `MATERIALIZED` forces it apart; `NOT MATERIALIZED` forces it in.
 - Folding in copies the CTE body into each use. It helps when the outer condition cuts a lot; it hurts when the body is heavy work done again.
+
+The step-through figure at the end of this section draws two plan trees for the same query: the CTE folded in, then written `MATERIALIZED`.
 
 ## Example
 

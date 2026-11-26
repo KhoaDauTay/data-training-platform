@@ -88,7 +88,7 @@ ORDER BY 3, name
 ```
 
 ## Hints
-1. Bước 1 là bài nhóm điểm ở đầu chương, thêm kênh nộp hồ sơ. Bước 2 gom theo tháng giải ngân trong một bước có tên, rồi cộng dồn bằng hàm cửa sổ. Bước 3 tính tỷ trọng theo chi nhánh trong một bước có tên, rồi xếp hạng.
+1. Bước 1 là việc "Điểm tín dụng có báo trước nợ xấu không?", thêm kênh nộp hồ sơ. Bước 2 gom theo tháng giải ngân trong một bước có tên, rồi cộng dồn bằng hàm cửa sổ. Bước 3 tính tỷ trọng theo chi nhánh trong một bước có tên, rồi xếp hạng.
 2. Bước 1: `GROUP BY l.id, a.channel, a.score` trong bước có tên. Bước 2: `date_trunc('month', l.disbursed_on)::date`, `sum(paid_out) OVER (ORDER BY month)`. Bước 3: `COALESCE(sum(s.outstanding) FILTER (WHERE a.channel = 'partner' AND a.score < 700), 0)`, `RANK() OVER (ORDER BY pct DESC)`.
 3. `WITH o AS (SELECT b.name, round(100.0 * COALESCE(sum(...) FILTER (...), 0) / sum(s.outstanding), 2) AS pct FROM ... GROUP BY b.name) SELECT name, pct, RANK() OVER (ORDER BY pct DESC) FROM o ORDER BY 3, name`
 
@@ -105,6 +105,6 @@ The loans paid out from January to the end of October 2026 on applications made 
 The month-end picture of October 2026. For each branch: the percentage of the branch's balance that comes from partner applications under 700 points (rounded to 2 decimals; a branch with no such loan has a share of 0), and its rank by that share (highest is rank 1; ties share a rank and the next rank skips). Sort by rank, then branch name.
 
 ## Hints
-1. Step 1 is the score-band task from the start of the chapter, with the application channel added. Step 2 groups by disbursement month in a named step, then adds up with a window function. Step 3 computes the share per branch in a named step, then ranks.
+1. Step 1 is the task "Does the credit score warn of bad debt?", with the application channel added. Step 2 groups by disbursement month in a named step, then adds up with a window function. Step 3 computes the share per branch in a named step, then ranks.
 2. Step 1: `GROUP BY l.id, a.channel, a.score` in the named step. Step 2: `date_trunc('month', l.disbursed_on)::date`, `sum(paid_out) OVER (ORDER BY month)`. Step 3: `COALESCE(sum(s.outstanding) FILTER (WHERE a.channel = 'partner' AND a.score < 700), 0)`, `RANK() OVER (ORDER BY pct DESC)`.
 3. `WITH o AS (SELECT b.name, round(100.0 * COALESCE(sum(...) FILTER (...), 0) / sum(s.outstanding), 2) AS pct FROM ... GROUP BY b.name) SELECT name, pct, RANK() OVER (ORDER BY pct DESC) FROM o ORDER BY 3, name`

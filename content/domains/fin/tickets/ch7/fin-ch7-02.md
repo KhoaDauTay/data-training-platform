@@ -50,7 +50,7 @@ Mình đang tính đề xuất bắt buộc trích nợ tự động cho khoản
 Các kỳ đến hạn trong quý {{q}} đã được trả. Mỗi cách trả: số kỳ đã trả, số kỳ trả sau ngày đến hạn, và tỷ lệ phần trăm kỳ trả trễ (làm tròn 1 chữ số thập phân). Tỷ lệ trễ cao nhất lên đầu; bằng nhau thì theo cách trả.
 
 ## Hints
-1. Ghép kỳ trả với lịch trả để có ngày đến hạn, đếm có điều kiện những kỳ trả sau ngày đến hạn, rồi chia cho số kỳ đã trả.
+1. Nối kỳ trả với lịch trả để có ngày đến hạn, đếm có điều kiện những kỳ trả sau ngày đến hạn, rồi chia cho số kỳ đã trả.
 2. Hai chỗ trống đầu cùng một điều kiện: `r.paid_on > s.due_on`. Chỗ trống cuối: `late_pct DESC, r.method`.
 3. `SELECT r.method, count(*), count(*) FILTER (WHERE r.paid_on > s.due_on), round(100.0 * count(*) FILTER (WHERE r.paid_on > s.due_on) / count(*), 1) AS late_pct FROM ... GROUP BY r.method ORDER BY late_pct DESC, r.method`
 

@@ -51,7 +51,7 @@ reflect:
   why: { vi: "Số đếm cho biết bao nhiêu, tỷ lệ cho biết thường xuyên đến đâu. So giữa các nhóm khác cỡ thì dùng tỷ lệ.", en: "A count says how many, a rate says how often. To compare groups of different sizes, use a rate." }
 wrong:
   - sql: "WITH sold AS (SELECT p.seller_id, count(*) AS lines FROM order_items i JOIN orders o ON o.id = i.order_id JOIN products p ON p.id = i.product_id WHERE o.status = 'delivered' AND o.ordered_at >= '{{from}}' AND o.ordered_at < '{{to}}' GROUP BY p.seller_id), broken AS (SELECT p.seller_id, count(*) AS n FROM returns r JOIN products p ON p.id = r.product_id WHERE r.reason = 'damaged' AND r.requested_on >= '{{from}}' AND r.requested_on < '{{to}}' GROUP BY p.seller_id) SELECT s.name, sold.lines, broken.n, ROUND(100 * broken.n / sold.lines, 1) AS pct FROM sold JOIN broken ON broken.seller_id = sold.seller_id JOIN sellers s ON s.id = sold.seller_id ORDER BY pct DESC, s.name LIMIT 5"
-    vi: "Phép chia hai số nguyên bỏ phần lẻ, nên tỷ lệ mất số thập phân. Nhân với 100.0 để có số thập phân."
+    vi: "Phép chia hai số nguyên bỏ phần thập phân, nên tỷ lệ mất số thập phân. Nhân với 100.0 để có số thập phân."
     en: "Dividing two integers drops the fraction, so the rate loses its decimals. Multiply by 100.0 to get a decimal."
 ---
 Khách chấm điểm thấp hay viết "hàng hỏng", nhưng shop bán nhiều thì đương nhiên bị trả nhiều. Mình cần tỷ lệ, không phải số đếm, để biết shop nào thật sự có vấn đề.
@@ -60,7 +60,7 @@ Khách chấm điểm thấp hay viết "hàng hỏng", nhưng shop bán nhiều
 Trong quý {{q}}: với mỗi shop, số dòng hàng thuộc các đơn đặt trong quý và đã giao xong, số yêu cầu trả hàng vì hỏng gửi trong quý, và tỷ lệ phần trăm của hai số đó (làm tròn 1 chữ số thập phân). Chỉ xét shop có ít nhất một yêu cầu như vậy. Gửi năm shop có tỷ lệ cao nhất, kèm tên shop; bằng nhau thì xếp theo tên shop.
 
 ## Hints
-1. Hai bước có tên: một bước đếm hàng đã bán của mỗi shop, một bước đếm yêu cầu trả vì hỏng, rồi ghép lại và chia.
+1. Hai bước có tên: một bước đếm hàng đã bán của mỗi shop, một bước đếm yêu cầu trả vì hỏng, rồi nối lại và chia.
 2. Lý do hỏng là `'damaged'`; chia cho `sold.lines`, nhân `100.0` để có số thập phân.
 3. `SELECT s.name, sold.lines, broken.n, ROUND(100.0 * broken.n / sold.lines, 1) AS pct FROM sold JOIN broken ... ORDER BY pct DESC, s.name LIMIT 5`
 

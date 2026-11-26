@@ -20,8 +20,8 @@ syntax: |-
 options:
   - { code: "EXPLAIN", vi: "chỉ lập kế hoạch, không chạy: chi phí và số dòng là ước lượng", en: "plans without running: costs and row counts are estimates" }
   - { code: "ANALYZE", vi: "chạy thật câu lệnh rồi in thêm số dòng thật và thời gian", en: "really runs the statement and also prints real row counts and times" }
-  - { code: "cost=a..b", vi: "chi phí khởi động .. chi phí tổng, theo đơn vị riêng của planner (không phải mili giây)", en: "startup cost .. total cost, in the planner's own units (not milliseconds)" }
-  - { code: "rows=", vi: "số dòng planner đoán nút này trả ra", en: "the number of rows the planner expects this node to return" }
+  - { code: "cost=a..b", vi: "chi phí khởi động .. chi phí tổng, theo đơn vị riêng của bộ lập kế hoạch (planner), không phải mili giây", en: "startup cost .. total cost, in the planner's own units (not milliseconds)" }
+  - { code: "rows=", vi: "số dòng planner ước lượng nút này trả ra", en: "the number of rows the planner expects this node to return" }
   - { code: "Seq Scan", vi: "đọc cả bảng, từng trang", en: "reads the whole table, page by page" }
   - { code: "Index Scan / Bitmap Index Scan", vi: "tìm dòng qua chỉ mục, chỉ đọc phần cần", en: "finds rows through an index, reading only what is needed" }
   - { code: "COSTS OFF, TIMING OFF", vi: "bỏ bớt số để kế hoạch dễ đọc và ổn định", en: "drops some numbers so the plan is easier to read and stable" }
@@ -53,7 +53,7 @@ examples:
       WHERE o.order_date >= '2026-10-01'
       GROUP BY s.name
     read:
-      vi: "Từ trong ra: chỉ mục ngày lấy đơn tháng 10, `stores` được đọc tuần tự rồi dựng bảng băm (Hash), Hash Join ghép hai bên, cuối cùng HashAggregate đếm theo tên cửa hàng. Mỗi mệnh đề của câu có một nút tương ứng."
+      vi: "Từ trong ra: chỉ mục ngày lấy đơn tháng 10, `stores` được đọc tuần tự rồi dựng bảng băm (Hash), Hash Join nối hai bên, cuối cùng HashAggregate đếm theo tên cửa hàng. Mỗi mệnh đề của câu có một nút tương ứng."
       en: "From the inside out: the date index fetches October's orders, `stores` is read sequentially into a hash table (Hash), a Hash Join pairs the two sides, and finally a HashAggregate counts by store name. Each clause of the query has a matching node."
   - title: { vi: "Ước lượng so với thực tế", en: "Estimate against reality" }
     sql: |-
@@ -62,7 +62,7 @@ examples:
       FROM orders
       WHERE customer_id = 42
     read:
-      vi: "`ANALYZE` chạy thật câu và in `actual rows`: 4 dòng, khớp với ước lượng ở ví dụ trước. Khi số thật lệch xa số đoán, planner có thể đã chọn kế hoạch dở; đó là chỗ đầu tiên cần nhìn."
+      vi: "`ANALYZE` chạy thật câu và in `actual rows`: 4 dòng, khớp với ước lượng ở ví dụ trước. Khi số thật lệch xa số ước lượng, planner có thể đã chọn kế hoạch dở; đó là chỗ đầu tiên cần nhìn."
       en: "`ANALYZE` really runs the query and prints `actual rows`: 4 rows, matching the estimate of the previous example. When real numbers are far from the guesses, the planner may have picked a poor plan; that is the first place to look."
 pitfalls:
   - title: { vi: "EXPLAIN ANALYZE trên câu ghi", en: "EXPLAIN ANALYZE on a write" }
@@ -124,7 +124,7 @@ Hai câu cho cùng kết quả, một câu xong ngay, câu kia đọc cả bản
 
 Trước khi chạy, Postgres lập một kế hoạch: đọc bảng nào, đọc thế nào (cả bảng hay qua chỉ mục), nối và gộp ra sao. `EXPLAIN` in kế hoạch đó thành một cây; mỗi nút có chi phí ước lượng và số dòng dự kiến. Đọc từ nút thụt sâu nhất ra ngoài: đó là thứ tự dữ liệu chảy.
 
-Nhiều người nghĩ **có chỉ mục là Postgres sẽ dùng nó**. Thật ra planner so chi phí: với bảng nhỏ, hay với điều kiện lấy phần lớn bảng, đọc tuần tự rẻ hơn. Chỉ mục giúp khi điều kiện chọn ra ít dòng trên một bảng lớn. `EXPLAIN ANALYZE` cho thêm số thật, nhưng nó chạy thật câu lệnh.
+Nhiều người nghĩ **có chỉ mục là Postgres sẽ dùng nó**. Thật ra bộ lập kế hoạch (planner) so chi phí: với bảng nhỏ, hay với điều kiện lấy phần lớn bảng, đọc tuần tự rẻ hơn. Chỉ mục giúp khi điều kiện chọn ra ít dòng trên một bảng lớn. `EXPLAIN ANALYZE` cho thêm số thật, nhưng nó chạy thật câu lệnh.
 
 ## Cú pháp
 

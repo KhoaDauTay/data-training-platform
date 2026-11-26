@@ -159,8 +159,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì VACUUM đúng là thu hồi chỗ, nhưng chỗ đó ở lại trong file cho INSERT và UPDATE sau dùng. VACUUM thường chỉ cắt được các trang trống ở cuối file. Lab thấy `space_vac` vẫn 18 trang sau khi mất 900/1.000 dòng; chỉ `VACUUM FULL` (khóa cả bảng) mới co về 2 trang."
-      en: "It sounds right because VACUUM does reclaim space, but that space stays inside the file for later INSERTs and UPDATEs. Plain VACUUM can only cut off empty pages at the end of the file. The lab shows `space_vac` still at 18 pages after losing 900 of 1,000 rows; only `VACUUM FULL` (which locks the whole table) shrinks it to 2."
+      vi: "\"Khoảng 5 GB\" nghe hợp lý vì VACUUM đúng là thu hồi chỗ, nhưng chỗ đó ở lại trong file: VACUUM ghi nó vào FSM (free space map, bản đồ chỗ trống của từng trang) cho INSERT và UPDATE sau dùng lại. VACUUM thường chỉ cắt được các trang trống ở cuối file, và không bao giờ xóa file. Bước 6 thấy `space_vac` vẫn 18 trang sau khi mất 900/1.000 dòng; chỉ `VACUUM FULL` (viết lại bảng, giữ lock trên cả bảng) mới co về 2 trang."
+      en: "\"About 5 GB\" sounds right because VACUUM does reclaim space, but that space stays inside the file: VACUUM records it in the FSM (free space map, the free space of each page) for later INSERTs and UPDATEs to reuse. Plain VACUUM can only cut off empty pages at the end of the file, and never deletes the file. Step 6 shows `space_vac` still at 18 pages after losing 900 of 1,000 rows; only `VACUUM FULL` (which rewrites the table under a lock on all of it) shrinks it to 2."
   - q:
       vi: "`EXPLAIN ANALYZE` ra Index Only Scan nhưng `Heap Fetches: 5000` trên 5000 dòng. Cách chữa nào đúng?"
       en: "`EXPLAIN ANALYZE` shows an Index Only Scan but `Heap Fetches: 5000` for 5000 rows. Which fix is right?"
@@ -171,8 +171,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì chậm thì hay nghĩ tới index, nhưng index đã đủ cột rồi; nó phải về heap vì trang chưa all-visible. Chỉ VACUUM bật bit đó trong visibility map; `ANALYZE` chỉ cập nhật thống kê. Lab thấy `Heap Fetches: 21` trên `reading_touched` xuống 0 sau một `VACUUM`."
-      en: "It sounds right because slowness makes people think of indexes, but the index already covers the columns; it goes to the heap because the pages are not all-visible. Only VACUUM sets that bit in the visibility map; `ANALYZE` only refreshes statistics. The lab shows `Heap Fetches: 21` on `reading_touched` dropping to 0 after one `VACUUM`."
+      vi: "\"Thêm index\" nghe hợp lý vì chậm thì hay nghĩ tới index, nhưng Index Only Scan nghĩa là index đã đủ cột. Nó vẫn về heap vì trang chưa có bit all-visible (mọi dòng của trang thấy được với mọi transaction) trong visibility map, nên phải kiểm tra từng dòng. Chỉ VACUUM bật bit đó; `ANALYZE` chỉ cập nhật thống kê cho planner. Ở bước 5, `Heap Fetches` của `reading_fresh` là 20 vì bảng chưa VACUUM lần nào; sau một `VACUUM` nó về 0."
+      en: "\"Add an index\" sounds right because slowness makes people think of indexes, but an Index Only Scan means the index already covers the columns. It still goes to the heap because the pages lack the all-visible bit (every row on the page is visible to every transaction) in the visibility map, so each row must be checked. Only VACUUM sets that bit; `ANALYZE` only refreshes the planner's statistics. In step 5, `reading_fresh` shows `Heap Fetches` 20 because it was never vacuumed; after one `VACUUM` it drops to 0."
 ---
 ## Mở bài
 

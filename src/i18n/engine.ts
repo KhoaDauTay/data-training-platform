@@ -48,6 +48,7 @@ const vi = {
   'kind.capstone': 'Tổng hợp',
   'minutes': '{n} phút',
   'done': 'Đã xong',
+  'xref.related': 'bài liên quan',
   'objectives': 'Mục tiêu',
   'requires': 'Nên học trước',
   'sources': 'Đọc thêm',
@@ -184,11 +185,11 @@ const vi = {
   'ext.title': 'Kệ extension của PostgreSQL',
   'ext.short': 'PostGIS, pg_trgm, unaccent, pgcrypto… mỗi gói một bài đầy đủ có lab',
   'ext.go': 'Mở kệ',
-  'ext.intro': 'Extension là gói cắm thêm vào PostgreSQL: kiểu dữ liệu, hàm, toán tử, loại index mới. Mỗi bài dạy một gói người làm dữ liệu hay gặp, lab chạy thật trên PGlite khi gói đó có bản cho trình duyệt.',
+  'ext.intro': 'Extension cắm thêm vào PostgreSQL kiểu dữ liệu, hàm, toán tử, loại index mới. Mỗi bài một gói hay gặp, lab chạy thật trên PGlite.',
   'ext.noxp': 'Phần tham khảo: không tính XP, không có huy hiệu. Bài xong vẫn được đánh dấu.',
   'ext.done': '{k}/{n} bài đã xong',
   'complete.noxp': 'Xong bài.',
-  'lab.postgisOnce': 'Lần chạy đầu tải PostGIS (khoảng 20 MB, một lần) và mất vài chục giây; các lần sau chỉ vài giây. Cần mạng cho lần tải đó.',
+  'lab.postgisOnce': 'Lần chạy đầu tải PostGIS (~20 MB, một lần, cần mạng) nên chậm; các lần sau chỉ vài giây.',
   'runtime.docs.ext': 'Phần chính không chạy ở đây: extension này chưa có bản cho trình duyệt (nó cần một tiến trình server, một máy khác hoặc bản build riêng). Khối có nút Chạy là cách làm tương đương bằng PostgreSQL thuần, chạy thật ở đây.',
 };
 export type EngineKey = keyof typeof vi;
@@ -236,6 +237,7 @@ const en: Record<EngineKey, string> = {
   'kind.capstone': 'Capstone',
   'minutes': '{n} min',
   'done': 'Done',
+  'xref.related': 'related lesson',
   'objectives': 'Objectives',
   'requires': 'Learn first',
   'sources': 'Further reading',
@@ -369,11 +371,11 @@ const en: Record<EngineKey, string> = {
   'ext.title': 'The PostgreSQL extensions shelf',
   'ext.short': 'PostGIS, pg_trgm, unaccent, pgcrypto… one full lesson with a lab per package',
   'ext.go': 'Open the shelf',
-  'ext.intro': 'An extension is a package you plug into PostgreSQL: new data types, functions, operators and index types. Each lesson teaches one package data people meet often; its lab runs for real on PGlite when the package has a browser build.',
+  'ext.intro': 'An extension plugs new data types, functions, operators and index types into PostgreSQL. One common package per lesson, its lab running for real on PGlite.',
   'ext.noxp': 'Reference shelf: no XP, no badges. Finished lessons are still marked.',
   'ext.done': '{k} of {n} lessons done',
   'complete.noxp': 'Lesson done.',
-  'lab.postgisOnce': 'The first Run downloads PostGIS (about 20 MB, once) and takes some tens of seconds; later runs take a few seconds. That download needs the network.',
+  'lab.postgisOnce': 'The first Run downloads PostGIS (~20 MB, once, needs the network), so it is slow; later runs take seconds.',
   'runtime.docs.ext': 'The main part does not run here: this extension has no browser build (it needs a server process, another machine or its own build). Blocks with a Run button show the plain PostgreSQL equivalent and do run here.',
 };
 

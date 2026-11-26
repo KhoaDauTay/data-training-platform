@@ -39,7 +39,7 @@ reflect:
     - { vi: "Để truy vấn chạy nhanh hơn", en: "To make the query faster" }
     - { vi: "Vì cuộc gọi không có mã riêng", en: "Because calls have no number of their own" }
   answer: 0
-  why: { vi: "Ghép một cuộc gọi với mọi lần trả tiền trong khoảng có thể ra nhiều dòng. Chia báo cáo thành từng bước có tên thì dễ kiểm mỗi bước trả về đúng một dòng cho mỗi cuộc gọi.", en: "Joining one call with every payment in the window can give several rows. Splitting the report into named steps makes it easy to check that each step returns exactly one row per call." }
+  why: { vi: "Nối một cuộc gọi với mọi lần trả tiền trong khoảng có thể ra nhiều dòng. Chia báo cáo thành từng bước có tên thì dễ kiểm mỗi bước trả về đúng một dòng cho mỗi cuộc gọi.", en: "Joining one call with every payment in the window can give several rows. Splitting the report into named steps makes it easy to check that each step returns exactly one row per call." }
 wrong:
   - sql: "WITH calls AS (SELECT id, loan_id, called_on, outcome FROM collection_calls WHERE called_on >= '{{from}}' AND called_on < '{{to}}'), paid AS (SELECT DISTINCT c.id FROM calls c JOIN repayments r ON r.loan_id = c.loan_id AND r.paid_on >= c.called_on AND r.paid_on < c.called_on + 7) SELECT c.outcome, count(*), count(p.id) FROM calls c LEFT JOIN paid p ON p.id = c.id GROUP BY c.outcome"
     vi: "Thiếu các cuộc có tiền về đúng ngày thứ 7: khoảng 7 ngày gồm cả ngày gọi lẫn ngày thứ 7 sau đó, nên mốc cuối là nhỏ hơn hoặc bằng."
@@ -53,7 +53,7 @@ Câu truy vấn trong editor đã có hai bước có tên: cuộc gọi trong t
 Các cuộc gọi nhắc nợ trong tháng {{month}}, theo kết quả cuộc gọi: kết quả, số cuộc gọi, và số cuộc mà khoản vay có tiền về trong 7 ngày kể từ ngày gọi (tính cả ngày gọi và ngày thứ 7 sau đó). Thứ tự dòng không quan trọng.
 
 ## Hints
-1. Bước thứ hai giữ mỗi cuộc gọi có ít nhất một lần trả tiền trong khoảng từ ngày gọi tới 7 ngày sau. Truy vấn chính ghép trái mọi cuộc gọi với bước đó, rồi đếm những cuộc ghép được.
+1. Bước thứ hai giữ mỗi cuộc gọi có ít nhất một lần trả tiền trong khoảng từ ngày gọi tới 7 ngày sau. Truy vấn chính nối trái mọi cuộc gọi với bước đó, rồi đếm những cuộc nối được.
 2. Chỗ trống đầu: `r.paid_on BETWEEN c.called_on AND c.called_on + 7` (gồm cả hai đầu). Chỗ trống thứ hai: `count(p.id)`, chỉ đếm ô không trống.
 3. `... JOIN repayments r ON r.loan_id = c.loan_id AND r.paid_on BETWEEN c.called_on AND c.called_on + 7) SELECT c.outcome, count(*), count(p.id) FROM calls c LEFT JOIN paid p ON p.id = c.id GROUP BY c.outcome`
 

@@ -79,7 +79,7 @@ quiz:
       - { vi: "Không phiên nào cho tới khi khởi động lại server", en: "None of them until the server is restarted" }
     answer: 1
     trap: 0
-    why: { vi: "Nghe hợp lý vì lệnh đổi ngay trong catalog, nhưng thiết lập theo vai trò chỉ được nạp khi một phiên bắt đầu. Kết nối cũ trong pool giữ giá trị cũ cho tới khi bị thay. Vì thế pool cần làm mới kết nối sau khi đổi.", en: "It sounds right because the command changes the catalog at once, but per-role settings are only loaded when a session starts. Old pooled connections keep the old value until they are replaced. That is why the pool must recycle connections after the change." }
+    why: { vi: "\"Cả 20 kết nối ngay lập tức\" nghe hợp lý vì lệnh ghi vào system catalog ngay, nhưng thiết lập theo vai trò chỉ được nạp lúc một phiên (session) bắt đầu. 20 kết nối đang mở giữ giá trị cũ cho tới khi bị thay. Không cần khởi động lại server: mọi phiên mới đăng nhập bằng `app_basic` nhận giới hạn ngay. Vì thế pool cần làm mới kết nối sau khi đổi.", en: "\"All 20 connections, immediately\" sounds right because the command writes to the system catalog at once, but per-role settings are only loaded when a session starts. The 20 open connections keep the old value until they are replaced. No server restart is needed: every new session that logs in as `app_basic` gets the limit at once. That is why the pool must recycle connections after the change." }
   - q: { vi: "Người bán 2 (gói basic) đọc 92 % số dòng của cả hệ thống và làm chậm mọi người bán khác. Hướng nào đúng?", en: "Seller 2 (basic tier) reads 92% of the whole system's rows and slows every other seller down. Which way is right?" }
     options:
       - { vi: "Đổi `tenant_id` của họ để dữ liệu nằm ở chỗ khác trong bảng", en: "Change their `tenant_id` so their data lives elsewhere in the table" }
@@ -87,7 +87,7 @@ quiz:
       - { vi: "Giảm `work_mem` của cả server cho mọi người bán", en: "Lower the whole server's `work_mem` for every seller" }
     answer: 1
     trap: 0
-    why: { vi: "Nghe hợp lý vì tách dữ liệu ra là hết ồn, nhưng đổi định danh của khách làm vỡ mọi tham chiếu và nhật ký. Trước hết sửa nguyên nhân (thường là index không dẫn đầu bằng `tenant_id`, xem `e-pg-l2-26`), rồi hạn mức; khách vẫn quá lớn thì đổi hạng: cùng định danh, chỗ đặt khác.", en: "It sounds right because moving the data away ends the noise, but changing a tenant's identity breaks every reference and log. Fix the cause first (often an index that does not lead with `tenant_id`, see `e-pg-l2-26`), then quotas; a tenant still too big changes tier: same identity, another placement." }
+    why: { vi: "Đổi `tenant_id` nghe như tách được dữ liệu ra, nhưng `tenant_id` là định danh của khách: đổi nó làm vỡ mọi tham chiếu và nhật ký, mà dữ liệu vẫn nằm chung bảng, chung tài nguyên. Giảm `work_mem` toàn server làm chậm mọi người bán để phạt một người. Trước hết sửa nguyên nhân: người bán 2 đọc nhiều dòng thường vì index không dẫn đầu bằng `tenant_id`, nên mỗi câu quét cả dữ liệu của người khác (`e-pg-l2-26`). Rồi đặt hạn mức theo hạng; khách vẫn quá lớn thì chuyển sang hạng riêng: cùng định danh, chỗ đặt khác.", en: "Changing `tenant_id` sounds like it moves the data away, but `tenant_id` is the tenant's identity: changing it breaks every reference and log, and the data still shares the same table and resources. Lowering the whole server's `work_mem` slows every seller to punish one. First fix the cause: seller 2 reads many rows usually because an index does not lead with `tenant_id`, so each query scans other sellers' data too (`e-pg-l2-26`). Then set per-tier quotas; a tenant still too big moves to a dedicated tier: same identity, another placement." }
 ---
 ## Mở bài
 
@@ -171,7 +171,7 @@ WHERE r.rolname IN
 ORDER BY 1;
 ```
 
-Trên server thật, một câu chạy quá 2 giây của `app_basic` bị hủy. PGlite không làm điều này, nên đây chỉ là chữ:
+Trên server thật, một câu chạy quá 2 giây của `app_basic` bị hủy. PGlite không hủy câu theo giới hạn này, nên đây chỉ là chữ:
 
 ```text
 -- real server, as app_basic:

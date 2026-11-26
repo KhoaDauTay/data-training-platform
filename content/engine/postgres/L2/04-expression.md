@@ -8,6 +8,7 @@ title_en: Indexes on expressions
 kind: lab
 runtime: browser
 minutes: 12
+figures: [{ name: pg-expression-index, at: idea }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Tạo index trên `lower(email)` để tìm email không phân biệt hoa thường mà vẫn nhanh.
@@ -78,8 +79,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì kết quả của hai cách giống nhau, nhưng planner không so ý nghĩa: nó tìm trong câu đúng biểu thức đã lưu trong index. `email ILIKE ...` là một toán tử khác trên cột `email`, nên kế hoạch là Seq Scan. Viết `lower(email) = lower(...)` thì index được dùng."
-      en: "It sounds right because both ways return the same rows, but the planner does not compare meanings: it looks in the query for the exact expression stored in the index. `email ILIKE ...` is a different operator on column `email`, so the plan is a Seq Scan. Write `lower(email) = lower(...)` and the index is used."
+      vi: "Hai cách trả cùng các dòng, nhưng planner không so ý nghĩa: nó tìm trong câu đúng biểu thức đã lưu trong index, ở đây là `lower(email)`. `email ILIKE ...` là một toán tử khác trên cột `email` gốc, nên kế hoạch là Seq Scan, dù bảng lớn hay nhỏ: đây là chuyện biểu thức có khớp không, không phải chuyện chi phí. Viết `lower(email) = lower(...)` thì index được dùng."
+      en: "Both ways return the same rows, but the planner does not compare meanings: it looks in the query for the exact expression stored in the index, here `lower(email)`. `email ILIKE ...` is a different operator on the raw `email` column, so the plan is a Seq Scan whatever the table size: the question is whether the expression matches, not what it costs. Write `lower(email) = lower(...)` and the index is used."
   - q:
       vi: "Vì sao Postgres bắt hàm trong index phải là `IMMUTABLE`?"
       en: "Why does Postgres require a function in an index to be `IMMUTABLE`?"
@@ -89,8 +90,8 @@ quiz:
       - { vi: "Vì hàm `VOLATILE` không chạy được trong `SELECT`", en: "Because `VOLATILE` functions cannot run in a `SELECT`" }
     answer: 1
     why:
-      vi: "Index chỉ đúng khi giá trị đã lưu bằng đúng giá trị tính lại lúc tìm. Hàm tự viết mặc định là `VOLATILE`; nếu chắc chắn nó chỉ phụ thuộc đầu vào, khai báo `IMMUTABLE` khi tạo hàm."
-      en: "An index is only correct when the stored value equals the value computed again at lookup time. A function you write is `VOLATILE` by default; if it truly depends only on its input, declare it `IMMUTABLE` when you create it."
+      vi: "Index tính kết quả của hàm một lần lúc ghi dòng rồi lưu lại; lúc tìm, Postgres tính lại hàm trên giá trị cần tìm và so với giá trị đã lưu. Nếu cùng đầu vào mà hàm trả khác đi (vì đọc giờ hay đọc bảng), giá trị lưu không còn khớp và lần tìm bỏ sót dòng. `IMMUTABLE` không làm dựng index nhanh hơn, và hàm `VOLATILE` vẫn chạy bình thường trong `SELECT`. Hàm tự viết mặc định là `VOLATILE`; chỉ khai báo `IMMUTABLE` khi nó thật sự chỉ phụ thuộc đầu vào."
+      en: "An index computes the function once when the row is written and stores the result; at lookup time Postgres computes the function on the searched value and compares it with the stored one. If the same input could give another result (because the function reads the clock or a table), the stored value no longer matches and the lookup misses the row. `IMMUTABLE` does not make the build faster, and a `VOLATILE` function runs fine in a `SELECT`. A function you write is `VOLATILE` by default; declare it `IMMUTABLE` only when it truly depends on its input alone."
 ---
 ## Mở bài
 
@@ -107,6 +108,8 @@ Nhiều người nghĩ cứ câu nào không phân biệt hoa thường là dùn
 Hàm trong index phải là `IMMUTABLE`: cùng đầu vào thì luôn ra cùng kết quả. Index lưu kết quả lúc ghi; nếu hàm có thể đổi kết quả theo giờ, theo cài đặt hay theo dữ liệu khác, lần tìm sau sẽ không thấy dòng. `lower` là `IMMUTABLE`; hàm bạn tự viết thì mặc định là `VOLATILE`.
 
 `CREATE UNIQUE INDEX` trên biểu thức là cách giữ luật "email không trùng, không phân biệt hoa thường" ngay trong database.
+
+Hình từng bước ở cuối mục này đặt hai index cạnh nhau: cùng một dòng, index trên `email` và index trên `lower(email)` giữ hai chuỗi khác nhau.
 
 ## Cú pháp
 
@@ -208,6 +211,8 @@ Many people think any case-insensitive query can use an index on `lower(email)`.
 A function in an index must be `IMMUTABLE`: same input, always the same output. The index stores the result at write time; if the function could change its result with the clock, a setting or other data, a later lookup would miss the row. `lower` is `IMMUTABLE`; a function you write yourself is `VOLATILE` by default.
 
 A `CREATE UNIQUE INDEX` on an expression keeps the rule "no duplicate email, ignoring case" inside the database.
+
+The step-through figure at the end of this section puts two indexes side by side: for the same row, the index on `email` and the index on `lower(email)` hold two different strings.
 
 ## Syntax
 

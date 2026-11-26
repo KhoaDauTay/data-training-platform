@@ -22,7 +22,7 @@ options:
   - { code: "GROUP BY a", vi: "một nhóm cho mỗi giá trị khác nhau của `a`", en: "one group per different value of `a`" }
   - { code: "GROUP BY a, b", vi: "một nhóm cho mỗi cặp (a, b) có trong dữ liệu", en: "one group per (a, b) pair found in the data" }
   - { code: "count(*), sum(...)", vi: "tính riêng trong từng nhóm", en: "computed separately inside each group" }
-  - { code: "GROUP BY 1", vi: "nhóm theo cột thứ nhất của SELECT (gọn, nhưng dễ lệch khi sửa câu)", en: "group by the first SELECT column (short, but easy to break when the query changes)" }
+  - { code: "GROUP BY 1", vi: "gom nhóm theo cột thứ nhất của SELECT (gọn, nhưng dễ lệch khi sửa câu)", en: "group by the first SELECT column (short, but easy to break when the query changes)" }
   - { code: "NULL", vi: "các ô trống gom thành một nhóm riêng", en: "empty cells are gathered into one group of their own" }
 examples:
   - title: { vi: "Mỗi nhóm hàng: số món và giá trung bình", en: "Per category: item count and average price" }
@@ -42,7 +42,7 @@ examples:
     read:
       vi: "3 dòng: 1298 đơn `PAID`, 92 đơn `CANCELLED`, 38 đơn `REFUNDED`. Cộng lại là 1428, đúng bằng số đơn: mỗi dòng của bảng rơi vào đúng một nhóm."
       en: "3 rows: 1298 `PAID` orders, 92 `CANCELLED`, 38 `REFUNDED`. They add up to 1428, the number of orders: every row of the table lands in exactly one group."
-  - title: { vi: "Nhóm theo hai cột", en: "Grouping by two columns" }
+  - title: { vi: "Gom nhóm theo hai cột", en: "Grouping by two columns" }
     sql: |-
       SELECT store_id, channel, count(*) AS orders
       FROM orders
@@ -82,7 +82,7 @@ pitfalls:
     wrong: "SELECT store_id, channel, count(*) FROM orders WHERE order_date >= '2026-10-01' GROUP BY store_id, channel, status"
     fix: "SELECT store_id, channel, count(*) FROM orders WHERE order_date >= '2026-10-01' GROUP BY store_id, channel"
     why:
-      vi: "Thêm `status` để \"cho chắc\" chia mỗi cặp cửa hàng–kênh thành tới 3 nhóm: 21 dòng thay vì 10, cùng một cặp lặp lại với số đếm nhỏ hơn. Chỉ nhóm theo đúng các cột câu hỏi cần."
+      vi: "Thêm `status` để \"cho chắc\" chia mỗi cặp cửa hàng–kênh thành tới 3 nhóm: 21 dòng thay vì 10, cùng một cặp lặp lại với số đếm nhỏ hơn. Chỉ gom nhóm theo đúng các cột câu hỏi cần."
       en: "Adding `status` \"to be safe\" splits each store–channel pair into up to 3 groups: 21 rows instead of 10, with the same pair repeated and smaller counts. Group by exactly the columns the question needs."
 quiz:
   - q:
@@ -95,8 +95,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Một số cách nhóm bên trong có xếp dữ liệu, nên kết quả đôi khi trông như đã xếp và người ta tin đó là luật. Postgres thường nhóm bằng bảng băm, và thứ tự ra là bất kỳ (ví dụ 2 cho `PAID` ở cuối). Chỉ `ORDER BY` hứa thứ tự."
-      en: "Some grouping methods sort the data inside, so a result can look sorted and people take that as the rule. Postgres often groups with a hash table and the output order is arbitrary (example 2 shows `PAID` last). Only `ORDER BY` promises an order."
+      vi: "Một số cách gom nhóm bên trong Postgres có sắp xếp dữ liệu, nên kết quả đôi khi trông như đã xếp và người ta tin đó là luật. Postgres thường gom nhóm bằng bảng băm, và thứ tự ra là bất kỳ (ví dụ \"Đếm theo trạng thái\" cho `PAID` ở cuối). Chỉ `ORDER BY` hứa thứ tự."
+      en: "Some grouping methods sort the data inside, so a result can look sorted and people take that as the rule. Postgres often groups with a hash table and the output order is arbitrary (the example \"Counting by status\" shows `PAID` last). Only `ORDER BY` promises an order."
   - q:
       vi: "Bảng có 1428 đơn. `SELECT status, count(*) … GROUP BY status` cộng các số đếm lại được bao nhiêu?"
       en: "The table has 1428 orders. What do the counts of `SELECT status, count(*) … GROUP BY status` add up to?"
@@ -107,7 +107,7 @@ quiz:
     answer: 0
     trap: 1
     why:
-      vi: "\"Gộp\" nghe như bỏ trùng, nhưng `GROUP BY` không vứt dòng nào: nó chỉ chia dòng vào các nhóm. Đây là cách kiểm tra nhanh: tổng các nhóm phải bằng số dòng đã lọc."
+      vi: "\"Gom nhóm\" nghe như bỏ trùng, nhưng `GROUP BY` không vứt dòng nào: nó chỉ chia dòng vào các nhóm. Đây là cách kiểm tra nhanh: tổng các nhóm phải bằng số dòng đã lọc."
       en: "\"Group\" sounds like removing duplicates, but `GROUP BY` throws no row away: it only puts rows into groups. That gives a quick check: the groups must add up to the filtered row count."
   - q:
       vi: "Vì sao `GROUP BY 1` có thể nguy hiểm khi sửa câu?"
@@ -140,7 +140,7 @@ Phòng mua hàng không muốn một con số cho cả cửa hàng nữa: "Mỗi
 
 ## Ý chính
 
-`GROUP BY` chia các dòng (đã qua `WHERE`) thành nhóm, mỗi giá trị khác nhau của cột nhóm là một nhóm. Hàm gộp chạy riêng trong từng nhóm, và kết quả có đúng một dòng cho mỗi nhóm. Nhóm theo hai cột thì mỗi cặp giá trị là một nhóm.
+`GROUP BY` chia các dòng (đã qua `WHERE`) thành nhóm, mỗi giá trị khác nhau của cột nhóm là một nhóm. Hàm gộp chạy riêng trong từng nhóm, và kết quả có đúng một dòng cho mỗi nhóm. Gom nhóm theo hai cột thì mỗi cặp giá trị là một nhóm.
 
 Nhiều người nghĩ **có thể đưa bất kỳ cột nào vào `SELECT` cạnh hàm gộp**. Thật ra mỗi dòng kết quả đại diện cho cả một nhóm, nên chỉ những cột có một giá trị duy nhất trong nhóm (chính là cột nhóm) mới hiện được. Cột khác thì phải nằm trong hàm gộp, hoặc được thêm vào `GROUP BY`, và thêm vào thì nhóm nhỏ đi.
 

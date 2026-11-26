@@ -77,8 +77,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý nếu chỉ áp các phụ thuộc một lượt, nhưng thuật toán bao đóng lặp tới khi không thêm được gì: có B thì `B → C` thêm C. D không nằm ở vế phải nào nên không bao giờ vào."
-      en: "It sounds right if you apply the dependencies only once, but the closure algorithm repeats until nothing new is added: having B, `B → C` adds C. D is on no right side, so it never gets in."
+      vi: "`{A, B}` là kết quả nếu chỉ áp các phụ thuộc một lượt, nhưng thuật toán bao đóng (closure) lặp tới khi một vòng không thêm được gì. Vòng 1: có A, `A → B` thêm B. Vòng 2: có B, `B → C` thêm C. Vòng 3 không thêm gì nên dừng ở `{A, B, C}`. D không nằm ở vế phải phụ thuộc nào, nên không gì kéo D vào, và đáp án có D là sai."
+      en: "`{A, B}` is what you get by applying the dependencies only once, but the closure algorithm repeats until a round adds nothing. Round 1: with A, `A → B` adds B. Round 2: with B, `B → C` adds C. Round 3 adds nothing, so it stops at `{A, B, C}`. D is on no dependency's right side, so nothing pulls D in, and the answer with D is wrong."
   - q:
       vi: "`{A, D, E}` có bao đóng là mọi thuộc tính, và `{A, D}` cũng vậy. `{A, D, E}` là gì?"
       en: "`{A, D, E}` has every attribute in its closure, and so does `{A, D}`. What is `{A, D, E}`?"
@@ -89,8 +89,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nhiều người nghĩ mọi tập xác định được cả dòng đều là khóa ứng viên. Thật ra khóa ứng viên phải tối thiểu: bỏ E đi vẫn là siêu khóa, nên `{A, D, E}` chỉ là siêu khóa."
-      en: "Many people think every set that determines the whole row is a candidate key. In fact a candidate key must be minimal: dropping E still leaves a superkey, so `{A, D, E}` is only a superkey."
+      vi: "Nhiều người nghĩ mọi tập quyết định được cả dòng đều là khóa ứng viên (candidate key), nhưng khóa ứng viên phải tối thiểu: bỏ bất kỳ thuộc tính nào là hết quyết định được cả dòng. Bỏ E khỏi `{A, D, E}` còn `{A, D}`, mà bao đóng của nó vẫn là mọi thuộc tính, nên E thừa. Vì bao đóng của `{A, D, E}` chứa mọi thuộc tính, nó vẫn là siêu khóa (superkey), không phải \"không phải khóa\"."
+      en: "Many people think every set that determines the whole row is a candidate key, but a candidate key must be minimal: dropping any attribute must lose the whole row. Dropping E from `{A, D, E}` leaves `{A, D}`, whose closure is still every attribute, so E is extra. Since the closure of `{A, D, E}` holds every attribute, it is still a superkey, not \"not a key at all\"."
 ---
 ## Mở bài
 
@@ -104,7 +104,7 @@ Tìm khóa ứng viên có một mẹo: thuộc tính không bao giờ nằm ở
 
 Hai tập phụ thuộc F và G **tương đương** khi mỗi tập suy ra được từng phụ thuộc của tập kia (F⁺ = G⁺); kiểm bằng bao đóng: với mỗi `L → R` của G, R phải nằm trong L⁺ tính theo F, và ngược lại. **Phủ tối thiểu** là một tập tương đương gọn nhất: mỗi vế phải một thuộc tính, không thuộc tính thừa ở vế trái, không phụ thuộc nào suy ra được từ các phụ thuộc còn lại.
 
-Các tên khóa trong thực tế: **khóa chính** là khóa ứng viên được chọn; các khóa ứng viên còn lại là **khóa thay thế**, giữ bằng `UNIQUE`. **Khóa ghép** có nhiều cột. **Khóa thay thế nhân tạo** (surrogate) là mã sinh ra không mang nghĩa nghiệp vụ; khi dùng nó, khóa tự nhiên vẫn phải có `UNIQUE`. **Khóa ngoại** là cột trỏ tới khóa của bảng khác.
+Các tên khóa trong thực tế: **khóa chính** là khóa ứng viên được chọn; các khóa ứng viên còn lại là **khóa thay thế** (alternate key), giữ bằng `UNIQUE`. **Khóa ghép** có nhiều cột. **Khóa nhân tạo** (surrogate key) là mã sinh ra không mang nghĩa nghiệp vụ; khi dùng nó, khóa tự nhiên vẫn phải có `UNIQUE`. **Khóa ngoại** là cột trỏ tới khóa của bảng khác.
 
 ## Cú pháp
 

@@ -18,11 +18,11 @@ variants:
   - { month: "7/2026", month_en: "July 2026", from: "2026-07-01", to: "2026-08-01" }
   - { month: "5/2026", month_en: "May 2026", from: "2026-05-01", to: "2026-06-01" }
 reflect:
-  q: { vi: "Vì sao ghép thường (không LEFT) không bao giờ tìm ra khách chưa mua?", en: "Why can a plain join (not LEFT) never find customers who never bought?" }
+  q: { vi: "Vì sao nối thường (không LEFT) không bao giờ tìm ra khách chưa mua?", en: "Why can a plain join (not LEFT) never find customers who never bought?" }
   options:
-    - { vi: "Ghép thường bỏ mọi khách không có đơn nào khớp, nên những khách cần tìm đã biến mất", en: "A plain join drops every customer with no matching order, so the very customers you want are gone" }
-    - { vi: "Ghép thường chạy chậm hơn", en: "A plain join is slower" }
-    - { vi: "Ghép thường không đọc được ngày đăng ký", en: "A plain join cannot read the signup date" }
+    - { vi: "Nối thường bỏ mọi khách không có đơn nào khớp, nên những khách cần tìm đã biến mất", en: "A plain join drops every customer with no matching order, so the very customers you want are gone" }
+    - { vi: "Nối thường chạy chậm hơn", en: "A plain join is slower" }
+    - { vi: "Nối thường không đọc được ngày đăng ký", en: "A plain join cannot read the signup date" }
   answer: 0
   why: { vi: "LEFT JOIN giữ mọi khách; khách không có đơn thì các cột của đơn để trống, và điều kiện cột đơn trống chọn đúng họ.", en: "LEFT JOIN keeps every customer; a customer with no order gets empty order columns, and the empty-order condition picks exactly them." }
 wrong:

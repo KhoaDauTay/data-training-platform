@@ -54,7 +54,7 @@ Ví dụ: sàn đang bán bao nhiêu sản phẩm, món rẻ nhất và đắt n
 ③ Điều kiện lọc chạy trước, hàm gộp chỉ tính trên những dòng còn lại.
 
 ## Hints
-1. Đây là bài gộp: biến nhiều khoản thanh toán thành hai con số. Lọc đúng trạng thái và đúng tháng trước, rồi đếm và cộng.
+1. Đây là bài hàm gộp: biến nhiều khoản thanh toán thành hai con số. Lọc đúng trạng thái và đúng tháng trước, rồi đếm và cộng.
 2. Bảng `payments`: trạng thái là cột `status` (đã thu là `'paid'`), thời điểm thu là `paid_at`, số tiền là `amount`. Đếm dùng `count(*)`, cộng dùng `sum(amount)`.
 3. `SELECT count(*), sum(amount) FROM payments WHERE status = 'paid' AND paid_at >= '{{from}}' AND ...`
 

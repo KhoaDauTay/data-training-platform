@@ -1,0 +1,39 @@
+# B3-9 (tools/v42/diagram-plan-v42.md): CASCADE follows declared keys, and nothing else. Lesson: e-pg-l5-21 (Ý chính).
+# Data (PGlite, lesson setup; tools/v42/b3check.log): seller 7 has 10 products, 50 seller_orders and 3 payouts; after
+# DELETE FROM sellers WHERE tenant_id = 7: 0 products, 0 orders, 3 payouts left. Keys are the lab's: products (tenant_id, id)
+# REFERENCES sellers ON DELETE CASCADE, seller_orders (tenant_id, product_id) REFERENCES products (tenant_id, id) ON DELETE
+# CASCADE, payouts without a foreign key. Entities draw no sub, so "no FK" is a note beside PAYOUTS.
+# Source: https://www.postgresql.org/docs/18/ddl-constraints.html
+title: { vi: "CASCADE chỉ đi theo khóa ngoại", en: "CASCADE follows foreign keys only" }
+caption:
+  vi: "Bốn bảng của lab. Mỗi đường là một khóa ngoại ghép ON DELETE CASCADE; payouts được thêm sau và không có đường nào."
+  en: "The lab's four tables. Each line is a composite ON DELETE CASCADE foreign key; payouts was added later and has no line."
+alt:
+  vi: "Xóa một khách bằng CASCADE chỉ đi theo khóa ngoại đã khai báo, nên bảng không có khóa ngoại giữ nguyên dữ liệu. Kết quả: products và seller_orders về 0, payouts vẫn còn 3 dòng của người bán 7."
+  en: "Deleting a tenant with CASCADE follows only declared foreign keys, so a table without one keeps its data. Result: products and seller_orders drop to 0, while payouts keeps seller 7's 3 rows."
+nodes:
+  - { id: s, shape: entity, label: SELLERS, fields: [{ name: tenant_id, pk: true }, name] }
+  - { id: pay, shape: entity, label: PAYOUTS, fields: [{ name: tenant_id, pk: true }, { name: id, pk: true }, amount] }
+  - { id: nofk, shape: note, label: { vi: "không có khóa ngoại", en: "no foreign key" }, tone: dead }
+  - { id: p, shape: entity, label: PRODUCTS, fields: [{ name: tenant_id, pk: true, fk: true }, { name: id, pk: true }, name] }
+  - { id: o, shape: entity, label: SELLER_ORDERS, fields: [{ name: tenant_id, pk: true, fk: true }, { name: id, pk: true }, { name: product_id, fk: true }, qty] }
+  - id: cnt
+    shape: grid
+    label: { vi: "người bán 7", en: "seller 7" }
+    head: [{ vi: "bảng", en: table }, { vi: "trước", en: before }, { vi: "sau", en: after }]
+    cells: [[products, "10", "0"], [seller_orders, "50", "0"], [payouts, "3", "3"]]
+    cellTone: { "2:2": dead }
+rows:
+  - [s, pay, nofk]
+  - [p, o]
+  - [cnt]
+phone: { rows: [[s], [p], [o], [pay], [nofk], [cnt]] }
+edges:
+  - { from: "s#0", to: "p#0", link: true, ends: [one, zero-many], label: CASCADE }
+  - { from: "p#1", to: "o#2", link: true, ends: [one, zero-many], label: CASCADE }
+steps:
+  - say: { vi: "Khóa ngoại khai báo đi tới đâu, CASCADE xóa tới đó.", en: "CASCADE deletes as far as the declared keys reach." }
+    show: [s, pay, nofk, p, o]
+    alt: { vi: "products và seller_orders treo vào sellers bằng khóa ngoại ghép ON DELETE CASCADE.", en: "products and seller_orders hang from sellers through composite ON DELETE CASCADE keys." }
+  - say: { vi: "payouts không có khóa ngoại: còn 3 dòng.", en: "payouts has no foreign key: 3 rows remain." }
+    alt: { vi: "Bảng thêm sau mà thiếu khóa ngoại không bị CASCADE chạm, nên chứng minh phải quét mọi bảng có tenant_id.", en: "A table added later without a foreign key is never reached by CASCADE, so the proof must scan every table with tenant_id." }

@@ -71,7 +71,7 @@ pitfalls:
     wrong: "SELECT sum(birth_year) / count(*) FROM customers"
     fix: "SELECT avg(birth_year) FROM customers"
     why:
-      vi: "`count(*)` đếm cả 27 khách không có năm sinh, nhưng `sum` thì bỏ họ, và phép chia hai số nguyên còn cắt phần lẻ: ra 1804, một năm sinh vô lý. `avg` chia đúng cho số ô có giá trị (khoảng 1982,93)."
+      vi: "`count(*)` đếm cả 27 khách không có năm sinh, nhưng `sum` thì bỏ họ, và phép chia hai số nguyên còn cắt phần thập phân: ra 1804, một năm sinh vô lý. `avg` chia đúng cho số ô có giá trị (khoảng 1982,93)."
       en: "`count(*)` counts the 27 customers with no birth year too, but `sum` skips them, and dividing two integers also drops the fraction: 1804, an absurd birth year. `avg` divides by the number of non-empty cells (about 1982.93)."
   - title: { vi: "Đếm một cột có ô trống khi muốn đếm dòng", en: "Counting a column with gaps when you meant rows" }
     wrong: "SELECT count(email) FROM customers"

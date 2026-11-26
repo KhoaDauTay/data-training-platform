@@ -1,0 +1,66 @@
+# B3-14 (tools/v42/diagram-plan-v42.md): CASE stops at the first branch that is true. Lessons: case_when (Ý chính),
+# conditional_agg (Ý chính, variant `filter` = step 2 with the bars titled count(*) FILTER; showing the bars alone left the hidden nodes' rows blank). Data (lab, PGlite; tools/v42/b3check.log): CASE WHEN price_vnd >= 100000 THEN 3
+# WHEN price_vnd >= 30000 THEN 2 ELSE 1 END; Household = Laundry powder 3kg 129000 → 3; Floor cleaner 56000, Paper towels 41000,
+# Light bulb 38000, Dish soap 32000 → 2; Trash bags 27000 → 1; all products: tier 1 15, tier 2 11, tier 3 4 (count(*) FILTER
+# gives the same three numbers on one row). Bars to scale (7.5 = 15), the note is the real count.
+# Source: https://www.postgresql.org/docs/current/functions-conditional.html#FUNCTIONS-CASE
+title: { vi: "CASE dừng ở nhánh đúng đầu tiên", en: "CASE stops at the first true branch" }
+caption:
+  vi: "CASE WHEN price_vnd >= 100000 THEN 3 WHEN price_vnd >= 30000 THEN 2 ELSE 1 END trên products của lab."
+  en: "CASE WHEN price_vnd >= 100000 THEN 3 WHEN price_vnd >= 30000 THEN 2 ELSE 1 END on the lab's products."
+alt:
+  vi: "CASE xét các nhánh theo thứ tự và lấy nhánh đúng đầu tiên, nên mức cao nhất phải viết trước. Kết quả: 15 món hạng 1, 11 hạng 2, 4 hạng 3."
+  en: "CASE checks branches in order and takes the first true one, so the highest bar goes first. Result: 15 items in tier 1, 11 in tier 2, 4 in tier 3."
+nodes:
+  - { id: item, label: Laundry powder 3kg, sub: "129000" }
+  - { id: b1, shape: key, mono: true, label: ">= 100000 → 3", tone: live }
+  - { id: b2, shape: key, mono: true, label: ">= 30000 → 2", tone: ghost }
+  - { id: b3, shape: key, mono: true, label: "ELSE → 1", tone: ghost }
+  - id: g
+    shape: grid
+    label: Household
+    head: [name, price_vnd, tier]
+    cells:
+      - [Laundry powder 3kg, "129000", "3"]
+      - [Floor cleaner, "56000", "2"]
+      - [Paper towels, "41000", "2"]
+      - [Light bulb, "38000", "2"]
+      - [Dish soap, "32000", "2"]
+      - [Trash bags, "27000", "1"]
+    rowTone: [new, null, null, null, null, null]
+  - id: cnt
+    shape: bars
+    label: { vi: "mọi sản phẩm", en: "all products" }
+    items:
+      - { label: tier 1, value: 7.5, note: "15" }
+      - { label: tier 2, value: 5.5, note: "11" }
+      - { label: tier 3, value: 2, note: "4" }
+rows:
+  - [item]
+  - [b1]
+  - [b2]
+  - [b3]
+  - [g, cnt]
+edges:
+  - { from: item, to: b1, label: { vi: "đúng, dừng", en: "true, stop" } }
+  - { from: b1, to: b2, dash: true, label: { vi: "không xét", en: "not checked" } }
+  - { from: b2, to: b3, dash: true }
+steps:
+  - say: { vi: "Kiểm từ trên xuống, dừng ở nhánh đúng đầu tiên.", en: "Checked top down, stopping at the first true branch." }
+    show: [item, b1, b2, b3]
+    alt: { vi: "129000 cũng lớn hơn 30000, nhưng nhánh 100000 đứng trước nên món này dừng ở hạng 3.", en: "129000 is also over 30000, but the 100000 branch comes first, so the item stops at tier 3." }
+  - say: { vi: "Cột CASE dùng như mọi cột, kể cả GROUP BY.", en: "A CASE column works like any column, even in GROUP BY." }
+    show: [item, b1, b2, b3, g, cnt]
+    alt: { vi: "Mỗi món nhận đúng một hạng, nên gom theo hạng ra 15, 11 và 4.", en: "Each item gets exactly one tier, so grouping by tier gives 15, 11 and 4." }
+variants:
+  filter:
+    step: 1
+    title: { vi: "Ba hạng giá trong một dòng", en: "Three price tiers on one row" }
+    caption:
+      vi: "Ba hạng giá trên products của lab, chia bằng CASE; count(*) FILTER (WHERE price_vnd >= 100000) và hai cột tương tự đếm cả ba trên một dòng."
+      en: "Three price tiers on the lab's products, split by CASE; count(*) FILTER (WHERE price_vnd >= 100000) and two similar columns count all three on one row."
+    alt:
+      vi: "FILTER đếm từng hạng trong cùng một dòng kết quả thay vì một dòng mỗi nhóm. Kết quả: 15, 11 và 4 món, như GROUP BY theo hạng."
+      en: "FILTER counts each tier in one result row instead of one row per group. Result: 15, 11 and 4 items, as with GROUP BY on the tier."
+    set:
+      cnt: { label: count(*) FILTER, sub: { vi: "một dòng, ba cột", en: "one row, three columns" } }

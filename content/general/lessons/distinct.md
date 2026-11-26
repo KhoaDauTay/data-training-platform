@@ -127,7 +127,7 @@ Nhóm marketing hỏi: "Tháng 10 có bao nhiêu khách đã mua hàng?" Bảng 
 
 ## Ý chính
 
-`SELECT DISTINCT` giữ mỗi dòng kết quả một lần: các dòng giống nhau ở mọi cột đã chọn gộp thành một. `count(DISTINCT customer_id)` làm điều tương tự bên trong hàm đếm: nó đếm số giá trị khác nhau thay vì số dòng.
+`SELECT DISTINCT` giữ mỗi dòng kết quả một lần: các dòng giống nhau ở mọi cột đã chọn chỉ còn một. `count(DISTINCT customer_id)` làm điều tương tự bên trong hàm đếm: nó đếm số giá trị khác nhau thay vì số dòng.
 
 Nhiều người nghĩ **`DISTINCT` gắn với cột đứng ngay sau nó**. Thật ra nó áp lên cả dòng: chọn thêm một cột là phép bỏ trùng xét thêm cột đó, và dòng chỉ trùng khi giống nhau ở mọi cột. Nếu bạn muốn "mỗi khách một dòng" thì chỉ chọn cột định danh khách.
 

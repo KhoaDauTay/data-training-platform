@@ -19,16 +19,16 @@ variants:
   - { day: "2026-10-25", d: "25/10/2026", d_en: "October 25" }
   - { day: "2026-10-20", d: "20/10/2026", d_en: "October 20" }
 reflect:
-  q: { vi: "Ghép thường giữa lịch trả và tiền về làm gì với kỳ chưa trả?", en: "What does a plain join between the schedule and the repayments do to an unpaid instalment?" }
+  q: { vi: "Nối thường giữa lịch trả và tiền về làm gì với kỳ chưa trả?", en: "What does a plain join between the schedule and the repayments do to an unpaid instalment?" }
   options:
-    - { vi: "Bỏ mất kỳ đó, vì nó không có dòng tiền về nào để ghép", en: "Drops it, because it has no repayment row to match" }
+    - { vi: "Bỏ mất kỳ đó, vì nó không có dòng tiền về nào để nối", en: "Drops it, because it has no repayment row to match" }
     - { vi: "Giữ kỳ đó với số tiền đã thu bằng 0", en: "Keeps it with 0 collected" }
     - { vi: "Báo lỗi", en: "Fails with an error" }
   answer: 0
-  why: { vi: "Ghép thường chỉ giữ cặp dòng khớp nhau. Ghép trái giữ mọi kỳ trả; phía tiền về để trống ở kỳ chưa trả, rồi ta thay ô trống bằng 0.", en: "A plain join keeps only matching pairs. A left join keeps every instalment; the repayment side stays empty for unpaid ones, and then we replace the empty cell with 0." }
+  why: { vi: "Nối thường chỉ giữ cặp dòng khớp nhau. Nối trái giữ mọi kỳ trả; phía tiền về để trống ở kỳ chưa trả, rồi ta thay ô trống bằng 0.", en: "A plain join keeps only matching pairs. A left join keeps every instalment; the repayment side stays empty for unpaid ones, and then we replace the empty cell with 0." }
 wrong:
   - sql: "SELECT s.id, s.principal_due + s.interest_due, COALESCE(r.amount, 0) FROM schedules s JOIN repayments r ON r.schedule_id = s.id WHERE s.due_on = '{{day}}' ORDER BY s.id"
-    vi: "Thiếu các kỳ chưa thu: ghép thường bỏ những kỳ không có dòng tiền về. Đề cần mọi kỳ đến hạn, kỳ chưa thu ghi 0."
+    vi: "Thiếu các kỳ chưa thu: nối thường bỏ những kỳ không có dòng tiền về. Đề cần mọi kỳ đến hạn, kỳ chưa thu ghi 0."
     en: "The unpaid instalments are missing: a plain join drops instalments with no repayment row. The request wants every instalment due, with 0 for those not collected."
 ---
 Kế toán đối chiếu tiền về theo từng ngày đến hạn. Mình cần mọi kỳ đến hạn trong ngày, kể cả kỳ khách chưa trả: kỳ chưa trả mới là thứ mình cần thấy nhất.
@@ -37,7 +37,7 @@ Kế toán đối chiếu tiền về theo từng ngày đến hạn. Mình cầ
 Mọi kỳ trả đến hạn ngày {{d}}: số hiệu kỳ trả (số nội bộ của dòng lịch trả), số tiền phải thu (gốc cộng lãi) và số tiền đã thu tính đến hôm nay; kỳ chưa thu thì ghi 0. Xếp theo số hiệu kỳ trả.
 
 ## Hints
-1. Kỳ chưa trả không có dòng tiền về. Ghép thường sẽ làm mất các kỳ đó; cần cách ghép giữ mọi dòng của lịch trả, rồi thay ô trống bằng 0.
+1. Kỳ chưa trả không có dòng tiền về. Nối thường sẽ làm mất các kỳ đó; cần cách nối giữ mọi dòng của lịch trả, rồi thay ô trống bằng 0.
 2. `FROM schedules s LEFT JOIN repayments r ON r.schedule_id = s.id` giữ mọi kỳ. `COALESCE(r.amount, 0)` lấy số tiền đã thu, không có thì 0. Phải thu là `s.principal_due + s.interest_due`.
 3. `SELECT s.id, s.principal_due + s.interest_due, COALESCE(r.amount, 0) FROM schedules s LEFT JOIN repayments r ON ... WHERE ... ORDER BY s.id`
 

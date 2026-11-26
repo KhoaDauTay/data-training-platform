@@ -30,7 +30,7 @@ reflect:
   why: { vi: "Mốc đầu tháng sau luôn có, nên cùng một cách viết dùng được cho tháng dài hay tháng ngắn, và cả khi cột có giờ phút.", en: "The first day of the next month always exists, so the same form works for long and short months alike, and even when the column holds a time of day." }
 wrong:
   - sql: "SELECT code, disbursed_on, principal, term_months FROM loans WHERE disbursed_on >= '2026-10-01' AND disbursed_on < '2026-11-01'"
-    vi: "Danh sách có khoản vay của mọi chi nhánh. Đề chỉ cần một chi nhánh: thêm điều kiện mã chi nhánh, nối bằng AND."
+    vi: "Danh sách có khoản vay của mọi chi nhánh. Đề chỉ cần một chi nhánh: thêm điều kiện mã chi nhánh, kết hợp bằng AND."
     en: "Your list has loans from every branch. The request is for one branch only: add a branch condition, joined with AND."
 ---
 Chào bạn, chào mừng đến Hũ Bạc! Mình là Nhật, trưởng nhóm dữ liệu, tuần này mình kèm bạn.
