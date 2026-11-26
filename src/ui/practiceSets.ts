@@ -55,7 +55,6 @@ export function mixCard(): HTMLElement | null {
     h('ul', { class: 'm-0 grid list-none gap-2 p-0 sm:grid-cols-2' }, ...d$.ROUTE_PARTS.map((p) => h('li', {},
       h('button', {
         type: 'button', class: 'flex min-h-11 w-full items-center gap-2 px-3 py-2 text-left',
-        'aria-label': lt('sets.mixAria', { n: p.n, title: p.title[lang] }),
         onclick: () => d$.startSet(mixedSet(p.skills, g.bySkill, Math.random), { kind: 'mix', part: p.n }),
       }, h('span', { class: 'shrink-0 font-bold' }, lt('sets.mixPart', { n: p.n })), h('span', { class: 'min-w-0 text-body-sm text-muted' }, p.title[lang]))))));
 }
