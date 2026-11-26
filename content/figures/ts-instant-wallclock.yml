@@ -1,0 +1,19 @@
+# TS-2 (v47 L972): one timestamptz instant read on three wall clocks. Lesson: e-ts-l1-02 (Ý chính).
+# Data = the lab's gate time 2026-10-30 08:10+07 = 01:10 UTC = 09:10 in Singapore (+08).
+title: { vi: "Một thời điểm, hai cách đọc", en: "One instant, two readings" }
+caption:
+  vi: "timestamptz giữ thời điểm 01:10 UTC; AT TIME ZONE đọc nó thành 08:10 ở Đà Nẵng và 09:10 ở Singapore."
+  en: "timestamptz keeps the instant 01:10 UTC; AT TIME ZONE reads it as 08:10 in Da Nang and 09:10 in Singapore."
+alt:
+  vi: "Một giá trị timestamptz là một thời điểm thật, không mang múi giờ. Mỗi múi giờ chỉ là một cách đọc thời điểm đó, nên 08:10 ở Đà Nẵng và 09:10 ở Singapore là cùng một lúc."
+  en: "A timestamptz value is one real instant and carries no time zone. Each zone is only a way to read that instant, so 08:10 in Da Nang and 09:10 in Singapore are the same moment."
+nodes:
+  - { id: inst, label: { vi: "một thời điểm", en: "one instant" }, sub: { vi: "lưu: 01:10 UTC", en: "stored: 01:10 UTC" }, tone: live }
+  - { id: vn, label: { vi: "Asia/Ho_Chi_Minh", en: "Asia/Ho_Chi_Minh" }, sub: { vi: "đọc 08:10", en: "reads 08:10" } }
+  - { id: sg, label: { vi: "Asia/Singapore", en: "Asia/Singapore" }, sub: { vi: "đọc 09:10", en: "reads 09:10" } }
+rows:
+  - [inst]
+  - [vn, sg]
+edges:
+  - { from: inst, to: vn }
+  - { from: inst, to: sg }

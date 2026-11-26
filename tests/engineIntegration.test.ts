@@ -38,7 +38,7 @@ describe('engine index and routes', () => {
 });
 
 describe('viz names in content → ENG-VIZ diagrams', () => {
-  const short = { postgres: 'pg', mongodb: 'mg', dynamodb: 'dy', redis: 'rd', design: 'pg', stack: 'pg', olap: 'pg', search: 'pg', telemetry: 'pg' } as const;
+  const short = { postgres: 'pg', mongodb: 'mg', dynamodb: 'dy', redis: 'rd', design: 'pg', stack: 'pg', olap: 'pg', search: 'pg', timeseries: 'pg', telemetry: 'pg' } as const;
   it.each(lessons.filter((l) => l.viz).map((l) => [l.id, l.viz!, l.engine] as const))('%s: %s', (_id, name, engine) => {
     const real = resolveViz(name, short[engine]);
     expect(real, name).toMatch(new RegExp(`^${short[engine]}-`));

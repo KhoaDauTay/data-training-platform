@@ -18,6 +18,7 @@ export const PREREQS: Partial<Record<EngineId, Prereq[]>> = {
   stack: [{ sql: [1, 7] }, { engine: 'postgres', to: 'L1' }],
   olap: [{ sql: [1, 7] }, { engine: 'postgres', to: 'L1' }], // v47 (L991)
   search: [{ sql: [1, 4] }, { engine: 'postgres', to: 'L1' }], // v47 (L1018)
+  timeseries: [{ sql: [1, 10] }], // v47 (L977): L2 uses window functions (Part 10)
   telemetry: [{ sql: [1, 8] }, { engine: 'postgres', to: 'L1' }], // v47 (L1033): windows (lag), CTEs, JSONB
 };
 
@@ -62,6 +63,7 @@ const MORE: Record<string, string[]> = {
   'e-ds-l2-03': ['join'], 'e-ds-l3-02': ['group_by', 'having'], 'e-ds-l4-05': ['group_by'], 'e-ds-l5-01': ['where', 'join', 'union', 'except'], 'e-ds-l5-02': ['exists', 'anti_join'],
   'e-st-l1-02': ['cast', 'coalesce'], 'e-st-l1-03': ['window_rank', 'distinct_on'], 'e-st-l2-01': ['cte', 'multi_cte'], 'e-st-l2-03': ['upsert'],
   'e-st-l2-06': ['window_lag'], 'e-st-l2-08': ['group_by', 'multi_join'], 'e-st-l3-02': ['date_bucket', 'window_rank'],
+  'e-ts-l1-03': ['date_bucket'], 'e-ts-l1-05': ['distinct_on'], 'e-ts-l2-01': ['window_agg'], 'e-ts-l2-02': ['window_lag'], 'e-ts-l2-03': ['upsert'],
 };
 /**
  * I8 "Luyện thêm": Engine lesson id → route skill ids, the one table: the inverse of the "Đào sâu" chips (DEEP, skill → lessons;
@@ -82,4 +84,5 @@ export const DIVE: Record<string, string[]> = {
   'e-ds-l5-06': ['e-pg-l4-04', 'e-pg-l5-12'], 'e-ds-l5-07': ['e-pg-l3-12', 'e-pg-l5-09'], 'e-ds-l5-08': ['e-pg-l4-20'],
   'e-st-l1-02': ['e-pg-l1-01'], 'e-st-l1-03': ['e-pg-l1-16'], 'e-st-l1-05': ['e-pg-l2-11'], 'e-st-l2-03': ['e-pg-l1-08', 'e-pg-l1-16'],
   'e-st-l2-04': ['e-pg-l1-04'], 'e-st-l2-08': ['e-pg-l1-08'], 'e-st-l3-04': ['e-pg-l4-07'],
+  'e-ts-l3-02': ['e-pg-l4-07', 'e-pg-l4-08'], 'e-ts-l3-03': ['e-pg-l2-08', 'e-pg-l5-05'],
 };

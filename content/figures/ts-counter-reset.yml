@@ -1,0 +1,30 @@
+# TS-7 (v47 L972): a cumulative counter restarts; the raw difference is negative, the reset-aware increase takes the new value.
+# Lesson: e-ts-l2-02 (Ý chính). Data = the lab's QC2 readings 880, 891, 4, 13, 20, 31 (06:00–07:15 on 30 Oct).
+title: { vi: "Bộ đếm khởi động lại", en: "A counter that restarts" }
+caption:
+  vi: "QC2 đọc 891 rồi 4: hiệu là -887. Coi số âm là khởi động lại và lấy 4 làm số lượt, tổng thành 11 + 4 + 9 + 7 + 11 = 42."
+  en: "QC2 reads 891, then 4: the difference is -887. Treating the negative step as a restart and taking 4 as the moves makes the total 11 + 4 + 9 + 7 + 11 = 42."
+alt:
+  vi: "Hiệu giữa hai lần đọc là số lượt trong đoạn đó, trừ lúc bộ đếm khởi động lại về 0 thì hiệu ra âm. Lúc đó giá trị mới chính là số lượt kể từ khi khởi động lại. Kết quả: 42 lượt, không phải 887."
+  en: "The difference between two readings is the moves in that step, except when the counter restarts from 0 and the difference turns negative. Then the new value itself is the number of moves since the restart. Result: 42 moves, not 887."
+nodes:
+  - id: raw
+    shape: bars
+    label: { vi: "moves_total của QC2", en: "moves_total of QC2" }
+    items:
+      - { label: "06:00", value: 8.8, note: "880" }
+      - { label: "06:15", value: 8.91, note: "891" }
+      - { label: "06:30", value: 0.04, note: "4", tone: warm }
+      - { label: "06:45", value: 0.13, note: "13" }
+      - { label: "07:00", value: 0.2, note: "20" }
+      - { label: "07:15", value: 0.31, note: "31" }
+  - id: inc
+    shape: grid
+    label: { vi: "số lượt mỗi đoạn", en: "moves per step" }
+    cells: [["06:15", "06:30", "06:45", "07:00", "07:15"], ["11", "4", "9", "7", "11"]]
+    colTone: [null, new, null, null, null]
+rows:
+  - [raw]
+  - [inc]
+edges:
+  - { from: raw, to: inc, label: lag }

@@ -759,6 +759,7 @@ export const vi = {
   'welcome.checkSkip': 'Bỏ qua',
   'welcome.eng.design': 'Thiết kế CSDL',
   'welcome.eng.stack': 'Công cụ dữ liệu',
+  'welcome.eng.timeseries': 'Chuỗi thời gian',
   // L87: the teaching scene (Boon teaches, Lily = the player listens) and Lily's growth on Home
   'teach.scene': 'Boon đang dạy Lily, bạn cùng học của bạn, bên tấm bảng',
   'teach.lily': 'Lily, bạn cùng học của bạn: bấm để Lily reo lên',

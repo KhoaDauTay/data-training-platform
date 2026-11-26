@@ -140,7 +140,7 @@ export const gradable = (l: EngineLesson, step: LabStep): boolean =>
  * not is a diagram when it has one, else it is read from the official docs.
  */
 export type Honest = 'pg' | 'mingo' | 'dynoxide' | 'redis' | 'search' | 'diagram' | 'docs';
-const RUNS: Record<EngineId, Honest> = { postgres: 'pg', mongodb: 'mingo', dynamodb: 'dynoxide', redis: 'redis', design: 'pg', stack: 'pg', olap: 'pg', search: 'search', telemetry: 'pg' };
+const RUNS: Record<EngineId, Honest> = { postgres: 'pg', mongodb: 'mingo', dynamodb: 'dynoxide', redis: 'redis', design: 'pg', stack: 'pg', olap: 'pg', search: 'search', timeseries: 'pg', telemetry: 'pg' };
 export const honestOf = (l: Pick<EngineLesson, 'engine' | 'runtime' | 'viz' | 'lab' | 'predict'>): Honest =>
   l.runtime !== 'docs' && LAB_RUNNERS[l.engine] && (l.lab || (l.predict && onPg(l.engine))) ? RUNS[l.engine] : l.viz ? 'diagram' : 'docs';
 
@@ -189,4 +189,4 @@ LAB_RUNNERS.search = async (env) => {
 };
 // v47 (L1037): telemetry labs are PostgreSQL labs; a `lang: promql` step goes to the PromQL simulation (lazy `promqlRunner` chunk)
 LAB_RUNNERS.telemetry = async (env) => (await import('./telemetry/promqlRunner')).tmRunner(env, await LAB_RUNNERS.postgres!(env));
-LAB_RUNNERS.design = LAB_RUNNERS.stack = LAB_RUNNERS.olap = LAB_RUNNERS.postgres; // v47 (L990): olap too // v45 (L742): stack labs too // v28 R4 (L420): design labs are PostgreSQL labs (`lab` schema, or the lab runtime with `setup`)
+LAB_RUNNERS.design = LAB_RUNNERS.stack = LAB_RUNNERS.olap = LAB_RUNNERS.timeseries = LAB_RUNNERS.postgres; // v47 (L970): timeseries too // v47 (L990): olap too // v45 (L742): stack labs too // v28 R4 (L420): design labs are PostgreSQL labs (`lab` schema, or the lab runtime with `setup`)

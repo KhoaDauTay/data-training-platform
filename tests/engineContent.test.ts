@@ -185,7 +185,7 @@ describe('honestOf: nhãn trung thực của mọi bài', () => {
       // L299: the two DynamoDB catalog labs (e-dy-l1-04, e-dy-l3-03) count as gradable now (dynoxide grades any check kind).
       expect(!!l.lab || (onPg(l.engine) && !!l.predict)).toBe(true);
       expect((l.lab?.steps ?? []).some((s) => gradable(l, s)) || (onPg(l.engine) && !!l.predict)).toBe(true);
-      expect(k).toBe({ postgres: 'pg', mongodb: 'mingo', dynamodb: 'dynoxide', redis: 'redis', design: 'pg', stack: 'pg', olap: 'pg', search: 'search', telemetry: 'pg' }[l.engine]);
+      expect(k).toBe({ postgres: 'pg', mongodb: 'mingo', dynamodb: 'dynoxide', redis: 'redis', design: 'pg', stack: 'pg', olap: 'pg', search: 'search', timeseries: 'pg', telemetry: 'pg' }[l.engine]);
     } else {
       expect(l.runtime).toBe('docs');
       expect(k).toBe(l.viz ? 'diagram' : 'docs');
