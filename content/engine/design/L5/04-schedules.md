@@ -28,7 +28,7 @@ lab:
       (4, 'T2', 'W', 'A'), (5, 'T3', 'R', 'B'), (6, 'T2', 'W', 'B');
   steps:
     - task:
-        vi: "Liệt kê các cạnh của đồ thị tiền nhiệm: `from_tx`, `to_tx`, mỗi cạnh một lần, xếp theo hai cột đó. Có cạnh Ti → Tj khi một thao tác của Ti đứng trước một thao tác của Tj trên cùng mục, khác giao dịch, và ít nhất một trong hai là ghi."
+        vi: "Liệt kê các cạnh của đồ thị tiền nhiệm: `from_tx`, `to_tx`, mỗi cạnh một lần, xếp theo hai cột đó. Có cạnh Ti → Tj khi một thao tác của Ti đứng trước một thao tác của Tj trên cùng mục, khác transaction, và ít nhất một trong hai là ghi."
         en: "List the edges of the precedence graph: `from_tx`, `to_tx`, each edge once, ordered by those two columns. There is an edge Ti → Tj when an operation of Ti comes before one of Tj on the same item, in different transactions, and at least one of them is a write."
       solution: SELECT DISTINCT a.tx AS from_tx, b.tx AS to_tx FROM ops a JOIN ops b ON a.item = b.item AND a.tx <> b.tx AND a.step < b.step AND (a.op = 'W' OR b.op = 'W') ORDER BY from_tx, to_tx
       check: rows
@@ -51,13 +51,13 @@ quiz:
       en: "Which two operations below conflict?"
     options:
       - { vi: "`R1(A)` và `R2(A)`: cùng đọc A", en: "`R1(A)` and `R2(A)`: both read A" }
-      - { vi: "`R1(A)` và `W2(A)`: khác giao dịch, cùng A, có một ghi", en: "`R1(A)` and `W2(A)`: different transactions, same A, one write" }
-      - { vi: "`W1(A)` và `W1(B)`: cùng giao dịch", en: "`W1(A)` and `W1(B)`: same transaction" }
+      - { vi: "`R1(A)` và `W2(A)`: khác transaction, cùng A, có một ghi", en: "`R1(A)` and `W2(A)`: different transactions, same A, one write" }
+      - { vi: "`W1(A)` và `W1(B)`: cùng transaction", en: "`W1(A)` and `W1(B)`: same transaction" }
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì hai người cùng chạm A, nhưng hai lần đọc không đổi gì nên đổi chỗ được. Xung đột cần đủ ba điều: khác giao dịch, cùng mục, ít nhất một ghi."
-      en: "It sounds right because both touch A, but two reads change nothing, so they can swap. A conflict needs all three: different transactions, the same item, at least one write."
+      vi: "`R1(A)` và `R2(A)` cùng chạm A, nhưng hai lần đọc không đổi giá trị nào, nên đổi chỗ chúng thì kết quả vẫn vậy. `W1(A)` và `W1(B)` thuộc cùng một transaction, mà thứ tự bên trong một transaction không bao giờ bị đổi. Xung đột cần đủ ba điều: khác transaction, cùng mục, ít nhất một ghi; chỉ `R1(A)` và `W2(A)` đủ cả ba, và đổi chỗ chúng làm T1 đọc giá trị khác."
+      en: "`R1(A)` and `R2(A)` both touch A, but two reads change no value, so swapping them leaves the result the same. `W1(A)` and `W1(B)` belong to one transaction, and the order inside a transaction is never changed. A conflict needs all three: different transactions, the same item, at least one write; only `R1(A)` and `W2(A)` meet all three, and swapping them makes T1 read a different value."
   - q:
       vi: "Đồ thị tiền nhiệm của lịch trong lab có chu trình T1 → T2 → T1. Kết luận?"
       en: "The lab schedule's precedence graph has the cycle T1 → T2 → T1. Conclusion?"
@@ -68,8 +68,8 @@ quiz:
     answer: 0
     trap: 1
     why:
-      vi: "Nhiều người nghĩ có chu trình là hết đường. Thật ra chu trình chỉ nói lịch không khả tuần tự xung đột; khả tuần tự view rộng hơn và có lịch qua được (với ghi mù). Kiểm khả tuần tự view là bài toán NP-đầy đủ, nên hệ thống thật dùng khả tuần tự xung đột."
-      en: "Many people think a cycle closes every door. In fact a cycle only says the schedule is not conflict serializable; view serializability is broader and some such schedules pass it (with blind writes). Testing view serializability is NP-complete, so real systems use conflict serializability."
+      vi: "Chu trình T1 → T2 → T1 nói không thứ tự tuần tự nào đặt được T1 vừa trước vừa sau T2, nên lịch không khả tuần tự xung đột. Nhưng nó chưa loại khả tuần tự view, một định nghĩa rộng hơn nhận thêm vài lịch có ghi mù (blind write: ghi một mục mà không đọc nó trước). Đổi T3 ra đầu không giúp: T3 không nằm trong chu trình. Kiểm khả tuần tự view là bài toán NP-đầy đủ (chưa có cách kiểm nhanh cho lịch lớn), nên hệ thống thật dùng khả tuần tự xung đột."
+      en: "The cycle T1 → T2 → T1 says no serial order can put T1 both before and after T2, so the schedule is not conflict serializable. It does not rule out view serializability, a broader definition that accepts a few more schedules with blind writes (writing an item without reading it first). Moving T3 to the front does not help: T3 is not in the cycle. Testing view serializability is NP-complete (no known fast test for large schedules), so real systems use conflict serializability."
   - q:
       vi: "T2 đọc giá trị T1 vừa ghi, rồi T2 commit trước khi T1 commit. Sau đó T1 hủy. Lịch này thế nào?"
       en: "T2 reads a value T1 just wrote, then T2 commits before T1 commits. Then T1 aborts. What is this schedule?"
@@ -80,30 +80,30 @@ quiz:
     answer: 0
     trap: 2
     why:
-      vi: "Nghe hợp lý vì khả tuần tự có vẻ là đủ an toàn, nhưng khả tuần tự nói về thứ tự, không nói về hủy. Khả phục hồi đòi: ai đọc của ai thì commit sau người đó. Tránh luôn hủy dây chuyền (cascadeless) thì chỉ đọc dữ liệu đã commit."
-      en: "It sounds right because serializable feels safe enough, but serializability is about order, not aborts. Recoverable requires: whoever reads from someone commits after them. To avoid cascading aborts (cascadeless), read only committed data."
+      vi: "T2 commit trước không làm lịch ổn, mà chính là lỗi: T2 đã commit một kết quả dựa trên giá trị T1 ghi, rồi T1 hủy, và commit của T2 không rút lại được. Khả tuần tự cũng không cứu: nó chỉ nói về thứ tự thao tác, không nói gì về hủy. Khả phục hồi (recoverable) đòi transaction đọc dữ liệu của ai thì commit sau người đó. Chặt hơn, không hủy dây chuyền (cascadeless) nghĩa là chỉ đọc dữ liệu đã commit."
+      en: "T2 committing first does not make the schedule fine, it is the fault: T2 committed a result built on the value T1 wrote, then T1 aborted, and T2's commit cannot be taken back. Serializability does not save it either: it is only about the order of operations, not about aborts. Recoverable requires a transaction that reads another's data to commit after it. Stricter, cascadeless means reading only committed data."
   - q:
       vi: "Lịch tuần tự là gì?"
       en: "What is a serial schedule?"
     options:
-      - { vi: "Lịch chạy hết một giao dịch rồi mới tới giao dịch khác", en: "A schedule that runs one transaction to the end before the next starts" }
+      - { vi: "Lịch chạy hết transaction này rồi mới tới cái khác", en: "A schedule that runs one transaction to the end before the next starts" }
       - { vi: "Lịch có số thứ tự tăng dần", en: "A schedule whose steps are numbered upwards" }
       - { vi: "Lịch chỉ có thao tác đọc", en: "A schedule with only reads" }
     answer: 0
     trap: 1
     why:
-      vi: "Nhiều người nghĩ \"tuần tự\" là các bước đánh số theo thứ tự. Thật ra lịch nào cũng có thứ tự bước; tuần tự nghĩa là không xen kẽ. Khả tuần tự nghĩa là cho cùng kết quả với một lịch tuần tự nào đó."
-      en: "Many people think \"serial\" means steps numbered in order. In fact every schedule has ordered steps; serial means no interleaving. Serializable means it gives the same result as some serial schedule."
+      vi: "\"Tuần tự\" nghe như các bước đánh số theo thứ tự, nhưng lịch nào cũng có thứ tự bước, kể cả lịch xen kẽ trong lab. Một lịch chỉ có thao tác đọc thì không có xung đột, nhưng vẫn có thể xen kẽ. Lịch tuần tự nghĩa là không xen kẽ: chạy hết transaction này rồi mới tới cái khác. Khả tuần tự nghĩa là cho cùng kết quả với một lịch tuần tự nào đó."
+      en: "\"Serial\" sounds like steps numbered in order, but every schedule has ordered steps, including the lab's interleaved one. A schedule with only reads has no conflicts, but can still interleave. A serial schedule means no interleaving: one transaction runs to the end before the next. Serializable means it gives the same result as some serial schedule."
 ---
 ## Mở bài
 
-Hai giao dịch chạy xen kẽ, kết quả có giống như chạy lần lượt không? Lý thuyết lịch trả lời câu đó mà không cần chạy thử. Bài này đọc lịch, vẽ đồ thị, và để SQL tìm chu trình hộ bạn.
+Hai transaction chạy xen kẽ, kết quả có giống như chạy lần lượt không? Lý thuyết lịch trả lời câu đó mà không cần chạy thử. Bài này đọc lịch, vẽ đồ thị, và để SQL tìm chu trình hộ bạn.
 
 ## Ý chính
 
-Một **lịch** là thứ tự xen kẽ các thao tác đọc `R` và ghi `W` của nhiều giao dịch. Lịch **tuần tự** chạy hết giao dịch này mới tới giao dịch kia; nó luôn đúng nhưng chậm. Lịch **khả tuần tự** cho cùng kết quả với một lịch tuần tự nào đó.
+Một **lịch** là thứ tự xen kẽ các thao tác đọc `R` và ghi `W` của nhiều transaction. Lịch **tuần tự** chạy hết transaction này mới tới transaction kia; nó luôn đúng nhưng chậm. Lịch **khả tuần tự** cho cùng kết quả với một lịch tuần tự nào đó.
 
-Hai thao tác **xung đột** khi thuộc hai giao dịch khác nhau, chạm cùng một mục, và ít nhất một là ghi. Đổi chỗ hai thao tác kề nhau không xung đột thì kết quả không đổi. Lịch **khả tuần tự xung đột** khi đổi chỗ như vậy được tới một lịch tuần tự. Cách kiểm: vẽ **đồ thị tiền nhiệm**, mỗi giao dịch một đỉnh, cạnh Ti → Tj khi một thao tác của Ti xung đột với một thao tác đứng sau của Tj. Không có chu trình thì khả tuần tự xung đột, và thứ tự topo của đồ thị cho lịch tuần tự tương đương.
+Hai thao tác **xung đột** khi thuộc hai transaction khác nhau, chạm cùng một mục, và ít nhất một là ghi. Đổi chỗ hai thao tác kề nhau không xung đột thì kết quả không đổi. Lịch **khả tuần tự xung đột** khi đổi chỗ như vậy được tới một lịch tuần tự. Cách kiểm: vẽ **đồ thị tiền nhiệm**, mỗi transaction một đỉnh, cạnh Ti → Tj khi một thao tác của Ti xung đột với một thao tác đứng sau của Tj. Không có chu trình thì khả tuần tự xung đột, và thứ tự topo của đồ thị cho lịch tuần tự tương đương.
 
 **Khả tuần tự view** rộng hơn: chỉ đòi cùng ai đọc của ai và cùng lần ghi cuối. Nó nhận thêm vài lịch có ghi mù, nhưng kiểm nó là NP-đầy đủ. **Khả phục hồi** là chuyện khác: ai đọc dữ liệu của ai thì phải commit sau người đó; **không hủy dây chuyền** khi chỉ đọc dữ liệu đã commit.
 
@@ -115,7 +115,7 @@ Hình dưới vẽ lịch trong lab, mỗi dòng một bước, rồi dựng đ�
 
 ## Tóm tắt
 
-- Xung đột = khác giao dịch, cùng mục, ít nhất một ghi.
+- Xung đột = khác transaction, cùng mục, ít nhất một ghi.
 - Đồ thị tiền nhiệm không có chu trình ⇔ khả tuần tự xung đột; thứ tự topo cho lịch tuần tự.
 - Khả tuần tự view rộng hơn nhưng kiểm là NP-đầy đủ.
 - Khả phục hồi: đọc của ai thì commit sau người đó; không hủy dây chuyền: chỉ đọc dữ liệu đã commit.

@@ -10,7 +10,7 @@ import { extensionsOf, pgScriptRunner, replayOf } from '../src/engine/pglab/runn
 import { runLabScript } from '../src/engine/pglab/session';
 import { compareResults, grade } from '../src/grader';
 
-const files = import.meta.glob<LessonSource>('../content/engine/postgres/L*/*.md', { query: '?fm', import: 'default', eager: true });
+const files = import.meta.glob<LessonSource>('../content/engine/postgres/{L*,ext}/*.md', { query: '?fm', import: 'default', eager: true });
 const lessons: EngineLesson[] = Object.entries(files).map(([p, s]) => parseEngineLesson(s, p)).sort((a, b) => a.id.localeCompare(b.id));
 const env = { grade, verdict: (r: unknown) => JSON.stringify(r).slice(0, 400) };
 const runner = pgScriptRunner(env, { run: runLabScript, reset: () => undefined });

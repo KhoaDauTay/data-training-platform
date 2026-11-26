@@ -46,7 +46,7 @@ quiz:
       - { vi: "`LIMIT` làm lock thành cấp transaction", en: "`LIMIT` turns the lock into a transaction-level lock" }
     answer: 1
     trap: 0
-    why: { vi: "Nghe hợp lý vì `LIMIT` chỉ trả một dòng, nhưng `LIMIT` không giới hạn số lần hàm được gọi. Docs chính thức nêu đúng ví dụ này: không bảo đảm hàm lock chỉ chạy cho dòng được trả về. Hãy chọn dòng trong truy vấn con có `LIMIT` trước, rồi mới lấy lock ở câu ngoài.", en: "It sounds right because `LIMIT` returns one row, but `LIMIT` does not limit how many times the function is called. The docs give exactly this example: nothing guarantees the lock function only runs for the returned rows. Pick the row in a sub-query with `LIMIT` first, then lock it in the outer query." }
+    why: { vi: "\"Không gì cả\" nghe hợp lý vì `LIMIT` chỉ trả một dòng, nhưng `LIMIT` chỉ cắt số dòng trả về, không cắt số lần hàm trong danh sách SELECT được gọi: tùy kế hoạch, Postgres có thể tính hàm cho vài dòng trước khi dừng. Docs chính thức nêu đúng ví dụ này. Mỗi lần gọi thừa để lại một lock cấp phiên trên một việc mà ứng dụng không biết mình đang giữ, nên không ai nhả; `LIMIT` không đổi cấp của lock. Hãy chọn dòng trong truy vấn con có `LIMIT` trước, rồi mới lấy lock ở câu ngoài.", en: "\"Nothing\" sounds right because `LIMIT` returns one row, but `LIMIT` only cuts the rows returned, not the number of times a function in the SELECT list is called: depending on the plan, Postgres may evaluate it for several rows before stopping. The docs give exactly this example. Each extra call leaves a session-level lock on a job the application does not know it holds, so nobody releases it; `LIMIT` does not change the lock's level. Pick the row in a sub-query with `LIMIT` first, then take the lock in the outer query." }
   - q: { vi: "Worker gọi `pg_advisory_lock(7)` trong một transaction, gặp lỗi và ROLLBACK, rồi tiếp tục dùng cùng kết nối. Lock 7 thế nào?", en: "A worker calls `pg_advisory_lock(7)` inside a transaction, hits an error and rolls back, then keeps using the same connection. What about lock 7?" }
     options:
       - { vi: "Đã nhả, vì ROLLBACK hủy mọi thứ transaction làm", en: "Released, because ROLLBACK undoes everything the transaction did" }
@@ -54,12 +54,12 @@ quiz:
       - { vi: "Bị nâng thành lock trên bảng", en: "It is escalated to a table lock" }
     answer: 1
     trap: 0
-    why: { vi: "Nghe hợp lý vì ROLLBACK xóa mọi thay đổi dữ liệu của transaction, nhưng lock cấp phiên không thuộc về transaction. Với connection pool, kết nối đó được trả về pool mà vẫn giữ lock, và việc số 7 bị khóa mãi. Dùng `pg_advisory_xact_lock` để lock tự nhả cùng transaction.", en: "It sounds right because ROLLBACK undoes every data change of the transaction, but a session-level lock does not belong to the transaction. With a connection pool, the connection goes back to the pool still holding the lock, and job 7 stays locked forever. Use `pg_advisory_xact_lock` so the lock goes away with the transaction." }
+    why: { vi: "\"Đã nhả\" nghe hợp lý vì ROLLBACK hủy mọi thay đổi dữ liệu của transaction, nhưng `pg_advisory_lock` là lock cấp phiên: nó thuộc về kết nối, không thuộc transaction, nên ROLLBACK không đụng tới nó. Advisory lock cũng không gắn với bảng nào, nên không có chuyện nâng thành lock bảng. Với connection pool, kết nối được trả về pool mà vẫn giữ lock, và việc số 7 bị lock mãi tới khi kết nối đóng. Dùng `pg_advisory_xact_lock` để lock tự nhả khi transaction kết thúc.", en: "\"Released\" sounds right because ROLLBACK undoes every data change of the transaction, but `pg_advisory_lock` is a session-level lock: it belongs to the connection, not the transaction, so ROLLBACK does not touch it. An advisory lock is not tied to any table either, so it cannot be escalated to a table lock. With a connection pool, the connection goes back to the pool still holding the lock, and job 7 stays locked until the connection closes. Use `pg_advisory_xact_lock` so the lock is released when the transaction ends." }
 ---
 
 ## Mở bài
 
-Ba máy chủ cùng chạy một cron lúc nửa đêm, và hóa đơn đêm đó bị gửi ba lần. Không có dòng nào để khóa, vì "việc gửi hóa đơn" không phải một dòng trong bảng. Làm sao để chỉ một máy được chạy?
+Ba máy chủ cùng chạy một cron lúc nửa đêm, và hóa đơn đêm đó bị gửi ba lần. Không có dòng nào để lock, vì "việc gửi hóa đơn" không phải một dòng trong bảng. Làm sao để chỉ một máy được chạy?
 
 ## Ý chính
 
@@ -69,7 +69,7 @@ Có hai cấp. Cấp transaction (`pg_advisory_xact_lock`) tự nhả khi transa
 
 Nhiều người nghĩ ROLLBACK nhả mọi lock, và gọi unlock một lần là xong. Thật ra lock cấp phiên không thuộc transaction nào nên ROLLBACK không đụng tới nó; và cùng một phiên lấy một lock nhiều lần thì nó được đếm chồng, phải unlock đủ số lần mới nhả.
 
-Advisory lock hiện trong `pg_locks` với `locktype = 'advisory'` và có thể tham gia deadlock như lock thường. Một bẫy nữa trong tài liệu chính thức: đặt hàm lock trong câu có `LIMIT` không bảo đảm hàm chỉ chạy cho các dòng được trả về; hãy chọn dòng trong truy vấn con trước, rồi mới khóa ở câu ngoài.
+Advisory lock hiện trong `pg_locks` với `locktype = 'advisory'` và có thể tham gia deadlock như lock thường. Một bẫy nữa trong tài liệu chính thức: đặt hàm lock trong câu có `LIMIT` không bảo đảm hàm chỉ chạy cho các dòng được trả về; hãy chọn dòng trong truy vấn con trước, rồi mới lấy lock ở câu ngoài.
 
 ## Cú pháp
 
@@ -163,7 +163,7 @@ Ba bước, mỗi bước là một câu: lấy lock 42 rồi đọc nó trong `
 - Advisory lock gắn với một con số do ứng dụng chọn, không với bảng hay dòng.
 - Ưu tiên cấp transaction (`pg_advisory_xact_lock`): tự nhả, kể cả khi ROLLBACK.
 - Lock cấp phiên sống qua ROLLBACK và được đếm chồng; nhả đủ số lần hoặc dùng `pg_advisory_unlock_all()`.
-- Dạng `try` để bỏ qua việc người khác đang làm; chọn dòng bằng `LIMIT` trong truy vấn con rồi mới khóa.
+- Dạng `try` để bỏ qua việc người khác đang làm; chọn dòng bằng `LIMIT` trong truy vấn con rồi mới lấy lock.
 
 # EN
 

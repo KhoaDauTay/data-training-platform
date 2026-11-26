@@ -3,6 +3,7 @@ id: multi_join
 title: "Nối nhiều bảng: đi theo chuỗi khóa"
 title_en: "Joining several tables: follow the chain of keys"
 minutes: 25
+figures: [{ name: sql-join-chain, at: idea }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Nối ba, bốn bảng bằng cách đi theo khóa từ bảng này sang bảng kia.
@@ -55,7 +56,7 @@ examples:
       GROUP BY s.name, p.category
       ORDER BY s.name, units DESC
     read:
-      vi: "25 dòng = 5 cửa hàng × 5 nhóm hàng. Ở Ben Thanh, văn phòng phẩm bán nhiều nhất (148 món). Nối đủ bảng trước, rồi gộp theo cột của hai bảng khác nhau."
+      vi: "25 dòng = 5 cửa hàng × 5 nhóm hàng. Ở Ben Thanh, văn phòng phẩm bán nhiều nhất (148 món). Nối đủ bảng trước, rồi gom nhóm theo cột của hai bảng khác nhau."
       en: "25 rows = 5 stores × 5 categories. At Ben Thanh, stationery sells the most (148 units). Join every table first, then group by columns from two different tables."
   - title: { vi: "Doanh số và số đơn cùng lúc", en: "Sales and order count together" }
     sql: |-
@@ -127,6 +128,8 @@ Mỗi `JOIN` thêm một bảng vào kết quả, với một điều kiện kh�
 
 Nhiều người nghĩ **sau khi nối, mỗi dòng vẫn là một đơn**. Thật ra một dòng là một tổ hợp ở mức chi tiết nhất: nối tới dòng hàng thì mỗi dòng là một dòng hàng, và mỗi đơn lặp lại. `sum` trên dòng hàng là đúng; đếm đơn thì phải `count(DISTINCT …)`.
 
+Hình từng bước ở cuối mục này vẽ đường đi đó bằng các khóa ngoại của `lab`, rồi đếm số dòng sau khi nối.
+
 ## Cú pháp
 
 Có thể viết bao nhiêu `JOIN` tùy ý; mỗi cái một dòng, cùng thụt lề, dễ đọc lại.
@@ -142,6 +145,8 @@ The question is longer now: "At each store, which category sold the most units?"
 Each `JOIN` adds one table to the result, with a key condition linking it to a table already there. Draw the path: `order_items` → `orders` (via `order_id`) → `stores` (via `store_id`), and `order_items` → `products` (via `product_id`). A new table may join to any table above it.
 
 Many people think **after the joins, each row is still one order**. In fact a row is a combination at the most detailed level: join down to the lines and each row is one line, with every order repeated. `sum` over lines is right; counting orders needs `count(DISTINCT …)`.
+
+The step-through figure at the end of this section draws that path with the foreign keys of `lab`, then counts the rows after the joins.
 
 ## Syntax
 

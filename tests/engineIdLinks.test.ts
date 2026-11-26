@@ -33,6 +33,7 @@ describe('id → titled link', () => {
     ['Như bài e-pg-l4-09: nối', 'e-pg-l4-09', '#/engine/postgres/L4/e-pg-l4-09', (t: string) => `Như bài ${t}: nối`],
     ['- `e-ds-l4-09`', 'e-ds-l4-09', '#/engine/design/L4/e-ds-l4-09', (t: string) => `- ${t}`],
     ['khóa: `e-mg-l5-12`.', 'e-mg-l5-12', '#/engine/mongodb/L5/e-mg-l5-12', (t: string) => `khóa: ${t}.`],
+    ['(bài `e-pg-ext-02`)', 'e-pg-ext-02', '#/engine/postgres/ext/e-pg-ext-02', (t: string) => `(bài ${t})`], // v43: the Extensions shelf
     ['(lesson `e-dy-l3-14`)', 'e-dy-l3-14', '#/engine/dynamodb/L3/e-dy-l3-14', (t: string) => `(lesson ${t})`],
     ['thẻ `e-bp-s10` (RLS)', 'e-bp-s10', '#/engine/best/postgres/e-bp-s10', (t: string) => `thẻ ${t} (RLS)`],
     ['xem e-bp-m39, e-bp-d01', 'e-bp-m39', '#/engine/best/mongodb/e-bp-m39', (t: string) => `xem ${t}, ${titleOf('e-bp-d01')}`],
@@ -64,7 +65,7 @@ describe('id → titled link', () => {
 });
 
 // Every line a learner can read in Engine content (outside fenced code and `id:` keys) renders with no raw id left.
-const texts = import.meta.glob<string>('../content/engine/{*/L*,best/*,mongodb/path}/*.{md,yml}', { query: '?raw', import: 'default', eager: true });
+const texts = import.meta.glob<string>('../content/engine/{*/L*,postgres/ext,best/*,mongodb/path}/*.{md,yml}', { query: '?raw', import: 'default', eager: true });
 const all = import.meta.glob<string>('../content/**/*.{md,yml}', { query: '?raw', import: 'default', eager: true });
 describe('content', () => {
   it('every Engine text line with an id renders it as a link', () => {

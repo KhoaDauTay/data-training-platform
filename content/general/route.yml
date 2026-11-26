@@ -9,7 +9,7 @@
   title: { vi: "Đọc bảng", en: "Reading tables" }
   skills: [select, where, order_by, limit]
 - n: 2
-  title: { vi: "Gộp và nhóm", en: "Aggregating and grouping" }
+  title: { vi: "Hàm gộp và gom nhóm", en: "Aggregating and grouping" }
   skills: [aggregate, group_by, having, distinct]
 - n: 3
   title: { vi: "Chữ, ngày và kiểu", en: "Text, dates and types" }
@@ -36,5 +36,5 @@
   title: { vi: "Hàm cửa sổ", en: "Window functions" }
   skills: [window_rank, window_lag, window_agg]
 - n: 11
-  title: { vi: "Index và hiệu năng", en: "Indexes and performance" }
+  title: { vi: "Chỉ mục và hiệu năng", en: "Indexes and performance" }
   skills: [explain_read, sargable, index_design]

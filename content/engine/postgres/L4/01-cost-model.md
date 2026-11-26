@@ -51,7 +51,7 @@ predict:
     - { vi: "Thấp hơn 348, vì ít dòng được trả về hơn", en: "Below 348, because fewer rows come back" }
   answer: 1
   trap: 0
-  why: { vi: "Nghe hợp lý vì số trang đọc không đổi, nhưng phép so sánh trên mỗi dòng cũng có giá. Planner vẫn đọc mọi trang và mọi dòng, rồi tính thêm một toán tử trên mỗi dòng: 348 + 20.000 × 0,0025 = 398. Số dòng ước lượng giảm, nhưng công việc thì không.", en: "It sounds right because the pages read do not change, but the comparison on each row has a price too. The planner still reads every page and every row, then charges one operator per row: 348 + 20,000 × 0.0025 = 398. The row estimate drops, the work does not." }
+  why: { vi: "\"Vẫn 348\" sai vì số trang không đổi nhưng phép so sánh `weight > 100` trên mỗi dòng cũng có giá. 348 = 148 trang × 1 + 20.000 dòng × 0,01. Có bộ lọc, planner vẫn đọc đủ 148 trang và 20.000 dòng, rồi cộng một toán tử cho mỗi dòng: 348 + 20.000 × 0,0025 = 398. \"Thấp hơn 348\" cũng sai: chi phí (cost) tính công việc phải làm, không tính số dòng trả về; dòng bị loại vẫn phải được đọc và kiểm tra.", en: "\"Still 348\" is wrong: the pages do not change, but the `weight > 100` comparison on each row has a price too. 348 = 148 pages × 1 + 20,000 rows × 0.01. With the filter the planner still reads all 148 pages and 20,000 rows, then adds one operator per row: 348 + 20,000 × 0.0025 = 398. \"Below 348\" is wrong too: cost counts the work done, not the rows returned; a rejected row must still be read and checked." }
   expect: { node: Seq Scan, table: parcels }
 quiz:
   - q: { vi: "`EXPLAIN` in `cost=0.00..348.00` cho một câu. Con số 348 nói gì?", en: "`EXPLAIN` prints `cost=0.00..348.00` for a query. What does 348 tell you?" }
@@ -61,7 +61,7 @@ quiz:
       - { vi: "Câu sẽ trả về 348 dòng", en: "The query will return 348 rows" }
     answer: 1
     trap: 0
-    why: { vi: "Nghe hợp lý vì con số trông giống thời gian, nhưng planner không đo gì cả: nó cộng giá đọc trang và giá xử lý dòng theo các hằng số như `seq_page_cost` = 1. Cùng chi phí có thể là 2 ms trên máy này và 200 ms trên máy khác. Thời gian thật chỉ có trong `EXPLAIN ANALYZE`; số dòng ước lượng là `rows=`.", en: "It sounds right because the figure looks like a time, but the planner measures nothing: it adds up page reads and row work priced by constants such as `seq_page_cost` = 1. The same cost can be 2 ms on one machine and 200 ms on another. Real time only shows in `EXPLAIN ANALYZE`; the row estimate is `rows=`." }
+    why: { vi: "Con số trông giống thời gian, nhưng planner không đo gì cả: nó cộng giá đọc trang và giá xử lý dòng theo các hằng số, với mốc `seq_page_cost` = 1 cho một trang đọc tuần tự. Vì không gắn với tốc độ máy, cùng chi phí 348 có thể chạy 2 ms trên máy này và 200 ms trên máy khác; thời gian thật chỉ có trong `EXPLAIN ANALYZE`. Đó cũng không phải số dòng: ước lượng số dòng (row estimate) nằm riêng ở `rows=`.", en: "The figure looks like a time, but the planner measures nothing: it adds up page reads and row work priced by constants, with `seq_page_cost` = 1 for one page read in order as the reference. Since it is not tied to machine speed, the same cost of 348 can take 2 ms on one machine and 200 ms on another; real time only shows in `EXPLAIN ANALYZE`. It is not a row count either: the row estimate is separate, in `rows=`." }
 ---
 ## Mở bài
 

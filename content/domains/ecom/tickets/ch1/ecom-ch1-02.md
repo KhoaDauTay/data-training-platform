@@ -23,7 +23,7 @@ variants:
   - { seller: "19", max_k: "300" }
   - { seller: "27", max_k: "1000" }
 reflect:
-  q: { vi: "Ba điều kiện nối với nhau bằng chữ AND nghĩa là gì?", en: "What does joining three conditions with AND mean?" }
+  q: { vi: "Ba điều kiện kết hợp với nhau bằng chữ AND nghĩa là gì?", en: "What does joining three conditions with AND mean?" }
   options:
     - { vi: "Một sản phẩm chỉ được giữ khi đúng cả ba điều kiện", en: "A product is kept only when all three conditions are true" }
     - { vi: "Một sản phẩm được giữ khi đúng ít nhất một điều kiện", en: "A product is kept when at least one condition is true" }

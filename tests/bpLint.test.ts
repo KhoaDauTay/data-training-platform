@@ -12,7 +12,7 @@ import { learnedCount, lintable, parseBpTips } from '../src/ui/bpTip';
 import { ecomRunner, finRunner, runner } from './helpers';
 import { labRun } from './generalRules';
 
-const engineFiles = import.meta.glob<string>('../content/engine/postgres/L*/*.md', { query: '?raw', import: 'default', eager: true });
+const engineFiles = import.meta.glob<string>('../content/engine/postgres/{L*,ext}/*.md', { query: '?raw', import: 'default', eager: true });
 
 /** [exercise id, SQL]: every Solution of every domain (each variant, each step), drill, lesson answer and example, Engine lab step. */
 async function allSolutions(): Promise<[string, string][]> {

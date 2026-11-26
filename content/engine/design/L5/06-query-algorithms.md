@@ -67,8 +67,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì vòng lồng dễ hiểu, nhưng không có index thì nó đọc bảng trong một lần cho mỗi dòng ngoài. Nối băm đọc mỗi bảng một lần; nối trộn chỉ thắng khi hai bên đã có thứ tự sẵn."
-      en: "It sounds right because a nested loop is easy to follow, but without an index it reads the inner table once per outer row. A hash join reads each table once; a merge join wins only when both sides are already ordered."
+      vi: "Vòng lồng đơn giản nhưng không có index thì nó đọc lại cả bảng trong cho mỗi dòng ngoài: với `R` và `S` của lab là 1.000 + 100.000 × 500 = 50.001.000 lượt đọc trang. Nối băm dựng bảng băm trên bảng nhỏ rồi quét bảng lớn một lần, khoảng 1.000 + 500 = 1.500 trang. Nối trộn không luôn nhanh nhất: hai bên chưa có thứ tự thì phải sắp cả hai trước, nên nó chỉ thắng khi dữ liệu đã có thứ tự sẵn."
+      en: "A nested loop is simple, but without an index it rereads the whole inner table for each outer row: for the lab's `R` and `S` that is 1,000 + 100,000 × 500 = 50,001,000 page reads. A hash join builds a hash table on the small table and scans the big one once, about 1,000 + 500 = 1,500 pages. A merge join is not always fastest: unordered inputs must both be sorted first, so it wins only when the data is already ordered."
   - q:
       vi: "EXPLAIN ghi `Sort Method: external merge  Disk: 900kB`. Nghĩa là gì?"
       en: "EXPLAIN shows `Sort Method: external merge  Disk: 900kB`. What does it mean?"
@@ -79,8 +79,8 @@ quiz:
     answer: 1
     trap: 2
     why:
-      vi: "Nhiều người nghĩ \"merge\" là dữ liệu đã có thứ tự. Thật ra đó là sắp xếp ngoài: sắp từng phần vừa bộ nhớ, ghi ra đĩa, rồi trộn. Tăng `work_mem` cho câu đó hoặc dùng index có thứ tự sẵn sẽ bỏ được bước ghi đĩa."
-      en: "Many people think \"merge\" means the data was already ordered. In fact it is an external sort: sort pieces that fit in memory, write them out, then merge. Raising `work_mem` for that query or using an index that is already ordered removes the disk step."
+      vi: "\"Merge\" không có nghĩa là bảng đã có thứ tự, và `Disk` không nói gì về ổ đĩa hỏng. Dòng này nghĩa là dữ liệu cần sắp lớn hơn `work_mem` (bộ nhớ mỗi phép sắp được dùng), nên Postgres làm sắp xếp ngoài: sắp từng phần vừa bộ nhớ thành một run, ghi 900 kB ra file tạm, rồi trộn các run lại. Tăng `work_mem` cho câu đó, hoặc dùng một index đã có thứ tự sẵn, sẽ bỏ được bước ghi đĩa."
+      en: "\"Merge\" does not mean the table is stored in order, and `Disk` says nothing about a failing drive. The line means the data to sort is bigger than `work_mem` (the memory each sort may use), so Postgres does an external sort: it sorts pieces that fit in memory into runs, writes 900 kB to temp files, then merges the runs. Raising `work_mem` for that query, or using an index that is already ordered, removes the disk step."
 ---
 ## Mở bài
 

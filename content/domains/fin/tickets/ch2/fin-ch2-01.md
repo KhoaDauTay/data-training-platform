@@ -21,7 +21,7 @@ variants:
   - { day: "2026-10-15", d: "15/10/2026", d_en: "October 15" }
   - { day: "2026-09-25", d: "25/09/2026", d_en: "September 25" }
 reflect:
-  q: { vi: "Ghép hai bảng bằng điều kiện nào thì mỗi kỳ trả đi đúng với khoản vay của nó?", en: "Which join condition matches every instalment with its own loan?" }
+  q: { vi: "Nối hai bảng bằng điều kiện nào thì mỗi kỳ trả đi đúng với khoản vay của nó?", en: "Which join condition matches every instalment with its own loan?" }
   options:
     - { vi: "Mã khoản vay ghi trong lịch trả bằng mã dòng của khoản vay", en: "The loan number written in the schedule equals the loan's own row number" }
     - { vi: "Mã dòng của lịch trả bằng mã dòng của khoản vay", en: "The schedule's row number equals the loan's row number" }
@@ -30,7 +30,7 @@ reflect:
   why: { vi: "Lịch trả giữ số của khoản vay mà nó thuộc về. Hai mã dòng của hai bảng chỉ tình cờ trùng số, không nói gì về quan hệ.", en: "The schedule keeps the number of the loan it belongs to. The row numbers of two tables only match by chance and say nothing about how rows relate." }
 wrong:
   - sql: "SELECT s.loan_id, s.instalment_no, s.principal_due, s.interest_due FROM schedules s WHERE s.due_on = '{{day}}' ORDER BY s.loan_id, s.instalment_no"
-    vi: "Cột đầu đang là số nội bộ của khoản vay ghi trong lịch trả, không phải mã khoản vay in trên hợp đồng. Ghép với sổ vay để lấy mã."
+    vi: "Cột đầu đang là số nội bộ của khoản vay ghi trong lịch trả, không phải mã khoản vay in trên hợp đồng. Nối với sổ vay để lấy mã."
     en: "The first column is the loan's internal number held in the schedule, not the loan code printed on the contract. Join the loan book to get the code."
 ---
 Khách hay gọi hỏi "kỳ này tôi phải trả bao nhiêu". Lịch trả chỉ ghi số nội bộ của khoản vay, còn khách thì đọc mã khoản vay in trên hợp đồng. Mình cần ghép hai thứ đó lại.
@@ -53,11 +53,11 @@ Ví dụ: các khoản giải ngân ngày 28/10/2026, kèm họ tên khách vay.
 
 ② Tên tắt đặt ngay sau tên bảng: `l` cho sổ vay.
 
-③ Ghép thêm bảng khách hàng; điều kiện sau `ON` nói dòng nào đi với dòng nào: mã khách bằng số khách ghi trên khoản vay.
+③ Nối thêm bảng khách hàng; điều kiện sau `ON` nói dòng nào đi với dòng nào: mã khách bằng số khách ghi trên khoản vay.
 
 ## Hints
-1. Đây là bài ghép hai bảng: lịch trả có ngày đến hạn và số tiền, sổ vay có mã khoản vay. Ghép theo số khoản vay ghi trong lịch trả, như ví dụ mẫu.
-2. Bảng `schedules s` (cột `loan_id`, `instalment_no`, `due_on`, `principal_due`, `interest_due`) ghép `loans l` qua `l.id = s.loan_id`. Lọc `s.due_on = '{{day}}'`, sắp `ORDER BY l.code, s.instalment_no`.
+1. Đây là bài nối hai bảng: lịch trả có ngày đến hạn và số tiền, sổ vay có mã khoản vay. Nối theo số khoản vay ghi trong lịch trả, như ví dụ mẫu.
+2. Bảng `schedules s` (cột `loan_id`, `instalment_no`, `due_on`, `principal_due`, `interest_due`) nối `loans l` qua `l.id = s.loan_id`. Lọc `s.due_on = '{{day}}'`, sắp `ORDER BY l.code, s.instalment_no`.
 3. `SELECT l.code, s.instalment_no, s.principal_due, s.interest_due FROM schedules s JOIN loans l ON ... WHERE ... ORDER BY l.code, s.instalment_no`
 
 ## Solution

@@ -86,8 +86,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì `teacher` không phải khóa, nhưng 3NF chỉ cấm phụ thuộc vào cột không khóa khi vế phải cũng không thuộc khóa nào. Ở đây vế phải `subject` nằm trong khóa, nên 3NF cho qua; BCNF thì không: mọi vế trái phải là siêu khóa."
-      en: "It sounds right because `teacher` is not a key, but 3NF only forbids such a dependency when its right side is not part of any key. Here the right side `subject` is in the key, so 3NF allows it; BCNF does not: every left side must be a superkey."
+      vi: "\"Chỉ 2NF\" nghe hợp lý vì `teacher` không phải khóa, nhưng 3NF chỉ cấm `teacher` → `subject` khi vế phải `subject` không thuộc khóa nào. Ở đây `subject` nằm trong khóa `(student, subject)`, nên bảng vẫn ở 3NF. BCNF chặt hơn: mọi vế trái phải là siêu khóa (superkey, tập cột xác định được cả dòng), mà `teacher` không xác định được học viên. Có khóa chính không đủ cho BCNF: chính vì vậy môn của Hoa vẫn lặp hai lần."
+      en: "\"Only 2NF\" sounds right because `teacher` is not a key, but 3NF forbids `teacher` → `subject` only when the right side `subject` is not part of any key. Here `subject` is in the key `(student, subject)`, so the table is still in 3NF. BCNF is stricter: every left side must be a superkey (a set of columns that determines the whole row), and `teacher` does not determine the student. Having a primary key is not enough for BCNF: that is why Hoa's subject is still stored twice."
   - q:
       vi: "Sau khi tách theo BCNF, phụ thuộc `(student, subject)` → `teacher` được giữ bằng gì?"
       en: "After the BCNF split, what enforces `(student, subject)` → `teacher`?"
@@ -98,8 +98,8 @@ quiz:
     answer: 1
     trap: 2
     why:
-      vi: "Nhiều người nghĩ khóa ngoại nối hai bảng thì giữ được mọi luật giữa chúng. Thật ra khóa ngoại chỉ hứa giáo viên có tồn tại; nó không cấm một học viên có hai giáo viên cùng môn. BCNF đổi mất việc giữ phụ thuộc lấy việc hết lặp."
-      en: "Many people think a foreign key between two tables keeps every rule between them. In fact it only promises the teacher exists; it does not stop a student from having two teachers for one subject. BCNF trades dependency preservation for no repetition."
+      vi: "Khóa ngoại nghe như giữ luật giữa hai bảng, nhưng nó chỉ hứa giáo viên trong `student_teacher` có tồn tại trong `teacher_subject`. Khóa chính của `student_teacher` cũng không giúp: bảng đó không có cột `subject`, nên không khóa nào thấy cặp (học viên, môn). Vì vậy (An, Minh) chèn được dù An đã có giáo viên toán Hoa. BCNF hết lặp nhưng mất phụ thuộc này; muốn giữ nó thì kiểm bằng truy vấn, trigger, hoặc giữ bảng 3NF."
+      en: "A foreign key sounds like it keeps the rule between the tables, but it only promises that a teacher in `student_teacher` exists in `teacher_subject`. The primary key of `student_teacher` does not help either: that table has no `subject` column, so no key sees the (student, subject) pair. That is why (An, Minh) goes in although An already has Hoa for math. BCNF removes the repetition but loses this dependency; to keep it, check with a query or a trigger, or keep the 3NF table."
 ---
 ## Mở bài
 
@@ -172,7 +172,7 @@ CREATE TABLE ex_st AS SELECT student, teacher FROM ex_tutoring;
 SELECT count(*) AS rows_back FROM ex_st JOIN ex_ts USING (teacher);
 ```
 
-Câu sai ra 8 dòng từ 5; câu đúng ra 5.
+Câu sai ra 8 dòng từ 5: môn toán có 3 học viên và 2 giáo viên (3 × 2 = 6), môn lý có 2 học viên và 1 giáo viên (2), vì `subject` không quyết định giáo viên. Câu đúng ra 5, vì mỗi giáo viên chỉ có một môn.
 
 Phụ thuộc bị mất: sau khi tách, An có thêm giáo viên toán thứ hai mà không gì chặn.
 
@@ -279,7 +279,7 @@ CREATE TABLE ex_st AS SELECT student, teacher FROM ex_tutoring;
 SELECT count(*) AS rows_back FROM ex_st JOIN ex_ts USING (teacher);
 ```
 
-The wrong query returns 8 rows from 5; the fixed one 5.
+The wrong query returns 8 rows from 5: math has 3 students and 2 teachers (3 × 2 = 6), physics 2 students and 1 teacher (2), because `subject` does not determine the teacher. The fixed one returns 5, because each teacher has one subject only.
 
 The lost dependency: after the split, An gets a second math teacher and nothing stops it.
 

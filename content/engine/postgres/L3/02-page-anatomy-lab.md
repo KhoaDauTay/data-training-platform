@@ -93,8 +93,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì `upper` là chỗ dữ liệu bắt đầu, nhưng tuple nằm từ `upper` tới cuối trang, nên `pagesize - upper` là số byte tuple đang dùng (104 với bảng `notes`). Chỗ trống là khoảng giữa mảng line pointer và tuple: `upper - lower` = 8052."
-      en: "It sounds right because `upper` is where the data starts, but the tuples sit from `upper` to the end of the page, so `pagesize - upper` is the bytes the tuples use (104 for table `notes`). The free space is the gap between the line pointer array and the tuples: `upper - lower` = 8052."
+      vi: "`pagesize - upper` nghe hợp lý vì `upper` là chỗ dữ liệu bắt đầu, nhưng tuple nằm từ `upper` tới cuối trang, nên phép đó ra số byte tuple đang dùng: 8192 − 8088 = 104 với bảng `notes`. `pagesize - lower` thì tính gộp cả chỗ trống lẫn tuple. Chỗ trống là khoảng giữa cuối mảng line pointer (`lower`) và tuple đầu tiên (`upper`): 8088 − 36 = 8052."
+      en: "`pagesize - upper` sounds right because `upper` is where the data starts, but the tuples sit from `upper` to the end of the page, so that gives the bytes the tuples use: 8192 - 8088 = 104 for table `notes`. `pagesize - lower` counts the free space and the tuples together. The free space is the gap between the end of the line pointer array (`lower`) and the first tuple (`upper`): 8088 - 36 = 8052."
   - q:
       vi: "Một trang còn `upper - lower` = 30 byte. Dòng mới có tuple dài 28 byte. Dòng đó vào trang này được không?"
       en: "A page has `upper - lower` = 30 bytes left. A new row has a 28-byte tuple. Does that row fit on this page?"
@@ -105,8 +105,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì chỉ so độ dài tuple với chỗ trống, nhưng mỗi dòng mới tốn thêm một line pointer 4 byte, và tuple được căn lề lên bội của 8. Một tuple không bao giờ bị cắt qua hai trang: không đủ chỗ thì dòng vào trang khác."
-      en: "It sounds right because you only compare the tuple length with the free space, but every new row also costs a 4-byte line pointer, and the tuple is aligned up to a multiple of 8. A tuple is never split across two pages: without room the row goes to another page."
+      vi: "\"28 nhỏ hơn 30\" chỉ so độ dài tuple với chỗ trống, nhưng mỗi dòng mới tốn thêm một line pointer 4 byte, và tuple được căn lề lên bội của 8 (28 thành 32). Dòng này cần 4 + 32 = 36 byte, hơn 30. Postgres không bao giờ cắt một tuple qua hai trang: không đủ chỗ thì dòng vào trang khác."
+      en: "\"28 is less than 30\" only compares the tuple length with the free space, but every new row also costs a 4-byte line pointer, and the tuple is aligned up to a multiple of 8 (28 becomes 32). This row needs 4 + 32 = 36 bytes, more than 30. Postgres never splits a tuple across two pages: without room the row goes to another page."
 ---
 ## Mở bài
 

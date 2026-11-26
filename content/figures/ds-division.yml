@@ -43,8 +43,8 @@ variants:
       res: { sub: { vi: "∀ môn: đã học", en: "∀ course: taken" } }
     title: { vi: "Với mọi môn = không có môn nào thiếu", en: "For every course = no course missing" }
     caption:
-      vi: "SQL không có ∀: ∀ môn (đã học) viết thành ¬∃ môn (chưa học), tức hai lớp NOT EXISTS. Dữ liệu là bài phép chia e-ds-l5-02."
-      en: "SQL has no ∀: ∀ course (taken) becomes ¬∃ course (not taken), two layers of NOT EXISTS. The data is the division lesson e-ds-l5-02."
+      vi: "SQL không có ∀: ∀ môn (đã học) viết thành ¬∃ môn (chưa học), tức hai lớp NOT EXISTS. Dữ liệu lấy từ bài trước, bài phép chia."
+      en: "SQL has no ∀: ∀ course (taken) becomes ¬∃ course (not taken), two layers of NOT EXISTS. The data comes from the previous lesson, on division."
     alt:
       vi: "SQL không có ∀, nên “với mọi môn” được viết là “không có môn nào chưa học”, tức hai lớp NOT EXISTS. Kết quả: An, Binh."
       en: "SQL has no ∀, so “for every course” is written as “no course not taken”, two layers of NOT EXISTS. Result: An, Binh."

@@ -130,7 +130,7 @@ Bảng đăng ký mới (`raw_signups`) do khách tự gõ: tên có khoảng tr
 
 Hàm chuỗi nhận một giá trị chữ và trả một giá trị chữ (hay một số, như `length`), tính riêng cho từng dòng. Chúng không đổi dữ liệu trong bảng, chỉ đổi cái bạn nhìn thấy trong kết quả. Có thể lồng hàm vào nhau; hàm trong cùng chạy trước.
 
-Nhiều người nghĩ **ô trống khi ghép chữ sẽ thành chuỗi rỗng**. Thật ra với `||`, chỉ cần một mảnh là NULL thì cả kết quả là NULL, kể cả phần chữ đang có. Khi cột có thể trống, dùng `concat_ws` (bỏ qua NULL), hoặc xử lý ô trống trước (Phần 4).
+Nhiều người nghĩ **ô trống khi ghép chữ sẽ thành chuỗi rỗng**. Thật ra với `||`, chỉ cần một mảnh là NULL thì cả kết quả là NULL, kể cả phần chữ đang có. Khi cột có thể trống, dùng `concat_ws` (bỏ qua NULL), hoặc thay ô trống trước bằng `COALESCE` (bài "COALESCE: thay ô trống bằng một giá trị dự phòng").
 
 ## Cú pháp
 
@@ -146,7 +146,7 @@ The new sign-up table (`raw_signups`) is typed in by customers: names with extra
 
 A string function takes a text value and returns a text value (or a number, like `length`), computed separately for each row. It does not change the data in the table, only what you see in the result. Functions can be nested; the innermost one runs first.
 
-Many people think **an empty cell becomes an empty string when you join text**. In fact with `||`, a single NULL piece makes the whole result NULL, including the text you had. When a column may be empty, use `concat_ws` (which skips NULLs), or handle the empty cell first (Part 4).
+Many people think **an empty cell becomes an empty string when you join text**. In fact with `||`, a single NULL piece makes the whole result NULL, including the text you had. When a column may be empty, use `concat_ws` (which skips NULLs), or replace the empty cell first with `COALESCE` (lesson "COALESCE: replace an empty cell with a fallback").
 
 ## Syntax
 

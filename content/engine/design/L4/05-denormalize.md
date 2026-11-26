@@ -78,8 +78,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì view thường tính lại mỗi lần đọc, nhưng materialized view lưu kết quả như một bảng: nhanh khi đọc, cũ cho tới lần làm mới kế tiếp. Đó chính là bản sao có kiểm soát."
-      en: "It sounds right because a plain view recomputes on every read, but a materialized view stores its result like a table: fast to read, stale until the next refresh. That is exactly a controlled copy."
+      vi: "View thường thì tính lại mỗi lần đọc, nhưng materialized view lưu kết quả lúc 9 giờ như một bảng, nên lúc 11 giờ vẫn trả số cũ. Nó cũng không báo lỗi: Postgres không theo dõi bảng nguồn để biết view đã cũ. Số chỉ mới sau `REFRESH MATERIALIZED VIEW`; vì vậy mỗi bản sao cần ghi rõ ai làm mới và lúc nào."
+      en: "A plain view recomputes on every read, but a materialized view stored its 9 o'clock result like a table, so at 11 it still returns the old figure. It raises no error either: Postgres does not watch the source tables to know the view is stale. The figure updates only after `REFRESH MATERIALIZED VIEW`; that is why every copy needs a note saying who refreshes it and when."
   - q:
       vi: "Bảng fact `sales` có grain \"một dòng = một món trong một đơn\". Cột nào KHÔNG nên đặt vào nó?"
       en: "Fact table `sales` has the grain \"one row = one item in one order\". Which column should NOT go in it?"
@@ -90,8 +90,8 @@ quiz:
     answer: 1
     trap: 2
     why:
-      vi: "Nhiều người nghĩ khóa ngoại tới chiều dữ liệu là thứ thừa trong bảng fact. Thật ra số đo phải cùng grain với dòng: tổng cả đơn lặp ở mọi món và bị cộng nhiều lần khi `sum`; nó thuộc về một fact ở grain đơn hàng."
-      en: "Many people think foreign keys to dimensions are the redundant part of a fact table. In fact measures must share the row's grain: an order total repeats on every item and is added several times by `sum`; it belongs to a fact at order grain."
+      vi: "`product_id` không thừa: nó là khóa ngoại tới bảng chiều sản phẩm, cách bảng fact nối ra các chiều. `qty` cũng đúng chỗ vì nó đo chính món đó. `order_total` thì đo cả đơn, khác mức chi tiết (grain) của dòng: một đơn ba món lặp tổng ba lần, và `sum(order_total)` cộng nó ba lần. Tổng của đơn thuộc về một bảng fact ở grain đơn hàng, hoặc tính bằng `sum` trên các món."
+      en: "`product_id` is not redundant: it is the foreign key to the product dimension, the way a fact table joins out to its dimensions. `qty` belongs too, since it measures that item. `order_total` measures the whole order, a different grain from the row: a three-item order repeats the total three times, and `sum(order_total)` adds it three times. The order total belongs in a fact table at order grain, or is computed with `sum` over the items."
 ---
 ## Mở bài
 
@@ -99,7 +99,7 @@ Cấp 4 dạy tách bảng để mỗi sự thật nằm một chỗ, vậy mà 
 
 ## Ý chính
 
-Phi chuẩn hóa là cố ý lưu một sự thật ở nhiều chỗ để đọc ít phép nối hơn. Cái giá luôn trả ở phía ghi: mỗi lần nguồn đổi, mọi bản sao phải đổi theo, nếu không chúng lệch nhau như dị thường sửa của bài 1. Vì vậy câu hỏi đúng không phải "có chuẩn không", mà "bản sao này được ai giữ cho khớp".
+Phi chuẩn hóa là cố ý lưu một sự thật ở nhiều chỗ để đọc ít phép nối hơn. Cái giá luôn trả ở phía ghi: mỗi lần nguồn đổi, mọi bản sao phải đổi theo, nếu không chúng lệch nhau như dị thường sửa trong bài Dị thường dữ liệu và dạng chuẩn 1. Vì vậy câu hỏi đúng không phải "có chuẩn không", mà "bản sao này được ai giữ cho khớp".
 
 Báo cáo dùng **star schema**: một bảng **fact** ở giữa (mỗi dòng là một sự kiện đo được: một món bán ra) và các bảng **chiều** quanh nó (sản phẩm, cửa hàng, ngày). Điều đầu tiên phải chốt là **grain**: một dòng fact nghĩa là gì. Mọi số đo phải cùng grain, nếu không `sum` sẽ cộng lặp. Nút Nâng cao C2 "Star schema và grain" ở Lộ trình học đi sâu phần này.
 
@@ -153,7 +153,7 @@ REFRESH MATERIALIZED VIEW ex_total;
 SELECT revenue FROM ex_total;
 ```
 
-Câu sai ra 1130, câu đúng ra 1230.
+Câu sai ra 1130, tổng của năm dòng bán ban đầu; câu đúng ra 1230, vì đã cộng thêm dòng mới 5 × 20 = 100.
 
 Đọc một materialized view tạo `WITH NO DATA` trước lần làm mới đầu tiên:
 
@@ -189,7 +189,7 @@ Level 4 teaches splitting tables so each fact lives in one place, yet data wareh
 
 ## Key idea
 
-Denormalising means storing one fact in several places on purpose so reads need fewer joins. The price is always paid on writes: whenever the source changes, every copy must follow, or they drift apart like the update anomaly of lesson 1. So the right question is not "is it normalised" but "who keeps this copy in step".
+Denormalising means storing one fact in several places on purpose so reads need fewer joins. The price is always paid on writes: whenever the source changes, every copy must follow, or they drift apart like the update anomaly in the lesson on data anomalies and first normal form. So the right question is not "is it normalised" but "who keeps this copy in step".
 
 Reporting uses a **star schema**: a **fact** table in the middle (each row a measured event: one item sold) and **dimension** tables around it (product, store, date). The first thing to settle is the **grain**: what one fact row means. Every measure must share that grain, or `sum` adds things twice. The advanced node C2 "Star schemas and grain" on the learning path goes deeper.
 
@@ -243,7 +243,7 @@ REFRESH MATERIALIZED VIEW ex_total;
 SELECT revenue FROM ex_total;
 ```
 
-The wrong query returns 1130, the fixed one 1230.
+The wrong query returns 1130, the total of the five original sales; the fixed one returns 1230, because it adds the new sale, 5 × 20 = 100.
 
 Reading a materialized view created `WITH NO DATA` before its first refresh:
 

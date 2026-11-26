@@ -103,8 +103,8 @@ quiz:
     answer: 0
     trap: 1
     why:
-      vi: "Nghe hợp lý vì shard ít khách nhất là chỗ rộng nhất. Nhưng rút tải là đường một chiều: shard đang được làm trống để nghỉ hưu, và mỗi khách mới đặt vào đó là thêm một lần chuyển sau này."
-      en: "It sounds right because the shard with the fewest tenants has the most room. But draining is one way: the shard is being emptied to retire, and every new tenant placed there is one more move later."
+      vi: "`s4` ít khách vì nó đang được làm trống để nghỉ hưu, không phải vì nó rảnh. Rút tải (draining) là đường một chiều: khách cũ vẫn được phục vụ, nhưng mỗi khách (tenant) mới đặt vào đó là thêm một lần chuyển sau này. Gói của khách không đổi điều đó, nên khách free cũng không được vào. Luật đặt khách chỉ xét shard đang `serving`."
+      en: "`s4` has few tenants because it is being emptied to retire, not because it is idle. Draining is one way: existing tenants are still served, but every new tenant placed there is one more move later. The tenant's tier does not change that, so free tenants may not go there either. The placement rule only considers shards in state `serving`."
   - q:
       vi: "Vì sao nơi ở nằm trong bảng `placements` có khoảng ngày `during`, thay vì một cột `shard_id` trong `tenants`?"
       en: "Why does the home live in a `placements` table with a date range `during`, instead of a `shard_id` column in `tenants`?"
@@ -115,8 +115,8 @@ quiz:
     answer: 2
     trap: 0
     why:
-      vi: "Nhiều người nghĩ bảng riêng chỉ để chạy nhanh. Thật ra nó trả lời được 'tháng 8 khách t-04 ở đâu' khi đối soát hóa đơn hay khôi phục, và ràng buộc loại trừ chặn hai nơi ở chồng nhau ngay trong database, kể cả lúc đang chuyển."
-      en: "Many people think the separate table is only for speed. In fact it answers 'where did t-04 live in August' for billing checks or restores, and the exclusion constraint stops two overlapping homes inside the database, even during a move."
+      vi: "Bảng riêng không để chạy nhanh: index gist ở đây phục vụ ràng buộc, không phải tốc độ. Nó cũng không cho ở hai shard cùng lúc, mà chính là để cấm điều đó. Một cột `shard_id` chỉ giữ nơi ở hiện tại; `placements` giữ cả lịch sử, nên trả lời được \"tháng 8 khách t-04 ở đâu\" (ở `s2`, trước khi chuyển sang `s3` ngày 2026-09-01). Ràng buộc loại trừ (exclusion constraint) chặn hai khoảng `during` chồng nhau của cùng một khách, kể cả lúc đang chuyển."
+      en: "The separate table is not for speed: the gist index here serves the constraint, not performance. Nor does it let a tenant live on two shards at once; it exists to forbid that. A `shard_id` column holds only the current home; `placements` keeps the history, so it answers \"where did t-04 live in August\" (on `s2`, before moving to `s3` on 2026-09-01). The exclusion constraint blocks two overlapping `during` ranges for the same tenant, even during a move."
 ---
 ## Mở bài
 

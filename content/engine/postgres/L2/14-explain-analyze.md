@@ -64,7 +64,7 @@ predict:
     en: "`ANALYZE` ran while the table held only 10,000 `done` orders; then 3000 `new` orders were added. What does `EXPLAIN` estimate for this query (`rows=`)?"
   options:
     - { vi: "3000: planner đếm lại trước khi chạy", en: "3000: the planner counts again before running" }
-    - { vi: "1: thống kê chưa biết `new`, nên planner đoán gần như không có dòng nào", en: "1: the statistics do not know `new`, so the planner guesses almost no rows" }
+    - { vi: "1: thống kê chưa biết `new`, nên planner ước gần như không có dòng nào", en: "1: the statistics do not know `new`, so the planner guesses almost no rows" }
     - { vi: "13.000: cả bảng", en: "13,000: the whole table" }
   answer: 1
   trap: 0
@@ -82,8 +82,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì kết quả vẫn đúng, nhưng planner chọn kế hoạch theo số dòng ước lượng. Lệch gần 1000 lần thì lựa chọn nested loop, index hay thứ tự join đều có thể sai. Việc đầu tiên là kiểm thống kê."
-      en: "It sounds right because the result is still correct, but the planner chooses plans from estimated row counts. Off by nearly 1000x, its choice of nested loop, index or join order may all be wrong. Check the statistics first."
+      vi: "Kết quả đúng chưa đủ: planner chọn kế hoạch theo số dòng ước lượng, không theo số thật. Ở đây lệch 4800 ÷ 5 = 960 lần, nên lựa chọn nested loop, index hay thứ tự join đều có thể sai cho 4800 dòng. Index hỏng thì câu báo lỗi hoặc trả sai dòng, không làm lệch ước lượng. Việc đầu tiên là chạy `ANALYZE` rồi xem lại `pg_stats`."
+      en: "A correct result is not enough: the planner chooses a plan from estimated row counts, not real ones. Here the gap is 4800 ÷ 5 = 960x, so its choice of nested loop, index or join order may all be wrong for 4800 rows. A corrupt index raises errors or returns wrong rows; it does not skew the estimate. First run `ANALYZE`, then check `pg_stats` again."
   - q:
       vi: "Bạn cần thêm index cho bảng đơn hàng đang nhận ghi liên tục. Lệnh nào không chặn `INSERT` trong lúc tạo?"
       en: "You must add an index to an orders table that takes writes all the time. Which command does not block `INSERT` while it builds?"
@@ -106,8 +106,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì mỗi index đúng là làm vài câu đọc nhanh hơn, nhưng mỗi lần ghi phải trả giá: một `INSERT` vào bảng có 6 index là 1 lần ghi heap cộng 6 lần ghi index."
-      en: "It sounds right because each index does speed up some reads, but every write pays for it: one `INSERT` into a table with 6 indexes is 1 heap write plus 6 index writes."
+      vi: "Mỗi index đúng là làm vài câu đọc nhanh hơn, nhưng mỗi lần ghi phải trả giá: một `INSERT` vào bảng có 6 index là 1 lần ghi vào heap (phần chứa dòng của bảng) cộng 6 lần ghi index. Và khi câu lấy phần lớn bảng, planner vẫn chọn Seq Scan vì đọc tuần tự rẻ hơn nhảy qua index cho từng dòng. Postgres không giới hạn 3 index mỗi bảng."
+      en: "Each index does speed up some reads, but every write pays for it: one `INSERT` into a table with 6 indexes is 1 write to the heap (where the table's rows live) plus 6 index writes. And when a query reads most of the table, the planner still picks a Seq Scan, because reading in order is cheaper than jumping through the index for each row. Postgres has no 3-index limit per table."
 ---
 ## Mở bài
 

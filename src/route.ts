@@ -110,7 +110,8 @@ export const learnAdvOf = (hash: string): string | undefined => /^#\/?learn\/adv
  * (either case) and lesson ids `e-…` pass; anything else is dropped (the page falls back to the engine or the overview).
  */
 export function engineRouteOf(hash: string): { engine?: string; level?: string; lesson?: string } {
-  const m = /^#\/?engine(?:\/(postgres|mongodb|dynamodb|design)(?:\/([lL][1-5])(?:\/(e-[a-z0-9-]+))?)?)?(?=$|[/?])/.exec(hash);
+  const m = /^#\/?engine(?:\/(postgres|mongodb|dynamodb|design)(?:\/([lL][1-5]|ext)(?:\/(e-[a-z0-9-]+))?)?)?(?=$|[/?])/.exec(hash);
+  if (m?.[2] === 'ext' && m[1] !== 'postgres') return { engine: m[1] }; // v43 (L720): the Extensions shelf is PostgreSQL's only
   return m ? { engine: m[1], level: m[2]?.toUpperCase(), lesson: m[3] } : {};
 }
 /**
@@ -142,9 +143,9 @@ export const engineInterviewHash = (x?: string): string => `#/engine/interview${
 /** v28 (L430): `#/engine/compare` (the "Which engine?" page) → true; checked before engineRouteOf, which drops `compare`. */
 export const engineCompareOf = (hash: string): boolean => /^#\/?engine\/compare(?=$|[/?])/.test(hash);
 export const engineCompareHash = (): string => '#/engine/compare';
-/** The engine, level or lesson page's hash. */
+/** The engine, level or lesson page's hash; level `EXT` = `#/engine/postgres/ext` (v43 L720: the Extensions shelf, kept forever). */
 export const engineHash = (engine: string, level?: string, lesson?: string): string =>
-  `#/engine/${engine}${level ? `/${level}${lesson ? `/${lesson}` : ''}` : ''}`;
+  `#/engine/${engine}${level ? `/${level === 'EXT' ? 'ext' : level}${lesson ? `/${lesson}` : ''}` : ''}`;
 const ENGINE_OF: Record<string, string> = { pg: 'postgres', mg: 'mongodb', dy: 'dynamodb', ds: 'design' };
 /** L280: `#/engine/play/<lesson id>` (named by engine-ux-spec §5.1, never built) → that lesson's hash; undefined elsewhere. */
 export function enginePlayOf(hash: string): string | undefined {

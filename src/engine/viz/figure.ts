@@ -25,10 +25,10 @@ export interface FigNode {
   card?: Card;
   /** v42 (L690): an ER entity's attribute rows under its title band: a name, or `{ name, pk?, fk? }` drawn with PK / FK pills */
   fields?: (Bi | Field)[];
-  /** v44 (L780): an entity or box drawn with a double border (a weak entity) */
+  /** v44 (L800): an entity or box drawn with a double border (a weak entity) */
   double?: boolean;
 }
-/** v44 (L780): partial = a weak entity's partial key (dashed underline); multi = a multivalued attribute (double-edged chip);
+/** v44 (L800): partial = a weak entity's partial key (dashed underline); multi = a multivalued attribute (double-edged chip);
  * derived = a derived attribute (dashed chip); part = one part of the composite attribute above it (indented, bracketed). */
 export interface Field { name: Bi; pk?: boolean; fk?: boolean; partial?: boolean; multi?: boolean; derived?: boolean; part?: boolean }
 /** v40 R2 (E-03): a crow's-foot end mark: exactly one, zero or one, one or more, zero or more; v42: `many` = a bare foot (no minimum). */
@@ -162,7 +162,7 @@ const fieldsOf = (n: FigNode, lang: Lang): { s: string; keys: string[]; o: Field
   const o: Field = typeof f === 'object' && 'name' in f ? f : { name: f };
   return { s: cellText(n, o.name, lang), keys: [o.pk ? 'PK' : '', o.fk ? 'FK' : ''].filter(Boolean), o };
 });
-/** v44 (L780): room an attribute's kind mark takes beside its name (a chip's padding, a composite part's indent) */
+/** v44 (L800): room an attribute's kind mark takes beside its name (a chip's padding, a composite part's indent) */
 const CHIP = 7, INDENT = 16;
 const fieldPad = (o: Field): number => (o.multi || o.derived ? 2 * CHIP : 0) + (o.part ? INDENT : 0);
 /** the pill column's width (every row of one entity starts its name at the same x) */
@@ -404,7 +404,7 @@ export function layout(spec0: FigSpec, lang: Lang, W: number, variant?: string):
       if (!r || !vis(p.show, r.e.from) || !vis(p.show, r.e.to) || !edgeShown(r.e, p.show, gated)) return;
       const k = `e:${i}`, pe = p.edges[i]; // v42: this frame's ends and label; v44: and its dash
       shapes.push(r.e.link
-        ? { k, t: 'p', d: r.d, ink: pe.ends ? 'edge' : 'new', w: pe.bold ? 3 : STROKE, dash: pe.dash } // v44 (L780): `bold` = an identifying relationship or total participation (a step may set it)
+        ? { k, t: 'p', d: r.d, ink: pe.ends ? 'edge' : 'new', w: pe.bold ? 3 : STROKE, dash: pe.dash } // v44 (L800): `bold` = an identifying relationship or total participation (a step may set it)
         : { k, t: 'p', d: r.d, ink: 'edge', w: STROKE, arrow: true, dash: pe.dash, attrs: ends(r.e) });
       if (pe.ends) shapes.push(...crowEnds(k, r.d, pe.ends, !!r.rev));
       if (r.lab && pe.label) shapes.push({ k: `${k}.l`, t: 't', x: r.lab.x, y: r.lab.y, s: tr(pe.label, lang), size: SS, a: r.lab.a, ink: 'muted' });
@@ -416,7 +416,7 @@ export function layout(spec0: FigSpec, lang: Lang, W: number, variant?: string):
   return { title: tr(variantOf(spec, variant)?.title ?? spec.title, lang), w: W, h: H, frames, maxW: 640 };
 }
 
-/** v44 (L781, eye E3): every frame keeps the figure's full height (the page never jumps between steps), so the slot of a node a
+/** v44 (L801, eye E3): every frame keeps the figure's full height (the page never jumps between steps), so the slot of a node a
  * later step shows is drawn as a faint dashed outline: the room reads as "more to come", not as a broken figure. A slot that a
  * shown node covers (alternates sharing one place) gets none. */
 function placeholders(p: Plan, later: Plan[], at: Map<string, Rect>, parentOf: Map<string, string>): Shape[] {
@@ -713,7 +713,7 @@ function lines(k: string, ls: Line[], cx: number, top: number, more: Partial<Ext
 }
 
 /** One node's shapes. Keys: `n:<id>` (its box), `n:<id>.t<i>` (its lines), `n:<id>:<r>:<c>` (a grid cell)… */
-/** v44 (L780): the inner edge of a double border, 3 units in (an unfilled path: the box under it stays the checker's box) */
+/** v44 (L800): the inner edge of a double border, 3 units in (an unfilled path: the box under it stays the checker's box) */
 function inset(k: string, r: Rect, rx: number): Shape {
   const [x, y, w, h, q] = [r.x + 3, r.y + 3, r.w - 6, r.h - 6, Math.max(0, Math.min(rx, (r.h - 6) / 2))];
   return { k, t: 'p', d: `M${x + q} ${y} L${x + w - q} ${y} Q${x + w} ${y} ${x + w} ${y + q} L${x + w} ${y + h - q} Q${x + w} ${y + h} ${x + w - q} ${y + h} L${x + q} ${y + h} Q${x} ${y + h} ${x} ${y + h - q} L${x} ${y + q} Q${x} ${y} ${x + q} ${y} Z`, ink: 'edge', w: 1.2 };
@@ -743,7 +743,7 @@ function draw(n: FigNode, r: Rect, lang: Lang, wide = false, parent?: string): S
       { k: `${k}.t0`, t: 't', x: x + w / 2, y: y + HEAD / 2, s: tr(n.label, lang), size: LS, b: true, a: 'm', ink, attrs: { 'data-owner': k } }];
     fs.forEach((f, i) => {
       const cy = fieldY(r, i);
-      // v44 (L780): kind marks. A composite's parts are indented under it with a bracket; a multivalued attribute sits in a
+      // v44 (L800): kind marks. A composite's parts are indented under it with a bracket; a multivalued attribute sits in a
       // double-edged chip, a derived one in a dashed chip; a partial key is underlined with a dash.
       const tx = x + 10 + pc + (f.o.part ? INDENT : 0) + (f.o.multi || f.o.derived ? CHIP : 0), tw = textWidth(f.s, SS, false, !!n.mono);
       if (f.o.part && !fs[i - 1]?.o.part) {
@@ -832,7 +832,7 @@ export function altText(spec: FigSpec, lang: Lang, variant?: string): string[] {
  * cells (a stepped figure that fills cells in gives its end state); a column blank in its header and every row is dropped. */
 export function altTables(spec: FigSpec, lang: Lang, variant?: string): FigTable[] {
   const ps = plans(spec, lang, variant);
-  // v44 (L782, eye E2): a variant reads only the frame(s) it draws, never the base figure's version of a grid
+  // v44 (L802, eye E2): a variant reads only the frame(s) it draws, never the base figure's version of a grid
   const all = variant !== undefined ? ps.map((p) => p.nodes) : [spec.nodes, ...ps.map((p) => p.nodes)];
   const blanks = (n: FigNode): number => (n.cells ?? []).flat().filter((c) => !tr(c, lang)).length;
   const ns = all[0].filter((n) => (n.shape === 'grid' || n.shape === 'bars') && ps.some((p) => p.show.has(n.id)))

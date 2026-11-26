@@ -1,0 +1,25 @@
+# v43 EXT-06 (tools/v43/extensions-plan.md): both sides through one function, the index on its output. Lesson: e-pg-ext-06 (Ý chính).
+# Data (PGlite 0.5.16, lesson setup): 30,000 products; unaccent('Đèn lồng Hội An') = 'Den long Hoi An'; f_unaccent IMMUTABLE wrapper
+# of unaccent('unaccent', $1); GIN index products_search_idx on f_unaccent(lower(name)) gin_trgm_ops; '%den long hoi an do%' = 142.
+# Alt text: the plan's sample (tools/v43/extensions-plan.md §b). Sources: https://www.postgresql.org/docs/18/unaccent.html,
+# https://www.postgresql.org/docs/18/indexes-expressional.html
+title: { vi: "Hai phía qua cùng một hàm", en: "Both sides through one function" }
+caption:
+  vi: "Tên hàng và từ khách gõ cùng đi qua f_unaccent(lower(...)). Index trigram được dựng trên chính kết quả đó, nên câu tìm không phải bỏ dấu lại cho từng dòng."
+  en: "The product name and the customer's words both go through f_unaccent(lower(...)). The trigram index is built on that very output, so a search never strips accents again row by row."
+alt:
+  vi: "Tên hàng và từ khách gõ đều đi qua cùng một hàm bỏ dấu và chữ thường trước khi so, nên \"den long hoi an\" khớp \"Đèn lồng Hội An\". Index trigram được dựng trên chính kết quả của hàm đó, nên câu tìm không phải bỏ dấu lại cho cả 30.000 dòng."
+  en: "The product name and the customer's words go through the same accent-stripping, lower-casing function before they are compared, so \"den long hoi an\" matches the accented product name. The trigram index is built on that function's output, so the search does not strip accents again for all 30,000 rows."
+nodes:
+  - { id: name, label: { vi: "tên hàng", en: "product name" }, sub: Đèn lồng Hội An }
+  - { id: typed, label: { vi: "khách gõ", en: "customer types" }, sub: den long hoi an }
+  - { id: fn, label: f_unaccent, sub: "+ lower()", tone: live }
+  - { id: idx, label: { vi: "index GIN", en: "GIN index" }, sub: gin_trgm_ops, tone: new }
+rows:
+  - [name, typed]
+  - [fn]
+  - [idx]
+edges:
+  - { from: name, to: fn }
+  - { from: typed, to: fn }
+  - { from: fn, to: idx, label: { vi: "den long hoi an", en: "den long hoi an" } }

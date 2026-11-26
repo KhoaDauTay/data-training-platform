@@ -33,7 +33,7 @@ lab:
     INSERT INTO pages VALUES ('P1', 2), ('P2', 4), ('P3', 0);
   steps:
     - task:
-        vi: "Pha phân tích: máy sập sau bản ghi số 8. Giao dịch nào chưa commit (kẻ thua)? Trả `tx`, mỗi giao dịch một lần, xếp theo `tx`."
+        vi: "Pha phân tích: máy sập sau bản ghi số 8. Transaction nào chưa commit (kẻ thua)? Trả `tx`, mỗi transaction một lần, xếp theo `tx`."
         en: "Analysis phase: the machine crashed after record 8. Which transactions never committed (the losers)? Return `tx`, each once, ordered by `tx`."
       solution: SELECT DISTINCT tx FROM log WHERE tx NOT IN (SELECT tx FROM log WHERE kind = 'commit') ORDER BY tx
       check: rows
@@ -70,19 +70,19 @@ quiz:
     answer: 0
     trap: 1
     why:
-      vi: "Nghe hợp lý vì ghi hết trang lúc commit có vẻ an toàn nhất, nhưng đó là chính sách force, rất chậm. WAL cho phép no-force: chỉ cần nhật ký tuần tự xuống đĩa; sau sự cố, nhật ký đủ để làm lại các trang."
-      en: "It sounds right because writing every page at commit feels safest, but that is the force policy, and it is slow. WAL allows no-force: only the sequential log must reach disk; after a crash the log is enough to redo the pages."
+      vi: "Ghi mọi trang lúc commit nghe an toàn nhất, nhưng đó là chính sách force: mỗi commit phải ghi nhiều trang rải khắp đĩa, rất chậm, và WAL (write-ahead log, nhật ký ghi trước) có mặt chính để tránh nó. Chờ tới lúc tắt máy mới ghi nhật ký thì mất điện là mất hết. Luật WAL chỉ đòi bản ghi nhật ký xuống đĩa trước trang dữ liệu và trước khi báo commit xong; nhật ký ghi tuần tự nên nhanh, và sau sự cố nó đủ để làm lại các trang."
+      en: "Writing every page at commit sounds safest, but that is the force policy: each commit must write many pages scattered over the disk, which is slow, and WAL (the write-ahead log) exists precisely to avoid it. Waiting until shutdown to write the log loses everything in a power cut. The WAL rule only requires the log record on disk before the data page and before the commit is reported done; the log is written sequentially, so it is fast, and after a crash it is enough to redo the pages."
   - q:
       vi: "Vì sao PostgreSQL không cần pha hoàn tác như ARIES?"
       en: "Why does PostgreSQL need no undo phase like ARIES?"
     options:
       - { vi: "Vì nó không bao giờ ghi trang chưa commit xuống đĩa", en: "Because it never writes uncommitted pages to disk" }
-      - { vi: "Vì MVCC: phiên bản dòng của giao dịch hủy vẫn nằm đó nhưng vô hình, vì giao dịch không được ghi là đã commit", en: "Because of MVCC: an aborted transaction's row versions stay but are invisible, since the transaction is not recorded as committed" }
+      - { vi: "Vì MVCC: phiên bản dòng của transaction hủy vẫn nằm đó nhưng vô hình, vì nó không được ghi là đã commit", en: "Because of MVCC: an aborted transaction's row versions stay but are invisible, since the transaction is not recorded as committed" }
     answer: 1
     trap: 0
     why:
-      vi: "Nhiều người nghĩ Postgres giữ trang bẩn trong bộ nhớ tới lúc commit. Thật ra nó cho ghi trang chưa commit (steal). Không cần hoàn tác vì mỗi dòng mang mã giao dịch: giao dịch không commit thì phiên bản của nó không ai thấy, và VACUUM dọn sau."
-      en: "Many people think Postgres keeps dirty pages in memory until commit. In fact it lets uncommitted pages reach disk (steal). No undo is needed because every row version carries its transaction id: if that transaction did not commit, nobody sees its versions, and VACUUM cleans them later."
+      vi: "\"Không bao giờ ghi trang chưa commit\" nghe hợp lý, nhưng Postgres có ghi: trang bẩn (dirty page, trang đã sửa mà chưa xuống đĩa) chứa thay đổi chưa commit vẫn có thể bị đẩy xuống đĩa (chính sách steal). Nó không cần hoàn tác vì MVCC: mỗi phiên bản dòng mang mã transaction đã tạo nó (`xmin`), và transaction không được ghi là đã commit thì phiên bản đó vô hình với mọi người. VACUUM dọn chúng sau."
+      en: "\"Never writes uncommitted pages\" sounds right, but Postgres does: a dirty page (changed in memory, not yet on disk) holding uncommitted changes may still be flushed (the steal policy). It needs no undo because of MVCC: every row version carries the id of the transaction that created it (`xmin`), and if that transaction is not recorded as committed, the version is invisible to everyone. VACUUM cleans them up later."
 ---
 ## Mở bài
 
@@ -92,9 +92,9 @@ Máy mất điện ngay giữa lúc đang ghi: dữ liệu đã commit phải c�
 
 Bộ đệm giữ trang trong RAM, nên lúc sập, đĩa có thể thiếu thay đổi đã commit hoặc chứa thay đổi chưa commit. Hai câu hỏi chính sách: có cho ghi trang chưa commit xuống đĩa không (**steal** / no-steal), và có bắt ghi mọi trang lúc commit không (**force** / no-force). Steal cần khả năng hoàn tác, no-force cần khả năng làm lại. Hệ thống thật chọn steal + no-force vì nhanh nhất, và trả giá bằng **nhật ký ghi trước**: mọi thay đổi được ghi vào nhật ký tuần tự trước khi trang của nó xuống đĩa, và commit chỉ xong khi nhật ký tới bản ghi commit đã xuống đĩa.
 
-**ARIES** là thuật toán phục hồi kinh điển. Mỗi bản ghi nhật ký có số thứ tự LSN; mỗi trang nhớ `pageLSN`, LSN của thay đổi cuối nó chứa. Sau sự cố, ba pha: **phân tích** đọc nhật ký từ điểm kiểm tra gần nhất để biết giao dịch nào chưa commit và trang nào có thể bẩn; **làm lại** lặp lại mọi thay đổi có LSN lớn hơn `pageLSN` của trang, kể cả của kẻ thua; **hoàn tác** đi ngược nhật ký gỡ thay đổi của kẻ thua, ghi bản bù (CLR) để sập lần nữa cũng không gỡ hai lần. Điểm kiểm tra mờ không dừng hệ thống.
+**ARIES** là thuật toán phục hồi kinh điển. Mỗi bản ghi nhật ký có một số thứ tự, LSN (log sequence number); mỗi trang nhớ `pageLSN`, LSN của thay đổi cuối nó chứa. Sau sự cố, ba pha: **phân tích** đọc nhật ký từ checkpoint (điểm kiểm tra) gần nhất để biết transaction nào chưa commit và trang nào có thể bẩn; **làm lại** lặp lại mọi thay đổi có LSN lớn hơn `pageLSN` của trang, kể cả của kẻ thua; **hoàn tác** đi ngược nhật ký gỡ thay đổi của kẻ thua, ghi bản ghi bù (compensation log record, CLR) để sập lần nữa cũng không gỡ hai lần. Checkpoint mờ (fuzzy checkpoint) ghi lại trạng thái mà không dừng hệ thống.
 
-**PostgreSQL** chỉ có làm lại. Nhờ MVCC, thay đổi của giao dịch hủy chỉ là phiên bản dòng không ai thấy, nên không cần gỡ. Nó còn ghi cả trang lần đầu trang đổi sau mỗi điểm kiểm tra, chống trang ghi dở. Sao lưu: `pg_dump` cho bản logic; bản sao vật lý cộng lưu trữ WAL cho phép khôi phục tới một thời điểm. Chi tiết WAL thật ở `e-pg-l3-12`.
+**PostgreSQL** chỉ có làm lại. Nhờ MVCC, thay đổi của transaction hủy chỉ là phiên bản dòng không ai thấy, nên không cần gỡ. Nó còn ghi cả trang vào WAL lần đầu trang đổi sau mỗi checkpoint (full-page write), để một trang chỉ ghi được nửa lúc sập vẫn dựng lại được. Sao lưu: `pg_dump` cho bản logic; bản sao vật lý cộng lưu trữ WAL cho phép khôi phục tới một thời điểm. Chi tiết WAL thật ở `e-pg-l3-12`.
 
 Hình từng bước ở cuối mục này theo một thay đổi đi vào WAL trước, rồi mới tới tệp dữ liệu: đó là cách ghi chỉ-redo của Postgres.
 
@@ -108,7 +108,7 @@ INSERT INTO events SELECT g FROM generate_series(1, 1000) g;
 SELECT pg_wal_lsn_diff(pg_current_wal_lsn(), before_lsn) > 0 AS wal_grew FROM ex_lsn;
 ```
 
-Giao dịch hủy: dòng đã chèn không còn thấy được.
+Transaction hủy: dòng đã chèn không còn thấy được.
 
 ```sql
 BEGIN;
@@ -117,7 +117,7 @@ ROLLBACK;
 SELECT count(*) AS visible FROM events WHERE v = -1;
 ```
 
-Bảng giao dịch của pha phân tích, đọc từ nhật ký trong lab.
+Bảng transaction của pha phân tích, đọc từ nhật ký trong lab.
 
 ```sql
 SELECT tx, max(lsn) AS last_lsn, bool_or(kind = 'commit') AS committed
@@ -126,14 +126,14 @@ FROM log GROUP BY tx ORDER BY tx;
 
 ## Lỗi hay gặp
 
-Điểm lưu chỉ có trong một giao dịch.
+Savepoint (điểm lưu) chỉ có trong một transaction.
 
 ```sql
 -- ERROR 25P01: SAVEPOINT can only be used in transaction blocks
 SAVEPOINT s1;
 ```
 
-Lùi về điểm lưu không hủy cả giao dịch.
+Lùi về một savepoint không hủy cả transaction.
 
 ```sql
 -- WRONG: ROLLBACK TO SAVEPOINT undoes only the part after s1, then COMMIT keeps 100
@@ -160,8 +160,8 @@ SELECT count(*) AS kept FROM events WHERE v IN (300, 400);
 
 - Steal + no-force là nhanh nhất; WAL làm nó an toàn: nhật ký xuống đĩa trước trang và trước khi commit xong.
 - ARIES: phân tích, làm lại (LSN > `pageLSN`), hoàn tác ngược thời gian có bản bù CLR.
-- PostgreSQL chỉ làm lại; MVCC làm thay đổi của giao dịch hủy thành vô hình.
-- Ghi cả trang sau điểm kiểm tra chống trang ghi dở; sao lưu vật lý + WAL cho khôi phục tới một thời điểm.
+- PostgreSQL chỉ làm lại; MVCC làm thay đổi của transaction hủy thành vô hình.
+- Full-page write sau checkpoint chống trang ghi dở; sao lưu vật lý + WAL cho khôi phục tới một thời điểm.
 
 # EN
 
@@ -173,9 +173,9 @@ The power fails in the middle of a write: committed data must survive and uncomm
 
 The buffer cache keeps pages in RAM, so at a crash the disk may lack committed changes or hold uncommitted ones. Two policy questions: may an uncommitted page be written to disk (**steal** / no-steal), and must every page be written at commit (**force** / no-force). Steal needs the ability to undo, no-force the ability to redo. Real systems pick steal + no-force because it is fastest, and pay with **write-ahead logging**: every change is written to a sequential log before its page reaches disk, and a commit is done only once the log up to its commit record is on disk.
 
-**ARIES** is the classic recovery algorithm. Each log record has a sequence number, the LSN; each page remembers its `pageLSN`, the LSN of the last change it holds. After a crash, three phases: **analysis** reads the log from the last checkpoint to learn which transactions did not commit and which pages may be dirty; **redo** repeats every change whose LSN is greater than the page's `pageLSN`, losers' changes included; **undo** walks the log backwards removing the losers' changes, writing compensation records (CLRs) so that a second crash never undoes twice. Fuzzy checkpoints do not stop the system.
+**ARIES** is the classic recovery algorithm. Each log record has a sequence number, the LSN (log sequence number); each page remembers its `pageLSN`, the LSN of the last change it holds. After a crash, three phases: **analysis** reads the log from the last checkpoint to learn which transactions did not commit and which pages may be dirty; **redo** repeats every change whose LSN is greater than the page's `pageLSN`, losers' changes included; **undo** walks the log backwards removing the losers' changes, writing compensation log records (CLRs) so that a second crash never undoes twice. Fuzzy checkpoints record the state without stopping the system.
 
-**PostgreSQL** only redoes. Thanks to MVCC, an aborted transaction's changes are just row versions nobody sees, so nothing must be removed. It also writes the whole page the first time a page changes after each checkpoint, against torn pages. Backups: `pg_dump` for a logical copy; a physical base backup plus a WAL archive allows point-in-time recovery. The real WAL in detail is in `e-pg-l3-12`.
+**PostgreSQL** only redoes. Thanks to MVCC, an aborted transaction's changes are just row versions nobody sees, so nothing must be removed. It also writes the whole page into the WAL the first time a page changes after each checkpoint (a full-page write), so a page only half written at the crash can still be rebuilt. Backups: `pg_dump` for a logical copy; a physical base backup plus a WAL archive allows point-in-time recovery. The real WAL in detail is in `e-pg-l3-12`.
 
 The step-through figure at the end of this section follows one change into the WAL first and only then into the data files: that is how Postgres logs redo only.
 

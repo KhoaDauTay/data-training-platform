@@ -94,8 +94,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì kết quả giống hệt, nhưng planner so biểu thức theo dạng chữ đã phân tích, không theo giá trị. `to_tsvector(body)` đọc thiết lập `default_text_search_config` của phiên, có thể đổi bất cứ lúc nào, nên nó không phải biểu thức của index. Postgres tính lại vector cho từng dòng."
-      en: "It sounds right because the result is identical, but the planner compares expressions by their parsed form, not by value. `to_tsvector(body)` reads the session's `default_text_search_config`, which can change at any time, so it is not the index's expression. Postgres recomputes the vector for every row."
+      vi: "Kết quả giống hệt, nhưng planner so biểu thức theo cách viết, không theo giá trị. `to_tsvector(body)` một tham số đọc thiết lập `default_text_search_config` của phiên, thiết lập này có thể đổi bất cứ lúc nào, nên nó là một biểu thức khác với `to_tsvector('english', body)` của index. Planner chọn Seq Scan và tính lại vector cho từng dòng. Câu không lỗi: một `SELECT` được dùng hàm phụ thuộc phiên, chỉ biểu thức của index mới bị cấm."
+      en: "The result is identical, but the planner compares expressions as written, not by value. One-argument `to_tsvector(body)` reads the session setting `default_text_search_config`, which can change at any time, so it is a different expression from the index's `to_tsvector('english', body)`. The planner picks a Seq Scan and recomputes the vector for every row. The query does not fail: a `SELECT` may use a session-dependent function, only an index expression may not."
   - q:
       vi: "Người dùng gõ vào ô tìm kiếm: harbor crane. Nên đưa chuỗi đó cho hàm nào?"
       en: "A user types into the search box: harbor crane. Which function should receive that string?"
@@ -106,8 +106,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì `to_tsquery` là hàm hay gặp nhất, nhưng nó đòi cú pháp câu hỏi: hai từ cách nhau bằng khoảng trắng là lỗi cú pháp. `plainto_tsquery` nối mọi từ bằng `&`; `websearch_to_tsquery` hiểu thêm dấu ngoặc kép (cụm từ) và dấu trừ (loại trừ), như ô tìm của trang web."
-      en: "It sounds right because `to_tsquery` is the one you meet most, but it demands query syntax: two words separated by a space are a syntax error. `plainto_tsquery` joins every word with `&`; `websearch_to_tsquery` also understands quotes (a phrase) and a minus sign (exclude), like a web search box."
+      vi: "`to_tsquery` là hàm hay gặp nhất, nhưng nó đòi cú pháp câu hỏi có toán tử: `harbor crane`, hai từ chỉ cách nhau khoảng trắng, là lỗi cú pháp `42601`. `to_tsvector` tách từ của văn bản cần tìm trong đó, không tạo câu hỏi. `plainto_tsquery` nhận chữ tự do và nối mọi từ bằng `&`; `websearch_to_tsquery` hiểu thêm dấu ngoặc kép (cụm từ) và dấu trừ (loại trừ), như ô tìm của trang web."
+      en: "`to_tsquery` is the one you meet most, but it demands query syntax with operators: `harbor crane`, two words separated only by a space, is syntax error `42601`. `to_tsvector` splits the words of the text being searched, it does not build a query. `plainto_tsquery` takes free text and joins every word with `&`; `websearch_to_tsquery` also understands quotes (a phrase) and a minus sign (exclude), like a web search box."
 ---
 ## Mở bài
 

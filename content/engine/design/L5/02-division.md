@@ -68,8 +68,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì chưa ai học gì, nhưng mệnh đề \"với mọi\" trên tập rỗng là đúng hiển nhiên. Dạng `NOT EXISTS` trả mọi người; dạng đếm thì trả rỗng, nên phải quyết trước bạn muốn nghĩa nào."
-      en: "It sounds right because nobody took anything, but a \"for all\" claim over the empty set is vacuously true. The `NOT EXISTS` form returns everyone; the counting form returns nobody, so decide which meaning you want first."
+      vi: "\"Không ai\" nghe hợp lý vì chưa ai học khóa nào trong nhóm, nhưng \"học mọi khóa\" nghĩa là \"không có khóa nào trong nhóm mà chưa học\"; nhóm rỗng thì không có khóa nào để thiếu, nên mọi học viên đều thỏa. Phép chia ÷ không phải phép chia số, nên không có lỗi chia cho 0. Dạng `NOT EXISTS` trả mọi người; dạng đếm trả rỗng vì phép nối với số chia không ra dòng nào để gom nhóm, nên hãy quyết trước bạn muốn nghĩa nào."
+      en: "\"Nobody\" sounds right because no one took a course in the group, but \"took every course\" means \"there is no course in the group they have not taken\"; an empty group has no course to miss, so every student qualifies. Division ÷ is not numeric division, so there is no division by zero. The `NOT EXISTS` form returns everyone; the counting form returns nobody because the join with the divisor gives no rows to group, so decide which meaning you want first."
   - q:
       vi: "Dạng đếm `HAVING count(*) = (SELECT count(*) FROM courses)` sai khi nào?"
       en: "When does the counting form `HAVING count(*) = (SELECT count(*) FROM courses)` go wrong?"
@@ -80,8 +80,8 @@ quiz:
     answer: 0
     trap: 1
     why:
-      vi: "Nhiều người nghĩ đếm là cách an toàn nhất. Thật ra hai lượt học cùng một khóa được đếm hai lần, và khóa ngoài số chia cũng bị đếm nếu không lọc trước; cần `count(DISTINCT …)` và lọc theo số chia."
-      en: "Many people think counting is the safest form. In fact two takes of one course count twice, and courses outside the divisor count too unless filtered first; you need `count(DISTINCT …)` and a filter on the divisor."
+      vi: "Đếm nghe chính xác, nhưng `count(*)` đếm lượt học, không đếm khóa. Chi học `SQL` hai lần và `NOSQL` một lần: 3 lượt, bằng 3 khóa `core`, nên Chi trông như đủ dù chưa học `DESIGN`. Tương tự, khóa ngoài số chia (như `SPARK`) cũng được đếm nếu không nối với số chia trước. Số dòng của `students` không liên quan. Cần `count(DISTINCT …)` sau khi đã lọc theo số chia."
+      en: "Counting sounds exact, but `count(*)` counts takes, not courses. Chi took `SQL` twice and `NOSQL` once: 3 takes, equal to the 3 `core` courses, so Chi looks complete without `DESIGN`. Likewise a course outside the divisor (such as `SPARK`) counts unless you join with the divisor first. The row count of `students` has nothing to do with it. You need `count(DISTINCT …)` after filtering on the divisor."
 ---
 ## Mở bài
 

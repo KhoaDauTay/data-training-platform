@@ -1,0 +1,38 @@
+# B3-10 (tools/v42/diagram-plan-v42.md): keep the first row of each group, in the order you choose. Lesson: distinct_on (Ý chính).
+# Data (lab, PGlite; tools/v42/b3check.log): customer 5's 4 orders by order_date DESC, id DESC = 1416 (2026-10-31), 474 (2026-02-26),
+# 263 (2025-10-18), 96 (2025-06-03); SELECT DISTINCT ON (customer_id) customer_id, id … WHERE customer_id BETWEEN 1 AND 5
+# ORDER BY customer_id, order_date DESC, id DESC = (1, 1110), (2, 1384), (3, 932), (4, 1334), (5, 1416).
+# Source: https://www.postgresql.org/docs/current/sql-select.html#SQL-DISTINCT
+title: { vi: "DISTINCT ON giữ dòng đầu mỗi nhóm", en: "DISTINCT ON keeps the first row of each group" }
+caption:
+  vi: "Khách 1 đến 5, ORDER BY customer_id, order_date DESC, id DESC: trong mỗi khách đơn mới nhất đứng đầu và được giữ."
+  en: "Customers 1 to 5, ORDER BY customer_id, order_date DESC, id DESC: within each customer the newest order comes first and is kept."
+alt:
+  vi: "DISTINCT ON giữ đúng một dòng cho mỗi giá trị của khóa nhóm: dòng đứng đầu theo ORDER BY. Khác GROUP BY, nó giữ nguyên cả dòng."
+  en: "DISTINCT ON keeps one row per value of the group key: the first by ORDER BY. Unlike GROUP BY, it keeps the whole row."
+nodes:
+  - { id: ob, shape: key, mono: true, label: ORDER BY, sub: "…, order_date DESC" }
+  - id: g
+    shape: grid
+    label: { vi: "orders của khách 5", en: "customer 5's orders" }
+    head: [customer_id, id, order_date]
+    cells: [["5", "1416", "2026-10-31"], ["5", "474", "2026-02-26"], ["5", "263", "2025-10-18"], ["5", "96", "2025-06-03"]]
+    rowTone: [new, ghost, ghost, ghost]
+  - id: r
+    shape: grid
+    label: { vi: "kết quả", en: result }
+    head: [customer_id, id]
+    cells: [["1", "1110"], ["2", "1384"], ["3", "932"], ["4", "1334"], ["5", "1416"]]
+    cellTone: { "4:1": new }
+rows:
+  - [ob]
+  - [g, r]
+edges:
+  - { from: g, to: r, label: { vi: "dòng đầu mỗi nhóm", en: "first per group" } }
+steps:
+  - say: { vi: "Trong nhóm của khách 5, xếp mới nhất lên đầu.", en: "Within customer 5's group, newest first." }
+    show: [ob, g]
+    alt: { vi: "ORDER BY mở đầu bằng cột của DISTINCT ON để các dòng cùng nhóm nằm liền nhau.", en: "ORDER BY starts with the DISTINCT ON column so each group's rows sit together." }
+  - say: { vi: "Giữ dòng đầu của mỗi nhóm.", en: "Keep the first row of each group." }
+    show: [ob, g, r]
+    alt: { vi: "Phần còn lại của ORDER BY quyết định dòng nào thắng, nên thiếu nó thì dòng giữ lại là bất kỳ.", en: "The rest of ORDER BY decides which row wins; without it the kept row is arbitrary." }

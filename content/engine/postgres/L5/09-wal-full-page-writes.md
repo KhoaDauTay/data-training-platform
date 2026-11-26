@@ -56,8 +56,8 @@ lab:
       ordered: true
       hint: { vi: "Lọc `fpi_length > 0`; is_stock dùng cùng phép `LIKE` với filenode như bước 1, đặt trong danh sách cột.", en: "Filter on `fpi_length > 0`; is_stock uses the same `LIKE` on the filenode as step 1, placed in the column list." }
       fact:
-        vi: "Ba ảnh cả trang: hai `FPI_FOR_HINT` trên trang của catalog hệ thống (lần đầu đọc catalog sau checkpoint đặt hint bit) và một `HOT_UPDATE` trên `stock`."
-        en: "Three full-page images: two `FPI_FOR_HINT` on system catalog pages (the first catalog reads after the checkpoint set hint bits) and one `HOT_UPDATE` on `stock`."
+        vi: "Ba ảnh cả trang: một `HOT_UPDATE` trên `stock` và hai `FPI_FOR_HINT` trên trang của system catalog. Lần đầu Postgres đọc các trang catalog đó sau checkpoint, nó đặt hint bit (cờ ghi nhớ \"transaction tạo dòng này đã commit\"); đặt cờ cũng là sửa trang, nên lần sửa đầu sau checkpoint ghi cả trang."
+        en: "Three full-page images: one `HOT_UPDATE` on `stock` and two `FPI_FOR_HINT` on system catalog pages. The first time Postgres reads those catalog pages after the checkpoint, it sets hint bits (flags that remember \"the transaction that made this row committed\"); setting a flag is a page change too, so the first one after the checkpoint writes the whole page."
         probe: "SELECT string_agg(record_type, ', ' ORDER BY start_lsn) FROM pg_get_wal_records_info((SELECT lsn FROM wal_marks WHERE step = 'start'), (SELECT lsn FROM wal_marks WHERE step = 'end')) WHERE fpi_length > 0"
         expect: [["FPI_FOR_HINT, FPI_FOR_HINT, HOT_UPDATE"]]
 quiz:
@@ -68,7 +68,7 @@ quiz:
       - { vi: "Để standby nhận nhanh hơn", en: "So standbys receive it faster" }
     answer: 1
     trap: 2
-    why: { vi: "Nghe hợp lý vì WAL cũng được gửi sang standby, nhưng ảnh cả trang làm WAL lớn hơn chứ không nhanh hơn; mục đích là chống trang ghi dở. Đó là `full_page_writes` (mặc định on). Replay bắt đầu từ checkpoint, nên chỉ lần sửa đầu sau mỗi checkpoint cần ảnh cả trang.", en: "It sounds right because WAL is also shipped to the standby, but full-page images make WAL bigger, not faster; their purpose is to survive torn pages. That is `full_page_writes` (on by default). Replay starts from the checkpoint, so only the first change after each checkpoint needs the full image." }
+    why: { vi: "\"Để standby nhận nhanh hơn\" nghe hợp lý vì WAL (write-ahead log, nhật ký ghi trước) cũng được gửi sang standby, nhưng ảnh cả trang làm WAL lớn hơn, không nhanh hơn; nó cũng không giúp đọc. Mục đích là chống trang ghi dở (torn page): máy sập giữa lúc ghi một trang 8 KB có thể để lại trang nửa cũ nửa mới, và bản ghi WAL chỉ mô tả một thay đổi nhỏ thì không dựng lại được trang đó. Phục hồi đọc WAL từ checkpoint gần nhất, nên chỉ lần sửa đầu của mỗi trang sau checkpoint cần ảnh cả trang (FPI, full-page image). Thiết lập là `full_page_writes` (mặc định on).", en: "\"So standbys receive it faster\" sounds right because WAL (the write-ahead log) is also shipped to standbys, but full-page images make WAL bigger, not faster, and they do not speed up reads either. Their purpose is torn pages: a crash in the middle of writing an 8 KB page can leave it half old, half new, and a WAL record that only describes a small change cannot rebuild that page. Recovery replays WAL from the last checkpoint, so only the first change to each page after a checkpoint needs a full-page image (FPI). The setting is `full_page_writes` (on by default)." }
   - q: { vi: "Một hệ thống đặt `checkpoint_timeout = 30s` để \"phục hồi nhanh\". Tác dụng phụ chính?", en: "A system sets `checkpoint_timeout = 30s` for \"fast recovery\". The main side effect?" }
     options:
       - { vi: "Không có", en: "None" }
@@ -76,7 +76,7 @@ quiz:
       - { vi: "Mất dữ liệu đã commit", en: "Committed data is lost" }
     answer: 1
     trap: 0
-    why: { vi: "Nghe như không có tác dụng phụ vì checkpoint dày chỉ làm phục hồi nhanh hơn, nhưng mỗi checkpoint đều có giá. Docs chính thức (WAL Configuration): checkpoint dày làm giảm thời gian phục hồi nhưng tăng chi phí I/O và lượng WAL do full-page write. Mặc định 5 phút / 1 GB là điểm cân bằng thường dùng.", en: "It sounds free because frequent checkpoints only make recovery faster, but every checkpoint has a price. WAL Configuration docs: frequent checkpoints cut recovery time but raise I/O cost and WAL volume through full-page writes. The 5 min / 1 GB defaults are the usual balance." }
+    why: { vi: "\"Không có\" nghe hợp lý vì checkpoint dày chỉ rút ngắn thời gian phục hồi, nhưng mỗi checkpoint có giá. Sau mỗi checkpoint, lần sửa đầu của mỗi trang lại phải ghi ảnh cả trang 8 KB vào WAL; checkpoint 30 giây một lần thì một trang hay sửa bị ghi ảnh lại mỗi 30 giây, nên WAL phình. Mỗi checkpoint cũng phải ghi mọi trang bẩn (dirty page: trang đã sửa trong bộ nhớ, chưa ghi xuống đĩa). \"Mất dữ liệu đã commit\" sai: dữ liệu đã commit nằm trong WAL, không phụ thuộc tần suất checkpoint. Mặc định 5 phút / 1 GB là điểm cân bằng thường dùng.", en: "\"None\" sounds right because frequent checkpoints only shorten recovery, but every checkpoint has a price. After each checkpoint, the first change to each page must again write an 8 KB full-page image into WAL; with a checkpoint every 30 seconds, a busy page gets a new image every 30 seconds, so WAL grows. Every checkpoint must also flush all dirty pages (pages changed in memory but not yet written to disk). \"Committed data is lost\" is wrong: committed data is in WAL, whatever the checkpoint frequency. The 5 min / 1 GB defaults are the usual balance." }
 ---
 ## Mở bài
 

@@ -54,7 +54,7 @@ Ví dụ: đơn hủy ở ứng dụng và ở web, tháng 8 so với tháng 9/2
 
 ① Mỗi kỳ là một cột có điều kiện riêng, nên hai kỳ nằm cạnh nhau trên cùng một dòng.
 
-② Bộ lọc chung chỉ giữ hai tháng cần so; điều kiện của từng cột chia tiếp bên trong.
+② Điều kiện lọc chung chỉ giữ hai tháng cần so; điều kiện của từng cột chia tiếp bên trong.
 
 ③ Lọc nhóm sau khi gom: chỉ giữ nhóm đủ dữ liệu để so.
 

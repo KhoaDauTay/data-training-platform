@@ -26,7 +26,7 @@ reflect:
     - { vi: "Vì yêu cầu bị từ chối không có trong danh sách", en: "Because rejected requests are not in the list" }
     - { vi: "Thật ra có cần, kết quả đang sai", en: "It actually does; the result is wrong" }
   answer: 0
-  why: { vi: "Đọc kỹ dữ liệu trước khi thêm điều kiện: ở đây yêu cầu bị từ chối ghi tiền hoàn bằng 0.", en: "Read the data before adding conditions: here a rejected request records a refund of 0." }
+  why: { vi: "Yêu cầu bị từ chối ghi tiền hoàn bằng 0, nên cộng mọi yêu cầu ra đúng bằng cộng riêng yêu cầu được duyệt. Đọc dữ liệu trước khi thêm một điều kiện thừa.", en: "A rejected request records a refund of 0, so adding up every request gives exactly the approved total. Read the data before adding a condition you do not need." }
 wrong:
   - sql: "SELECT reason, count(*), count(status), sum(refund) FROM returns WHERE requested_on >= '{{from}}' AND requested_on < '{{to}}' GROUP BY reason ORDER BY 2 DESC, reason"
     vi: "Cột thứ ba đang đếm mọi yêu cầu có trạng thái, kể cả yêu cầu bị từ chối. Đề chỉ đếm yêu cầu được duyệt hoàn tiền."

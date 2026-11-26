@@ -42,8 +42,8 @@ lab:
       check: plan
       ordered: true
       hint:
-        vi: Cùng index, lần này đọc theo chiều xuôi.
-        en: Same index, read forwards this time.
+        vi: "Index `orders_created_idx` đã xếp sẵn `created_at` từ cũ tới mới: sắp theo đúng cột đó rồi giới hạn 3 dòng, Postgres đọc index theo chiều xuôi."
+        en: "Index `orders_created_idx` already holds `created_at` from oldest to newest: sort by that column and limit to 3 rows, and Postgres reads the index forwards."
     - task:
         vi: "Trang \"đơn gần đây\" cần 10 đơn mới nhất: `id`, `amount`, `created_at`, mới trước (mỗi đơn có `created_at` riêng, không trùng). Bài chấm cả tốc độ: đúng mà phải sắp xếp cả bảng là chưa đạt."
         en: "The \"recent orders\" page needs the 10 newest orders: `id`, `amount`, `created_at`, newest first (each order has its own `created_at`, no ties). Speed is graded too: a right answer that sorts the whole table does not pass."
@@ -66,8 +66,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì index xếp tăng còn câu hỏi muốn giảm, nhưng các trang lá của B-tree nối với nhau theo cả hai chiều. Với một cột, một index tăng dần phục vụ được cả `ORDER BY created_at` lẫn `ORDER BY created_at DESC`. Chiều `DESC` trong index chỉ quan trọng khi trộn chiều giữa nhiều cột."
-      en: "It sounds right because the index is ascending and the query wants descending, but the B-tree leaf pages are linked in both directions. For one column, a single ascending index serves both `ORDER BY created_at` and `ORDER BY created_at DESC`. A `DESC` index only matters when several columns mix directions."
+      vi: "Index thứ hai `(created_at DESC)` nghe hợp lý vì index xếp tăng còn câu hỏi muốn giảm, nhưng các trang lá (leaf page, tầng dưới cùng giữ giá trị) của B-tree nối với nhau theo cả hai chiều. Vì thế với một cột, một index tăng dần phục vụ được cả `ORDER BY created_at` lẫn `ORDER BY created_at DESC`: Postgres đọc từ cuối về đầu. Bỏ `LIMIT` không giúp gì, chỉ bắt đọc hết. Chiều `DESC` trong index chỉ quan trọng khi trộn chiều giữa nhiều cột."
+      en: "A second index `(created_at DESC)` sounds right because the index is ascending and the query wants descending, but the B-tree leaf pages (the bottom level that holds the values) are linked in both directions. So for one column, a single ascending index serves both `ORDER BY created_at` and `ORDER BY created_at DESC`: Postgres reads it from the end. Removing `LIMIT` does not help, it only forces reading everything. A `DESC` index only matters when several columns mix directions."
 predict:
   sql: SELECT id, created_at FROM orders ORDER BY created_at DESC LIMIT 5
   expect: { node: Index Scan, table: orders, index: orders_created_idx }
@@ -81,8 +81,8 @@ predict:
   answer: 1
   trap: 0
   why:
-    vi: "Nghe hợp lý vì index xếp tăng dần còn câu hỏi `DESC`, như thể index không phục vụ được chiều ngược; nhưng lá của B-tree đã xếp theo `created_at` và nối với nhau theo cả hai chiều. Postgres đọc từ cuối index ngược lại, dừng sau 5 dòng (nút `Limit`), nên không cần đọc hay sắp xếp phần còn lại."
-    en: "It sounds right because the index is ascending while the query asks for `DESC`, as if the index could not serve the reverse order, but the B-tree leaves are already ordered by `created_at` and linked in both directions. Postgres reads from the end of the index backwards and stops after 5 rows (the `Limit` node), so it never reads or sorts the rest."
+    vi: "Seq Scan rồi Sort nghe hợp lý vì index xếp tăng dần còn câu hỏi `DESC`, như thể index không phục vụ được chiều ngược; nhưng trang lá của B-tree đã xếp theo `created_at` và nối với nhau theo cả hai chiều. Postgres đọc từ cuối index ngược lại, dừng sau 5 dòng (nút `Limit`), nên không cần đọc hay sắp xếp phần còn lại."
+    en: "A Seq Scan then a Sort sounds right because the index is ascending while the query asks for `DESC`, as if the index could not serve the reverse order, but the B-tree leaves are already ordered by `created_at` and linked in both directions. Postgres reads from the end of the index backwards and stops after 5 rows (the `Limit` node), so it never reads or sorts the rest."
 ---
 ## Mở bài
 

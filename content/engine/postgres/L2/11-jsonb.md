@@ -85,8 +85,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì index đặt trên cột `doc` và biểu thức cũng đọc `doc`, nhưng index chỉ phục vụ toán tử có trong opclass của nó. `->>` trả `text` rồi so `=`: index GIN không biết phép đó. `?` (có khóa) cần opclass mặc định `jsonb_ops`. Chỉ `@>` (và jsonpath `@?`, `@@`) đi qua `jsonb_path_ops`."
-      en: "It sounds right because the index is on column `doc` and the expression reads `doc`, but an index only serves the operators of its opclass. `->>` returns `text` and then `=` compares it: the GIN index knows nothing of that. `?` (key exists) needs the default `jsonb_ops` opclass. Only `@>` (and the jsonpath `@?`, `@@`) goes through `jsonb_path_ops`."
+      vi: "Index nằm trên cả cột `doc` nên dễ nghĩ câu nào đọc `doc` cũng dùng được, nhưng index chỉ phục vụ các toán tử trong opclass (operator class: bộ toán tử index đó hiểu) của nó. `->>` lấy ra một giá trị `text` rồi so `=`: index GIN không biết phép đó. `?` (có khóa không) cần opclass mặc định `jsonb_ops`, không có trong `jsonb_path_ops`. Chỉ `@>` (và jsonpath `@?`, `@@`) đi qua `jsonb_path_ops`."
+      en: "The index covers the whole `doc` column, so any query reading `doc` seems able to use it, but an index only serves the operators in its opclass (operator class: the set of operators that index understands). `->>` pulls out a `text` value and then compares it with `=`: the GIN index knows nothing of that. `?` (does the key exist?) needs the default `jsonb_ops` opclass, which `jsonb_path_ops` lacks. Only `@>` (and the jsonpath `@?`, `@@`) goes through `jsonb_path_ops`."
   - q:
       vi: "`doc ->> 'price' > '150'` đếm được 14.200 dòng, trong khi chỉ 5.000 sản phẩm có giá trên 150. Vì sao?"
       en: "`doc ->> 'price' > '150'` counts 14,200 rows while only 5,000 products cost more than 150. Why?"
@@ -97,8 +97,8 @@ quiz:
     answer: 0
     trap: 1
     why:
-      vi: "Nghe hợp lý vì thống kê cũ hay làm sai ước lượng, nhưng thống kê chỉ đổi kế hoạch, không bao giờ đổi kết quả. Ở đây kết quả sai vì kiểu: `->>` luôn trả `text`, và chuỗi được so theo thứ tự chữ. Ép kiểu trước khi so: `(doc ->> 'price')::numeric > 150`."
-      en: "It sounds right because stale statistics often skew estimates, but statistics only change the plan, never the result. Here the result is wrong because of the type: `->>` always returns `text`, and strings compare in alphabetical order. Cast before comparing: `(doc ->> 'price')::numeric > 150`."
+      vi: "Thống kê (statistics) cũ chỉ làm sai ước lượng số dòng, tức đổi kế hoạch, không bao giờ đổi kết quả; `jsonb` cũng lưu số đúng như nhập, không làm tròn. Kết quả sai vì kiểu: `->>` luôn trả `text`, và chuỗi được so từng ký tự từ trái sang: `'20.99'` lớn hơn `'150'` vì `2` > `1`. Ép kiểu trước khi so: `(doc ->> 'price')::numeric > 150` đếm đúng 5.000 (200 mức giá từ 0,99 tới 199,99, có 50 mức trên 150: 50/200 × 20.000 sản phẩm)."
+      en: "Stale statistics only skew row estimates, which changes the plan, never the result; `jsonb` also stores numbers exactly as given, with no rounding. The result is wrong because of the type: `->>` always returns `text`, and strings compare character by character from the left: `'20.99'` is greater than `'150'` because `2` > `1`. Cast before comparing: `(doc ->> 'price')::numeric > 150` counts exactly 5,000 (200 price levels from 0.99 to 199.99, 50 of them above 150: 50/200 × 20,000 products)."
 ---
 ## Mở bài
 

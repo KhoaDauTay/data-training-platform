@@ -8,6 +8,7 @@ title_en: "Indexes that lead with tenant_id"
 kind: lab
 runtime: browser
 minutes: 15
+figures: [{ name: sql-index-column-order, at: idea, variant: tenant }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-25" }
 objectives:
   - { vi: "Đặt `tenant_id` đứng đầu index nhiều cột, rồi tới cột lọc bằng, cuối cùng là cột khoảng hoặc sắp xếp", en: "Put `tenant_id` first in a multicolumn index, then the equality columns, last the range or sort column" }
@@ -61,7 +62,7 @@ quiz:
       - { vi: "Tốt hơn, vì cột thời gian chọn lọc hơn cột khách", en: "Better, because the time column is more selective" }
     answer: 1
     trap: 0
-    why: { vi: "Nghe hợp lý vì cả hai cột đều có mặt, nhưng B-tree sắp theo cột đầu trước. `tenant_id` đứng đầu thì dòng của một khách nằm liền nhau, đã xếp theo thời gian: đọc một đoạn ngắn là xong. `created_at` đứng đầu thì phải lướt qua mọi khách rồi lọc bỏ: một khách lớn làm chậm câu của mọi khách khác.", en: "It sounds right because both columns are there, but a B-tree sorts by its first column first. With `tenant_id` first, one tenant's rows sit together, already in time order: reading one short stretch is enough. With `created_at` first, the query skims every tenant and filters them out: one big tenant slows every other tenant's query." }
+    why: { vi: "Có đủ hai cột chưa đủ: B-tree sắp theo cột đầu trước, rồi mới theo cột thứ hai trong cùng một giá trị cột đầu. `tenant_id` đứng đầu thì dòng của một khách (tenant) nằm liền nhau, đã xếp theo thời gian: đọc một đoạn ngắn là xong. `created_at` đứng đầu thì dòng của khách 7 rải khắp index giữa dòng của 49 khách khác, nên câu phải lướt qua mọi khách rồi lọc bỏ. Cột thời gian chọn lọc hơn không giúp gì, vì câu lọc bằng `tenant_id = $1` chứ không bằng một mốc thời gian.", en: "Having both columns is not enough: a B-tree sorts by the first column, then by the second within each first-column value. With `tenant_id` first, one tenant's rows sit together, already in time order: reading one short stretch is enough. With `created_at` first, tenant 7's rows are spread over the whole index among 49 other tenants, so the query skims every tenant and filters them out. A more selective time column does not help, because the query filters on `tenant_id = $1`, not on a point in time." }
   - q: { vi: "Bảng có `PRIMARY KEY (id)` và index `(tenant_id)`. Câu \"đơn mới nhất của khách 7\" vẫn có Sort. Vì sao?", en: "A table has `PRIMARY KEY (id)` and an index `(tenant_id)`. The query \"tenant 7's newest orders\" still has a Sort. Why?" }
     options:
       - { vi: "Trong một khách, các dòng không xếp theo thời gian", en: "Within one tenant the rows are not in time order" }
@@ -69,7 +70,7 @@ quiz:
       - { vi: "Index đã hỏng sau nhiều lần ghi và cần dựng lại", en: "The index broke after many writes and needs a rebuild" }
     answer: 0
     trap: 1
-    why: { vi: "Khóa chính thiếu `tenant_id` nghe như thủ phạm vì đó là lời khuyên đúng cho bảng nhiều khách, nhưng nó không quyết định Sort ở đây. Sort còn vì index chỉ có `tenant_id`: thêm `created_at` làm cột thứ hai thì thứ tự có sẵn trong index.", en: "A primary key without `tenant_id` sounds like the culprit because that is good advice for multi-tenant tables, but it does not decide the Sort here. The Sort stays because the index holds only `tenant_id`: add `created_at` as the second column and the order comes ready from the index." }
+    why: { vi: "Khóa chính thiếu `tenant_id` nghe như thủ phạm vì đưa `tenant_id` vào khóa là lời khuyên đúng cho bảng nhiều khách (tenant), nhưng câu này không đọc khóa chính, nên khóa chính không quyết định Sort. Index cũng không hỏng: hỏng thì câu báo lỗi hoặc trả sai dòng, không sinh thêm Sort. Sort còn vì index chỉ có `tenant_id`: trong một khách, các mục không xếp theo thời gian. Thêm `created_at` làm cột thứ hai thì thứ tự có sẵn trong index.", en: "A primary key without `tenant_id` sounds like the culprit because putting `tenant_id` in the key is good advice for multi-tenant tables, but this query does not read the primary key, so the key does not decide the Sort. The index is not broken either: a broken index raises errors or returns wrong rows, it does not add a Sort. The Sort stays because the index holds only `tenant_id`: within one tenant the entries are not in time order. Add `created_at` as the second column and the order comes ready from the index." }
 ---
 ## Mở bài
 
@@ -82,6 +83,8 @@ Năm mươi chủ hàng dùng chung bảng `invoices` của cổng khách hàng 
 Nhiều người nghĩ index có đủ cột là được, thứ tự không quan trọng. Thật ra B-tree sắp theo cột đầu trước. Index chỉ có `created_at` (hoặc `created_at` đứng đầu) bắt câu của khách 7 lướt qua hóa đơn của cả 50 khách rồi lọc bỏ: dòng "Rows Removed by Filter" lớn là dấu hiệu, và một khách lớn làm chậm mọi khách khác.
 
 Điều kiện khách phải ở dạng index dùng được: `tenant_id = 7`, không phải `tenant_id + 0 = 7`. Khi bật RLS, policy thêm `tenant_id = …` vào mọi câu (xem `e-pg-l5-19`), nên chính index này giữ cho mọi câu dưới RLS vẫn rẻ.
+
+Hình cuối mục này cho thấy một đoạn của index `(tenant_id, created_at)`: tháng 3 của khách 7 là một đoạn liền.
 
 ## Cú pháp
 
@@ -199,6 +202,8 @@ In a multi-tenant table nearly every query has `tenant_id = …`. A multicolumn 
 Many people think an index only needs the right columns, in any order. In fact a B-tree sorts by its first column first. An index on `created_at` alone (or with `created_at` first) makes tenant 7's query skim the invoices of all 50 tenants and filter them out: a large "Rows Removed by Filter" is the sign, and one big tenant slows every other one.
 
 The tenant condition must be in a form the index can use: `tenant_id = 7`, not `tenant_id + 0 = 7`. With RLS on, the policy adds `tenant_id = …` to every query (see `e-pg-l5-19`), so this very index keeps every query under RLS cheap.
+
+The figure at the end of this section shows a stretch of the index `(tenant_id, created_at)`: tenant 7's March is one unbroken stretch.
 
 ## Syntax
 

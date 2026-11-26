@@ -18,13 +18,13 @@ variants:
   - { from: "2025-01-01", to: "2026-01-01", first: "01/2025", last: "12/2025", first_en: "January 2025", last_en: "December 2025" }
   - { from: "2026-01-01", to: "2026-11-01", first: "01/2026", last: "10/2026", first_en: "January 2026", last_en: "October 2026" }
 reflect:
-  q: { vi: "Vì sao ghép đánh giá với giao hàng theo mã đơn mà không theo mã sản phẩm?", en: "Why join reviews to deliveries on the order number and not the product number?" }
+  q: { vi: "Vì sao nối đánh giá với giao hàng theo mã đơn mà không theo mã sản phẩm?", en: "Why join reviews to deliveries on the order number and not the product number?" }
   options:
     - { vi: "Mỗi đơn có một lần giao; ngày giao thuộc về đơn, không thuộc về sản phẩm", en: "Each order has one delivery; the delivery date belongs to the order, not to the product" }
     - { vi: "Vì danh mục giao hàng không có cột nào khác", en: "Because the delivery list has no other column" }
-    - { vi: "Ghép theo mã nào cũng được", en: "Any number works for the join" }
+    - { vi: "Nối theo mã nào cũng được", en: "Any number works for the join" }
   answer: 0
-  why: { vi: "Khóa ghép phải nói đúng quan hệ: một đánh giá thuộc một đơn, một đơn có một lần giao.", en: "The join key must state the real relationship: a review belongs to one order, and an order has one delivery." }
+  why: { vi: "Khóa nối phải nói đúng quan hệ: một đánh giá thuộc một đơn, một đơn có một lần giao.", en: "The join key must state the real relationship: a review belongs to one order, and an order has one delivery." }
 wrong:
   - sql: "SELECT r.rating, ROUND(AVG(r.created_on - d.shipped_on), 2) FROM reviews r JOIN deliveries d ON d.order_id = r.order_id WHERE r.created_on >= '{{from}}' AND r.created_on < '{{to}}' GROUP BY r.rating ORDER BY r.rating"
     vi: "Bạn đang tính từ ngày gửi hàng. Đề tính từ ngày khách nhận hàng."
@@ -37,7 +37,7 @@ Các đánh giá viết từ tháng {{first}} đến hết tháng {{last}}: vớ
 
 ## Hints
 1. Ngày viết nằm ở đánh giá, ngày nhận hàng nằm ở danh mục giao hàng; hai bảng chung mã đơn. Trừ hai ngày, rồi lấy trung bình theo số sao.
-2. Ghép `d.order_id = r.order_id`; số ngày là `r.created_on - d.delivered_on`; làm tròn `ROUND(AVG(...), 2)`.
+2. Nối `d.order_id = r.order_id`; số ngày là `r.created_on - d.delivered_on`; làm tròn `ROUND(AVG(...), 2)`.
 3. `SELECT r.rating, ROUND(AVG(r.created_on - d.delivered_on), 2) FROM reviews r JOIN deliveries d ON ... WHERE ... GROUP BY r.rating ORDER BY r.rating`
 
 ## Solution

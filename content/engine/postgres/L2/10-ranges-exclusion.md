@@ -85,8 +85,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì trên đồng hồ hai lượt có chung mốc 10:00, nhưng range mặc định gồm đầu và bỏ cuối: lượt đầu dừng ngay trước 10:00. Vì thế `&&` trả `false` và lịch nối tiếp được phép. Muốn tính cả mốc cuối thì phải ghi rõ `'[]'`."
-      en: "It sounds right because on the clock both bookings share 10:00, but a default range includes its start and excludes its end: the first booking stops just before 10:00. So `&&` is `false` and back-to-back bookings are allowed. To include the end you must write `'[]'`."
+      vi: "Từ chối nghe hợp lý vì trên đồng hồ hai lượt có chung mốc 10:00, nhưng range mặc định là `[)`: gồm mốc đầu, bỏ mốc cuối, nên lượt đầu dừng ngay trước 10:00. Vì thế `&&` (có chồng nhau không) trả `false` và hai lượt nối tiếp được phép. Ràng buộc kiểm ngay lúc `INSERT`, không đợi `VACUUM`. Muốn tính cả mốc cuối thì phải ghi rõ `'[]'`."
+      en: "Refusing sounds right because on the clock both bookings share 10:00, but a default range is `[)`: it includes its start and excludes its end, so the first booking stops just before 10:00. So `&&` (do they overlap?) is `false` and back-to-back bookings are allowed. The constraint is checked at `INSERT` time, not during `VACUUM`. To include the end you must write `'[]'`."
   - q:
       vi: "Vì sao ràng buộc `EXCLUDE USING gist (room WITH =, during WITH &&)` cần extension `btree_gist`?"
       en: "Why does the constraint `EXCLUDE USING gist (room WITH =, during WITH &&)` need the `btree_gist` extension?"
@@ -97,8 +97,8 @@ quiz:
     answer: 1
     trap: 2
     why:
-      vi: "Nghe hợp lý vì ràng buộc `UNIQUE` quen thuộc chạy trên B-tree, nhưng B-tree không hiểu `&&` của range, nên ràng buộc này phải là GiST. GiST thì lại thiếu `=` cho số nguyên; `btree_gist` bù phần đó. Thiếu extension, lệnh tạo báo lỗi opclass."
-      en: "It sounds right because the familiar `UNIQUE` constraint runs on a B-tree, but a B-tree does not understand the range `&&`, so this constraint must be GiST. GiST in turn lacks `=` for integers; `btree_gist` fills that gap. Without the extension, creating it fails with an opclass error."
+      vi: "`EXCLUDE` chạy trên B-tree nghe hợp lý vì ràng buộc `UNIQUE` quen thuộc chạy trên B-tree, nhưng B-tree không hiểu `&&` của range, nên ràng buộc này phải dùng GiST. GiST lại không có sẵn opclass (operator class: bộ toán tử một loại index hiểu cho một kiểu dữ liệu) với `=` cho số nguyên; `btree_gist` thêm opclass đó. Đây không phải chuyện tốc độ: thiếu extension, lệnh tạo ràng buộc báo lỗi ngay."
+      en: "`EXCLUDE` on a B-tree sounds right because the familiar `UNIQUE` constraint runs on a B-tree, but a B-tree does not understand the range `&&`, so this constraint must use GiST. GiST in turn has no built-in opclass (operator class: the set of operators an index type understands for a data type) with `=` for integers; `btree_gist` adds it. This is not about speed: without the extension, creating the constraint fails at once."
 ---
 ## Mở bài
 

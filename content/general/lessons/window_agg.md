@@ -1,6 +1,6 @@
 ---
 id: window_agg
-title: "Tổng chạy, trung bình trượt và tỉ trọng: SUM/AVG/COUNT OVER"
+title: "Tổng lũy kế, trung bình trượt và tỉ trọng: SUM/AVG/COUNT OVER"
 title_en: "Running totals, moving averages and shares: SUM/AVG/COUNT OVER"
 minutes: 25
 figures: [{ name: sql-window-vs-group, at: idea }]
@@ -8,9 +8,9 @@ verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Dùng `SUM`, `AVG`, `COUNT` làm hàm cửa sổ để giữ từng dòng mà vẫn có số tổng.
     en: Use `SUM`, `AVG`, `COUNT` as window functions to keep every row and still get a total.
-  - vi: Tính tổng chạy với `ORDER BY` trong `OVER`, và tỉ trọng với `OVER ()`.
+  - vi: Tính tổng lũy kế với `ORDER BY` trong `OVER`, và tỉ trọng với `OVER ()`.
     en: Compute a running total with `ORDER BY` inside `OVER`, and a share with `OVER ()`.
-  - vi: Viết khung `ROWS BETWEEN … PRECEDING AND CURRENT ROW` cho trung bình trượt, và biết bẫy đồng hạng của khung mặc định.
+  - vi: Viết khung `ROWS BETWEEN … PRECEDING AND CURRENT ROW` cho trung bình trượt, và biết bẫy của khung mặc định khi nhiều dòng bằng nhau ở cột sắp xếp.
     en: Write a `ROWS BETWEEN … PRECEDING AND CURRENT ROW` frame for a moving average, and know the tie trap of the default frame.
 syntax: |-
   SELECT column,
@@ -23,7 +23,7 @@ syntax: |-
 options:
   - { code: "OVER ()", vi: "cả kết quả là một cửa sổ: tổng chung đặt cạnh mỗi dòng", en: "the whole result is one window: the grand total next to every row" }
   - { code: "OVER (PARTITION BY col)", vi: "tổng (hay trung bình) của nhóm của dòng đó", en: "the total (or average) of that row's group" }
-  - { code: "OVER (ORDER BY col)", vi: "tổng chạy: từ dòng đầu tới dòng hiện tại", en: "a running total: from the first row to the current one" }
+  - { code: "OVER (ORDER BY col)", vi: "tổng lũy kế: từ dòng đầu tới dòng hiện tại", en: "a running total: from the first row to the current one" }
   - { code: "ROWS BETWEEN 2 PRECEDING AND CURRENT ROW", vi: "khung 3 dòng: hai dòng trước và dòng này", en: "a 3-row frame: the two rows before and this one" }
   - { code: "RANGE", vi: "khung mặc định: khi có `ORDER BY`, các dòng bằng nhau về thứ tự được cộng cùng lúc", en: "the default frame: with `ORDER BY`, rows equal in the order are added together" }
 examples:
@@ -37,7 +37,7 @@ examples:
     read:
       vi: "5 nhóm, mỗi nhóm 6 món, đúng 20%. `GROUP BY` chạy trước, rồi `SUM(count(*)) OVER ()` cộng số đếm của mọi nhóm (30) và đặt cạnh từng dòng để chia."
       en: "5 categories, 6 items each, exactly 20%. `GROUP BY` runs first, then `SUM(count(*)) OVER ()` adds up every group's count (30) and places it next to each row for the division."
-  - title: { vi: "Tổng chạy", en: "A running total" }
+  - title: { vi: "Tổng lũy kế", en: "A running total" }
     sql: |-
       WITH d AS (
         SELECT order_date, count(*) AS n
@@ -77,17 +77,17 @@ examples:
       vi: "12 dòng: đồ uống trung bình khoảng 20.167 đồng, đồ gia dụng khoảng 53.833. Mỗi món giữ dòng của mình, nên có thể so trực tiếp: bột giặt 129.000 gấp hơn hai lần trung bình nhóm."
       en: "12 rows: drinks average about 20,167 VND, household items about 53,833. Each item keeps its own row, so you can compare directly: the laundry powder at 129,000 is more than twice its group's average."
 pitfalls:
-  - title: { vi: "Tổng chạy và các dòng đồng hạng", en: "Running totals and tied rows" }
+  - title: { vi: "Tổng lũy kế khi nhiều dòng bằng nhau", en: "Running totals and tied rows" }
     wrong: "SELECT id, order_date, COUNT(*) OVER (ORDER BY order_date) AS running FROM orders WHERE store_id = 3 AND order_date >= '2026-10-28' ORDER BY order_date, id"
     fix: "SELECT id, order_date, COUNT(*) OVER (ORDER BY order_date, id) AS running FROM orders WHERE store_id = 3 AND order_date >= '2026-10-28' ORDER BY order_date, id"
     why:
-      vi: "Khung mặc định là `RANGE`: mọi đơn cùng ngày là \"đồng hạng\" nên được đếm cùng lúc, và cả 6 đơn ngày 28/10 đều hiện 6. Thêm `id` vào `ORDER BY` (hoặc dùng `ROWS`) để tổng chạy tăng từng dòng 1, 2, 3."
+      vi: "Khung mặc định là `RANGE`: mọi đơn cùng ngày là \"bằng nhau\" ở cột sắp xếp nên được đếm cùng lúc, và cả 6 đơn ngày 28/10 đều hiện 6. Thêm `id` vào `ORDER BY` (hoặc dùng `ROWS`) để tổng lũy kế tăng từng dòng 1, 2, 3."
       en: "The default frame is `RANGE`: every order of the same day is a \"peer\", so they are counted together, and all 6 orders of 28 October show 6. Add `id` to the `ORDER BY` (or use `ROWS`) so the running total grows row by row 1, 2, 3."
   - title: { vi: "GROUP BY khi bạn muốn giữ từng dòng", en: "GROUP BY when you want to keep every row" }
     wrong: "SELECT name, category, SUM(price_vnd) FROM products GROUP BY category"
     fix: "SELECT name, category, SUM(price_vnd) OVER (PARTITION BY category) AS cat_total FROM products WHERE category = 'Drinks'"
     why:
-      vi: "`GROUP BY category` gộp mỗi nhóm thành một dòng, nên `name` không còn chỗ: Postgres báo 42803. Muốn tổng nhóm đứng cạnh từng món, dùng `SUM(…) OVER (PARTITION BY category)`."
+      vi: "`GROUP BY category` gộp mỗi nhóm thành một dòng, nên `name` không còn chỗ: Postgres báo lỗi 42803 (cột không nằm trong nhóm). Muốn tổng nhóm đứng cạnh từng món, dùng `SUM(…) OVER (PARTITION BY category)`."
       en: "`GROUP BY category` collapses each group into one row, so `name` has nowhere to go: Postgres raises 42803. To put the group total next to each item, use `SUM(…) OVER (PARTITION BY category)`."
   - title: { vi: "Trung bình trượt quên khung", en: "A moving average without a frame" }
     wrong: "WITH d AS (SELECT order_date, count(*) AS n FROM orders WHERE store_id = 3 AND order_date BETWEEN '2026-10-25' AND '2026-10-31' GROUP BY order_date) SELECT order_date, n, round(AVG(n) OVER (ORDER BY order_date), 2) AS avg3 FROM d ORDER BY order_date"
@@ -101,7 +101,7 @@ quiz:
       en: "How do `SUM(x) OVER ()` and `SUM(x) OVER (ORDER BY d)` differ?"
     options:
       - { vi: "Giống nhau; `ORDER BY` chỉ sắp lại kết quả", en: "They are the same; `ORDER BY` only re-sorts the result" }
-      - { vi: "Cái đầu là tổng của mọi dòng; cái sau là tổng chạy tới dòng hiện tại", en: "The first is the total of every row; the second is a running total up to the current row" }
+      - { vi: "Cái đầu là tổng của mọi dòng; cái sau là tổng lũy kế tới dòng hiện tại", en: "The first is the total of every row; the second is a running total up to the current row" }
       - { vi: "Cái sau báo lỗi vì thiếu `PARTITION BY`", en: "The second fails because it lacks `PARTITION BY`" }
     answer: 1
     trap: 0
@@ -118,12 +118,12 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "`GROUP BY` gộp mất từng đơn (và báo 42803 nếu bạn vẫn chọn cột của đơn). `PARTITION BY` cho tổng của nhóm mà giữ nguyên mọi dòng; `ORDER BY store_id` sẽ ra tổng chạy qua các cửa hàng, không phải tổng từng cửa hàng."
+      vi: "`GROUP BY` gộp mất từng đơn (và báo lỗi 42803, cột không nằm trong nhóm, nếu bạn vẫn chọn cột của đơn). `PARTITION BY` cho tổng của nhóm mà giữ nguyên mọi dòng; `ORDER BY store_id` sẽ ra tổng lũy kế qua các cửa hàng, không phải tổng từng cửa hàng."
       en: "`GROUP BY` collapses the orders (and raises 42803 if you still select order columns). `PARTITION BY` gives the group total and keeps every row; `ORDER BY store_id` would give a running total across stores, not each store's total."
 recap:
-  - vi: "`OVER ()` = tổng chung cạnh mỗi dòng; `PARTITION BY` = tổng của nhóm; `ORDER BY` = tổng chạy."
+  - vi: "`OVER ()` = tổng chung cạnh mỗi dòng; `PARTITION BY` = tổng của nhóm; `ORDER BY` = tổng lũy kế."
     en: "`OVER ()` = grand total next to each row; `PARTITION BY` = the group's total; `ORDER BY` = a running total."
-  - vi: "Khung mặc định cộng các dòng đồng hạng cùng lúc; thêm cột phân định hay dùng `ROWS`."
+  - vi: "Khung mặc định cộng các dòng bằng nhau ở cột sắp xếp cùng lúc; thêm tiêu chí sắp xếp phụ hay dùng `ROWS`."
     en: "The default frame adds tied rows together; add a tie-breaking column or use `ROWS`."
   - vi: "Trung bình trượt cần khung rõ ràng: `ROWS BETWEEN n PRECEDING AND CURRENT ROW`."
     en: "A moving average needs an explicit frame: `ROWS BETWEEN n PRECEDING AND CURRENT ROW`."
@@ -138,9 +138,9 @@ Báo cáo tuần cần ba cột cạnh số đơn mỗi ngày: cộng dồn từ
 
 ## Ý chính
 
-`SUM`, `AVG`, `COUNT`, `MIN`, `MAX` thêm `OVER (…)` thì thành hàm cửa sổ: mỗi dòng giữ nguyên và nhận con số tính trên một **khung** dòng. `OVER ()` là cả kết quả; `PARTITION BY` là nhóm của dòng; có `ORDER BY` thì khung chạy từ dòng đầu tới dòng hiện tại, thành tổng chạy.
+`SUM`, `AVG`, `COUNT`, `MIN`, `MAX` thêm `OVER (…)` thì thành hàm cửa sổ: mỗi dòng giữ nguyên và nhận con số tính trên một **khung** dòng. `OVER ()` là cả kết quả; `PARTITION BY` là nhóm của dòng; có `ORDER BY` thì khung chạy từ dòng đầu tới dòng hiện tại, thành tổng lũy kế.
 
-Nhiều người nghĩ **`ORDER BY` trong `OVER` chỉ để sắp xếp**. Thật ra nó đổi khung. Và khung mặc định tính theo giá trị: các dòng có cùng giá trị sắp xếp (cùng ngày chẳng hạn) được cộng cùng một lúc. Muốn đúng "từng dòng", thêm cột phân định hoặc viết `ROWS BETWEEN …`.
+Nhiều người nghĩ **`ORDER BY` trong `OVER` chỉ để sắp xếp**. Thật ra nó đổi khung. Và khung mặc định tính theo giá trị: các dòng có cùng giá trị sắp xếp (cùng ngày chẳng hạn) được cộng cùng một lúc. Muốn đúng "từng dòng", thêm tiêu chí sắp xếp phụ hoặc viết `ROWS BETWEEN …`.
 
 Hình cuối mục này so ba cách trên số đơn mỗi ngày của Ben Thanh: `GROUP BY` còn một dòng, `OVER ()` và `OVER (ORDER BY …)` giữ đủ sáu dòng.
 

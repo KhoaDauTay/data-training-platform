@@ -82,8 +82,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì NULL trông như một giá trị khác `'ruler'`, nhưng mọi hàm gộp trừ `count(*)` đều bỏ qua NULL. Kết quả là 1, và phép thử phụ thuộc bỏ sót vi phạm nếu bạn không đếm NULL riêng."
-      en: "It sounds right because NULL looks like a value other than `'ruler'`, but every aggregate except `count(*)` skips NULLs. The result is 1, and a dependency test misses the violation unless you count NULL separately."
+      vi: "2 nghe hợp lý vì NULL trông như một giá trị khác `'ruler'`, nhưng mọi hàm gộp trừ `count(*)` đều bỏ qua NULL. Còn lại `'ruler'`, `'ruler'`, và `DISTINCT` gộp hai chữ giống nhau làm một, nên kết quả là 1, không phải 3. Hệ quả: phép thử phụ thuộc hàm bỏ sót vi phạm (một dòng có tên, một dòng trống) nếu bạn không cộng thêm 1 cho nhóm có NULL, như bước 2 của lab."
+      en: "2 sounds right because NULL looks like a value other than `'ruler'`, but every aggregate except `count(*)` skips NULLs. That leaves `'ruler'`, `'ruler'`, and `DISTINCT` merges the two equal names into one, so the result is 1, not 3. As a result, a functional dependency test misses the violation (one line with a name, one without) unless you add 1 for a group that has a NULL, as in step 2 of the lab."
   - q:
       vi: "Bảng phẳng `order_lines` lặp tên sản phẩm trên mỗi dòng. Cách nào giữ đúng luật `product_code → product_name`?"
       en: "The flat table `order_lines` repeats the product name on every line. Which way keeps the rule `product_code → product_name`?"
@@ -94,8 +94,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nhiều người nghĩ phụ thuộc là một kiểu `UNIQUE`. Thật ra một mã xuất hiện trên nhiều dòng đơn là bình thường, nên `UNIQUE (product_code)` chặn cả dữ liệu đúng. Đặt phụ thuộc vào bảng mà vế trái là khóa thì khóa tự giữ luật."
-      en: "Many people think a dependency is a kind of `UNIQUE`. In fact one code on many order lines is normal, so `UNIQUE (product_code)` blocks correct data. Put the dependency in a table whose key is the left side, and the key keeps the rule."
+      vi: "Nhiều người nghĩ phụ thuộc hàm là một kiểu `UNIQUE`, nhưng mã P1 nằm trên dòng của đơn 1 lẫn đơn 2 là bình thường, nên `UNIQUE (product_code)` chặn cả dữ liệu đúng. `CHECK (product_name IS NOT NULL)` chỉ cấm tên trống, vẫn cho cùng một mã mang hai tên khác nhau. Chuyển tên sang bảng `products` có khóa chính `code` thì khóa không cho hai dòng cùng mã, nên một mã không thể có hai tên."
+      en: "Many people think a functional dependency is a kind of `UNIQUE`, but code P1 on lines of both order 1 and order 2 is normal, so `UNIQUE (product_code)` blocks correct data. `CHECK (product_name IS NOT NULL)` only forbids an empty name and still lets one code carry two different names. Move the name to a `products` table keyed by `code`, and the key forbids two rows with the same code, so a code cannot have two names."
 ---
 ## Mở bài
 

@@ -8,6 +8,7 @@ title_en: SQL injection and safe dynamic SQL
 kind: lab
 runtime: browser
 minutes: 18
+figures: [{ name: pg-injection-bind, at: idea }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Chỉ ra vì sao nối chuỗi người dùng nhập vào câu SQL động cho phép họ viết lại câu lệnh.
@@ -80,8 +81,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe đúng vì ví dụ quen thuộc đều dùng dấu nháy, nhưng tự thoát chỉ chặn đúng một đường. Một số nối không có nháy (`WHERE id = ' || p`) vẫn nhận `1 OR true`, và tên bảng cần quy tắc khác hẳn. `EXECUTE … USING` gửi giá trị tách khỏi câu lệnh; `quote_literal`/`%L` và `quote_ident`/`%I` là các hàm thoát của chính Postgres."
-      en: "It sounds right because the familiar examples all use quotes, but hand escaping blocks only one road. A number concatenated without quotes (`WHERE id = ' || p`) still accepts `1 OR true`, and table names need a different rule entirely. `EXECUTE … USING` sends the value apart from the command; `quote_literal`/`%L` and `quote_ident`/`%I` are Postgres' own escaping functions."
+      vi: "Nhân đôi dấu nháy nghe đủ vì ví dụ tấn công ở bước 1 dùng dấu nháy, nhưng tự thoát (escape) chỉ chặn đúng một đường. Giới hạn 20 ký tự cũng không chặn được, vì `1 OR true` chỉ có 9 ký tự. Một số nối không có nháy (`WHERE id = ' || p`) vẫn nhận `1 OR true`, và tên bảng cần quy tắc khác hẳn. `EXECUTE … USING` gửi giá trị tách khỏi câu lệnh; `quote_literal`/`%L` và `quote_ident`/`%I` là các hàm thoát của chính Postgres."
+      en: "Doubling quotes sounds enough because the step 1 attack used a quote, but hand escaping blocks only one road. A 20-character limit does not stop it either, since `1 OR true` is only 9 characters. A number concatenated without quotes (`WHERE id = ' || p`) still accepts `1 OR true`, and table names need a different rule entirely. `EXECUTE … USING` sends the value apart from the command; `quote_literal`/`%L` and `quote_ident`/`%I` are Postgres' own escaping functions."
   - q:
       vi: "Người dùng chọn tên bảng để xuất báo cáo. Cách nào đúng?"
       en: "The user picks the table name for a report. Which way is right?"
@@ -106,6 +107,8 @@ SQL injection xảy ra khi chữ do người dùng gõ được ghép vào câu 
 Nhiều người nghĩ chỉ cần nhân đôi dấu nháy là xong. Thật ra cách đúng là không để giá trị chạm vào chữ SQL. Với giá trị: `EXECUTE '… $1' USING p`, hay `PREPARE … $1` và tham số của driver; giá trị đi riêng, Postgres không bao giờ phân tích nó như mã. Khi buộc phải đưa giá trị vào chữ, dùng `format('%L')` hoặc `quote_literal`.
 
 Tên bảng, tên cột không truyền bằng tham số được: `$1` chỉ thay một giá trị. Tên đi qua `format('%I')` hoặc `quote_ident`, các hàm này thêm nháy kép khi cần. `%s` chèn nguyên văn, nên với dữ liệu người dùng nó chẳng khác gì `||`. Tên do người dùng chọn còn cần danh sách cho phép, vì `%I` chặn được câu thứ hai nhưng không chặn việc đọc nhầm bảng.
+
+Hình từng bước ở cuối mục này đưa cùng một chuỗi qua hai đường: ghép bằng `||` thì nó thành mã, truyền bằng `$1` thì nó chỉ là một giá trị.
 
 ## Cú pháp
 
@@ -211,6 +214,8 @@ SQL injection happens when text typed by a user is glued into a statement and Po
 Many people think doubling the quotes is enough. In fact the right way is to never let the value touch the SQL text. For values: `EXECUTE '… $1' USING p`, or `PREPARE … $1` and the driver's parameters; the value travels apart and Postgres never parses it as code. When a value must go into the text, use `format('%L')` or `quote_literal`.
 
 Table and column names cannot be passed as parameters: `$1` only stands for a value. Names go through `format('%I')` or `quote_ident`, which add double quotes when needed. `%s` inserts text as is, so with user data it is no better than `||`. A name the user picks also needs an allow list, because `%I` stops a second statement but not a read of the wrong table.
+
+The step-through figure at the end of this section sends one string down two paths: glued with `||` it becomes code, passed as `$1` it stays a value.
 
 ## Syntax
 

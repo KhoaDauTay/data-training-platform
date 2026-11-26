@@ -1,0 +1,68 @@
+# B3-5 (tools/v42/diagram-plan-v42.md): the planner multiplies the MCV frequency by the row count. Lessons: e-pg-l2-15 (Ý chính),
+# e-pg-l4-02 (Ý chính, variant `mcv` = step 1 with that lesson's own parcels data, beside its registry pg-plan-tree).
+# Data (PGlite, lesson setups; tools/v42/b3check.log): tickets most_common_vals {open,pending,closed}, freqs {0.6,0.3,0.1},
+# reltuples 30000; status = 'closed' → Seq Scan rows=3000 (real 3000); closed_at null_frac 0.9 → IS NULL rows=27000 (real 27000).
+# parcels (e-pg-l4-02): {delivered,in_transit,returned,lost} = {0.7,0.2,0.09,0.01}, reltuples 20000; status = 'lost' → Bitmap Heap
+# Scan rows=200. Bars are the frequencies × 10 (the note is the real frequency).
+# Deviation: step 2 swaps the MCV bars for null_frac and redoes the product (0.9 × 30000), so the box is never left unconnected;
+# the plan's variant was plain frame 1 (tickets data in a parcels lesson); it is step 1 patched with parcels' numbers.
+# Sources: https://www.postgresql.org/docs/18/planner-stats.html, https://www.postgresql.org/docs/18/row-estimation-examples.html
+title: { vi: "Planner ước số dòng bằng một phép nhân", en: "The planner estimates rows with one multiplication" }
+caption:
+  vi: "Bảng tickets của lab sau ANALYZE. rows= trong kế hoạch là tần suất đọc từ pg_stats nhân với reltuples."
+  en: "The lab's tickets table after ANALYZE. The plan's rows= is the frequency read from pg_stats times reltuples."
+alt:
+  vi: "Planner không đếm dòng mà nhân tần suất trong pg_stats với số dòng của bảng. Vì vậy thống kê cũ cho ước lượng lệch và kế hoạch sai."
+  en: "The planner does not count rows; it multiplies the frequency in pg_stats by the table's row count. Stale statistics therefore give skewed estimates and wrong plans."
+nodes:
+  - id: mcv
+    shape: bars
+    label: most_common_freqs
+    sub: status
+    items:
+      - { label: open, value: 6, note: "0.6" }
+      - { label: pending, value: 3, note: "0.3" }
+      - { label: closed, value: 1, note: "0.1", tone: live }
+  - { id: n, shape: key, mono: true, label: reltuples 30000 }
+  - { id: x, label: "0.1 × 30000", sub: { vi: "= 3000 dòng", en: "= 3000 rows" }, tone: live }
+  - { id: nul, label: null_frac 0.9, sub: closed_at, tone: live }
+  - { id: plan, shape: key, mono: true, label: Seq Scan, sub: rows=3000 }
+rows:
+  - [mcv, nul]
+  - [n, x]
+  - [plan]
+edges:
+  - { from: mcv, to: x }
+  - { from: nul, to: x }
+  - { from: n, to: x }
+  - { from: x, to: plan }
+steps:
+  - say: { vi: "Giá trị trong MCV: lấy đúng tần suất.", en: "A value in the MCV: use its exact frequency." }
+    show: [mcv, n, x, plan]
+    alt: { vi: "closed có tần suất đo được 0.1, nên ước lượng bằng 0.1 nhân 30000 dòng, khớp số thật.", en: "closed has a measured frequency of 0.1, so the estimate is 0.1 times 30000 rows, matching the real count." }
+  - say: { vi: "IS NULL dùng null_frac.", en: "IS NULL uses null_frac." }
+    show: [nul, n, x, plan]
+    alt: { vi: "Chín phần mười closed_at để trống, nên ước 0.9 nhân 30000 bằng 27000 dòng, cũng khớp số thật.", en: "Nine tenths of closed_at are empty, so the estimate is 0.9 times 30000, or 27000 rows, again the real count." }
+    set:
+      x: { label: "0.9 × 30000", sub: { vi: "= 27000 dòng", en: "= 27000 rows" } }
+      plan: { sub: rows=27000 }
+variants:
+  mcv:
+    step: 0
+    title: { vi: "Ước số dòng của 'lost' từ MCV", en: "Estimating 'lost' from the MCV list" }
+    caption:
+      vi: "Bảng parcels của lab: tần suất của lost trong pg_stats nhân với reltuples ra đúng rows= của kế hoạch."
+      en: "The lab's parcels table: the frequency of lost in pg_stats times reltuples gives exactly the plan's rows=."
+    alt:
+      vi: "lost có tần suất 0.01 trong MCV của cột status, nên planner ước 0.01 nhân 20000 bằng 200 dòng, khớp số thật, và đi qua index cho giá trị hiếm này."
+      en: "lost has a frequency of 0.01 in the MCV list of status, so the planner estimates 0.01 times 20000, or 200 rows, matching the real count, and uses the index for this rare value."
+    set:
+      mcv:
+        items:
+          - { label: delivered, value: 7, note: "0.7" }
+          - { label: in_transit, value: 2, note: "0.2" }
+          - { label: returned, value: 0.9, note: "0.09" }
+          - { label: lost, value: 0.1, note: "0.01", tone: live }
+      n: { label: reltuples 20000 }
+      x: { label: "0.01 × 20000", sub: { vi: "= 200 dòng", en: "= 200 rows" } }
+      plan: { label: Bitmap Heap Scan, sub: rows=200 }

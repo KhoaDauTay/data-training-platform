@@ -14,7 +14,7 @@ import { factsOf, factsSql, readOf } from './perfFacts';
 /** Engine steps over budget on purpose (`<lesson id>.s<n>`), each with its reason. Stale entries fail. */
 const ALLOW: Record<string, string> = {};
 
-const files = import.meta.glob<LessonSource>('../content/engine/postgres/L*/*.md', { query: '?fm', import: 'default', eager: true });
+const files = import.meta.glob<LessonSource>('../content/engine/postgres/{L*,ext}/*.md', { query: '?fm', import: 'default', eager: true });
 const lessons: EngineLesson[] = Object.entries(files).map(([p, s]) => parseEngineLesson(s, p)).filter((l) => l.lab?.setup).sort((a, b) => a.id.localeCompare(b.id));
 const [FA, FB] = factsSql(`n.nspname NOT IN ('pg_catalog', 'information_schema') AND n.nspname NOT LIKE 'pg_toast%'`);
 

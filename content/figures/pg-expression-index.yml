@@ -1,0 +1,36 @@
+# B3-3 (tools/v42/diagram-plan-v42.md): the index stores lower(email), so the query must ask for lower(email). Lesson: e-pg-l2-04
+# (Ý chính). Data (PGlite, lesson setup; tools/v42/b3check*.log): users row 1236 = User1236@Example.com, lower = user1236@example.com;
+# WHERE lower(email) = 'user1236@example.com' → Seq Scan (Filter lower(email) = …) with no index and with a plain index on email;
+# after CREATE INDEX … (lower(email)) → Index Scan, rows=1; upper(email) = … still Seq Scan. A cell holds ≤ 18 characters, so the
+# Deviation: no dashed col→plan edge (two arrows into one box form a bus, which takes no label); "no match" is the grid's sub.
+# The two strings are cut after the @ (the grids' subs say which is as written and which is lower-cased).
+# Source: https://www.postgresql.org/docs/18/indexes-expressional.html
+title: { vi: "Index trên biểu thức lower(email)", en: "An index on the expression lower(email)" }
+caption:
+  vi: "Cùng dòng 1236 của users, hai index giữ hai chuỗi khác nhau. Câu hỏi về lower(email) chỉ tra được index lưu đúng lower(email)."
+  en: "For the same row 1236 of users, two indexes hold two different strings. A query about lower(email) can only use the index that stores lower(email)."
+alt:
+  vi: "Index trên biểu thức lưu kết quả của biểu thức cho mỗi dòng, và chỉ câu dùng đúng biểu thức đó mới tra được nó. Hàm trong index phải IMMUTABLE."
+  en: "An expression index stores the expression's result per row, and only a query using that exact expression can use it. The function must be IMMUTABLE."
+nodes:
+  - { id: col, shape: grid, label: index (email), sub: { vi: "như đã ghi: không khớp", en: "as written: no match" }, cells: [["User1236@…"]] }
+  - { id: expr, shape: grid, label: index (lower(email)), sub: { vi: "đã viết thường", en: "lower-cased" }, cells: [["user1236@…"]], tone: new }
+  - { id: q, shape: key, mono: true, label: "WHERE lower(email) = …" }
+  - { id: plan, label: Seq Scan, sub: { vi: "lower mỗi dòng", en: "lower on every row" }, tone: dead }
+  - { id: miss, shape: note, label: { vi: "ILIKE, upper(): biểu thức khác", en: "ILIKE, upper(): other expressions" } }
+rows:
+  - [col, expr]
+  - [q, plan]
+  - [miss]
+edges:
+  - { from: q, to: plan }
+  - { from: expr, to: plan }
+steps:
+  - say: { vi: "Index thường lưu giá trị như đã ghi.", en: "A plain index stores the value as written." }
+    show: [col, q, plan]
+    alt: { vi: "Câu hỏi về lower(email), một giá trị khác, nên index trên email không giúp được.", en: "The query asks about lower(email), a different value, so the email index cannot help." }
+  - say: { vi: "Index biểu thức lưu kết quả của lower.", en: "An expression index stores lower's result." }
+    show: [col, expr, q, plan, miss]
+    alt: { vi: "Planner khớp đúng biểu thức, nên lower(email) dùng index còn upper(email) vẫn quét bảng.", en: "The planner matches the exact expression, so lower(email) uses the index while upper(email) still scans." }
+    set:
+      plan: { label: Index Scan, sub: { vi: "1 dòng", en: "1 row" }, tone: live }

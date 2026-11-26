@@ -2,10 +2,9 @@
 # (Ý chính). Data: the Example ex_invoice (id, issued_on) and ex_invoice_line (invoice_id REFERENCES ex_invoice ON DELETE CASCADE,
 # line_no, amount, PRIMARY KEY (invoice_id, line_no)), checked on PGlite (tools/v42/b2check.log); the vehicle tree car (seats) /
 # truck (payload_kg) of the same lesson, drawn as the "shared parent + subtype tables" mapping its Ý chính calls the cleanest.
-# v44 eye fixes (L783): ER notation instead of a loose pill: the weak entity has a double border, its partial key line_no a dashed
+# v44 eye fixes (L803): ER notation instead of a loose pill: the weak entity has a double border, its partial key line_no a dashed
 # underline, the identifying relationship and the total participation are heavy lines. The `isa` variant in Ví dụ is gone (the
-# tree was drawn twice on one page, E17). Without `near`, a phone that stacks CAR and TRUCK runs TRUCK's line down the side lane
-# from d (E1). Step 2 keeps step 1 (cumulative). Sources: https://www.postgresql.org/docs/18/ddl-constraints.html,
+# tree was drawn twice on one page, E17). A phone puts d beside CAR, so each child has its own line from d (E1; a shared trunk is a rule-h run). Step 2 keeps step 1 (cumulative). Sources: https://www.postgresql.org/docs/18/ddl-constraints.html,
 # https://www.postgresql.org/docs/18/ddl-inherit.html (INHERITS does not carry keys, so it is not used).
 title: { vi: "Thực thể yếu và cây cha–con", en: "Weak entities and parent–child trees" }
 caption:
@@ -18,7 +17,7 @@ nodes:
   - { id: inv, shape: entity, label: INVOICE, fields: [{ name: id, pk: true }, issued_on] }
   - { id: line, shape: entity, label: INVOICE_LINE, double: true, fields: [{ name: invoice_id, pk: true, fk: true }, { name: line_no, pk: true, partial: true }, amount] }
   - { id: veh, shape: entity, label: VEHICLE, fields: [{ name: id, pk: true }, kind] }
-  - { id: d, shape: key, label: d, sub: { vi: "rời nhau", en: "disjoint" } }
+  - { id: d, shape: key, label: d, sub: { vi: "rời, toàn phần", en: "disjoint, total" } }
   - { id: car, shape: entity, label: CAR, fields: [{ name: id, pk: true, fk: true }, seats] }
   - { id: trk, shape: entity, label: TRUCK, fields: [{ name: id, pk: true, fk: true }, payload_kg] }
 rows:
@@ -26,9 +25,10 @@ rows:
   - [veh]
   - [d]
   - [car, trk]
+phone: { rows: [[inv], [line], [veh], [car, d], [trk]] }
 edges:
   - { from: "inv#0", to: "line#0", link: true, bold: true, ends: [one, one-many], label: { vi: "định danh", en: "identifies" } }
-  - { from: veh, to: d, link: true, bold: true, label: { vi: "toàn phần", en: "total" } }
+  - { from: veh, to: d, link: true, bold: true }
   - { from: d, to: car, link: true }
   - { from: d, to: trk, link: true }
 steps:

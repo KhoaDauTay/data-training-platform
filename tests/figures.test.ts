@@ -19,7 +19,7 @@ import { VI_DIACRITIC } from './generalRules';
 
 const specs = Object.fromEntries(Object.entries(import.meta.glob<FigSpec>('../content/figures/*.yml', { import: 'default', eager: true }))
   .map(([p, s]) => [p.replace(/^.*\/(.+)\.yml$/, '$1'), s]));
-const engineFiles = import.meta.glob<string>('../content/engine/*/L*/*.md', { query: '?raw', import: 'default', eager: true });
+const engineFiles = import.meta.glob<string>('../content/engine/*/{L*,ext}/*.md', { query: '?raw', import: 'default', eager: true });
 const engine: EngineLesson[] = Object.entries(engineFiles).map(([p, s]) => parseEngineLesson(s, p, parse));
 const general = await Promise.all(Object.entries(fullLessons).map(async ([p, load]) => parseFullLesson(await load(), lessonIdOf(p))));
 const SHORT = { postgres: 'pg', mongodb: 'mg', dynamodb: 'dy', design: 'ds' } as const;
@@ -252,7 +252,8 @@ describe.each(Object.keys(specs))('v39 figure %s', (name) => {
         const tables = altTables(spec, lang, variant);
         const v = variant === undefined ? undefined : spec.variants?.[variant];
         const shown = new Set(v?.step !== undefined ? spec.steps?.[v.step].show ?? spec.nodes.map((n) => n.id) : v?.show ?? spec.nodes.map((n) => n.id));
-        // v44 (L782, eye E2): a variant's tables are the grids its own frame draws, as that frame patches them (never the base's)
+        // v44 (L784, L802 eye E2): a variant may patch a grid's rows or bars (another lesson's data), and its tables are the grids its
+        // own frame draws, as the variant's and that step's set patch them (never the base's)
         const patch = (n: FigSpec['nodes'][number]): FigSpec['nodes'][number] => ({ ...n, ...v?.set?.[n.id], ...(v?.step !== undefined ? spec.steps?.[v.step].set?.[n.id] : {}) }) as FigSpec['nodes'][number];
         const grids = spec.nodes.filter((n) => (n.shape === 'grid' || n.shape === 'bars') && (v?.step !== undefined || v?.show ? shown.has(n.id) : true)).map(patch);
         expect(tables.length, `${lang} bảng dữ liệu`).toBe(grids.length);
@@ -600,7 +601,9 @@ describe('v42 ER mode', () => {
     expect((k('e:2.l') as { x: number }).x).toBeGreaterThan(Math.max(...loop.map(([x]) => x)));
   });
   // the content's ER figures: links clear of boxes, texts and each other at every width, step and variant
-  for (const name of ['ds-cardinality', 'ds-er-clinic', 'ds-er-to-tables']) for (const variant of [undefined, ...Object.keys(specs[name]?.variants ?? {})]) for (const lang of LANGS)
+  // v44 (L785): every spec that draws an entity, not a hand-kept list
+  const ER_SPECS = Object.keys(specs).filter((n) => specs[n].nodes.some((x) => x.shape === 'entity'));
+  for (const name of ER_SPECS) for (const variant of [undefined, ...Object.keys(specs[name]?.variants ?? {})]) for (const lang of LANGS)
     it.each(WIDTHS)(`${name} ${variant ?? ''} · ${lang} · W %i: đường quan hệ không cắt hộp, chữ; dấu không chạm chữ`, (W) => {
       const d = layout(specs[name], lang, W, variant);
       d.frames.forEach((f, i) => { const at = `${name} ${lang} W${W} ${i}`; expect(linkFindings(f, d.w, d.h), at).toEqual([]); marksClear(f, at); });
@@ -608,7 +611,7 @@ describe('v42 ER mode', () => {
     });
   // hosts are any width 280–640 (390–430 px phones, tablets): partial wraps must route as cleanly as the three test widths
   const sweep: [string, FigSpec, string | undefined][] = [...CARDS.map((c): [string, FigSpec, undefined] => [`er ${c}`, ER(c), undefined]),
-    ...['ds-cardinality', 'ds-er-clinic', 'ds-er-to-tables'].flatMap((n) => [undefined, ...Object.keys(specs[n].variants ?? {})].map((v): [string, FigSpec, string | undefined] => [n, specs[n], v]))];
+    ...ER_SPECS.flatMap((n) => [undefined, ...Object.keys(specs[n].variants ?? {})].map((v): [string, FigSpec, string | undefined] => [n, specs[n], v]))];
   for (const [name, spec, v] of sweep) for (const lang of LANGS) it(`${name} ${v ?? ''} · ${lang} · mọi bề rộng 280–640 (bước 4): không lỗi dựng, analyze, đường quan hệ và dấu sạch`, () => {
     for (let W = 280; W <= 640; W += 4) {
       const d = layout(spec, lang, W, v);

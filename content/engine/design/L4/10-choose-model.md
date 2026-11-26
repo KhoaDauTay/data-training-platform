@@ -65,8 +65,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì cô lập mạnh nghe như không có rủi ro, nhưng 5.000 database là 5.000 lần sao lưu, nâng cấp và nhóm kết nối cho những khách không cần điều đó. Khách nhỏ và giống nhau là chỗ của pool."
-      en: "It sounds right because strong isolation sounds risk-free, but 5,000 databases are 5,000 backups, upgrades and connection pools for tenants who do not need them. Small, similar tenants belong in a pool."
+      vi: "Silo nghe an toàn nhất, nhưng 5.000 database là 5.000 lần sao lưu, nâng cấp và 5.000 nhóm kết nối cho những khách không cần tách riêng. Bridge cũng nặng: 5.000 schema nhân mọi bảng và mọi lần đổi cấu trúc lên 5.000 lần. Khách nhỏ, giống nhau, không hợp đồng đặc biệt là chỗ của pool: một bộ bảng, `tenant_id` trong khóa, chính sách theo dòng làm lưới an toàn."
+      en: "A silo sounds safest, but 5,000 databases mean 5,000 backups, upgrades and connection pools for tenants who need no separation. The bridge is heavy too: 5,000 schemas multiply every table and every schema change by 5,000. Small, similar tenants with no special contract belong in a pool: one set of tables, `tenant_id` in the keys, row policies as the safety net."
   - q:
       vi: "Trong lab, hai người bán lớn nhất chiếm hơn 95% đơn, một người có hợp đồng database riêng. Thiết kế nào hợp?"
       en: "In the lab, the two largest sellers hold over 95% of the orders, and one has a contract for its own database. Which design fits?"
@@ -77,8 +77,8 @@ quiz:
     answer: 0
     trap: 1
     why:
-      vi: "Nhiều người nghĩ đối xử như nhau là công bằng. Thật ra mô hình đi theo hạng dịch vụ và hợp đồng: khách nhỏ trả giá pool, khách lớn trả cho sự tách biệt. Giữ cùng cấu trúc bảng có tenant_id ở mọi nơi thì chuyển một khách giữa các chỗ chỉ là chép dữ liệu."
-      en: "Many people think treating everyone the same is fair. In fact the model follows the service tier and the contract: small tenants pay a pool price, large ones pay for separation. Keeping one table design with tenant_id everywhere makes moving a tenant between homes just a data copy."
+      vi: "Song Ceramics và Kim Lantern có 42.000 + 18.000 = 60.000 trên 62.620 đơn, khoảng 95,8%. Đưa cả bảy sang silo là trả giá silo cho năm khách nhỏ không cần nó. Giữ tất cả ở pool thì vi phạm hợp đồng database riêng của Song Ceramics, và hai khách lớn làm chậm hàng xóm. Mô hình đi theo hợp đồng và hạng dịch vụ; cùng cấu trúc bảng có `tenant_id` ở mọi nơi thì chuyển một khách chỉ là chép dữ liệu."
+      en: "Song Ceramics and Kim Lantern have 42,000 + 18,000 = 60,000 of 62,620 orders, about 95.8%. Moving all seven to silos pays silo prices for five small tenants who do not need it. Keeping everyone in the pool breaks Song Ceramics' own-database contract, and the two big tenants slow their neighbours. The model follows the contract and the service tier; with one table design carrying `tenant_id` everywhere, moving a tenant is just a data copy."
   - q:
       vi: "Hôm nay mọi người bán ở pool. Năm sau một người sẽ cần ra máy riêng. Quyết định nào hôm nay làm việc đó dễ nhất?"
       en: "Today every seller is in the pool. Next year one of them will need its own server. Which decision today makes that easiest?"
@@ -89,8 +89,8 @@ quiz:
     answer: 1
     trap: 2
     why:
-      vi: "Nghe hợp lý vì schema riêng trông như đã tách sẵn, nhưng nó vẫn nằm chung database và nhân việc đổi cấu trúc lên N lần ngay từ hôm nay. Khóa bắt đầu bằng tenant_id cho phép chọn đúng dữ liệu một khách, chép đi theo thứ tự cha trước con sau, rồi đổi một dòng trong bảng định tuyến."
-      en: "It sounds right because an own schema looks already separated, but it still lives in the shared database and multiplies schema changes by N from today. Keys that start with tenant_id let you pick exactly one tenant's data, copy it parents first, then change one row in the routing table."
+      vi: "Bridge nghe như đã tách sẵn, nhưng schema riêng vẫn nằm chung database và nhân mọi lần đổi cấu trúc lên theo số khách ngay từ hôm nay. Khóa toàn cục tránh trùng số, nhưng không cho biết dòng nào thuộc khách nào: khóa ngoại không mang `tenant_id`, nên phải lần từng tham chiếu bằng tay. Khóa bắt đầu bằng `tenant_id` cho phép chọn đúng dữ liệu một khách bằng `WHERE tenant_id = …`, chép cha trước con sau, rồi đổi một dòng trong bảng định tuyến."
+      en: "The bridge looks already separated, but an own schema still lives in the shared database and multiplies every schema change by the tenant count from today. Global keys avoid colliding numbers, but say nothing about which row belongs to which tenant: foreign keys carry no `tenant_id`, so every reference must be traced by hand. Keys that start with `tenant_id` let you pick exactly one tenant's data with `WHERE tenant_id = …`, copy it parents first, then change one row in the routing table."
   - q:
       vi: "Luật nào không có chỗ tự nhiên khi dữ liệu chia theo khách hàng?"
       en: "Which rule has no natural home once data is split by tenant?"
@@ -101,8 +101,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nhiều người nghĩ cứ thêm `UNIQUE` là xong. Thật ra khi các khách nằm ở những database khác nhau, không ràng buộc nào thấy được cả chợ; luật toàn cục cần một bảng tra riêng, độc lập với các khách, được ghi có điều kiện."
-      en: "Many people think adding `UNIQUE` settles it. In fact once tenants live in different databases, no constraint can see the whole market; a global rule needs its own lookup table, independent of the tenants, written with a condition."
+      vi: "Email và mã hóa đơn duy nhất trong một người bán đều có chỗ tự nhiên: `UNIQUE` trên `(tenant_id, …)` nằm cùng dữ liệu của khách đó. Số sê-ri thì phải duy nhất trên toàn chợ, mà khi các khách nằm ở những database khác nhau, không `UNIQUE` nào thấy được cả chợ. Luật đó cần một bảng tra riêng, độc lập với các khách, ghi có điều kiện: chỉ ghi khi số sê-ri chưa có ai đăng ký."
+      en: "An email or an invoice number unique within one seller has a natural home: a `UNIQUE` on `(tenant_id, …)` sits with that tenant's data. A serial number must be unique market-wide, and once tenants live in different databases no `UNIQUE` can see the whole market. That rule needs its own lookup table, independent of the tenants, written with a condition: write only if no one has registered the serial yet."
 ---
 ## Mở bài
 

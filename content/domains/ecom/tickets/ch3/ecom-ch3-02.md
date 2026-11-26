@@ -32,7 +32,7 @@ reflect:
     - { vi: "Để kết quả chạy nhanh hơn", en: "To make the query faster" }
     - { vi: "Vì nhóm hàng không có tên", en: "Because categories have no name" }
   answer: 0
-  why: { vi: "Mỗi lần ghép đi thêm một bước theo khóa: dòng hàng → sản phẩm → nhóm hàng.", en: "Each join walks one more step along a key: order line → product → category." }
+  why: { vi: "Mỗi lần nối đi thêm một bước theo khóa: dòng hàng → sản phẩm → nhóm hàng.", en: "Each join walks one more step along a key: order line → product → category." }
 wrong:
   - sql: "SELECT c.name, sum(i.quantity * i.unit_price) FROM order_items i JOIN orders o ON o.id = i.order_id JOIN products p ON p.id = i.product_id JOIN categories c ON c.id = p.category_id WHERE o.ordered_at >= '{{from}}' AND o.ordered_at < '{{to}}' GROUP BY c.name"
     vi: "Bạn đang cộng cả đơn bị hủy và đơn chưa giao. Đề chỉ tính đơn đã giao."
@@ -46,7 +46,7 @@ Dữ liệu nằm ở bốn bảng. Câu truy vấn trong editor đã viết s�
 Các đơn đặt trong tháng {{month}} và đã giao xong: doanh thu hàng (số lượng nhân đơn giá, cộng mọi dòng hàng) theo từng nhóm hàng. Gửi tên nhóm hàng và doanh thu. Thứ tự dòng không quan trọng.
 
 ## Hints
-1. Dòng hàng có mã đơn và mã sản phẩm; sản phẩm có mã nhóm hàng; tên nhóm hàng nằm ở danh mục nhóm hàng. Mỗi lần ghép đi thêm một bước.
+1. Dòng hàng có mã đơn và mã sản phẩm; sản phẩm có mã nhóm hàng; tên nhóm hàng nằm ở danh mục nhóm hàng. Mỗi lần nối đi thêm một bước.
 2. `o.id = i.order_id`, `p.id = i.product_id`, `c.id = p.category_id`.
 3. `... JOIN orders o ON o.id = i.order_id JOIN products p ON p.id = i.product_id JOIN categories c ON c.id = p.category_id ...`
 

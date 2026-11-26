@@ -37,7 +37,7 @@ export function writeServiceWorker(outDir) {
       // DynamoDB engine (~1.2 MB gz), fetched from the network on the first DynamoDB run. L248: nor the Postgres contrib
       // tarballs of the engine labs (pgcrypto alone is 1.1 MB), fetched only by a lab that names them.
       else if (!/^(sw\.js|_headers|datasets\/.*)$/.test(rel + name) && !/^assets\/(dynoxide-worker|dynoxide_bg|sqlite3)-/.test(rel + name)
-        && !/^assets\/[a-z_]+\.tar-[\w-]+\.gz$/.test(rel + name)) files.push(rel + name);
+        && !/^assets\/[a-z_-]+\.tar-[\w-]+\.gz$/.test(rel + name)) files.push(rel + name);
     }
   };
   walk(outDir, '');
