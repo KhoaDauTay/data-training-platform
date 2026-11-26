@@ -8,6 +8,7 @@ title_en: The relational model, Codd's rules and constraints
 kind: lab
 runtime: browser
 minutes: 20
+figures: [{ name: ds-relation-anatomy, at: idea }]
 objectives:
   - vi: Gọi đúng tên quan hệ, bộ, thuộc tính, miền và nói bảng SQL khác quan hệ toán học ở đâu.
     en: Name relation, tuple, attribute and domain correctly and say where an SQL table differs from a mathematical relation.
@@ -113,6 +114,8 @@ Toàn vẹn dữ liệu có bốn loại. **Miền**: kiểu, `NOT NULL`, `CHECK
 Khi một câu phá luật, mặc định cả câu bị hủy và Postgres trả một mã SQLSTATE lớp 23: `23502` thiếu giá trị bắt buộc, `23505` trùng khóa, `23503` khóa ngoại không có cha, `23514` sai `CHECK`. Với khóa ngoại, bạn còn chọn được cách xử lý khi xóa dòng cha: chặn (mặc định), `CASCADE` (xóa theo), `SET NULL`, `SET DEFAULT`.
 
 Codd sau đó viết 13 quy tắc (đánh số 0 đến 12) mô tả một hệ "quan hệ đầy đủ": mọi thông tin là giá trị trong bảng, catalog cũng là bảng đọc được bằng SQL, có độc lập dữ liệu, luật toàn vẹn khai báo trong database chứ không trong ứng dụng. Đó là thước đo lịch sử; không sản phẩm nào đạt trọn.
+
+Hình cuối mục này gắn các từ ấy lên bảng `staff` của lab, cùng bốn loại luật và mã lỗi của chúng.
 
 ## Cú pháp
 
@@ -249,6 +252,8 @@ Integrity comes in four kinds. **Domain**: types, `NOT NULL`, `CHECK`. **Key**: 
 When a statement breaks a rule, by default the whole statement is cancelled and Postgres returns a class 23 SQLSTATE: `23502` a required value is missing, `23505` duplicate key, `23503` foreign key with no parent, `23514` failed `CHECK`. For a foreign key you also choose what happens when the parent row is deleted: block it (the default), `CASCADE` (delete along), `SET NULL`, `SET DEFAULT`.
 
 Codd later wrote 13 rules (numbered 0 to 12) for a "fully relational" system: all information is values in tables, the catalog is tables readable with SQL, data independence holds, integrity rules are declared in the database rather than the application. They are a historical yardstick; no product meets them all.
+
+The figure at the end of this section pins those words on the lab's `staff` table, with the four kinds of rule and their error codes.
 
 ## Syntax
 

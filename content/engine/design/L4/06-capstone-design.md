@@ -8,6 +8,7 @@ title_en: Capstone - from a flat spreadsheet to a 3NF schema
 kind: capstone
 runtime: browser
 minutes: 30
+figures: [{ name: ds-2nf-split, at: practice }]
 objectives:
   - vi: Đọc phụ thuộc hàm từ một bảng phẳng và thiết kế các bảng 3NF có khóa, khóa ngoại và CHECK.
     en: Read the functional dependencies of a flat table and design 3NF tables with keys, foreign keys and a CHECK.
@@ -123,6 +124,8 @@ Phụ thuộc hàm trên `loans_flat`: `loan_id` → mọi cột; `member_email`
 
 Sáu bước: ba bước tạo bảng (chấm bằng catalog, đừng đặt tên ràng buộc), ba bước chép dữ liệu theo thứ tự cha trước con sau. Bước cuối được chấm bằng câu hỏi của thủ thư: sách nào đang được mượn và ai đang giữ.
 
+Hình cuối mục này nhắc lại một phép tách không mất dòng (bài `e-ds-l4-02`): làm cùng cách cho thành viên và sách.
+
 ## Tóm tắt
 
 - Đọc phụ thuộc hàm trước, rồi tách theo vế trái của từng phụ thuộc bắc cầu.
@@ -143,6 +146,8 @@ The ER description: a **member** (keyed by email, with a name) borrows many **bo
 Functional dependencies on `loans_flat`: `loan_id` → every column; `member_email` → `member_name`; `isbn` → `title`. The last two are transitive through `loan_id`, so the table is only in 2NF. Split on their left sides into `members` and `books`, keep `loans` with two foreign keys, and add the rule that a return date is never before the borrow date.
 
 Six steps: three create tables (graded on the catalog, do not name the constraints), three copy the data, parents before children. The last step is graded with the librarian's question: which books are out, and who has them.
+
+The figure at the end of this section recalls a lossless split (lesson `e-ds-l4-02`): do the same for members and books.
 
 ## Recap
 

@@ -8,6 +8,7 @@ title_en: Data anomalies and first normal form
 kind: concept
 runtime: browser
 minutes: 15
+figures: [{ name: ds-anomalies, at: idea }]
 objectives:
   - vi: Chỉ ra dị thường sửa, thêm và xóa trên một bảng gom nhiều sự thật vào một dòng.
     en: Point out update, insert and delete anomalies in a table that packs several facts into one row.
@@ -90,6 +91,8 @@ Chuẩn hóa là tách bảng sao cho mỗi sự thật được lưu đúng m�
 
 **Dạng chuẩn 1 (1NF)**: mỗi ô giữ một giá trị, không có nhóm lặp (không `phone1`, `phone2`, `phone3`, không chuỗi "0901, 0902"). Postgres có mảng và `jsonb`, nên câu hỏi thực tế là: bạn có tìm, đếm, nối theo từng phần tử không? Nếu có, đó là nhiều sự thật và thuộc về một bảng con có khóa. Nếu bạn chỉ luôn đọc và ghi cả khối, một mảng hay tài liệu jsonb là chấp nhận được.
 
+Hình cuối mục này cho thấy ba kiểu hỏng trên bảng `ex_orders`, mỗi bước một kiểu.
+
 ## Ví dụ
 
 Một bảng rộng: mỗi đơn lặp lại thành phố của khách.
@@ -169,6 +172,8 @@ When a table packs several independent facts into one row, three kinds of **anom
 Normalisation splits tables so that every fact is stored exactly once, based on the functional dependencies of level 3. The normal forms go from easy to hard: 1NF, 2NF, 3NF, BCNF, then 4NF and 5NF.
 
 **First normal form (1NF)**: every cell holds one value, with no repeating groups (no `phone1`, `phone2`, `phone3`, no string "0901, 0902"). Postgres has arrays and `jsonb`, so the practical question is: do you search, count or join on single elements? If so, they are several facts and belong in a child table with a key. If you always read and write the whole block, an array or a jsonb document is acceptable.
+
+The figure at the end of this section shows the three kinds of damage on the `ex_orders` table, one per step.
 
 ## Example
 

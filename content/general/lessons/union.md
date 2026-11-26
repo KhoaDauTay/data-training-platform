@@ -3,6 +3,7 @@ id: union
 title: "UNION: xếp chồng hai kết quả"
 title_en: "UNION: stack two results"
 minutes: 20
+figures: [{ name: sql-set-ops, at: idea, variant: union }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Ghép dòng của hai câu `SELECT` thành một kết quả bằng `UNION ALL` hay `UNION`.
@@ -123,6 +124,8 @@ Quản lý muốn một dòng thời gian ngày 31/10: mọi đơn **và** mọi
 
 Nhiều người nghĩ **`UNION` là lựa chọn mặc định an toàn**. Thật ra việc bỏ trùng có thể làm mất dòng bạn cần (hai dòng hàng cùng nhóm hàng là hai dòng thật), và tốn thêm công để so. Dùng `UNION ALL` trừ khi câu hỏi muốn danh sách không trùng.
 
+Hình cuối mục này đặt `UNION ALL` và `UNION` cạnh nhau trên thành phố của cửa hàng và của khách: một bên giữ trùng, một bên bỏ trùng.
+
 ## Cú pháp
 
 `ORDER BY` (nếu có) đứng một lần ở cuối và áp cho cả kết quả.
@@ -138,6 +141,8 @@ The manager wants a timeline of 31 October: every order **and** every payment, i
 `UNION ALL` takes the results of two `SELECT`s and stacks them: the second query's rows go under the first's. Both queries need the same number of columns, with compatible types, matched by position. `UNION` (without `ALL`) does the same, then removes rows that are exactly equal.
 
 Many people think **`UNION` is the safe default**. In fact removing repeats can lose rows you need (two lines of the same category are two real lines), and it costs extra work to compare. Use `UNION ALL` unless the question wants a list with no repeats.
+
+The figure at the end of this section puts `UNION ALL` and `UNION` side by side on the stores' and the customers' cities: one keeps repeats, the other removes them.
 
 ## Syntax
 

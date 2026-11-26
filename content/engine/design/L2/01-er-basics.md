@@ -8,6 +8,7 @@ title_en: Entities, attributes, relationships and degree
 kind: concept
 runtime: browser
 minutes: 15
+figures: [{ name: ds-cardinality, at: example }]
 objectives:
   - vi: Phân loại thuộc tính đơn, phức hợp, đa trị, dẫn xuất và thuộc tính khóa.
     en: Classify simple, composite, multivalued, derived and key attributes.
@@ -125,6 +126,8 @@ SELECT e.name AS employee, m.name AS manager FROM ex_employee e JOIN ex_employee
 
 `manager_id` cho phép NULL: người đứng đầu không có quản lý, phía "được quản lý" tham gia bộ phận.
 
+Hình cuối mục này đọc ba dòng chân chim ở trên: mỗi ký hiệu nói thực thể bên cạnh nó có bao nhiêu dòng.
+
 ## Lỗi hay gặp
 
 Nhét thuộc tính đa trị vào một ô dạng danh sách: tìm một giá trị bằng `=` không ra.
@@ -208,6 +211,8 @@ SELECT e.name AS employee, m.name AS manager FROM ex_employee e JOIN ex_employee
 ```
 
 `manager_id` allows NULL: the person at the top has no manager, so the "managed" side takes part partially.
+
+The figure at the end of this section reads the three crow's-foot lines above: each mark says how many rows of the entity beside it take part.
 
 ## Common mistakes
 

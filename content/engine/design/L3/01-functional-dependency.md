@@ -8,6 +8,7 @@ title_en: Functional dependencies and Armstrong's rules
 kind: concept
 runtime: browser
 minutes: 15
+figures: [{ name: ds-fd-check, at: example }]
 objectives:
   - vi: Đọc và viết một phụ thuộc hàm X → Y, phân biệt tầm thường, đầy đủ, bộ phận và bắc cầu.
     en: Read and write a functional dependency X → Y and tell trivial, full, partial and transitive ones apart.
@@ -139,6 +140,8 @@ Khóa chính quyết định mọi cột: số dòng bằng số `id` khác nhau
 SELECT count(*) AS row_count, count(DISTINCT id) AS ids FROM deliveries;
 ```
 
+Hình cuối mục này xếp các dòng `deliveries` theo `carrier`: SlowShip có hai số điện thoại, đủ để bác `carrier → carrier_phone`.
+
 ## Lỗi hay gặp
 
 Kiểm trên một phần dữ liệu rồi kết luận cho cả bảng.
@@ -242,6 +245,8 @@ The primary key determines every column: the row count equals the number of dist
 ```sql
 SELECT count(*) AS row_count, count(DISTINCT id) AS ids FROM deliveries;
 ```
+
+The figure at the end of this section orders the `deliveries` rows by `carrier`: SlowShip has two phone numbers, enough to refute `carrier → carrier_phone`.
 
 ## Common mistakes
 

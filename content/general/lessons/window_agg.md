@@ -3,6 +3,7 @@ id: window_agg
 title: "Tổng chạy, trung bình trượt và tỉ trọng: SUM/AVG/COUNT OVER"
 title_en: "Running totals, moving averages and shares: SUM/AVG/COUNT OVER"
 minutes: 25
+figures: [{ name: sql-window-vs-group, at: idea }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Dùng `SUM`, `AVG`, `COUNT` làm hàm cửa sổ để giữ từng dòng mà vẫn có số tổng.
@@ -141,6 +142,8 @@ Báo cáo tuần cần ba cột cạnh số đơn mỗi ngày: cộng dồn từ
 
 Nhiều người nghĩ **`ORDER BY` trong `OVER` chỉ để sắp xếp**. Thật ra nó đổi khung. Và khung mặc định tính theo giá trị: các dòng có cùng giá trị sắp xếp (cùng ngày chẳng hạn) được cộng cùng một lúc. Muốn đúng "từng dòng", thêm cột phân định hoặc viết `ROWS BETWEEN …`.
 
+Hình cuối mục này so ba cách trên số đơn mỗi ngày của Ben Thanh: `GROUP BY` còn một dòng, `OVER ()` và `OVER (ORDER BY …)` giữ đủ sáu dòng.
+
 ## Cú pháp
 
 Hàm gộp thường và hàm cửa sổ có thể đứng chung: `GROUP BY` chạy trước, `OVER` tính trên kết quả đã gộp.
@@ -156,6 +159,8 @@ The weekly report needs three columns next to each day's order count: the total 
 `SUM`, `AVG`, `COUNT`, `MIN`, `MAX` with `OVER (…)` become window functions: every row stays and gets a number computed over a **frame** of rows. `OVER ()` is the whole result; `PARTITION BY` is the row's group; with `ORDER BY`, the frame runs from the first row to the current one, which makes a running total.
 
 Many people think **`ORDER BY` inside `OVER` only sorts**. In fact it changes the frame. And the default frame works by value: rows with the same sort value (the same day, say) are added at once. To get true "row by row", add a tie-breaking column or write `ROWS BETWEEN …`.
+
+The figure at the end of this section compares three ways on Ben Thanh's orders per day: `GROUP BY` leaves one row, `OVER ()` and `OVER (ORDER BY …)` keep all six.
 
 ## Syntax
 

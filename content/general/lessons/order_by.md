@@ -3,6 +3,7 @@ id: order_by
 title: "ORDER BY: xếp kết quả theo thứ tự bạn muốn"
 title_en: "ORDER BY: put the result in the order you want"
 minutes: 20
+figures: [{ name: sql-clause-order, at: idea, variant: tail }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Xếp kết quả tăng hoặc giảm theo một cột, kể cả cột tính ra.
@@ -142,6 +143,8 @@ Phòng mua hàng hỏi: "Món nào đắt nhất, xếp từ trên xuống?" M�
 
 Nhiều người nghĩ **bảng có sẵn một thứ tự** (thứ tự chèn, hay theo `id`). Thật ra bảng là một tập dòng không thứ tự. Kết quả hôm nay đúng thứ tự có thể là do may; chỉ `ORDER BY` mới là lời hứa.
 
+Hình cuối mục này là bước cuối của hình thứ tự chạy trong bài `HAVING`: `ORDER BY` chạy sau `SELECT`, nên dùng được bí danh đặt ở đó.
+
 ## Cú pháp
 
 Mỗi khóa xếp có chiều riêng; `NULLS FIRST`/`NULLS LAST` là tùy chọn.
@@ -157,6 +160,8 @@ Purchasing asks: "Which items are the most expensive, from the top down?" A tabl
 `ORDER BY` comes near the end of a query and says which column to sort by, and in which direction. The default is ascending (`ASC`); add `DESC` to go down. You can list several keys: the second is only used when rows are equal on the first. Because `ORDER BY` runs after `SELECT`, it can use a column name given with `AS`.
 
 Many people think **a table has a built-in order** (insert order, or by `id`). In fact a table is a set of rows with no order. A result that comes back in the right order today may be luck; only `ORDER BY` is a promise.
+
+The figure at the end of this section is the last step of the run-order figure in the `HAVING` lesson: `ORDER BY` runs after `SELECT`, so it can use an alias made there.
 
 ## Syntax
 

@@ -3,6 +3,7 @@ id: window_rank
 title: "Xếp hạng trong nhóm: ROW_NUMBER, RANK, DENSE_RANK"
 title_en: "Ranking within groups: ROW_NUMBER, RANK, DENSE_RANK"
 minutes: 25
+figures: [{ name: sql-window-vs-group, at: idea }, { name: sql-rank-ties, at: examples }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Đánh số và xếp hạng dòng trong từng nhóm bằng `OVER (PARTITION BY … ORDER BY …)`.
@@ -46,8 +47,8 @@ examples:
       WHERE city = 'Hue' AND birth_year >= 1998
       ORDER BY birth_year DESC, id
     read:
-      vi: "Hai khách sinh năm 1998: `ROW_NUMBER` cho họ số 3 và 4 (ai trước là tùy), `RANK` và `DENSE_RANK` đều cho cả hai hạng 3. Khác nhau ở người kế tiếp: `RANK` sẽ nhảy sang 5, `DENSE_RANK` sang 4."
-      en: "Two customers born in 1998: `ROW_NUMBER` gives them 3 and 4 (which one first is arbitrary), `RANK` and `DENSE_RANK` both give them rank 3. The difference is the next person: `RANK` would jump to 5, `DENSE_RANK` to 4."
+      vi: "Hai khách sinh năm 1998: `ROW_NUMBER` cho họ số 3 và 4 (ai trước là tùy), `RANK` và `DENSE_RANK` đều cho cả hai hạng 3. Khác nhau ở người kế tiếp: `RANK` sẽ nhảy sang 5, `DENSE_RANK` sang 4. Hình cuối mục này vẽ bảng đó cùng một dòng minh họa người kế tiếp."
+      en: "Two customers born in 1998: `ROW_NUMBER` gives them 3 and 4 (which one first is arbitrary), `RANK` and `DENSE_RANK` both give them rank 3. The difference is the next person: `RANK` would jump to 5, `DENSE_RANK` to 4. The figure at the end of this section draws that table with an illustrative next person."
   - title: { vi: "Top 2 mỗi nhóm", en: "The top 2 per group" }
     sql: |-
       WITH r AS (
@@ -132,6 +133,8 @@ Hàm cửa sổ tính trên một nhóm dòng mà **không gộp** chúng: mỗi
 
 Nhiều người nghĩ **có thể lọc hạng ngay trong `WHERE`**. Thật ra hàm cửa sổ chạy sau `WHERE` (và sau `GROUP BY`, `HAVING`), nên `WHERE` chưa thấy nó. Muốn top N mỗi nhóm: tính hạng trong một CTE, rồi lọc ở câu ngoài.
 
+Hình cuối mục này nhắc lại điểm khác giữa gộp nhóm và hàm cửa sổ: hàm cửa sổ thêm một cột mà không bỏ dòng nào, và hàm xếp hạng cũng vậy.
+
 ## Cú pháp
 
 Có thể đặt nhiều hàm cửa sổ trong cùng một `SELECT`, mỗi hàm một `OVER` riêng.
@@ -147,6 +150,8 @@ Purchasing wants the two priciest items of each category, and marketing wants th
 A window function computes over a group of rows **without collapsing** them: every row stays and gets one more column. `PARTITION BY` sets the groups, `ORDER BY` inside `OVER` sets the order. `ROW_NUMBER` numbers 1, 2, 3; `RANK` and `DENSE_RANK` give equal rows the same rank.
 
 Many people think **the rank can be filtered right in `WHERE`**. In fact window functions run after `WHERE` (and after `GROUP BY`, `HAVING`), so `WHERE` cannot see them yet. For the top N per group: compute the rank in a CTE, then filter in the outer query.
+
+The figure at the end of this section recalls the difference between grouping and a window function: a window function adds a column without removing any row, and so does a ranking function.
 
 ## Syntax
 

@@ -3,6 +3,7 @@ id: window_lag
 title: "So với dòng trước, dòng sau: LAG và LEAD"
 title_en: "Comparing with the previous and next row: LAG and LEAD"
 minutes: 25
+figures: [{ name: sql-lag-prev-row, at: idea }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Lấy giá trị của dòng trước bằng `LAG` và dòng sau bằng `LEAD`, theo một thứ tự bạn chọn.
@@ -141,6 +142,8 @@ sources:
 
 Nhiều người nghĩ **`LAG` trả giá trị của ngày hôm trước**. Thật ra nó trả giá trị của **dòng** trước. Nếu một ngày không có dữ liệu, ngày đó không có dòng, và `LAG` lặng lẽ so với ngày xa hơn. Khi câu hỏi nói "so với hôm qua", dựng lịch đủ ngày trước.
 
+Hình cuối mục này dời cột `n` xuống một dòng trên số đơn của Ben Thanh: ngày 26/10 không có dòng, nên `prev` của 27/10 là số của 25/10.
+
 ## Cú pháp
 
 Tham số thứ hai là số dòng lùi (mặc định 1), tham số thứ ba là giá trị khi không có dòng đó.
@@ -156,6 +159,8 @@ Tham số thứ hai là số dòng lùi (mặc định 1), tham số thứ ba l�
 `LAG(column)` takes the value of the **previous** row, `LEAD(column)` of the **next** row, in the order given by `OVER (ORDER BY …)`. The current value minus `LAG` is the change; subtracting two dates gives a number of days. `PARTITION BY` keeps each group (each customer, each store) apart, so the first row never borrows another group's number.
 
 Many people think **`LAG` returns the value of the previous day**. In fact it returns the value of the previous **row**. If a day has no data, it has no row, and `LAG` quietly compares with an earlier day. When the question says "compared with yesterday", build a full calendar first.
+
+The figure at the end of this section shifts the `n` column down one row on Ben Thanh's orders: 26 Oct has no row, so 27 Oct's `prev` is 25 Oct's number.
 
 ## Syntax
 

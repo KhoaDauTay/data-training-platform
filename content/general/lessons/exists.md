@@ -3,6 +3,7 @@ id: exists
 title: "EXISTS và NOT EXISTS: có dòng nào khớp không?"
 title_en: "EXISTS and NOT EXISTS: is there any matching row?"
 minutes: 25
+figures: [{ name: sql-not-in-null, at: pitfalls }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Giữ dòng có (hoặc không có) ít nhất một dòng liên quan ở bảng khác.
@@ -70,8 +71,8 @@ pitfalls:
     wrong: "SELECT c.id FROM customers c WHERE c.id NOT IN (SELECT o.customer_id FROM orders o WHERE o.order_date >= '2026-10-20')"
     fix: "SELECT c.id FROM customers c WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id AND o.order_date >= '2026-10-20')"
     why:
-      vi: "Danh sách mã khách có NULL (đơn vãng lai), nên `NOT IN` không đúng với ai: 0 dòng thay vì 235. `NOT EXISTS` so từng cặp, NULL chỉ đơn giản là không khớp."
-      en: "The list of customer ids holds NULL (walk-in orders), so `NOT IN` is true for nobody: 0 rows instead of 235. `NOT EXISTS` checks pair by pair, and NULL simply does not match."
+      vi: "Danh sách mã khách có NULL (đơn vãng lai), nên `NOT IN` không đúng với ai: 0 dòng thay vì 235. `NOT EXISTS` so từng cặp, NULL chỉ đơn giản là không khớp. Hình cuối mục này vẽ chuỗi phép so của khách 3: một dòng NULL trong danh sách làm cả chuỗi ra NULL."
+      en: "The list of customer ids holds NULL (walk-in orders), so `NOT IN` is true for nobody: 0 rows instead of 235. `NOT EXISTS` checks pair by pair, and NULL simply does not match. The figure at the end of this section draws customer 3's chain of comparisons: one NULL row in the list turns the whole chain into NULL."
   - title: { vi: "Quên điều kiện tương quan", en: "Forgetting the correlation" }
     wrong: "SELECT s.name FROM stores s WHERE EXISTS (SELECT 1 FROM orders o WHERE o.order_date = '2026-10-29')"
     fix: "SELECT s.name FROM stores s WHERE EXISTS (SELECT 1 FROM orders o WHERE o.store_id = s.id AND o.order_date = '2026-10-29')"

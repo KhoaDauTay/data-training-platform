@@ -8,6 +8,7 @@ title_en: Closure, minimal cover, candidate keys and superkeys
 kind: concept
 runtime: browser
 minutes: 20
+figures: [{ name: ds-closure-rounds, at: example }]
 objectives:
   - vi: Tính bao đóng X⁺ của một tập thuộc tính và dùng nó để biết X có phải siêu khóa không.
     en: Compute the closure X⁺ of a set of attributes and use it to tell whether X is a superkey.
@@ -148,6 +149,8 @@ Phủ tối thiểu làm bằng tay, trên tập `{A → BC, B → C, A → B}`:
 minimal cover:         A → B, B → C
 ```
 
+Hình cuối mục này tính bao đóng của `{a,d}` từng vòng một, tới khi đủ năm thuộc tính.
+
 ## Lỗi hay gặp
 
 Áp các phụ thuộc một lượt rồi dừng.
@@ -258,6 +261,8 @@ A minimal cover by hand, for the set `{A → BC, B → C, A → B}`:
 3. A → C follows from A → B, B → C: drop it
 minimal cover:         A → B, B → C
 ```
+
+The figure at the end of this section computes the closure of `{a,d}` round by round, until it holds all five attributes.
 
 ## Common mistakes
 

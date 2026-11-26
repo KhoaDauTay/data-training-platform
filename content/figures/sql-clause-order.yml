@@ -51,3 +51,14 @@ steps:
     set:
       w: { rowTone: [new, null, null, null, null, new, new] }
       r: { rowTone: [null, null, null, null, new, new, new] }
+variants:
+  # v40: order_by and limit show only the last step (L630): the two clauses that run after SELECT.
+  tail:
+    step: 3
+    title: { vi: "ORDER BY và LIMIT chạy sau cùng", en: "ORDER BY and LIMIT run last" }
+    caption:
+      vi: "Sắp xếp và cắt dòng là hai bước cuối, sau khi SELECT đã tính xong các cột."
+      en: "Sorting and cutting rows are the last two steps, after SELECT has computed the columns."
+    alt:
+      vi: "Hai danh sách. Thứ tự viết: SELECT, FROM, WHERE, GROUP BY, HAVING, ORDER BY, LIMIT. Thứ tự chạy: 1 FROM (30 dòng), 2 WHERE (bỏ món từ 50k), 3 GROUP BY (5 nhóm), 4 HAVING (giữ 4 nhóm), 5 SELECT (tính cột), 6 ORDER BY (sắp xếp), 7 LIMIT (cắt N dòng). Ba bước cuối được tô: SELECT tính cột trước, rồi ORDER BY sắp xếp kết quả, rồi LIMIT cắt lấy N dòng đầu. Vì ORDER BY chạy sau SELECT, nó dùng được bí danh đặt ở SELECT; WHERE và HAVING thì không."
+      en: "Two lists. Written order: SELECT, FROM, WHERE, GROUP BY, HAVING, ORDER BY, LIMIT. Run order: 1 FROM (30 rows), 2 WHERE (drop items from 50k), 3 GROUP BY (5 groups), 4 HAVING (keep 4 groups), 5 SELECT (compute cols), 6 ORDER BY (sort), 7 LIMIT (cut N rows). The last three steps are highlighted: SELECT computes the columns first, then ORDER BY sorts the result, then LIMIT keeps the first N rows. Because ORDER BY runs after SELECT, it can use an alias made in SELECT; WHERE and HAVING cannot."

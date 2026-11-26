@@ -8,6 +8,7 @@ title_en: Upsert and MERGE
 kind: lab
 runtime: browser
 minutes: 15
+figures: [{ name: sql-upsert-flow, at: idea }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Thêm-hoặc-sửa một dòng theo khóa bằng `INSERT ... ON CONFLICT`, dùng `EXCLUDED`, `DO NOTHING` và `DO UPDATE ... WHERE`.
@@ -107,6 +108,8 @@ Nhiều người nghĩ một index bất kỳ trên cột là đủ làm đích 
 `MERGE` nối một bảng nguồn với bảng đích rồi chạy nhánh `WHEN` đầu tiên khớp cho từng cặp: `MATCHED` (có ở cả hai), `NOT MATCHED` (chỉ có ở nguồn) và, từ Postgres 17, `NOT MATCHED BY SOURCE` (chỉ có ở đích). `RETURNING merge_action()` cho biết dòng nào bị `INSERT`, `UPDATE` hay `DELETE`.
 
 Chọn cách nào: upsert theo khóa, nhất là khi nhiều phiên ghi cùng lúc, dùng `ON CONFLICT`, vì nó gặp dòng vừa được thêm thì chuyển sang sửa. Đồng bộ cả một bảng, có cả xóa, dùng `MERGE`, và chấp nhận rằng `MERGE` có thể vấp lỗi trùng khóa nếu phiên khác thêm cùng khóa cùng lúc.
+
+Hình cuối mục này vẽ `ON CONFLICT` quyết định từng dòng: dòng chưa có khóa thì thêm, dòng đã có thì sửa, hoặc bỏ qua với `DO NOTHING`.
 
 ## Cú pháp
 
@@ -245,6 +248,8 @@ Many people think any index on the column is enough for a conflict target. In fa
 `MERGE` joins a source to the target and runs the first matching `WHEN` branch for each pair: `MATCHED` (in both), `NOT MATCHED` (only in the source) and, since Postgres 17, `NOT MATCHED BY SOURCE` (only in the target). `RETURNING merge_action()` tells which rows got an `INSERT`, `UPDATE` or `DELETE`.
 
 Which to pick: for an upsert by key, above all when several sessions write at once, use `ON CONFLICT`, because when it meets a row that was just inserted it switches to the update. To sync a whole table, deletes included, use `MERGE`, and accept that `MERGE` can hit a duplicate-key error when another session inserts the same key at the same time.
+
+The figure at the end of this section draws `ON CONFLICT` deciding row by row: a row whose key is missing is inserted, one whose key exists is updated, or skipped with `DO NOTHING`.
 
 ## Syntax
 

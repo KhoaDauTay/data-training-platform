@@ -3,6 +3,7 @@ id: limit
 title: "LIMIT: chỉ lấy N dòng đầu"
 title_en: "LIMIT: take only the first N rows"
 minutes: 20
+figures: [{ name: sql-clause-order, at: idea, variant: tail }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Lấy top N của một danh sách đã xếp, như 3 món đắt nhất.
@@ -147,6 +148,8 @@ Giám đốc kinh doanh chỉ muốn nhìn "3 món đắt nhất", không phải
 
 Nhiều người nghĩ **`LIMIT 3` là "3 dòng đầu của bảng"**. Bảng không có dòng đầu: không có `ORDER BY`, ba dòng bạn nhận là ba dòng bất kỳ. Và ngay cả khi có `ORDER BY`, nếu dòng thứ 3 hòa điểm với dòng thứ 4, lựa chọn giữa chúng vẫn là may rủi; thêm cột phân xử hoặc `WITH TIES`.
 
+Hình cuối mục này là bước cuối của hình thứ tự chạy trong bài `HAVING`: `LIMIT` chạy sau cùng, sau `ORDER BY`.
+
 ## Cú pháp
 
 `LIMIT` là cách viết của Postgres; `FETCH FIRST … ROWS` là cách viết chuẩn và có thêm `WITH TIES`.
@@ -162,6 +165,8 @@ The sales director only wants to see "the 3 most expensive items", not the whole
 `LIMIT n` sits at the end of a query and keeps at most the first n rows of the result. `OFFSET k` skips k rows before taking any, which is how you split a list into pages. Both run last: filter (`WHERE`), sort (`ORDER BY`), then cut.
 
 Many people think **`LIMIT 3` means "the first 3 rows of the table"**. A table has no first row: without `ORDER BY`, the three rows you get are any three. And even with `ORDER BY`, if row 3 ties with row 4 the choice between them is still luck; add a tie-breaker or `WITH TIES`.
+
+The figure at the end of this section is the last step of the run-order figure in the `HAVING` lesson: `LIMIT` runs last, after `ORDER BY`.
 
 ## Syntax
 

@@ -8,6 +8,7 @@ title_en: What a DBMS does, the three schema levels and data independence
 kind: concept
 runtime: browser
 minutes: 15
+figures: [{ name: ds-three-levels, at: idea }]
 objectives:
   - vi: Kể được năm việc một hệ quản trị CSDL làm thay cho ứng dụng.
     en: Name five jobs a database management system does so that applications do not have to.
@@ -96,6 +97,8 @@ Lợi ích của việc tách tầng là **độc lập dữ liệu**. Độc l�
 Có thể xếp loại DBMS theo **mô hình dữ liệu**: phân cấp (IBM IMS, dạng cây), mạng (CODASYL, con trỏ giữa bản ghi), quan hệ (Codd 1970, bảng giá trị), đối tượng-quan hệ (PostgreSQL), rồi các họ NoSQL: tài liệu (MongoDB), khóa-giá trị (DynamoDB), đồ thị. Cũng xếp được theo số người dùng (một hay nhiều) và theo nơi đặt (tập trung, khách/chủ, phân tán).
 
 PostgreSQL là hệ khách/chủ: mỗi kết nối có một tiến trình server riêng, chung một vùng nhớ đệm, có tiến trình nền ghi WAL và dọn rác. PGlite trong trình duyệt là cùng mã server đó dịch sang WebAssembly, chạy một phiên.
+
+Hình cuối mục này xếp ba tầng của chính lab: view ở tầng ngoài, bảng `products` ở tầng khái niệm, file và index ở tầng trong.
 
 ## Ví dụ
 
@@ -186,6 +189,8 @@ Splitting the levels gives **data independence**. Logical independence: change t
 A DBMS can be classified by its **data model**: hierarchical (IBM IMS, trees), network (CODASYL, pointers between records), relational (Codd 1970, tables of values), object-relational (PostgreSQL), then the NoSQL families: document (MongoDB), key-value (DynamoDB), graph. It can also be classified by number of users (one or many) and by where it runs (centralised, client/server, distributed).
 
 PostgreSQL is a client/server system: each connection has its own server process, they share a buffer cache, and background processes write the WAL and clean up. PGlite in the browser is the same server code compiled to WebAssembly, running one session.
+
+The figure at the end of this section stacks the lab's own three levels: views at the external level, the table `products` at the conceptual level, the file and the index at the internal level.
 
 ## Example
 

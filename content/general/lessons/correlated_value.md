@@ -3,6 +3,7 @@ id: correlated_value
 title: "Truy vấn con tương quan: một giá trị cho từng dòng"
 title_en: "Correlated subqueries: one value per row"
 minutes: 25
+figures: [{ name: sql-correlated-loop, at: idea }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Tính cho mỗi dòng một giá trị từ bảng khác, như ngày đặt gần nhất của từng cửa hàng.
@@ -121,6 +122,8 @@ Truy vấn con tương quan nhắc tới một cột của câu ngoài, như `o.
 
 Nhiều người nghĩ **truy vấn con nào nằm trong một câu lớn cũng là tương quan**. Thật ra chỉ khi nó nhắc tới dòng ngoài. Thiếu điều kiện đó, nó thành truy vấn con độc lập, cho cùng một giá trị cho mọi dòng, và câu vẫn chạy với một ý nghĩa khác.
 
+Hình cuối mục này chạy câu ví dụ đầu từng dòng một: với mỗi cửa hàng, truy vấn con chạy lại với `s.id` của cửa hàng đó, tổng cộng 5 lần.
+
 ## Cú pháp
 
 Đặt bí danh khác nhau cho bảng ngoài và bảng trong, kể cả khi là cùng một bảng.
@@ -136,6 +139,8 @@ The regional manager asks: "What is the latest order date of each store?" That i
 A correlated subquery names a column of the outer query, such as `o.store_id = s.id`. So Postgres computes it separately for each outer row, with that row's value. Use it in `SELECT` to add a lookup column, or in `WHERE` to compare a row with its own group.
 
 Many people think **any subquery inside a bigger query is correlated**. Only when it names the outer row. Without that condition it is an independent subquery that gives the same value for every row, and the query still runs with a different meaning.
+
+The figure at the end of this section runs the first example row by row: for each store the subquery runs again with that store's `s.id`, 5 times in all.
 
 ## Syntax
 

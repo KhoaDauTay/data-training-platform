@@ -3,6 +3,7 @@ id: except
 title: "EXCEPT và INTERSECT: hiệu và giao của hai danh sách"
 title_en: "EXCEPT and INTERSECT: difference and intersection of two lists"
 minutes: 20
+figures: [{ name: sql-set-ops, at: idea, variant: except }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Tìm những gì có ở danh sách này mà danh sách kia không có (`EXCEPT`).
@@ -124,6 +125,8 @@ Marketing hỏi: "Ai mua hàng trong tháng 9 nhưng không quay lại trong th�
 
 Nhiều người nghĩ **thứ tự hai bên không quan trọng**, vì với `UNION` và `INTERSECT` là vậy. Với `EXCEPT`, đổi chỗ là đổi hẳn câu hỏi: "khách tháng 9 không quay lại" thành "khách mới của tháng 10". Đọc to "bên trái, trừ bên phải" trước khi chạy.
 
+Hình cuối mục này dùng lại thành phố của cửa hàng và của khách: `EXCEPT` giữ Hue và Can Tho, hai nơi có khách mà chưa có cửa hàng.
+
 ## Cú pháp
 
 `EXCEPT` và `INTERSECT` viết giữa hai câu `SELECT`, như `UNION`.
@@ -139,6 +142,8 @@ Marketing asks: "Who bought in September but did not come back in October?" You 
 `EXCEPT` keeps the rows of the left result that are not in the right one. `INTERSECT` keeps the rows found on both sides. As with `UNION`, both sides need the same number of columns matched by position, and by default the result has no repeats (add `ALL` to keep repeat counts).
 
 Many people think **the order of the two sides does not matter**, because it does not for `UNION` and `INTERSECT`. With `EXCEPT`, swapping the sides changes the question entirely: "September customers who did not return" becomes "October's new customers". Say "left minus right" aloud before running.
+
+The figure at the end of this section reuses the stores' and the customers' cities: `EXCEPT` keeps Hue and Can Tho, the two places with customers and no store.
 
 ## Syntax
 

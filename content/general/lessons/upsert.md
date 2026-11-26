@@ -3,6 +3,7 @@ id: upsert
 title: "Thêm hoặc sửa: ON CONFLICT và MERGE"
 title_en: "Insert or update: ON CONFLICT and MERGE"
 minutes: 25
+figures: [{ name: sql-upsert-flow, at: idea }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Viết upsert bằng `INSERT … ON CONFLICT … DO NOTHING | DO UPDATE` theo một khóa.
@@ -139,6 +140,8 @@ Upsert là "thêm, nếu đã có thì sửa". Ở Postgres, `INSERT … ON CONF
 
 Nhiều người nghĩ **`ON CONFLICT` tự tìm dòng trùng theo các cột bạn nêu**. Thật ra nó cần một ràng buộc duy nhất có thật đúng trên các cột ấy; không có thì báo lỗi, còn bỏ trống đích thì chỉ canh các ràng buộc đang có (thường là `id` tự sinh, không bao giờ đụng). Khi không có khóa phù hợp, `MERGE` so khớp theo điều kiện bạn viết.
 
+Hình cuối mục này đi theo ví dụ thứ hai: tháng 6 của cửa hàng 5 chưa có nên được thêm, tháng 12 đã có nên được sửa từ 9 lên 9,5 triệu.
+
 ## Cú pháp
 
 `MERGE` có từ PostgreSQL 15; `RETURNING` cùng `merge_action()` có từ PostgreSQL 17.
@@ -154,6 +157,8 @@ Accounting sends a new target sheet: some months are already in the table, some 
 An upsert is "insert, and if it is already there, update". In Postgres, `INSERT … ON CONFLICT` with the key columns tries to insert; a row that hits the unique constraint named in brackets turns to `DO NOTHING` (skip) or `DO UPDATE` (change the existing row). Inside `DO UPDATE`, `EXCLUDED` is the row you proposed and the table name is the old row.
 
 Many people think **`ON CONFLICT` looks for duplicates on the columns you name by itself**. In fact it needs a real unique constraint on exactly those columns; without one it fails, and with no target it only watches the constraints that exist (often a generated `id`, which never clashes). When no suitable key exists, `MERGE` matches on a condition you write.
+
+The figure at the end of this section follows the second example: store 5's June is missing, so it is added; December exists, so it goes from 9 to 9.5 million.
 
 ## Syntax
 

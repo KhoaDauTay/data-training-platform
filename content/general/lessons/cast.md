@@ -3,6 +3,7 @@ id: cast
 title: "Kiểu dữ liệu và ép kiểu: CAST và ::"
 title_en: "Data types and casting: CAST and ::"
 minutes: 25
+figures: [{ name: sql-sargable-index, at: pitfalls }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Đổi một giá trị sang kiểu khác bằng `CAST(x AS kiểu)` hoặc `x::kiểu`.
@@ -77,8 +78,8 @@ pitfalls:
     wrong: "SELECT name FROM products WHERE price_vnd::text > '50000'"
     fix: "SELECT name FROM products WHERE price_vnd > 50000"
     why:
-      vi: "Chữ so từng ký tự: `'9000'` lớn hơn `'50000'` vì 9 > 5, còn `'129000'` nhỏ hơn vì 1 < 5. Câu sai ra 6 món, có cả nước suối 9.000 đồng; câu đúng ra 8. Ép kiểu cột còn làm mất chỉ mục, nên trên bảng lớn câu cũng chậm hơn hẳn."
-      en: "Text compares character by character: `'9000'` is greater than `'50000'` because 9 > 5, while `'129000'` is smaller because 1 < 5. The wrong query returns 6 items, including the 9,000 VND water; the right one returns 8. Casting the column also loses its index, so on a big table the query is much slower too."
+      vi: "Chữ so từng ký tự: `'9000'` lớn hơn `'50000'` vì 9 > 5, còn `'129000'` nhỏ hơn vì 1 < 5. Câu sai ra 6 món, có cả nước suối 9.000 đồng; câu đúng ra 8. Ép kiểu cột còn làm mất chỉ mục, nên trên bảng lớn câu cũng chậm hơn hẳn. Hình cuối mục này vẽ cùng chuyện đó trên chỉ mục ngày: hàm bọc cột làm chỉ mục không cắt được đoạn nào."
+      en: "Text compares character by character: `'9000'` is greater than `'50000'` because 9 > 5, while `'129000'` is smaller because 1 < 5. The wrong query returns 6 items, including the 9,000 VND water; the right one returns 8. Casting the column also loses its index, so on a big table the query is much slower too. The figure at the end of this section draws the same thing on a date index: a function around the column leaves the index nothing to cut."
 quiz:
   - q:
       vi: "`SELECT 1 / 3` trong Postgres trả gì?"

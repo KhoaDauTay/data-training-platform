@@ -8,6 +8,7 @@ title_en: Weak entities, generalisation and the EER model
 kind: concept
 runtime: browser
 minutes: 15
+figures: [{ name: ds-er-to-tables, at: example, variant: weak }]
 objectives:
   - vi: Nhận ra thực thể yếu và đưa nó lên bảng với khóa gồm khóa của chủ cộng khóa bộ phận.
     en: Spot a weak entity and map it to a table keyed by its owner's key plus a partial key.
@@ -132,6 +133,8 @@ INSERT INTO ex_vehicle VALUES (1, 'car', 5, NULL), (2, 'truck', NULL, 3000), (3,
 SELECT kind, count(*) AS vehicles FROM ex_vehicle GROUP BY kind ORDER BY kind;
 ```
 
+Hình cuối mục này vẽ `ex_invoice_line` thành bảng có khóa ghép `(invoice_id, line_no)`.
+
 ## Lỗi hay gặp
 
 Dùng `INHERITS` và tin rằng khóa chính phủ cả cây.
@@ -225,6 +228,8 @@ CREATE TABLE ex_vehicle (
 INSERT INTO ex_vehicle VALUES (1, 'car', 5, NULL), (2, 'truck', NULL, 3000), (3, 'car', 7, NULL);
 SELECT kind, count(*) AS vehicles FROM ex_vehicle GROUP BY kind ORDER BY kind;
 ```
+
+The figure at the end of this section draws `ex_invoice_line` as a table with the composite key `(invoice_id, line_no)`.
 
 ## Common mistakes
 

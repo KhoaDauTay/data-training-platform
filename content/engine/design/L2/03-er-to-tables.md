@@ -8,6 +8,7 @@ title_en: From an ER diagram to tables
 kind: lab
 runtime: browser
 minutes: 20
+figures: [{ name: ds-er-to-tables, at: idea }]
 objectives:
   - vi: Áp bảy luật chuyển ER sang bảng cho thực thể, 1:N, M:N, 1:1, đa trị, thực thể yếu và loại con.
     en: Apply the seven ER-to-table rules for entities, 1:N, M:N, 1:1, multivalued attributes, weak entities and subtypes.
@@ -97,6 +98,8 @@ Bảy luật chuyển, theo thứ tự hay gặp. **Thực thể mạnh** thành
 **Thuộc tính đa trị** thành bảng con: khóa ngoại tới chủ cộng giá trị, cả hai làm khóa chính. **Thực thể yếu** thành bảng có khóa chính = khóa của chủ + khóa bộ phận, khóa ngoại tới chủ với `ON DELETE CASCADE`. **Loại con** trong cây EER thành bảng có khóa chính đồng thời là khóa ngoại tới bảng cha.
 
 Mối quan hệ ba ngôi trở lên đi như M:N: một bảng có một khóa ngoại cho mỗi tập thực thể tham gia. Sau khi dựng xong, đừng tin trí nhớ: đọc `pg_constraint` để thấy từng khóa ngoại nối bảng nào với bảng nào.
+
+Hình cuối mục này đi qua ba luật, mỗi bước một luật: 1:N, M:N và thực thể yếu.
 
 ## Cú pháp
 
@@ -200,6 +203,8 @@ Seven mapping rules, in the order you meet them most. A **strong entity** become
 A **multivalued attribute** becomes a child table: a foreign key to the owner plus the value, both as the primary key. A **weak entity** becomes a table whose primary key = the owner's key + the partial key, with a foreign key to the owner using `ON DELETE CASCADE`. A **subtype** in an EER tree becomes a table whose primary key is also a foreign key to the parent table.
 
 Relationships of degree three or more go like M:N: one table with a foreign key for each entity set taking part. Once built, do not trust your memory: read `pg_constraint` to see which tables each foreign key joins.
+
+The figure at the end of this section walks through the three rules, one per step: 1:N, M:N and the weak entity.
 
 ## Syntax
 

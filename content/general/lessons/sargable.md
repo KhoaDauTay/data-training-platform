@@ -3,6 +3,7 @@ id: sargable
 title: "Điều kiện dùng được chỉ mục (sargable)"
 title_en: "Conditions that can use an index (sargable)"
 minutes: 25
+figures: [{ name: sql-sargable-index, at: idea }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Nhận ra điều kiện làm mất chỉ mục, vì cột bị bọc trong hàm, phép tính hay phép đổi kiểu.
@@ -127,6 +128,8 @@ Chỉ mục B-tree lưu giá trị của cột, đã sắp xếp. Nó giúp đư
 
 Nhiều người nghĩ **Postgres đủ thông minh để tự viết lại `date_trunc('month', order_date) = …` thành một khoảng**. Thật ra nó không làm vậy. Cách sửa gần như luôn là chuyển mọi biến đổi sang phía hằng số, và viết khoảng thời gian dạng nửa mở.
 
+Hình cuối mục này đặt hai điều kiện tháng 10 lên cùng một chỉ mục ngày: cột để trần đọc một đoạn liền, cột bọc trong `date_trunc` phải tính hàm cho mọi dòng.
+
 ## Cú pháp
 
 Bài luyện của Phần này có thanh hiệu năng: câu đúng kết quả mà mất chỉ mục là chưa đạt.
@@ -142,6 +145,8 @@ The orders table has an index on the order date, yet the "October orders" query 
 A B-tree index stores the column's values, sorted. It helps when the condition compares **the column itself** with a value: `=`, `<`, `>=`, `BETWEEN`, `IN`. Such a condition is called *sargable*. Wrap the column in a function, arithmetic or a cast, and Postgres must recompute it for every row, so it reads the whole table.
 
 Many people think **Postgres is smart enough to rewrite `date_trunc('month', order_date) = …` into a range by itself**. It does not. The fix is almost always to move every transformation to the constant side, and to write time ranges as half-open.
+
+The figure at the end of this section puts the two October conditions on one date index: the bare column reads one stretch, the column wrapped in `date_trunc` must run the function on every row.
 
 ## Syntax
 
