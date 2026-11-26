@@ -5,6 +5,7 @@ level: L4
 module: scale
 title: "Hậu tố tính được: shard mà vẫn GetItem được"
 title_en: "Calculated suffix: sharded, yet still one GetItem away"
+figures: [{ name: dy-write-sharding, at: idea, variant: calc }]
 kind: lab
 runtime: browser
 minutes: 10
@@ -115,6 +116,8 @@ Nhiều người nghĩ có thể tăng số shard sau, khi tải lớn lên. Th�
 
 Lab chạy bằng dynoxide trong trình duyệt.
 
+Hình dưới vẽ 36 đơn chia đều bốn shard, và cách tính lại shard của một đơn.
+
 ## Cú pháp
 
 ```text
@@ -201,6 +204,8 @@ The calculation must be stable: the same order id always gives the same number. 
 Many people think the shard count can be raised later, when the load grows. In fact the shard number is inside the partition key already written: change the calculation and old items sit in the wrong place, and a GetItem using the new calculation does not find them. Choose a shard count with headroom from the start.
 
 The lab runs on dynoxide in the browser.
+
+The figure below draws 36 orders spread over four shards, and how one order's shard is computed again.
 
 ## Syntax
 

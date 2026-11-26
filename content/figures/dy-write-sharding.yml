@@ -1,0 +1,98 @@
+# B4-8 (tools/v42/diagram-plan-v42.md): a suffix spreads one hot key; reading it back costs N queries. Lessons: e-dy-l4-04
+# (Ý chính), variants `calc` in e-dy-l4-05 and `tenant` in e-dy-l4-16 (Ý chính).
+# Data (quoted from e-dy-l4-04 and the AWS page): VOTE#2026-11-20 → #0 … #7 (N = 8); 1500 writes/s → about 188 per shard, under
+# a partition's 1000 WCU; reading the day = 8 Queries or PartiQL pk IN [...] (dynoxide: 48 votes over the 8 shards, b4check.log).
+# Variant calc (dynoxide on e-dy-l4-05's lab): 36 orders on ORD#2026-11-20#0..#3, 9 each; O-1027 lives on #3 = 1027 mod 4, one
+# GetItem. Deviation: the plan said mod 8, the lesson's lab uses 4 shards, so the variant draws its own 4 bars.
+# Variant tenant (quoted from e-dy-l4-16): C09 peaks at 2400 writes/s → 3 shards of 800; small tenants keep one key (C01's bar is
+# an illustration of "one key, far under the ceiling", no measured rate).
+# Bars are drawn in hundreds of writes (a unit is ≥ 8 px) with the real number as each note; the dashed line is the 1000 WCU ceiling.
+# Source: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-partition-key-sharding.html
+title: { vi: "Write sharding: rải một khóa nóng", en: "Write sharding: spread one hot key" }
+caption:
+  vi: "1500 lần ghi mỗi giây vào VOTE#2026-11-20 vượt trần 1000 WCU của một partition. Thêm hậu tố #0 tới #7 thì mỗi khóa nhận khoảng 188; đổi lại, đọc cả ngày phải hỏi đủ tám khóa."
+  en: "1500 writes per second on VOTE#2026-11-20 exceed one partition's 1000 WCU ceiling. With suffixes #0 to #7 each key takes about 188; in exchange, reading the day must ask all eight keys."
+alt:
+  vi: "Write sharding thêm hậu tố vào một khóa nóng để rải lần ghi qua nhiều partition. Cái giá nằm ở phía đọc: phải đọc mọi shard rồi tự gộp."
+  en: "Write sharding adds a suffix to a hot key to spread writes over partitions. The price is on the read side: read every shard and merge."
+nodes:
+  - { id: hot, shape: key, mono: true, label: "VOTE#2026-11-20", sub: { vi: "1500 ghi/s", en: 1500 writes/s }, tone: dead }
+  - id: b
+    shape: bars
+    label: { vi: "ghi mỗi giây", en: "writes per second" }
+    sub: { vi: "vạch: trần 1000 WCU", en: "line: 1000 WCU ceiling" }
+    mark: 10
+    items:
+      - { label: { vi: "1 khóa", en: 1 key }, value: 15, note: "1500", tone: dead }
+  - id: bc
+    shape: bars
+    label: { vi: "đơn mỗi shard", en: "orders per shard" }
+    items:
+      - { label: "#0", value: 9, note: "9" }
+      - { label: "#1", value: 9, note: "9" }
+      - { label: "#2", value: 9, note: "9" }
+      - { label: "#3", value: 9, note: "9", tone: live }
+  - id: bt
+    shape: bars
+    label: { vi: "ghi mỗi giây", en: "writes per second" }
+    sub: { vi: "vạch: trần 1000 WCU", en: "line: 1000 WCU ceiling" }
+    mark: 10
+    items:
+      - { label: "C09#0", value: 8, note: "800", tone: live }
+      - { label: "C09#1", value: 8, note: "800", tone: live }
+      - { label: "C09#2", value: 8, note: "800", tone: live }
+      - { label: C01, value: 0.5, note: { vi: "1 khóa", en: 1 key } }
+  - { id: rd, shape: key, label: { vi: "đọc cả ngày", en: read the day }, sub: { vi: "8 Query rồi gộp", en: "8 Queries, merged" }, tone: warm }
+rows:
+  - [hot]
+  - [b, bc, bt]
+  - [rd]
+edges:
+  - { id: hb, from: hot, to: b, label: { vi: "ghi", en: writes } }
+  - { from: hot, to: bt }
+  - { id: br, from: b, to: rd }
+  - { from: bc, to: rd }
+  - { from: bt, to: rd }
+steps:
+  - say: { vi: "Một khóa, một partition: vượt trần.", en: "One key, one partition: over the ceiling." }
+    show: [hot, b, hb]
+    alt: { vi: "1500 lần ghi mỗi giây trên một khóa vượt trần 1000 WCU của partition.", en: "1500 writes per second on one key exceeds a partition's 1000 WCU ceiling." }
+  - say: { vi: "Thêm hậu tố 0–7: mỗi shard khoảng 190.", en: "Suffix 0–7: about 190 each." }
+    show: [hot, b, rd, hb, br]
+    alt: { vi: "Tám giá trị khóa rải tải qua nhiều partition, nhưng đọc cả ngày phải hỏi đủ tám shard rồi gộp.", en: "Eight key values spread the load over partitions, but reading the day must ask all eight and merge." }
+    set:
+      hb: { label: "+ #0…#7" }
+      b:
+        items:
+          - { label: "#0", value: 1.88, note: "188", tone: live }
+          - { label: "#1", value: 1.88, note: "188", tone: live }
+          - { label: "#2", value: 1.88, note: "188", tone: live }
+          - { label: "#3", value: 1.88, note: "188", tone: live }
+          - { label: "#4", value: 1.88, note: "188", tone: live }
+          - { label: "#5", value: 1.88, note: "188", tone: live }
+          - { label: "#6", value: 1.88, note: "188", tone: live }
+          - { label: "#7", value: 1.88, note: "188", tone: live }
+variants:
+  calc:
+    show: [bc, rd]
+    set:
+      rd: { label: GetItem O-1027, sub: "shard = 1027 mod 4", tone: live }
+    title: { vi: "Hậu tố tính được: đọc thẳng một item", en: "A calculated suffix: read one item directly" }
+    caption:
+      vi: "36 đơn của ngày 2026-11-20 rải trên ORD#2026-11-20#0 tới #3, mỗi khóa 9 đơn. Số shard tính lại từ mã đơn: O-1027 nằm ở #3, nên đọc nó là một GetItem."
+      en: "The 36 orders of 2026-11-20 are spread over ORD#2026-11-20#0 to #3, 9 per key. The shard is computed again from the order id: O-1027 lives on #3, so reading it is one GetItem."
+    alt:
+      vi: "Hậu tố tính từ thuộc tính tra cứu nên biết ngay item ở shard nào, đọc một item vẫn là một GetItem. Đọc cả ngày vẫn phải hỏi mọi shard rồi gộp."
+      en: "A suffix computed from the lookup attribute tells you the shard, so reading one item is still one GetItem. Reading the whole day still asks every shard and merges."
+  tenant:
+    show: [hot, bt, rd]
+    set:
+      hot: { label: "TENANT#C09", sub: { vi: "2400 ghi/s", en: 2400 writes/s } }
+      rd: { label: "2400 ÷ 1000", sub: { vi: "làm tròn lên: 3", en: "rounded up: 3" }, tone: live }
+    title: { vi: "Chỉ khách nóng có hậu tố", en: "Only the hot tenant gets a suffix" }
+    caption:
+      vi: "Khách C09 lên tới 2400 lần ghi mỗi giây nên khóa của nó có ba hậu tố, mỗi khóa khoảng 800. Khách nhỏ giữ một khóa TENANT#C01, xa dưới trần."
+      en: "Tenant C09 peaks at 2400 writes per second, so its key gets three suffixes of about 800 each. A small tenant keeps one key TENANT#C01, far under the ceiling."
+    alt:
+      vi: "Chỉ khách nóng cần hậu tố: 2400 chia 1000 làm tròn lên là 3 shard. Bảng Tenants ghi số shard từng khách, nên ứng dụng biết khóa nào có hậu tố."
+      en: "Only the hot tenant needs a suffix: 2400 over 1000 rounded up is 3 shards. The Tenants table records each tenant's shard count, so the application knows which keys carry a suffix."

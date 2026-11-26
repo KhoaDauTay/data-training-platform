@@ -39,7 +39,7 @@ rows:
 edges:
   - { from: "ix#1", to: doc }
   - { from: "ix#2", to: doc }
-  - { from: q, to: gap, label: { vi: "cần", en: needs } }
+  - { from: q, to: gap }
   - { from: pf, to: gap, dash: true }
   - { from: gap, to: plan }
 steps:

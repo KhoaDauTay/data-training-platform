@@ -157,7 +157,7 @@ describe('v44: no diagrams drawn with characters', () => {
 describe.each(Object.keys(specs))('v39 figure %s', (name) => {
   const spec = specs[name];
   it('giới hạn: ≤ 12 node, ≤ 14 mũi tên, ≤ 6 bước; tên file = [a-z0-9-]+; VI và EN đủ, EN không dấu', () => {
-    expect(name).toMatch(/^(sql|ds|pg|mg|dy)-[a-z0-9-]+$/);
+    expect(name).toMatch(/^(sql|ds|pg|mg|dy|bp)-[a-z0-9-]+$/); // v44 B4 (L812): bp- = a Best Practice card's figure
     expect(spec.nodes.length).toBeLessThanOrEqual(12);
     expect((spec.edges ?? []).length).toBeLessThanOrEqual(14);
     expect((spec.steps ?? []).length).toBeLessThanOrEqual(6);
@@ -217,7 +217,7 @@ describe.each(Object.keys(specs))('v39 figure %s', (name) => {
             }
           }
           // tokens only: every tone and ink the builder writes maps to an --eng-* alias in the core
-          for (const n of f.nodes) expect(JSON.stringify(n)).not.toMatch(/#[0-9a-f]{3,6}\b|rgb\(|var\(--(?!eng-)/i);
+          for (const n of f.nodes) expect(JSON.stringify({ ...n, s: undefined })).not.toMatch(/#[0-9a-f]{3,6}\b|rgb\(|var\(--(?!eng-)/i); // v44 B4: drawn text is content (TENANT#C02, VOTE#2026), not a colour
           // R1 E10: two arrows into one box land ≥ 16 apart or share one tip (a bus), never a double arrowhead
           for (let p = 0; p < m.arrows.length; p++) for (let q = p + 1; q < m.arrows.length; q++) {
             const [A, B] = [m.arrows[p], m.arrows[q]];
@@ -263,7 +263,7 @@ describe.each(Object.keys(specs))('v39 figure %s', (name) => {
         // v44 (L784, L802 eye E2): a variant may patch a grid's rows or bars (another lesson's data), and its tables are the grids its
         // own frame draws, as the variant's and that step's set patch them (never the base's)
         const patch = (n: FigSpec['nodes'][number]): FigSpec['nodes'][number] => ({ ...n, ...v?.set?.[n.id], ...(v?.step !== undefined ? spec.steps?.[v.step].set?.[n.id] : {}) }) as FigSpec['nodes'][number];
-        const grids = spec.nodes.filter((n) => (n.shape === 'grid' || n.shape === 'bars') && (v?.step !== undefined || v?.show ? shown.has(n.id) : true)).map(patch);
+        const grids = spec.nodes.filter((n) => (n.shape === 'grid' || n.shape === 'bars') && (v?.step !== undefined || v?.show ? shown.has(n.id) : !spec.steps?.length || spec.steps.some((st) => !st.show || st.show.includes(n.id)))).map(patch); // v44 B4: a node only a variant shows has no table in the base figure
         expect(tables.length, `${lang} bảng dữ liệu`).toBe(grids.length);
         for (const [i, t] of tables.entries()) {
           expect(t.caption, lang).not.toBe('');

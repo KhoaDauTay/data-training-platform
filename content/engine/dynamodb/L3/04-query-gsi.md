@@ -5,6 +5,7 @@ level: L3
 module: secondary
 title: "Query trên GSI"
 title_en: "Query a GSI"
+figures: [{ name: dy-gsi-copy, at: example, variant: query }]
 kind: lab
 runtime: browser
 minutes: 12
@@ -268,6 +269,8 @@ Các đơn đang `NEW` qua GSI:
 
 Một item, `ScannedCount` 1: `Limit` dừng việc đọc, không chỉ cắt kết quả.
 
+Hình dưới vẽ các item mà Query trên byStatus trả về và những gì chúng mang theo.
+
 ## Lỗi hay gặp
 
 Scan cả bảng rồi lọc theo trạng thái:
@@ -352,6 +355,8 @@ The latest `DELIVERED` order, reading the index sort key backwards:
 ```
 
 One item, `ScannedCount` 1: `Limit` stops the read, it does not just cut the result.
+
+The figure below draws the items a Query on byStatus returns and what they carry.
 
 ## Common mistakes
 

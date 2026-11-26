@@ -1,0 +1,65 @@
+# B4-7 (tools/v42/diagram-plan-v42.md): an item without the index key is simply not in the index. Lessons: e-dy-l3-06 (Ý chính),
+# variant `queue` in e-dy-l4-08 (Ý chính).
+# Data (quoted): GSI openOrders (city + openSince); SET openSince puts an item in the index, REMOVE takes it out; dynoxide on
+# e-dy-l3-06's lab gives 4 open orders in Hue (tools/v42/b4check.log). The three Orders rows are a sample with the lesson's key
+# names (the grids' titles say so). Variant: e-dy-l4-08's lab table Tickets (pk, sk), GSI OpenByQueue (open_queue + opened_at),
+# rows TCK#0019 and TCK#0058 are open (SHIPPING) and TCK#0002 has no open_queue (the lab's step 4 sets it), real values.
+# Deviation: REMOVE is an arrow out of the index (dashed), SET one into it, so the two never run side by side; each row that is in the index has a row arrow to its index row (side by side), so the empty cell is why O-2 has none; the item without the key is the last table row, so both row arrows run level.
+# Source: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-indexes-general-sparse-indexes.html
+title: { vi: "GSI thưa: thiếu khóa là không vào index", en: "A sparse GSI: no key, not in the index" }
+caption:
+  vi: "GSI openOrders có khóa city + openSince. Đơn không có openSince không được ghi vào index; SET openSince đưa đơn vào, REMOVE đưa ra."
+  en: "The GSI openOrders is keyed on city + openSince. An order without openSince is not written to the index; SET openSince puts it in, REMOVE takes it out."
+alt:
+  vi: "GSI thưa chỉ chứa item có đủ thuộc tính khóa của nó, nên đọc cả index chỉ là đọc phần việc đang mở. Thêm cờ khi cần theo dõi, xóa cờ khi xong."
+  en: "A sparse GSI holds only items that have its key attributes, so reading the whole index reads only the open work. Set the flag to track an item, remove it when done."
+nodes:
+  - id: t
+    shape: grid
+    label: { vi: "Orders (minh họa)", en: "Orders (sample)" }
+    head: [orderId, city, openSince]
+    cells: [[O-1, Hue, 10-02], [O-3, Hue, 10-05], [O-2, Hue, "–"]]
+    cellTone: { "2:2": ghost }
+  - id: g
+    shape: grid
+    label: GSI openOrders
+    head: [city, openSince, orderId]
+    cells: [[Hue, 10-02, O-1], [Hue, 10-05, O-3]]
+    colTone: [new, new, null]
+  - { id: set, shape: key, mono: true, label: SET openSince, sub: { vi: "vào index", en: enters the index }, tone: new }
+  - { id: rm, shape: key, mono: true, label: REMOVE openSince, sub: { vi: "rời index", en: leaves the index }, tone: warm }
+rows:
+  - [t, g]
+  - [rm, set]
+edges:
+  - { from: "t#1", to: "g#1" }
+  - { from: "t#2", to: "g#2" }
+  - { from: set, to: g }
+  - { from: g, to: rm, dash: true }
+steps:
+  - say: { vi: "Chỉ item có openSince vào index.", en: "Only items with openSince enter the index." }
+    show: [t, g]
+    alt: { vi: "O-2 không có thuộc tính khóa của GSI, nên nó không được ghi vào index và không tốn WCU cho index.", en: "O-2 lacks the GSI's key attribute, so it is not written to the index and costs no index WCU." }
+  - say: { vi: "Giao xong: REMOVE, item tự rời index.", en: "Delivered: REMOVE, and the item leaves." }
+    show: [t, g, set, rm]
+    alt: { vi: "Có hay không có openSince mới quyết định, nên đổi status thôi không đủ.", en: "Only the presence of openSince decides, so changing status alone is not enough." }
+variants:
+  queue:
+    show: [t, g]
+    set:
+      t:
+        label: Tickets
+        head: [pk, open_queue, opened_at]
+        cells: [["TCK#0019", SHIPPING, "11-01 09:00"], ["TCK#0058", SHIPPING, "11-08 12:00"], ["TCK#0002", "–", "–"]]
+        cellTone: { "2:1": ghost, "2:2": ghost }
+      g:
+        label: GSI OpenByQueue
+        head: [open_queue, opened_at, pk]
+        cells: [[SHIPPING, "11-01 09:00", "TCK#0019"], [SHIPPING, "11-08 12:00", "TCK#0058"]]
+    title: { vi: "Hàng đợi phiếu mở trên GSI thưa", en: "An open-ticket queue on a sparse GSI" }
+    caption:
+      vi: "GSI OpenByQueue có khóa open_queue + opened_at. Phiếu TCK#0002 không có open_queue nên không có trong index; đóng phiếu là REMOVE thuộc tính đó."
+      en: "The GSI OpenByQueue is keyed on open_queue + opened_at. Ticket TCK#0002 has no open_queue, so it is not in the index; closing a ticket means REMOVE on that attribute."
+    alt:
+      vi: "Chỉ phiếu đang mở mang open_queue, nên GSI chỉ giữ phiếu mở và một Query theo hàng đợi đọc vài item thay vì cả bảng. Đặt open_queue thành một giá trị như CLOSED vẫn giữ phiếu trong index; phải REMOVE."
+      en: "Only open tickets carry open_queue, so the GSI holds only open tickets and a Query by queue reads a few items instead of the whole table. Setting open_queue to a value like CLOSED keeps the ticket in the index; it must be REMOVEd."

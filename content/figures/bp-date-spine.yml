@@ -1,0 +1,47 @@
+# B4-11 (tools/v42/diagram-plan-v42.md): generate every month first, then LEFT JOIN the data. Card: e-bp-a01 (Ý chính).
+# Data (PGlite on lab, the card's pair, tools/v42/b4check.log): store 4, June–November 2025: the GROUP BY version returns 3 rows
+# (Sep 6, Oct 6, Nov 6); the date spine returns 6 (Jun 0, Jul 0, Aug 0, Sep 6, Oct 6, Nov 6).
+# Source: https://www.postgresql.org/docs/18/functions-srf.html
+title: { vi: "Trục ngày giữ lại kỳ trống", en: "A date spine keeps the empty periods" }
+caption:
+  vi: "Cửa hàng 4 mở từ tháng 9/2025. Báo cáo tháng 6 tới tháng 11: GROUP BY trên orders chỉ ra 3 tháng; sinh đủ 6 tháng bằng generate_series rồi LEFT JOIN thì ba tháng đầu hiện số 0."
+  en: "Store 4 opened in September 2025. A June-to-November report: GROUP BY on orders gives only 3 months; generating all 6 months with generate_series and then a LEFT JOIN shows 0 for the first three."
+alt:
+  vi: "Báo cáo theo kỳ phải sinh đủ các kỳ rồi LEFT JOIN dữ liệu vào; GROUP BY trên bảng sự kiện bỏ mất kỳ trống. Kết quả: 6 tháng thay vì 3."
+  en: "A periodic report must generate every period and LEFT JOIN the data; GROUP BY on the event table loses empty periods. Result: 6 months instead of 3."
+nodes:
+  - id: bad
+    shape: bars
+    label: { vi: "GROUP BY trên orders", en: "GROUP BY on orders" }
+    items:
+      - { label: { vi: "T9", en: Sep }, value: 6, note: "6" }
+      - { label: { vi: "T10", en: Oct }, value: 6, note: "6" }
+      - { label: { vi: "T11", en: Nov }, value: 6, note: "6" }
+  - { id: warn, shape: note, label: { vi: "3 tháng biến mất", en: "3 months vanish" } }
+  - id: spine
+    shape: grid
+    label: generate_series
+    cells: [[{ vi: "T6", en: Jun }, { vi: "T7", en: Jul }, { vi: "T8", en: Aug }, { vi: "T9", en: Sep }, { vi: "T10", en: Oct }, { vi: "T11", en: Nov }]]
+    colTone: [new, new, new, null, null, null]
+  - id: good
+    shape: bars
+    label: spine LEFT JOIN orders
+    items:
+      - { label: { vi: "T6", en: Jun }, value: 0, note: "0", tone: new }
+      - { label: { vi: "T7", en: Jul }, value: 0, note: "0", tone: new }
+      - { label: { vi: "T8", en: Aug }, value: 0, note: "0", tone: new }
+      - { label: { vi: "T9", en: Sep }, value: 6, note: "6" }
+      - { label: { vi: "T10", en: Oct }, value: 6, note: "6" }
+      - { label: { vi: "T11", en: Nov }, value: 6, note: "6" }
+rows:
+  - [bad, warn]
+  - [spine]
+  - [good]
+edges:
+  - { from: spine, to: good, label: LEFT JOIN }
+steps:
+  - say: { vi: "Chỉ GROUP BY: tháng không có đơn biến mất.", en: "GROUP BY alone: months with no orders vanish." }
+    show: [bad, warn]
+    alt: { vi: "GROUP BY chỉ tạo nhóm từ dòng có thật, nên tháng 6 đến 8 không có dòng nào để hiện.", en: "GROUP BY makes groups only from existing rows, so June to August have no row to show." }
+  - say: { vi: "Sinh đủ kỳ, rồi nối dữ liệu vào.", en: "Generate every period, then join the data." }
+    alt: { vi: "generate_series tạo đủ sáu tháng, và LEFT JOIN giữ cả tháng không khớp với số 0.", en: "generate_series makes all six months, and the LEFT JOIN keeps months without a match as 0." }
