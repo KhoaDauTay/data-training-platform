@@ -138,6 +138,8 @@ const CAP = 10;
 // ── layout (svg-system §2.1–2.3, §3) ─────────────────────────────────────────────────────────────────────────────
 export interface Rect { x: number; y: number; w: number; h: number }
 const base = (end: string): string => end.split('#')[0];
+/** an edge that names a grid row (grid#2) at either end */
+const rowEnd = (e: FigEdge): boolean => e.from.includes('#') || e.to.includes('#');
 const merge = (nodes: FigNode[], set?: Patch): FigNode[] => nodes.map((n) => (set?.[n.id] ? { ...n, ...set[n.id] } : n));
 interface Plan { say: string; show: Set<string>; nodes: FigNode[] }
 
@@ -170,7 +172,7 @@ export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): 
     }
   }
   const edges = spec.edges ?? [];
-  const gridLink = (e: FigEdge): boolean => !!e.link && (e.from.includes('#') || e.to.includes('#'));
+  const gridLink = (e: FigEdge): boolean => !!e.link && rowEnd(e);
   // v40 (L634): a side lane (16 units at the right) for every edge between rows that are not neighbours; reserving them can
   // change the wrapping, so lay out again until the count is stable
   let reserve = 0;
@@ -222,7 +224,7 @@ export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): 
       const y1 = anchorY(l, L), y2 = anchorY(r, R);
       return { e, d: `M${L.x + L.w} ${y1} L${R.x} ${y2}`, lab: label && y1 === y2 ? { x: (L.x + L.w + R.x) / 2, y: y1 - 6 - lineH(SS) / 2, a: 'm' as const, s: label } : undefined };
     }
-    if (ra === rb && (e.from.includes('#') || e.to.includes('#'))) return label ? fail(`${e.from}: dòng bảng, không nhãn`) : rowArrow(e, a, b);
+    if (ra === rb && rowEnd(e)) return label ? fail(`${e.from}: dòng bảng, không nhãn`) : rowArrow(e, a, b);
     if (ra === rb) {
       if (Math.abs(vrows[ra].indexOf(base(e.from)) - vrows[ra].indexOf(base(e.to))) !== 1) fail(`${e.from}→${e.to}: cùng hàng nhưng không cạnh nhau`);
       const cy = Math.round((Math.max(a.y, b.y) + Math.min(a.y + a.h, b.y + b.h)) / 2);
@@ -326,7 +328,7 @@ function placeRows(spec: FigSpec, lang: Lang, W: number, dims: Map<string, Sized
   const between = (a: string, b: string): FigEdge | undefined => edges.find((e) => (base(e.from) === a && base(e.to) === b) || (base(e.from) === b && base(e.to) === a));
   const gapOf = (a: string, b: string): number => {
     const e = between(a, b);
-    return !e ? GAP_X : e.link ? Math.max(32, e.label ? Math.ceil(textWidth(tr(e.label, lang), SS)) + 12 : 0) : Math.max(e.from.includes('#') || e.to.includes('#') ? 40 : 24, e.label ? Math.ceil(textWidth(tr(e.label, lang), SS)) + 12 : 0); // v41: a row arrow may step in the gap
+    return !e ? GAP_X : e.link ? Math.max(32, e.label ? Math.ceil(textWidth(tr(e.label, lang), SS)) + 12 : 0) : Math.max(rowEnd(e) ? 40 : 24, e.label ? Math.ceil(textWidth(tr(e.label, lang), SS)) + 12 : 0); // v41: a row arrow may step in the gap
   };
   const links = (a: string, b: string): number => edges.filter((e) => e.link && [base(e.from), base(e.to)].sort().join() === [a, b].sort().join()).length;
   // R1 E16: `align` lines up runs of equal-length rows as columns (boxes stretched to the column); a run that does not fit stacks

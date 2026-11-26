@@ -11,7 +11,7 @@ alt:
   vi: "Trang heap 8 kB của bảng doc. Dòng 1: 100 ký tự, 101 B, nhỏ hơn ngưỡng khoảng 2 kB nên ở lại trang, không cần nén."
   en: "The 8 kB heap page of table doc. Row 1: 100 characters, 101 B, below the threshold of about 2 kB, so it stays on the page with no compression."
 nodes:
-  - { id: thr, shape: note, label: { vi: "~2 kB: bắt đầu TOAST", en: "~2 kB: TOAST starts" } }
+  - { id: thr, shape: note, label: { vi: "từ ~2 kB: TOAST", en: "from ~2 kB: TOAST" } }
   - { id: val, label: { vi: "id 1: 100 ký tự", en: "id 1: 100 chars" }, sub: { vi: "nhỏ hơn 2 kB", en: "under 2 kB" } }
   - { id: cmp, shape: key, label: { vi: "không cần nén", en: "no compression" }, tone: ghost }
   - { id: res, shape: key, label: { vi: "ở lại trang", en: "stays on page" }, tone: live }

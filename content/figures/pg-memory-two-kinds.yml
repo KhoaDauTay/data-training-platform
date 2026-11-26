@@ -15,7 +15,7 @@ groups:
   - { id: sh, label: { vi: "bộ nhớ chung", en: "shared memory" }, nodes: [sb, rd, ck] }
   - { id: pr, label: { vi: "riêng từng kết nối", en: "per connection" }, nodes: [c1, c2, srt] }
 nodes:
-  - { id: sb, shape: grid, label: shared_buffers, sub: { vi: "128 MB, ô = trang 8 kB", en: "128 MB, cell = 8 kB page" }, cells: [[p0, p1, p2], [p3, p4, p5]] }
+  - { id: sb, shape: grid, label: shared_buffers, sub: { vi: "128 MB, 8 kB/ô", en: "128 MB, 8 kB/cell" }, cells: [[p0, p1, p2], [p3, p4, p5]] }
   - { id: rd, shape: key, label: { vi: "đọc: hit / read", en: "read: hit / read" }, tone: new }
   - { id: ck, shape: key, label: { vi: "checkpoint ghi", en: "checkpoint writes" }, tone: ghost }
   - { id: tf, shape: table, label: { vi: "file bảng", en: "table files" }, sub: { vi: "trên đĩa", en: "on disk" } }

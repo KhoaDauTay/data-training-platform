@@ -41,7 +41,11 @@ steps:
       item: { sub: { vi: "stock 1, không đổi", en: "stock 1, unchanged" }, tone: plain }
   - say: { vi: "Không có điều kiện, lần ghi sau đè lần trước.", en: "Without a condition, the later write overwrites the earlier one." }
     alt: { vi: "Cách khác: PutItem không điều kiện ghi cả item mới đè lên item cũ, không kiểm gì và không báo gì, nên lần ghi sau xóa mất thay đổi của lần trước.", en: "The other way: a PutItem with no condition writes the new item over the old one, checks nothing and says nothing, so the later write wipes out the earlier change." }
-    show: [item, put, ow]
+    show: [a, b, item, ok, no, wcu, put, ow]
     set:
+      a: { tone: ghost }
+      ok: { tone: ghost }
+      no: { tone: ghost }
+      wcu: { tone: ghost }
       item: { sub: { vi: "bị ghi đè", en: "overwritten" }, tone: warm }
       ow: { tone: warm }

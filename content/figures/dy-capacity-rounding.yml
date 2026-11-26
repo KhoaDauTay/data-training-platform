@@ -13,19 +13,17 @@ alt:
 align: true
 nodes:
   - { id: q, label: Query, sub: "1500 × 64 B" }
-  - { id: qr, label: { vi: "96 000 B → 96 KB", en: "96,000 B → 96 KB" }, sub: "12 RCU", tone: live }
+  - { id: qr, label: { vi: "96 000 B → 96 KB", en: "96,000 B → 96 KB" }, sub: { vi: "12 RCU, đọc cuối", en: "12 RCU, eventual" }, tone: live }
   - { id: g, label: GetItem × 1500, sub: { vi: "mỗi item → 4 KB", en: "each item → 4 KB" } }
-  - { id: gr, label: { vi: "1500 × 0,5", en: "1500 × 0.5" }, sub: "750 RCU", tone: warm }
+  - { id: gr, label: { vi: "1500 × 0,5", en: "1500 × 0.5" }, sub: { vi: "750 RCU, đọc cuối", en: "750 RCU, eventual" }, tone: warm }
   - { id: b, label: BatchGetItem, sub: { vi: "1,5 KB + 6,5 KB", en: "1.5 KB + 6.5 KB" } }
   - { id: br, label: "4 + 8 = 12 KB", sub: { vi: "không phải 8 KB", en: "not 8 KB" }, tone: warm }
-  - { id: n1, shape: note, label: { vi: "RCU: nhất quán cuối", en: "RCU: eventual reads" } }
   - { id: n2, shape: note, label: { vi: "ghi: làm tròn 1 KB", en: "writes: round to 1 KB" } }
   - { id: n3, shape: note, label: { vi: "Projection, COUNT: không rẻ hơn", en: "Projection, COUNT: no cheaper" } }
 rows:
   - [q, qr]
   - [g, gr]
   - [b, br]
-  - [n1]
   - [n2, n3]
 edges:
   - { from: q, to: qr }

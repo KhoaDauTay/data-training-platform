@@ -19,7 +19,7 @@ nodes:
       - { label: KeyCondition, value: 4, note: { vi: "đọc 4, tính tiền", en: "reads 4, billed" }, tone: warm }
       - { label: Filter, value: 3, note: { vi: "còn 3, đã đọc 4", en: "3 left, 4 read" } }
       - { label: Projection, value: 3, note: { vi: "chỉ còn total", en: "total only" } }
-  - { id: g, shape: key, label: "ScannedCount 4 · Count 3", tone: live }
+  - { id: g, label: ScannedCount 4, sub: Count 3, tone: live }
   - { id: lim, shape: key, label: { vi: "Limit đếm ở bước 1", en: "Limit counts at step 1" } }
 rows:
   - [q]

@@ -11,7 +11,7 @@ alt:
   vi: "Từ trên xuống, cho câu UPDATE products SET price = price + 1.00 trên 3 dòng: BEFORE STATEMENT chạy 1 lần. BEFORE ROW chạy cho từng dòng ngay trước khi ghi: pen 10.00 thành 11.00, book 50.00 thành 51.00, bag 120.00 thành 121.00; đây là lúc còn sửa được NEW. Sau dòng cuối, AFTER ROW chạy 3 lần và ghi price_audit. Cuối cùng AFTER STATEMENT chạy 1 lần và đọc NEW TABLE. OLD là giá cũ, NEW là giá mới."
   en: "From top to bottom, for UPDATE products SET price = price + 1.00 on 3 rows: BEFORE STATEMENT fires once. BEFORE ROW fires for each row just before it is written: pen 10.00 becomes 11.00, book 50.00 becomes 51.00, bag 120.00 becomes 121.00; this is when NEW can still be changed. After the last row, AFTER ROW fires 3 times and writes price_audit. Finally AFTER STATEMENT fires once and reads NEW TABLE. OLD is the old price, NEW the new one."
 groups:
-  - { id: br, label: BEFORE ROW, nodes: [r1, r2, r3] }
+  - { id: br, label: BEFORE ROW ×3, nodes: [r1, r2, r3] }
 nodes:
   - { id: st, mono: true, label: UPDATE products, sub: { vi: "3 dòng", en: "3 rows" } }
   - { id: bs, label: BEFORE STATEMENT, sub: { vi: "×1", en: "×1" } }
@@ -21,12 +21,10 @@ nodes:
   - { id: ar, label: AFTER ROW ×3, sub: { vi: "ghi price_audit", en: "writes price_audit" }, tone: live }
   - { id: as, label: AFTER STATEMENT, sub: "×1 · NEW TABLE", tone: live }
   - { id: old, shape: key, label: { vi: "OLD = giá cũ", en: "OLD = old price" } }
-  - { id: new, shape: key, label: { vi: "NEW = giá mới", en: "NEW = new price" } }
-  - { id: n, shape: note, label: { vi: "BEFORE ROW: sửa được NEW", en: "BEFORE ROW: can change NEW" } }
+  - { id: new, shape: key, label: { vi: "NEW: sửa được ở BEFORE ROW", en: "NEW: editable in BEFORE ROW" } }
 rows:
   - [st]
   - [bs]
-  - [n]
   - [r1, r2, r3]
   - [ar]
   - [as]
