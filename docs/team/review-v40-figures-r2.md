@@ -19,7 +19,8 @@ This round fixes every P2 and the P3s the brief named. Decisions: L648, L649, L6
 | E-11 | P3 | `sql-sargable-index` | With `align: true`, both result chips stack below their strips on phones. |
 | E-12 | P3 | `sql-rank-ties` | "sinh từ năm 1998 trở đi" in the caption and alt, and "đồng hạng" throughout. The ROW_NUMBER note reads "3 và 4, tùy thứ tự" / "3 and 4, any order". |
 | E-13 | P3 | all boxes | Text in box, key, table and doc shapes is centred in the box's height, which is fixed by the tallest step. |
-| E-16 | P3 | every stepped figure | The text alternative is the figure, then one entry per step. The step list shows those entries: each step's own alt, else its sentence plus what changed. Nothing is read twice, and no "Bước n:" label is written into the text. The hand-written alts of `ds-anomalies` and `ds-er-to-tables` were swept. |
+| E-16 | P3 | every stepped figure | The text alternative is the figure, then one entry per step. The step list shows those entries: each step's own alt, else its sentence plus what changed. Nothing is read twice, and no "Bước n:" label is written into the text. The hand-written alts of `ds-anomalies` and `ds-er-to-tables` were swept, and the step-1 sentence moved from the figure alt into `steps[0].alt` in `sql-correlated-loop`, `sql-window-vs-group` and `ds-closure-rounds`. |
+| extra | — | `sql-inner-join-pairs`, `ds-relation-anatomy` | The inner-join links use cell anchors, so the lines reach the cells instead of stopping at the edge of a wider frame. The relation-anatomy caption names the dept_id column instead of the lines, because at 320 the tables stack and no line is drawn. The lesson sentence for e-ds-l1-02 now says the words sit "beside" the table. |
 
 Not in this round: E-06, E-10, E-14, E-15, E-17, the rest of E-07 ("NOT EXISTS xét từng cặp" as the box's second line), the rest of E-08 (the store label), the rest of E-09 (one-line pill, operator first on phones), the rest of E-12 (legend gaps at 320), and the rest of E-13 (the Mermaid syntax and the duplicate title box).
 
@@ -33,7 +34,7 @@ New spec fields:
 
 New functions: `cellOf`, `anchorX`, `crowEnds`, `crowMark`, `mid`, and in `layout()` the closures `dropped`, `out` and `leave`.
 
-Changed functions: `anchorY`, `laneRoute`, `size`, `pageShapes`, `draw`, `altText`, `mountFigure`, `fold`, and `gapOf` / `labelled` in `placeRows`.
+Changed functions: the `layout()` body (routes, `side`, the lane-reserve count, the frame loop), `WORDS` (`step` removed), the types `FigEdge`, `FigNode` and `Card`, `anchorY`, `laneRoute`, `size`, `pageShapes`, `draw`, `altText`, `mountFigure`, `fold`, and `gapOf` / `labelled` in `placeRows`.
 
 Outside the builder:
 - The core `mount` takes `FigOpts.steps` and puts the text alternative before the step list.
@@ -57,7 +58,8 @@ Outside the builder:
   | `engineAxe` | 14 |
   | `engineDesignAxe` | 14 |
 
-- Build and `check-budget`: `engineFigure` is 9,211 B gz against a 9 KB cap.
+- Build and `check-budget`: `engineFigure` is 9,212 B gz against a 9,216 B (9 KB) cap, so any addition breaks it.
+- `node scripts/overlap-check.mjs --selftest` passes.
 - The overlap checker on 36 routes (VI 6 configs, EN 3) found 0 in (a)–(g).
 - Shots of every step of the fixed figures were checked by eye at 1280 light, 375 dark and 320.
 - No e2e, full vitest or smoke run.

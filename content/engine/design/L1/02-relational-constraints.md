@@ -115,7 +115,7 @@ Khi một câu phá luật, mặc định cả câu bị hủy và Postgres tr�
 
 Codd sau đó viết 13 quy tắc (đánh số 0 đến 12) mô tả một hệ "quan hệ đầy đủ": mọi thông tin là giá trị trong bảng, catalog cũng là bảng đọc được bằng SQL, có độc lập dữ liệu, luật toàn vẹn khai báo trong database chứ không trong ứng dụng. Đó là thước đo lịch sử; không sản phẩm nào đạt trọn.
 
-Hình cuối mục này gắn các từ ấy lên bảng `staff` của lab, cùng bốn loại luật và mã lỗi của chúng.
+Hình cuối mục này đặt các từ ấy cạnh bảng `staff` của lab, cùng bốn loại luật và mã lỗi của chúng.
 
 ## Cú pháp
 
@@ -253,7 +253,7 @@ When a statement breaks a rule, by default the whole statement is cancelled and 
 
 Codd later wrote 13 rules (numbered 0 to 12) for a "fully relational" system: all information is values in tables, the catalog is tables readable with SQL, data independence holds, integrity rules are declared in the database rather than the application. They are a historical yardstick; no product meets them all.
 
-The figure at the end of this section pins those words on the lab's `staff` table, with the four kinds of rule and their error codes.
+The figure at the end of this section sets those words beside the lab's `staff` table, with the four kinds of rule and their error codes.
 
 ## Syntax
 

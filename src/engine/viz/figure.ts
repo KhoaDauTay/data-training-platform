@@ -504,7 +504,9 @@ function crowEnds(k: string, d: string, ends: [Card | null, Card | null], rev: b
 /** One end mark at (x, y), the box edge, the line coming from (px, py): the outer mark (bar = 1, foot = many) touches the box, the
  * inner one (bar = at least 1, circle = may be 0) sits further out; the circle is hollow and painted over the line. */
 function crowMark(k: string, x: number, y: number, px: number, py: number, c: Card): Shape[] {
-  const ux = Math.sign(x - px), uy = Math.sign(y - py); // links run at right angles
+  // ponytail: assumes the end segment is level or upright (true for cross-row links and same-row links between equal-height
+  // boxes, as in ds-cardinality); a same-row link between boxes of different heights is diagonal: normalise with hypot then
+  const ux = Math.sign(x - px), uy = Math.sign(y - py);
   const pt = (t: number, s: number): string => `${x - ux * t - uy * s} ${y - uy * t + ux * s}`; // links run at right angles: ux, uy are 0 or ±1
   const bar = (t: number): string => `M${pt(t, -5)} L${pt(t, 5)}`;
   const many = c.endsWith('many'), zero = c.startsWith('zero');

@@ -7,8 +7,8 @@ caption:
   vi: "{a,d}⁺ chỉ lớn lên khi cả vế trái của một phụ thuộc đã nằm trong tập, và dừng khi một vòng không thêm gì. a và d không ở vế phải nào, nên có mặt trong mọi khóa."
   en: "{a,d}⁺ grows only when a whole left side is already inside the set, and stops when a round adds nothing. a and d are on no right side, so they are in every key."
 alt:
-  vi: "Ba phụ thuộc: a → b, b → c, {c,d} → e, đều đang chờ. Năm thuộc tính a, b, c, d, e. Vòng 0: tập là {a,d}."
-  en: "Three dependencies: a → b, b → c, {c,d} → e, all waiting. Five attributes a, b, c, d, e. Round 0: the set is {a,d}."
+  vi: "Ba phụ thuộc: a → b, b → c, {c,d} → e, đều đang chờ. Năm thuộc tính a, b, c, d, e."
+  en: "Three dependencies: a → b, b → c, {c,d} → e, all waiting. Five attributes a, b, c, d, e."
 nodes:
   - { id: f1, shape: key, mono: true, label: "a → b", sub: { vi: "chờ", en: "waiting" }, tone: ghost }
   - { id: f2, shape: key, mono: true, label: "b → c", sub: { vi: "chờ", en: "waiting" }, tone: ghost }
