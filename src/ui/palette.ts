@@ -14,8 +14,8 @@ export interface PaletteDeps {
 }
 
 const TEXT = {
-  vi: { title: 'Tìm bài, trang và thuật ngữ', label: 'Tìm', hint: 'Gõ tên kỹ năng, bài CSDL, trang hoặc thuật ngữ. Enter mở kết quả đầu, mũi tên để chọn.', loading: 'Đang tải danh mục…', failed: 'Không tải được danh mục CSDL; vẫn tìm được kỹ năng SQL và các trang.', none: 'Không có kết quả.', count: '{n} kết quả', close: 'Đóng', skill: 'Kỹ năng SQL', lesson: 'Bài CSDL', term: 'Thuật ngữ', page: 'Trang', room: 'Phòng phỏng vấn', design: 'Thiết kế CSDL', stack: 'Công cụ dữ liệu' },
-  en: { title: 'Search lessons, pages and terms', label: 'Search', hint: 'Type a skill, a database lesson, a page or a term. Enter opens the first result, arrow keys move.', loading: 'Loading the index…', failed: 'Could not load the database index; SQL skills and pages are still searchable.', none: 'No results.', count: '{n} results', close: 'Close', skill: 'SQL skill', lesson: 'Database lesson', term: 'Term', page: 'Page', room: 'Interview room', design: 'Database design', stack: 'Data stack' },
+  vi: { title: 'Tìm bài, trang và thuật ngữ', label: 'Tìm', hint: 'Gõ tên kỹ năng, bài CSDL, trang hoặc thuật ngữ. Enter mở kết quả đầu, mũi tên để chọn.', loading: 'Đang tải danh mục…', failed: 'Không tải được danh mục CSDL; vẫn tìm được kỹ năng SQL và các trang.', none: 'Không có kết quả.', count: '{n} kết quả', close: 'Đóng', skill: 'Kỹ năng SQL', lesson: 'Bài CSDL', term: 'Thuật ngữ', page: 'Trang', room: 'Phòng phỏng vấn', design: 'Thiết kế CSDL', stack: 'Công cụ dữ liệu', timeseries: 'Chuỗi thời gian' },
+  en: { title: 'Search lessons, pages and terms', label: 'Search', hint: 'Type a skill, a database lesson, a page or a term. Enter opens the first result, arrow keys move.', loading: 'Loading the index…', failed: 'Could not load the database index; SQL skills and pages are still searchable.', none: 'No results.', count: '{n} results', close: 'Close', skill: 'SQL skill', lesson: 'Database lesson', term: 'Term', page: 'Page', room: 'Interview room', design: 'Database design', stack: 'Data stack', timeseries: 'Time-series' },
 } as const;
 
 let d: PaletteDeps;
