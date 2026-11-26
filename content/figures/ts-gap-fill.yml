@@ -1,0 +1,25 @@
+# TS-4 (v47 L972): a slot series keeps the slots with a lost signal; LATERAL fills them with the latest reading.
+# Lesson: e-ts-l1-04 (Ý chính). Data = the lab's readings 08:10–08:50 on 30 Oct (08:20, 08:30, 08:40 missing; step 3).
+title: { vi: "Giữ mốc trống rồi lấp", en: "Keep the empty slots, then fill" }
+caption:
+  vi: "generate_series giữ ba mốc mất tín hiệu thành ô trống; LATERAL lấp chúng bằng số đo gần nhất trước đó, -16.0."
+  en: "generate_series keeps the three slots with a lost signal as empty cells; LATERAL fills them with the latest earlier reading, -16.0."
+alt:
+  vi: "Dựng đủ các mốc trước thì mốc mất tín hiệu vẫn hiện, dưới dạng ô trống, thay vì biến mất. Lấp bằng số đo gần nhất cho màn hình một số ở mọi mốc, nhưng đó là giá trị lấp, không phải số đo thật."
+  en: "Building every slot first keeps a slot with a lost signal visible, as an empty cell, instead of letting it vanish. Filling with the latest reading gives the screen a number at every slot, but it is a filled value, not a real measurement."
+nodes:
+  - id: raw
+    shape: grid
+    label: { vi: "đo được", en: "measured" }
+    cells: [["08:10", "08:20", "08:30", "08:40", "08:50"], ["-16.0", "—", "—", "—", "-16.5"]]
+    colTone: [null, ghost, ghost, ghost, null]
+  - id: filled
+    shape: grid
+    label: { vi: "sau khi lấp", en: "after filling" }
+    cells: [["08:10", "08:20", "08:30", "08:40", "08:50"], ["-16.0", "-16.0", "-16.0", "-16.0", "-16.5"]]
+    colTone: [null, new, new, new, null]
+rows:
+  - [raw]
+  - [filled]
+edges:
+  - { from: raw, to: filled, label: LATERAL }
