@@ -64,8 +64,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì người đọc hiểu đó là cùng một khách, nhưng database chỉ thấy các ô độc lập; không luật nào nối chúng. Đó là dị thường sửa: một sự thật lưu nhiều chỗ thì sửa sót một chỗ là dữ liệu tự mâu thuẫn."
-      en: "It sounds right because a reader knows it is the same customer, but the database only sees independent cells; no rule ties them. That is an update anomaly: one fact stored in many places goes inconsistent as soon as one copy is missed."
+      vi: "Postgres không tự sửa các đơn khác: với nó, `customer_city` ở mỗi đơn là một ô riêng, không luật nào nói chúng phải bằng nhau. Câu `UPDATE` cũng không lỗi, vì không khóa hay ràng buộc nào nằm trên cột thành phố. Kết quả là dị thường sửa (update anomaly): thành phố của khách lưu ở nhiều đơn, sửa một đơn thì các đơn còn lại vẫn ghi thành phố cũ. Cách chữa là lưu thành phố một lần, trong bảng khách."
+      en: "Postgres does not fix the other orders: to it, `customer_city` on each order is a separate cell, and no rule says they must match. The `UPDATE` does not fail either, because no key or constraint sits on the city column. The result is an update anomaly: the customer's city is stored on many orders, so changing one leaves the others with the old city. The cure is to store the city once, in a customers table."
   - q:
       vi: "Cột `tags text[]` trên bảng bài viết có phạm 1NF không?"
       en: "Does a `tags text[]` column on an articles table break 1NF?"
@@ -76,8 +76,8 @@ quiz:
     answer: 1
     trap: 2
     why:
-      vi: "Nhiều người nghĩ hệ có hỗ trợ là được dùng thoải mái. Thật ra câu hỏi là \"một giá trị\" theo nghĩa nghiệp vụ: nếu từng phần tử là thứ bạn tìm và nối theo, nó là nhiều sự thật và thuộc về một bảng con có khóa và khóa ngoại."
-      en: "Many people think anything the system supports is fair game. In fact the question is \"one value\" in business terms: if each element is something you search and join on, it is several facts and belongs in a child table with a key and a foreign key."
+      vi: "\"Postgres hỗ trợ mảng\" chỉ nói mảng lưu được, không nói thiết kế đúng; \"mảng luôn bị cấm\" thì quá cứng. Dạng chuẩn 1 (1NF) hỏi mỗi ô có phải một giá trị theo nghĩa nghiệp vụ không. Nếu bạn luôn đọc và ghi cả danh sách thẻ, mảng là một giá trị và ổn. Nếu bạn tìm, đếm hay nối theo từng thẻ, mỗi thẻ là một sự thật riêng và nên là một dòng của bảng con có khóa chính và khóa ngoại."
+      en: "\"Postgres supports arrays\" only says arrays can be stored, not that the design is right; \"arrays are never allowed\" is too rigid. First normal form (1NF) asks whether each cell is one value in business terms. If you always read and write the whole tag list, the array is one value and fine. If you search, count or join by single tag, each tag is a separate fact and should be a row of a child table with a primary key and a foreign key."
 ---
 ## Mở bài
 

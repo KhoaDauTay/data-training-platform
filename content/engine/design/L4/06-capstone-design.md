@@ -109,8 +109,8 @@ quiz:
     answer: 1
     trap: 2
     why:
-      vi: "Nhiều người nghĩ khóa ngoại chỉ kiểm lúc COMMIT. Thật ra mặc định nó kiểm ngay ở cuối mỗi câu; chỉ ràng buộc khai báo `DEFERRABLE` và đặt `DEFERRED` mới chờ tới COMMIT."
-      en: "Many people think foreign keys are checked only at COMMIT. In fact by default they are checked at the end of each statement; only a constraint declared `DEFERRABLE` and set `DEFERRED` waits for COMMIT."
+      vi: "Postgres không chép theo thứ tự chữ cái; thứ tự là do bạn chạy câu nào trước. Khóa ngoại mặc định cũng không chờ tới COMMIT: nó được kiểm ở cuối mỗi câu `INSERT`, chỉ ràng buộc khai báo `DEFERRABLE` và đặt `DEFERRED` mới chờ. Vì vậy chép `loans` trước thì mỗi dòng trỏ tới một email và một ISBN chưa có trong `members`, `books`, và câu bị từ chối với mã 23503 (vi phạm khóa ngoại)."
+      en: "Postgres does not copy in alphabetical order; the order is whichever statement you run first. A foreign key does not wait for COMMIT by default either: it is checked at the end of each `INSERT`, and only a constraint declared `DEFERRABLE` and set `DEFERRED` waits. So copying `loans` first makes each row point to an email and an ISBN not yet in `members` and `books`, and the statement is refused with code 23503 (foreign key violation)."
 ---
 ## Mở bài
 

@@ -84,8 +84,8 @@ quiz:
     answer: 0
     trap: 1
     why:
-      vi: "Nhiều người nhớ luật \"bảng nối lấy cặp khóa ngoại làm khóa\" như luật tuyệt đối. Thật ra luật đó đúng khi mỗi cặp chỉ xuất hiện một lần; lịch hẹn là một sự kiện lặp lại, nên nó thành một thực thể có khóa riêng."
-      en: "Many people treat \"a junction table is keyed by its foreign keys\" as absolute. In fact it holds when each pair appears once; an appointment is a repeating event, so it becomes an entity with its own key."
+      vi: "\"Bảng nối không bao giờ dùng khóa ghép\" sai: luật thường gặp là ngược lại, bảng nối lấy cặp khóa ngoại làm khóa, nhưng chỉ khi mỗi cặp xuất hiện một lần. Ở đây bệnh nhân 1 có thể khám bác sĩ 1 hôm nay và tái khám tuần sau: cùng cặp, hai lịch. Khóa (`patient_id`, `doctor_id`) sẽ từ chối lịch thứ hai, nên lịch hẹn thành một thực thể có `id` riêng. Lý do không phải tốc độ: khóa ghép không làm truy vấn chậm đi đáng kể."
+      en: "\"Junction tables never use composite keys\" is wrong: the usual rule is the opposite, a junction table is keyed by its pair of foreign keys, but only when each pair appears once. Here patient 1 can see doctor 1 today and come back next week: the same pair, two appointments. The key (`patient_id`, `doctor_id`) would refuse the second one, so an appointment becomes an entity with its own `id`. Speed is not the reason: a composite key does not make queries noticeably slower."
   - q:
       vi: "`UNIQUE (doctor_id, starts_at)` chặn được trường hợp nào?"
       en: "Which case does `UNIQUE (doctor_id, starts_at)` block?"
@@ -96,8 +96,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì ý định là \"không trùng lịch\", nhưng `UNIQUE` chỉ so bằng nhau. Chặn lịch chồng khoảng thời gian cần một ràng buộc loại trừ (`EXCLUDE`) trên khoảng giờ; bài này dừng ở giờ bắt đầu."
-      en: "It sounds right because the intent is \"no double booking\", but `UNIQUE` only compares for equality. Blocking overlapping time ranges needs an exclusion constraint (`EXCLUDE`) on a time range; this lesson stops at start times."
+      vi: "\"Mọi lịch chồng giờ\" nghe hợp lý vì ý định là không đặt trùng lịch, nhưng `UNIQUE` chỉ so bằng nhau: 09:00 và 09:15 là hai giá trị khác nhau, nên lịch 09:15 vẫn qua dù khám chồng lên lịch 09:00. Hai bác sĩ cùng 09:00 cũng qua, vì cặp (`doctor_id`, `starts_at`) khác nhau, như lịch 1 và 3 trong lab. Chặn lịch chồng khoảng thời gian cần ràng buộc loại trừ (exclusion constraint, `EXCLUDE`) trên một khoảng giờ; bài này dừng ở giờ bắt đầu."
+      en: "\"Every overlapping appointment\" sounds right because the intent is no double booking, but `UNIQUE` only compares for equality: 09:00 and 09:15 are different values, so the 09:15 appointment passes even though it overlaps the 09:00 one. Two doctors at 09:00 also pass, since the pairs (`doctor_id`, `starts_at`) differ, like appointments 1 and 3 in the lab. Blocking overlapping time ranges needs an exclusion constraint (`EXCLUDE`) on a time range; this lesson stops at start times."
 ---
 ## Mở bài
 

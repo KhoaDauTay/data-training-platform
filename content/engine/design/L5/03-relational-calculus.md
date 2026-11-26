@@ -61,8 +61,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì phủ định của một bảng có vẻ là rỗng, nhưng phép tính không giới hạn biến vào bảng nào, nên kết quả vô hạn. Biểu thức an toàn chỉ trả giá trị có trong các quan hệ đã cho; SQL ép điều đó vì mọi biến phải đứng trong `FROM`."
-      en: "It sounds right because the negation of a table seems empty, but the calculus does not tie the variable to any table, so the result is infinite. A safe expression returns only values found in the given relations; SQL enforces this because every variable must sit in `FROM`."
+      vi: "Rỗng nghe hợp lý vì phủ định một bảng có vẻ không còn gì, nhưng ở đây biến `t` không bị buộc chạy trên bảng nào, nên mọi bộ có thể tưởng tượng mà không nằm trong `students` đều thỏa: vô số bộ. Phép tính cũng không biết lịch sử, nên không có nghĩa \"học viên đã bị xóa\". Biểu thức an toàn chỉ trả giá trị có trong các quan hệ nhắc tới; SQL ép điều đó vì mọi biến phải được khai báo trong `FROM`."
+      en: "Empty sounds right because negating a table seems to leave nothing, but here the variable `t` is not bound to any table, so every imaginable tuple not in `students` qualifies: infinitely many. The calculus knows no history either, so it cannot mean \"students that were deleted\". A safe expression returns only values found in the relations it mentions; SQL enforces this because every variable must be declared in `FROM`."
   - q:
       vi: "Học viên chưa học khóa nào có thỏa `∀ e ∈ took (e.student_id = t.id → e.grade >= 5)` không?"
       en: "Does a student with no course at all satisfy `∀ e ∈ took (e.student_id = t.id → e.grade >= 5)`?"
@@ -72,8 +72,8 @@ quiz:
     answer: 0
     trap: 1
     why:
-      vi: "Nhiều người nghĩ cần ít nhất một điểm mới kết luận. Thật ra \"với mọi\" trên tập rỗng là đúng; câu `NOT EXISTS` trong lab trả cả Dung. Nếu nghiệp vụ cần \"có học và đều đạt\", thêm một `EXISTS` nữa."
-      en: "Many people think at least one grade is needed. In fact \"for all\" over an empty set is true; the lab's `NOT EXISTS` query returns Dung too. If the business means \"took something and passed all\", add an `EXISTS`."
+      vi: "\"Chưa có điểm thì không kết luận được\" nghe hợp lý, nhưng công thức là một phép kéo theo: với mỗi lượt học `e`, nếu `e` là của học viên này thì điểm ≥ 5. Dung không có lượt học nào, nên vế trái `e.student_id = t.id` sai với mọi `e`, và kéo theo có vế trái sai luôn đúng. Vì vậy câu `NOT EXISTS` trong lab trả cả Dung. Nếu nghiệp vụ cần \"có học và đều đạt\", thêm một `EXISTS` nữa."
+      en: "\"Without grades you cannot conclude\" sounds right, but the formula is an implication: for each take `e`, if `e` belongs to this student, the grade is ≥ 5. Dung has no takes, so the left side `e.student_id = t.id` is false for every `e`, and an implication with a false left side is always true. That is why the lab's `NOT EXISTS` query returns Dung too. If the business means \"took something and passed all\", add an `EXISTS`."
 ---
 ## Mở bài
 

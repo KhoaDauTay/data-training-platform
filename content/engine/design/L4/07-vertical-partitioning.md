@@ -87,8 +87,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì TOAST nổi tiếng là \"chỗ để chữ dài\", nhưng ngưỡng mặc định là khoảng 2 KB mỗi dòng. Trong lab, 2.000 khách chiếm 250 trang và bảng TOAST trống; bỏ các cột ít đọc thì câu đếm khách `gold` chỉ còn đọc 32 trang."
-      en: "It sounds right because TOAST is known as \"where long text goes\", but the default threshold is about 2 KB per row. In the lab, 2,000 customers take 250 pages and the TOAST table is empty; without the rarely read columns, counting `gold` customers reads only 32 pages."
+      vi: "TOAST (cơ chế dời giá trị lớn sang bảng phụ) không dời mọi cột chữ: nó chỉ ra tay khi một dòng vượt khoảng 2 KB. Giá trị 400 byte nằm ngay trong trang của bảng, nên câu lọc theo `tier` đọc qua nó, có index trên `bio` hay không cũng vậy. Trong lab, 2.000 khách chiếm 250 trang và bảng TOAST trống; tách các cột ít đọc ra thì câu đếm khách `gold` chỉ còn đọc 32 trang."
+      en: "TOAST (the mechanism that moves large values into a side table) does not move every text column: it acts only when a row passes about 2 KB. A 400-byte value sits inside the table's pages, so a query filtering on `tier` reads through it, whether or not `bio` has an index. In the lab, 2,000 customers take 250 pages and the TOAST table is empty; after moving the rarely read columns out, counting `gold` customers reads only 32 pages."
   - q:
       vi: "Tách bảng theo cột có làm bảng vi phạm dạng chuẩn không?"
       en: "Does splitting a table by columns break a normal form?"
@@ -99,8 +99,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nhiều người nghĩ cứ tách bảng là đổi dạng chuẩn. Thật ra phi chuẩn hóa là lưu lặp một sự thật; tách 1:1 không lặp gì, khóa chính của bảng mới chính là khóa ngoại. Cái giá nằm ở đọc: hồ sơ đầy đủ cần JOIN."
-      en: "Many people think any split changes the normal form. In fact denormalising means storing a fact twice; a 1:1 split repeats nothing, the new table's primary key is the foreign key. The cost is on reads: the full profile needs a JOIN."
+      vi: "Phi chuẩn hóa là lưu một sự thật ở hai chỗ; tách 1:1 không chép gì, mỗi cột chỉ nằm ở một bảng. Bảng mới cũng có khóa riêng: `customer_id` vừa là khóa chính vừa là khóa ngoại. Vì vậy dạng chuẩn không đổi; đây là quyết định lưu trữ vật lý, và cái giá là một JOIN mỗi khi đọc đủ hồ sơ."
+      en: "Denormalising means storing one fact in two places; a 1:1 split copies nothing, each column lives in one table. The new table does have its own key: `customer_id` is both its primary key and its foreign key. So the normal form is unchanged; it is a physical storage decision, and the cost is a JOIN whenever the full profile is read."
 ---
 ## Mở bài
 
@@ -190,7 +190,7 @@ VACUUM FULL ex_wide2;
 SELECT pg_relation_size('ex_wide2') AS bytes;
 ```
 
-Câu sai vẫn ra 2.097.152 byte; sau `VACUUM FULL` còn 139.264.
+Câu sai vẫn ra 2.097.152 byte (256 trang 8 KB); sau `VACUUM FULL` còn 139.264 (17 trang).
 
 Bảng phụ thiếu khóa chính thì không còn là 1:1. Có khóa chính, hồ sơ thứ hai cho cùng khách bị từ chối:
 
@@ -309,7 +309,7 @@ VACUUM FULL ex_wide2;
 SELECT pg_relation_size('ex_wide2') AS bytes;
 ```
 
-The wrong version still gives 2,097,152 bytes; after `VACUUM FULL` it is 139,264.
+The wrong version still gives 2,097,152 bytes (256 pages of 8 KB); after `VACUUM FULL` it is 139,264 (17 pages).
 
 Without a primary key the side table is no longer 1:1. With one, a second profile for the same customer is refused:
 
