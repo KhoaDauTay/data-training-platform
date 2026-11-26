@@ -91,6 +91,9 @@ const GROUPS = [
   // the Mongo engine (mingo + shell parser, engineMongo-*, loaded in its worker), its shop data and the NoSQL path dataset
   // (content/engine/mongodb/path/dataset.json, dataset-*): 75 KB gz at integration.
   ['engineLab', /^(runner|engineMongo|mongoSeed\w*|dataset)-[\w-]{8}\.js$/, 90],
+  // v47 R1 (L1017): the search track's Elasticsearch-style interpreter + its lab runner (src/engine/search/{es,esLab}.ts), lazy from
+  // LAB_RUNNERS.search on the first lab or example whose data is a JSON index; main thread, no worker, no dependency.
+  ['search', /^esLab-/, 8],
   // L248: the MongoDB path ("Lộ trình NoSQL"): 12 parts of skills, lessons and 168 drills (content/engine/mongodb/path/*.yml as
   // JSON) + the shell parser for its ESR/covered rules, lazy on the first path page: 72 KB gz at integration.
   ['enginePath', /^engineMongoPath-/, 80],

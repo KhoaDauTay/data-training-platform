@@ -18,7 +18,7 @@ export interface PaletteSources {
 export interface PaletteHashes { skill: (id: string) => string; lesson: (engine: string, level: string, id: string) => string; term: (id: string) => string }
 
 const str = (x: unknown): string => (typeof x === 'string' ? x : '');
-const ENGINE_NAME: Record<string, string> = { postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB' };
+const ENGINE_NAME: Record<string, string> = { postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB', search: 'Elasticsearch' };
 
 export function paletteItems(src: PaletteSources, lang: 'vi' | 'en', hash: PaletteHashes, designName = 'Design', stackName = 'Data stack'): PaletteItem[] {
   const skills = src.skills.map((s): PaletteItem => ({ kind: 'skill', title: s.label[lang], alt: s.id, href: hash.skill(s.id) }));
