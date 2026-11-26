@@ -83,8 +83,8 @@ predict:
   answer: 1
   trap: 0
   why:
-    vi: "Phương án Index Only Scan nghe hợp lý vì index nhỏ hơn heap 10 lần và có đủ mọi khóa. Nhưng do MVCC, index không biết dòng nào còn thấy được; chỉ visibility map mới cho bỏ qua heap, và ở đây nó trống (`relallvisible` = 0). Ép dùng index thì ra `Heap Fetches: 10000`, nên planner chọn Seq Scan. Số dòng trong `pg_class` chỉ là ước lượng cho planner, không phải kết quả của `count(*)`."
-    en: "The Index Only Scan option sounds right because the index is 10 times smaller than the heap and holds every key. But because of MVCC the index does not know which rows are still visible; only the visibility map lets a scan skip the heap, and here it is empty (`relallvisible` = 0). Forcing the index gives `Heap Fetches: 10000`, so the planner picks a Seq Scan. The row count in `pg_class` is only an estimate for the planner, never the result of `count(*)`."
+    vi: "Phương án Index Only Scan nghe hợp lý vì index nhỏ hơn heap 10 lần (30 so với 304 trang) và có đủ mọi khóa. Nhưng do MVCC (mỗi dòng có thể có nhiều phiên bản, mỗi transaction thấy một phần), index không biết dòng nào còn thấy được; chỉ visibility map mới cho bỏ qua heap, và ở đây nó trống (`relallvisible` = 0). Ép dùng index thì ra `Heap Fetches: 10000`, nên planner chọn Seq Scan. Số dòng trong `pg_class` chỉ là ước lượng cho planner, không phải kết quả của `count(*)`."
+    en: "The Index Only Scan option sounds right because the index is 10 times smaller than the heap (30 against 304 pages) and holds every key. But because of MVCC (a row can have several versions, and each transaction sees some of them) the index does not know which rows are still visible; only the visibility map lets a scan skip the heap, and here it is empty (`relallvisible` = 0). Forcing the index gives `Heap Fetches: 10000`, so the planner picks a Seq Scan. The row count in `pg_class` is only an estimate for the planner, never the result of `count(*)`."
   expect: { node: Seq Scan, table: visits }
 quiz:
   - q:
@@ -97,8 +97,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì VACUUM vừa bật bit cho mọi trang, nhưng bit all-visible bị xóa ngay khi trang đổi. UPDATE đổi hai trang: trang của bản cũ và trang nhận bản mới. Mỗi mục index trỏ vào hai trang đó phải về heap hỏi, còn các trang khác vẫn được bỏ qua. Lần VACUUM sau bật lại bit."
-      en: "It sounds right because VACUUM just set the bit on every page, but the all-visible bit is cleared as soon as a page changes. The UPDATE changed two pages: the old version's page and the page that took the new version. Every index entry pointing into those two pages must ask the heap, while the other pages are still skipped. The next VACUUM sets the bits again."
+      vi: "\"0\" nghe hợp lý vì VACUUM vừa bật bit cho mọi trang, nhưng bit all-visible của một trang bị xóa ngay khi trang đó đổi. UPDATE đổi hai trang: trang của bản cũ và trang nhận bản mới (trang cũ đã đầy). Mỗi mục index trỏ vào hai trang đó phải về heap hỏi; mỗi trang giữ khoảng 33 dòng (10.000 ÷ 304), nên ra vài chục. Các trang khác vẫn giữ bit và được bỏ qua, nên không phải 10.000. Lần VACUUM sau bật lại bit."
+      en: "\"0\" sounds right because VACUUM just set the bit on every page, but a page's all-visible bit is cleared as soon as that page changes. The UPDATE changed two pages: the old version's page and the page that took the new version (the old page was full). Every index entry pointing into those two pages must ask the heap; each page holds about 33 rows (10,000 ÷ 304), so a few dozen. All other pages keep their bit and are still skipped, so it is not 10,000. The next VACUUM sets the bits again."
   - q:
       vi: "Sau khi xóa 1.000 trong 10.000 dòng của `visits` (chưa VACUUM, chưa ANALYZE), `reltuples` trong `pg_class` là bao nhiêu?"
       en: "After deleting 1,000 of the 10,000 rows of `visits` (no VACUUM, no ANALYZE yet), what is `reltuples` in `pg_class`?"
@@ -109,8 +109,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì con số nằm ngay trong catalog, nhưng `reltuples` chỉ là ước lượng cho planner. Do MVCC, không có một số dòng chung cho mọi transaction, nên Postgres không giữ số đếm chính xác. Muốn con số đúng cho transaction của bạn thì phải `count(*)`."
-      en: "It sounds right because the number sits right in the catalog, but `reltuples` is only an estimate for the planner. Because of MVCC there is no single row count valid for every transaction, so Postgres keeps no exact count. For the right number in your transaction you must `count(*)`."
+      vi: "9000 nghe hợp lý vì con số nằm ngay trong catalog, nhưng `reltuples` chỉ là ước lượng số dòng (row estimate) cho planner, và DELETE không cập nhật nó. Do MVCC, không có một số dòng chung cho mọi transaction: transaction mở từ trước DELETE vẫn thấy 10.000. Vì vậy Postgres không giữ số đếm chính xác. DELETE cũng không xóa thống kê; con số chỉ đổi khi VACUUM, ANALYZE hay CREATE INDEX chạy. Muốn con số đúng cho transaction của bạn thì phải `count(*)`."
+      en: "9000 sounds right because the number sits right in the catalog, but `reltuples` is only a row estimate for the planner, and DELETE does not update it. Because of MVCC there is no single row count valid for every transaction: a transaction opened before the DELETE still sees 10,000. So Postgres keeps no exact count. DELETE does not clear the statistics either; the number only changes when VACUUM, ANALYZE or CREATE INDEX runs. For the right number in your transaction you must `count(*)`."
 ---
 ## Mở bài
 
