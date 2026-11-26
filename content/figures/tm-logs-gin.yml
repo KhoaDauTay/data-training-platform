@@ -1,0 +1,23 @@
+# TM-7 (v47 Telemetry R1, L1042): one JSON log, indexed two ways. Lesson: e-tm-l2-03 (Ý chính).
+# Data = the lab's log id 25: level error, route /quote, code 500, msg db slow.
+# Sources: https://www.postgresql.org/docs/current/datatype-json.html#JSON-INDEXING ; https://grafana.com/docs/loki/latest/get-started/overview/
+title: { vi: "Một log, hai cách đánh index", en: "One log, two ways to index it" }
+caption:
+  vi: "GIN của PostgreSQL đánh index mọi khóa và giá trị trong jsonb; Loki chỉ đánh index nhãn và nén phần nội dung."
+  en: "PostgreSQL's GIN indexes every key and value in the jsonb; Loki indexes only the labels and compresses the content."
+alt:
+  vi: "Cùng một log có cấu trúc có thể được tìm qua index GIN trên mọi khóa và giá trị, hoặc qua vài nhãn như trong Loki rồi lọc nội dung lúc đọc. Kết quả: GIN phục vụ @> và ?, còn Loki nhanh khi nhãn ít giá trị."
+  en: "The same structured log can be found through a GIN index over every key and value, or through a few labels as in Loki with the content filtered at read time. Result: GIN serves @> and ?, while Loki is fast when labels have few values."
+nodes:
+  - { id: log, shape: doc, label: { vi: "một log JSON", en: "one JSON log" }, sub: jsonb }
+  - { id: gin, shape: table, label: "PG GIN", sub: { vi: "mọi khóa, giá trị", en: "every key, value" } }
+  - { id: loki, label: Loki, sub: { vi: "index: chỉ nhãn", en: "index: labels only" } }
+  - { id: n1, shape: note, label: { vi: "@> và ? dùng index", en: "@> and ? use the index" } }
+  - { id: n2, shape: note, label: { vi: "nội dung lọc lúc đọc", en: "content filtered on read" } }
+rows:
+  - [log]
+  - [gin, loki]
+  - [n1, n2]
+edges:
+  - { from: log, to: gin }
+  - { from: log, to: loki }

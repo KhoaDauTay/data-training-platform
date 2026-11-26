@@ -59,7 +59,7 @@ export const VIZ_ALIAS: Record<string, string> = {
  */
 export function resolveViz(name: string, engine: string): string | undefined {
   const known = [...new Set([...vizNames(), ...NOSQL_VIZ, ...PG_FLOW_VIZ, ...TENANT_VIZ])];
-  const bare = /^(pg|mg|dy|ds|st|ol|ts|sm|sql)-/.test(name) ? [name] : [name, `${engine}-${name}`, ...(engine === 'ds' || engine === 'st' || engine === 'ol' || engine === 'ts' || engine === 'sm' ? [`pg-${name}`] : [])];
+  const bare = /^(pg|mg|dy|ds|st|ol|ts|tm|sm|sql)-/.test(name) ? [name] : [name, `${engine}-${name}`, ...(engine === 'ds' || engine === 'st' || engine === 'ol' || engine === 'ts' || engine === 'tm' || engine === 'sm' ? [`pg-${name}`] : [])];
   for (const c of bare.flatMap((x) => [x, VIZ_ALIAS[x]]).filter((x): x is string => !!x)) {
     if (known.includes(c)) return c;
     const longer = known.filter((k) => k.startsWith(`${c}-`));

@@ -15,6 +15,7 @@
     "engSearch": ["binoculars", "Engine: search and Elasticsearch (looking for text in documents, no logo; v47 L1010)"],
     "engStack": ["flow-arrow", "Engine: the data stack (data flowing through a pipeline of stages, no logo; v45 L741)"],
     "engRedis": ["memory", "Engine: Redis, an in-memory key-value store (a memory chip, no logo; v47 L950)"],
+    "engTelemetry": ["pulse", "Engine: telemetry and observability (a heartbeat line on a monitor, no logo; v47 L1032)"],
     "engStream": ["waveform", "Engine: Streaming & CDC (a continuous signal of events, no logo; v47 L1062)"],
     "skillMap": ["grid-four", "#/me skill map card (a grid of skill cells; v24 L323)"],
     "badgePart": ["seal-check", "badge: a learning-path Part held at Solid (a checked seal)"],

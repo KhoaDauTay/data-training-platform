@@ -1,0 +1,27 @@
+# TM-8 (v47 Telemetry R1, L1042): trace a1 as a tree; the critical path by the longest-child rule. Lesson: e-tm-l2-04 (Ý chính).
+# Data = the lab: GET /track 900, auth 50, load shipment 780, render 35, db: shipments 120, call carrier API 630, http POST carrier 610.
+# Sources: https://opentelemetry.io/docs/concepts/signals/traces/ ; https://www.postgresql.org/docs/current/queries-with.html
+title: { vi: "Cây span của trace a1", en: "The span tree of trace a1" }
+caption:
+  vi: "Mỗi mũi tên đi từ span cha tới span con; các ô tô sáng là đường găng: mỗi bước theo span con chạy lâu nhất."
+  en: "Each arrow goes from a parent span to a child span; the highlighted boxes are the critical path: each step follows the longest child."
+alt:
+  vi: "Trace là một cây span nối bằng parent_id, và đường găng đi từ gốc qua span con chạy lâu nhất ở mỗi tầng. Kết quả: GET /track, load shipment, call carrier API rồi http POST carrier, nơi 610 trong 900 ms là thời gian riêng."
+  en: "A trace is a tree of spans linked by parent_id, and the critical path goes from the root through the longest child at each level. Result: GET /track, load shipment, call carrier API, then http POST carrier, where 610 of the 900 ms are its own time."
+nodes:
+  - { id: root, label: "GET /track", sub: "900 ms", tone: live }
+  - { id: load, label: "load shipment", sub: "780 ms", tone: live }
+  - { id: short, shape: note, label: { vi: "auth 50, render 35: nhánh ngắn", en: "auth 50, render 35: short" } }
+  - { id: db, label: "db: shipments", sub: "120 ms" }
+  - { id: call, label: "call carrier API", sub: "630 ms", tone: live }
+  - { id: http, label: "http POST carrier", sub: { vi: "610 ms, riêng 610", en: "610 ms, self 610" }, tone: warm }
+rows:
+  - [root]
+  - [load, short]
+  - [db, call]
+  - [http]
+edges:
+  - { from: root, to: load }
+  - { from: load, to: db }
+  - { from: load, to: call }
+  - { from: call, to: http }

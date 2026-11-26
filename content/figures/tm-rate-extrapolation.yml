@@ -1,0 +1,26 @@
+# TM-11 (v47 Telemetry R1, L1042): increase() over [1m] at 10:00, left-open window and extrapolation. Lesson: e-tm-l3-02 (Ý chính).
+# Data = the lab's /track 500 series: 48 at 09:59:00 (excluded), then 51, 54, 57, 60; increase 9 × 60/45 = 12, rate 0.2.
+# Sources: https://prometheus.io/docs/prometheus/latest/querying/functions/ ; https://github.com/prometheus/prometheus/blob/v3.5.0/promql/functions.go
+title: { vi: "increase() kéo tới hai mép khoảng", en: "increase() stretches to the range edges" }
+caption:
+  vi: "Khoảng [1m] lúc 10:00 mở bên trái: mẫu 09:59:00 bị loại. Bốn mẫu còn lại cách nhau 45 giây; hàm kéo thêm 15 giây về mép trái."
+  en: "The [1m] range at 10:00 is left-open: the 09:59:00 sample is out. The other four samples span 45 seconds; the function stretches 15 more seconds to the left edge."
+alt:
+  vi: "increase() lấy mức tăng giữa mẫu đầu và mẫu cuối trong khoảng rồi ngoại suy tới hai mép khoảng khi mẫu đủ gần mép. Kết quả: 9 trong 45 giây thành 9 × 60/45 = 12 trong 60 giây, và rate() là 12/60 = 0,2 mỗi giây."
+  en: "increase() takes the increase between the first and last sample in the range, then extrapolates to both edges when the samples are close enough. Result: 9 over 45 seconds becomes 9 × 60/45 = 12 over 60 seconds, and rate() is 12/60 = 0.2 per second."
+nodes:
+  - id: win
+    shape: grid
+    mono: true
+    label: { vi: "[1m] lúc 10:00", en: "[1m] at 10:00" }
+    head: [time, value]
+    cells: [["09:59:00", { vi: "48, loại", en: "48, out" }], ["09:59:15", "51"], ["09:59:30", "54"], ["09:59:45", "57"], ["10:00:00", "60"]]
+    rowTone: [warm, new, new, new, new]
+  - { id: raw, shape: key, label: { vi: "60 - 51 = 9 trong 45 s", en: "60 - 51 = 9 in 45 s" } }
+  - { id: ext, shape: note, label: { vi: "9 × 60/45 = 12; rate 0,2", en: "9 × 60/45 = 12; rate 0.2" } }
+rows:
+  - [win]
+  - [raw]
+  - [ext]
+edges:
+  - { from: win, to: raw }

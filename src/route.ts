@@ -114,7 +114,7 @@ export const learnAdvOf = (hash: string): string | undefined => /^#\/?learn\/adv
  * (either case) and lesson ids `e-…` pass; anything else is dropped (the page falls back to the engine or the overview).
  */
 export function engineRouteOf(hash: string): { engine?: string; level?: string; lesson?: string } {
-  const m = /^#\/?engine(?:\/(postgres|mongodb|dynamodb|redis|design|stack|olap|search|timeseries|stream)(?:\/([lL][1-5]|ext)(?:\/(e-[a-z0-9-]+))?)?)?(?=$|[/?])/.exec(hash);
+  const m = /^#\/?engine(?:\/(postgres|mongodb|dynamodb|redis|design|stack|olap|search|timeseries|telemetry|stream)(?:\/([lL][1-5]|ext)(?:\/(e-[a-z0-9-]+))?)?)?(?=$|[/?])/.exec(hash);
   if (m?.[2] === 'ext' && m[1] !== 'postgres') return { engine: m[1] }; // v43 (L720): the Extensions shelf is PostgreSQL's only
   return m ? { engine: m[1], level: m[2]?.toUpperCase(), lesson: m[3] } : {};
 }
@@ -154,10 +154,10 @@ export const engineCompareHash = (): string => '#/engine/compare';
 /** The engine, level or lesson page's hash; level `EXT` = `#/engine/postgres/ext` (v43 L720: the Extensions shelf, kept forever). */
 export const engineHash = (engine: string, level?: string, lesson?: string): string =>
   `#/engine/${engine}${level ? `/${level === 'EXT' ? 'ext' : level}${lesson ? `/${lesson}` : ''}` : ''}`;
-const ENGINE_OF: Record<string, string> = { pg: 'postgres', mg: 'mongodb', dy: 'dynamodb', rd: 'redis', ds: 'design', st: 'stack', ol: 'olap', sr: 'search', ts: 'timeseries', sm: 'stream' };
+const ENGINE_OF: Record<string, string> = { pg: 'postgres', mg: 'mongodb', dy: 'dynamodb', rd: 'redis', ds: 'design', st: 'stack', ol: 'olap', sr: 'search', ts: 'timeseries', tm: 'telemetry', sm: 'stream' };
 /** L280: `#/engine/play/<lesson id>` (named by engine-ux-spec §5.1, never built) → that lesson's hash; undefined elsewhere. */
 export function enginePlayOf(hash: string): string | undefined {
-  const m = /^#\/?engine\/play\/(e-(pg|mg|dy|rd|ds|st|ol|sr|ts|sm)-l([1-5])-[a-z0-9-]+)(?=$|[/?])/.exec(hash);
+  const m = /^#\/?engine\/play\/(e-(pg|mg|dy|rd|ds|st|ol|sr|ts|tm|sm)-l([1-5])-[a-z0-9-]+)(?=$|[/?])/.exec(hash);
   return m ? engineHash(ENGINE_OF[m[2]], `L${m[3]}`, m[1]) : undefined;
 }
 

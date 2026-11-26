@@ -1,0 +1,9 @@
+- id: signals
+  vi: Ba tín hiệu và metric
+  en: The three signals and metrics
+- id: query
+  vi: Truy vấn telemetry bằng SQL
+  en: Querying telemetry with SQL
+- id: promql
+  vi: PromQL mô phỏng và sự cố
+  en: Simulated PromQL and an incident

@@ -20,6 +20,7 @@ export const PREREQS: Partial<Record<EngineId, Prereq[]>> = {
   search: [{ sql: [1, 4] }, { engine: 'postgres', to: 'L1' }], // v47 (L1018)
   timeseries: [{ sql: [1, 10] }], // v47 (L977): L2 uses window functions (Part 10)
   stream: [{ sql: [1, 10] }, { engine: 'postgres', to: 'L1' }], // v47 (L1064)
+  telemetry: [{ sql: [1, 8] }, { engine: 'postgres', to: 'L1' }], // v47 (L1033): windows (lag), CTEs, JSONB
 };
 
 /** Total minutes of a list of lessons (track card: "≈ N h"). */

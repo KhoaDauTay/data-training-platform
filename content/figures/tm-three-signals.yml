@@ -1,0 +1,24 @@
+# TM-1 (v47 Telemetry R1, L1042): one request leaves a mark in all three signals. Lesson: e-tm-l1-01 (Ý chính).
+# Data = the lab: trace t2, GET /track, 2.4 s, the counter http_requests_total, the ERROR log line.
+# Sources: https://opentelemetry.io/docs/concepts/signals/ ; https://opentelemetry.io/docs/concepts/signals/logs/
+title: { vi: "Một request, ba tín hiệu", en: "One request, three signals" }
+caption:
+  vi: "Request t2 làm counter tăng 1, để lại một trace hai span và hai dòng log mang trace_id t2."
+  en: "Request t2 adds 1 to the counter, leaves a trace of two spans and two log lines carrying trace_id t2."
+alt:
+  vi: "Một request để lại dấu ở cả ba tín hiệu: metrics đếm nó, trace ghi các bước của nó, log ghi điều nó gặp. Kết quả: trace_id trong log là sợi dây nối log với trace."
+  en: "One request leaves a mark in all three signals: metrics count it, the trace records its steps, the logs record what it met. Result: the trace_id in the logs is the thread linking logs to the trace."
+nodes:
+  - { id: req, label: "GET /track", sub: { vi: "request t2", en: "request t2" } }
+  - { id: met, shape: table, label: metrics, sub: { vi: "counter +1", en: "counter +1" } }
+  - { id: tr, label: trace, sub: { vi: "2 span, 2,4 s", en: "2 spans, 2.4 s" } }
+  - { id: log, shape: doc, label: { vi: "log", en: "logs" }, sub: "trace_id = t2" }
+  - { id: why, shape: note, label: { vi: "trace_id nối log với trace", en: "trace_id links logs to the trace" } }
+rows:
+  - [req]
+  - [met, tr, log]
+  - [why]
+edges:
+  - { from: req, to: met }
+  - { from: req, to: tr }
+  - { from: req, to: log }
