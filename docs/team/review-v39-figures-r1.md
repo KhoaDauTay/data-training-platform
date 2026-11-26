@@ -53,9 +53,9 @@ and the shots are kept outside the repo, with the coordinator. This file sums th
 ## Why the checker missed E9, and the fix
 
 `getBBox()` ignores strokes. The strips were 15 high on a 16 pitch, so their geometric gap was 1.0. Rule c needed an overlap above
-`boxGap` (1), so it stayed silent, although two 1.2-wide strokes overlapped by 0.2. The labels' estimated ink sat 0.25 inside the
-stroke (in Edge the text box sits about 1.25 lower than the strip's middle, so it actually reached into the stroke), and rule b only
-fired on a crossing above 0.5. Rule a saw the touching line boxes but filed them as info.
+`boxGap` (1), so it stayed silent, although two 1.2-wide strokes overlapped by 0.2. The labels' estimated ink (from the text box Edge reports) ran from 0.2
+inside to 0.4 outside the strip's geometric edge (375/320 and 1280), so it sat on the 0.6-wide half stroke, and rule b only fired
+on a crossing above 0.5. Rule a saw the touching line boxes but filed them as info.
 
 `analyze()` now gets each box's stroke width (`sw`, read from CSS in the page; 1.2 / 2.2 in the Vitest model) and has two more
 checks:
@@ -87,3 +87,5 @@ All four are fixed.
 - E19: the left-join figure still follows the collapsed Bẫy 2 card; the caption now says "Bẫy 1".
 - E23, E24: the tight old gaps in `pg-mvcc-timeline`, `pg-wal-flow` and `mg-pipeline`, and the thin pipeline bars.
 - E26: the reserved band under the step sentence.
+- What the new thresholds let through on purpose (cells with 0.8–1.8 of background between strokes, text exactly on a stroke's
+  inner edge in `mg-replica-election`) is listed in the overlap report kept with the coordinator; each was looked at by eye.
