@@ -9,8 +9,8 @@ caption:
   vi: "Hai quầy cùng lấy 2 cuốn bằng SET stock = stock - :q với ConditionExpression stock >= :q. DynamoDB kiểm và ghi trong một bước nguyên tử, nên không bán lố; lần bị từ chối nhận ConditionalCheckFailedException và vẫn tốn WCU. PutItem không điều kiện thì ghi đè lặng lẽ."
   en: "Two desks each take 2 copies with SET stock = stock - :q and ConditionExpression stock >= :q. DynamoDB checks and writes in one atomic step, so nothing is oversold; the refused call gets ConditionalCheckFailedException and still uses WCU. A PutItem with no condition overwrites silently."
 alt:
-  vi: "Quầy A gửi lệnh trừ 2 cuốn của sách 978-0-02 nếu stock ≥ 2. Stock đang là 3, điều kiện 3 ≥ 2 đúng, nên stock thành 1."
-  en: "Desk A sends a command to take 2 copies of book 978-0-02 if stock ≥ 2. Stock is 3, the condition 3 ≥ 2 holds, so stock becomes 1."
+  vi: "Hai quầy cùng muốn lấy 2 cuốn sách 978-0-02, đang còn 3 cuốn, bằng một lần ghi có điều kiện stock ≥ 2. Bên dưới là kết quả của từng lần ghi, và cách khác: PutItem không điều kiện."
+  en: "Two desks each want to take 2 copies of book 978-0-02, which has 3, with a write conditioned on stock ≥ 2. Below are the result of each write and the other way: a PutItem with no condition."
 nodes:
   - { id: a, label: { vi: "Quầy A: lấy 2", en: "Desk A: takes 2" }, sub: { vi: "nếu stock ≥ 2", en: "if stock ≥ 2" }, tone: new }
   - { id: b, label: { vi: "Quầy B: lấy 2", en: "Desk B: takes 2" }, sub: { vi: "nếu stock ≥ 2", en: "if stock ≥ 2" }, tone: ghost }
@@ -31,6 +31,7 @@ edges:
   - { from: put, to: ow, dash: true }
 steps:
   - say: { vi: "Kiểm tra và ghi trong cùng một bước nguyên tử.", en: "Check and write in one atomic step." }
+    alt: { vi: "Quầy A gửi lệnh trước. Stock đang là 3, điều kiện 3 ≥ 2 đúng, nên stock thành 1.", en: "Desk A sends first. Stock is 3, the condition 3 ≥ 2 holds, so stock becomes 1." }
     show: [a, b, item, ok]
   - say: { vi: "Điều kiện sai: lỗi, item giữ nguyên, không bán lố.", en: "Condition false: an error, item unchanged, no overselling." }
     show: [a, b, item, no, wcu]

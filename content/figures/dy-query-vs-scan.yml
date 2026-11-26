@@ -8,8 +8,8 @@ caption:
   vi: "Bạn trả tiền theo ScannedCount, số item đã đọc, không theo Count, số item trả về. Query đi thẳng tới item collection của C-01 theo thứ tự sort key; Scan đọc cả 120 item rồi mới lọc."
   en: "You pay for ScannedCount, the items read, not for Count, the items returned. Query goes straight to C-01's item collection in sort-key order; Scan reads all 120 items, then filters."
 alt:
-  vi: "Bảng Orders có 120 item. Item collection của C-01 có 4 đơn theo thứ tự sort key orderId: 2026-07-28#O-101, 2026-08-28#O-102, 2026-09-17#O-103, 2026-10-19#O-104; 116 item còn lại thuộc khách khác. Query với customerId = C-01 chỉ đọc 4 item đó: ScannedCount 4, Count 4."
-  en: "Table Orders has 120 items. C-01's item collection holds 4 orders in sort-key order of orderId: 2026-07-28#O-101, 2026-08-28#O-102, 2026-09-17#O-103, 2026-10-19#O-104; the other 116 items belong to other customers. A Query with customerId = C-01 reads only those 4 items: ScannedCount 4, Count 4."
+  vi: "Bảng Orders có 120 item. Item collection của C-01 có 4 đơn theo thứ tự sort key orderId: 2026-07-28#O-101, 2026-08-28#O-102, 2026-09-17#O-103, 2026-10-19#O-104; 116 item còn lại thuộc khách khác."
+  en: "Table Orders has 120 items. C-01's item collection holds 4 orders in sort-key order of orderId: 2026-07-28#O-101, 2026-08-28#O-102, 2026-09-17#O-103, 2026-10-19#O-104; the other 116 items belong to other customers."
 nodes:
   - { id: q, label: Query, sub: "customerId = C-01", tone: new }
   - { id: s, label: Scan + Filter, sub: "customerId = C-01", tone: warm }
@@ -26,6 +26,7 @@ edges:
   - { from: s, to: rest }
 steps:
   - say: { vi: "Query đi thẳng tới một item collection, theo thứ tự sort key.", en: "Query goes straight to one item collection, in sort-key order." }
+    alt: { vi: "Query với customerId = C-01 chỉ đọc 4 item của C-01: ScannedCount 4, Count 4.", en: "A Query with customerId = C-01 reads only C-01's 4 items: ScannedCount 4, Count 4." }
     show: [q, c1, rest, cnt]
   - say: { vi: "Scan đọc mọi item rồi mới lọc; bạn trả tiền cho 120.", en: "Scan reads every item, then filters; you pay for 120." }
     show: [s, c1, rest, cnt]

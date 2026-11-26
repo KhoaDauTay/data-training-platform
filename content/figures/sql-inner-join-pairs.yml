@@ -35,8 +35,8 @@ rows:
   - [on]
   - [res]
 edges:
-  - { from: "o#0", to: "s#4", link: true }
-  - { from: "o#1", to: "s#2", link: true }
-  - { from: "o#2", to: "s#2", link: true }
-  - { from: "o#3", to: "s#0", link: true }
-  - { from: "o#4", to: "s#3", link: true }
+  - { from: "o#0.1", to: "s#4.0", link: true }
+  - { from: "o#1.1", to: "s#2.0", link: true }
+  - { from: "o#2.1", to: "s#2.0", link: true }
+  - { from: "o#3.1", to: "s#0.0", link: true }
+  - { from: "o#4.1", to: "s#3.0", link: true }

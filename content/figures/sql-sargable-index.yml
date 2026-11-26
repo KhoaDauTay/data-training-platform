@@ -16,7 +16,8 @@ nodes:
   - { id: gplan, shape: key, mono: true, label: Bitmap Index Scan, tone: live }
   - { id: bad, shape: grid, mono: true, label: { vi: "hàm bọc cột", en: "function on column" }, cells: [["f()", "f()", "f()", "f()", "f()"]], colTone: [warm, warm, warm, warm, warm], sub: { vi: "tính f() mọi dòng", en: "f() on every row" } }
   - { id: bplan, shape: key, mono: true, label: Seq Scan, tone: dead }
-  - { id: rule, shape: note, label: { vi: "đổi phía hằng số, đừng đổi cột", en: "move the constant, not the column" } }
+  - { id: rule, shape: note, label: { vi: "đổi phía hằng\u00a0số, đừng đổi cột", en: "move the constant, not the column" } }
+align: true
 rows:
   - [idx]
   - [good, gplan]

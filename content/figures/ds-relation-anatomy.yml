@@ -1,11 +1,12 @@
 # DS-2 (tools/v39/diagram-plan.md): relation, tuple, attribute, domain, and the 4 integrity kinds. Lesson: e-ds-l1-02 (Ý chính).
 # Data: the lab setup: staff (1 An 1 900, 2 Binh 2 750, 3 Chi 3 1200, 4 Dung 9 680, 5 Giang 1 820), departments (1 sales, 2 ops, 3 it).
+# v40 R2 (E-02): dept_id is drawn last so the lines leave its cells (edge ends staff#r.3); the caption no longer says the words point.
 # Setup has no FK yet; Dung's dept_id 9 has no parent, so the lab's ADD FOREIGN KEY fails with 23503 until it is fixed (lab steps 3–4).
 # Sources: https://www.postgresql.org/docs/current/ddl-constraints.html , https://www.postgresql.org/docs/current/errcodes-appendix.html
 title: { vi: "Từ ngữ hình thức trên một bảng quen", en: "The formal words on a familiar table" }
 caption:
-  vi: "Mỗi từ của mô hình quan hệ chỉ vào một phần của bảng, và mỗi loại luật toàn vẹn có chỗ của nó cùng một mã lỗi."
-  en: "Each word of the relational model points at a part of the table, and each kind of integrity rule has its place and an error code."
+  vi: "Bốn từ hình thức là tên khác của bảng, dòng, cột và kiểu; bốn loại luật toàn vẹn, mỗi loại có một mã lỗi. Cột dept_id của staff trỏ tới id của departments."
+  en: "The four formal words are other names for table, row, column and type; four kinds of integrity rule, each with an error code. Column dept_id of staff refers to the id of departments."
 alt:
   vi: "Quan hệ là bảng, bộ là dòng, thuộc tính là cột, miền là kiểu cộng luật. Bảng staff có 5 dòng: An phòng 1, lương 900; Binh phòng 2, 750; Chi phòng 3, 1200; Dung phòng 9, 680; Giang phòng 1, 820. Bảng departments có 1 sales, 2 ops, 3 it. Các đường nối dept_id với id của phòng: An và Giang tới sales, Binh tới ops, Chi tới it. Dung trỏ tới phòng 9, không có cha: thêm khóa ngoại sẽ báo 23503. Bốn loại luật: miền (CHECK, 23514), khóa (UNIQUE, 23505), thực thể (PK, 23502 hoặc 23505), tham chiếu (FK, 23503)."
   en: "A relation is a table, a tuple is a row, an attribute is a column, a domain is a type plus rules. Table staff has 5 rows: An dept 1, salary 900; Binh dept 2, 750; Chi dept 3, 1200; Dung dept 9, 680; Giang dept 1, 820. Table departments has 1 sales, 2 ops, 3 it. Lines join dept_id to the department id: An and Giang to sales, Binh to ops, Chi to it. Dung points at department 9, which has no parent: adding the foreign key raises 23503. Four kinds of rule: domain (CHECK, 23514), key (UNIQUE, 23505), entity (PK, 23502 or 23505), referential (FK, 23503)."
@@ -17,10 +18,10 @@ nodes:
   - id: staff
     shape: grid
     label: staff
-    head: [id, name, dept_id, salary]
-    cells: [["1", An, "1", "900"], ["2", Binh, "2", "750"], ["3", Chi, "3", "1200"], ["4", Dung, "9", "680"], ["5", Giang, "1", "820"]]
+    head: [id, name, salary, dept_id]
+    cells: [["1", An, "900", "1"], ["2", Binh, "750", "2"], ["3", Chi, "1200", "3"], ["4", Dung, "680", "9"], ["5", Giang, "820", "1"]]
     rowTone: [null, null, null, dead]
-    cellTone: { "3:2": dead }
+    cellTone: { "3:3": dead }
   - { id: dept, shape: grid, label: departments, head: [id, name], cells: [["1", sales], ["2", ops], ["3", it]] }
   - { id: bad, shape: key, label: { vi: "Dung: phòng 9", en: "Dung: dept 9" }, sub: { vi: "không cha: 23503", en: "no parent: 23503" }, tone: dead }
   - { id: i1, label: { vi: "Miền", en: "Domain" }, sub: "CHECK → 23514" }
@@ -35,7 +36,7 @@ rows:
   - [i1, i2]
   - [i3, i4]
 edges:
-  - { from: "staff#0", to: "dept#0", link: true }
-  - { from: "staff#1", to: "dept#1", link: true }
-  - { from: "staff#2", to: "dept#2", link: true }
-  - { from: "staff#4", to: "dept#0", link: true }
+  - { from: "staff#0.3", to: "dept#0.0", link: true }
+  - { from: "staff#1.3", to: "dept#1.0", link: true }
+  - { from: "staff#2.3", to: "dept#2.0", link: true }
+  - { from: "staff#4.3", to: "dept#0.0", link: true }

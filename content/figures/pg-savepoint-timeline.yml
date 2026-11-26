@@ -8,8 +8,8 @@ caption:
   vi: "Phần trước mốc được giữ; ROLLBACK TO SAVEPOINT chỉ bỏ phần sau mốc và đưa transaction đang hỏng (25P02) về trạng thái dùng được."
   en: "The part before the marker is kept; ROLLBACK TO SAVEPOINT undoes only the part after it and makes a broken transaction (25P02) usable again."
 alt:
-  vi: "Dòng thời gian của một transaction: BEGIN, UPDATE tài khoản 1 từ 100 xuống 70, UPDATE tài khoản 2 từ 50 lên 80, rồi SAVEPOINT before_fee."
-  en: "The timeline of one transaction: BEGIN, UPDATE account 1 from 100 down to 70, UPDATE account 2 from 50 up to 80, then SAVEPOINT before_fee."
+  vi: "Dòng thời gian của một transaction trên hai tài khoản, 1 có 100 và 2 có 50: các lệnh nối nhau bằng mũi tên, từ BEGIN tới COMMIT."
+  en: "The timeline of one transaction on two accounts, 1 with 100 and 2 with 50: the statements are joined by arrows, from BEGIN to COMMIT."
 nodes:
   - { id: b, shape: key, label: BEGIN }
   - { id: u1, label: UPDATE, sub: "id 1: 100 → 70", tone: new }
@@ -33,6 +33,7 @@ edges:
   - { from: rb, to: cm }
 steps:
   - say: { vi: "Chuyển tiền xong, đặt mốc before_fee.", en: "Money moved, marker before_fee set." }
+    alt: { vi: "BEGIN, UPDATE tài khoản 1 từ 100 xuống 70, UPDATE tài khoản 2 từ 50 lên 80, rồi SAVEPOINT before_fee.", en: "BEGIN, UPDATE account 1 from 100 down to 70, UPDATE account 2 from 50 up to 80, then SAVEPOINT before_fee." }
     show: [b, u1, u2, sp]
   - say: { vi: "Một lệnh lỗi: mọi lệnh sau bị từ chối (25P02).", en: "One statement fails: every later one is refused (25P02)." }
     show: [b, u1, u2, sp, fee, st]

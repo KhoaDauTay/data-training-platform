@@ -67,18 +67,18 @@ pitfalls:
     why:
       vi: "Phép nối tạo một dòng cho mỗi đơn hoàn tiền, nên khách hoàn tiền hai lần xuất hiện hai lần: 38 dòng cho 36 khách. `EXISTS` chỉ trả lời có hay không."
       en: "The join makes one row per refunded order, so a customer with two refunds appears twice: 38 rows for 36 customers. `EXISTS` only answers yes or no."
-  - title: { vi: "NOT IN thay cho NOT EXISTS", en: "NOT IN instead of NOT EXISTS" }
-    wrong: "SELECT c.id FROM customers c WHERE c.id NOT IN (SELECT o.customer_id FROM orders o WHERE o.order_date >= '2026-10-20')"
-    fix: "SELECT c.id FROM customers c WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id AND o.order_date >= '2026-10-20')"
-    why:
-      vi: "Danh sách mã khách có NULL (đơn vãng lai), nên `NOT IN` không đúng với ai: 0 dòng thay vì 235. `NOT EXISTS` so từng cặp, NULL chỉ đơn giản là không khớp. Hình cuối mục này vẽ chuỗi phép so của khách 3: một dòng NULL trong danh sách làm cả chuỗi ra NULL."
-      en: "The list of customer ids holds NULL (walk-in orders), so `NOT IN` is true for nobody: 0 rows instead of 235. `NOT EXISTS` checks pair by pair, and NULL simply does not match. The figure at the end of this section draws customer 3's chain of comparisons: one NULL row in the list turns the whole chain into NULL."
   - title: { vi: "Quên điều kiện tương quan", en: "Forgetting the correlation" }
     wrong: "SELECT s.name FROM stores s WHERE EXISTS (SELECT 1 FROM orders o WHERE o.order_date = '2026-10-29')"
     fix: "SELECT s.name FROM stores s WHERE EXISTS (SELECT 1 FROM orders o WHERE o.store_id = s.id AND o.order_date = '2026-10-29')"
     why:
       vi: "Thiếu `o.store_id = s.id`, truy vấn con hỏi \"có đơn nào ngày 29/10 không\", câu trả lời là có, cho mọi cửa hàng: 5 dòng thay vì 3. Truy vấn con phải nhắc tới dòng ngoài."
       en: "Without `o.store_id = s.id`, the subquery asks \"is there any order on 29 October\", and the answer is yes for every store: 5 rows instead of 3. The subquery has to mention the outer row."
+  - title: { vi: "NOT IN thay cho NOT EXISTS", en: "NOT IN instead of NOT EXISTS" }
+    wrong: "SELECT c.id FROM customers c WHERE c.id NOT IN (SELECT o.customer_id FROM orders o WHERE o.order_date >= '2026-10-20')"
+    fix: "SELECT c.id FROM customers c WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id AND o.order_date >= '2026-10-20')"
+    why:
+      vi: "Danh sách mã khách có NULL (đơn vãng lai), nên `NOT IN` không đúng với ai: 0 dòng thay vì 235. `NOT EXISTS` so từng cặp, NULL chỉ đơn giản là không khớp. Hình cuối mục này vẽ chuỗi phép so của khách 3: một dòng NULL trong danh sách làm cả chuỗi ra NULL."
+      en: "The list of customer ids holds NULL (walk-in orders), so `NOT IN` is true for nobody: 0 rows instead of 235. `NOT EXISTS` checks pair by pair, and NULL simply does not match. The figure at the end of this section draws customer 3's chain of comparisons: one NULL row in the list turns the whole chain into NULL."
 quiz:
   - q:
       vi: "`EXISTS (SELECT NULL FROM orders WHERE …)` có khác `EXISTS (SELECT 1 FROM orders WHERE …)` không?"

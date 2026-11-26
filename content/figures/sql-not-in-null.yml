@@ -16,7 +16,7 @@ nodes:
     label: { vi: "mã khách có đơn từ 20/10", en: "customer ids since 20 Oct" }
     cells: [["2", "4", "5", "6", "…", "NULL"]]
     toneOf: { "NULL": warm }
-    sub: { vi: "87 dòng, 5 dòng NULL", en: "87 rows, 5 of them NULL" }
+    sub: { vi: "87 dòng, 5\u00a0dòng NULL", en: "87 rows, 5 of them NULL" }
   - id: test
     shape: grid
     mono: true

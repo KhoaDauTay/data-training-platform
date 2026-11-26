@@ -7,8 +7,8 @@ caption:
   vi: "Mỗi lần gọi dừng ở Limit (hoặc 1 MB) và trả khóa của item cuối đã đọc (LastEvaluatedKey, viết tắt LEK). Gửi khóa đó làm ExclusiveStartKey để đọc tiếp. Có khóa chưa chắc còn dữ liệu: chỉ hết khi phản hồi không còn LastEvaluatedKey."
   en: "Each call stops at Limit (or 1 MB) and returns the key of the last item read (LastEvaluatedKey, LEK for short). Send that key as ExclusiveStartKey to read on. A key does not promise more data: you are done only when the response has no LastEvaluatedKey."
 alt:
-  vi: "Item collection C-01 có 4 đơn theo thứ tự orderId. Lần gọi 1, Limit 2, đọc O-101 và O-102, rồi trả LastEvaluatedKey là O-102."
-  en: "Item collection C-01 holds 4 orders in orderId order. Call 1, Limit 2, reads O-101 and O-102, then returns LastEvaluatedKey O-102."
+  vi: "Item collection C-01 có 4 đơn theo thứ tự orderId, đọc bằng Query với Limit 2 qua tối đa ba lần gọi."
+  en: "Item collection C-01 holds 4 orders in orderId order, read by a Query with Limit 2 over up to three calls."
 nodes:
   - id: strip
     shape: grid
@@ -27,6 +27,7 @@ edges:
   - { from: c2, to: c3, label: ExclusiveStartKey }
 steps:
   - say: { vi: "Dừng khi đủ Limit hoặc 1 MB; trả về khóa cuối đã đọc.", en: "Stops at Limit or 1 MB; returns the last key read." }
+    alt: { vi: "Lần gọi 1 đọc O-101 và O-102, rồi trả LastEvaluatedKey là O-102.", en: "Call 1 reads O-101 and O-102, then returns LastEvaluatedKey O-102." }
     show: [strip, c1]
   - say: { vi: "Gửi lại khóa đó làm ExclusiveStartKey.", en: "Send that key back as ExclusiveStartKey." }
     show: [strip, c1, c2]

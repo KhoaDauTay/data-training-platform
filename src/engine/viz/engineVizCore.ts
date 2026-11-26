@@ -180,7 +180,7 @@ const HOLD_MS = 2050; // the 0.55 s tween + 1.5 s rest (engine-ux-spec §6); 4 s
  * `data-fig`, the caption follows the title, and the generated text alternative (every node and arrow) sits in a <details>.
  * A figure with one frame is static (P3): no buttons, counter, status line or focus stop.
  */
-export interface FigOpts { name: string; caption: string; alt: string[]; altTitle: string }
+export interface FigOpts { name: string; caption: string; alt: string[]; altTitle: string; /** v40 R2 (E-16): each step in words, the numbered list (else the step sentences) */ steps?: string[] }
 let figs = 0;
 export function mount(host: HTMLElement, d: Diagram, lang: Lang, start = 0, fo?: FigOpts): VizHandle {
   const ui = UI[lang];
@@ -193,7 +193,7 @@ export function mount(host: HTMLElement, d: Diagram, lang: Lang, start = 0, fo?:
   const back = D.h('button', { type: 'button', class: BTN }, `‹ ${ui.back}`);
   const play = D.h('button', { type: 'button', class: BTN, 'aria-pressed': 'false' }, ui.play);
   const next = D.h('button', { type: 'button', class: BTN }, `${ui.next} ›`);
-  const items = d.frames.map((f, i) => D.h('li', {}, f.say));
+  const items = d.frames.map((f, i) => D.h('li', {}, fo?.steps?.[i] ?? f.say));
   const alt = fo ? D.h('div', { id: `${id}-alt` }, ...fo.alt.map((p) => D.h('p', { class: 'm-0' }, p))) : null;
   if (one) st.svg.setAttribute('aria-labelledby', `${id}-cap ${id}-alt`);
   const fig = D.h('figure', one ? { class: 'm-0 grid gap-2', 'data-fig': fo!.name } : {
@@ -207,7 +207,7 @@ export function mount(host: HTMLElement, d: Diagram, lang: Lang, start = 0, fo?:
     // longest and the buttons below never move between steps
     D.h('div', { class: 'grid' }, say, ...d.frames.map((f) => D.h('p', { class: 'invisible m-0 text-body-sm [grid-area:1/1]', 'aria-hidden': 'true' }, f.say))),
     D.h('div', { class: 'flex flex-wrap items-center gap-2' }, back, play, next, counter),
-    D.h('details', { class: 'text-body-sm' }, D.h('summary', {}, ui.all), D.h('ol', {}, ...items), alt)]));
+    D.h('details', { class: 'text-body-sm' }, D.h('summary', {}, ui.all), alt, D.h('ol', {}, ...items))]));
   let at = -1;
   let timer: number | undefined;
   const halt = (): void => {

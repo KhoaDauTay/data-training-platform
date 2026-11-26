@@ -8,8 +8,8 @@ caption:
   vi: "Một: mọi cột câu cần đều có trong index (INCLUDE thêm amount vào lá, không làm nó thành khóa). Hai: trang heap phải được đánh dấu all-visible trong visibility map, việc VACUUM làm. Trang chưa đánh dấu vẫn phải mở heap."
   en: "One: every column the query needs is in the index (INCLUDE adds amount to the leaves without making it a key). Two: the heap page must be marked all-visible in the visibility map, which VACUUM does. A page without the mark still opens the heap."
 alt:
-  vi: "Lá của index (customer_id, created_at) INCLUDE (amount) có 5 đơn mới nhất của khách 42, mỗi mục có customer_id, created_at và amount; amount là cột INCLUDE, không phải khóa. Bảng vừa nạp: visibility map của 4 trang (minh họa, trên 371 trang) toàn bit 0, nên Index Scan vẫn mở cả 4 trang heap."
-  en: "The leaf of index (customer_id, created_at) INCLUDE (amount) holds customer 42's 5 newest orders, each entry with customer_id, created_at and amount; amount is an INCLUDE column, not a key. The table is freshly loaded: the visibility map of 4 pages (an illustration, of 371) is all 0 bits, so the Index Scan still opens all 4 heap pages."
+  vi: "Lá của index (customer_id, created_at) INCLUDE (amount) có 5 đơn mới nhất của khách 42, mỗi mục có customer_id, created_at và amount; amount là cột INCLUDE, không phải khóa. Bên dưới là visibility map của 4 trang (minh họa, trên 371 trang) và 4 trang heap. Hai điều kiện: mọi cột có trong index, trang all-visible."
+  en: "The leaf of index (customer_id, created_at) INCLUDE (amount) holds customer 42's 5 newest orders, each entry with customer_id, created_at and amount; amount is an INCLUDE column, not a key. Below are the visibility map of 4 pages (an illustration, of 371) and 4 heap pages. Two conditions: every column is in the index, the page is all-visible."
 nodes:
   - { id: c1, shape: key, label: { vi: "1. mọi cột có trong index", en: "1. every column in index" }, tone: live }
   - { id: c2, shape: key, label: { vi: "2. trang all-visible", en: "2. page all-visible" }, tone: warm }
@@ -35,6 +35,7 @@ edges:
   - { from: vm, to: heap, label: { vi: "bit 0: mở", en: "bit 0: open" } }
 steps:
   - say: { vi: "Bảng vừa nạp: chưa trang nào all-visible, vẫn phải mở heap.", en: "Freshly loaded: no page is all-visible, the heap is still opened." }
+    alt: { vi: "Bảng vừa nạp: visibility map toàn bit 0, nên Index Scan vẫn mở cả 4 trang heap.", en: "The table is freshly loaded: the visibility map is all 0 bits, so the Index Scan still opens all 4 heap pages." }
   - say: { vi: "VACUUM bật bit all-visible.", en: "VACUUM sets the all-visible bits." }
     alt: { vi: "VACUUM chạy: cả 4 bit trong visibility map thành 1.", en: "VACUUM runs: all 4 bits in the visibility map become 1." }
     set:

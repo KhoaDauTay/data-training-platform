@@ -21,10 +21,16 @@ export interface FigNode {
   /** v40: one grid cell, `"<body row>:<col>"` → tone, drawn with a bold edge (the highlight; words still carry the meaning) */
   cellTone?: Record<string, Tone>;
   items?: { label: Bi; value: number; note?: Bi; tone?: Tone }[]; mark?: number;
+  /** v40 R2 (E-03): a box or key that shows a crow's-foot mark before its label (a legend entry) */
+  card?: Card;
 }
-/** `from`/`to` = a node id, or `grid#row` for a link; `link` = a plain line (a `grid#row` link is drawn only side by side; a
- * node-to-node link (v40) is routed like an arrow across rows, without a head). */
-export interface FigEdge { from: string; to: string; label?: Bi; dash?: boolean; link?: boolean }
+/** v40 R2 (E-03): a crow's-foot end mark: exactly one, zero or one, one or more, zero or more. */
+export type Card = 'one' | 'zero-one' | 'many' | 'zero-many';
+/** `from`/`to` = a node id, or `grid#row` (v40 R2: `grid#row.col`, the line leaves that cell's facing edge) for a link; `link` =
+ * a plain line (a `grid#row` link is drawn only side by side; a node-to-node link (v40) is routed like an arrow across rows,
+ * without a head). v40 R2: `ends` = crow's-foot marks at the from/to ends of a node-to-node link; `near` = drawn only between
+ * neighbouring rows or side by side (never on a side lane; the text alternative keeps it). */
+export interface FigEdge { from: string; to: string; label?: Bi; dash?: boolean; link?: boolean; ends?: [Card | null, Card | null]; near?: boolean }
 /** v40: a dashed frame around whole author rows (one level), its label in a band on top. */
 export interface FigGroup { id: string; label: Bi; nodes: string[] }
 type Patch = Record<string, Partial<FigNode>>;
@@ -46,7 +52,8 @@ const fail = (msg: string): never => {
 
 // ── text fit (svg-system §5) ─────────────────────────────────────────────────────────────────────────────────────
 const ADV = { 400: W400.split(',').map(Number), 700: W700.split(',').map(Number) };
-const fold = (s: string): string => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D');
+// v40 R2: a no-break space (U+00A0, written " " in YAML) keeps two words on one line (wrap breaks at ' ' only) and measures as a space
+const fold = (s: string): string => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').replace(/ /g, ' ');
 /** Estimated advance of `s` at `size` px: the table + 4 % (unknown characters 0.62 em); mono 0.62 em per character. */
 export function textWidth(s: string, size: number, bold = false, mono = false): number {
   if (mono) return [...s].length * 0.62 * size;
@@ -130,8 +137,10 @@ function size(n: FigNode, lang: Lang, room: number): Sized {
   const ls = boxLines(n, lang, room + 2 * MARGIN >= WIDE);
   if (shape === 'note') return { w: Math.ceil(widest(ls)), h: tall(ls) };
   const padX = shape === 'key' ? 14 : shape === 'doc' ? 16 : 10;
-  return { w: Math.ceil(Math.max(64, widest(ls) + 2 * padX)), h: tall(ls) + 2 * PAD_Y + (shape === 'table' ? CAP : 0) };
+  return { w: Math.ceil(Math.max(64, widest(ls) + 2 * padX + (n.card ? CARD_W : 0))), h: tall(ls) + 2 * PAD_Y + (shape === 'table' ? CAP : 0) };
 }
+/** v40 R2: room a legend entry's mark takes before its label. */
+const CARD_W = 34;
 /** v40: a cylinder's cap is an ellipse 2·5 tall (cubic halves, no arc: the checker's path sampler reads M L H V Q C Z). */
 const CAP = 10;
 
@@ -140,6 +149,11 @@ export interface Rect { x: number; y: number; w: number; h: number }
 const base = (end: string): string => end.split('#')[0];
 /** an edge that names a grid row (grid#2) at either end */
 const rowEnd = (e: FigEdge): boolean => e.from.includes('#') || e.to.includes('#');
+/** An edge end `id`, `id#row` or (v40 R2) `id#row.col` → [id, row?, col?]. */
+const cellOf = (end: string): [string, number?, number?] => {
+  const [id, rc] = end.split('#');
+  return [id, ...(rc?.split('.').map(Number) ?? [])] as [string, number?, number?];
+};
 const merge = (nodes: FigNode[], set?: Patch): FigNode[] => nodes.map((n) => (set?.[n.id] ? { ...n, ...set[n.id] } : n));
 interface Plan { say: string; show: Set<string>; nodes: FigNode[] }
 
@@ -178,7 +192,7 @@ export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): 
   let reserve = 0;
   let pl = placeRows(spec, lang, W, new Map(dims), reserve, heads);
   for (let i = 0; i < 3; i++) {
-    const need = edges.filter((e) => !gridLink(e) && Math.abs(pl.rowOf.get(base(e.from))! - pl.rowOf.get(base(e.to))!) > 1).length;
+    const need = edges.filter((e) => !gridLink(e) && !e.near && Math.abs(pl.rowOf.get(base(e.from))! - pl.rowOf.get(base(e.to))!) > 1).length;
     if (need <= reserve) break;
     reserve = need;
     pl = placeRows(spec, lang, W, new Map(dims), reserve, heads);
@@ -197,9 +211,12 @@ export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): 
   // (⅓ ⅔ …, sorted by where they come from) when each lands above its own source, else they join one bus with one arrowhead.
   // v40: arrows on a side lane share the spread (they can land anywhere on the box), never the bus.
   const far = (e: FigEdge): boolean => Math.abs(rowOf.get(base(e.from))! - rowOf.get(base(e.to))!) > 1;
+  const dropped = (e: FigEdge): boolean => !!e.near && far(e); // v40 R2: a `near` edge is not drawn on a side lane
+  /** v40 R2 (E-01): an arrow leaves a node whose text sits on its edge (a table's sub or title) 8 units clear of it */
+  const out = (id: string): number => (['grid', 'bars'].includes(byId.get(base(id))?.shape ?? '') ? 8 : 2);
   const side = (e: FigEdge): string | undefined => {
     const ra = rowOf.get(base(e.from))!, rb = rowOf.get(base(e.to))!;
-    return e.link || ra === rb ? undefined : `${base(e.to)}|${rb > ra}`;
+    return e.link || ra === rb || dropped(e) ? undefined : `${base(e.to)}|${rb > ra}`;
   };
   const cx = (e: FigEdge): number => { const a = at.get(base(e.from))!; return a.x + a.w / 2; };
   const spread = (e: FigEdge, g: FigEdge[]): number => { const b = at.get(base(e.to))!; return Math.round(b.x + (b.w * (g.indexOf(e) + 1)) / (g.length + 1)); };
@@ -210,6 +227,14 @@ export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): 
     if (g.length < 2) return undefined;
     return far(e) || g.every((f) => far(f) || fits(f, spread(f, g))) ? spread(e, g) : 'bus';
   };
+  /** v40 R2 (E-08): ≥ 2 arrows leaving one side of a box toward neighbouring rows leave it at ⅓, ⅔ … (sorted by where they go),
+   * so an elbow's first leg never runs beside a straight arrow and through its label; undefined = alone (it leaves the middle). */
+  const leave = (e: FigEdge): number | undefined => {
+    const dir = (f: FigEdge): number => Math.sign(rowOf.get(base(f.to))! - rowOf.get(base(f.from))!);
+    const g = edges.filter((f) => !f.link && !far(f) && base(f.from) === base(e.from) && dir(f) && dir(f) === dir(e)).sort((p, q) => at.get(base(p.to))!.x - at.get(base(q.to))!.x);
+    const a = at.get(base(e.from))!;
+    return g.length < 2 ? undefined : Math.round(a.x + (a.w * (g.indexOf(e) + 1)) / (g.length + 1));
+  };
   let laneNo = 0;
   const routes = edges.map((e) => {
     const a = at.get(base(e.from)) ?? fail(`edge: không có node "${e.from}"`);
@@ -217,12 +242,13 @@ export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): 
     const ra = rowOf.get(base(e.from))!, rb = rowOf.get(base(e.to))!;
     const label = tr(e.label, lang);
     const plain = !!e.link; // a link has no head and ends on the box edge
+    if (dropped(e)) return undefined;
     if (e.link && (gridLink(e) || ra === rb)) {
       if (ra !== rb) return undefined; // a table-row link stacked on a phone: the text alternative keeps it
       const [l, r] = a.x < b.x ? [e.from, e.to] : [e.to, e.from];
       const L = at.get(base(l))!, R = at.get(base(r))!;
-      const y1 = anchorY(l, L), y2 = anchorY(r, R);
-      return { e, d: `M${L.x + L.w} ${y1} L${R.x} ${y2}`, lab: label && y1 === y2 ? { x: (L.x + L.w + R.x) / 2, y: y1 - 6 - lineH(SS) / 2, a: 'm' as const, s: label } : undefined };
+      const y1 = anchorY(l, L, e), y2 = anchorY(r, R, e), x1 = anchorX(l, L, true), x2 = anchorX(r, R, false);
+      return { e, rev: l !== e.from, d: `M${x1} ${y1} L${x2} ${y2}`, lab: label && y1 === y2 ? { x: (x1 + x2) / 2, y: y1 - 6 - lineH(SS) / 2, a: 'm' as const, s: label } : undefined };
     }
     if (ra === rb && rowEnd(e)) return label ? fail(`${e.from}: dòng bảng, không nhãn`) : rowArrow(e, a, b);
     if (ra === rb) {
@@ -234,17 +260,18 @@ export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): 
       return { e, d: `M${x1} ${cy} L${x2} ${cy}`, lab: label ? { x: (x1 + x2) / 2, y: cy - 6 - lineH(SS) / 2, a: 'm' as const, s: label } : undefined };
     }
     const down = rb > ra;
-    const y1 = plain ? (down ? a.y + a.h : a.y) : down ? a.y + a.h + 2 : a.y - 2;
+    const y1 = plain ? (down ? a.y + a.h : a.y) : down ? a.y + a.h + out(e.from) : a.y - out(e.from);
     const end = (x: number, from: number): number => (plain ? (down ? b.y : b.y + b.h) : stopAt(x, from, x, b.y + b.h / 2, STROKE, b)[1]);
     const L = land(e);
     if (far(e)) {
       if (label) fail(`${e.from}→${e.to}: nhãn trên làn bên chưa hỗ trợ`);
-      return { e, d: laneRoute(a, b, ra, rb, CW + 8 + 16 * laneNo++, nextLane, end, typeof L === 'number' ? L : undefined) };
+      return { e, d: laneRoute(a, y1, b, ra, rb, CW + 8 + 16 * laneNo++, nextLane, end, typeof L === 'number' ? L : undefined) };
     }
     const lo = Math.max(a.x, b.x), hi = Math.min(a.x + a.w, b.x + b.w);
+    const D = leave(e);
     const straight = L === undefined ? hi - lo >= 24 : L !== 'bus' && fits(e, L);
     if (straight) {
-      const x = typeof L === 'number' ? L : Math.round((lo + hi) / 2);
+      const x = typeof L === 'number' ? L : D === undefined ? Math.round((lo + hi) / 2) : Math.min(hi - 12, Math.max(lo + 12, D));
       const ye = end(x, y1);
       return { e, d: `M${x} ${y1} L${x} ${ye}`, lab: label ? { x: x + 6, y: (y1 + ye) / 2, a: undefined, s: label } : undefined };
     }
@@ -253,7 +280,7 @@ export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): 
     lanes.set(gap, L === 'bus' ? Math.max(1, lanes.get(gap) ?? 0) : k + 1); // ponytail: a lone elbow placed before a bus in the same gap may share its lane
     const ym = laneY(gap, k);
     // a lone elbow lands on the part of b nearest the source (or its spread place); a bus lands in b's middle
-    const ax = Math.round(a.x + a.w / 2);
+    const ax = D ?? Math.round(a.x + a.w / 2);
     const bx = L === 'bus' ? Math.round(b.x + b.w / 2) : typeof L === 'number' ? L : Math.round(Math.min(b.x + b.w - 12, Math.max(b.x + 12, ax)));
     if (label && L === 'bus') fail(`${e.from}→${e.to}: nhãn trên đường bus chưa hỗ trợ`);
     return { e, d: `M${ax} ${y1} L${ax} ${ym} L${bx} ${ym} L${bx} ${end(bx, ym)}`, lab: label ? elbowLabel(label, ax, bx, ym, e) : undefined };
@@ -267,17 +294,28 @@ export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): 
       const n = byId.get(base(end))!, gw = n.shape === 'grid' ? gridCols(n, lang).reduce((p, q) => p + q, 0) : r.w;
       return r.x + Math.round((r.w - gw) / 2) + (out * s > 0 ? gw : 0);
     };
-    const y1 = anchorY(e.from, a), yb = e.to.includes('#') ? anchorY(e.to, b) : Math.min(b.y + b.h - 8, Math.max(b.y + 8, y1));
+    const y1 = anchorY(e.from, a, e), yb = e.to.includes('#') ? anchorY(e.to, b, e) : Math.min(b.y + b.h - 8, Math.max(b.y + 8, y1));
     const x1 = edge(e.from, a, 1) + 2 * s, tx = edge(e.to, b, -1), xm = Math.round((x1 + tx) / 2);
     // the tip (end + 0.75·w) stays 3 short of the cells, as stopAt() does
     return { e, d: `M${x1} ${y1} L${xm} ${y1} L${xm} ${yb} L${tx - (3 + 0.75 * STROKE) * s} ${yb}`, lab: undefined };
   }
-  /** A link end's y: a grid row's middle (`grid#2`), else the node's middle. */
-  function anchorY(end: string, r: Rect): number {
-    const [id, row] = end.split('#');
+  /** A link end's y: a grid row's middle (`grid#2`), else the node's middle; v40 R2 (E-02): links sharing one row end spread 8 apart. */
+  function anchorY(end: string, r: Rect, e: FigEdge): number {
+    const [id, row] = cellOf(end);
     if (row === undefined) return Math.round(r.y + r.h / 2);
     const n = byId.get(id)!;
-    return Math.round(r.y + tall(titleLines(n, lang, 'label', wide)) + (n.label === undefined ? 0 : 4) + ((n.head ? 1 : 0) + Number(row) + 0.5) * ROW_H);
+    const share = edges.filter((f) => f.from === end || f.to === end);
+    return Math.round(r.y + tall(titleLines(n, lang, 'label', wide)) + (n.label === undefined ? 0 : 4) + ((n.head ? 1 : 0) + row + 0.5) * ROW_H + (share.indexOf(e) - (share.length - 1) / 2) * 8);
+  }
+  /** v40 R2 (E-02): a link end's x: the node's facing edge, or for `grid#row.col` the facing edge of that cell, which must be the
+   * table's outer column on that side (a line from an inner cell would cross its neighbours). */
+  function anchorX(end: string, r: Rect, right: boolean): number {
+    const [id, , col] = cellOf(end);
+    if (col === undefined) return r.x + (right ? r.w : 0);
+    const cols = gridCols(byId.get(id)!, lang);
+    const sum = cols.reduce((a, b) => a + b, 0);
+    if (col !== (right ? cols.length - 1 : 0)) fail(`${end}: ô không ở mép`);
+    return r.x + Math.round((r.w - sum) / 2) + (right ? sum : 0);
   }
 
   /** data-from/data-to name a box the checker can find: a box, key, table or doc end (a grid or bars end has no single rect, the checker finds its nearest cell). */
@@ -291,8 +329,9 @@ export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): 
       if (!r || !p.show.has(base(r.e.from)) || !p.show.has(base(r.e.to))) return;
       const k = `e:${i}`;
       shapes.push(r.e.link
-        ? { k, t: 'p', d: r.d, ink: 'new', w: STROKE, dash: r.e.dash }
+        ? { k, t: 'p', d: r.d, ink: r.e.ends ? 'edge' : 'new', w: STROKE, dash: r.e.dash }
         : { k, t: 'p', d: r.d, ink: 'edge', w: STROKE, arrow: true, dash: r.e.dash, attrs: ends(r.e) });
+      if (r.e.ends) shapes.push(...crowEnds(k, r.d, r.e.ends, !!r.rev));
       if (r.lab) shapes.push({ k: `${k}.l`, t: 't', x: r.lab.x, y: r.lab.y, s: r.lab.s, size: SS, a: r.lab.a, ink: 'muted' });
     });
     for (const n of p.nodes) if (p.show.has(n.id)) shapes.push(...draw(n, at.get(n.id)!, lang, wide, parentOf.get(n.id)));
@@ -328,7 +367,7 @@ function placeRows(spec: FigSpec, lang: Lang, W: number, dims: Map<string, Sized
   const between = (a: string, b: string): FigEdge | undefined => edges.find((e) => (base(e.from) === a && base(e.to) === b) || (base(e.from) === b && base(e.to) === a));
   const gapOf = (a: string, b: string): number => {
     const e = between(a, b);
-    return !e ? GAP_X : e.link ? Math.max(32, e.label ? Math.ceil(textWidth(tr(e.label, lang), SS)) + 12 : 0) : Math.max(rowEnd(e) ? 40 : 24, e.label ? Math.ceil(textWidth(tr(e.label, lang), SS)) + 12 : 0); // v41: a row arrow may step in the gap
+    return !e ? GAP_X : e.link ? Math.max(32, (e.label ? Math.ceil(textWidth(tr(e.label, lang), SS)) + 12 : 0) + (e.ends ? 2 * CROW : 0)) : Math.max(rowEnd(e) ? 40 : 24, e.label ? Math.ceil(textWidth(tr(e.label, lang), SS)) + 12 : 0); // v41: a row arrow may step in the gap
   };
   const links = (a: string, b: string): number => edges.filter((e) => e.link && [base(e.from), base(e.to)].sort().join() === [a, b].sort().join()).length;
   // R1 E16: `align` lines up runs of equal-length rows as columns (boxes stretched to the column); a run that does not fit stacks
@@ -384,7 +423,7 @@ function placeRows(spec: FigSpec, lang: Lang, W: number, dims: Map<string, Sized
   for (const n of spec.nodes) if (!rowOf.has(n.id)) fail(`node "${n.id}" không nằm trong rows`);
   const near = (e: FigEdge): boolean => Math.abs(rowOf.get(base(e.from))! - rowOf.get(base(e.to))!) === 1;
   // a labelled edge between neighbouring rows widens its gap (v40: 64, room for a label beside a straight arrow or above an elbow)
-  const labelled = new Set(edges.filter((e) => e.label && near(e)).map((e) => Math.min(rowOf.get(base(e.from))!, rowOf.get(base(e.to))!)));
+  const labelled = new Set(edges.filter((e) => (e.label || e.ends) && near(e)).map((e) => Math.min(rowOf.get(base(e.from))!, rowOf.get(base(e.to))!)));
   const isNote = (id: string): boolean => byId.get(id)?.shape === 'note';
   const linked = (i: number): boolean => edges.some((e) => Math.min(rowOf.get(base(e.from))!, rowOf.get(base(e.to))!) === i && near(e));
   const group = (i: number): string | undefined => parentOf.get(vrows[i]?.[0]);
@@ -458,10 +497,9 @@ function vertXs(d: string, y0: number, y1: number): number[] {
 }
 /** A side lane: out into the gap next to the source row, across to the lane at the right, along it, then back through the
  * gap next to the target row and into the target (never across a row's neighbours). */
-function laneRoute(a: Rect, b: Rect, ra: number, rb: number, lx: number, lane: (gap: number) => number, end: (x: number, from: number) => number, land?: number): string {
+function laneRoute(a: Rect, y1: number, b: Rect, ra: number, rb: number, lx: number, lane: (gap: number) => number, end: (x: number, from: number) => number, land?: number): string {
   const down = rb > ra;
   const ax = Math.round(a.x + a.w / 2), bx = land ?? Math.round(b.x + b.w / 2);
-  const y1 = down ? a.y + a.h + 2 : a.y - 2;
   const ys = lane(down ? ra : ra - 1), yt = lane(down ? rb - 1 : rb);
   return `M${ax} ${y1} L${ax} ${ys} L${lx} ${ys} L${lx} ${yt} L${bx} ${yt} L${bx} ${end(bx, yt)}`;
 }
@@ -470,6 +508,32 @@ function elbowLabel(s: string, ax: number, bx: number, ym: number, e: FigEdge): 
   if (Math.abs(bx - ax) < textWidth(s, SS) + 16) fail(`${e.from}→${e.to}: đoạn ngang quá ngắn cho nhãn "${s}"`);
   return { x: (ax + bx) / 2, y: ym - 6 - lineH(SS) / 2, a: 'm', s };
 }
+
+// ── v40 R2 (E-03): crow's-foot marks, drawn at a link's ends along its last segment (so they turn with a stacked link) ──
+/** The marks of a link with `ends` (from, to): the path's first and last points with their neighbours; `rev` = the path starts at `to`. */
+function crowEnds(k: string, d: string, ends: [Card | null, Card | null], rev: boolean): Shape[] {
+  const p = (d.match(/-?\d*\.?\d+/g) ?? []).map(Number), n = p.length;
+  return [[p[0], p[1], p[2], p[3]], [p[n - 2], p[n - 1], p[n - 4], p[n - 3]]].flatMap(([x, y, px, py], i) => {
+    const c = ends[rev ? 1 - i : i];
+    return c ? crowMark(`${k}.m${i}`, x, y, px, py, c) : [];
+  });
+}
+/** One end mark at (x, y), the box edge, the line coming from (px, py): the outer mark (bar = 1, foot = many) touches the box, the
+ * inner one (bar = at least 1, circle = may be 0) sits further out; the circle is hollow and painted over the line. */
+function crowMark(k: string, x: number, y: number, px: number, py: number, c: Card): Shape[] {
+  // ponytail: assumes the end segment is level or upright (true for cross-row links and same-row links between equal-height
+  // boxes, as in ds-cardinality); a same-row link between boxes of different heights is diagonal: normalise with hypot then
+  const ux = Math.sign(x - px), uy = Math.sign(y - py);
+  const pt = (t: number, s: number): string => `${x - ux * t - uy * s} ${y - uy * t + ux * s}`; // links run at right angles: ux, uy are 0 or ±1
+  const bar = (t: number): string => `M${pt(t, -5)} L${pt(t, 5)}`;
+  const many = c.endsWith('many'), zero = c.startsWith('zero');
+  // a stem first (on a link it lies on the line; a legend entry has no other line)
+  const d = `M${pt(0, 0)} L${pt(28, 0)} ` + (many ? `M${pt(10, 0)} L${pt(0, -5)} M${pt(10, 0)} L${pt(0, 5)}` : bar(6)) + (zero ? '' : ` ${bar(many ? 14 : 12)}`);
+  const o = many ? 18 : 16;
+  return [{ k, t: 'p', d, ink: 'edge', w: STROKE }, ...(zero ? [{ k: `${k}.o`, t: 'c', x: x - ux * o, y: y - uy * o, r: 3.5, tone: 'plain' } as Shape] : [])];
+}
+/** Room a mark takes along the line (the zero-or-more circle reaches 21.5 from the box). */
+const CROW = 24;
 
 /** v40: a cylinder (`table`) or a folded page (`doc`): one filled path (the box, key `n:<id>`), one open path (the cap's
  * front edge or the fold), then the text, kept clear of both. */
@@ -482,9 +546,12 @@ function pageShapes(n: FigNode, r: Rect, lang: Lang, attrs?: Record<string, stri
     ? [`M${x} ${y + CAP / 2} C${x} ${y + CAP / 2 - q} ${x + w} ${y + CAP / 2 - q} ${x + w} ${y + CAP / 2} L${x + w} ${y + h - CAP / 2} C${x + w} ${y + h - CAP / 2 + q} ${x} ${y + h - CAP / 2 + q} ${x} ${y + h - CAP / 2} Z`,
       `M${x} ${y + CAP / 2} C${x} ${y + CAP / 2 + q} ${x + w} ${y + CAP / 2 + q} ${x + w} ${y + CAP / 2}`]
     : [`M${x} ${y} L${x + w - CAP} ${y} L${x + w} ${y + CAP} L${x + w} ${y + h} L${x} ${y + h} Z`, `M${x + w - CAP} ${y} L${x + w - CAP} ${y + CAP} L${x + w} ${y + CAP}`];
+  const top = n.shape === 'table' ? CAP : 0, ls = boxLines(n, lang);
   return [{ k, t: 'p', d: body, tone, ink: 'edge', w: 1.2, attrs }, { k: `${k}.e`, t: 'p', d: edge, ink: 'edge', w: 1.2 },
-    ...lines(`${k}.t`, boxLines(n, lang), x + w / 2, y + PAD_Y + (n.shape === 'table' ? CAP : 0), { ink: tone === 'ghost' ? 'muted' : 'ink' }, k)];
+    ...lines(`${k}.t`, ls, x + w / 2, mid(y + top, h - top, ls), { ink: tone === 'ghost' ? 'muted' : 'ink' }, k)];
 }
+/** v40 R2 (E-13): the top of a box's text block, centred in its height (a box is as tall as its tallest frame). */
+const mid = (y: number, h: number, ls: Line[]): number => y + (h - tall(ls)) / 2;
 
 /** Text lines centred on (cx, top…), each its own <text> (dominant-baseline middle). */
 function lines(k: string, ls: Line[], cx: number, top: number, more: Partial<Extract<Shape, { t: 't' }>>, owner?: string): Shape[] {
@@ -505,8 +572,11 @@ function draw(n: FigNode, r: Rect, lang: Lang, wide = false, parent?: string): S
   const attrs = parent ? { 'data-parent': parent } : undefined;
   if (shape === 'box' || shape === 'key') {
     const ls = boxLines(n, lang);
+    const cy = r.y + r.h / 2;
     return [{ k, t: 'r', x: r.x, y: r.y, w: r.w, h: r.h, tone: n.tone ?? 'cell', rx: shape === 'key' ? r.h / 2 : 8, attrs },
-      ...lines(`${k}.t`, ls, r.x + r.w / 2, r.y + PAD_Y, { ink }, k)];
+      // v40 R2 (E-03): a legend entry: its mark at the right of a short stem, as if the entity stood there
+      ...(n.card ? crowMark(`${k}.m`, r.x + CARD_W + 6, cy, r.x, cy, n.card) : []),
+      ...lines(`${k}.t`, ls, r.x + (r.w + (n.card ? CARD_W : 0)) / 2, mid(r.y, r.h, ls), { ink }, k)];
   }
   if (shape === 'table' || shape === 'doc') return pageShapes(n, r, lang, attrs);
   if (shape === 'note') return lines(`${k}.t`, boxLines(n, lang, wide), r.x + r.w / 2, r.y, { ink: 'ink' });
@@ -528,7 +598,7 @@ function draw(n: FigNode, r: Rect, lang: Lang, wide = false, parent?: string): S
         const hl = head ? undefined : n.cellTone?.[`${body}:${c}`];
         const tone: Tone = head ? 'cell' : hl ?? n.toneOf?.[s] ?? n.rowTone?.[body] ?? n.colTone?.[c] ?? n.tone ?? 'plain';
         if (s) {
-          out.push({ k: ck, t: 'r', x, y, w: cols[c], h: ROW_H, tone, rx: 0, bold: !!hl },
+          out.push({ k: ck, t: 'r', x, y, w: cols[c], h: ROW_H, tone, rx: 0, bold: !!hl, attrs }, // v40 R2: a grid in a group names it too
             { k: `${ck}.t`, t: 't', x: x + cols[c] / 2, y: y + ROW_H / 2, s, size: SS, b: head, mono: !!n.mono && !head, a: 'm', ink: tone === 'ghost' ? 'muted' : 'ink',
               attrs: { 'data-owner': ck, ...(n.mono && !head ? { lang: 'en' } : {}) } });
         }
@@ -559,8 +629,8 @@ function draw(n: FigNode, r: Rect, lang: Lang, wide = false, parent?: string): S
 
 // ── text alternative (svg-system §6; R1 E11, L628): sentences, tables read row by row, every step; a hand-written `alt` wins ──
 const WORDS = {
-  vi: { alt: 'Sơ đồ bằng lời', has: 'Hình có', step: 'Bước', now: 'Lúc này', arrow: 'trỏ tới', link: 'nối với', dashed: 'nét đứt', struck: 'gạch bỏ', table: 'Bảng', mark: 'vạch ở' },
-  en: { alt: 'The figure in words', has: 'The figure shows', step: 'Step', now: 'Now', arrow: 'points to', link: 'is linked to', dashed: 'dashed', struck: 'struck out', table: 'A table', mark: 'mark at' },
+  vi: { alt: 'Sơ đồ bằng lời', has: 'Hình có', now: 'Lúc này', arrow: 'trỏ tới', link: 'nối với', dashed: 'nét đứt', struck: 'gạch bỏ', table: 'Bảng', mark: 'vạch ở' },
+  en: { alt: 'The figure in words', has: 'The figure shows', now: 'Now', arrow: 'points to', link: 'is linked to', dashed: 'dashed', struck: 'struck out', table: 'A table', mark: 'mark at' },
 };
 const nameOf = (n: FigNode, lang: Lang): string => [tr(n.label, lang), tr(n.sub, lang)].filter(Boolean).join(', ');
 const cap = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1);
@@ -586,9 +656,9 @@ export function altText(spec: FigSpec, lang: Lang, variant?: string, generated =
   const ps = plans(spec, lang, variant);
   const byId = new Map(ps[0].nodes.map((n) => [n.id, n]));
   const end = (x: string): string => {
-    const [id, row] = x.split('#');
+    const [id, row] = cellOf(x);
     const n = byId.get(id)!;
-    return row === undefined ? tr(n.label, lang) || id : `${tr(n.label, lang) || w.table} (${(n.cells?.[Number(row)] ?? []).map((c) => tr(c, lang)).filter(Boolean).join(', ')})`;
+    return row === undefined ? tr(n.label, lang) || id : `${tr(n.label, lang) || w.table} (${(n.cells?.[row] ?? []).map((c) => tr(c, lang)).filter(Boolean).join(', ')})`;
   };
   const parts = (ns: FigNode[]): string => ns.map((n) => said(n, lang)).filter(Boolean).join('; ');
   const edges = (spec.edges ?? []).map((e) => `${end(e.from)} ${e.link ? w.link : w.arrow} ${end(e.to)}${e.label ? ` (${tr(e.label, lang)})` : ''}${e.dash ? ` (${w.dashed})` : ''}`);
@@ -596,13 +666,14 @@ export function altText(spec: FigSpec, lang: Lang, variant?: string, generated =
   const first = spec.alt && !generated && v?.step === undefined ? tr(spec.alt, lang)
     : `${w.has}: ${parts(ps[0].nodes.filter((n) => ps[0].show.has(n.id)))}.${edges.length ? ` ${cap(edges.join('; '))}.` : ''}`;
   if (ps.length < 2) return [first];
-  const own1 = !generated && spec.steps?.[0]?.alt;
-  // every later step in words (its sentence is already in the step list above the alt): its own alt, else what changed
-  return [own1 ? `${first} ${w.step} 1: ${tr(own1, lang)}` : first, ...ps.slice(1).map((p, j) => {
-    const prev = ps[j];
-    const own = !generated && spec.steps?.[j + 1]?.alt;
-    const changed = p.nodes.filter((n) => p.show.has(n.id) && (!prev.show.has(n.id) || JSON.stringify(n) !== JSON.stringify(prev.nodes.find((m) => m.id === n.id))));
-    return `${w.step} ${j + 2}: ${own ? tr(own, lang) : `${w.now}: ${parts(changed)}.`}`;
+  // v40 R2 (E-16): [the figure, then one entry per step]; the core shows the steps as its numbered list, each step read once:
+  // its own alt, else its sentence plus what changed
+  return [first, ...ps.map((p, j) => {
+    const own = !generated && spec.steps?.[j]?.alt;
+    if (own) return tr(own, lang);
+    const prev = ps[j - 1];
+    const changed = prev ? p.nodes.filter((n) => p.show.has(n.id) && (!prev.show.has(n.id) || JSON.stringify(n) !== JSON.stringify(prev.nodes.find((m) => m.id === n.id)))) : [];
+    return changed.length ? `${p.say} ${w.now}: ${parts(changed)}.` : p.say;
   })];
 }
 // ── mounting ───────────────────────────────────────────────────────────────────────────────────────────────────
@@ -636,7 +707,8 @@ export async function mountFigure(host: HTMLElement, ref: FigRef, deps: Deps, en
     W = w;
     const i = v?.index ?? step ?? ref.step ?? 0;
     v?.destroy();
-    v = mount(host, layout(spec, lang, W, ref.variant), lang, i, { name: ref.name, caption: tr(variantOf(spec, ref.variant)?.caption ?? spec.caption, lang), alt: altText(spec, lang, ref.variant), altTitle: WORDS[lang].alt });
+    const a = altText(spec, lang, ref.variant);
+    v = mount(host, layout(spec, lang, W, ref.variant), lang, i, { name: ref.name, caption: tr(variantOf(spec, ref.variant)?.caption ?? spec.caption, lang), alt: a.slice(0, 1), steps: a.slice(1), altTitle: WORDS[lang].alt });
   };
   draw();
   const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(() => draw()) : undefined;

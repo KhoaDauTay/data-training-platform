@@ -4,7 +4,7 @@
 # B shows one row per city (5 of its 283), labelled as a sample. Source: https://www.postgresql.org/docs/current/queries-union.html
 title: { vi: "UNION ALL, UNION, EXCEPT", en: "UNION ALL, UNION, EXCEPT" }
 caption:
-  vi: "Phép tập hợp xếp chồng dòng của hai câu có cùng cột, khác phép nối là thêm cột."
+  vi: "Phép tập hợp xếp chồng dòng của hai câu có cùng cột, khác với phép nối, vốn thêm cột."
   en: "Set operations stack the rows of two queries with the same columns, unlike a join, which adds columns."
 nodes:
   - { id: a, shape: grid, label: "A: stores", head: [city], cells: [[Da Nang], [Da Nang], [Ho Chi Minh City], [Ho Chi Minh City], [Hanoi]], sub: { vi: "5 / 5 dòng", en: "5 / 5 rows" } }
