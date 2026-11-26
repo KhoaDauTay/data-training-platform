@@ -8,8 +8,8 @@ caption:
   vi: "Bộ lọc { email: null } khớp cả tài liệu thiếu trường email lẫn tài liệu có email: null. $exists: false chỉ lấy trường thiếu, $type: \"null\" chỉ lấy giá trị null."
   en: "The filter { email: null } matches both a document without an email field and one with email: null. $exists: false takes only the missing field, $type: \"null\" only the null value."
 alt:
-  vi: "Năm khách: c1 An, c2 Binh và c4 Dung có email; c3 Chi không có trường email; c5 Em có email bằng null. Bộ lọc email: null khớp c3 và c5. Bộ lọc $exists: false chỉ khớp c3. Bộ lọc $type: \"null\" chỉ khớp c5."
-  en: "Five customers: c1 An, c2 Binh and c4 Dung have an email; c3 Chi has no email field; c5 Em has email set to null. The filter email: null matches c3 and c5. The filter $exists: false matches only c3. The filter $type: \"null\" matches only c5."
+  vi: "“Không có email” có hai nghĩa: tài liệu thiếu hẳn trường email (Chi), hoặc có trường nhưng giá trị là null (Em). Bộ lọc email: null gộp cả hai; muốn tách ra thì dùng $exists: false cho trường thiếu và $type: \"null\" cho giá trị null."
+  en: "“No email” has two meanings: the document has no email field at all (Chi), or it has the field with the value null (Em). The filter email: null catches both; to tell them apart, use $exists: false for the missing field and $type: \"null\" for the null value."
 nodes:
   - id: cust
     shape: grid

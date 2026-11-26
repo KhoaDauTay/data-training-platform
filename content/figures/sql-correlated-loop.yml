@@ -7,8 +7,8 @@ caption:
   vi: "Truy vấn con nhắc tới s.id của dòng ngoài, nên mỗi cửa hàng có một lần chạy riêng, với giá trị của chính nó."
   en: "The subquery names s.id of the outer row, so each store gets a run of its own, with its own value."
 alt:
-  vi: "Bên trái là bảng stores với 5 cửa hàng. Ở giữa là truy vấn con max(order_date) lọc theo store_id. Bên phải là cột kết quả, các ô chưa tính ghi dấu hỏi."
-  en: "On the left is the stores table with 5 stores. In the middle is the subquery max(order_date) filtered by store_id. On the right is the result column; cells not computed yet show a question mark."
+  vi: "Truy vấn con tương quan nhắc tới s.id của dòng ngoài, nên nó không chạy một lần cho cả bảng mà chạy lại cho từng cửa hàng, mỗi lần với id của chính cửa hàng đó. Kết quả: 5 cửa hàng, 5 lần chạy, mỗi dòng một ngày đơn cuối."
+  en: "A correlated subquery names s.id of the outer row, so it does not run once for the whole table but again for each store, each time with that store's own id. Result: 5 stores, 5 runs, one last-order date per row."
 nodes:
   - id: s
     shape: grid
@@ -32,19 +32,20 @@ edges:
   - { from: q, to: r }
 steps:
   - say: { vi: "Với cửa hàng 1, truy vấn con chạy với s.id = 1.", en: "For store 1 the subquery runs with s.id = 1." }
+    alt: { vi: "Với cửa hàng đầu tiên, truy vấn con thay s.id bằng 1 và chỉ tìm đơn của cửa hàng 1, nên chỉ ô kết quả của dòng đó có giá trị.", en: "For the first store the subquery puts 1 in place of s.id and looks only at store 1's orders, so only that row's result cell gets a value." }
     show: [s, q, r]
     set:
       s: { rowTone: [new] }
       r: { cells: [["2026-10-31"], ["?"], ["?"], ["?"], ["?"]], cellTone: { "0:0": new } }
   - say: { vi: "Dòng tiếp theo, chạy lại với s.id = 2.", en: "Next row, run again with s.id = 2." }
-    alt: { vi: "Với Son Tra (id 2), truy vấn con chạy lại với store_id = 2 và ra 2026-10-30.", en: "For Son Tra (id 2) the subquery runs again with store_id = 2 and gives 2026-10-30." }
+    alt: { vi: "Sang dòng Son Tra, truy vấn con chạy lại từ đầu với store_id = 2, nên ra ngày riêng của cửa hàng này chứ không dùng lại kết quả trước.", en: "On the Son Tra row the subquery runs again from scratch with store_id = 2, so it gives this store's own date instead of reusing the last result." }
     show: [s, q, r]
     set:
       s: { rowTone: [null, new] }
       q: { sub: "WHERE store_id = 2" }
       r: { cells: [["2026-10-31"], ["2026-10-30"], ["?"], ["?"], ["?"]], cellTone: { "1:0": new } }
   - say: { vi: "Một lần cho mỗi dòng ngoài; Postgres có thể tối ưu, nhưng ý nghĩa là vậy.", en: "Once per outer row; Postgres may optimise it, but that is the meaning." }
-    alt: { vi: "Cả 5 dòng đều có giá trị: Son Tra 2026-10-30, bốn cửa hàng còn lại 2026-10-31. Truy vấn con đã chạy 5 lần.", en: "All 5 rows have a value: Son Tra 2026-10-30, the other four stores 2026-10-31. The subquery ran 5 times." }
+    alt: { vi: "Hết bảng, truy vấn con đã chạy 5 lần, mỗi dòng ngoài một lần; Postgres có thể tối ưu cách chạy, nhưng kết quả luôn đúng như vậy.", en: "By the end of the table the subquery has run 5 times, once per outer row; Postgres may optimise how it runs, but the result always means exactly this." }
     set:
       q: { sub: { vi: "mỗi s.id một lần", en: "once per s.id" } }
       r: { cells: [["2026-10-31"], ["2026-10-30"], ["2026-10-31"], ["2026-10-31"], ["2026-10-31"]] }

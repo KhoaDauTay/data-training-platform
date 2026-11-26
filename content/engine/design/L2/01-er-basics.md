@@ -100,14 +100,6 @@ Có hai lối vẽ phổ biến. Lối Chen vẽ thực thể là hình chữ nh
 
 ## Ví dụ
 
-Một phần sơ đồ, theo lối chân chim (đọc: một khách có không hoặc nhiều đơn; mỗi đơn có đúng một khách):
-
-```text
-CUSTOMER ||--o{ ORDER : places
-ORDER    ||--|{ ORDER_LINE : contains
-EMPLOYEE |o--o{ EMPLOYEE : manages
-```
-
 Thuộc tính phức hợp (họ tên, địa chỉ) lên bảng thành nhiều cột; ghép lại khi đọc.
 
 ```sql
@@ -126,7 +118,7 @@ SELECT e.name AS employee, m.name AS manager FROM ex_employee e JOIN ex_employee
 
 `manager_id` cho phép NULL: người đứng đầu không có quản lý, phía "được quản lý" tham gia bộ phận.
 
-Hình cuối mục này đọc ba dòng chân chim ở trên: mỗi ký hiệu nói thực thể bên cạnh nó có bao nhiêu dòng.
+Hình cuối mục vẽ một phần sơ đồ cửa hàng theo lối chân chim: mỗi khách đặt 0..n đơn, mỗi đơn thuộc đúng 1 khách; mỗi đơn gồm 1..n dòng; mỗi nhân viên có 0..1 người quản lý, một người quản lý 0..n nhân viên. Mỗi ký hiệu nói thực thể bên cạnh nó có bao nhiêu dòng, và đường nối đi từ khóa chính tới cột khóa ngoại trỏ về nó.
 
 ## Lỗi hay gặp
 
@@ -186,14 +178,6 @@ Two drawing styles are common. Chen's style draws entities as rectangles, relati
 
 ## Example
 
-Part of a diagram in crow's foot style (read: a customer has zero or more orders; each order has exactly one customer):
-
-```text
-CUSTOMER ||--o{ ORDER : places
-ORDER    ||--|{ ORDER_LINE : contains
-EMPLOYEE |o--o{ EMPLOYEE : manages
-```
-
 Composite attributes (full name, address) become several columns, joined back when read.
 
 ```sql
@@ -212,7 +196,7 @@ SELECT e.name AS employee, m.name AS manager FROM ex_employee e JOIN ex_employee
 
 `manager_id` allows NULL: the person at the top has no manager, so the "managed" side takes part partially.
 
-The figure at the end of this section reads the three crow's-foot lines above: each mark says how many rows of the entity beside it take part.
+The figure at the end of this section draws part of the shop's diagram in crow's foot style: each customer places 0..n orders, each order belongs to exactly 1 customer; each order contains 1..n lines; each employee has 0..1 manager, and a manager manages 0..n employees. Each mark says how many rows of the entity beside it take part, and each line runs from a primary key to the foreign-key column that points at it.
 
 ## Common mistakes
 

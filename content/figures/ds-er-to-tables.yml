@@ -1,4 +1,6 @@
 # DS-4 (tools/v39/diagram-plan.md): three mapping rules, one per step. Lessons: e-ds-l2-03 (Ý chính), e-ds-l2-02 (Ví dụ, variant `weak` = step 3).
+# v42 (L695): the ER side is drawn (two entities and their relationship, crow's-foot ends patched per step through the edge id `rel`),
+# never written as text. The entities show only their own attributes: the column the rule adds appears in the table below.
 # Data: 1:N = the Example ex_dept / ex_emp (dept_id NOT NULL REFERENCES ex_dept; Lan 1, Minh 1, Nga 2) of e-ds-l2-03;
 # M:N = the lab's order_items (order_id, product_id, qty, PRIMARY KEY (order_id, product_id)) of e-ds-l2-03; the lab table starts
 # empty, so its three rows are an illustration (v40 R2 E-04: the two key columns tinted, as in the other steps);
@@ -9,11 +11,14 @@ caption:
   vi: "Mỗi dạng quan hệ ER có một dạng bảng chuẩn; cột tô màu là cột luật đó thêm vào."
   en: "Each ER shape has one standard table shape; the highlighted columns are the ones the rule adds."
 alt:
-  vi: "Mỗi bước một luật: tên luật, quan hệ ER, rồi bảng nó tạo ra, cột luật thêm vào được tô màu."
-  en: "One rule per step: the rule, the ER relationship, then the table it makes, with the columns the rule adds highlighted."
+  vi: "Mỗi dạng quan hệ ER thành bảng theo một cách cố định, và luật cho biết phải thêm cột nào: khóa ngoại ở phía nhiều cho 1:N, một bảng nối cho M:N, hay khóa ghép cho thực thể yếu."
+  en: "Each ER relationship shape becomes tables in one fixed way, and the rule says which columns to add: a foreign key on the many side for 1:N, a junction table for M:N, or a composite key for a weak entity."
+groups:
+  - { id: er, label: { vi: "sơ đồ ER", en: "ER diagram" }, nodes: [ea, eb] }
 nodes:
   - { id: rule, label: { vi: "1:N → FK bên N", en: "1:N → FK on N side" }, tone: new }
-  - { id: er, mono: true, label: "ex_dept ||--|{ ex_emp" }
+  - { id: ea, shape: entity, label: ex_dept, fields: [{ name: id, pk: true }, name] }
+  - { id: eb, shape: entity, label: ex_emp, fields: [{ name: id, pk: true }, name] }
   - id: tbl
     shape: grid
     label: ex_emp
@@ -24,25 +29,30 @@ nodes:
   - { id: chip, shape: key, label: { vi: "NOT NULL = bắt buộc", en: "NOT NULL = total" } }
 rows:
   - [rule]
-  - [er]
+  - [ea, eb]
   - [tbl, chip]
 edges:
+  - { id: rel, from: ea, to: eb, link: true, ends: [one, one-many], label: { vi: "có", en: "has" } }
   - { from: er, to: tbl }
 steps:
   - say: { vi: "1:N: khóa ngoại đặt ở bảng bên N.", en: "1:N: the foreign key goes in the table on the N side." }
-    alt: { vi: "1:N giữa ex_dept và ex_emp: cột dept_id của ex_emp trỏ tới ex_dept.id; NOT NULL nghĩa là mỗi nhân viên bắt buộc có phòng. Bảng ex_emp: Lan phòng 1, Minh phòng 1, Nga phòng 2.", en: "1:N between ex_dept and ex_emp: column dept_id of ex_emp points at ex_dept.id; NOT NULL means every employee must have a department. Table ex_emp: Lan dept 1, Minh dept 1, Nga dept 2." }
+    alt: { vi: "Mỗi phòng có 1..n nhân viên, nên bảng ex_emp, phía nhiều, nhận cột khóa ngoại dept_id; NOT NULL vì nhân viên nào cũng phải có phòng.", en: "Each department has 1..n employees, so the table on the many side, ex_emp, gets the foreign key column dept_id; NOT NULL because every employee must have a department." }
   - say: { vi: "M:N: thêm một bảng nối, khóa là cặp hai khóa.", en: "M:N: add a junction table keyed by the pair of keys." }
-    alt: { vi: "M:N giữa orders và products: bảng nối order_items có order_id và product_id, hai khóa ngoại được tô màu, cùng qty. Khóa chính là cặp (order_id, product_id); qty là dữ liệu của chính quan hệ. Ba dòng minh họa: đơn 1 sản phẩm 10 qty 2, đơn 1 sản phẩm 11 qty 1, đơn 2 sản phẩm 10 qty 5.", en: "M:N between orders and products: the junction table order_items has order_id and product_id, two highlighted foreign keys, plus qty. The primary key is the pair (order_id, product_id); qty is the relationship's own data. Three sample rows: order 1 product 10 qty 2, order 1 product 11 qty 1, order 2 product 10 qty 5." }
+    alt: { vi: "Đơn và sản phẩm gặp nhau 0..n lần mỗi phía, nên không bên nào giữ được khóa ngoại: một bảng nối order_items mới lấy cặp (order_id, product_id) làm khóa và giữ qty của chính quan hệ.", en: "Orders and products meet 0..n times on each side, so neither can hold the foreign key: a new junction table order_items is keyed by the pair (order_id, product_id) and holds the relationship's own qty." }
     set:
       rule: { label: { vi: "M:N → bảng nối", en: "M:N → junction table" } }
-      er: { label: "orders }o--o{ products" }
+      ea: { label: orders, fields: [{ name: id, pk: true }, { name: customer_id, fk: true }] }
+      eb: { label: products, fields: [{ name: id, pk: true }, name] }
+      rel: { ends: [zero-many, zero-many], label: { vi: "chứa", en: "contains" } }
       tbl: { label: order_items, head: [order_id, product_id, qty], cells: [["1", "10", "2"], ["1", "11", "1"], ["2", "10", "5"]], colTone: [new, new, null], sub: "PK (order_id, product_id)" }
       chip: { label: { vi: "qty: thuộc tính của quan hệ", en: "qty: the link's own data" } }
   - say: { vi: "Thực thể yếu: khóa ghép với khóa của cha, xóa theo cha.", en: "Weak entity: a composite key with the parent's key, deleted with the parent." }
-    alt: { vi: "Thực thể yếu ex_invoice_line phụ thuộc ex_invoice: khóa chính ghép (invoice_id, line_no); ba dòng: hóa đơn 1 dòng 1 là 100, dòng 2 là 40, hóa đơn 2 dòng 1 là 75; ON DELETE CASCADE xóa các dòng theo hóa đơn.", en: "The weak entity ex_invoice_line depends on ex_invoice: a composite primary key (invoice_id, line_no); three rows: invoice 1 line 1 is 100, line 2 is 40, invoice 2 line 1 is 75; ON DELETE CASCADE removes the lines with their invoice." }
+    alt: { vi: "Dòng hóa đơn chỉ có số dòng, không đủ làm khóa, nên khóa của nó ghép khóa hóa đơn với số dòng, và ON DELETE CASCADE xóa nó theo hóa đơn.", en: "An invoice line has only its line number, not enough for a key, so its key combines the invoice's key with the line number, and ON DELETE CASCADE deletes it with its invoice." }
     set:
       rule: { label: { vi: "thực thể yếu → khóa ghép", en: "weak entity → composite key" } }
-      er: { label: "ex_invoice ||--|{ ex_invoice_line" }
+      ea: { label: ex_invoice, fields: [{ name: id, pk: true }, issued_on] }
+      eb: { label: ex_invoice_line, fields: [line_no, amount] }
+      rel: { ends: [one, one-many], label: { vi: "gồm", en: "has" } }
       tbl: { label: ex_invoice_line, head: [invoice_id, line_no, amount], cells: [["1", "1", "100"], ["1", "2", "40"], ["2", "1", "75"]], colTone: [new, new, null], sub: "PK (invoice_id, line_no)" }
       chip: { label: ON DELETE CASCADE }
 variants:
@@ -53,5 +63,5 @@ variants:
       vi: "Dòng hóa đơn không có khóa riêng: khóa của nó là khóa hóa đơn cộng số dòng, và nó bị xóa theo hóa đơn."
       en: "An invoice line has no key of its own: its key is the invoice's key plus a line number, and it is deleted with the invoice."
     alt:
-      vi: "Thực thể yếu ex_invoice_line phụ thuộc ex_invoice (quan hệ ||--|{: mỗi dòng thuộc đúng một hóa đơn, mỗi hóa đơn có ít nhất một dòng). Bảng ex_invoice_line có invoice_id, line_no, amount với ba dòng: hóa đơn 1 dòng 1 là 100, hóa đơn 1 dòng 2 là 40, hóa đơn 2 dòng 1 là 75. Khóa chính là cặp (invoice_id, line_no), và ON DELETE CASCADE xóa các dòng khi hóa đơn bị xóa."
-      en: "The weak entity ex_invoice_line depends on ex_invoice (relationship ||--|{: each line belongs to exactly one invoice, each invoice has at least one line). Table ex_invoice_line has invoice_id, line_no, amount with three rows: invoice 1 line 1 is 100, invoice 1 line 2 is 40, invoice 2 line 1 is 75. The primary key is the pair (invoice_id, line_no), and ON DELETE CASCADE removes the lines when the invoice is deleted."
+      vi: "Mỗi hóa đơn gồm 1..n dòng, mỗi dòng thuộc đúng một hóa đơn. Dòng hóa đơn không có khóa riêng nên khóa của nó ghép khóa hóa đơn với số dòng, và nó bị xóa theo hóa đơn."
+      en: "Each invoice has 1..n lines, and each line belongs to exactly one invoice. A line has no key of its own, so its key combines the invoice's key with the line number, and it is deleted with its invoice."

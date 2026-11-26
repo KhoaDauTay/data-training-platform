@@ -9,8 +9,8 @@ caption:
   vi: "Chọn theo cách đọc, không theo luật cứng. Màn hình nào đọc dữ liệu này? Đọc bao nhiêu lần so với ghi? Phía \"nhiều\" lớn tới đâu sau một năm?"
   en: "Choose by how the data is read, not by a fixed rule. Which screen reads it? How often is it read compared with written? How big is the \"many\" side after a year?"
 alt:
-  vi: "Bên nhúng: tài liệu đơn 1 chứa luôn mảng lines, hai dòng p1 qty 2 và p4 qty 1 nằm ngay trong tài liệu; đọc cùng nhau trong một lần, một lần ghi trên một tài liệu là nguyên tử, nhưng một mảng không giới hạn sẽ chạm trần 16 MiB của một tài liệu. Bên tham chiếu: tài liệu sản phẩm p6 chỉ giữ một bản sao 3 đánh giá mới nhất; mọi đánh giá nằm trong collection reviews riêng, mỗi cái có product_id trỏ về p6, nên phía nhiều không giới hạn."
-  en: "Embed side: the document order 1 holds its lines array, the two lines p1 qty 2 and p4 qty 1 sit inside the document; it is read together in one go and one write on one document is atomic, but an unbounded array would hit the 16 MiB ceiling of one document. Reference side: the product document p6 keeps only a copy of the 3 newest reviews; every review lives in its own collection reviews, each with a product_id pointing back to p6, so the many side is unbounded."
+  vi: "Nhúng khi phần con ít và luôn đọc cùng phần cha: các dòng của đơn nằm trong tài liệu đơn, đọc một lần và ghi nguyên tử. Tham chiếu khi phía “nhiều” lớn không giới hạn: đánh giá nằm ở collection reviews riêng với product_id, vì một tài liệu không vượt quá 16 MiB."
+  en: "Embed when the children are few and always read with their parent: an order's lines live inside the order document, read in one go and written atomically. Reference when the “many” side grows without limit: reviews live in their own reviews collection with a product_id, because one document cannot pass 16 MiB."
 groups:
   - { id: em, label: { vi: "Nhúng", en: "Embed" }, nodes: [od, e1, e2, lim] }
   - { id: rf, label: { vi: "Tham chiếu", en: "Reference" }, nodes: [pr, rv, r1] }

@@ -9,8 +9,8 @@ caption:
   vi: "Một: mọi cột câu cần đều có trong index (INCLUDE thêm amount vào lá, không làm nó thành khóa). Hai: trang heap phải được đánh dấu all-visible trong visibility map, việc VACUUM làm. Trang chưa đánh dấu vẫn phải mở heap."
   en: "One: every column the query needs is in the index (INCLUDE adds amount to the leaves without making it a key). Two: the heap page must be marked all-visible in the visibility map, which VACUUM does. A page without the mark still opens the heap."
 alt:
-  vi: "Lá của index (customer_id, created_at) INCLUDE (amount) có 5 đơn mới nhất của khách 42, mỗi mục có customer_id, created_at và amount; amount là cột INCLUDE, không phải khóa. Bên dưới là visibility map của 4 trang (minh họa, trên 371 trang) và 4 trang heap. Hai điều kiện: mọi cột có trong index, trang all-visible."
-  en: "The leaf of index (customer_id, created_at) INCLUDE (amount) holds customer 42's 5 newest orders, each entry with customer_id, created_at and amount; amount is an INCLUDE column, not a key. Below are the visibility map of 4 pages (an illustration, of 371) and 4 heap pages. Two conditions: every column is in the index, the page is all-visible."
+  vi: "Postgres chỉ bỏ qua heap khi đủ hai điều: mọi cột câu cần đều có trong index (INCLUDE thêm amount vào lá mà không làm nó thành khóa), và trang heap đã được VACUUM đánh dấu all-visible. Thiếu bit all-visible thì vẫn phải mở heap để kiểm tra dòng còn sống không."
+  en: "Postgres skips the heap only when two things hold: every column the query needs is in the index (INCLUDE adds amount to the leaves without making it a key), and VACUUM has marked the heap page all-visible. Without the all-visible bit it must still open the heap to check the row is alive."
 nodes:
   - { id: c1, shape: key, label: { vi: "1. mọi cột có trong index", en: "1. every column in index" }, tone: live }
   - { id: c2, shape: key, label: { vi: "2. bit all-visible", en: "2. all-visible bit" }, tone: warm }
@@ -36,16 +36,16 @@ edges:
   - { from: vm, to: heap, label: { vi: "bit quyết định", en: "the bit decides" } }
 steps:
   - say: { vi: "Bảng vừa nạp: chưa trang nào all-visible, vẫn phải mở heap.", en: "Freshly loaded: no page is all-visible, the heap is still opened." }
-    alt: { vi: "Bảng vừa nạp: visibility map toàn bit 0, nên Index Scan vẫn mở cả 4 trang heap.", en: "The table is freshly loaded: the visibility map is all 0 bits, so the Index Scan still opens all 4 heap pages." }
+    alt: { vi: "Bảng vừa nạp chưa được VACUUM nên mọi bit all-visible là 0, và Index Scan vẫn phải mở từng trang heap dù index đã có đủ cột.", en: "The freshly loaded table has not been vacuumed, so every all-visible bit is 0 and the Index Scan must still open each heap page although the index has every column." }
   - say: { vi: "VACUUM bật bit all-visible: không mở trang heap nào.", en: "VACUUM sets the all-visible bits: no heap page is opened." }
-    alt: { vi: "VACUUM chạy: cả 4 bit trong visibility map thành 1. Chạy lại câu: Index Only Scan, Heap Fetches: 0, cả 4 trang heap được bỏ qua.", en: "VACUUM runs: all 4 bits in the visibility map become 1. Run the query again: Index Only Scan, Heap Fetches: 0, all 4 heap pages are skipped." }
+    alt: { vi: "Sau VACUUM mọi trang đều all-visible, nên câu chạy lại thành Index Only Scan với Heap Fetches: 0, không mở trang heap nào.", en: "After VACUUM every page is all-visible, so the rerun becomes an Index Only Scan with Heap Fetches: 0 and opens no heap page." }
     set:
       plan: { label: Index Only Scan, sub: "Heap Fetches: 0", tone: live }
       c2: { tone: live }
       vm: { cells: [["1", "1", "1", "1"]] }
       heap: { tone: plain, cells: [[{ vi: "bỏ qua", en: "skip" }, { vi: "bỏ qua", en: "skip" }, { vi: "bỏ qua", en: "skip" }, { vi: "bỏ qua", en: "skip" }]] }
   - say: { vi: "Bit = 1: trả ngay từ index. Bit = 0: vẫn ghé heap.", en: "Bit = 1: answer from the index. Bit = 0: visit the heap anyway." }
-    alt: { vi: "Index Only Scan: trang p2 bị ghi sau VACUUM nên bit của nó về 0. Ba trang bit 1 được trả thẳng từ index, bỏ qua heap; chỉ p2 vẫn phải mở.", en: "Index Only Scan: page p2 was written after VACUUM, so its bit is back to 0. The three pages with bit 1 are answered straight from the index and the heap is skipped; only p2 is still opened." }
+    alt: { vi: "Một lần ghi sau VACUUM đưa bit của trang p2 về 0, nên Index Only Scan vẫn trả các trang khác thẳng từ index nhưng phải ghé heap riêng ở p2.", en: "A write after VACUUM resets page p2's bit to 0, so the Index Only Scan still answers the other pages straight from the index but must visit the heap for p2." }
     set:
       plan: { label: Index Only Scan, sub: { vi: "chỉ mở trang bit 0", en: "opens bit-0 pages" }, tone: live }
       c2: { tone: live }

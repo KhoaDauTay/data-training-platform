@@ -7,8 +7,8 @@ caption:
   vi: "Bạn viết SELECT đầu tiên, Postgres chạy nó gần cuối; số thứ tự là thứ tự chạy."
   en: "You write SELECT first, Postgres runs it near the end; the numbers are the run order."
 alt:
-  vi: "Hai danh sách. Thứ tự viết: SELECT, FROM, WHERE, GROUP BY, HAVING, ORDER BY, LIMIT. Thứ tự chạy: 1 FROM (30 dòng), 2 WHERE (bỏ món từ 50k), 3 GROUP BY (5 nhóm), 4 HAVING (giữ 4 nhóm), 5 SELECT (tính cột), 6 ORDER BY (sắp xếp), 7 LIMIT (cắt N dòng). Đường nối mỗi mệnh đề đã viết với vị trí chạy của nó: SELECT viết đầu tiên nhưng chạy thứ 5."
-  en: "Two lists. Written order: SELECT, FROM, WHERE, GROUP BY, HAVING, ORDER BY, LIMIT. Run order: 1 FROM (30 rows), 2 WHERE (drop items of 50k or more), 3 GROUP BY (5 groups), 4 HAVING (keep 4 groups), 5 SELECT (compute columns), 6 ORDER BY (sort), 7 LIMIT (cut N rows). Lines join each written clause to its run position: SELECT is written first but runs fifth."
+  vi: "Thứ tự bạn viết câu lệnh không phải thứ tự Postgres chạy: nó lấy dữ liệu (FROM) trước, lọc dòng, gộp nhóm, lọc nhóm, rồi mới tính cột ở SELECT. Vì vậy một mệnh đề chỉ dùng được những gì các mệnh đề chạy trước nó đã tạo ra."
+  en: "The order you write a query in is not the order Postgres runs it: it takes the data (FROM) first, filters rows, groups, filters groups, and only then computes the columns in SELECT. So a clause can only use what the clauses that run before it have made."
 nodes:
   - id: w
     shape: grid
@@ -37,24 +37,24 @@ edges:
   - { from: "w#6", to: "r#6", link: true }
 steps:
   - say: { vi: "Bạn viết SELECT trước, nhưng Postgres chạy FROM trước.", en: "You write SELECT first, but Postgres runs FROM first." }
-    alt: { vi: "Sáng lên: SELECT ở đầu danh sách viết, FROM ở số 1 của danh sách chạy.", en: "Highlighted: SELECT at the top of the written list, FROM at number 1 of the run list." }
+    alt: { vi: "SELECT đứng đầu khi viết, nhưng Postgres chạy FROM đầu tiên, vì phải có bảng thì mới có dòng để làm việc.", en: "SELECT comes first when you write, but Postgres runs FROM first, because there must be a table before there are rows to work on." }
     set:
       w: { rowTone: [new] }
       r: { rowTone: [new] }
   - say: { vi: "WHERE lọc từng dòng trước khi có nhóm.", en: "WHERE filters single rows before any group exists." }
-    alt: { vi: "Sáng lên: FROM và WHERE, số 1 và 2, trước GROUP BY.", en: "Highlighted: FROM and WHERE, numbers 1 and 2, before GROUP BY." }
+    alt: { vi: "WHERE chạy thứ hai, ngay sau FROM, nên nó xét từng dòng lẻ khi chưa có nhóm nào và không dùng được count(*).", en: "WHERE runs second, right after FROM, so it judges single rows before any group exists and cannot use count(*)." }
     set:
       w: { rowTone: [null, new, new] }
       r: { rowTone: [new, new] }
   - say: { vi: "HAVING lọc cả nhóm, sau khi đếm xong.", en: "HAVING filters whole groups, after counting." }
-    alt: { vi: "Sáng lên: GROUP BY (5 nhóm) rồi HAVING (giữ 4 nhóm), số 3 và 4.", en: "Highlighted: GROUP BY (5 groups) then HAVING (keep 4 groups), numbers 3 and 4." }
+    alt: { vi: "GROUP BY gộp dòng thành 5 nhóm, rồi HAVING mới lọc, giữ 4 nhóm, vì điều kiện count(*) >= 4 chỉ có nghĩa khi nhóm đã đếm xong.", en: "GROUP BY folds the rows into 5 groups, then HAVING filters and keeps 4, because count(*) >= 4 only means something once each group is counted." }
     set:
       w: { rowTone: [null, null, null, new, new] }
       r: { rowTone: [null, null, new, new] }
   - say:
       vi: "Bí danh đặt ở SELECT không dùng được trong WHERE hay HAVING, vì chúng chạy trước SELECT."
       en: "An alias made in SELECT cannot be used in WHERE or HAVING: they run before SELECT."
-    alt: { vi: "Sáng lên: SELECT, ORDER BY và LIMIT, số 5 đến 7; WHERE và HAVING đã chạy xong ở số 2 và 4.", en: "Highlighted: SELECT, ORDER BY and LIMIT, numbers 5 to 7; WHERE and HAVING already ran at numbers 2 and 4." }
+    alt: { vi: "SELECT chạy thứ năm, sau WHERE và HAVING, nên bí danh đặt ở SELECT chưa tồn tại khi hai mệnh đề đó chạy; chỉ ORDER BY và LIMIT, chạy sau, mới dùng được nó.", en: "SELECT runs fifth, after WHERE and HAVING, so an alias made in SELECT does not exist yet when they run; only ORDER BY and LIMIT, which run later, can use it." }
     set:
       w: { rowTone: [new, null, null, null, null, new, new] }
       r: { rowTone: [null, null, null, null, new, new, new] }
@@ -67,5 +67,5 @@ variants:
       vi: "Sắp xếp và cắt dòng là hai bước cuối, sau khi SELECT đã tính xong các cột."
       en: "Sorting and cutting rows are the last two steps, after SELECT has computed the columns."
     alt:
-      vi: "Hai danh sách. Thứ tự viết: SELECT, FROM, WHERE, GROUP BY, HAVING, ORDER BY, LIMIT. Thứ tự chạy: 1 FROM (30 dòng), 2 WHERE (bỏ món từ 50k), 3 GROUP BY (5 nhóm), 4 HAVING (giữ 4 nhóm), 5 SELECT (tính cột), 6 ORDER BY (sắp xếp), 7 LIMIT (cắt N dòng). Ba bước cuối được tô: SELECT tính cột trước, rồi ORDER BY sắp xếp kết quả, rồi LIMIT cắt lấy N dòng đầu. Vì ORDER BY chạy sau SELECT, nó dùng được bí danh đặt ở SELECT; WHERE và HAVING thì không."
-      en: "Two lists. Written order: SELECT, FROM, WHERE, GROUP BY, HAVING, ORDER BY, LIMIT. Run order: 1 FROM (30 rows), 2 WHERE (drop items from 50k), 3 GROUP BY (5 groups), 4 HAVING (keep 4 groups), 5 SELECT (compute cols), 6 ORDER BY (sort), 7 LIMIT (cut N rows). The last three steps are highlighted: SELECT computes the columns first, then ORDER BY sorts the result, then LIMIT keeps the first N rows. Because ORDER BY runs after SELECT, it can use an alias made in SELECT; WHERE and HAVING cannot."
+      vi: "ORDER BY và LIMIT là hai bước chạy cuối cùng: SELECT tính cột xong, ORDER BY mới sắp xếp kết quả, rồi LIMIT giữ N dòng đầu. Vì chạy sau SELECT, ORDER BY dùng được bí danh đặt ở SELECT; WHERE và HAVING thì không."
+      en: "ORDER BY and LIMIT are the last two steps: once SELECT has computed the columns, ORDER BY sorts the result, then LIMIT keeps the first N rows. Because it runs after SELECT, ORDER BY can use an alias made in SELECT; WHERE and HAVING cannot."

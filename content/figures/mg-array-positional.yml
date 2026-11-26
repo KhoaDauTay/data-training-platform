@@ -9,8 +9,8 @@ caption:
   vi: "Cả ba lệnh tăng qty thêm 1 trong đơn 5. $ sửa phần tử đầu tiên khớp điều kiện mảng trong filter, $[] sửa mọi phần tử, $[elem] sửa mọi phần tử thỏa điều kiện elem trong arrayFilters. Ô được tô màu là ô được sửa."
   en: "All three commands add 1 to qty in order 5. $ changes the first element that matches the array condition in the filter, $[] changes every element, $[elem] changes every element that meets condition elem in arrayFilters. A tinted cell is a changed one."
 alt:
-  vi: "Đơn 5 có hai dòng: p6 qty 2 và p4 qty 2. Một lệnh $inc tăng qty thêm 1, qua một trong ba dạng toán tử vị trí."
-  en: "Order 5 has two lines: p6 qty 2 and p4 qty 2. One $inc command adds 1 to qty through one of the three positional forms."
+  vi: "Ba toán tử vị trí trả lời câu hỏi “sửa phần tử nào của mảng”. $ sửa phần tử khớp đầu tiên, $[] sửa tất cả, $[elem] sửa mọi phần tử thỏa điều kiện trong arrayFilters."
+  en: "The three positional operators answer “which element of the array changes”. $ changes the first match, $[] changes them all, $[elem] changes every element that meets its condition in arrayFilters."
 nodes:
   - { id: op, mono: true, label: lines.$.qty, sub: { vi: "khớp đầu tiên", en: "first match" }, tone: new }
   - { id: f, shape: key, label: { vi: "filter: qty ≥ 2", en: "filter: qty ≥ 2" } }
@@ -22,15 +22,15 @@ edges:
   - { from: op, to: doc, label: "$inc qty +1" }
 steps:
   - say: { vi: "$: phần tử khớp đầu tiên.", en: "$: the first matching element." }
-    alt: { vi: "Lệnh dùng lines.$.qty với filter qty ≥ 2: cả hai dòng thỏa, nhưng $ chỉ sửa dòng khớp đầu tiên, nên p6 thành 3, p4 giữ 2.", en: "The command uses lines.$.qty with the filter qty ≥ 2: both lines qualify, but $ changes only the first matching line, so p6 becomes 3 and p4 stays 2." }
+    alt: { vi: "Với lines.$.qty, cả hai dòng đều thỏa qty ≥ 2 nhưng $ chỉ nhớ vị trí khớp đầu tiên, nên chỉ p6 tăng lên 3.", en: "With lines.$.qty both lines meet qty ≥ 2, but $ only remembers the first matching position, so only p6 goes up to 3." }
   - say: { vi: "$[]: mọi phần tử.", en: "$[]: every element." }
-    alt: { vi: "Lệnh dùng lines.$[].qty, không cần điều kiện mảng: cả hai dòng tăng, p6 và p4 đều từ 2 thành 3.", en: "The command uses lines.$[].qty and needs no array condition: both lines grow, p6 and p4 each go from 2 to 3." }
+    alt: { vi: "Với lines.$[].qty, $[] nghĩa là “mọi phần tử” và không cần điều kiện mảng, nên cả hai dòng cùng tăng lên 3.", en: "With lines.$[].qty, $[] means “every element” and needs no array condition, so both lines go up to 3." }
     set:
       op: { label: "lines.$[].qty", sub: { vi: "mọi phần tử", en: "every element" } }
       f: { label: { vi: "không cần điều kiện", en: "no condition needed" }, tone: ghost }
       doc: { cells: [[p6, "2 → 3"], [p4, "2 → 3"]], cellTone: { "0:1": new, "1:1": new } }
   - say: { vi: "$[elem] với arrayFilters: mọi phần tử thỏa elem.", en: "$[elem] with arrayFilters: every element meeting elem." }
-    alt: { vi: "Lệnh dùng lines.$[elem].qty với arrayFilters elem.sku = p4: chỉ dòng p4 thỏa elem, nên p4 từ 2 thành 3, p6 giữ 2.", en: "The command uses lines.$[elem].qty with arrayFilters elem.sku = p4: only the p4 line meets elem, so p4 goes from 2 to 3 and p6 stays 2." }
+    alt: { vi: "Với lines.$[elem].qty và arrayFilters elem.sku = p4, chỉ phần tử thỏa elem được sửa, nên p4 tăng lên 3 còn p6 giữ nguyên.", en: "With lines.$[elem].qty and arrayFilters elem.sku = p4, only the element that meets elem changes, so p4 goes up to 3 and p6 stays as it was." }
     set:
       op: { label: "lines.$[elem].qty", sub: { vi: "thỏa elem", en: "each elem match" } }
       f: { label: "arrayFilters: elem.sku = p4" }

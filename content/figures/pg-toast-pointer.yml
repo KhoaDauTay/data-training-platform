@@ -9,8 +9,8 @@ caption:
   vi: "Dòng rộng quá khoảng 2 kB thì Postgres nén giá trị dài tại chỗ trước; vẫn quá rộng mới cắt nó thành chunk khoảng 2000 B trong bảng TOAST, trên trang chỉ còn con trỏ 18 B. Cỡ giá trị không nói trước nó nằm đâu."
   en: "When a row is wider than about 2 kB, Postgres first compresses the long value in place; only if it is still too wide does it cut the value into chunks of about 2000 B in the TOAST table, leaving an 18 B pointer on the page. A value's size does not tell you where it lives."
 alt:
-  vi: "Trang heap 8 kB của bảng doc, ngưỡng TOAST khoảng 2 kB, và hai bước quyết định cho mỗi dòng: nén, rồi ở lại trang hay ra bảng TOAST."
-  en: "The 8 kB heap page of table doc, the TOAST threshold of about 2 kB, and the two decisions for each row: compress, then stay on the page or move to the TOAST table."
+  vi: "Khi một dòng rộng quá khoảng 2 kB, Postgres thử nén giá trị dài tại chỗ trước; chỉ khi nén xong vẫn quá rộng mới cắt nó ra bảng TOAST và để lại con trỏ 18 B. Vì vậy cỡ ban đầu của giá trị không nói trước được nó nằm ở đâu."
+  en: "When a row is wider than about 2 kB, Postgres first tries to compress the long value in place; only if it is still too wide does it move the value to the TOAST table and leave an 18 B pointer. So a value's original size does not tell you where it ends up."
 nodes:
   - { id: thr, shape: note, label: { vi: "ngưỡng TOAST ~2 kB", en: "TOAST threshold ~2 kB" } }
   - { id: val, label: { vi: "id 1: 100 ký tự", en: "id 1: 100 chars" }, sub: { vi: "nhỏ hơn 2 kB", en: "under 2 kB" } }
@@ -34,17 +34,17 @@ edges:
   - { from: "page#1", to: toast }
 steps:
   - say: { vi: "Dòng 1: nhỏ, ở lại trang.", en: "Row 1: small, it stays." }
-    alt: { vi: "Dòng 1: 100 ký tự, 101 B, nhỏ hơn ngưỡng nên ở lại trang, không cần nén.", en: "Row 1: 100 characters, 101 B, below the threshold, so it stays on the page with no compression." }
+    alt: { vi: "Dòng 1 chỉ 101 B, dưới ngưỡng 2 kB, nên Postgres không nén và để nó ở lại trang.", en: "Row 1 is only 101 B, under the 2 kB threshold, so Postgres does not compress it and leaves it on the page." }
     show: [thr, val, cmp, res, page]
   - say: { vi: "Dòng 3: lớn nhưng lặp lại, nén còn 1156 B và ở lại.", en: "Row 3: big but repetitive, it compresses to 1156 B and stays." }
     show: [thr, val, cmp, res, page]
-    alt: { vi: "Dòng 3: 100 000 chữ b. Quá ngưỡng, Postgres nén bằng pglz còn 1156 B, vừa trang, nên ở lại tại chỗ.", en: "Row 3: 100,000 letters b. Over the threshold, Postgres compresses it with pglz to 1156 B, which fits, so it stays inline." }
+    alt: { vi: "Dòng 3 có 100 000 chữ b, quá ngưỡng nhưng lặp lại nên pglz nén còn 1156 B, vừa trang, và nó ở lại tại chỗ.", en: "Row 3 holds 100,000 letters b, over the threshold but repetitive, so pglz compresses it to 1156 B, which fits, and it stays inline." }
     set:
       val: { label: { vi: "id 3: 100 000 'b'", en: "id 3: 100,000 'b'" }, sub: { vi: "lặp lại, quá 2 kB", en: "repeats, over 2 kB" } }
       cmp: { label: { vi: "nén pglz → 1156 B", en: "pglz → 1156 B" }, tone: new }
       page: { cells: [["1", { vi: "tại chỗ", en: "inline" }, "101 B"], ["2", "", ""], ["3", { vi: "nén pglz", en: "pglz" }, "1156 B"]], cellTone: { "2:1": new } }
   - say: { vi: "Dòng 2: gần ngẫu nhiên, nén không được: cắt ra TOAST, để lại con trỏ 18 B.", en: "Row 2: near random, it does not compress: chunked into TOAST, an 18 B pointer stays." }
-    alt: { vi: "Dòng 2: 6400 ký tự md5, gần ngẫu nhiên, nén không giảm. Postgres cắt nó thành 4 chunk trong bảng TOAST: chunk_seq 0, 1, 2 mỗi chunk 1996 B, chunk 3 còn 412 B. Trên trang, dòng 2 chỉ giữ con trỏ 18 B trỏ tới bảng TOAST.", en: "Row 2: 6400 md5 characters, near random, compression does not shrink it. Postgres cuts it into 4 chunks in the TOAST table: chunk_seq 0, 1, 2 at 1996 B each and chunk 3 at 412 B. On the page, row 2 keeps only an 18 B pointer to the TOAST table." }
+    alt: { vi: "Dòng 2 có 6400 ký tự md5 gần ngẫu nhiên nên nén không giảm được, và Postgres cắt nó thành 4 chunk trong bảng TOAST, trên trang chỉ còn con trỏ 18 B.", en: "Row 2 holds 6400 near-random md5 characters that do not compress, so Postgres cuts it into 4 chunks in the TOAST table and the page keeps only an 18 B pointer." }
     set:
       val: { label: { vi: "id 2: 6400 ký tự", en: "id 2: 6400 chars" }, sub: { vi: "gần như ngẫu nhiên", en: "md5, near random" } }
       cmp: { label: { vi: "nén: không giảm", en: "barely shrinks" }, tone: warm }
@@ -58,5 +58,5 @@ variants:
       vi: "Postgres tự làm một kiểu tách dọc: giá trị dài không nén được ra bảng TOAST, trang chỉ giữ con trỏ 18 B; giá trị nén vừa thì ở lại."
       en: "Postgres does a kind of vertical split by itself: a long value that does not compress moves to the TOAST table and the page keeps an 18 B pointer; a value that compresses enough stays."
     alt:
-      vi: "Trang heap 8 kB của bảng doc có ba dòng. Dòng 1, 101 B, ở tại chỗ. Dòng 3, 100 000 chữ b, nén pglz còn 1156 B và ở lại. Dòng 2, 6400 ký tự md5, nén không giảm nên bị cắt thành 4 chunk trong bảng TOAST (1996, 1996, 1996 và 412 B); trên trang chỉ còn con trỏ 18 B."
-      en: "The 8 kB heap page of table doc holds three rows. Row 1, 101 B, is inline. Row 3, 100,000 letters b, compresses with pglz to 1156 B and stays. Row 2, 6400 md5 characters, does not shrink, so it is cut into 4 chunks in the TOAST table (1996, 1996, 1996 and 412 B); the page keeps only an 18 B pointer."
+      vi: "Postgres tự tách dọc giá trị dài: giá trị không nén được ra bảng TOAST và trang chỉ giữ con trỏ 18 B, còn giá trị nén đủ nhỏ thì ở lại. Nhờ vậy dòng trên trang heap luôn hẹp, dù cột có chứa văn bản dài."
+      en: "Postgres splits long values off by itself: a value that does not compress moves to the TOAST table and the page keeps an 18 B pointer, while one that compresses enough stays. So rows on the heap page stay narrow even when a column holds long text."

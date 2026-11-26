@@ -10,8 +10,8 @@ caption:
   vi: "Chuyển cột phụ thuộc sang một bảng có khóa là cột quyết định nó: sự thật lưu một lần, nối lại vẫn đủ dòng."
   en: "Move the dependent column into a table keyed by the column that determines it: the fact is stored once, and joining back gives every row."
 alt:
-  vi: "course_id quyết định course_title, nhưng khóa của ex_enrol là cặp (student_id, course_id): đó là phụ thuộc vào một phần khóa. Bảng trước khi tách có bốn dòng: sinh viên 1, 2, 3 học khóa 10 SQL, sinh viên 1 học khóa 20 Stats; chữ SQL lặp ba lần. Sau khi tách: ex_enrol chỉ còn student_id và course_id, bốn dòng; ex_course có khóa course_id với hai dòng, 10 SQL và 20 Stats. course_id của ex_enrol là khóa ngoại trỏ tới ex_course. Nối hai bảng lại ra đúng bốn dòng ban đầu."
-  en: "course_id determines course_title, but the key of ex_enrol is the pair (student_id, course_id): a dependency on part of the key. Before the split the table has four rows: students 1, 2, 3 take course 10 SQL, student 1 takes course 20 Stats; the word SQL repeats three times. After the split: ex_enrol keeps only student_id and course_id, four rows; ex_course is keyed by course_id with two rows, 10 SQL and 20 Stats. course_id in ex_enrol is a foreign key to ex_course. Joining the two back gives exactly the four original rows."
+  vi: "course_title chỉ phụ thuộc vào course_id, một phần của khóa (student_id, course_id), nên tên khóa học bị lặp ở mỗi lượt đăng ký. Chuyển nó sang ex_course có khóa course_id thì mỗi tên chỉ lưu một lần, và nối hai bảng lại vẫn ra đúng 4 dòng ban đầu."
+  en: "course_title depends only on course_id, part of the key (student_id, course_id), so the course name repeats on every enrolment. Moving it to ex_course, keyed by course_id, stores each name once, and joining the two tables back still gives exactly the 4 original rows."
 nodes:
   - { id: dep, shape: key, mono: true, label: "course_id → course_title", tone: warm }
   - { id: part, shape: note, label: { vi: "phụ thuộc một phần khóa", en: "depends on part of the key" } }

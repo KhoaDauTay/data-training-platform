@@ -8,8 +8,8 @@ caption:
   vi: "LAG dời cột xuống một dòng theo thứ tự cửa sổ, nên ngày không có dòng bị bỏ qua lặng lẽ."
   en: "LAG shifts the column down one row in window order, so a day with no row is skipped silently."
 alt:
-  vi: "Số đơn mỗi ngày của Ben Thanh với prev = LAG(n, 1, 0) và change = n − prev. 25/10: n 4, prev 0 (giá trị mặc định, vì không có dòng trước), change +4. Ngày 26/10 không có dòng nào. 27/10: n 2, prev 4, change −2: prev là số của 25/10, không phải 26/10. 28/10: 6, prev 2, +4. 29/10: 4, prev 6, −2. 30/10: 4, prev 4, 0. 31/10: 2, prev 4, −2."
-  en: "Ben Thanh's orders per day with prev = LAG(n, 1, 0) and change = n − prev. 25 Oct: n 4, prev 0 (the default, since there is no earlier row), change +4. 26 Oct has no row at all. 27 Oct: n 2, prev 4, change −2: prev is 25 Oct's number, not 26 Oct's. 28 Oct: 6, prev 2, +4. 29 Oct: 4, prev 6, −2. 30 Oct: 4, prev 4, 0. 31 Oct: 2, prev 4, −2."
+  vi: "LAG(n, 1, 0) lấy giá trị của dòng đứng trước theo ORDER BY, không phải của ngày hôm trước. Ngày 26/10 không có dòng nào, nên prev của 27/10 là số của 25/10; dòng đầu không có dòng trước nên nhận giá trị mặc định 0."
+  en: "LAG(n, 1, 0) takes the value of the previous row in ORDER BY order, not of the previous day. 26 Oct has no row, so 27 Oct's prev is 25 Oct's number; the first row has no row before it, so it gets the default 0."
 nodes:
   - id: t
     shape: grid

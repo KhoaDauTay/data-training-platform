@@ -11,8 +11,8 @@ caption:
   vi: "Hai quầy cùng lấy 2 cuốn bằng SET stock = stock - :q với ConditionExpression stock >= :q. DynamoDB kiểm và ghi trong một bước nguyên tử, nên không bán lố; lần bị từ chối nhận ConditionalCheckFailedException và vẫn tốn WCU. PutItem không điều kiện thì ghi đè lặng lẽ."
   en: "Two desks each take 2 copies with SET stock = stock - :q and ConditionExpression stock >= :q. DynamoDB checks and writes in one atomic step, so nothing is oversold; the refused call gets ConditionalCheckFailedException and still uses WCU. A PutItem with no condition overwrites silently."
 alt:
-  vi: "Hai quầy cùng muốn lấy 2 cuốn sách 978-0-02, đang còn 3 cuốn, bằng một lần ghi có điều kiện stock ≥ 2. Mỗi quầy trỏ tới kết quả lần ghi của mình rồi tới item; cách khác là PutItem không điều kiện, ghi thẳng vào item."
-  en: "Two desks each want to take 2 copies of book 978-0-02, which has 3, with a write conditioned on stock ≥ 2. Each desk points to the result of its write, then to the item; the other way is a PutItem with no condition, written straight onto the item."
+  vi: "Ghi có điều kiện kiểm tra và ghi trong cùng một bước nguyên tử, nên hai quầy cùng bán một cuốn sách không thể bán lố. Không có điều kiện, lần ghi sau lặng lẽ đè lên lần trước."
+  en: "A conditional write checks and writes in one atomic step, so two desks selling the same book can never oversell it. Without a condition, the later write silently overwrites the earlier one."
 nodes:
   - { id: a, label: { vi: "Quầy A: lấy 2", en: "Desk A: takes 2" }, sub: { vi: "nếu stock ≥ 2", en: "if stock ≥ 2" }, tone: new }
   - { id: b, label: { vi: "Quầy B: lấy 2", en: "Desk B: takes 2" }, sub: { vi: "nếu stock ≥ 2", en: "if stock ≥ 2" }, tone: ghost }
@@ -33,18 +33,18 @@ edges:
   - { from: put, to: item, label: { vi: "ghi đè 3 → 1", en: "overwrites 3 → 1" } }
 steps:
   - say: { vi: "Kiểm tra và ghi trong cùng một bước nguyên tử.", en: "Check and write in one atomic step." }
-    alt: { vi: "Quầy A gửi lệnh trước. Stock đang là 3, điều kiện 3 ≥ 2 đúng, nên stock thành 1.", en: "Desk A sends first. Stock is 3, the condition 3 ≥ 2 holds, so stock becomes 1." }
+    alt: { vi: "Quầy A gửi trước: stock đang là 3 nên điều kiện stock ≥ 2 đúng, và DynamoDB trừ ngay thành 1 trong cùng bước kiểm tra.", en: "Desk A sends first: stock is 3, so the condition stock ≥ 2 holds and DynamoDB takes it down to 1 in the same step as the check." }
     show: [a, ok, item]
   - say: { vi: "Điều kiện sai: lỗi, item giữ nguyên, không bán lố.", en: "Condition false: an error, item unchanged, no overselling." }
     show: [a, b, ok, no, item]
-    alt: { vi: "Quầy B gửi cùng lệnh. Stock giờ là 1, điều kiện 1 ≥ 2 sai: DynamoDB từ chối với ConditionalCheckFailedException, nét đứt tới item nghĩa là không ghi gì, item giữ stock 1, và lần ghi bị từ chối vẫn tốn WCU.", en: "Desk B sends the same command. Stock is now 1, the condition 1 ≥ 2 is false: DynamoDB refuses with ConditionalCheckFailedException, the dashed line to the item means nothing is written, the item keeps stock 1, and the refused write still uses WCU." }
+    alt: { vi: "Quầy B gửi cùng lệnh khi stock chỉ còn 1, điều kiện sai nên DynamoDB từ chối bằng ConditionalCheckFailedException, item giữ nguyên và lần bị từ chối vẫn tốn WCU.", en: "Desk B sends the same command when stock is only 1, the condition is false, so DynamoDB refuses with ConditionalCheckFailedException, the item stays as it was and the refused call still uses WCU." }
     set:
       a: { tone: ghost }
       ok: { tone: ghost }
       b: { tone: new }
       item: { sub: { vi: "stock 1, không đổi", en: "stock 1, unchanged" }, tone: plain }
   - say: { vi: "Không có điều kiện, lần ghi sau đè lần trước.", en: "Without a condition, the later write overwrites the earlier one." }
-    alt: { vi: "Cách khác: quầy B đã đọc stock 3 trước khi A ghi, rồi dùng PutItem không điều kiện ghi cả item với stock 1. Lần ghi đè lên thay đổi của A mà không kiểm gì, không báo gì: đã bán 4 cuốn mà stock vẫn ghi 1.", en: "The other way: desk B read stock 3 before A wrote, then a PutItem with no condition writes the whole item with stock 1. It overwrites A's change, checks nothing and says nothing: 4 copies are sold and stock still says 1." }
+    alt: { vi: "Nếu quầy B tính từ stock 3 đã đọc trước đó rồi ghi bằng PutItem không điều kiện, nó đè lên thay đổi của A mà không báo gì: bán 4 cuốn nhưng stock vẫn ghi 1.", en: "If desk B works from the stock 3 it read earlier and writes with a PutItem with no condition, it overwrites A's change without a word: 4 copies sold, yet stock still says 1." }
     show: [a, ok, item, put]
     set:
       a: { tone: ghost }

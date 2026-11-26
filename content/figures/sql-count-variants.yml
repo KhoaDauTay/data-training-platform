@@ -7,8 +7,8 @@ caption:
   vi: "Số lớn đếm 8 dòng mẫu; dòng nhỏ là kết quả trên cả bảng 300 khách. Hàm gộp bỏ qua ô NULL; chỉ count(*) đếm mọi dòng."
   en: "The big numbers count the 8 sample rows; the small line is the result on the whole 300-customer table. Aggregates skip NULL cells; only count(*) counts every row."
 alt:
-  vi: "Cột city của 8 dòng mẫu: Da Nang, HCM City, NULL, Hue, Da Nang, Hanoi, NULL, Can Tho. count(*) cho 8, đếm mọi dòng (cả bảng: 300). count(city) cho 6, bỏ hai ô NULL (cả bảng: 283). count(DISTINCT city) cho 5 giá trị khác nhau, Da Nang chỉ tính một lần (cả bảng: 5)."
-  en: "The city column of 8 sample rows: Da Nang, HCM City, NULL, Hue, Da Nang, Hanoi, NULL, Can Tho. count(*) gives 8, every row (whole table: 300). count(city) gives 6, skipping the two NULL cells (whole table: 283). count(DISTINCT city) gives 5 distinct values, Da Nang counted once (whole table: 5)."
+  vi: "Ba kiểu count trả lời ba câu hỏi khác nhau trên cùng một cột: count(*) đếm dòng, count(city) chỉ đếm ô có giá trị vì hàm gộp bỏ qua NULL, còn count(DISTINCT city) đếm mỗi giá trị một lần. Trên 8 dòng mẫu: 8, 6 và 5; trên cả bảng: 300, 283 và 5."
+  en: "The three counts answer three different questions on one column: count(*) counts rows, count(city) counts only filled cells because aggregates skip NULL, and count(DISTINCT city) counts each value once. On the 8 sample rows: 8, 6 and 5; on the whole table: 300, 283 and 5."
 align: true
 nodes:
   - id: city

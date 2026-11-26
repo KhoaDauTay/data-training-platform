@@ -8,8 +8,8 @@ caption:
   vi: "Đơn ngày 31/10 tìm cửa hàng của nó qua ON s.id = o.store_id. Son Tra không có đơn nào hôm đó nên không có trong kết quả."
   en: "Each order of 31 Oct finds its store through ON s.id = o.store_id. Son Tra had no order that day, so it is not in the result."
 alt:
-  vi: "Bảng orders o có 5 đơn ngày 31/10: 1416 của cửa hàng 5, 1417 và 1418 của cửa hàng 3, 1419 của cửa hàng 1, 1420 của cửa hàng 4. Bảng stores s: 1 Hai Chau, 2 Son Tra, 3 Ben Thanh, 4 Thao Dien, 5 Hoan Kiem; Son Tra mờ vì không có đơn. Đường nối mỗi đơn với cửa hàng có id bằng store_id của nó. Điều kiện ON s.id = o.store_id cho 5 dòng kết quả: 1416 Hoan Kiem, 1417 Ben Thanh, 1418 Ben Thanh, 1419 Hai Chau, 1420 Thao Dien."
-  en: "The orders o table has 5 orders of 31 Oct: 1416 from store 5, 1417 and 1418 from store 3, 1419 from store 1, 1420 from store 4. The stores s table: 1 Hai Chau, 2 Son Tra, 3 Ben Thanh, 4 Thao Dien, 5 Hoan Kiem; Son Tra is faded, it had no order. A line joins each order to the store whose id equals its store_id. The condition ON s.id = o.store_id gives 5 result rows: 1416 Hoan Kiem, 1417 Ben Thanh, 1418 Ben Thanh, 1419 Hai Chau, 1420 Thao Dien."
+  vi: "INNER JOIN ghép mỗi đơn với cửa hàng có id bằng store_id của đơn, theo điều kiện ON s.id = o.store_id. Một cửa hàng có hai đơn thì xuất hiện hai lần; Son Tra không có đơn nào hôm đó nên không có cặp và không có trong kết quả. Kết quả: 5 dòng, mỗi đơn một dòng."
+  en: "INNER JOIN pairs each order with the store whose id equals the order's store_id, by the condition ON s.id = o.store_id. A store with two orders appears twice; Son Tra had no order that day, so it has no pair and is not in the result. Result: 5 rows, one per order."
 nodes:
   - id: o
     shape: grid

@@ -8,8 +8,8 @@ caption:
   vi: "Mỗi lần gọi dừng ở Limit (hoặc 1 MB) và trả khóa của item cuối đã đọc (LastEvaluatedKey, viết tắt LEK). Gửi khóa đó làm ExclusiveStartKey để đọc tiếp. Có khóa chưa chắc còn dữ liệu: chỉ hết khi phản hồi không còn LastEvaluatedKey."
   en: "Each call stops at Limit (or 1 MB) and returns the key of the last item read (LastEvaluatedKey, LEK for short). Send that key as ExclusiveStartKey to read on. A key does not promise more data: you are done only when the response has no LastEvaluatedKey."
 alt:
-  vi: "Item collection C-01 có 4 đơn theo thứ tự orderId, đọc bằng Query với Limit 2 qua tối đa ba lần gọi."
-  en: "Item collection C-01 holds 4 orders in orderId order, read by a Query with Limit 2 over up to three calls."
+  vi: "Query trả kết quả theo trang: mỗi lần gọi dừng ở Limit và trả LastEvaluatedKey, khóa của item cuối đã đọc, để lần sau gửi lại làm ExclusiveStartKey. Chỉ khi phản hồi không còn LastEvaluatedKey mới là hết dữ liệu."
+  en: "Query returns results in pages: each call stops at Limit and returns LastEvaluatedKey, the key of the last item read, to send back next time as ExclusiveStartKey. Only a response with no LastEvaluatedKey means the data is done."
 nodes:
   - id: strip
     shape: grid
@@ -30,14 +30,14 @@ edges:
   - { from: c2, to: c3, label: ExclusiveStartKey }
 steps:
   - say: { vi: "Dừng khi đủ Limit hoặc 1 MB; trả về khóa cuối đã đọc.", en: "Stops at Limit or 1 MB; returns the last key read." }
-    alt: { vi: "Lần gọi 1 đọc O-101 và O-102, rồi trả LastEvaluatedKey là khóa đầy đủ của O-102: customerId C-01 và orderId 2026-08-28#O-102.", en: "Call 1 reads O-101 and O-102, then returns LastEvaluatedKey, the full key of O-102: customerId C-01 and orderId 2026-08-28#O-102." }
+    alt: { vi: "Lần gọi 1 đọc đủ 2 item theo Limit rồi dừng, trả LastEvaluatedKey là khóa đầy đủ của O-102 (partition key và sort key) để biết chỗ đọc tiếp.", en: "Call 1 reads its 2 items by Limit and stops, returning LastEvaluatedKey, the full key of O-102 (partition key and sort key), so the next call knows where to go on." }
     show: [strip, nk, c1]
   - say: { vi: "Gửi lại khóa đó làm ExclusiveStartKey.", en: "Send that key back as ExclusiveStartKey." }
     show: [strip, nk, c1, c2]
-    alt: { vi: "Lần gọi 2 gửi ExclusiveStartKey O-102, đọc O-103 và O-104. Item cuối nằm đúng ranh giới trang nên phản hồi vẫn có LastEvaluatedKey O-104.", en: "Call 2 sends ExclusiveStartKey O-102 and reads O-103 and O-104. The last item sits right on the page boundary, so the response still carries LastEvaluatedKey O-104." }
+    alt: { vi: "Lần gọi 2 gửi khóa đó làm ExclusiveStartKey và đọc 2 item cuối; vì đọc đúng bằng Limit, DynamoDB chưa biết đã hết nên vẫn trả LastEvaluatedKey O-104.", en: "Call 2 sends that key as ExclusiveStartKey and reads the last 2 items; since it read exactly Limit, DynamoDB cannot know it is done and still returns LastEvaluatedKey O-104." }
     set:
       strip: { cells: [["2026-07-28#O-101", "1"], ["2026-08-28#O-102", "1"], ["2026-09-17#O-103", "2"], ["2026-10-19#O-104", "2"]], cellTone: { "2:1": new, "3:1": new } }
   - say: { vi: "Có LEK chưa chắc còn dữ liệu; chỉ hết khi không còn LEK.", en: "A LEK does not promise more data; you are done only when it is absent." }
-    alt: { vi: "Lần gọi 3 gửi ExclusiveStartKey O-104 và nhận 0 item, không còn LastEvaluatedKey: đến đây mới hết.", en: "Call 3 sends ExclusiveStartKey O-104 and gets 0 items and no LastEvaluatedKey: only now is it done." }
+    alt: { vi: "Lần gọi 3 nhận 0 item và không còn LastEvaluatedKey: chỉ đến lúc này vòng lặp đọc trang mới được dừng.", en: "Call 3 gets 0 items and no LastEvaluatedKey: only now may the paging loop stop." }
     set:
       strip: { cells: [["2026-07-28#O-101", "1"], ["2026-08-28#O-102", "1"], ["2026-09-17#O-103", "2"], ["2026-10-19#O-104", "2"]], cellTone: { "2:1": new, "3:1": new } }

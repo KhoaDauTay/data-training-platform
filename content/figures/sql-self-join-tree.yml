@@ -8,8 +8,8 @@ caption:
   vi: "Mỗi mũi tên là manager_id: nó trỏ về một dòng khác của chính bảng staff. Bí danh e (nhân viên) và m (quản lý) cho bảng đóng hai vai."
   en: "Every arrow is manager_id: it points back to another row of the same staff table. Aliases e (employee) and m (manager) let the table play both roles."
 alt:
-  vi: "Cây quản lý trong bảng staff. Ha Minh (CEO) ở trên cùng; manager_id của Ha Minh là NULL, nên cần LEFT JOIN để giữ dòng này. Do Lan (cùng 3 người dưới quyền) và Ly Quan (quản lý vùng) trỏ tới Ha Minh. Ta Vy (quản lý cửa hàng) trỏ tới Ly Quan. Hai thu ngân Vu Giang và Phan Khanh trỏ tới Ta Vy. Lam Phuong (kho) trỏ tới Phan Khanh. Bên dưới, cùng một bảng dưới hai bí danh: staff e có dòng Ta Vy, manager_id 3; staff m có dòng id 3, Ly Quan; hai dòng ghép với nhau qua ON m.id = e.manager_id."
-  en: "The management tree inside the staff table. Ha Minh (CEO) is at the top; Ha Minh's manager_id is NULL, so a LEFT JOIN is needed to keep that row. Do Lan (with 3 more people) and Ly Quan (regional manager) point to Ha Minh. Ta Vy (store manager) points to Ly Quan. Two cashiers, Vu Giang and Phan Khanh, point to Ta Vy. Lam Phuong (stock clerk) points to Phan Khanh. Below, the same table under two aliases: staff e has the row Ta Vy, manager_id 3; staff m has the row id 3, Ly Quan; the two rows pair up through ON m.id = e.manager_id."
+  vi: "Mỗi nhân viên trỏ tới quản lý của mình qua manager_id, và quản lý cũng là một dòng của chính bảng staff, nên cả cây nằm trong một bảng. Muốn ghép nhân viên với quản lý, ta gọi bảng hai lần với bí danh e và m rồi nối ON m.id = e.manager_id, và dùng LEFT JOIN vì CEO có manager_id là NULL."
+  en: "Each employee points to their manager through manager_id, and the manager is also a row of the same staff table, so the whole tree lives in one table. To pair employees with managers, name the table twice with aliases e and m, join ON m.id = e.manager_id, and use a LEFT JOIN because the CEO's manager_id is NULL."
 nodes:
   - { id: ha, label: Ha Minh, sub: CEO }
   - { id: nul, mono: true, label: "manager_id NULL", sub: { vi: "LEFT JOIN để giữ", en: "LEFT JOIN to keep" }, tone: warm }

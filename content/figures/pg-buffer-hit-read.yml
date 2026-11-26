@@ -7,8 +7,8 @@ caption:
   vi: "Mỗi trang một nút quét cần đi qua shared buffers. Có sẵn ở đó thì đếm là hit, không đụng đĩa; chưa có thì phải nạp từ ngoài vào (đĩa hoặc page cache của hệ điều hành) và đếm là read. Trong lab, Seq Scan trên trips ghi shared hit=163: cả 163 trang đều có sẵn."
   en: "Every page a scan node needs goes through shared buffers. If it is already there it counts as hit, with no disk access; if not, it is brought in from outside (disk or the OS page cache) and counts as read. In the lab, the Seq Scan on trips shows shared hit=163: all 163 pages were already there."
 alt:
-  vi: "Hai đường tới shared buffers, vùng chung gồm các trang 8 kB (minh họa 6 trang). Bên trái, Seq Scan trên trips với shared hit=163 tìm thấy trang có sẵn: hit, không đụng đĩa. Bên phải, trang chưa có được nạp từ file bảng trên đĩa vào shared buffers: read."
-  en: "Two ways into shared buffers, the shared area of 8 kB pages (6 pages shown as an illustration). On the left, the Seq Scan on trips with shared hit=163 finds the page already there: hit, no disk access. On the right, a page that is not there is loaded from the table files on disk into shared buffers: read."
+  vi: "Mỗi trang một nút quét cần đều phải nằm trong shared buffers trước. Trang có sẵn ở đó được đếm là hit và không tốn lần đọc đĩa nào; trang chưa có phải nạp từ file bảng vào và được đếm là read."
+  en: "Every page a scan node needs must be in shared buffers first. A page already there counts as hit and costs no disk read; a page that is not must be loaded from the table files and counts as read."
 nodes:
   - { id: q, label: Seq Scan trips, sub: "shared hit=163" }
   - { id: tf, shape: table, label: { vi: "file bảng", en: "table files" }, sub: { vi: "trên đĩa", en: "on disk" } }

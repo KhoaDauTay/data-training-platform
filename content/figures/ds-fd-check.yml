@@ -6,8 +6,8 @@ caption:
   vi: "Hai dòng cùng carrier mà khác carrier_phone là đủ bác carrier → carrier_phone. Câu GROUP BY carrier HAVING count(DISTINCT carrier_phone) > 1 tìm đúng những dòng đó."
   en: "Two rows with the same carrier and different carrier_phone are enough to refute carrier → carrier_phone. GROUP BY carrier HAVING count(DISTINCT carrier_phone) > 1 finds exactly those rows."
 alt:
-  vi: "Câu hỏi: carrier có quyết định carrier_phone không? Bảng deliveries xếp theo carrier: FastGo ở ba dòng 1, 2, 4, cùng số 0901; SlowShip ở dòng 3 với 0902 và dòng 5 với 0903; QuickBox chỉ một dòng, 0904. FastGo một số: chưa bác được. SlowShip hai số: phụ thuộc bị bác bỏ. QuickBox chỉ có một dòng nên không nói được gì. Một kết quả sạch không chứng minh phụ thuộc đúng; chỉ một cặp dòng trái là đủ bác."
-  en: "The question: does carrier determine carrier_phone? Table deliveries ordered by carrier: FastGo on three rows 1, 2, 4, all with 0901; SlowShip on row 3 with 0902 and row 5 with 0903; QuickBox on one row, 0904. FastGo has one phone: not refuted. SlowShip has two phones: the dependency is refuted. QuickBox has one row, so it says nothing. A clean result does not prove a dependency; one pair of disagreeing rows is enough to refute it."
+  vi: "Chỉ cần hai dòng cùng carrier mà khác carrier_phone là đủ bác phụ thuộc carrier → carrier_phone, như SlowShip có hai số. Ngược lại, dữ liệu sạch không chứng minh được phụ thuộc đúng: FastGo một số chỉ là chưa bác, còn QuickBox một dòng thì không nói được gì."
+  en: "Two rows with the same carrier but different carrier_phone are enough to refute carrier → carrier_phone, as SlowShip with two phones does. Clean data never proves the dependency: FastGo with one phone is only not refuted yet, and QuickBox with one row says nothing."
 nodes:
   - { id: q, shape: key, mono: true, label: "carrier → carrier_phone ?" }
   - id: t

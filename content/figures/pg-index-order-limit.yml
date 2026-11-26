@@ -9,8 +9,8 @@ caption:
   vi: "B-tree giữ created_at theo thứ tự, nên ORDER BY created_at DESC LIMIT 5 chỉ đọc ngược 5 mục cuối rồi dừng. Một index tăng dần đọc được cả hai chiều."
   en: "The B-tree keeps created_at in order, so ORDER BY created_at DESC LIMIT 5 reads the last 5 entries backwards and stops. An ascending index can be read in both directions."
 alt:
-  vi: "Index orders_created_idx giữ 20 000 mục created_at theo thứ tự tăng: 01-01 00:07, 01-01 00:14, rồi 19 993 mục nữa, rồi 04-08 04:52, 04:59, 05:06, 05:13 và cuối cùng 05:20."
-  en: "Index orders_created_idx holds 20,000 created_at entries in ascending order: 01-01 00:07, 01-01 00:14, then 19,993 more, then 04-08 04:52, 04:59, 05:06, 05:13 and finally 05:20."
+  vi: "Index B-tree đã giữ created_at theo thứ tự, nên ORDER BY created_at DESC LIMIT 5 chỉ cần đọc ngược 5 mục cuối rồi dừng. Không có index đó, Postgres phải đọc cả 20 000 dòng và sắp xếp chỉ để lấy 5 dòng."
+  en: "The B-tree index already keeps created_at in order, so ORDER BY created_at DESC LIMIT 5 only reads the last 5 entries backwards and stops. Without that index, Postgres must read all 20,000 rows and sort them just to get 5."
 groups:
   - { id: other, label: { vi: "Kế hoạch khác", en: "Another plan" }, nodes: [alt] }
 nodes:
@@ -35,15 +35,16 @@ edges:
 steps:
   - say: { vi: "B-tree giữ created_at theo thứ tự.", en: "The B-tree keeps created_at in order." }
     show: [lim, scan, idx]
+    alt: { vi: "Index orders_created_idx lưu 20 000 mục created_at đã xếp tăng dần, nên mục mới nhất luôn nằm ở cuối.", en: "Index orders_created_idx stores 20,000 created_at entries already sorted ascending, so the newest entry is always at the end." }
   - say: { vi: "DESC: đọc ngược từ cuối, đủ 5 thì Limit dừng.", en: "DESC: read backwards from the end; Limit stops at 5." }
     show: [lim, scan, idx]
-    alt: { vi: "Index Scan Backward đọc ngược từ mục cuối: 05:20 là mục thứ 1, rồi 05:13, 05:06, 04:59, và 04:52 là mục thứ 5. Limit 5 dừng ngay đó, không đọc 19 995 mục còn lại.", en: "Index Scan Backward reads from the last entry: 05:20 is entry 1, then 05:13, 05:06, 04:59, and 04:52 is entry 5. Limit 5 stops right there and never reads the other 19,995 entries." }
+    alt: { vi: "Index Scan Backward đọc ngược từ mục cuối và Limit dừng ngay khi đủ 5 mục, nên 19 995 mục còn lại không bao giờ được đọc.", en: "Index Scan Backward reads backwards from the last entry and Limit stops as soon as it has 5, so the other 19,995 entries are never read." }
     set:
       lim: { tone: live }
       scan: { tone: live }
       idx: { head: [created_at, { vi: "đọc", en: "read" }], cells: [["01-01 00:07", ""], ["01-01 00:14", ""], [{ vi: "… 19 993 mục", en: "… 19,993 more" }, ""], ["04-08 04:52", "5"], ["04-08 04:59", "4"], ["04-08 05:06", "3"], ["04-08 05:13", "2"], ["04-08 05:20", "1"]] }
   - say: { vi: "Không index (hoặc sắp theo biểu thức): đọc hết rồi sắp.", en: "No index (or sorting by an expression): read everything, then sort." }
-    alt: { vi: "Cách khác, khi không có index phù hợp hoặc khi sắp theo một biểu thức như created_at::date: Seq Scan đọc cả 20 000 dòng rồi Sort (top-N heapsort) mới đưa 5 dòng lên Limit.", en: "The other way, with no matching index or when sorting by an expression such as created_at::date: Seq Scan reads all 20,000 rows, then Sort (top-N heapsort) hands 5 rows to Limit." }
+    alt: { vi: "Khi không có index khớp, hoặc khi sắp theo biểu thức như created_at::date, Seq Scan phải đọc cả 20 000 dòng rồi Sort mới chọn ra 5 dòng.", en: "With no matching index, or when sorting by an expression such as created_at::date, Seq Scan must read all 20,000 rows and Sort then picks 5." }
     set:
       alt: { tone: warm }
       lim: { tone: live }

@@ -8,8 +8,8 @@ caption:
   vi: "Cửa hàng có đơn ngày 23/10 (d23) và ngày 24/10 (d24). Loại JOIN quyết định dòng không có cặp của bên nào được giữ."
   en: "Stores with orders on 23 Oct (d23) and on 24 Oct (d24). The join type decides whose unmatched rows survive."
 alt:
-  vi: "Hai danh sách mã cửa hàng: d23 có 1, 2, 3, 5; d24 có 1, 2, 3, 4. Ba bảng kết quả đặt cạnh nhau. INNER: 3 dòng, chỉ các cặp 1–1, 2–2, 3–3. LEFT (d23): 4 dòng, thêm 5 với d24 là NULL; cửa hàng 4 bị mất. FULL: 5 dòng, thêm 5 với d24 là NULL và 4 với d23 là NULL, nên có NULL ở cả hai bên."
-  en: "Two lists of store ids: d23 has 1, 2, 3, 5; d24 has 1, 2, 3, 4. Three result tables side by side. INNER: 3 rows, only the pairs 1–1, 2–2, 3–3. LEFT (d23): 4 rows, adding 5 with d24 NULL; store 4 is lost. FULL: 5 rows, adding 5 with d24 NULL and 4 with d23 NULL, so there are NULLs on both sides."
+  vi: "Cùng hai ngày đơn, loại JOIN quyết định dòng không có cặp của bên nào được giữ: INNER chỉ giữ cửa hàng có đơn cả hai ngày, LEFT giữ thêm cửa hàng chỉ có ở d23, FULL giữ cả hai phía và điền NULL vào chỗ thiếu. Kết quả: 3, 4 rồi 5 dòng."
+  en: "On the same two days of orders, the join type decides whose unmatched rows survive: INNER keeps only stores with orders on both days, LEFT also keeps stores only in d23, FULL keeps both sides and fills gaps with NULL. Result: 3, then 4, then 5 rows."
 nodes:
   - { id: kt, mono: true, label: "d23: 1 2 3 5", sub: { vi: "đơn ngày 23/10", en: "orders on 23 Oct" } }
   - { id: ka, mono: true, label: "d24: 1 2 3 4", sub: { vi: "đơn ngày 24/10", en: "orders on 24 Oct" } }

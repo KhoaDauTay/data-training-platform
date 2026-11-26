@@ -8,8 +8,8 @@ caption:
   vi: "Điều kiện: sku là p4 và qty ≥ 2. Dấu chấm ({\"lines.sku\": \"p4\", \"lines.qty\": {$gte: 2}}) cho mỗi điều kiện tìm phần tử riêng, nên đơn 1 khớp nhờ hai dòng khác nhau. $elemMatch đòi cả hai điều kiện trên cùng một phần tử. Ô được tô màu là ô mà lần khớp dựa vào."
   en: "The condition: sku is p4 and qty ≥ 2. Dot notation ({\"lines.sku\": \"p4\", \"lines.qty\": {$gte: 2}}) lets each condition find its own element, so order 1 matches through two different lines. $elemMatch needs both conditions on one element. A tinted cell is one the match relies on."
 alt:
-  vi: "Hai nhóm, cùng hai đơn. Đơn 1 có dòng p1 qty 2 và dòng p4 qty 1; đơn 5 có dòng p6 qty 2 và dòng p4 qty 2. Với dấu chấm, đơn 1 khớp vì qty 2 nằm ở dòng 1 còn p4 ở dòng 2, hai phần tử khác nhau; đơn 5 khớp nhờ dòng 2; kết quả là đơn 1 và 5. Với $elemMatch, đơn 1 không khớp vì không dòng nào đủ cả hai; đơn 5 khớp nhờ dòng 2 (p4, qty 2); kết quả chỉ có đơn 5."
-  en: "Two groups, the same two orders. Order 1 has line p1 qty 2 and line p4 qty 1; order 5 has line p6 qty 2 and line p4 qty 2. With dot notation, order 1 matches because qty 2 is on line 1 and p4 on line 2, two different elements; order 5 matches through line 2; the result is orders 1 and 5. With $elemMatch, order 1 does not match because no line has both; order 5 matches through line 2 (p4, qty 2); the result is order 5 only."
+  vi: "Với dấu chấm, mỗi điều kiện được tìm trên một phần tử bất kỳ, nên đơn 1 khớp dù sku p4 và qty 2 nằm ở hai dòng khác nhau. $elemMatch đòi cả hai điều kiện trên cùng một phần tử, nên chỉ đơn 5 khớp. Kết quả: 2 đơn so với 1 đơn."
+  en: "With dot notation each condition may be met by any element, so order 1 matches even though sku p4 and qty 2 sit on two different lines. $elemMatch needs both conditions on one element, so only order 5 matches. Result: 2 orders against 1."
 groups:
   - { id: dot, label: { vi: "dấu chấm", en: "dot notation" }, nodes: [a1, a5, ar] }
   - { id: em, label: $elemMatch, nodes: [b1, b5, br] }
