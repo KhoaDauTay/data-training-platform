@@ -35,14 +35,10 @@ function figureBox(l: Lesson, place: string): HTMLElement | null {
   const key = `${place}|${l.id}`;
   const lang = getLang();
   const old = figHosts.get(key);
-  if (old?.lang === lang) return old.host;
+  if (old?.lang === lang) return framed(old.host, place);
   const step = old?.m?.index;
   old?.m?.destroy();
-  // The builder never draws narrower than 280 (+ the frame's 8): the brief's host is the viewport − 80 (pane, task and card
-  // padding), the dialog's − 34, so below 368 px the host takes some padding (brief: the card's and the task pane's; dialog: its
-  // body's) and a 320 phone still gets ≥ 13 px labels (L861; measured 232 → 280 px in the brief, 278 → 294 in the dialog).
-  const bleed = place === 'lesson-dialog-title' ? 'mt-3 min-w-0 max-[367px]:-mx-2' : 'mt-3 min-w-0 max-[367px]:-mx-6';
-  const e: { lang: string; host: HTMLElement; m?: FigMounted } = { lang, host: h('div', { class: bleed, 'data-fig-slot': ref.name }) };
+  const e: { lang: string; host: HTMLElement; m?: FigMounted } = { lang, host: h('div', { class: 'min-w-[288px] sm:min-w-[296px]', 'data-fig-slot': ref.name }) };
   figHosts.set(key, e);
   const mountNow = (): void => void import('../engine/viz/figure')
     .then((f) => f.mountFigure(e.host, ref, { h, s, reducedMotion, loadedGsap, loadGsap, getLang }, 'sql', lang, step))
@@ -52,8 +48,17 @@ function figureBox(l: Lesson, place: string): HTMLElement | null {
     const io = new IntersectionObserver((xs) => { if (xs.some((x) => x.isIntersecting)) { io.disconnect(); mountNow(); } }, { rootMargin: '200px' });
     io.observe(e.host);
   }
-  return e.host;
+  return framed(e.host, place);
 }
+/**
+ * The builder never draws narrower than 280 (+ the frame's padding, 8 below 640 px, 16 from it), so the host is at least
+ * 288 / 296 wide (labels stay ≥ 13 px). On a
+ * phone the brief's host is the viewport − 80 (pane, task and card padding) and the dialog's − 34: below 368 px the wrapper takes
+ * that padding (brief `-mx-6`, dialog `-mx-2`; 320 px: 232 → 280 in the brief, 278 → 294 in the dialog). A brief pane made
+ * narrow by the splitter (25 % at 1024 px) scrolls the figure sideways inside this wrapper instead of shrinking it (L861).
+ */
+const framed = (host: HTMLElement, place: string): HTMLElement =>
+  h('div', { class: place === 'lesson-dialog-title' ? 'mt-3 min-w-0 overflow-x-auto max-[367px]:-mx-2' : 'mt-3 min-w-0 overflow-x-auto max-[367px]:-mx-6' }, host);
 
 
 // Session state by skill id. The brief is rebuilt on every rerender, so what the player typed or ran lives here.

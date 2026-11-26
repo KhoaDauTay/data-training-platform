@@ -30,4 +30,4 @@ rows:
   - [cust, res]
   - [n]
 edges:
-  - { from: cust, to: res, label: { vi: "đọc trái → phải", en: "left → right" } }
+  - { from: cust, to: res, label: { vi: "thay NULL", en: "fill NULL" } }

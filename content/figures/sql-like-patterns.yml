@@ -8,8 +8,8 @@ caption:
   vi: "✓ = khớp mẫu. '%water%': chứa water ở bất kỳ đâu. '_o%': một ký tự bất kỳ, rồi chữ o, rồi gì cũng được."
   en: "✓ = matches. '%water%': water anywhere. '_o%': any one character, then the letter o, then anything."
 alt:
-  vi: "LIKE giữ dòng mà cả chuỗi khớp mẫu: % thay cho bất kỳ chuỗi nào, kể cả rỗng, còn _ thay cho đúng một ký tự. Vì vậy Coconut water khớp cả hai mẫu, còn Chocolate bar không khớp mẫu nào vì ký tự thứ hai của nó là h."
-  en: "LIKE keeps a row when the whole string fits the pattern: % stands for any run of characters, even none, and _ for exactly one character. So Coconut water fits both patterns, while Chocolate bar fits neither, because its second character is h."
+  vi: "LIKE giữ dòng mà cả chuỗi khớp mẫu: % thay cho bất kỳ chuỗi nào, kể cả rỗng, còn _ thay cho đúng một ký tự. Vì vậy Coconut water khớp cả hai mẫu, còn Chocolate bar không khớp mẫu nào: tên không chứa water, và ký tự thứ hai là h chứ không phải o."
+  en: "LIKE keeps a row when the whole string fits the pattern: % stands for any run of characters, even none, and _ for exactly one character. So Coconut water fits both patterns, while Chocolate bar fits neither: its name has no water, and its second character is h, not o."
 nodes:
   - { id: pct, shape: key, mono: true, label: "%", sub: { vi: "bất kỳ chuỗi nào", en: "any run of chars" } }
   - { id: one, shape: key, mono: true, label: "_", sub: { vi: "đúng một ký tự", en: "exactly one char" } }

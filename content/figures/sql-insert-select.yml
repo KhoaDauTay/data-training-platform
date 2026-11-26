@@ -2,6 +2,7 @@
 # Data (lab, checked in PGlite 2026-11-26): store_targets for 2026-12-01: 1 10000000, 2 5000000, 3 15000000, 4 6000000, 5 9000000;
 # stores 1 and 2 are in Da Nang. INSERT INTO store_targets (store_id, month, target_vnd) SELECT t.store_id, DATE '2027-01-01', t.target_vnd
 # FROM store_targets t JOIN stores s ON s.id = t.store_id WHERE s.city = 'Da Nang' AND t.month = '2026-12-01' → 2 new rows (the lesson's third example).
+# The fixed value's arrow is dashed: it adds a value to each row, while the solid arrow carries the rows themselves.
 # Source: https://www.postgresql.org/docs/current/sql-insert.html
 title: { vi: "INSERT … SELECT chép dòng từ một câu đọc", en: "INSERT … SELECT copies rows from a query" }
 caption:
@@ -31,4 +32,4 @@ rows:
   - [res]
 edges:
   - { from: src, to: res }
-  - { from: m, to: res }
+  - { from: m, to: res, dash: true }

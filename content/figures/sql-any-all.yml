@@ -2,7 +2,7 @@
 # Data (lab, checked in PGlite 2026-11-26): Drinks prices 9000, 12000, 18000, 22000, 25000, 35000. Snacks: 15000, 16000, 20000,
 # 28000 are < ANY (true) and 45000, 89000 are not; no snack is < ALL (none is below 9000). The lesson's first example keeps the 4.
 # Source: https://www.postgresql.org/docs/current/functions-subquery.html#FUNCTIONS-SUBQUERY-ANY-SOME
-title: { vi: "ANY so với giá lớn nhất, ALL với giá nhỏ nhất", en: "ANY compares with the largest, ALL with the smallest" }
+title: { vi: "< ANY so với giá lớn nhất, < ALL với giá nhỏ nhất", en: "< ANY compares with the largest, < ALL with the smallest" }
 caption:
   vi: "Giá mỗi món ăn vặt so với 6 giá đồ uống. < ANY chỉ cần một giá thỏa; < ALL phải thỏa với cả 6."
   en: "Each snack's price against the 6 drink prices. < ANY needs one price to hold; < ALL must hold for all 6."
