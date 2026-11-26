@@ -17,13 +17,13 @@ nodes:
   - id: b
     shape: bars
     label: { vi: "tuổi XID cũ nhất", en: "oldest XID age" }
-    sub: { vi: "vạch: quay vòng, ≈ 2,15 tỉ", en: "line: wraparound, ≈ 2.15 billion" }
-    mark: 10.7
+    sub: { vi: "vạch: quay vòng, ~2,15 tỉ", en: "line: wraparound, ~2.15 billion" }
+    mark: 5.37
     items:
-      - { label: { vi: "ép VACUUM", en: "forced VACUUM" }, value: 1, note: { vi: "200 triệu", en: "200 million" }, tone: cell }
-      - { label: failsafe, value: 8, note: { vi: "1,6 tỉ", en: "1.6 billion" }, tone: warm }
-      - { label: { vi: "cảnh báo", en: "warning" }, value: 10.5, note: { vi: "còn 40 triệu", en: "40 million left" }, tone: warm }
-      - { label: { vi: "từ chối ghi", en: "writes refused" }, value: 10.7, note: { vi: "còn 3 triệu", en: "3 million left" }, tone: dead }
+      - { label: { vi: "ép VACUUM", en: "forced VACUUM" }, value: 0.5, note: { vi: "200 triệu", en: "200 million" }, tone: cell }
+      - { label: failsafe, value: 4, note: { vi: "1,6 tỉ", en: "1.6 billion" }, tone: warm }
+      - { label: { vi: "cảnh báo", en: "warning" }, value: 5.27, note: { vi: "còn 40 triệu", en: "40 million left" }, tone: warm }
+      - { label: { vi: "từ chối ghi", en: "writes refused" }, value: 5.36, note: { vi: "còn 3 triệu", en: "3 million left" }, tone: dead }
   - { id: s, label: idle in transaction, tone: dead }
   - { id: v, label: VACUUM, sub: { vi: "không freeze được", en: "cannot freeze" }, tone: ghost }
 rows:

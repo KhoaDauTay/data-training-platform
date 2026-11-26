@@ -26,17 +26,18 @@ rows:
 phone:
   rows: [[i1], [i2], [i3], [t]]
 edges:
-  - { from: i1, to: t }
-  - { from: i2, to: t }
+  - { from: i1, to: i2 }
+  - { from: i2, to: i3 }
   - { from: i3, to: t }
 steps:
   - say: { vi: "Mỗi INSERT gọi nextval(): số 1, rồi số 2.", en: "Each INSERT calls nextval(): number 1, then number 2." }
     alt: { vi: "signup lấy số 1, rồi trong một transaction mở bằng BEGIN, dòng cancelled lấy số 2 và đã nằm trong bảng.", en: "signup takes number 1, then inside a transaction opened with BEGIN, the cancelled row takes number 2 and is already in the table." }
-    show: [i1, i2, t]
+    set:
+      i3: { tone: ghost, sub: { vi: "chưa chạy", en: "not run yet" } }
   - say: { vi: "ROLLBACK bỏ dòng, nhưng số 2 không về sequence.", en: "ROLLBACK drops the row, but number 2 does not go back." }
     alt: { vi: "ROLLBACK xóa dòng cancelled khỏi bảng, còn sequence vẫn đứng ở 2 vì nextval() không bao giờ được hoàn lại.", en: "ROLLBACK removes the cancelled row from the table, while the sequence stays at 2 because nextval() is never given back." }
-    show: [i1, i2, t]
     set:
+      i3: { tone: ghost, sub: { vi: "chưa chạy", en: "not run yet" } }
       i2: { sub: { vi: "2, rồi ROLLBACK", en: "2, then ROLLBACK" }, tone: dead }
       t: { sub: { vi: "dòng 2 đã bỏ", en: "row 2 dropped" }, rowTone: [null, ghost, null], cells: [["1", signup], ["2", { vi: "(đã bỏ)", en: "(dropped)" }], ["", ""]] }
   - say: { vi: "login nhận số 3: bảng có lỗ ở số 2.", en: "login gets number 3: the table has a gap at 2." }

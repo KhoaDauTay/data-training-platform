@@ -38,7 +38,7 @@ rows:
   - [up]
   - [hot]
 edges:
-  - { from: rd, to: up, label: { vi: "status vẫn có index", en: "status still indexed" } }
+  - { from: rd, to: up, label: { vi: "status có index", en: "status indexed" } }
   - { from: up, to: hot }
 steps:
   - say: { vi: "Hai index chưa từng được đọc.", en: "Two indexes were never read." }

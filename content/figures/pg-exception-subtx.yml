@@ -11,7 +11,7 @@ alt:
   vi: "Khối có EXCEPTION chạy trong một subtransaction: khi một lệnh trong khối lỗi, mọi thay đổi của khối bị hoàn tác trước khi nhánh bắt lỗi chạy, còn việc làm ngoài khối vẫn giữ. Kết quả: chỉ còn tài khoản 100."
   en: "A block with EXCEPTION runs in a subtransaction: when a statement inside it fails, all of the block's changes are undone before the handler runs, while work outside the block is kept. Result: only account 100 remains."
 groups:
-  - { id: blk, label: { vi: "khối có EXCEPTION", en: "block with EXCEPTION" }, nodes: [b1, b2] }
+  - { id: blk, label: { vi: "khối có EXCEPTION", en: "EXCEPTION block" }, nodes: [b1, b2] }
 nodes:
   - { id: a, label: INSERT 100, sub: "'Kim A'", tone: live }
   - { id: b1, label: INSERT 101, sub: "'Kim B'", tone: live }

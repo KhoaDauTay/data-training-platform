@@ -17,13 +17,13 @@ nodes:
   - id: l1
     shape: grid
     label: { vi: "gốc: 1000 × 1000", en: "root: 1000 × 1000" }
-    head: ["", "x < 500", "x ≥ 500"]
+    head: [{ vi: "vùng", en: area }, "x < 500", "x ≥ 500"]
     cells: [["y ≥ 500", "7452", "7493"], ["y < 500", "7570", "7485"]]
     cellTone: { "1:2": warm }
   - id: l2
     shape: grid
     label: { vi: "nhánh x ≥ 500, y < 500", en: "branch x ≥ 500, y < 500" }
-    head: ["", "x < 750", "x ≥ 750"]
+    head: [{ vi: "vùng", en: area }, "x < 750", "x ≥ 750"]
     cells: [["y ≥ 250", "1905", "1883"], ["y < 250", "1841", "1856"]]
     cellTone: { "1:1": warm }
   - { id: res, label: Bitmap Index Scan, sub: { vi: "11 cửa hàng", en: "11 shops" }, tone: live }

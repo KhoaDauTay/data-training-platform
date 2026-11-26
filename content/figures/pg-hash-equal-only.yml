@@ -37,4 +37,4 @@ steps:
     set:
       q: { label: "token BETWEEN", sub: "'c00' AND 'c01'", tone: warm }
       ix: { cellTone: { "0:1": warm, "1:1": warm, "2:1": warm, "3:1": warm, "5:1": warm } }
-      res: { label: Seq Scan, sub: { vi: "đọc 30000, khớp 5", en: "reads 30000, 5 match" }, tone: dead }
+      res: { label: Seq Scan, sub: { vi: "đọc 30000, khớp 5", en: "5 of 30000 match" }, tone: dead }
