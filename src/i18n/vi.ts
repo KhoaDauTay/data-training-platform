@@ -118,6 +118,7 @@ export const vi = {
   'voice.rowsAndValues': 'Số dòng và giá trị đều lệch, bạn xem lại điều kiện lọc nhé.',
   'nav.practice': 'Luyện SQL',
   'nav.practiceShort': 'Luyện SQL', // review v22 RC: the top-bar label (EN is shorter there)
+  'nav.practiceTiny': 'Luyện', // L1097: the phone bar below 360 px
   'nav.engine': 'Cơ sở dữ liệu', // v47 S1 (L900): was "Database Engine"; the route id stays `engine`
   'nav.engineShort': 'CSDL', // v47 S1 (L900): the top-bar label and the phone switch (was "Engine"); the page h1 is nav.engine
   'deep.title': 'Đào sâu trong Cơ sở dữ liệu:',
@@ -725,6 +726,9 @@ export const vi = {
   'welcome.tourTitle': '8 bước của hướng dẫn',
   'welcome.back': 'Quay lại',
   'welcome.next': 'Tiếp',
+  'welcome.goalSkip': 'Bỏ qua: học phân tích dữ liệu',
+  'welcome.start': 'Bắt đầu',
+  'welcome.regoal': 'Đã biết SQL? Chọn lại mục tiêu',
   'welcome.page': 'Bước {i}/{n}',
   'welcome.dbReady': 'Dữ liệu sẵn sàng!',
   'welcome.dbBar': 'Tiến độ tải dữ liệu',
@@ -737,17 +741,17 @@ export const vi = {
   'welcome.entering': 'Đang mở lĩnh vực đã chọn…',
   // v47 S3 (L910–L912): the goal step, the entry check step, Home's Engine names
   'welcome.goalTitle': 'Bạn muốn học gì?',
-  'welcome.goalIntro': 'Chọn một hướng. Chưa chắc thì bấm Tiếp: bạn bắt đầu như người mới học phân tích dữ liệu. Đổi lại lúc nào cũng được trong menu ⋯.',
+  'welcome.goalIntro': 'Chọn một hướng. Chưa chắc thì bấm Bỏ qua: bạn bắt đầu như người mới học phân tích dữ liệu. Đổi lại lúc nào cũng được trong menu ⋯.',
   'welcome.goalReplay': 'Chọn lại hướng học. Trang chủ sẽ gợi ý bước tiếp theo theo hướng này.',
   'welcome.goalLabel': 'Chọn mục tiêu',
   'welcome.goal.analyst': 'Mới học phân tích dữ liệu',
   'welcome.goal.sql': 'Đã biết SQL',
-  'welcome.goal.internals': 'Muốn hiểu bên trong database',
+  'welcome.goal.internals': 'Muốn hiểu bên trong CSDL',
   'welcome.goal.engineer': 'Kỹ sư dữ liệu',
   'welcome.goalShort.analyst': 'Chọn một công ty, làm việc bằng SQL từ bước đầu',
   'welcome.goalShort.sql': 'Làm bài kiểm tra đầu vào, bỏ qua phần đã biết',
-  'welcome.goalShort.internals': 'PostgreSQL, MongoDB, DynamoDB: chọn cấp độ L1–L5',
-  'welcome.goalShort.engineer': 'Công cụ dữ liệu (dbt, Snowflake…) và thiết kế CSDL',
+  'welcome.goalShort.internals': 'Bắt đầu với PostgreSQL, chọn cấp L1–L5',
+  'welcome.goalShort.engineer': 'Công cụ dữ liệu: dbt, Snowflake, Airflow…',
   'welcome.checkTitle': 'Kiểm tra đầu vào',
   'welcome.checkIntro': 'Mỗi Phần của lộ trình một bài ngắn. Làm đúng bài nào, Phần đó tính là đã học. Sai không mất gì, không có điểm.',
   'welcome.checkLater': 'Bỏ qua cũng được: bài kiểm tra vẫn nằm ở trang Lộ trình.',

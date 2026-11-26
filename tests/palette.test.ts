@@ -19,7 +19,7 @@ describe('search palette (F12)', () => {
       expect(by('lesson')).toHaveLength(Object.keys(meta).length);
       expect(by('term')).toHaveLength((glossary as unknown[]).length);
       for (const x of by('skill')) expect(ROUTE_SKILLS.some((s) => s.id === learnSkillOf(x.href))).toBe(true);
-      for (const x of by('lesson')) expect(engineRouteOf(x.href).lesson).toMatch(/^e-(pg|mg|dy|rd|ds|st|ol|sr|gr)-(l\d|ext)-\d\d$/); // v43: the Extensions shelf (e-pg-ext-NN)
+      for (const x of by('lesson')) expect(engineRouteOf(x.href).lesson).toMatch(/^e-[a-z]{2}-(l\d|ext)-\d\d$/); // v43: the Extensions shelf (e-pg-ext-NN)
       for (const x of by('term')) expect(engineTermsOf(x.href)).toMatch(/^[a-z0-9-]+$/);
       expect(all.every((x) => x.title && !x.title.includes('`'))).toBe(true);
     }
@@ -38,10 +38,27 @@ describe('search palette (F12)', () => {
 
   it('v47 S4 (L984): the one interview room, one result per tab, found as "phong van" or "interview"', () => {
     const all = paletteItems(src, 'vi', { ...hashes, interview: interviewTabHash }, 'Design', 'Data stack', 'Phòng phỏng vấn');
-    expect(all.filter((x) => x.kind === 'page').map((x) => x.href)).toEqual(['#/learn/interview', '#/learn/interview?e=pg', '#/learn/interview?e=mg', '#/learn/interview?e=dy']);
-    expect(all.filter((x) => x.kind === 'page').map((x) => x.title)).toEqual(['Phòng phỏng vấn · SQL', 'Phòng phỏng vấn · PostgreSQL', 'Phòng phỏng vấn · MongoDB', 'Phòng phỏng vấn · DynamoDB']);
+    const rooms = all.filter((x) => x.kind === 'page' && x.href.startsWith('#/learn/interview')); // L1092: other pages follow
+    expect(rooms.map((x) => x.href)).toEqual(['#/learn/interview', '#/learn/interview?e=pg', '#/learn/interview?e=mg', '#/learn/interview?e=dy']);
+    expect(rooms.map((x) => x.title)).toEqual(['Phòng phỏng vấn · SQL', 'Phòng phỏng vấn · PostgreSQL', 'Phòng phỏng vấn · MongoDB', 'Phòng phỏng vấn · DynamoDB']);
     for (const q of ['phong van', 'interview', 'phỏng vấn mongo']) expect(search(all, q).some((x) => x.kind === 'page')).toBe(true);
-    for (const x of all.filter((y) => y.kind === 'page')) expect(isInterviewPage(x.href) && interviewTabHash(interviewTabOf(x.href))).toBe(x.href);
+    for (const x of rooms) expect(isInterviewPage(x.href) && interviewTabHash(interviewTabOf(x.href))).toBe(x.href);
+  });
+
+  it('L1092 (eye E-01): the hub and Practise pages are results too, in both languages, each on a route the router opens', () => {
+    for (const lang of ['vi', 'en'] as const) {
+      const all = paletteItems(src, lang, hashes);
+      const hit = (q: string) => search(all, q).filter((x) => x.kind === 'page').map((x) => x.href);
+      expect(hit('best practice')).toContain('#/engine/best');
+      expect(hit('extension')).toContain('#/engine/postgres/ext');
+      expect(hit('chon csdl')).toContain('#/engine/compare');
+      expect(hit('which database')).toContain('#/engine/compare');
+      expect(hit('engine')).toContain('#/engine');
+      expect(hit('sua cau loi')).toContain('#/practice');
+      expect(hit('mixed review')).toContain('#/practice');
+    }
+    expect(engineRouteOf('#/engine/postgres/ext').level).toBe('EXT');
+    expect(engineTermsOf('#/engine/terms')).toBe('');
   });
 
   it('{mod}+K opens it: Ctrl on Windows/Linux, ⌘ on macOS; never with Shift/Alt or a handled event', () => {
