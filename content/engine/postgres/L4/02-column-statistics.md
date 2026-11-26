@@ -54,7 +54,7 @@ predict:
     - { vi: "Index Scan, 14.000 dòng", en: "Index Scan, 14,000 rows" }
   answer: 1
   trap: 0
-  why: { vi: "Nghe hợp lý vì có index trên trạng thái, nhưng index chỉ đáng khi giá trị hiếm. Ước lượng = tần suất MCV × reltuples = 0,7 × 20.000 = 14.000. Đọc 70 % bảng qua index thì nhảy trang ngẫu nhiên nhiều hơn đọc tuần tự, nên Seq Scan rẻ hơn.", en: "It sounds right because there is an index on the status, but an index only pays off for a rare value. Estimate = MCV frequency × reltuples = 0.7 × 20,000 = 14,000. Reading 70% of the table through an index means more random page jumps than a sequential read, so the Seq Scan is cheaper." }
+  why: { vi: "Có index trên trạng thái nên đi qua index nghe hợp lý, nhưng index chỉ đáng khi giá trị hiếm. Ước lượng số dòng (row estimate) = tần suất của 'delivered' trong danh sách giá trị phổ biến (MCV, most common values) × `reltuples` = 0,7 × 20.000 = 14.000, không phải 200 (200 là số kiện 'lost', 1 %). Lấy 14.000 dòng qua index (Index Scan hay Bitmap) nghĩa là nhảy tới gần như mọi trang theo thứ tự ngẫu nhiên, đắt hơn đọc tuần tự cả bảng một lượt, nên planner chọn Seq Scan.", en: "An index on the status makes the index path sound right, but an index only pays off for a rare value. Row estimate = the frequency of 'delivered' in the most-common-values list (MCV) × `reltuples` = 0.7 × 20,000 = 14,000, not 200 (200 is the 'lost' count, 1%). Fetching 14,000 rows through an index (Index Scan or Bitmap) means jumping to almost every page in random order, which costs more than one sequential pass over the table, so the planner picks a Seq Scan." }
   expect: { node: Seq Scan, table: parcels }
 quiz:
   - q: { vi: "Bảng có 50 triệu dòng, cấu hình mặc định. `ANALYZE` đọc bao nhiêu dòng để lập thống kê?", en: "A table holds 50 million rows, default settings. How many rows does `ANALYZE` read to build the statistics?" }
@@ -64,7 +64,7 @@ quiz:
       - { vi: "100 dòng đầu tiên của bảng", en: "The first 100 rows of the table" }
     answer: 1
     trap: 0
-    why: { vi: "Nghe hợp lý vì thống kê càng đầy đủ càng đúng, nhưng đọc hết một bảng lớn sau mỗi đợt ghi là quá đắt. `ANALYZE` lấy mẫu ngẫu nhiên 300 × `default_statistics_target` dòng (mặc định 30.000), đủ để ước lượng tần suất và histogram. Bảng nhỏ hơn mức đó thì được đọc hết, như bảng `parcels` ở đây. Cột cần chính xác hơn thì tăng mục tiêu riêng bằng `SET STATISTICS`.", en: "It sounds right because fuller statistics are more accurate, but reading a whole big table after every batch of writes is too expensive. `ANALYZE` takes a random sample of 300 × `default_statistics_target` rows (30,000 by default), enough to estimate frequencies and a histogram. A table smaller than that is read in full, like `parcels` here. A column that needs more precision gets its own target with `SET STATISTICS`." }
+    why: { vi: "Đọc cả 50 triệu dòng nghe chắc ăn hơn, nhưng làm vậy sau mỗi đợt ghi là quá đắt, và một mẫu đủ lớn đã cho tần suất gần đúng. `ANALYZE` lấy mẫu ngẫu nhiên 300 × `default_statistics_target` dòng: 300 × 100 (mặc định) = 30.000. Mẫu rải khắp bảng, không phải 100 dòng đầu, vì phần đầu file thường là dữ liệu cũ, không đại diện cho cả bảng. Bảng dưới 30.000 dòng thì được đọc hết, như `parcels` ở đây; cột cần chính xác hơn thì tăng mục tiêu riêng bằng `SET STATISTICS`.", en: "Reading all 50 million rows sounds safer, but doing that after every batch of writes is too expensive, and a big enough sample already gives close frequencies. `ANALYZE` takes a random sample of 300 × `default_statistics_target` rows: 300 × 100 (the default) = 30,000. The sample is spread across the table, not the first 100 rows, because the start of the file usually holds old data that does not represent the whole table. A table under 30,000 rows is read in full, like `parcels` here; a column that needs more precision gets its own target with `SET STATISTICS`." }
 ---
 ## Mở bài
 
@@ -171,7 +171,7 @@ ANALYZE parcels_copy;
 EXPLAIN SELECT * FROM parcels_copy WHERE status = 'lost';
 ```
 
-Không có thống kê, planner đoán khoảng 100 dòng bằng hằng số mặc định; sau ANALYZE nó ra đúng 200. Bảng vừa nạp xong chưa được autovacuum ANALYZE ngay, nên hãy tự chạy.
+Bảng mới tạo chưa có thống kê (statistics), nên planner ước lượng khoảng 100 dòng bằng một hằng số mặc định thay vì tần suất thật; sau ANALYZE nó ra đúng 200 (1 % của 20.000). Bảng vừa nạp xong chưa được autovacuum ANALYZE ngay, nên hãy tự chạy.
 
 ## Thực hành
 
@@ -291,7 +291,7 @@ ANALYZE parcels_copy;
 EXPLAIN SELECT * FROM parcels_copy WHERE status = 'lost';
 ```
 
-With no statistics the planner guesses about 100 rows from a default constant; after ANALYZE it gets exactly 200. Autovacuum does not analyze a freshly loaded table at once, so run it yourself.
+A new table has no statistics yet, so the planner estimates about 100 rows from a default constant instead of the real frequency; after ANALYZE it gets exactly 200 (1% of 20,000). Autovacuum does not analyze a freshly loaded table at once, so run it yourself.
 
 ## Practice
 

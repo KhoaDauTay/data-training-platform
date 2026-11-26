@@ -79,8 +79,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì kết quả của hai cách giống nhau, nhưng planner không so ý nghĩa: nó tìm trong câu đúng biểu thức đã lưu trong index. `email ILIKE ...` là một toán tử khác trên cột `email`, nên kế hoạch là Seq Scan. Viết `lower(email) = lower(...)` thì index được dùng."
-      en: "It sounds right because both ways return the same rows, but the planner does not compare meanings: it looks in the query for the exact expression stored in the index. `email ILIKE ...` is a different operator on column `email`, so the plan is a Seq Scan. Write `lower(email) = lower(...)` and the index is used."
+      vi: "Hai cách trả cùng các dòng, nhưng planner không so ý nghĩa: nó tìm trong câu đúng biểu thức đã lưu trong index, ở đây là `lower(email)`. `email ILIKE ...` là một toán tử khác trên cột `email` gốc, nên kế hoạch là Seq Scan, dù bảng lớn hay nhỏ: đây là chuyện biểu thức có khớp không, không phải chuyện chi phí. Viết `lower(email) = lower(...)` thì index được dùng."
+      en: "Both ways return the same rows, but the planner does not compare meanings: it looks in the query for the exact expression stored in the index, here `lower(email)`. `email ILIKE ...` is a different operator on the raw `email` column, so the plan is a Seq Scan whatever the table size: the question is whether the expression matches, not what it costs. Write `lower(email) = lower(...)` and the index is used."
   - q:
       vi: "Vì sao Postgres bắt hàm trong index phải là `IMMUTABLE`?"
       en: "Why does Postgres require a function in an index to be `IMMUTABLE`?"
@@ -90,8 +90,8 @@ quiz:
       - { vi: "Vì hàm `VOLATILE` không chạy được trong `SELECT`", en: "Because `VOLATILE` functions cannot run in a `SELECT`" }
     answer: 1
     why:
-      vi: "Index chỉ đúng khi giá trị đã lưu bằng đúng giá trị tính lại lúc tìm. Hàm tự viết mặc định là `VOLATILE`; nếu chắc chắn nó chỉ phụ thuộc đầu vào, khai báo `IMMUTABLE` khi tạo hàm."
-      en: "An index is only correct when the stored value equals the value computed again at lookup time. A function you write is `VOLATILE` by default; if it truly depends only on its input, declare it `IMMUTABLE` when you create it."
+      vi: "Index tính kết quả của hàm một lần lúc ghi dòng rồi lưu lại; lúc tìm, Postgres tính lại hàm trên giá trị cần tìm và so với giá trị đã lưu. Nếu cùng đầu vào mà hàm trả khác đi (vì đọc giờ hay đọc bảng), giá trị lưu không còn khớp và lần tìm bỏ sót dòng. `IMMUTABLE` không làm dựng index nhanh hơn, và hàm `VOLATILE` vẫn chạy bình thường trong `SELECT`. Hàm tự viết mặc định là `VOLATILE`; chỉ khai báo `IMMUTABLE` khi nó thật sự chỉ phụ thuộc đầu vào."
+      en: "An index computes the function once when the row is written and stores the result; at lookup time Postgres computes the function on the searched value and compares it with the stored one. If the same input could give another result (because the function reads the clock or a table), the stored value no longer matches and the lookup misses the row. `IMMUTABLE` does not make the build faster, and a `VOLATILE` function runs fine in a `SELECT`. A function you write is `VOLATILE` by default; declare it `IMMUTABLE` only when it truly depends on its input alone."
 ---
 ## Mở bài
 

@@ -108,7 +108,7 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Hai từ khóa trông gần giống nên dễ coi là một. `DISTINCT` cần mọi cột bằng nhau mới gộp; `DISTINCT ON` chỉ nhìn các cột trong ngoặc, và `ORDER BY` chọn dòng đại diện."
+      vi: "Hai từ khóa trông gần giống nên dễ coi là một. `DISTINCT` cần mọi cột bằng nhau mới coi hai dòng là trùng; `DISTINCT ON` chỉ nhìn các cột trong ngoặc, và `ORDER BY` chọn dòng đại diện."
       en: "The two keywords look alike, so it is easy to treat them as one. `DISTINCT` only merges rows equal on every column; `DISTINCT ON` looks only at the bracketed columns, and `ORDER BY` picks the representative row."
 recap:
   - vi: "`DISTINCT ON (a)` giữ dòng đầu tiên của mỗi nhóm `a`, theo `ORDER BY`."
@@ -128,7 +128,7 @@ Chăm sóc khách hỏi: "Với mỗi khách, đơn gần nhất của họ là 
 
 `DISTINCT ON (customer_id)` giữ một dòng cho mỗi giá trị của cột trong ngoặc: dòng đứng đầu nhóm theo `ORDER BY`. Vì vậy `ORDER BY` làm hai việc: mở đầu bằng cột nhóm (để các dòng cùng nhóm nằm liền nhau), rồi xếp trong nhóm để dòng bạn muốn lên đầu.
 
-Nhiều người nghĩ **Postgres tự biết "dòng đầu" là dòng mới nhất**. Thật ra "đầu" chỉ có nghĩa theo `ORDER BY` bạn viết. Không có cột chọn dòng thắng, hoặc có mà không có cột phân xử khi hòa, dòng được giữ là may rủi.
+Nhiều người nghĩ **Postgres tự biết "dòng đầu" là dòng mới nhất**. Thật ra "đầu" chỉ có nghĩa theo `ORDER BY` bạn viết. Không có cột chọn dòng thắng, hoặc có mà không có cột phân xử khi hai dòng bằng nhau, dòng được giữ là may rủi.
 
 Hình từng bước ở cuối mục này xếp các đơn của khách 5 rồi giữ dòng đầu của mỗi khách.
 

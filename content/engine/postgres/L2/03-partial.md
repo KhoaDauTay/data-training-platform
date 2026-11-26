@@ -90,8 +90,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì với dữ liệu hôm nay `status <> 'done'` chọn đúng các dòng mở, nhưng planner không nhìn dữ liệu: nó chỉ so biểu thức để chứng minh điều kiện của câu suy ra điều kiện của index. Không có luật nào nói `<> 'done'` kéo theo `= 'open'`, nên câu đó Seq Scan. Câu không nhắc `status` thì còn trả cả việc đã xong."
-      en: "It sounds right because with today's data `status <> 'done'` picks exactly the open rows, but the planner does not look at the data: it only compares expressions to prove that the query's condition implies the index's condition. Nothing says `<> 'done'` implies `= 'open'`, so that query is a Seq Scan. The query that never mentions `status` also returns done tasks."
+      vi: "Với dữ liệu hôm nay, `status <> 'done'` chọn đúng các dòng mở, nhưng planner không nhìn dữ liệu: nó chỉ so biểu thức để chứng minh rằng mọi dòng câu cần đều có trong index. Nó không biết `status` chỉ có hai giá trị, nên không suy được `<> 'done'` thành `= 'open'`, và câu đó thành Seq Scan. Câu không nhắc `status` thì cần cả việc đã xong, những dòng không có trong index, nên index không đủ để trả lời. Chỉ câu lặp đúng `status = 'open'` mới dùng được index."
+      en: "With today's data `status <> 'done'` picks exactly the open rows, but the planner does not look at the data: it only compares expressions to prove that every row the query needs is in the index. It does not know `status` has only two values, so it cannot turn `<> 'done'` into `= 'open'`, and that query becomes a Seq Scan. The query that never mentions `status` also needs done tasks, rows the index does not hold, so the index cannot answer it. Only the query that repeats `status = 'open'` exactly can use the index."
   - q:
       vi: "Có `CREATE UNIQUE INDEX ... ON tasks (owner_id) WHERE status = 'open'`. Người 2 đang có một việc mở. Thêm cho người 2 một việc `done` thì sao?"
       en: "There is `CREATE UNIQUE INDEX ... ON tasks (owner_id) WHERE status = 'open'`. Person 2 already has an open task. What happens when you add a `done` task for person 2?"
@@ -102,8 +102,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì unique thường áp lên cả cột, nhưng unique index partial chỉ chứa các dòng thỏa `WHERE`. Dòng `done` không vào index, nên không có gì để trùng; chỉ việc mở thứ hai của cùng người mới bị lỗi `23505`."
-      en: "It sounds right because uniqueness usually covers the whole column, but a partial unique index holds only rows matching its `WHERE`. A `done` row never enters the index, so there is nothing to clash with; only a second open task for the same person fails with `23505`."
+      vi: "Bị từ chối nghe hợp lý vì unique thường áp lên cả cột, nhưng unique index partial chỉ chứa các dòng thỏa `WHERE status = 'open'`. Dòng `done` không vào index, nên không có gì để trùng; chỉ việc mở thứ hai của cùng người mới bị lỗi trùng khóa `23505` (unique violation). Postgres cũng không bao giờ tự sửa việc mở cũ: index chỉ kiểm, không ghi dòng nào."
+      en: "Refused sounds right because uniqueness usually covers the whole column, but a partial unique index holds only rows matching `WHERE status = 'open'`. A `done` row never enters the index, so there is nothing to clash with; only a second open task for the same person fails with the duplicate-key error `23505` (unique violation). Postgres never edits the old open task either: an index only checks, it writes no row."
 ---
 ## Mở bài
 

@@ -45,8 +45,8 @@ lab:
       check: rows
       hint: { vi: "Hai cột thời gian là NULL khi chưa từng chạy; nối bằng `IS NOT NULL OR ...`.", en: "Both timestamp columns are NULL when it never ran; join them with `IS NOT NULL OR ...`." }
       fact:
-        vi: "1000 dòng thêm, 1000 dòng sống, 0 dòng chết, và chưa từng ANALYZE: planner đang đoán bằng giá trị mặc định. PGlite không có autovacuum nền; trên server thật autoanalyze thường đã chạy sau lần nạp này."
-        en: "1000 rows inserted, 1000 live, 0 dead, and never analysed: the planner is guessing with default values. PGlite has no background autovacuum; on a real server autoanalyze would usually have run after this load."
+        vi: "1000 dòng thêm, 1000 dòng sống, 0 dòng chết, và chưa từng ANALYZE: bảng chưa có thống kê (statistics), nên planner ước lượng số dòng bằng giá trị mặc định. PGlite không có autovacuum chạy nền; trên server thật, autoanalyze (ANALYZE tự động) thường đã chạy sau lần nạp này."
+        en: "1000 rows inserted, 1000 live, 0 dead, and never analysed: the table has no statistics yet, so the planner estimates row counts from default values. PGlite has no background autovacuum; on a real server autoanalyze (the automatic ANALYZE) would usually have run after this load."
         probe: "SELECT n_tup_ins, n_live_tup, n_dead_tup, last_analyze IS NOT NULL OR last_autoanalyze IS NOT NULL FROM pg_stat_user_tables WHERE relname = 'hits'"
         expect: [[1000, 1000, 0, false]]
 quiz:
@@ -56,7 +56,7 @@ quiz:
       - { vi: "B: tổng 10.000 giây/ngày so với 20 giây; xếp theo `total_exec_time`, không theo `mean_exec_time`", en: "B: 10,000 seconds a day against 20; rank by `total_exec_time`, not by `mean_exec_time`" }
     answer: 1
     trap: 0
-    why: { vi: "A hấp dẫn vì 2 giây mỗi lần là thứ đập vào mắt, nhưng B chạy 2 triệu lần. `pg_stat_statements` có `total_exec_time`, `mean_exec_time`, `calls`, `shared_blks_hit/read`… Tải server là tổng; câu chậm lẻ tẻ thì quan trọng cho trải nghiệm người dùng, nhưng là câu hỏi khác.", en: "A is tempting because 2 seconds per run is what catches the eye, but B runs 2 million times. `pg_stat_statements` has `total_exec_time`, `mean_exec_time`, `calls`, `shared_blks_hit/read`… Server load is the total; an occasional slow query matters for user experience, but that is a different question." }
+    why: { vi: "A gây chú ý vì 2 giây mỗi lần, nhưng tải server là tổng thời gian: A = 10 lần × 2 giây = 20 giây/ngày, B = 2 000 000 lần × 5 ms = 10 000 giây/ngày, gấp 500 lần. `pg_stat_statements` ghi sẵn `total_exec_time` (tổng), `mean_exec_time` (trung bình mỗi lần) và `calls`; xếp theo `total_exec_time` để thấy câu tốn tải nhất. Câu chậm lẻ tẻ như A vẫn quan trọng cho người phải chờ nó, nhưng đó là câu hỏi khác.", en: "A catches the eye at 2 seconds per run, but server load is total time: A = 10 runs × 2 s = 20 s a day, B = 2,000,000 runs × 5 ms = 10,000 s a day, 500 times more. `pg_stat_statements` already records `total_exec_time` (the total), `mean_exec_time` (the average per run) and `calls`; rank by `total_exec_time` to find the query that costs the most load. An occasional slow query like A still matters to whoever waits for it, but that is a different question." }
   - q: { vi: "`pg_stat_user_tables` cho thấy một bảng 50 triệu dòng có `seq_scan` tăng hàng nghìn mỗi giờ. Bước tiếp theo?", en: "`pg_stat_user_tables` shows a 50-million-row table whose `seq_scan` grows by thousands an hour. Next step?" }
     options:
       - { vi: "Tìm trong `pg_stat_statements` các câu chạm bảng đó, xem `EXPLAIN` của câu có tổng thời gian lớn nhất, rồi mới quyết định index", en: "Find the statements touching that table in `pg_stat_statements`, look at the `EXPLAIN` of the one with the largest total time, then decide on an index" }
@@ -64,7 +64,7 @@ quiz:
       - { vi: "Tăng `shared_buffers`", en: "Raise `shared_buffers`" }
     answer: 0
     trap: 1
-    why: { vi: "Tạo index trên mọi cột nghe như cách nhanh nhất để hết Seq Scan, nhưng bạn chưa biết câu nào đang quét. Số đếm cho biết có vấn đề; `pg_stat_statements` cho biết câu nào; `EXPLAIN` cho biết vì sao. Index mọi cột làm chậm ghi và phần lớn không được dùng.", en: "Indexing every column sounds like the fastest way to end the Seq Scans, but you do not yet know which query is scanning. The counters say there is a problem; `pg_stat_statements` says which query; `EXPLAIN` says why. Indexing every column slows writes and most of those indexes go unused." }
+    why: { vi: "Tạo index trên mọi cột nghe như cách nhanh nhất để hết Seq Scan, nhưng bạn chưa biết câu nào đang quét, và mỗi index làm mọi INSERT/UPDATE chậm thêm trong khi phần lớn sẽ không được dùng. Tăng `shared_buffers` (bộ đệm dùng chung) chỉ giữ thêm trang trong RAM; câu vẫn đọc cả 50 triệu dòng. Đi theo thứ tự: `seq_scan` cho biết có vấn đề, `pg_stat_statements` cho biết câu nào, `EXPLAIN` cho biết vì sao planner chọn quét tuần tự.", en: "Indexing every column sounds like the fastest way to end the Seq Scans, but you do not yet know which query is scanning, and every index slows each INSERT/UPDATE while most would go unused. Raising `shared_buffers` (the shared buffer cache) only keeps more pages in RAM; the query still reads all 50 million rows. Go in order: `seq_scan` says there is a problem, `pg_stat_statements` says which query, `EXPLAIN` says why the planner chose a sequential scan." }
 ---
 ## Mở bài
 

@@ -55,8 +55,8 @@ lab:
       check: rows
       ordered: true
       hint:
-        vi: "Lọc `kind = 'saving'` rồi phản nối bằng `NOT EXISTS`."
-        en: "Filter `kind = 'saving'`, then anti-join with `NOT EXISTS`."
+        vi: "Lọc `kind = 'saving'` rồi giữ tài khoản không có dòng con, bằng phản nối (anti-join) `NOT EXISTS`."
+        en: "Filter `kind = 'saving'`, then keep the accounts with no child row, with an anti-join `NOT EXISTS`."
 quiz:
   - q:
       vi: "Dòng hóa đơn được đánh số 1, 2, 3 lại từ đầu trong mỗi hóa đơn. Khóa của bảng dòng hóa đơn là gì?"
@@ -68,8 +68,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì `line_no` trông như một mã, nhưng nó chỉ duy nhất trong một hóa đơn: hai hóa đơn đều có dòng 1. Thực thể yếu được nhận diện qua chủ của nó, nên khóa phải gồm `invoice_id`."
-      en: "It sounds right because `line_no` looks like an id, but it is unique only within one invoice: two invoices both have line 1. A weak entity is identified through its owner, so the key must include `invoice_id`."
+      vi: "`line_no` một mình nghe hợp lý vì nó trông như một mã, nhưng nó chỉ duy nhất trong một hóa đơn: hóa đơn nào cũng có dòng 1. Đó chính là thực thể yếu (weak entity): không tự phân biệt được, phải nhận diện qua chủ của nó là hóa đơn. \"Yếu\" không có nghĩa là không cần khóa; khóa của nó là khóa của chủ (`invoice_id`) cộng khóa bộ phận (partial key, ở đây `line_no`)."
+      en: "`line_no` alone sounds right because it looks like an id, but it is unique only within one invoice: every invoice has a line 1. That is exactly a weak entity: it cannot tell itself apart and is identified through its owner, the invoice. \"Weak\" does not mean no key; its key is the owner's key (`invoice_id`) plus the partial key (here `line_no`)."
   - q:
       vi: "Bạn dùng `CREATE TABLE companies (...) INHERITS (parties)`. `parties` có khóa chính `id`. Điều gì đúng?"
       en: "You use `CREATE TABLE companies (...) INHERITS (parties)`. `parties` has primary key `id`. What is true?"
@@ -80,8 +80,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nhiều người nghĩ kế thừa bảng là cách tự nhiên để vẽ EER. Thật ra theo tài liệu Postgres, index, `UNIQUE` và khóa ngoại chỉ áp lên một bảng, không lan sang con. Bảng cha dùng chung khóa với bảng con (khóa chính đồng thời là khóa ngoại) giữ được luật."
-      en: "Many people think table inheritance is the natural way to draw EER. In fact, per the Postgres docs, indexes, `UNIQUE` and foreign keys apply to one table only, not to its children. A shared-key design (the primary key is also the foreign key) keeps the rules."
+      vi: "\"`id` vẫn duy nhất\" nghe tự nhiên vì con kế thừa cột của cha, nhưng theo docs chính thức của Postgres, index, `UNIQUE`, khóa chính và khóa ngoại chỉ áp lên đúng một bảng, không lan sang con. Vì thế `companies` có thể chứa một `id` đã có trong `parties`, và khóa ngoại trỏ tới `parties` chỉ thấy dòng nằm trong chính `parties`. Postgres không cấm cách này, chỉ không bảo vệ nó. Cách giữ được luật là bảng con có khóa chính đồng thời là khóa ngoại tới cha, như `saving_accounts` trong lab."
+      en: "\"`id` stays unique\" sounds natural because the child inherits the parent's columns, but per the official Postgres docs, indexes, `UNIQUE`, primary keys and foreign keys apply to exactly one table, not to its children. So `companies` can hold an `id` already in `parties`, and a foreign key to `parties` only sees rows stored in `parties` itself. Postgres does not forbid this, it just does not protect it. The design that keeps the rules is a child table whose primary key is also a foreign key to the parent, like `saving_accounts` in the lab."
 ---
 ## Mở bài
 

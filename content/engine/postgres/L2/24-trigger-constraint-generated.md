@@ -89,8 +89,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì trigger chạy cho mọi dòng, nhưng ở mức READ COMMITTED mỗi transaction chỉ thấy dữ liệu đã commit, nên hai trigger cùng không thấy xung đột. Ràng buộc `EXCLUDE USING gist (during WITH &&)` dựa trên index, nên transaction sau phải chờ và bị từ chối."
-      en: "It sounds right because the trigger runs for every row, but at READ COMMITTED each transaction sees only committed data, so neither trigger sees the conflict. An `EXCLUDE USING gist (during WITH &&)` constraint works through an index, so the second transaction waits and is refused."
+      vi: "Trigger chạy cho mọi dòng, nhưng ở mức cô lập (isolation level) mặc định READ COMMITTED, mỗi transaction chỉ thấy dữ liệu đã commit. Lịch của bên kia chưa commit, nên cả hai trigger cùng không thấy xung đột và cả hai lịch được lưu. Postgres không tự đổi trigger thành ràng buộc; bạn phải khai báo `EXCLUDE USING gist (during WITH &&)`. Ràng buộc này kiểm qua index, thấy cả dòng chưa commit, nên transaction sau phải chờ và bị từ chối."
+      en: "The trigger runs for every row, but at the default isolation level, READ COMMITTED, each transaction sees only committed data. The other booking is not committed yet, so neither trigger sees the conflict and both bookings are stored. Postgres never turns a trigger into a constraint by itself; you must declare `EXCLUDE USING gist (during WITH &&)`. That constraint checks through an index, which sees uncommitted rows too, so the second transaction waits and is refused."
   - q:
       vi: "Trong PostgreSQL 18 bạn viết `line_tax numeric(12,2) GENERATED ALWAYS AS (qty * unit_price * 0.1)`, không ghi gì thêm. Điều gì đúng?"
       en: "In PostgreSQL 18 you write `line_tax numeric(12,2) GENERATED ALWAYS AS (qty * unit_price * 0.1)` with nothing after it. What is true?"
@@ -100,8 +100,8 @@ quiz:
       - { vi: "Báo lỗi vì thiếu chữ STORED", en: "An error because the word STORED is missing" }
     answer: 0
     why:
-      vi: "PostgreSQL 18 thêm cột generated VIRTUAL và lấy nó làm mặc định. Bản 17 trở về trước chỉ có STORED và bắt buộc ghi chữ đó. Cần index trên cột thì ghi `STORED`."
-      en: "PostgreSQL 18 added VIRTUAL generated columns and made them the default. Version 17 and earlier had only STORED and required the word. If you need an index on the column, write `STORED`."
+      vi: "PostgreSQL 18 thêm cột generated VIRTUAL và lấy nó làm mặc định khi không ghi gì, nên không có lỗi. Bản 17 trở về trước chỉ có STORED và bắt buộc ghi chữ đó; đó là lý do nhiều người nhớ là STORED. Cần index trên cột thì ghi `STORED`."
+      en: "PostgreSQL 18 added VIRTUAL generated columns and made them the default when nothing is written, so there is no error. Version 17 and earlier had only STORED and required the word; that is why many people remember STORED. If you need an index on the column, write `STORED`."
   - q:
       vi: "`customers.order_count` phải luôn bằng số đơn của khách trong `orders`. Cái nào làm được?"
       en: "`customers.order_count` must always equal the customer's number of orders in `orders`. Which one can do it?"
@@ -111,8 +111,8 @@ quiz:
       - { vi: "Trigger trên `orders` cập nhật `customers`, hoặc không lưu cột này mà đếm lúc đọc", en: "A trigger on `orders` that updates `customers`, or not storing the column and counting on read" }
     answer: 2
     why:
-      vi: "Cột generated và `CHECK` chỉ được nhìn dòng của chính nó, không được chứa subquery. Dữ liệu dẫn xuất nằm ở bảng khác là việc của trigger, hoặc đơn giản hơn là đếm lúc đọc."
-      en: "A generated column and a `CHECK` may only look at their own row and cannot hold a subquery. Derived data in another table is a job for a trigger, or more simply, count on read."
+      vi: "Cột generated và `CHECK` chỉ được nhìn dòng của chính nó, không được chứa truy vấn con (subquery), nên cả hai bị từ chối ngay lúc tạo. Dữ liệu dẫn xuất nằm ở bảng khác là việc của trigger, hoặc đơn giản hơn là đếm lúc đọc."
+      en: "A generated column and a `CHECK` may only look at their own row and cannot hold a subquery, so both are refused at creation. Derived data in another table is a job for a trigger, or more simply, count on read."
 ---
 ## Mở bài
 

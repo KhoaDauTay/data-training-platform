@@ -96,8 +96,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Phương án đầu nghe hợp lý vì `log_tail` vừa co lại thật, nhưng đó là ngoại lệ trong docs chính thức: chỉ các trang trống liền nhau ở **cuối** bảng mới bị cắt. Hai bảng cùng xóa 1800 dòng, chỉ khác vị trí: 35 trang so với 4. Không có VACUUM FULL ngầm nào; muốn `log_head` nhỏ lại thật phải viết lại bảng (`VACUUM FULL`, giữ lock `ACCESS EXCLUSIVE` suốt lúc chạy)."
-      en: "The first option sounds right because `log_tail` really did shrink, but that is the exception in the docs: only the run of empty pages at the **end** of the table gets cut. Both tables lost 1800 rows, only the position differs: 35 pages against 4. There is no implicit VACUUM FULL; to really shrink `log_head` you must rewrite the table (`VACUUM FULL`, which holds an `ACCESS EXCLUSIVE` lock while it runs)."
+      vi: "\"VACUUM luôn trả chỗ, `log_head` chỉ chưa kịp\" nghe hợp lý vì `log_tail` vừa co lại thật, nhưng đó là ngoại lệ trong docs chính thức: VACUUM chỉ cắt được các trang trống liền nhau ở **cuối** file, vì cắt đuôi file không làm dời dòng nào. Hai bảng cùng xóa 1800 dòng, chỉ khác vị trí: 35 trang so với 4. DELETE cũng không tự xóa trang: dòng xóa chỉ thành dead tuple cho tới khi VACUUM dọn. Không có VACUUM FULL ngầm nào; muốn `log_head` nhỏ lại thật phải viết lại bảng (`VACUUM FULL`, giữ lock `ACCESS EXCLUSIVE` suốt lúc chạy)."
+      en: "\"VACUUM always gives space back, `log_head` has not caught up\" sounds right because `log_tail` really did shrink, but that is the exception in the docs: VACUUM can only cut off the run of empty pages at the **end** of the file, because truncating the file's tail moves no row. Both tables lost 1800 rows, only the position differs: 35 pages against 4. A DELETE does not drop pages either: deleted rows are only dead tuples until VACUUM cleans them. There is no implicit VACUUM FULL; to really shrink `log_head` you must rewrite the table (`VACUUM FULL`, which holds an `ACCESS EXCLUSIVE` lock while it runs)."
   - q:
       vi: "Một bảng log xóa dữ liệu cũ (dòng đầu bảng) mỗi đêm và chèn dữ liệu mới mỗi ngày với lượng tương đương. Có cần lên lịch `VACUUM FULL` hằng tuần không?"
       en: "A log table deletes old data (rows at the head) every night and inserts about the same amount of new data every day. Should you schedule a weekly `VACUUM FULL`?"
@@ -108,8 +108,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Dễ nghĩ phải viết lại vì `log_head` không nhỏ lại, nhưng `log_reuse` cho thấy chỗ trống được dùng lại: 1800 dòng mới vào trang 0–31, bảng vẫn 35 trang. Khi lượng xóa và lượng chèn cân nhau, kích thước giữ ổn định. `VACUUM FULL` chỉ đáng khi bảng đã co hẳn và sẽ không lớn lại."
-      en: "It is tempting to rewrite because `log_head` did not shrink, but `log_reuse` shows the space being reused: 1800 new rows went into pages 0–31 and the table stayed at 35 pages. When deletes and inserts balance, the size stays flat. `VACUUM FULL` is only worth it when the table has shrunk for good and will not grow back."
+      vi: "Dễ nghĩ phải viết lại vì `log_head` không nhỏ lại, nhưng `log_reuse` cho thấy chỗ trống được dùng lại: 1800 dòng mới vào trang 0–31, bảng vẫn 35 trang. Khi lượng xóa và lượng chèn cân nhau, kích thước giữ ổn định. Index không đổi kết luận này. `VACUUM FULL` chỉ đáng khi bảng đã co hẳn và sẽ không lớn lại."
+      en: "It is tempting to rewrite because `log_head` did not shrink, but `log_reuse` shows the space being reused: 1800 new rows went into pages 0–31 and the table stayed at 35 pages. When deletes and inserts balance, the size stays flat. Indexes do not change this conclusion. `VACUUM FULL` is only worth it when the table has shrunk for good and will not grow back."
 ---
 ## Mở bài
 

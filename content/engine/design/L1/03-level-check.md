@@ -58,8 +58,8 @@ quiz:
     answer: 1
     trap: 2
     why:
-      vi: "Xóa cột nghe gọn nhưng làm mất dữ liệu của mọi người khác. Mỗi nhóm thấy một tầng ngoài riêng (view) trên cùng tầng khái niệm; index không giới hạn ai thấy gì."
-      en: "Dropping columns sounds tidy but takes the data away from everyone else. Each group sees its own external level (a view) over the same conceptual level; an index does not limit who sees what."
+      vi: "Xóa cột chi tiết nghe gọn, nhưng tầng khái niệm là dữ liệu chung: xóa đi thì nhóm kế toán, nhóm kho cũng mất. Index chỉ giúp đọc nhanh hơn, không giới hạn ai thấy gì. Cách đúng là tầng ngoài: một view cộng doanh thu theo tháng, rồi chỉ cấp quyền đọc view đó cho nhóm phân tích, không cấp quyền trên bảng gốc."
+      en: "Dropping the detail columns sounds tidy, but the conceptual level is shared data: drop them and accounting and the warehouse lose them too. An index only makes reads faster; it does not limit who sees what. The right place is the external level: a view that sums revenue by month, with read access granted to the analysts on that view only, not on the base table."
   - q:
       vi: "Bạn tách bảng `customers` thành hai bảng và tạo lại view `customers` cũ bằng một JOIN. Ứng dụng cũ chạy tiếp. Đó là gì?"
       en: "You split table `customers` into two tables and recreate the old `customers` as a view with a JOIN. The old application keeps working. What is that?"
@@ -82,8 +82,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "`23505` là trùng khóa, `23514` là sai `CHECK`. Khóa ngoại không tìm thấy dòng cha là `23503` (foreign_key_violation)."
-      en: "`23505` is a duplicate key and `23514` a failed `CHECK`. A foreign key with no parent row is `23503` (foreign_key_violation)."
+      vi: "Đơn 102 không trùng mã đơn nào, nên không phải `23505` (trùng khóa); tổng 10 ≥ 0 nên `CHECK` cũng qua, không phải `23514`. Lỗi nằm ở `customer_id` = 7: khóa ngoại (foreign key) đòi khách 7 phải có trong `customers`, mà bảng chỉ có khách 1 và 2, nên Postgres trả `23503` (foreign_key_violation)."
+      en: "Order 102 duplicates no order id, so it is not `23505` (duplicate key); the total 10 ≥ 0 passes the `CHECK`, so not `23514` either. The problem is `customer_id` = 7: the foreign key requires customer 7 to exist in `customers`, which holds only customers 1 and 2, so Postgres returns `23503` (foreign_key_violation)."
   - q:
       vi: "Khóa chính khác một `UNIQUE` ở điểm nào?"
       en: "How does a primary key differ from a `UNIQUE`?"
@@ -94,12 +94,12 @@ quiz:
     answer: 1
     trap: 2
     why:
-      vi: "Nhiều người nghĩ khóa chính sắp bảng trên đĩa; điều đó đúng với InnoDB của MySQL, không đúng với Postgres: bảng Postgres là heap không thứ tự, khóa chính chỉ là một index B-tree riêng. Khác biệt thật là toàn vẹn thực thể: không NULL."
-      en: "Many people think a primary key sorts the table on disk; that holds for MySQL InnoDB, not for Postgres: a Postgres table is an unordered heap and the primary key is a separate B-tree index. The real difference is entity integrity: no NULL."
+      vi: "Nhiều người nghĩ khóa chính sắp bảng trên đĩa; điều đó đúng với InnoDB của MySQL, không đúng với Postgres: bảng Postgres là heap (dòng nằm theo thứ tự được ghi, không theo khóa), còn khóa chính chỉ là một index B-tree riêng bên cạnh. \"Không khác\" cũng sai: `UNIQUE` vẫn nhận nhiều NULL, còn khóa chính cấm NULL (toàn vẹn thực thể) và mỗi bảng chỉ có một."
+      en: "Many people think a primary key sorts the table on disk; that holds for MySQL InnoDB, not for Postgres: a Postgres table is a heap (rows sit in the order they were written, not by key), and the primary key is just a separate B-tree index beside it. \"No difference\" is wrong too: `UNIQUE` still accepts several NULLs, while a primary key forbids NULL (entity integrity) and a table has only one."
 ---
 ## Mở bài
 
-Năm câu hỏi ngắn và một lab đọc catalog để chốt lại cấp 1. Sai một câu thì đọc lời giải thích rồi quay lại bài liên quan.
+Bốn câu hỏi ngắn và một lab đọc catalog để chốt lại cấp 1. Sai một câu thì đọc lời giải thích rồi quay lại bài liên quan.
 
 ## Ý chính
 
@@ -130,7 +130,7 @@ referential                 FOREIGN KEY ... REFERENCES     23503
 
 ## Opening
 
-Five short questions and a catalog lab to wrap up level 1. If you miss one, read the explanation and go back to the lesson it comes from.
+Four short questions and a catalog lab to wrap up level 1. If you miss one, read the explanation and go back to the lesson it comes from.
 
 ## Key idea
 

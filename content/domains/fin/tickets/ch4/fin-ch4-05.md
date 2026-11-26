@@ -77,7 +77,7 @@ ORDER BY month_end
 ```
 
 ## Hints
-1. Bước 1 gom theo tháng giải ngân. Bước 2 đặt tháng giải ngân của từng khoản thành một bước có tên, rồi ghép trái với ảnh chụp đúng cuối tháng thứ ba và đếm có điều kiện. Bước 3 cộng dư nợ theo tháng, lấy tháng trước bằng hàm lấy dòng trước; tính cả cuối tháng 4 để tháng 5 có số so sánh, rồi mới lọc bỏ tháng 4.
+1. Bước 1 gom theo tháng giải ngân. Bước 2 đặt tháng giải ngân của từng khoản thành một bước có tên, rồi nối trái với ảnh chụp đúng cuối tháng thứ ba và đếm có điều kiện. Bước 3 cộng dư nợ theo tháng, lấy tháng trước bằng hàm lấy dòng trước; tính cả cuối tháng 4 để tháng 5 có số so sánh, rồi mới lọc bỏ tháng 4.
 2. Bước 2: cuối tháng thứ ba là `(c.cohort + interval '4 month' - interval '1 day')::date`, đặt điều kiện ngày này trong `ON` của `LEFT JOIN`. Bước 3: `total - LAG(total) OVER (ORDER BY month_end)`. Bài nâng cao "Cohort và retention" giải thích cách theo dõi cohort.
 3. `WITH t AS (SELECT month_end, sum(outstanding) AS total FROM loan_snapshots WHERE ... GROUP BY month_end), d AS (SELECT month_end, total, total - LAG(total) OVER (ORDER BY month_end) AS change FROM t) SELECT month_end, total, change FROM d WHERE ... ORDER BY month_end`
 

@@ -110,8 +110,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì bản cũ của Postgres (trước 9.4) đúng là ghi đè `xmin` bằng 2, nhưng từ 9.4 freeze chỉ bật hai bit COMMITTED và INVALID cùng lúc, tức cờ `HEAP_XMIN_FROZEN`. `xmin` giữ nguyên để còn tra cứu tuple do transaction nào tạo. Vì vậy kiểm tra freeze bằng `t_xmin = '2'` luôn ra 0 dòng."
-      en: "It sounds right because old Postgres versions (before 9.4) did overwrite `xmin` with 2, but since 9.4 freezing only sets the COMMITTED and INVALID bits together, the `HEAP_XMIN_FROZEN` flag. `xmin` is kept so you can still tell which transaction created the tuple. That is why checking for frozen tuples with `t_xmin = '2'` always finds 0 rows."
+      vi: "Số 2 nghe hợp lý vì Postgres trước 9.4 đúng là ghi đè `xmin` bằng 2, nhưng từ 9.4 freeze chỉ bật hai bit COMMITTED và INVALID cùng lúc, tức cờ `HEAP_XMIN_FROZEN`. `xmin` giữ nguyên để còn tra cứu tuple do transaction nào tạo; bước 2 của lab thấy cả 3 tuple vẫn giữ số cũ. `xmin` cũng không bao giờ là NULL: mọi tuple đều mang số của transaction đã chèn nó. Vì vậy kiểm tra freeze bằng `t_xmin = '2'` luôn ra 0 dòng."
+      en: "The number 2 sounds right because Postgres before 9.4 did overwrite `xmin` with 2, but since 9.4 freezing only sets the COMMITTED and INVALID bits together, the `HEAP_XMIN_FROZEN` flag. `xmin` is kept so you can still tell which transaction created the tuple; step 2 of the lab sees all 3 tuples keep the old number. `xmin` is never NULL either: every tuple carries the number of the transaction that inserted it. That is why checking for frozen tuples with `t_xmin = '2'` always finds 0 rows."
   - q:
       vi: "Một bảng lưu trữ 500 GB gần như chỉ đọc, vậy mà log ghi autovacuum chạy trên nó \"to prevent wraparound\". Vì sao?"
       en: "A 500 GB archive table is almost read only, yet the log shows autovacuum running on it \"to prevent wraparound\". Why?"
@@ -122,8 +122,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì autovacuum thường được kích bởi số dead tuple, nhưng còn lý do thứ hai: tuổi của `relfrozenxid`. Transaction ở các bảng khác vẫn làm XID tăng, nên tuổi của bảng lưu trữ cũng tăng. Một lần `VACUUM (FREEZE)` lúc vắng tải đánh dấu các trang all-frozen, và những lần chống wraparound sau bỏ qua chúng."
-      en: "It sounds right because autovacuum is usually triggered by dead tuples, but there is a second reason: the age of `relfrozenxid`. Transactions on other tables keep the XID moving, so the archive table ages too. One `VACUUM (FREEZE)` at a quiet time marks its pages all-frozen, and later anti-wraparound runs skip them."
+      vi: "\"Chắc có ai đang sửa bảng\" nghe hợp lý vì autovacuum thường được kích bởi số dead tuple, nhưng còn lý do thứ hai: tuổi của `relfrozenxid`. XID (số hiệu transaction, 32 bit, quay vòng) tăng theo transaction của cả cơ sở dữ liệu, nên bảng không ai sửa vẫn già đi. Khi tuổi vượt `autovacuum_freeze_max_age` (mặc định 200 triệu), autovacuum phải freeze các tuple còn lại để chúng không bỗng trông như \"ở tương lai\" sau khi XID quay vòng (wraparound). Đây là việc định kỳ, không phải sửa trang hỏng. Một lần `VACUUM (FREEZE)` lúc vắng tải đánh dấu các trang all-frozen, và những lần sau bỏ qua chúng."
+      en: "\"Someone must be changing the table\" sounds right because autovacuum is usually triggered by dead tuples, but there is a second reason: the age of `relfrozenxid`. The XID (transaction ID, 32 bits, wrapping round) grows with the whole database's transactions, so a table nobody touches still ages. Once that age passes `autovacuum_freeze_max_age` (200 million by default), autovacuum must freeze the remaining tuples so they do not suddenly look \"in the future\" after the XID wraps round (wraparound). This is routine work, not page repair. One `VACUUM (FREEZE)` at a quiet time marks the pages all-frozen, and later runs skip them."
 ---
 ## Mở bài
 

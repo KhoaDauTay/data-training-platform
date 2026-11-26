@@ -6,7 +6,7 @@ minutes: 20
 figures: [{ name: sql-set-ops, at: idea, variant: union }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
-  - vi: Ghép dòng của hai câu `SELECT` thành một kết quả bằng `UNION ALL` hay `UNION`.
+  - vi: Xếp chồng dòng của hai câu `SELECT` thành một kết quả bằng `UNION ALL` hay `UNION`.
     en: Stack the rows of two `SELECT`s into one result with `UNION ALL` or `UNION`.
   - vi: Chọn `UNION ALL` khi cần giữ mọi dòng, `UNION` khi muốn bỏ trùng.
     en: Pick `UNION ALL` to keep every row and `UNION` to remove duplicates.
@@ -65,19 +65,19 @@ pitfalls:
     wrong: "SELECT name, city FROM stores UNION SELECT name FROM customers"
     fix: "SELECT name, city FROM stores UNION SELECT name, city FROM customers"
     why:
-      vi: "`UNION` ghép theo vị trí cột, nên hai bên phải có cùng số cột: lỗi 42601. Thêm cột còn thiếu (hoặc một hằng số, `NULL`) cho bên ít cột hơn."
+      vi: "`UNION` khớp cột theo vị trí, nên hai bên phải có cùng số cột: lỗi 42601. Thêm cột còn thiếu (hoặc một hằng số, `NULL`) cho bên ít cột hơn."
       en: "`UNION` matches columns by position, so both sides need the same number: error 42601. Add the missing column (or a constant, `NULL`) to the shorter side."
   - title: { vi: "Cột đổi chỗ", en: "Columns in swapped order" }
     wrong: "SELECT name, price_vnd FROM products WHERE category = 'Drinks' UNION SELECT price_vnd, name FROM products WHERE category = 'Snacks'"
     fix: "SELECT name, price_vnd FROM products WHERE category = 'Drinks' UNION SELECT name, price_vnd FROM products WHERE category = 'Snacks'"
     why:
-      vi: "Cột ghép theo vị trí, không theo tên: cột 1 của bên dưới (giá, số) phải khớp cột 1 bên trên (tên, chữ). Kiểu không khớp thì lỗi 42804; nếu kiểu tình cờ khớp, dữ liệu lẫn lặng lẽ. Viết cột theo cùng thứ tự."
+      vi: "Cột khớp theo vị trí, không theo tên: cột 1 của bên dưới (giá, số) phải khớp cột 1 bên trên (tên, chữ). Kiểu không khớp thì lỗi 42804; nếu kiểu tình cờ khớp, dữ liệu lẫn lặng lẽ. Viết cột theo cùng thứ tự."
       en: "Columns match by position, not by name: column 1 of the lower query (price, a number) must fit column 1 of the upper one (name, text). Mismatched types give error 42804; if the types happen to fit, the data mixes silently. Write the columns in the same order."
   - title: { vi: "UNION bỏ mất dòng trùng cần đếm", en: "UNION drops repeats you needed to count" }
     wrong: "SELECT p.category FROM order_items i JOIN products p ON p.id = i.product_id WHERE i.order_id = 1417 UNION SELECT p.category FROM order_items i JOIN products p ON p.id = i.product_id WHERE i.order_id = 1418"
     fix: "SELECT p.category FROM order_items i JOIN products p ON p.id = i.product_id WHERE i.order_id = 1417 UNION ALL SELECT p.category FROM order_items i JOIN products p ON p.id = i.product_id WHERE i.order_id = 1418"
     why:
-      vi: "Câu hỏi là nhóm hàng của mọi dòng hàng trong hai đơn (để đếm sau đó). `UNION` gộp các dòng giống nhau nên chỉ còn 3, trong khi có 6 dòng hàng. Mặc định dùng `UNION ALL`; chỉ dùng `UNION` khi thật sự muốn bỏ trùng."
+      vi: "Câu hỏi là nhóm hàng của mọi dòng hàng trong hai đơn (để đếm sau đó). `UNION` bỏ các dòng giống nhau, mỗi nhóm hàng chỉ giữ một, nên còn 3, trong khi có 6 dòng hàng. Mặc định dùng `UNION ALL`; chỉ dùng `UNION` khi thật sự muốn bỏ trùng."
       en: "The question is the category of every line in two orders (to count later). `UNION` merges equal rows and leaves 3, while there are 6 lines. Default to `UNION ALL`; use `UNION` only when you really want repeats removed."
 quiz:
   - q:

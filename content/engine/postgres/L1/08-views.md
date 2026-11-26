@@ -82,8 +82,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì view trông như một bảng, mà bảng thì giữ dữ liệu đã chép vào; nhưng view thường không lưu dòng nào, chỉ lưu câu `SELECT`. Mỗi lần đọc, Postgres chạy lại câu đó trên dữ liệu hiện tại. Chỉ materialized view mới cần `REFRESH`."
-      en: "It sounds right because a view looks like a table, and a table keeps the rows copied into it, but a plain view stores no rows, only its `SELECT`. Every read reruns that query on current data. Only a materialized view needs `REFRESH`."
+      vi: "\"Không thấy 50 đơn mới\" nghe hợp lý vì view trông như một bảng, mà bảng thì giữ dữ liệu đã chép vào; nhưng view thường không lưu dòng nào, chỉ lưu câu `SELECT`. Mỗi lần đọc, Postgres chạy lại câu đó trên dữ liệu hiện tại, nên 50 đơn mới có mặt ngay và dữ liệu gốc đổi cũng không gây lỗi. Chỉ materialized view (lưu sẵn kết quả) mới cần `REFRESH`."
+      en: "\"The 50 new orders are missing\" sounds right because a view looks like a table, and a table keeps the rows copied into it, but a plain view stores no rows, only its `SELECT`. Every read reruns that query on current data, so the 50 new orders show at once, and changed data causes no error. Only a materialized view (which stores its result) needs `REFRESH`."
   - q:
       vi: "Bạn muốn làm mới một materialized view mà người khác vẫn đọc được trong lúc đó. Cần gì?"
       en: "You want to refresh a materialized view while other people keep reading it. What do you need?"
@@ -94,8 +94,8 @@ quiz:
     answer: 0
     trap: 1
     why:
-      vi: "Nghe hợp lý vì đọc dữ liệu cũ thì có gì phải chặn, nhưng `REFRESH` thường khóa materialized view cho tới khi xong. Bản `CONCURRENTLY` tính kết quả mới bên cạnh rồi chỉ ghi phần khác biệt, nên người đọc không bị chặn; để so từng dòng, nó cần một unique index."
-      en: "It sounds right because reading old data should not need to wait, but a plain `REFRESH` locks the materialized view until it is done. The `CONCURRENTLY` form builds the new result on the side and writes only the differences, so readers are not blocked; to match rows it needs a unique index."
+      vi: "\"Chỉ cần `REFRESH MATERIALIZED VIEW`\" nghe hợp lý vì đọc dữ liệu cũ thì có gì phải chặn, nhưng bản thường thay cả nội dung một lần và giữ một lock chặn mọi người đọc cho tới khi xong. Bản `CONCURRENTLY` tính kết quả mới bên cạnh rồi chỉ ghi phần khác biệt, nên người đọc không bị chặn; để ghép dòng cũ với dòng mới, nó cần một unique index. Xóa rồi tạo lại thì trong lúc đó view không tồn tại, người đọc gặp lỗi."
+      en: "\"Just `REFRESH MATERIALIZED VIEW`\" sounds right because reading old data should not need to wait, but the plain form replaces the whole content at once and holds a lock that blocks every reader until it is done. The `CONCURRENTLY` form builds the new result on the side and writes only the differences, so readers are not blocked; to pair old rows with new ones it needs a unique index. Dropping and recreating leaves no view in between, so readers get errors."
 ---
 ## Mở bài
 

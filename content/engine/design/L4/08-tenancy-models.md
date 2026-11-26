@@ -79,8 +79,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì lọc theo tenant_id chặn được đọc nhầm, nhưng hợp đồng nói về nơi dữ liệu nằm và cách khôi phục. Trong pool, khôi phục một khách là chép dữ liệu ra khỏi bản sao lưu chung; schema riêng vẫn nằm chung database và chung bản sao lưu."
-      en: "It sounds right because filtering on tenant_id prevents wrong reads, but the contract is about where the data lives and how it is restored. In a pool, restoring one tenant means copying rows out of a shared backup; an own schema still lives in the shared database and the shared backup."
+      vi: "Pool nghe đủ vì lọc theo `tenant_id` chặn đọc nhầm, nhưng hợp đồng hỏi dữ liệu nằm ở đâu và khôi phục thế nào, không hỏi câu SQL lọc gì. Trong pool, dòng của khách nằm chung bảng với mọi khách khác, nên khôi phục một khách là chép dòng ra khỏi bản sao lưu chung. Bridge cũng không đạt: schema riêng vẫn nằm trong cùng database và cùng bản sao lưu. Chỉ silo cho khách một database riêng, sao lưu và khôi phục riêng."
+      en: "The pool sounds enough because filtering on `tenant_id` blocks wrong reads, but the contract asks where the data lives and how it is restored, not what the SQL filters. In a pool the tenant's rows share tables with every other tenant, so restoring one tenant means copying rows out of a shared backup. The bridge fails too: an own schema still lives in the same database and the same backup. Only the silo gives the tenant its own database, backed up and restored alone."
   - q:
       vi: "Chợ có 5.000 người bán nhỏ, mỗi schema 40 bảng. Một bạn đề xuất bridge (schema mỗi khách). Điều gì lớn lên trước tiên?"
       en: "The market has 5,000 small sellers, 40 tables per schema. Someone proposes the bridge (a schema per tenant). What grows first?"
@@ -91,8 +91,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nhiều người nghĩ schema là miễn phí vì tạo nó chỉ mất một lệnh. Thật ra mỗi bảng trong mỗi schema là một dòng catalog, một tệp, một việc cho autovacuum và một chỗ phải đổi cấu trúc. Kết nối thì không: một kết nối đổi `search_path` là sang schema khác."
-      en: "Many people think a schema is free because creating one takes one command. In fact every table in every schema is a catalog row, a file, a job for autovacuum and one more place to migrate. Connections are not the issue: one connection changes `search_path` to reach another schema."
+      vi: "Schema nghe miễn phí vì tạo nó chỉ mất một lệnh, nhưng bridge chép đủ 40 bảng vào mỗi schema: 5.000 × 40 = 200.000 bảng. Mỗi bảng là một dòng trong catalog hệ thống (system catalog, các bảng Postgres dùng để ghi mọi đối tượng), một tệp trên đĩa, một việc cho autovacuum, và một chỗ phải đổi cấu trúc, nên thêm một cột là chạy 5.000 lần. Số kết nối thì không tăng: một kết nối chỉ cần đổi `search_path` là sang schema khác."
+      en: "A schema sounds free because creating one takes one command, but the bridge copies all 40 tables into each schema: 5,000 × 40 = 200,000 tables. Each table is a row in the system catalog (the tables Postgres uses to record every object), a file on disk, a job for autovacuum and one more place to migrate, so adding a column runs 5,000 times. The connection count does not grow: one connection just changes `search_path` to reach another schema."
 ---
 ## Mở bài
 

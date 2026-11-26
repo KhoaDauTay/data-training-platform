@@ -19,7 +19,7 @@ syntax: |-
 options:
   - { code: "x.key = o.key", vi: "điều kiện nhắc tới dòng ngoài: truy vấn con chạy lại cho mỗi dòng", en: "a condition naming the outer row: the subquery reruns for every row" }
   - { code: "(SELECT max(…) …)", vi: "gộp lại để chắc chỉ một giá trị", en: "aggregate so there is only one value" }
-  - { code: "products x … products p", vi: "cùng một bảng hai bí danh: so dòng với nhóm của nó", en: "one table, two aliases: compare a row with its group" }
+  - { code: "products x … products p", vi: "cùng một bảng hai alias: so dòng với nhóm của nó", en: "one table, two aliases: compare a row with its group" }
   - { code: "NULL", vi: "khi không có dòng nào khớp (với `count`, ra 0)", en: "when no row matches (with `count`, 0)" }
 examples:
   - title: { vi: "Ngày có đơn gần nhất của mỗi cửa hàng", en: "Each store's latest order date" }
@@ -45,7 +45,7 @@ examples:
       FROM products p
       WHERE p.price_vnd > (SELECT avg(x.price_vnd) FROM products x WHERE x.category = p.category)
     read:
-      vi: "11 món, có cả nước cam 35.000 đồng: rẻ so với cả cửa hàng nhưng đắt so với đồ uống. Bí danh `x` là \"các món cùng nhóm với `p`\"."
+      vi: "11 món, có cả nước cam 35.000 đồng: rẻ so với cả cửa hàng nhưng đắt so với đồ uống. Alias `x` là \"các món cùng nhóm với `p`\"."
       en: "11 items, the orange juice at 35,000 VND among them: cheap for the whole shop but pricey for a drink. The alias `x` means \"the items in the same category as `p`\"."
   - title: { vi: "Đơn mới nhất của từng khách", en: "Each customer's latest order" }
     sql: |-
@@ -54,8 +54,8 @@ examples:
       WHERE o.customer_id BETWEEN 1 AND 5
         AND o.order_date = (SELECT max(x.order_date) FROM orders x WHERE x.customer_id = o.customer_id)
     read:
-      vi: "5 đơn, mỗi khách một đơn. Nếu một khách có hai đơn cùng ngày cuối, cả hai sẽ ra; Phần 7 có `DISTINCT ON` để chọn đúng một."
-      en: "5 orders, one per customer. If a customer had two orders on the last day, both would show; Part 7 has `DISTINCT ON` to pick exactly one."
+      vi: "5 đơn, mỗi khách một đơn. Nếu một khách có hai đơn cùng ngày cuối, cả hai sẽ ra; bài \"DISTINCT ON: dòng đầu tiên của mỗi nhóm\" (Phần 7) chọn đúng một."
+      en: "5 orders, one per customer. If a customer had two orders on the last day, both would show; the lesson \"DISTINCT ON: the first row of each group\" (Part 7) picks exactly one."
   - title: { vi: "Tra chỉ tiêu tháng 10 cho từng cửa hàng", en: "Looking up each store's October target" }
     sql: |-
       SELECT s.name, (SELECT t.target_vnd FROM store_targets t WHERE t.store_id = s.id AND t.month = '2026-10-01') AS target
@@ -87,8 +87,8 @@ quiz:
     answer: 0
     trap: 2
     why:
-      vi: "Vị trí trong câu dễ gây nhầm, nhưng một truy vấn con trong `SELECT` vẫn có thể độc lập (như trung bình cả bảng ở bài trước). \"Tương quan\" nghĩa là nó phụ thuộc vào dòng ngoài đang xét."
-      en: "Its position is misleading: a subquery in `SELECT` can still be independent (like the table-wide average of the earlier lesson). \"Correlated\" means it depends on the outer row being checked."
+      vi: "Vị trí trong câu dễ gây nhầm, nhưng một truy vấn con trong `SELECT` vẫn có thể độc lập (như trung bình cả bảng ở bài \"Truy vấn con một giá trị: so với một con số tính ra\"). \"Tương quan\" nghĩa là nó phụ thuộc vào dòng ngoài đang xét."
+      en: "Its position is misleading: a subquery in `SELECT` can still be independent (like the table-wide average in the lesson \"Scalar subqueries: compare with a computed number\"). \"Correlated\" means it depends on the outer row being checked."
   - q:
       vi: "Truy vấn con tương quan chạy lại cho mỗi dòng ngoài. Điều đó có nghĩa gì với tốc độ?"
       en: "A correlated subquery reruns for each outer row. What does that mean for speed?"
@@ -114,7 +114,7 @@ sources:
 ---
 ## Mở bài
 
-Quản lý vùng hỏi: "Mỗi cửa hàng có đơn gần nhất vào ngày nào?" Đó là một con số **cho từng cửa hàng**, lấy từ bảng `orders`. Truy vấn con ở bài trước cho một số cho cả bảng; giờ bạn cần nó đổi theo từng dòng.
+Quản lý vùng hỏi: "Mỗi cửa hàng có đơn gần nhất vào ngày nào?" Đó là một con số **cho từng cửa hàng**, lấy từ bảng `orders`. Truy vấn con một giá trị (bài liền trước trong Phần 6) cho một số cho cả bảng; giờ bạn cần nó đổi theo từng dòng.
 
 ## Ý chính
 
@@ -126,13 +126,13 @@ Hình cuối mục này chạy câu ví dụ đầu từng dòng một: với m�
 
 ## Cú pháp
 
-Đặt bí danh khác nhau cho bảng ngoài và bảng trong, kể cả khi là cùng một bảng.
+Đặt alias khác nhau cho bảng ngoài và bảng trong, kể cả khi là cùng một bảng.
 
 # EN
 
 ## Opening
 
-The regional manager asks: "What is the latest order date of each store?" That is one number **per store**, taken from the `orders` table. The subquery of the earlier lesson gives one number for the whole table; now you need it to change with each row.
+The regional manager asks: "What is the latest order date of each store?" That is one number **per store**, taken from the `orders` table. A scalar subquery (the lesson just before this one in Part 6) gives one number for the whole table; now you need it to change with each row.
 
 ## Key idea
 

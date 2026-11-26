@@ -72,8 +72,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì khách \"sở hữu\" các đơn, nhưng một ô chỉ chứa một giá trị. Mỗi đơn có đúng một khách, nên phía N giữ một cột trỏ về phía 1. Bảng nối chỉ cần cho M:N."
-      en: "It sounds right because the customer \"owns\" the orders, but a cell holds one value. Each order has exactly one customer, so the N side holds one column pointing to the 1 side. A junction table is only needed for M:N."
+      vi: "Đặt ở `customers` nghe hợp lý vì khách \"sở hữu\" các đơn, nhưng một ô chỉ chứa một giá trị, còn một khách có thể có hàng chục đơn. Ngược lại, mỗi đơn có đúng một khách, nên phía N (đơn) giữ một cột `customer_id` trỏ về phía 1 (khách). Bảng nối (junction table) chỉ cần cho M:N, khi cả hai phía đều có nhiều."
+      en: "Putting it in `customers` sounds right because the customer \"owns\" the orders, but a cell holds one value and a customer may have dozens of orders. The other way round, each order has exactly one customer, so the N side (orders) holds one column `customer_id` pointing to the 1 side (customers). A junction table is only needed for M:N, when both sides have many."
   - q:
       vi: "Bảng nối `order_items` không có khóa chính. Chuyện gì có thể xảy ra?"
       en: "Junction table `order_items` has no primary key. What can happen?"
@@ -84,8 +84,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nhiều người nghĩ khóa ngoại chặn trùng. Thật ra khóa ngoại chỉ kiểm tra dòng cha tồn tại; chặn trùng là việc của khóa chính hoặc `UNIQUE` trên cặp cột."
-      en: "Many people think foreign keys block duplicates. In fact a foreign key only checks that the parent row exists; blocking duplicates is the job of a primary key or `UNIQUE` on the pair."
+      vi: "Nhiều người nghĩ hai khóa ngoại đã chặn trùng, nhưng khóa ngoại chỉ kiểm tra dòng cha có tồn tại: chèn (đơn 1, sản phẩm 10) hai lần thì cả hai lần đều có cha, nên cả hai đều qua. Khi đó `sum(qty)` của đơn 1 cộng sản phẩm 10 hai lần. Postgres vẫn tạo bảng không có khóa chính bình thường. Chặn trùng là việc của khóa chính hoặc `UNIQUE` trên cặp (`order_id`, `product_id`)."
+      en: "Many people think the two foreign keys block duplicates, but a foreign key only checks that the parent row exists: insert (order 1, product 10) twice and both times the parents exist, so both pass. Then `sum(qty)` for order 1 counts product 10 twice. Postgres happily creates a table with no primary key. Blocking duplicates is the job of a primary key or `UNIQUE` on the pair (`order_id`, `product_id`)."
 ---
 ## Mở bài
 

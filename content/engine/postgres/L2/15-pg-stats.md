@@ -66,21 +66,21 @@ predict:
   answer: 1
   trap: 0
   why:
-    vi: "Nghe hợp lý nếu bạn nghĩ planner chỉ biết có 3 giá trị rồi chia đều; nhưng `ANALYZE` ghi cả tần suất: `most_common_vals = {open,pending,closed}` và `most_common_freqs = {0.6,0.3,0.1}`. Với `status = 'closed'`, planner lấy 0,1 × 30.000 = 3000. Bảng chỉ 30.000 dòng nên `ANALYZE` đọc hết, thống kê đúng tuyệt đối; với bảng lớn nó lấy mẫu, nên ước lượng chỉ gần đúng."
-    en: "It sounds right if you think the planner only knows there are 3 values and splits evenly, but `ANALYZE` also recorded frequencies: `most_common_vals = {open,pending,closed}` and `most_common_freqs = {0.6,0.3,0.1}`. For `status = 'closed'` the planner takes 0.1 x 30,000 = 3000. The table has only 30,000 rows, so `ANALYZE` read all of them and the statistics are exact; on a large table it samples, so estimates are only approximate."
+    vi: "Chia đều (10.000) chỉ đúng nếu planner chỉ biết có 3 giá trị; nhưng `ANALYZE` ghi cả tần suất của từng giá trị phổ biến: `most_common_vals = {open,pending,closed}` và `most_common_freqs = {0.6,0.3,0.1}`. Với `status = 'closed'`, planner lấy 0,1 × 30.000 = 3000. Hằng số mặc định 0,5 % chỉ dùng khi chưa có thống kê, mà `ANALYZE` vừa chạy; và planner không cần chạy câu, vì nó ước lượng từ thống kê. Bảng chỉ 30.000 dòng nên `ANALYZE` đọc hết, thống kê đúng tuyệt đối; với bảng lớn nó lấy mẫu, nên ước lượng chỉ gần đúng."
+    en: "An even split (10,000) would only hold if the planner knew nothing but the 3 values, but `ANALYZE` also recorded the frequency of each common value: `most_common_vals = {open,pending,closed}` and `most_common_freqs = {0.6,0.3,0.1}`. For `status = 'closed'` the planner takes 0.1 x 30,000 = 3000. The 0.5% default is used only when there are no statistics, and `ANALYZE` has just run; the planner need not run the query, since it estimates from statistics. The table has only 30,000 rows, so `ANALYZE` read all of them and the statistics are exact; on a large table it samples, so estimates are only approximate."
 quiz:
   - q:
       vi: "Cùng bảng đó, `EXPLAIN SELECT * FROM tickets WHERE status = 'archived'`. Không phiếu nào có trạng thái này. Planner ước lượng bao nhiêu dòng?"
       en: "Same table, `EXPLAIN SELECT * FROM tickets WHERE status = 'archived'`. No ticket has this status. How many rows does the planner estimate?"
     options:
       - { vi: "0: giá trị không có trong danh sách giá trị phổ biến, nên không có dòng nào", en: "0: the value is not in the most-common-values list, so there are no rows" }
-      - { vi: "1: planner không bao giờ đoán 0, nó làm tròn lên ít nhất 1 dòng", en: "1: the planner never guesses 0, it rounds up to at least 1 row" }
+      - { vi: "1: planner không bao giờ ước lượng 0, nó làm tròn lên ít nhất 1 dòng", en: "1: the planner never estimates 0, it rounds up to at least 1 row" }
       - { vi: "10.000: một phần ba bảng", en: "10,000: a third of the table" }
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì danh sách MCV đã phủ 100 % số dòng, nhưng thống kê chỉ là ảnh chụp lúc `ANALYZE` chạy: từ đó tới giờ có thể đã có dòng mới. Nếu planner đoán 0, mọi nút phía trên sẽ được định giá như không tốn gì, nên nó luôn giữ ít nhất 1 dòng. `EXPLAIN` in `rows=1`."
-      en: "It sounds right because the MCV list already covers 100% of the rows, but statistics are only a snapshot from when `ANALYZE` ran: new rows may have arrived since. If the planner guessed 0, every node above would be priced as free, so it always keeps at least 1 row. `EXPLAIN` prints `rows=1`."
+      vi: "Số 0 nghe hợp lý vì danh sách giá trị phổ biến (MCV, most common values) đã phủ 100 % số dòng, nhưng thống kê chỉ là ảnh chụp lúc `ANALYZE` chạy: từ đó tới giờ có thể đã có dòng `archived` mới. Nếu planner ước lượng 0, mọi nút phía trên sẽ được tính như không tốn gì, nên nó luôn giữ ít nhất 1 dòng. `EXPLAIN` in `rows=1`. 10.000 là chia đều, nhưng planner chỉ chia phần còn lại ngoài MCV, mà ở đây phần còn lại là 0."
+      en: "0 sounds right because the most-common-values (MCV) list already covers 100% of the rows, but statistics are only a snapshot from when `ANALYZE` ran: new `archived` rows may have arrived since. If the planner estimated 0, every node above would be costed as free, so it always keeps at least 1 row. `EXPLAIN` prints `rows=1`. 10,000 is an even split, but the planner only spreads what is left outside the MCV list, and here nothing is left."
 ---
 ## Mở bài
 
@@ -88,7 +88,7 @@ Planner phải chọn giữa đọc cả bảng và đi qua index trước khi c
 
 ## Ý chính
 
-Planner không đếm dòng trước khi chọn kế hoạch. Nó đoán từ thống kê mà `ANALYZE` (hoặc autovacuum) ghi vào catalog. View `pg_stats` cho đọc thống kê đó, mỗi cột một dòng:
+Planner không đếm dòng trước khi chọn kế hoạch. Nó ước lượng từ thống kê (statistics) mà `ANALYZE` (hoặc autovacuum) ghi vào catalog. View `pg_stats` cho đọc thống kê đó, mỗi cột một dòng:
 
 - `null_frac`: tỉ lệ NULL.
 - `n_distinct`: số giá trị khác nhau; số âm nghĩa là tỉ lệ so với số dòng (`-1` = mọi giá trị khác nhau, như khóa chính).
@@ -118,9 +118,9 @@ SELECT attname, n_distinct, null_frac FROM pg_stats WHERE tablename = 'tickets' 
 
 ## Tóm tắt
 
-- Planner đoán số dòng từ `pg_stats`, không đếm trước khi chạy.
+- Planner ước lượng số dòng từ `pg_stats`, không đếm trước khi chạy.
 - Giá trị trong MCV: tần suất nhân số dòng; `IS NULL`: `null_frac` nhân số dòng.
-- Planner không bao giờ đoán 0 dòng; tối thiểu là 1.
+- Planner không bao giờ ước lượng 0 dòng; tối thiểu là 1.
 - Dữ liệu đổi nhiều thì chạy `ANALYZE` để ước lượng theo kịp.
 
 # EN
@@ -131,7 +131,7 @@ The planner must choose between reading the whole table and going through an ind
 
 ## Key idea
 
-The planner does not count rows before choosing a plan. It guesses from statistics that `ANALYZE` (or autovacuum) stores in the catalog. The `pg_stats` view lets you read them, one row per column:
+The planner does not count rows before choosing a plan. It estimates from statistics that `ANALYZE` (or autovacuum) stores in the catalog. The `pg_stats` view lets you read them, one row per column:
 
 - `null_frac`: the share of NULLs.
 - `n_distinct`: the number of distinct values; a negative number is a fraction of the row count (`-1` = every value distinct, like a primary key).
@@ -161,7 +161,7 @@ Guess `rows=` first, see the real plan, read the very numbers the planner used, 
 
 ## Recap
 
-- The planner guesses row counts from `pg_stats`; it does not count before running.
+- The planner estimates row counts from `pg_stats`; it does not count before running.
 - A value in the MCV list: frequency times row count; `IS NULL`: `null_frac` times row count.
-- The planner never guesses 0 rows; the minimum is 1.
+- The planner never estimates 0 rows; the minimum is 1.
 - When data changes a lot, run `ANALYZE` so estimates keep up.

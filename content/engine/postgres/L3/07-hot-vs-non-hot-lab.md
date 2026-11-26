@@ -99,8 +99,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì các cột kia không đổi, nhưng bản mới có `ctid` mới, và index nào cũng phải trỏ tới được nó. Lab thấy đúng vậy: `wallet_pkey` có thêm mục (0,7) cho ví 2 dù khóa chính không đổi."
-      en: "It sounds right because the other columns did not change, but the new version has a new `ctid`, and every index must be able to reach it. The lab shows exactly that: `wallet_pkey` gains an entry (0,7) for wallet 2 although the primary key did not change."
+      vi: "\"Chỉ index của cột bị đổi\" nghe hợp lý vì bốn cột kia không đổi, nhưng bản mới là một tuple khác, có `ctid` mới, và mỗi index phải trỏ được tới nó. Không HOT thì không có chuỗi trong trang để đi theo, nên cả 5 index đều nhận 1 mục. Index B-tree cũng không sửa tại chỗ: mục cũ trỏ bản cũ vẫn ở đó. Bước 2 của lab thấy đúng vậy: `wallet_pkey` có thêm mục (0,7) cho ví 2 dù khóa chính không đổi."
+      en: "\"Only the changed column's index\" sounds right because the other four columns did not change, but the new version is a different tuple with a new `ctid`, and every index must be able to reach it. Without HOT there is no chain inside the page to follow, so all 5 indexes get 1 entry. A B-tree is not updated in place either: the old entry pointing at the old version stays. Step 2 of the lab shows exactly that: `wallet_pkey` gains an entry (0,7) for wallet 2 although the primary key did not change."
   - q:
       vi: "`balance` có index. Câu `UPDATE wallet SET balance = balance WHERE id = 4` có thể là HOT không?"
       en: "`balance` is indexed. Can `UPDATE wallet SET balance = balance WHERE id = 4` be HOT?"
@@ -111,8 +111,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì `balance` được ghi tên trong `SET`, nhưng Postgres so giá trị cũ và mới của từng cột có index, không nhìn danh sách `SET`. Chạy câu này trên `wallet` của lab, `n_tup_hot_upd` tăng thêm 1."
-      en: "It sounds right because `balance` is named in `SET`, but Postgres compares the old and new values of each indexed column, not the `SET` list. Run this on the lab's `wallet` and `n_tup_hot_upd` goes up by 1."
+      vi: "\"Cột có index nằm trong `SET`\" nghe hợp lý, nhưng Postgres so giá trị cũ và mới của từng cột có index, không nhìn danh sách `SET`. `balance = balance` giữ nguyên giá trị, nên điều kiện HOT chỉ còn là trang có chỗ. Khóa chính cũng không đổi, nên không index nào cần mục mới. Chạy câu này trên `wallet` của lab, `n_tup_hot_upd` tăng thêm 1."
+      en: "\"An indexed column is in `SET`\" sounds right, but Postgres compares the old and new values of each indexed column, not the `SET` list. `balance = balance` keeps the value, so the only HOT condition left is room on the page. The primary key does not change either, so no index needs a new entry. Run this on the lab's `wallet` and `n_tup_hot_upd` goes up by 1."
 ---
 ## Mở bài
 

@@ -91,7 +91,7 @@ pitfalls:
     wrong: "INSERT INTO products (name, category, price_vnd) VALUES ('Gel pen', 'Stationery', 9000) ON CONFLICT DO NOTHING RETURNING name, price_vnd"
     fix: "MERGE INTO products p USING (VALUES ('Gel pen', 'Stationery', 9000)) AS v (name, category, price_vnd) ON p.name = v.name WHEN MATCHED THEN UPDATE SET price_vnd = v.price_vnd WHEN NOT MATCHED THEN INSERT (name, category, price_vnd) VALUES (v.name, v.category, v.price_vnd) RETURNING merge_action(), p.name, p.price_vnd"
     why:
-      vi: "Câu sai chạy êm và trả `Gel pen`, nhưng đó là dòng thứ hai: ràng buộc duy nhất duy nhất là `id`, vừa tự sinh nên không bao giờ đụng, và giá cũ vẫn nằm ở dòng đầu. `MERGE` cho thấy nó đã sửa (UPDATE) dòng có sẵn."
+      vi: "Câu sai chạy êm và trả `Gel pen`, nhưng đó là một dòng thứ hai: bảng chỉ có ràng buộc duy nhất trên `id`, mà cột này vừa tự sinh nên không bao giờ đụng, và giá cũ vẫn nằm ở dòng đầu. `MERGE` cho thấy nó đã sửa (UPDATE) dòng có sẵn."
       en: "The wrong query runs fine and returns `Gel pen`, but that is a second row: the only unique constraint is `id`, freshly generated so it never clashes, and the old price is still on the first row. `MERGE` shows it updated (UPDATE) the existing row."
 quiz:
   - q:
@@ -116,7 +116,7 @@ quiz:
     answer: 1
     trap: 2
     why:
-      vi: "\"Excluded\" nghe như giá trị cũ bị loại, nhưng ngược lại: đó là dòng bạn đề nghị mà bị từ chối vì đụng khóa. Tên bảng (hay bí danh) chỉ dòng đang nằm trong bảng. Cộng hai số là kiểu \"tích lũy\"."
+      vi: "\"Excluded\" nghe như giá trị cũ bị loại, nhưng ngược lại: đó là dòng bạn đề nghị mà bị từ chối vì đụng khóa. Tên bảng (hay alias) chỉ dòng đang nằm trong bảng. Cộng hai số là kiểu \"tích lũy\"."
       en: "\"Excluded\" sounds like the old value thrown out, but it is the other way round: it is the row you proposed, rejected because it hit the key. The table name (or alias) means the row already in the table. Adding the two is the \"accumulate\" pattern."
 recap:
   - vi: "`ON CONFLICT … DO NOTHING` bỏ qua, `DO UPDATE SET … = EXCLUDED.…` ghi đè; đích phải khớp một ràng buộc duy nhất."

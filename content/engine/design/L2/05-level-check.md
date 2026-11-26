@@ -66,8 +66,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì tuổi thay đổi theo năm, nhưng mỗi lúc khách chỉ có một tuổi, nên không phải đa trị. Tuổi tính được từ ngày sinh: thuộc tính dẫn xuất, thường tính khi đọc thay vì lưu."
-      en: "It sounds right because age changes every year, but at any moment a customer has one age, so it is not multivalued. Age comes from the birth date: a derived attribute, usually computed on read rather than stored."
+      vi: "Đa trị nghe hợp lý vì tuổi đổi theo năm, nhưng tại mỗi thời điểm khách chỉ có một tuổi; đa trị (multivalued) là nhiều giá trị cùng lúc, như nhiều số điện thoại. Tuổi cũng không phải thuộc tính khóa: nhiều khách cùng tuổi, nên nó không phân biệt được ai. Tuổi tính được từ ngày sinh, nên là thuộc tính dẫn xuất (derived), thường tính khi đọc thay vì lưu."
+      en: "Multivalued sounds right because age changes every year, but at any moment a customer has one age; multivalued means several values at once, like several phone numbers. Age is not a key attribute either: many customers share an age, so it tells no one apart. Age is computed from the birth date, so it is a derived attribute, usually computed on read rather than stored."
   - q:
       vi: "Trong lab, `editions` có khóa (`book_id`, `edition_no`) và `ON DELETE CASCADE`. Nó là gì trên sơ đồ?"
       en: "In the lab, `editions` is keyed by (`book_id`, `edition_no`) with `ON DELETE CASCADE`. What is it on the diagram?"
@@ -78,8 +78,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nhiều người thấy khóa ghép là nghĩ ngay tới bảng nối. Thật ra chỉ một trong hai cột trỏ tới bảng khác; cột kia là số thứ tự riêng trong mỗi sách. Đó là dấu hiệu của thực thể yếu."
-      en: "Many people see a composite key and think junction table. In fact only one of the two columns points at another table; the other is a number local to each book. That is the sign of a weak entity."
+      vi: "Nhiều người thấy khóa ghép là nghĩ ngay tới bảng nối, nhưng bảng nối có hai cột khóa đều trỏ tới hai bảng khác (như `book_authors`). Ở `editions`, chỉ `book_id` trỏ tới `books`; `edition_no` là số thứ tự đếm lại từ 1 trong mỗi sách, và không có bảng \"năm\" nào. Khóa = khóa của chủ + số riêng, cộng `ON DELETE CASCADE`, là dấu hiệu của thực thể yếu (weak entity). Loại con (subtype) thì dùng đúng khóa của cha, không thêm cột khóa."
+      en: "Many people see a composite key and think junction table, but a junction table has two key columns that both point at other tables (like `book_authors`). In `editions`, only `book_id` points at `books`; `edition_no` restarts at 1 in each book, and there is no \"years\" table. Owner's key + a local number, plus `ON DELETE CASCADE`, is the sign of a weak entity. A subtype would use exactly the parent's key, with no extra key column."
   - q:
       vi: "Một người có thể vừa là giảng viên vừa là sinh viên. Cây chuyên biệt hóa của `person` là gì?"
       en: "One person can be both a lecturer and a student. What is the specialisation tree of `person`?"
@@ -90,8 +90,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì đa số người chỉ có một vai, nhưng chỉ cần một người có hai vai là cây chồng nhau. Khi đó cách \"một bảng + cột loại\" không dùng được; bảng cha chung cộng bảng con dùng chung khóa thì được."
-      en: "It sounds right because most people have one role, but one person with two roles makes the tree overlapping. Then the \"one table + type column\" mapping does not work; a shared parent table plus child tables sharing the key does."
+      vi: "Rời nhau (disjoint) nghe hợp lý vì đa số người chỉ có một vai, nhưng rời nhau nghĩa là không ai được thuộc hai loại con; chỉ cần một người vừa dạy vừa học là cây chồng nhau (overlapping). Đây cũng không phải thực thể yếu: `person` có khóa riêng, không cần chủ để nhận diện. Với cây chồng nhau, cách \"một bảng + một cột loại\" không dùng được vì cột chỉ chứa một loại; bảng cha chung cộng mỗi vai một bảng con dùng chung khóa thì được."
+      en: "Disjoint sounds right because most people have one role, but disjoint means nobody may belong to two subtypes; one person who both teaches and studies makes the tree overlapping. It is not a weak entity either: `person` has its own key and needs no owner to be identified. With an overlapping tree, \"one table + a type column\" fails because the column holds one type; a shared parent table plus one child table per role, sharing the key, works."
   - q:
       vi: "Mối quan hệ 1:1 giữa nhân viên và thẻ ra vào lên bảng thế nào?"
       en: "How does a 1:1 relationship between an employee and an access badge map to tables?"
@@ -102,8 +102,8 @@ quiz:
     answer: 1
     trap: 2
     why:
-      vi: "Nhiều người dừng ở khóa ngoại. Thật ra khóa ngoại một mình là 1:N: một nhân viên có thể có nhiều thẻ. `UNIQUE` trên cùng cột mới giới hạn mỗi nhân viên một thẻ."
-      en: "Many people stop at the foreign key. In fact a foreign key alone is 1:N: one employee could have many badges. `UNIQUE` on the same column is what limits each employee to one badge."
+      vi: "Nhiều người dừng ở khóa ngoại, nhưng khóa ngoại một mình là 1:N: hai thẻ cùng ghi `employee_id` = 5 đều hợp lệ, nên một nhân viên có thể có nhiều thẻ. `UNIQUE` trên cùng cột mới giới hạn mỗi nhân viên một thẻ. Bảng nối là cách cho M:N, cả hai phía đều có nhiều; với 1:1 nó thừa một bảng mà vẫn không chặn được thẻ thứ hai."
+      en: "Many people stop at the foreign key, but a foreign key alone is 1:N: two badges both holding `employee_id` = 5 are valid, so one employee can have many badges. `UNIQUE` on the same column is what limits each employee to one badge. A junction table is for M:N, where both sides have many; for 1:1 it adds a table and still does not block a second badge."
 ---
 ## Mở bài
 

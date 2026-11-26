@@ -18,8 +18,8 @@ syntax: |-
   LEFT JOIN right_table r ON r.foreign_key = l.key [AND condition_on_r]
   WHERE r.key IS NULL
 options:
-  - { code: "LEFT JOIN … ON", vi: "giữ mọi dòng bên trái, ghép với dòng bên phải nếu có", en: "keeps every left row, paired with right rows when there are any" }
-  - { code: "WHERE r.id IS NULL", vi: "chỉ giữ dòng không ghép được (khóa bên phải trống)", en: "keeps only the rows that found no partner (right key empty)" }
+  - { code: "LEFT JOIN … ON", vi: "giữ mọi dòng bên trái, nối với dòng bên phải nếu có", en: "keeps every left row, paired with right rows when there are any" }
+  - { code: "WHERE r.id IS NULL", vi: "chỉ giữ dòng không nối được (khóa bên phải trống)", en: "keeps only the rows that found no partner (right key empty)" }
   - { code: "ON … AND r.date >= …", vi: "\"không có trong giai đoạn này\": điều kiện thuộc về phép nối", en: "\"none in this period\": the condition belongs to the join" }
   - { code: "r.id", vi: "kiểm tra cột không bao giờ trống khi có cặp, thường là khóa chính", en: "test a column that is never empty for a real partner, usually the primary key" }
 examples:
@@ -76,7 +76,7 @@ pitfalls:
     wrong: "SELECT c.id, c.name FROM customers c LEFT JOIN orders o ON o.customer_id = c.id WHERE o.order_date >= '2026-09-01' AND o.id IS NULL"
     fix: "SELECT c.id, c.name FROM customers c LEFT JOIN orders o ON o.customer_id = c.id AND o.order_date >= '2026-09-01' WHERE o.id IS NULL"
     why:
-      vi: "Trong `WHERE`, hai điều kiện mâu thuẫn: dòng không có cặp có `order_date` trống nên trượt điều kiện ngày, còn dòng có cặp thì trượt `IS NULL`. Kết quả luôn 0 dòng. Điều kiện về bảng phải nằm trong `ON`."
+      vi: "Trong `WHERE`, hai điều kiện mâu thuẫn: dòng không có cặp có `order_date` trống nên trượt điều kiện ngày, còn dòng có cặp thì trượt `IS NULL`. Kết quả luôn 0 dòng. Điều kiện về bảng bên phải phải nằm trong `ON`."
       en: "In `WHERE` the two conditions contradict each other: an unmatched row has an empty `order_date` and fails the date test, while a matched row fails `IS NULL`. The result is always 0 rows. Conditions on the right table belong in `ON`."
   - title: { vi: "Kiểm tra NULL trên cột có thể trống", en: "Testing NULL on a column that can be empty" }
     wrong: "SELECT s.name FROM stores s LEFT JOIN orders o ON o.store_id = s.id AND o.order_date = '2026-10-29' WHERE o.delivered_on IS NULL"
@@ -90,12 +90,12 @@ quiz:
       en: "In `LEFT JOIN orders o … WHERE o.id IS NULL`, why is `o.id` empty?"
     options:
       - { vi: "Vì một số đơn có mã trống", en: "Because some orders have an empty id" }
-      - { vi: "Vì dòng bên trái không ghép được đơn nào, nên mọi cột của `o` là NULL", en: "Because the left row matched no order, so every column of `o` is NULL" }
+      - { vi: "Vì dòng bên trái không nối được đơn nào, nên mọi cột của `o` là NULL", en: "Because the left row matched no order, so every column of `o` is NULL" }
       - { vi: "Vì `LEFT JOIN` xóa mã đơn", en: "Because `LEFT JOIN` erases the order id" }
     answer: 1
     trap: 0
     why:
-      vi: "Đọc chữ \"id IS NULL\" thì dễ nghĩ dữ liệu có đơn mất mã. Nhưng `id` là khóa chính, không bao giờ trống; nó chỉ trống trong kết quả khi không có đơn nào được ghép. Đó chính là dấu hiệu \"không có cặp\"."
+      vi: "Đọc chữ \"id IS NULL\" thì dễ nghĩ dữ liệu có đơn mất mã. Nhưng `id` là khóa chính, không bao giờ trống; nó chỉ trống trong kết quả khi không có đơn nào được nối. Đó chính là dấu hiệu \"không có cặp\"."
       en: "Reading \"id IS NULL\", it is easy to think some orders lost their id. But `id` is the primary key and is never empty; it is only empty in the result when no order was paired. That is the very sign of \"no match\"."
   - q:
       vi: "Muốn \"khách không mua gì trong tháng 10\", điều kiện tháng 10 đặt ở đâu?"
@@ -107,7 +107,7 @@ quiz:
     answer: 0
     trap: 1
     why:
-      vi: "`WHERE` là nơi quen thuộc cho mọi bộ lọc, nên đặt ở đó trông tự nhiên. Nhưng câu hỏi là \"không có cặp trong tháng 10\": tháng 10 quyết định cặp nào được tính, nên nó thuộc về phép nối. Đặt ở `WHERE` thì luôn ra 0 dòng."
+      vi: "`WHERE` là nơi quen thuộc cho mọi điều kiện lọc, nên đặt ở đó trông tự nhiên. Nhưng câu hỏi là \"không có cặp trong tháng 10\": tháng 10 quyết định cặp nào được tính, nên nó thuộc về phép nối. Đặt ở `WHERE` thì luôn ra 0 dòng."
       en: "`WHERE` is the usual home for filters, so it feels natural there. But the question is \"no partner in October\": October decides which partners count, so it belongs to the join. In `WHERE` it always gives 0 rows."
 recap:
   - vi: "Anti-join = `LEFT JOIN` + `WHERE r.id IS NULL`."
@@ -127,7 +127,7 @@ Marketing muốn gửi ưu đãi cho "những khách không đặt đơn nào t�
 
 ## Ý chính
 
-Anti-join tìm dòng của bảng A không có cặp nào ở bảng B. Cách viết bằng phép nối: `LEFT JOIN` để giữ mọi dòng của A, rồi `WHERE` giữ những dòng mà khóa của B trống, tức là không ghép được. Mọi điều kiện về B (thời gian, trạng thái) phải nằm trong `ON`, vì chúng quyết định cặp nào được tính.
+Anti-join tìm dòng của bảng A không có cặp nào ở bảng B. Cách viết bằng phép nối: `LEFT JOIN` để giữ mọi dòng của A, rồi `WHERE` giữ những dòng mà khóa của B trống, tức là không nối được. Mọi điều kiện về B (thời gian, trạng thái) phải nằm trong `ON`, vì chúng quyết định cặp nào được tính.
 
 Nhiều người nghĩ **kiểm tra cột nào của B trống cũng được**. Thật ra chỉ cột không bao giờ trống khi có cặp thật mới đáng tin, thường là khóa chính. Một cột có thể trống tự nhiên (như ngày giao) sẽ để lọt cả những dòng có cặp.
 

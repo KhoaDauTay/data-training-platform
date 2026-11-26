@@ -82,7 +82,7 @@ quiz:
       - { vi: "Rồi, miễn là các bảng đều đã bật RLS", en: "Yes, as long as every table has RLS on" }
     answer: 1
     trap: 0
-    why: { vi: "Nghe hợp lý vì CASCADE trông như \"xóa tất cả của khách này\", nhưng nó chỉ đi theo đúng các khóa ngoại đã khai báo. Lab có bảng `payouts` thêm sau, không có khóa ngoại, nên còn nguyên 3 dòng. Chứng minh bằng câu quét mọi bảng có `tenant_id`, và kiểm từng kho khác ngoài database.", en: "It sounds right because CASCADE looks like \"delete everything of this tenant\", but it only follows the foreign keys that were declared. The lab's `payouts` table was added later without one, so its 3 rows stay. Prove it with a query over every table with `tenant_id`, and check every store outside the database too." }
+    why: { vi: "\"Rồi\" nghe hợp lý vì CASCADE trông như \"xóa tất cả của khách này\", nhưng nó chỉ đi theo đúng các khóa ngoại (foreign key) đã khai báo tới `sellers`, không tìm theo cột `tenant_id`. Lab có bảng `payouts` thêm sau, không có khóa ngoại, nên còn nguyên 3 dòng. RLS cũng không liên quan: nó chỉ lọc dòng nhìn thấy được, không xóa gì. Chứng minh bằng một câu đếm trên mọi bảng có cột `tenant_id`, và kiểm cả các kho ngoài database.", en: "\"Yes\" sounds right because CASCADE looks like \"delete everything of this tenant\", but it only follows the foreign keys declared to `sellers`; it does not look for a `tenant_id` column. The lab's `payouts` table was added later without one, so its 3 rows stay. RLS is unrelated: it only filters which rows are visible and deletes nothing. Prove it with a count over every table that has a `tenant_id` column, and check every store outside the database too." }
   - q: { vi: "Thứ tự nào đúng khi một khách rời đi?", en: "Which order is right when a tenant leaves?" }
     options:
       - { vi: "Xóa ngay, khi cần thì lấy lại từ bản sao lưu", en: "Delete at once, restore from backup if needed" }
@@ -90,7 +90,7 @@ quiz:
       - { vi: "Xóa trước, rồi xuất lại dữ liệu từ log", en: "Delete first, then rebuild the export from the logs" }
     answer: 1
     trap: 0
-    why: { vi: "Nghe hợp lý vì bản sao lưu có đủ dữ liệu, nhưng khôi phục bản sao lưu vật lý là khôi phục mọi khách, không phải một khách. Xuất trước, đối chiếu số đếm với file, rồi mới xóa; nhật ký kiểm toán thì giữ lại sau khi khách đi.", en: "It sounds right because the backup holds all the data, but restoring a physical backup restores every tenant, not one. Export first, check the counts against the file, and only then delete; the audit trail is kept after the tenant has gone." }
+    why: { vi: "Xóa ngay nghe hợp lý vì bản sao lưu có đủ dữ liệu, nhưng khôi phục một bản sao lưu vật lý là khôi phục cả cụm, mọi khách, không lấy riêng được một khách. Log cũng không chứa đủ dữ liệu để dựng lại bản xuất. Thứ tự đúng: khóa truy cập để dữ liệu thôi thay đổi, xuất kèm bảng đếm (manifest: số dòng mỗi bảng), đối chiếu số đếm với file, rồi mới xóa. Nhật ký kiểm toán thì giữ lại sau khi khách đi.", en: "Deleting at once sounds right because the backup holds all the data, but restoring a physical backup restores the whole cluster, every tenant; you cannot take back just one. Logs do not hold enough data to rebuild the export either. The right order: suspend access so the data stops changing, export with a manifest (the row count of each table), check the counts against the file, and only then delete. The audit trail is kept after the tenant has gone." }
 ---
 ## Mở bài
 

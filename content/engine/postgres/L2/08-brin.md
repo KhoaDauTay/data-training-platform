@@ -65,8 +65,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì B-tree giúp câu khoảng bất kể thứ tự dòng, nhưng BRIN chỉ lưu min/max của từng khối trang. Khi giá trị bị xáo trộn, mọi khối đều phủ gần hết khoảng thời gian, nên index không loại được khối nào và planner chọn Seq Scan. `pg_stats.correlation` gần 0 là dấu hiệu cảnh báo."
-      en: "It sounds right because a B-tree helps a range query whatever the row order, but BRIN only stores the min/max of each block range. When values are shuffled, every range covers nearly the whole time span, so the index rules nothing out and the planner picks a Seq Scan. A `pg_stats.correlation` near 0 is the warning sign."
+      vi: "B-tree giúp câu khoảng bất kể thứ tự dòng, nên dễ nghĩ index nào cũng vậy; nhưng BRIN chỉ lưu giá trị nhỏ nhất và lớn nhất của mỗi nhóm trang (block range). Khi giá trị bị xáo trộn, nhóm nào cũng chứa cả thời điểm sớm lẫn muộn, nên khoảng min–max của mọi nhóm phủ gần hết năm, index không loại được nhóm nào và planner chọn Seq Scan. Tạo BRIN cũng không sắp lại bảng: nó chỉ đọc bảng như đang có. Dấu hiệu cảnh báo là `pg_stats.correlation` gần 0 (giá trị không đi theo vị trí dòng)."
+      en: "A B-tree helps a range query whatever the row order, so it is easy to think every index does; but a BRIN stores only the smallest and largest value of each block range. When values are shuffled, every range holds both early and late times, so each range's min–max spans nearly the whole year, the index rules nothing out and the planner picks a Seq Scan. Creating a BRIN does not re-sort the table either: it reads the table as it is. The warning sign is a `pg_stats.correlation` near 0 (values do not follow row position)."
 predict:
   sql: SELECT count(*) FROM readings WHERE taken_at >= timestamptz '2026-03-01 00:00+00' AND taken_at < timestamptz '2026-03-02 00:00+00'
   expect: { node: Bitmap Index Scan, index: readings_taken_brin }
@@ -80,8 +80,8 @@ predict:
   answer: 1
   trap: 0
   why:
-    vi: "Seq Scan nghe hợp lý vì BRIN chỉ là bản tóm tắt, không biết từng dòng nằm đâu; nhưng bản tóm tắt đó đủ để bỏ qua các khối không liên quan: BRIN lưu min/max của `taken_at` cho mỗi khối 8 trang. Vì dữ liệu ghi theo thời gian, chỉ một khối có khoảng giao với ngày cần đếm. Bitmap Index Scan đánh dấu khối đó (planner ước 1250 dòng, tức vài khối), Bitmap Heap Scan đọc 8 trang và `Recheck Cond` lọc lại từng dòng, còn 144. BRIN không bao giờ trỏ thẳng tới dòng, nên không có Index Scan."
-    en: "A Seq Scan sounds right because BRIN is only a summary and does not know where each row is, but that summary is enough to skip unrelated ranges: BRIN stores the min/max of `taken_at` for each 8-page block range. Because data was written in time order, only one range overlaps the day. The Bitmap Index Scan marks that range (the planner estimates 1250 rows, a few ranges), the Bitmap Heap Scan reads 8 pages and `Recheck Cond` filters each row, leaving 144. BRIN never points at individual rows, so there is no plain Index Scan."
+    vi: "Seq Scan nghe hợp lý vì BRIN chỉ là bản tóm tắt, không biết từng dòng nằm đâu; nhưng bản tóm tắt đó đủ để bỏ qua các nhóm trang không liên quan: BRIN lưu min/max của `taken_at` cho mỗi nhóm 8 trang (block range). Vì dữ liệu ghi theo thời gian, chỉ một, hai nhóm có khoảng giao với ngày cần đếm. Bitmap Index Scan đánh dấu các nhóm đó, Bitmap Heap Scan đọc trang của chúng, và `Recheck Cond` kiểm lại từng dòng, vì nhóm trang chứa cả dòng của ngày khác; còn lại 144 dòng (24 giờ × 6 số đo mỗi giờ). BRIN không bao giờ trỏ thẳng tới một dòng, nên không có Index Scan trả đúng 144 dòng."
+    en: "A Seq Scan sounds right because BRIN is only a summary and does not know where each row is, but that summary is enough to skip unrelated page groups: BRIN stores the min/max of `taken_at` for each 8-page block range. Because data was written in time order, only one or two ranges overlap the day. The Bitmap Index Scan marks those ranges, the Bitmap Heap Scan reads their pages, and `Recheck Cond` checks each row again, because a range also holds rows of other days; 144 rows remain (24 hours × 6 readings an hour). BRIN never points at a single row, so there is no Index Scan returning exactly 144 rows."
 ---
 ## Mở bài
 

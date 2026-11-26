@@ -105,8 +105,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì lỗi trông như thiếu quyền trên bảng, nhưng thông báo nói rõ là schema. Muốn chạm tới một bảng, vai trò cần `USAGE` trên schema chứa nó rồi mới tới quyền trên bảng; cấp thêm quyền bảng không mở được cửa schema."
-      en: "It sounds right because the error looks like a missing table privilege, but the message names the schema. To reach a table a role first needs `USAGE` on its schema, then the table privilege; more table grants never open the schema door."
+      vi: "Cấp thêm `SELECT` hay đăng nhập lại đều không giúp, vì thông báo nói rõ là schema, không phải bảng. Muốn chạm tới một bảng, vai trò cần `USAGE` trên schema chứa nó rồi mới tới quyền trên bảng; cấp thêm quyền bảng không mở được cửa schema."
+      en: "Another `SELECT` grant or a new login does not help, because the message names the schema, not the table. To reach a table a role first needs `USAGE` on its schema, then the table privilege; more table grants never open the schema door."
   - q:
       vi: "Bạn (vai trò `postgres`) chạy `ALTER DEFAULT PRIVILEGES IN SCHEMA sales GRANT SELECT ON TABLES TO readers`. Ngày mai `app_owner` tạo bảng `sales.refunds`. `readers` đọc được bảng đó không?"
       en: "You (role `postgres`) run `ALTER DEFAULT PRIVILEGES IN SCHEMA sales GRANT SELECT ON TABLES TO readers`. Tomorrow `app_owner` creates table `sales.refunds`. Can `readers` read it?"
@@ -117,8 +117,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì câu lệnh có ghi tên schema, nhưng quyền mặc định gắn với vai trò tạo đối tượng. Không ghi `FOR ROLE` thì đó là vai trò đang chạy lệnh. Muốn phủ bảng của `app_owner`, viết `FOR ROLE app_owner`."
-      en: "It sounds right because the command names the schema, but default privileges belong to the role that creates the objects. Without `FOR ROLE` that is the role running the command. To cover the tables of `app_owner`, write `FOR ROLE app_owner`."
+      vi: "Câu lệnh có ghi tên schema, nhưng quyền mặc định gắn với vai trò tạo đối tượng. Không ghi `FOR ROLE` thì đó là vai trò đang chạy lệnh, ở đây là `postgres`; bảng do `app_owner` tạo không được phủ. Không cần khởi động lại: quyền mặc định có hiệu lực ngay. Muốn phủ bảng của `app_owner`, viết `FOR ROLE app_owner`."
+      en: "The command names the schema, but default privileges belong to the role that creates the objects. Without `FOR ROLE` that is the role running the command, here `postgres`; tables `app_owner` creates are not covered. No restart is needed: default privileges apply at once. To cover the tables of `app_owner`, write `FOR ROLE app_owner`."
   - q:
       vi: "Trong PostgreSQL 16 trở lên, vai trò `khoa` được tạo với `NOINHERIT` rồi được `GRANT readers TO khoa`. Điều gì đúng?"
       en: "In PostgreSQL 16 and later, role `khoa` is created with `NOINHERIT` and then gets `GRANT readers TO khoa`. What is true?"
@@ -128,8 +128,8 @@ quiz:
       - { vi: "Câu GRANT bị từ chối vì `khoa` là NOINHERIT", en: "The GRANT is refused because `khoa` is NOINHERIT" }
     answer: 1
     why:
-      vi: "Từ bản 16, thuộc tính INHERIT của vai trò chỉ là giá trị mặc định cho tùy chọn INHERIT của từng lần cấp. Lần cấp này nhận false; `pg_has_role('khoa', 'readers', 'USAGE')` trả false còn `'MEMBER'` trả true."
-      en: "Since version 16 a role's INHERIT attribute is only the default for the INHERIT option of each grant. This grant gets false; `pg_has_role('khoa', 'readers', 'USAGE')` returns false while `'MEMBER'` returns true."
+      vi: "GRANT không bị từ chối: `khoa` vẫn thành thành viên. Từ bản 16, thuộc tính INHERIT (tự dùng quyền của nhóm) của vai trò chỉ là giá trị mặc định cho tùy chọn INHERIT của từng lần cấp. `khoa` là `NOINHERIT`, nên lần cấp này nhận false: `khoa` chỉ dùng quyền của `readers` sau `SET ROLE readers`. Vì vậy `pg_has_role('khoa', 'readers', 'USAGE')` trả false còn `'MEMBER'` trả true."
+      en: "The GRANT is not refused: `khoa` still becomes a member. Since version 16 a role's INHERIT attribute (using the group's privileges automatically) is only the default for the INHERIT option of each grant. `khoa` is `NOINHERIT`, so this grant gets false: `khoa` uses `readers`' privileges only after `SET ROLE readers`. Hence `pg_has_role('khoa', 'readers', 'USAGE')` returns false while `'MEMBER'` returns true."
 ---
 ## Mở bài
 
@@ -141,7 +141,7 @@ Một vai trò có thể là thành viên của vai trò khác: `GRANT readers T
 
 Nhiều người nghĩ cấp `SELECT` trên bảng là đủ để đọc. Thật ra mỗi bảng nằm trong một schema, và vai trò cần `USAGE` trên schema đó mới chạm được tới bảng; `CREATE` trên schema là quyền tạo đối tượng trong đó. Từ PostgreSQL 15, `PUBLIC` không còn quyền `CREATE` trên schema `public`, nên người dùng thường không tạo bảng ở đó được nữa.
 
-`ALTER DEFAULT PRIVILEGES` đặt quyền cho đối tượng tạo sau này. Nó không đụng tới bảng đang có, và chỉ áp cho đối tượng do một vai trò cụ thể tạo: vai trò ghi sau `FOR ROLE`, nếu không ghi thì là vai trò đang chạy lệnh. Muốn giới hạn quyền tới từng dòng thì cần row-level security, học ở bài e-pg-l5-10.
+`ALTER DEFAULT PRIVILEGES` đặt quyền cho đối tượng tạo sau này. Nó không đụng tới bảng đang có, và chỉ áp cho đối tượng do một vai trò cụ thể tạo: vai trò ghi sau `FOR ROLE`, nếu không ghi thì là vai trò đang chạy lệnh. Muốn giới hạn quyền tới từng dòng thì cần RLS (row-level security, bảo mật theo dòng), học ở `e-pg-l5-10`.
 
 Khi một người nghỉ, `ALTER ROLE` khóa đăng nhập (`NOLOGIN`, `VALID UNTIL`). Muốn xóa hẳn, chuyển đối tượng của họ bằng `REASSIGN OWNED BY`, gỡ phần còn lại bằng `DROP OWNED BY`, rồi `DROP ROLE`.
 
@@ -278,7 +278,7 @@ A role can be a member of another role: `GRANT readers TO minh` puts `minh` into
 
 Many people think a `SELECT` grant on a table is enough to read it. In fact every table lives in a schema, and a role needs `USAGE` on that schema before it can reach the table; `CREATE` on a schema is the privilege to create objects in it. Since PostgreSQL 15, `PUBLIC` no longer has `CREATE` on schema `public`, so ordinary users cannot create tables there any more.
 
-`ALTER DEFAULT PRIVILEGES` sets privileges for objects created later. It does not touch existing tables, and it only covers objects created by one specific role: the role named after `FOR ROLE`, or else the role running the command. Limiting access to single rows needs row-level security, taught in lesson e-pg-l5-10.
+`ALTER DEFAULT PRIVILEGES` sets privileges for objects created later. It does not touch existing tables, and it only covers objects created by one specific role: the role named after `FOR ROLE`, or else the role running the command. Limiting access to single rows needs RLS (row-level security), taught in `e-pg-l5-10`.
 
 When someone leaves, `ALTER ROLE` locks their login (`NOLOGIN`, `VALID UNTIL`). To remove them for good, move their objects with `REASSIGN OWNED BY`, clear what is left with `DROP OWNED BY`, then `DROP ROLE`.
 

@@ -94,8 +94,8 @@ quiz:
       - { vi: "Không đổi: planner bỏ qua `NOT MATERIALIZED` khi có `GROUP BY`", en: "No change: the planner ignores `NOT MATERIALIZED` when there is a `GROUP BY`" }
     answer: 0
     why:
-      vi: "\"Dùng hai lần thì thêm `NOT MATERIALIZED`\" nghe hợp lý sau bước 3, nơi nó giúp nhiều. Nhưng ở bước 3, gộp vào cho điều kiện cắt bớt phần phải đọc. Ở đây thân CTE là một phép gom trên cả bảng: gộp vào thì một chỗ dùng vẫn phải gom cả bảng, chỗ kia gom lại lần nữa, và kế hoạch đắt hơn. Gộp chỉ có lợi khi điều kiện bên ngoài cắt được nhiều hơn phần phải làm lại."
-      en: "\"Used twice, so add `NOT MATERIALIZED`\" sounds right after step 3, where it helped a lot. But in step 3 folding let the condition cut what had to be read. Here the CTE body groups the whole table: folded in, one use still groups the whole table and the other groups again, so the plan costs more. Folding pays only when the outer condition cuts more than the work that is repeated."
+      vi: "\"Dùng hai lần thì thêm `NOT MATERIALIZED`\" nghe hợp lý sau bước 3, nơi nó giúp nhiều. Nhưng ở bước 3, gộp vào cho điều kiện cắt bớt phần phải đọc. Ở đây thân CTE là một phép gom trên cả bảng: gộp vào thì một chỗ dùng vẫn phải gom cả bảng, chỗ kia gom lại lần nữa, và kế hoạch đắt hơn. Planner không bỏ qua `NOT MATERIALIZED` vì có `GROUP BY`; nó làm đúng điều bạn bảo, nên mới đắt hơn. Gộp chỉ có lợi khi điều kiện bên ngoài cắt được nhiều hơn phần phải làm lại."
+      en: "\"Used twice, so add `NOT MATERIALIZED`\" sounds right after step 3, where it helped a lot. But in step 3 folding let the condition cut what had to be read. Here the CTE body groups the whole table: folded in, one use still groups the whole table and the other groups again, so the plan costs more. The planner does not ignore `NOT MATERIALIZED` because of a `GROUP BY`; it does exactly what you asked, which is why it costs more. Folding pays only when the outer condition cuts more than the work that is repeated."
 ---
 
 ## Mở bài

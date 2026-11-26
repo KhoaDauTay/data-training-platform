@@ -50,7 +50,7 @@ Câu truy vấn trong editor đã gần xong. Chỗ trống đầu là tên hàm
 Mỗi tháng từ {{first}} đến {{last}}: tiền đã thu thành công trong tháng (theo thời điểm thu), và chênh lệch so với tháng ngay trước (tháng này trừ tháng trước; tháng đầu bảng để trống). Tháng ghi bằng ngày đầu tháng; tháng sớm nhất lên đầu.
 
 ## Hints
-1. Gộp tiền theo tháng trước, rồi với mỗi tháng nhìn sang tháng đứng ngay trước nó theo thứ tự thời gian.
+1. Cộng tiền theo tháng trước, rồi với mỗi tháng nhìn sang tháng đứng ngay trước nó theo thứ tự thời gian.
 2. `LAG(revenue) OVER (ORDER BY month)` lấy tiền của tháng đứng trước.
 3. `SELECT month, revenue, revenue - LAG(revenue) OVER (ORDER BY month) FROM m ORDER BY month`
 

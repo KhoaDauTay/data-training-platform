@@ -10,7 +10,7 @@ objectives:
     en: Take the top N of a sorted list, such as the 3 most expensive items.
   - vi: Lật sang trang tiếp theo bằng `OFFSET`.
     en: Turn to the next page with `OFFSET`.
-  - vi: Biết khi nào top N bỏ mất dòng hòa điểm, và giữ chúng lại bằng `WITH TIES`.
+  - vi: Biết khi nào top N bỏ mất dòng bằng nhau, và giữ chúng lại bằng `WITH TIES`.
     en: Know when a top N drops tied rows, and keep them with `WITH TIES`.
 syntax: |-
   SELECT column_1, column_2
@@ -23,7 +23,7 @@ options:
   - { code: "LIMIT n", vi: "giữ tối đa n dòng đầu của kết quả", en: "keep at most the first n rows of the result" }
   - { code: "OFFSET k", vi: "bỏ qua k dòng đầu trước khi lấy", en: "skip the first k rows before taking any" }
   - { code: "FETCH FIRST n ROWS ONLY", vi: "cách viết chuẩn SQL, giống `LIMIT n`", en: "the standard SQL spelling, same as `LIMIT n`" }
-  - { code: "FETCH FIRST n ROWS WITH TIES", vi: "lấy thêm mọi dòng hòa với dòng thứ n (cần `ORDER BY`)", en: "also take every row tied with row n (needs `ORDER BY`)" }
+  - { code: "FETCH FIRST n ROWS WITH TIES", vi: "lấy thêm mọi dòng bằng với dòng thứ n (cần `ORDER BY`)", en: "also take every row tied with row n (needs `ORDER BY`)" }
 examples:
   - title: { vi: "Ba món đắt nhất", en: "The three most expensive items" }
     sql: |-
@@ -53,7 +53,7 @@ examples:
     read:
       vi: "Nước suối 9.000 và trà xanh 12.000. Thứ tự chạy là `WHERE` → `ORDER BY` → `LIMIT`: lọc trước, xếp sau, cắt cuối cùng."
       en: "Mineral water at 9,000 and green tea at 12,000. The run order is `WHERE` → `ORDER BY` → `LIMIT`: filter first, sort next, cut last."
-  - title: { vi: "Năm đơn mới nhất, có cột phân xử", en: "The five newest orders, with a tie-breaker" }
+  - title: { vi: "Năm đơn mới nhất, có tiêu chí sắp xếp phụ", en: "The five newest orders, with a tie-breaker" }
     sql: |-
       SELECT id, order_date, store_id
       FROM orders
@@ -62,7 +62,7 @@ examples:
     read:
       vi: "Cả 5 đơn đều ngày 31/10/2026, từ đơn 1420 trở xuống. Nhiều đơn cùng ngày, nên nếu thiếu `id DESC`, Postgres được tự chọn 5 đơn nào trong số đó."
       en: "All 5 orders are from 31 October 2026, from order 1420 down. Many orders share a date, so without `id DESC` Postgres may pick any 5 of them."
-  - title: { vi: "Giữ cả dòng hòa điểm", en: "Keeping the tied rows" }
+  - title: { vi: "Giữ cả dòng bằng nhau", en: "Keeping the tied rows" }
     sql: |-
       SELECT name, birth_year
       FROM customers
@@ -70,7 +70,7 @@ examples:
       ORDER BY birth_year
       FETCH FIRST 3 ROWS WITH TIES
     read:
-      vi: "Xin 3 khách lớn tuổi nhất nhưng nhận 13 dòng: cả 13 người cùng sinh năm 1965, hòa với người thứ 3. `WITH TIES` không bỏ ai chỉ vì may rủi thứ tự."
+      vi: "Xin 3 khách lớn tuổi nhất nhưng nhận 13 dòng: cả 13 người cùng sinh năm 1965, bằng với người thứ 3. `WITH TIES` không bỏ ai chỉ vì may rủi thứ tự."
       en: "Asking for the 3 oldest customers returns 13 rows: all 13 were born in 1965, tied with the third one. `WITH TIES` drops no one just because of a lucky order."
 pitfalls:
   - title: { vi: "LIMIT mà không ORDER BY", en: "LIMIT without ORDER BY" }
@@ -79,11 +79,11 @@ pitfalls:
     why:
       vi: "Câu sai trả 3 dòng bất kỳ (ở đây là ba món đầu tiên được nạp: trà xanh, cà phê lon, nước cam), không phải 3 món đắt nhất. Không có `ORDER BY` thì \"3 dòng đầu\" không có nghĩa gì."
       en: "The wrong query returns any 3 rows (here, the first three loaded: green tea, canned coffee, orange juice), not the 3 most expensive. Without `ORDER BY`, \"the first 3 rows\" means nothing."
-  - title: { vi: "Top N cắt ngang dòng hòa điểm", en: "A top N that cuts through a tie" }
+  - title: { vi: "Top N cắt ngang dòng bằng nhau", en: "A top N that cuts through a tie" }
     wrong: "SELECT name, birth_year FROM customers WHERE birth_year >= 1965 ORDER BY birth_year LIMIT 3"
     fix: "SELECT name, birth_year FROM customers WHERE birth_year >= 1965 ORDER BY birth_year FETCH FIRST 3 ROWS WITH TIES"
     why:
-      vi: "13 khách cùng sinh năm 1965, nên `LIMIT 3` phải chọn 3 trong 13 và lựa chọn đó không được hứa. Nếu câu hỏi là \"những người lớn tuổi nhất\", dùng `WITH TIES` hoặc nói rõ cột phân xử."
+      vi: "13 khách cùng sinh năm 1965, nên `LIMIT 3` phải chọn 3 trong 13 và lựa chọn đó không được hứa. Nếu câu hỏi là \"những người lớn tuổi nhất\", dùng `WITH TIES` hoặc nói rõ tiêu chí sắp xếp phụ."
       en: "13 customers share 1965, so `LIMIT 3` has to pick 3 of the 13 and that pick is not promised. If the question is \"the oldest customers\", use `WITH TIES` or state a tie-breaker."
   - title: { vi: "LIMIT đặt trước ORDER BY", en: "LIMIT placed before ORDER BY" }
     wrong: "SELECT name, price_vnd FROM products LIMIT 3 ORDER BY price_vnd DESC"
@@ -114,7 +114,7 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nhân số trang với cỡ trang nghe tự nhiên, nhưng `OFFSET` là số dòng bỏ qua: trang 1 bỏ 0, trang 2 bỏ 10, trang 3 bỏ 20."
+      vi: "Nhân số trang với cỡ trang nghe tự nhiên, nhưng `OFFSET` là số dòng bỏ qua trước trang đó: trang 3 bỏ hai trang đầu, (3 − 1) × 10 = 20 dòng."
       en: "Multiplying the page number by the page size sounds natural, but `OFFSET` counts the rows to skip: page 1 skips 0, page 2 skips 10, page 3 skips 20."
   - q:
       vi: "Khi nào `FETCH FIRST 3 ROWS WITH TIES` trả nhiều hơn 3 dòng?"
@@ -125,14 +125,14 @@ quiz:
       - { vi: "Khi bảng có NULL", en: "When the table has NULLs" }
     answer: 0
     why:
-      vi: "`WITH TIES` lấy thêm mọi dòng hòa với dòng cuối được lấy, theo các cột trong `ORDER BY`. Thêm cột phân xử vào `ORDER BY` thì ít dòng hòa hơn."
+      vi: "`WITH TIES` lấy thêm mọi dòng bằng với dòng cuối được lấy, theo các cột trong `ORDER BY`. Thêm tiêu chí sắp xếp phụ vào `ORDER BY` thì ít dòng bằng nhau hơn."
       en: "`WITH TIES` adds every row tied with the last row taken, on the `ORDER BY` keys. Adding a tie-breaker to `ORDER BY` leaves fewer ties."
 recap:
   - vi: "`LIMIT` cắt sau khi đã lọc và xếp; luôn đi cùng `ORDER BY`."
     en: "`LIMIT` cuts after filtering and sorting; always pair it with `ORDER BY`."
   - vi: "`OFFSET` = số dòng bỏ qua = (trang − 1) × cỡ trang."
     en: "`OFFSET` = rows skipped = (page − 1) × page size."
-  - vi: "Dòng hòa ở mép cắt: thêm cột phân xử hoặc dùng `WITH TIES`."
+  - vi: "Dòng bằng nhau ở mép cắt: thêm tiêu chí sắp xếp phụ hoặc dùng `WITH TIES`."
     en: "Ties at the cut: add a tie-breaker or use `WITH TIES`."
 sources:
   - https://www.postgresql.org/docs/current/queries-limit.html
@@ -146,7 +146,7 @@ Giám đốc kinh doanh chỉ muốn nhìn "3 món đắt nhất", không phải
 
 `LIMIT n` đứng cuối câu và giữ tối đa n dòng đầu của kết quả. `OFFSET k` bỏ qua k dòng trước khi bắt đầu lấy, dùng để chia trang. Cả hai chạy sau cùng: lọc (`WHERE`), xếp (`ORDER BY`), rồi mới cắt.
 
-Nhiều người nghĩ **`LIMIT 3` là "3 dòng đầu của bảng"**. Bảng không có dòng đầu: không có `ORDER BY`, ba dòng bạn nhận là ba dòng bất kỳ. Và ngay cả khi có `ORDER BY`, nếu dòng thứ 3 hòa điểm với dòng thứ 4, lựa chọn giữa chúng vẫn là may rủi; thêm cột phân xử hoặc `WITH TIES`.
+Nhiều người nghĩ **`LIMIT 3` là "3 dòng đầu của bảng"**. Bảng không có dòng đầu: không có `ORDER BY`, ba dòng bạn nhận là ba dòng bất kỳ. Và ngay cả khi có `ORDER BY`, nếu dòng thứ 3 bằng với dòng thứ 4, lựa chọn giữa chúng vẫn là may rủi; thêm tiêu chí sắp xếp phụ hoặc `WITH TIES`.
 
 Hình cuối mục này là bước cuối của hình thứ tự chạy trong bài `HAVING`: `LIMIT` chạy sau cùng, sau `ORDER BY`.
 
