@@ -3,7 +3,7 @@ id: pattern_match
 title: "LIKE và ILIKE: tìm theo mẫu chữ"
 title_en: "LIKE and ILIKE: search by a text pattern"
 minutes: 20
-verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
+verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 figures: [{ name: sql-like-patterns, at: idea }]
 objectives:
   - vi: Tìm dòng mà một cột chữ bắt đầu, kết thúc hay chứa một đoạn chữ.
