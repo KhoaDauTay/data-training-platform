@@ -10,7 +10,7 @@ const GROUPS = [
   ['tickets', /^ticketSources-/, 110], // ticket markdown, lazy, fetched at boot (src/content.ts): 37 KB after ch1–6, 64 KB after ch7–9, 99 KB after ch10–12 (Plan 4 S7, L40 rule); V22-E (L201): ch1–8 only, frontmatter as JSON
   ['ticketLate', /^ticketLateSources-/, 50], // V22-E (L201): Logistics tickets of chapters 9–12 (src/ticketLateSources.ts), fetched in parallel with `tickets` by loadContent()
   ['lanes', /^laneSources-/, 20], // lane briefs and side tasks (content/lanes/), lazy, fetched at boot beside the tickets (Plan 5)
-  ['en', /^en-.*\.js$/, 20], // EN dictionary, lazy (Plan 5 T3): 11 KB, fetched at boot only when the player's language is EN
+  ['en', /^en-.*\.js$/, 22], // v47 (L914a): 20 -> 22 after S1 (CSDL names) + S3 (goal step) strings; EN dictionary, lazy (Plan 5 T3): 11 KB, fetched at boot only when the player's language is EN
   ['lessons', /^lessonSources-/, 35], // quick lessons (content/lessons.yml), lazy, fetched at boot beside the tickets (Plan 6): 8 KB for 11 lessons; Plan 8a: 38 lessons, ~0.75 KB each
   ['art', /^logistics-/, 20], // Plan 8b D8b-2: Tien Sa scene, route map and completion scenes, lazy (prefetched when idle after the first render): 7 KB, took 6 KB off main
   ['illustrations', /^illustrations-/, 15], // Plan 8b D8b-8: drawn illustrations (learning path, modules, empty states, Finance), lazy, fetched by the first page that shows one
