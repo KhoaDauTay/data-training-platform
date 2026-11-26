@@ -4,6 +4,7 @@ title: "Sửa và xóa dòng: UPDATE, DELETE và điều kiện từ bảng khá
 title_en: "Changing and removing rows: UPDATE, DELETE and conditions from another table"
 minutes: 25
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
+figures: [{ name: sql-update-join, at: idea }]
 objectives:
   - vi: Đổi giá trị bằng `UPDATE … SET … WHERE` và xóa dòng bằng `DELETE … WHERE`.
     en: Change values with `UPDATE … SET … WHERE` and remove rows with `DELETE … WHERE`.

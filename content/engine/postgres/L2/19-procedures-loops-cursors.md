@@ -17,6 +17,7 @@ objectives:
   - vi: Đọc kết quả từng phần bằng cursor, trong PL/pgSQL và bằng `DECLARE ... CURSOR` của SQL.
     en: Read a result piece by piece with a cursor, in PL/pgSQL and with SQL `DECLARE ... CURSOR`.
 requires: [e-pg-l2-18]
+figures: [{ name: pg-loop-continue-exit, at: idea }]
 sources:
   - https://www.postgresql.org/docs/18/sql-createprocedure.html
   - https://www.postgresql.org/docs/18/sql-call.html
@@ -144,6 +145,8 @@ Khối `DO` là đoạn PL/pgSQL chạy một lần, không lưu lại. Bên tro
 Nhiều người nghĩ vòng lặp chạy trong server thì nhanh như một câu SQL. Thật ra mỗi vòng là một câu lệnh riêng: tìm dòng, ghi dòng, cập nhật index từng lần. Một câu theo tập như `INSERT ... SELECT` hay `UPDATE ... WHERE` để planner xử lý mọi dòng trong một lần quét. Chỉ dùng vòng lặp khi mỗi dòng cần một quyết định mà SQL không diễn đạt được.
 
 Cursor đọc một kết quả từng phần thay vì lấy hết một lần. Trong PL/pgSQL: `OPEN`, `FETCH ... INTO`, `CLOSE`. Ở mức SQL: `DECLARE ... CURSOR` rồi `FETCH`, và chỉ chạy được trong `BEGIN ... COMMIT`.
+
+Hình từng bước ở cuối mục này chạy khối `DO` của mục Ví dụ trên sáu đơn, từng dòng một, để thấy chỗ `CONTINUE` và chỗ `EXIT`.
 
 ## Cú pháp
 
@@ -275,6 +278,8 @@ A `DO` block is a piece of PL/pgSQL run once and not stored. Inside it you have 
 Many people think a loop running inside the server is as fast as one SQL statement. In fact each iteration is a separate statement: find the row, write it, update indexes, one at a time. One set-based statement such as `INSERT ... SELECT` or `UPDATE ... WHERE` lets the planner handle every row in one pass. Only use a loop when each row needs a decision SQL cannot express.
 
 A cursor reads a result piece by piece instead of all at once. In PL/pgSQL: `OPEN`, `FETCH ... INTO`, `CLOSE`. In SQL: `DECLARE ... CURSOR` then `FETCH`, and only inside `BEGIN ... COMMIT`.
+
+The step-through figure at the end of this section runs the Example's `DO` block over the six orders, row by row, to show where `CONTINUE` and `EXIT` act.
 
 ## Syntax
 

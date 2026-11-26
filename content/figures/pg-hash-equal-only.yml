@@ -1,0 +1,40 @@
+# B5-5 (v46 Batch 5, L842): a Hash index keeps entries in hash-code order, so it can find one value but not a range.
+# Lesson: e-pg-l2-05 (Ý chính). Data: the lab setup, PGlite (tools/v46-b5/check1.log): hashtext(token) of the six tokens drawn
+# (id 42 = md5('42'), the lab's first step; the five tokens between 'c00' and 'c01'); token = md5('42') → Index Scan using
+# sessions_token_hash; token BETWEEN 'c00' AND 'c01' → Seq Scan, 5 rows. The predict's own range ('a00'..'a01') is not drawn.
+# Deviation: the index really orders by bucket, then by the unsigned 32-bit code; the grid sorts the six signed hashtext()
+# values, which is enough to show that text neighbours land far apart (the sub says "sample"). Sources:
+# https://www.postgresql.org/docs/18/hash-index.html, https://www.postgresql.org/docs/18/indexes-types.html
+title: { vi: "Index Hash chỉ tìm được dấu bằng", en: "A Hash index finds equality only" }
+caption:
+  vi: "Sáu mục mẫu của sessions_token_hash, xếp theo mã băm. Cột chữ là vị trí của token theo thứ tự chữ trong khoảng 'c00' tới 'c01'."
+  en: "Six sample entries of sessions_token_hash, in hash-code order. The order column is the token's place in text order within 'c00' to 'c01'."
+alt:
+  vi: "Index Hash xếp mục theo mã băm của giá trị chứ không theo giá trị, nên một dấu bằng tính ra đúng một mã và nhảy thẳng tới đó. Các giá trị kề nhau theo chữ lại có mã nằm rải khắp index, nên một khoảng không dùng được nó và phải quét cả bảng."
+  en: "A Hash index orders entries by the hash code of the value, not the value, so an equality computes one code and jumps straight to it. Values that are neighbours in text order get codes spread across the index, so a range cannot use it and the whole table is scanned."
+nodes:
+  - { id: q, shape: key, label: "token = md5('42')", sub: { vi: "mã -164201981", en: "code -164201981" }, tone: new }
+  - id: ix
+    shape: grid
+    label: { vi: "index Hash trên token", en: "Hash index on token" }
+    sub: { vi: "mẫu: 6 mục theo mã", en: "sample: 6 entries by code" }
+    head: [{ vi: "mã băm", en: hash code }, token, { vi: "thứ tự chữ", en: text order }]
+    cells: [["-1554959803", "c00f93…", "5"], ["-788876048", "c00193…", "1"], ["-643884566", "c003c8…", "2"], ["-625902848", "c00e30…", "4"], ["-164201981", "a1d0c6…", "–"], ["876945295", "c008c3…", "3"]]
+    cellTone: { "4:0": live, "4:1": live }
+  - { id: res, label: Index Scan, sub: { vi: "đọc 1 dòng", en: "reads 1 row" }, tone: live }
+rows:
+  - [q]
+  - [ix]
+  - [res]
+edges:
+  - { from: q, to: ix }
+  - { from: ix, to: res }
+steps:
+  - say: { vi: "Dấu bằng: một mã, một chỗ trong index.", en: "Equality: one code, one place in the index." }
+    alt: { vi: "Postgres băm md5('42') thành mã -164201981, tìm đúng mục có mã đó và đọc một dòng bằng Index Scan.", en: "Postgres hashes md5('42') into the code -164201981, finds the entry with that code and reads one row with an Index Scan." }
+  - say: { vi: "Khoảng: năm token kề nhau nằm rải khắp index.", en: "A range: five neighbouring tokens lie all over the index." }
+    alt: { vi: "Năm token từ 'c00' tới 'c01' đứng liền nhau theo chữ nhưng mã băm của chúng xen lẫn mục khác, nên Hash không cho một đoạn nào để đọc và planner chọn Seq Scan.", en: "The five tokens from 'c00' to 'c01' are neighbours in text but their hash codes are mixed in with other entries, so Hash offers no stretch to read and the planner picks a Seq Scan." }
+    set:
+      q: { label: "token BETWEEN", sub: "'c00' AND 'c01'", tone: warm }
+      ix: { cellTone: { "0:1": warm, "1:1": warm, "2:1": warm, "3:1": warm, "5:1": warm } }
+      res: { label: Seq Scan, sub: { vi: "đọc 30000, khớp 5", en: "5 of 30000 match" }, tone: dead }

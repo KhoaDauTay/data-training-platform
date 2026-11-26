@@ -15,6 +15,7 @@ objectives:
   - vi: Nhận ra các câu Hash không phục vụ được (khoảng, sắp xếp, tiền tố, unique, nhiều cột) trước khi chọn nó.
     en: Spot the queries Hash cannot serve (ranges, sorting, prefixes, uniqueness, several columns) before choosing it.
 requires: [e-pg-l2-04]
+figures: [{ name: pg-hash-equal-only, at: idea }]
 sources:
   - https://www.postgresql.org/docs/18/indexes-types.html
   - https://www.postgresql.org/docs/18/hash-index.html
@@ -88,6 +89,8 @@ Hash không phục vụ được: khoảng (`<`, `BETWEEN`), `ORDER BY`, tìm th
 
 Nhiều người nghĩ cứ câu nào chọn lọc (khớp ít dòng) thì có index là dùng được. Thật ra index chỉ dùng được khi toán tử của câu nằm trong những gì index hiểu. Câu khoảng khớp 6 dòng vẫn Seq Scan nếu cột chỉ có index Hash; ngay cả `BETWEEN x AND x`, khoảng chỉ chứa một giá trị, cũng vậy.
 
+Hình từng bước ở cuối mục này xếp sáu mục mẫu của index theo mã băm, để thấy vì sao dấu bằng tìm được còn một khoảng thì không.
+
 ## Ví dụ
 
 Câu bằng đi qua index Hash:
@@ -148,6 +151,8 @@ A Hash index hashes each value into a 32-bit code and files entries by that code
 Hash cannot serve: ranges (`<`, `BETWEEN`), `ORDER BY`, prefix search `LIKE 'abc%'`, multicolumn indexes, uniqueness. A B-tree does all of these, and serves `=` very well too. So B-tree remains the sensible default; pick Hash only when you measure it as smaller or faster for one kind of equality query.
 
 Many people think any selective query (matching few rows) can use an index if one exists. In fact an index is usable only when the query's operator is one the index understands. A range matching 6 rows still does a Seq Scan if the column only has a Hash index; so does `BETWEEN x AND x`, a range holding a single value.
+
+The step-through figure at the end of this section lays six sample index entries out in hash-code order, to show why an equality can be found and a range cannot.
 
 ## Example
 

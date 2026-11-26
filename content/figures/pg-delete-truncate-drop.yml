@@ -1,0 +1,43 @@
+# B5-3 (v46 Batch 5, L841): what each of DELETE, TRUNCATE and DROP leaves behind. Lesson: e-pg-l1-14 (Ý chính).
+# Data: the lab setup, PGlite (tools/v46-b5/check1.log): orders 6 rows, 2 cancelled (ids 2 and 5; DELETE … RETURNING gives
+# them), 4 left, both indexes kept; import_rows ids 1–4, TRUNCATE then INSERT → id 5 (RESTART IDENTITY → 1); DROP TABLE
+# old_report → 2BP01 because old_report_view depends on it (CASCADE drops both). Sources:
+# https://www.postgresql.org/docs/18/sql-delete.html, https://www.postgresql.org/docs/18/sql-truncate.html,
+# https://www.postgresql.org/docs/18/sql-droptable.html
+title: { vi: "DELETE, TRUNCATE, DROP: còn lại gì", en: "DELETE, TRUNCATE, DROP: what is left" }
+caption:
+  vi: "Ba bảng của lab, mỗi bảng một lệnh. Bước 1 là trước, bước 2 là sau lệnh."
+  en: "Three of the lab's tables, one command each. Step 1 is before, step 2 after the command."
+alt:
+  vi: "DELETE bỏ từng dòng khớp WHERE, TRUNCATE bỏ mọi dòng một lần nhưng giữ bảng và bộ đếm identity, còn DROP bỏ cả định nghĩa bảng và bị chặn khi còn view dựa vào. Chọn lệnh theo thứ bạn muốn giữ lại."
+  en: "DELETE removes each row its WHERE matches, TRUNCATE removes every row at once but keeps the table and its identity counter, and DROP removes the table's definition too and is refused while a view depends on it. Pick the command by what you want to keep."
+nodes:
+  - { id: c1, shape: key, label: "DELETE … WHERE", sub: { vi: "đơn cancelled", en: "cancelled orders" }, tone: new }
+  - { id: c2, shape: key, label: TRUNCATE, sub: import_rows, tone: new }
+  - { id: c3, shape: key, label: DROP TABLE, sub: old_report, tone: new }
+  - id: o
+    shape: grid
+    label: orders
+    head: [id, status]
+    cells: [["1", paid], ["2", cancelled], ["3", paid], ["4", paid], ["5", cancelled], ["6", paid]]
+  - { id: ir, shape: table, label: import_rows, sub: { vi: "4 dòng, id 1–4", en: "4 rows, ids 1–4" } }
+  - { id: rp, shape: table, label: old_report, sub: { vi: "2 dòng + 1 view", en: "2 rows + 1 view" } }
+rows:
+  - [c1, c2, c3]
+  - [o, ir, rp]
+align: true
+phone:
+  rows: [[c1], [o], [c2], [ir], [c3], [rp]]
+edges:
+  - { from: c1, to: o }
+  - { from: c2, to: ir }
+  - { from: c3, to: rp }
+steps:
+  - say: { vi: "Trước: ba bảng đều có dữ liệu.", en: "Before: all three tables hold data." }
+    alt: { vi: "orders có 6 đơn, 2 đơn bị hủy; import_rows có 4 dòng id 1 tới 4; old_report có 2 dòng và view old_report_view đọc nó.", en: "orders has 6 orders, 2 of them cancelled; import_rows has 4 rows with ids 1 to 4; old_report has 2 rows and the view old_report_view reads it." }
+  - say: { vi: "Sau: mỗi lệnh bỏ một phần khác nhau.", en: "After: each command removes a different part." }
+    alt: { vi: "DELETE bỏ hai đơn bị hủy và trả chúng bằng RETURNING, TRUNCATE làm rỗng import_rows nhưng dòng mới vẫn nhận id 5, còn DROP bị từ chối với mã 2BP01 vì view còn dựa vào bảng.", en: "DELETE removes the two cancelled orders and returns them with RETURNING, TRUNCATE empties import_rows but a new row still gets id 5, and DROP is refused with code 2BP01 because the view still depends on the table." }
+    set:
+      o: { label: { vi: "orders: còn 4", en: "orders: 4 left" }, rowTone: [null, ghost, null, null, ghost, null], cells: [["1", paid], ["2", { vi: "(đã xóa)", en: "(deleted)" }], ["3", paid], ["4", paid], ["5", { vi: "(đã xóa)", en: "(deleted)" }], ["6", paid]] }
+      ir: { sub: { vi: "0 dòng, id kế: 5", en: "0 rows, next id: 5" }, tone: warm }
+      rp: { sub: { vi: "2BP01: còn view", en: "2BP01: a view" }, tone: dead }

@@ -16,6 +16,7 @@ objectives:
   - vi: Chọn đúng việc cần làm khi `age(datfrozenxid)` tăng mãi
     en: Choose the right action when `age(datfrozenxid)` keeps growing
 requires: [e-pg-l3-10]
+figures: [{ name: pg-xid-wraparound, at: idea }]
 sources:
   - https://www.postgresql.org/docs/18/routine-vacuuming.html
   - https://www.postgresql.org/docs/18/runtime-config-vacuum.html
@@ -69,6 +70,8 @@ Mỗi bảng có `relfrozenxid`, mỗi database có `datfrozenxid`: mốc mà m�
 Nếu không ai freeze được: khi XID cũ nhất còn cách điểm quay vòng 40 triệu, log ghi cảnh báo kèm số transaction còn lại. Khi còn dưới 3 triệu, Postgres từ chối cấp XID mới, nghĩa là mọi lệnh ghi bị từ chối, cho tới khi cả database được VACUUM.
 
 Nhiều người nghĩ autovacuum chạy dày hơn là đủ để tuổi giảm. Thật ra VACUUM chỉ freeze được tuple mà không transaction nào còn cần. Một phiên "idle in transaction" mở cả ngày, hay một prepared transaction bị quên, giữ mốc xmin đứng yên, và mọi lần VACUUM đều bị nó chặn. Phải tìm và kết thúc thủ phạm trước.
+
+Hình từng bước ở cuối mục này đặt các mốc trên cùng một thước tuổi XID, theo giá trị mặc định trong tài liệu.
 
 ## Ví dụ
 
@@ -135,6 +138,8 @@ Every table has a `relfrozenxid` and every database a `datfrozenxid`: the horizo
 If nobody manages to freeze: once the oldest XID is 40 million transactions from the wraparound point, the log warns with the number of transactions left. Under 3 million left, Postgres refuses to assign new XIDs, meaning every write is refused, until the whole database is vacuumed.
 
 Many people think running autovacuum more often is enough to bring the age down. In fact VACUUM can only freeze tuples no transaction still needs. An "idle in transaction" session left open all day, or a forgotten prepared transaction, pins the xmin horizon, and every VACUUM is held back by it. Find and end the culprit first.
+
+The step-through figure at the end of this section puts these marks on one XID age ruler, with the defaults from the documentation.
 
 ## Example
 

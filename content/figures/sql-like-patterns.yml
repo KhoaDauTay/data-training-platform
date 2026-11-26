@@ -1,0 +1,30 @@
+# v46 (L866): LIKE matches a pattern; % = any run of characters, _ = exactly one. Lessons: pattern_match (Ý chính) + its quick lesson.
+# Data (lab, checked in PGlite 2026-11-26), products by id: name LIKE '%water%' is true for Mineral water 1.5l and Coconut water
+# only; name LIKE '_o%' is true for Coconut water, Potato chips, Toothpaste, Toothbrush, Notebook A5. Six names shown.
+# A ✓ is the word "khớp/match" in the caption, never colour alone.
+# Source: https://www.postgresql.org/docs/current/functions-matching.html#FUNCTIONS-LIKE
+title: { vi: "LIKE so tên với một mẫu", en: "LIKE checks a name against a pattern" }
+caption:
+  vi: "✓ = khớp mẫu. '%water%': chứa water ở bất kỳ đâu. '_o%': một ký tự bất kỳ, rồi chữ o, rồi gì cũng được."
+  en: "✓ = matches. '%water%': water anywhere. '_o%': any one character, then the letter o, then anything."
+alt:
+  vi: "LIKE giữ dòng mà cả chuỗi khớp mẫu: % thay cho bất kỳ chuỗi nào, kể cả rỗng, còn _ thay cho đúng một ký tự. Vì vậy Coconut water khớp cả hai mẫu, còn Chocolate bar không khớp mẫu nào: tên không chứa water, và ký tự thứ hai là h chứ không phải o."
+  en: "LIKE keeps a row when the whole string fits the pattern: % stands for any run of characters, even none, and _ for exactly one character. So Coconut water fits both patterns, while Chocolate bar fits neither: its name has no water, and its second character is h, not o."
+nodes:
+  - { id: pct, shape: key, mono: true, label: "%", sub: { vi: "bất kỳ chuỗi nào", en: "any run of chars" } }
+  - { id: one, shape: key, mono: true, label: "_", sub: { vi: "đúng một ký tự", en: "exactly one char" } }
+  - id: p
+    shape: grid
+    label: products
+    head: [name, "'%water%'", "'_o%'"]
+    cells:
+      - [Mineral water 1.5l, "✓", ""]
+      - [Coconut water, "✓", "✓"]
+      - [Potato chips, "", "✓"]
+      - [Notebook A5, "", "✓"]
+      - [Chocolate bar, "", ""]
+      - [Green tea 500ml, "", ""]
+    cellTone: { "0:1": new, "1:1": new, "1:2": new, "2:2": new, "3:2": new }
+rows:
+  - [pct, one]
+  - [p]

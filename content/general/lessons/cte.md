@@ -4,6 +4,7 @@ title: "CTE (WITH): đặt tên cho một bước trung gian"
 title_en: "CTEs (WITH): name an intermediate step"
 minutes: 25
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
+figures: [{ name: sql-cte-steps, at: idea }]
 objectives:
   - vi: Tách một câu dài thành bước có tên bằng `WITH tên AS (…)`.
     en: Split a long query into named steps with `WITH name AS (…)`.

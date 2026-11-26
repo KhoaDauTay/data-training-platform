@@ -5,6 +5,7 @@ level: L5
 module: global-ops
 title: "Cách ly và chi phí theo khách: bảng chung hay bảng riêng"
 title_en: "Isolation and cost per tenant: a shared table or a table each"
+figures: [{ name: dy-tenant-isolation, at: idea }]
 kind: concept
 runtime: docs
 docs_why: server
@@ -72,6 +73,8 @@ Một khách lớn của cổng Cargo Query hỏi hai câu: "Ai khác đọc đ�
 **Chi phí**: tag chi phí gắn theo bảng (GSI theo tag của bảng), nên bảng chung chỉ có một dòng trên hóa đơn. Muốn chi phí từng khách, ứng dụng cộng `ConsumedCapacity` của mỗi request vào mã khách. Bảng riêng thì tag mã khách lên bảng.
 
 Bài này cần IAM và hóa đơn AWS thật, dynoxide không có; hai Query ví dụ chạy được.
+
+Hình dưới vẽ Query của C02 chỉ chạm item của C02, Scan bị cấm, và RCU cộng theo khách.
 
 ## Cú pháp
 
@@ -196,6 +199,8 @@ A big tenant of the Cargo Query portal asks two questions: "Can anyone else read
 **Cost**: cost tags attach per table (GSIs take the table's tags), so a shared table is one line on the bill. For each tenant's cost, the application adds each request's `ConsumedCapacity` to the tenant id. With a table each, tag the table with the tenant id.
 
 This lesson needs real IAM and a real AWS bill, which dynoxide does not have; the two example Queries do run.
+
+The figure below draws C02's Query touching only C02's items, Scan denied, and RCU summed per tenant.
 
 ## Syntax
 

@@ -17,6 +17,7 @@ objectives:
   - vi: Chọn hành vi khi xóa dòng cha (`ON DELETE CASCADE` hay chặn) và đọc ràng buộc từ `pg_constraint`.
     en: Choose what happens when a parent row is deleted (`ON DELETE CASCADE` or block) and read constraints from `pg_constraint`.
 requires: [e-pg-l1-03]
+figures: [{ name: pg-constraint-gates, at: idea }]
 sources:
   - https://www.postgresql.org/docs/18/ddl-constraints.html
   - https://www.postgresql.org/docs/18/sql-altertable.html
@@ -101,6 +102,8 @@ Nhiều người nghĩ `CHECK (qty > 0)` chặn luôn NULL. Thật ra `CHECK` ch
 Khóa ngoại còn quyết định chuyện gì xảy ra khi xóa dòng cha. Mặc định Postgres chặn việc xóa khi còn dòng con; `ON DELETE CASCADE` xóa luôn các dòng con; `ON DELETE SET NULL` để trống cột tham chiếu. Chọn theo nghĩa nghiệp vụ: xóa giỏ hàng thì xóa món trong giỏ, nhưng xóa khách thì không nên xóa hóa đơn.
 
 `ALTER TABLE ... ADD CONSTRAINT` kiểm mọi dòng đang có; một dòng vi phạm là cả lệnh thất bại. Với `CHECK` và khóa ngoại có thể thêm `NOT VALID` để bỏ qua dòng cũ, sửa dữ liệu, rồi chạy `VALIDATE CONSTRAINT`. Ràng buộc nằm trong catalog `pg_constraint`: `contype` là `c` (check), `f` (khóa ngoại), `p` (khóa chính), `u` (unique), và từ Postgres 18 có thêm `n` cho mỗi `NOT NULL`.
+
+Hình từng bước ở cuối mục này cho ba dòng đi qua các ràng buộc của bảng `stock`, kể cả dòng NULL lọt qua `CHECK`.
 
 ## Cú pháp
 
@@ -227,6 +230,8 @@ Many people think `CHECK (qty > 0)` also blocks NULL. In fact `CHECK` only rejec
 A foreign key also decides what happens when a parent row is deleted. By default Postgres blocks the delete while child rows exist; `ON DELETE CASCADE` deletes the child rows too; `ON DELETE SET NULL` empties the referencing column. Choose by business meaning: deleting a cart may delete its items, but deleting a customer should not delete their invoices.
 
 `ALTER TABLE ... ADD CONSTRAINT` checks every existing row; one violating row makes the whole command fail. For `CHECK` and foreign keys you can add `NOT VALID` to skip the old rows, fix the data, then run `VALIDATE CONSTRAINT`. Constraints live in the catalog `pg_constraint`: `contype` is `c` (check), `f` (foreign key), `p` (primary key), `u` (unique), and since Postgres 18 also `n` for each `NOT NULL`.
+
+The step-through figure at the end of this section sends three rows through the constraints of table `stock`, including the NULL row that slips past `CHECK`.
 
 ## Syntax
 

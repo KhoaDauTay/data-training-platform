@@ -1,0 +1,40 @@
+# DY-B6-1 (v46 Batch 6, L850–L859): only the key is schema; each item carries its own attributes. Lesson: e-dy-l1-01 (Ý chính).
+# Data (demo_setup, run on dynoxide): Books(isbn) 978-0-04 title Query Not Scan, price 88000, tags [nosql, perf];
+# 978-0-05 title Indexes by Hand, price 132000 (no tags); PutItem 978-0-06 title Small Items Fast, pages 212 → ok, 1 WCU.
+# Source: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.CoreComponents.html
+title: { vi: "Bảng chỉ khai khóa, item tự mang thuộc tính", en: "The table declares a key, items bring the rest" }
+caption:
+  vi: "Bảng Books chỉ khai khóa chính isbn. Ba item trong cùng bảng có bộ thuộc tính khác nhau: 978-0-05 không có tags, 978-0-06 mang pages mà không cần lệnh nào như ALTER TABLE. Ô tô màu là thuộc tính khóa, item nào cũng phải có."
+  en: "The Books table declares only the primary key isbn. Three items in one table carry different attributes: 978-0-05 has no tags, 978-0-06 brings pages with no command like ALTER TABLE. A tinted cell is the key attribute, which every item must have."
+alt:
+  vi: "Bảng DynamoDB không có cột: phần schema duy nhất là khóa chính, mọi thuộc tính khác do từng item tự mang. Thuộc tính vắng mặt thì đơn giản là không có trong item, không phải một ô rỗng."
+  en: "A DynamoDB table has no columns: the only schema is the primary key, and every other attribute is carried by each item. A missing attribute is simply not in the item, not an empty cell."
+groups:
+  - { id: tb, label: { vi: "bảng Books", en: "table Books" }, nodes: [b4, b5, b6] }
+nodes:
+  - { id: pk, shape: key, label: { vi: "khóa chính: isbn", en: "primary key: isbn" }, sub: { vi: "schema duy nhất", en: "the only schema" }, tone: ptr }
+  - id: b4
+    shape: grid
+    label: 978-0-04
+    head: [{ vi: "thuộc tính", en: attribute }, { vi: "giá trị", en: value }]
+    cells: [[isbn, 978-0-04], [title, Query Not Scan], [price, "88000"], [tags, "nosql, perf"]]
+    cellTone: { "0:0": ptr, "0:1": ptr }
+  - id: b5
+    shape: grid
+    label: 978-0-05
+    head: [{ vi: "thuộc tính", en: attribute }, { vi: "giá trị", en: value }]
+    cells: [[isbn, 978-0-05], [title, Indexes by Hand], [price, "132000"]]
+    cellTone: { "0:0": ptr, "0:1": ptr }
+    sub: { vi: "không có tags", en: "no tags" }
+  - id: b6
+    shape: grid
+    label: 978-0-06
+    head: [{ vi: "thuộc tính", en: attribute }, { vi: "giá trị", en: value }]
+    cells: [[isbn, 978-0-06], [title, Small Items Fast], [pages, "212"]]
+    cellTone: { "0:0": ptr, "0:1": ptr, "2:0": new, "2:1": new }
+    sub: { vi: "pages: thuộc tính mới", en: "pages: a new attribute" }
+rows:
+  - [pk]
+  - [b4, b5, b6]
+edges:
+  - { from: pk, to: tb }

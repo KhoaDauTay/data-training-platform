@@ -4,6 +4,7 @@ import {
   type BpCard, type BpMeta, type CardSource, type Habits, type Pair, type Side, type Track, type TrackId, type Verdict,
 } from '../engine/best';
 import type { Question } from '../engine/content';
+import { figureSlot } from '../engine/figureSlot';
 import type { PgLabClient } from '../engine/pglab/client';
 import type * as I18n from '../i18n';
 import { bestText, type BestKey } from '../i18n/best';
@@ -95,6 +96,10 @@ function prose(text: string): HTMLElement {
   return d.h('div', { class: 'flex flex-col gap-3' }, ...out);
 }
 const section = (id: keyof typeof BP_SECTIONS, c: BpCard): string | undefined => c.sections.find((s) => s.id === id)?.text[lang()];
+/** v44 B4 (P1, L812): the card's figures for section `at` (figureSlot, the same lazy engineFigure chunk as Engine lessons). */
+const FIG_TRACK: Record<TrackId, string> = { sql: 'sql', postgres: 'pg', mongodb: 'mg', dynamodb: 'dy' };
+const figs = (c: BpCard, at: keyof typeof BP_SECTIONS): HTMLElement[] =>
+  (c.figures ?? []).filter((f) => f.at === at).map((f) => figureSlot(`${c.id}|${f.name}|${at}`, f, d.viz, FIG_TRACK[c.track]));
 const pill = (cls: string, ...kids: (Node | string | null)[]): HTMLElement => d.h('span', { class: d.cls.cx(d.cls.PILL, cls) }, ...kids);
 const linkBtn = (href: string, text: string, main = false): HTMLElement =>
   d.h('a', { href, class: d.cls.cx(main ? d.cls.BTN_SECONDARY : d.cls.BTN_GHOST, 'shrink-0 px-4 py-1.5 whitespace-nowrap no-underline') }, text);
@@ -447,8 +452,9 @@ function cardPage(c: BpCard): HTMLElement {
     h('section', { class: 'flex flex-col gap-2 rounded-(--r-card) border-l-4 border-accent bg-panel p-5 ring-1 ring-line max-sm:p-4', 'aria-labelledby': 'bp-rule-h' },
       h('h2', { id: 'bp-rule-h', class: 'm-0 text-caption font-bold tracking-wider text-muted uppercase' }, bt('rule')),
       h('div', { class: 'text-body' }, prose(section('idea', c) ?? ''))),
+    ...figs(c, 'idea'), // under the rule box, not in it: its padding would leave < 280 px at 320
     h('section', { class: 'flex flex-col gap-3', 'aria-labelledby': 'bp-why' },
-      h('h2', { id: 'bp-why', class: 'm-0 text-title font-bold' }, bt('why')), prose(section('why', c) ?? '')),
+      h('h2', { id: 'bp-why', class: 'm-0 text-title font-bold' }, bt('why')), prose(section('why', c) ?? ''), ...figs(c, 'why')),
     h('section', { class: 'flex flex-col gap-4', 'aria-label': `${bt('bad')} / ${bt('good')}` },
       h('div', { class: 'grid gap-4 md:grid-cols-2' }, pane(c, 'bad', res?.bad), pane(c, 'good', res?.good)),
       p.runtime === 'none' ? h('p', { class: 'm-0 rounded-(--r-inset) bg-surface-2 p-3 text-body-sm text-muted', 'data-runtime': 'none' }, bt('run.none'))
@@ -460,7 +466,7 @@ function cardPage(c: BpCard): HTMLElement {
         role: 'status', 'data-verdict': res ? (res.v.ok ? res.v.kind : 'odd') : false,
         class: cls.cx('m-0 rounded-(--r-inset) text-body-sm text-ink', res && 'px-4 py-3 font-semibold ring-1', res && (!res.v.ok || res.v.kind === 'diff' || res.v.kind === 'error' ? 'bg-warn-soft ring-warn-line' : 'bg-good-soft ring-good-line')),
       }, res ? conclusion(c, res.bad, res.good, res.v) : typeof v.run === 'object' && 'error' in v.run ? v.run.error : '')),
-    example ? h('section', { class: 'flex flex-col gap-3', 'aria-labelledby': 'bp-ex' }, h('h2', { id: 'bp-ex', class: 'm-0 text-title font-bold' }, bt('example')), prose(example)) : null,
+    example ? h('section', { class: 'flex flex-col gap-3', 'aria-labelledby': 'bp-ex' }, h('h2', { id: 'bp-ex', class: 'm-0 text-title font-bold' }, bt('example')), prose(example), ...figs(c, 'example')) : null,
     h('section', { class: cls.cx(cls.CARD, 'flex flex-col gap-4 p-5 max-sm:p-4'), 'aria-labelledby': 'bp-quiz' },
       h('h2', { id: 'bp-quiz', class: 'm-0 flex items-center gap-2 text-title font-bold' }, d.icon('kindQuiz', 'size-5 text-accent'), bt('quiz.title')),
       h('div', { class: 'divide-y divide-line [&>*]:py-4 [&>*:first-child]:pt-0 [&>*:last-child]:pb-0' },

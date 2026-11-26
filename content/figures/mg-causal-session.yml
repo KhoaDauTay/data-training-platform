@@ -1,0 +1,51 @@
+# B4-3 (tools/v42/diagram-plan-v42.md): a session waits for the node to catch up before reading. Lessons: e-mg-l4-08 (Ý chính),
+# variant `nosession` (frame 1 alone) in e-mg-l4-11 (Ý chính).
+# Data (quoted from e-mg-l4-08's example, docs-only: no replica set in the browser): updateOne({ _id: 1 }, { $set: { city: "Hue" } })
+# with w: majority, then find({ _id: 1 }) with readConcern majority and readPref secondary; without a session the read may return
+# the old city, in the session it carries afterClusterTime and returns Hue, maybe after a wait.
+# Deviation: the plan's wait note is the read cell itself (Hue, after a wait), so nothing floats under the grid.
+# Source: https://www.mongodb.com/docs/manual/core/causal-consistency-read-write-concerns/
+title: { vi: "Session nhân quả: đọc được điều mình vừa ghi", en: "A causal session: read your own write" }
+caption:
+  vi: "Ghi city = Hue với w: majority, rồi đọc lại từ secondary. Ngoài session, secondary có thể chưa áp lần ghi; trong session, lần đọc mang afterClusterTime và node chờ tới mốc đó."
+  en: "Write city = Hue with w: majority, then read it back from a secondary. Outside a session the secondary may not have applied the write; in a session the read carries afterClusterTime and the node waits until then."
+alt:
+  vi: "Session nhất quán nhân quả bảo đảm đọc được điều mình vừa ghi, kể cả từ secondary, bằng cách chờ node tới mốc thời gian của lần ghi. Bảo đảm chỉ có với write và read concern majority."
+  en: "A causally consistent session guarantees reading your own write, even from a secondary, by waiting for the node to reach the write's time. The guarantee holds only with majority write and read concerns."
+nodes:
+  - { id: t, shape: key, mono: true, label: afterClusterTime, tone: live }
+  - id: tl
+    shape: grid
+    label: { vi: "đọc lại sau một lần ghi", en: "reading back after a write" }
+    head: [{ vi: "bước", en: step }, primary, secondary]
+    cells:
+      - [{ vi: "ghi", en: write }, city = Hue, { vi: "chưa có", en: not yet }]
+      - [{ vi: "đọc", en: read }, "–", { vi: "cũ", en: old }]
+    cellTone: { "1:2": dead }
+rows:
+  - [t]
+  - [tl]
+edges:
+  - { from: t, to: tl, label: { vi: "lần đọc mang", en: the read carries } }
+steps:
+  - say: { vi: "Không session: secondary có thể chưa thấy lần ghi.", en: "No session: the secondary may not have the write." }
+    show: [tl]
+    alt: { vi: "Secondary áp oplog không đồng bộ, nên đọc ngay sau ghi có thể trả bản cũ.", en: "Secondaries apply the oplog asynchronously, so a read right after the write can return the old value." }
+  - say: { vi: "Trong session nhân quả, lần đọc mang mốc thời gian.", en: "In a causal session the read carries a time." }
+    alt: { vi: "Driver đặt afterClusterTime của lần ghi, nên node chỉ trả lời khi đã có lần ghi đó.", en: "The driver sets afterClusterTime from the write, so the node answers only once it has that write." }
+    set:
+      tl:
+        cells:
+          - [{ vi: "ghi", en: write }, city = Hue, { vi: "chưa có", en: not yet }]
+          - [{ vi: "đọc", en: read }, "–", { vi: "Hue, sau khi chờ", en: "Hue, after a wait" }]
+        cellTone: { "1:2": live }
+variants:
+  nosession:
+    step: 0
+    title: { vi: "Đọc secondary ngoài session", en: "Reading a secondary outside a session" }
+    caption:
+      vi: "Ghi city = Hue với w: majority, rồi đọc ngay từ secondary, không session. Secondary có thể chưa áp lần ghi nên trả city cũ."
+      en: "Write city = Hue with w: majority, then read from a secondary at once, with no session. The secondary may not have applied the write yet, so it returns the old city."
+    alt:
+      vi: "w: majority xác nhận khi đa số đã ghi bền mục oplog, còn secondary áp thay đổi sau đó, không đồng bộ. Nên đọc secondary ngay sau xác nhận, ngoài session nhân quả, có thể thấy bản cũ."
+      en: "w: majority acknowledges once a majority has made the oplog entry durable, and secondaries apply the change later, asynchronously. So reading a secondary right after the acknowledgement, outside a causal session, can see the old value."

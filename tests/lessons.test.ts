@@ -49,6 +49,17 @@ describe('parseLessons, cueIn, pref bài học', () => {
     expect(() => parseLessons(ENTRY.replace('en: "notes"', 'en: ""'))).toThrow(/explain/);
   });
 
+  it('v46 (L860): figure: { name, variant?, step? } đọc thành FigRef ở mục Ý chính; tên, variant hay step hỏng thì báo lỗi', () => {
+    expect(parseLessons(ENTRY)[0].figure).toBeUndefined();
+    const fig = (f: string) => parseLessons(ENTRY.replace('- id: where\n', `- id: where\n  figure: ${f}\n`));
+    expect(fig('{ name: sql-rows-columns, variant: rows }')[0].figure).toEqual({ name: 'sql-rows-columns', at: 'concept', variant: 'rows' });
+    expect(fig('{ name: sql-clause-order, step: 2 }')[0].figure).toEqual({ name: 'sql-clause-order', at: 'concept', step: 2 });
+    expect(() => fig('{ name: "Bad Name" }')).toThrow(/figure.name/);
+    expect(() => fig('[sql-x]')).toThrow(/figure cần/);
+    expect(() => fig('{ name: sql-x, variant: 3 }')).toThrow(/figure.variant/);
+    expect(() => fig('{ name: sql-x, step: -1 }')).toThrow(/figure.step/);
+  });
+
   it('cueIn: các đoạn giữa "…" theo thứ tự, trong cùng một câu, không phân biệt hoa thường', () => {
     expect(cueIn('từ ngày … đến …', 'Lấy lô từ ngày 01/07 đến hết 30/09.')).toBe(true);
     expect(cueIn('từ ngày … đến …', 'Đến cuối tháng. Từ ngày 01/07.')).toBe(false);

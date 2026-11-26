@@ -1,0 +1,50 @@
+# B5-6 (v46 Batch 5, L842): SP-GiST splits space into parts that do not overlap, so a small box visits one branch per level.
+# Lesson: e-pg-l2-07 (Ý chính). Data: the lab setup (setseed 0.5, 30000 points in 1000 × 1000), PGlite (tools/v46-b5/check1.log,
+# check2.log): quadrant counts at x = 500, y = 500: x<500,y≥500 7452 · x≥500,y≥500 7493 · x<500,y<500 7570 · x≥500,y<500 7485;
+# inside x≥500,y<500 at 750 / 250: 1905 · 1883 / 1841 · 1856; box (700,200)–(720,220): 11 shops, Bitmap Index Scan on
+# shops_loc_spgist. The predict's own box (100,100)–(120,120) is not drawn. Deviation: quad_point_ops picks its centre from the
+# data (a median), so the real split lines are near, not exactly at, the middle; the counts are for the middle lines drawn.
+# Sources: https://www.postgresql.org/docs/18/spgist.html, https://www.postgresql.org/docs/18/spgist-builtin-opclasses.html
+title: { vi: "SP-GiST chia mặt phẳng thành ô không chồng nhau", en: "SP-GiST splits the plane into parts that never overlap" }
+caption:
+  vi: "30000 cửa hàng của lab trên ô 1000 × 1000, mỗi ô ghi số cửa hàng trong nó. Đường chia vẽ ở giữa cho dễ đọc; cây thật chọn tâm theo dữ liệu."
+  en: "The lab's 30000 shops on a 1000 × 1000 square, each part showing how many shops it holds. The split lines are drawn at the middle for reading; the real tree picks its centre from the data."
+alt:
+  vi: "Mỗi nút của cây SP-GiST chia vùng của nó thành bốn phần không chồng nhau, nên mỗi điểm thuộc đúng một nhánh. Một hộp nhỏ chỉ rơi vào một phần ở mỗi tầng, nên index đi xuống một nhánh thay vì đọc 30000 điểm."
+  en: "Each node of an SP-GiST tree splits its area into four parts that never overlap, so every point belongs to exactly one branch. A small box falls into one part at each level, so the index walks down one branch instead of reading 30000 points."
+nodes:
+  - { id: q, shape: key, label: { vi: "hộp (700,200)", en: "box (700,200)" }, sub: { vi: "tới (720,220)", en: "to (720,220)" }, tone: new }
+  - id: l1
+    shape: grid
+    label: { vi: "gốc: 1000 × 1000", en: "root: 1000 × 1000" }
+    head: [{ vi: "vùng", en: area }, "x < 500", "x ≥ 500"]
+    cells: [["y ≥ 500", "7452", "7493"], ["y < 500", "7570", "7485"]]
+    cellTone: { "1:2": warm }
+  - id: l2
+    shape: grid
+    label: { vi: "nhánh x ≥ 500, y < 500", en: "branch x ≥ 500, y < 500" }
+    head: [{ vi: "vùng", en: area }, "x < 750", "x ≥ 750"]
+    cells: [["y ≥ 250", "1905", "1883"], ["y < 250", "1841", "1856"]]
+    cellTone: { "1:1": warm }
+  - { id: res, label: Bitmap Index Scan, sub: { vi: "11 cửa hàng", en: "11 shops" }, tone: live }
+rows:
+  - [q, l1]
+  - [res, l2]
+phone:
+  rows: [[q], [l1], [l2], [res]]
+edges:
+  - { from: q, to: l1 }
+  - { from: l1, to: l2, label: { vi: "1 trong 4", en: "1 of 4" } }
+  - { from: l2, to: res }
+steps:
+  - say: { vi: "Tầng gốc: hộp nằm trọn trong một phần tư.", en: "Root level: the box lies inside one quarter." }
+    alt: { vi: "Hộp từ (700,200) tới (720,220) nằm trong phần x ≥ 500, y < 500, nên ba phần còn lại với khoảng 22500 cửa hàng bị bỏ qua.", en: "The box from (700,200) to (720,220) lies in the part x ≥ 500, y < 500, so the other three parts, about 22500 shops, are skipped." }
+    set:
+      l2: { tone: ghost, cellTone: {} }
+      res: { tone: ghost, sub: { vi: "chưa tới", en: "not yet" } }
+  - say: { vi: "Tầng sau: lại chia bốn, lại chỉ một phần.", en: "Next level: four again, one again." }
+    alt: { vi: "Phần đó lại chia làm bốn và hộp chỉ rơi vào phần x < 750, y < 250 với 1841 cửa hàng, nên cây tiếp tục xuống đúng một nhánh.", en: "That part splits into four again and the box falls only into x < 750, y < 250 with 1841 shops, so the tree keeps going down a single branch." }
+    set:
+      res: { tone: ghost, sub: { vi: "chưa tới", en: "not yet" } }
+  - say: { vi: "Đáy cây: 11 cửa hàng, không quét cả bảng.", en: "At the bottom: 11 shops, no full scan." }
+    alt: { vi: "Ở các tầng dưới cùng, index trả 11 cửa hàng nằm trong hộp qua Bitmap Index Scan trên shops_loc_spgist.", en: "At the lowest levels the index returns the 11 shops inside the box through a Bitmap Index Scan on shops_loc_spgist." }

@@ -53,6 +53,8 @@ export interface FigSpec {
   phone?: { rows: string[][] };
   /** P5: `set`/`show` change the static figure; `step: i` draws step i alone, static; `title`/`caption`/`alt` replace the spec's */
   variants?: Record<string, { set?: Patch; show?: string[]; step?: number; title?: Bi; caption?: Bi; alt?: Bi }>;
+  /** B4 eye X4 (L822): the step (1-based) whose grids and bars the data tables list; default: the last frame showing each */
+  data_step?: number;
 }
 export interface FigRef { name: string; at: string; variant?: string; step?: number }
 
@@ -410,24 +412,24 @@ export function layout(spec0: FigSpec, lang: Lang, W: number, variant?: string):
       if (r.lab && pe.label) shapes.push({ k: `${k}.l`, t: 't', x: r.lab.x, y: r.lab.y, s: tr(pe.label, lang), size: SS, a: r.lab.a, ink: 'muted' });
     });
     for (const n of p.nodes) if (p.show.has(n.id)) shapes.push(...draw(n, at.get(n.id)!, lang, wide, parentOf.get(n.id)));
-    shapes.push(...placeholders(p, ps.slice(fi + 1), at, parentOf));
+    shapes.push(...previews(p, ps.slice(fi + 1), at, parentOf, lang, wide));
     return { say: p.say, nodes: shapes };
   });
   return { title: tr(variantOf(spec, variant)?.title ?? spec.title, lang), w: W, h: H, frames, maxW: 640 };
 }
 
-/** v44 (L801, eye E3): every frame keeps the figure's full height (the page never jumps between steps), so the slot of a node a
- * later step shows is drawn as a faint dashed outline: the room reads as "more to come", not as a broken figure. A slot that a
- * shown node covers (alternates sharing one place) gets none. */
-function placeholders(p: Plan, later: Plan[], at: Map<string, Rect>, parentOf: Map<string, string>): Shape[] {
+/** v44 (L801; B4 eye X2, L820): every frame keeps the figure's full height (the page never jumps between steps), and a node a
+ * later step shows is drawn in that later version, faded (opacity PREVIEW, aria-hidden, `data-preview` for the checker), so step 1
+ * reads as "this is coming", not as empty dashed boxes. A slot that a shown node covers (alternates sharing one place) gets none. */
+export const PREVIEW = 0.28;
+function previews(p: Plan, later: Plan[], at: Map<string, Rect>, parentOf: Map<string, string>, lang: Lang, wide: boolean): Shape[] {
   const shown = p.nodes.filter((n) => p.show.has(n.id)).map((n) => at.get(n.id)!);
   const clear = (r: Rect): boolean => shown.every((s) => r.x + r.w + 8 <= s.x || s.x + s.w + 8 <= r.x || r.y + r.h + 8 <= s.y || s.y + s.h + 8 <= r.y);
-  return p.nodes.filter((n) => !p.show.has(n.id) && later.some((q) => q.show.has(n.id)) && clear(at.get(n.id)!)).map((n) => {
-    const r = at.get(n.id)!, g = parentOf.get(n.id);
-    return { k: `ph:${n.id}`, t: 'r', x: r.x, y: r.y, w: r.w, h: r.h, tone: 'ghost', rx: 8, o: 0.5, ...(g ? { attrs: { 'data-parent': g } } : {}) } as Shape;
+  return p.nodes.filter((n) => !p.show.has(n.id) && later.some((q) => q.show.has(n.id)) && clear(at.get(n.id)!)).flatMap((n) => {
+    const v = later.find((q) => q.show.has(n.id))!.nodes.find((m) => m.id === n.id)!;
+    return draw(v, at.get(n.id)!, lang, wide, parentOf.get(n.id)).map((s) => ({ ...s, k: `pv:${s.k}`, o: PREVIEW, attrs: { ...s.attrs, 'aria-hidden': 'true', 'data-preview': '' } }) as Shape);
   });
 }
-
 // ── v40 layout pieces (L632–L637): rows and groups, side lanes, elbow labels ───────────────────────────────────────
 const GPAD = 10, GBAND = 20, GAP_ELBOW = 64;
 /** Node id → its group's key (`g:<id>`); a group must hold whole author rows, consecutive. */
@@ -806,7 +808,8 @@ function draw(n: FigNode, r: Rect, lang: Lang, wide = false, parent?: string): S
       const s = tr(it.note, lang) || String(it.value);
       out.push({ k: `${k}.l${i}`, t: 't', x: bx - 8, y: cy, s: tr(it.label, lang), size: SS, a: 'e', ink: 'ink' },
         { k: `${k}:b${i}`, t: 'r', x: bx, y: cy - 7, w: it.value * unit, h: 14, tone: it.tone ?? n.tone ?? 'new', rx: 3 },
-        { k: `${k}.v${i}`, t: 't', x: bx + Math.max(it.value, n.mark ?? 0) * unit + 8, y: cy, s, size: SS, ink: 'ink' });
+        // B4 eye X5 (L823): the value sits right after its own bar; only a value that would cross the mark line goes past it
+        { k: `${k}.v${i}`, t: 't', x: bx + (n.mark === undefined || it.value * unit + 8 + textWidth(s, SS) + 6 < n.mark * unit ? it.value : Math.max(it.value, n.mark)) * unit + 8, y: cy, s, size: SS, ink: 'ink' });
     });
     if (n.mark !== undefined) out.push({ k: `${k}.m`, t: 'l', x1: bx + n.mark * unit, y1: y + 1, x2: bx + n.mark * unit, y2: y + its.length * BAR_H - 1, ink: 'warm', w: 1.5, dash: true });
     y += its.length * BAR_H;
@@ -832,11 +835,12 @@ export function altText(spec: FigSpec, lang: Lang, variant?: string): string[] {
  * cells (a stepped figure that fills cells in gives its end state); a column blank in its header and every row is dropped. */
 export function altTables(spec: FigSpec, lang: Lang, variant?: string): FigTable[] {
   const ps = plans(spec, lang, variant);
-  // v44 (L802, eye E2): a variant reads only the frame(s) it draws, never the base figure's version of a grid
-  const all = variant !== undefined ? ps.map((p) => p.nodes) : [spec.nodes, ...ps.map((p) => p.nodes)];
-  const blanks = (n: FigNode): number => (n.cells ?? []).flat().filter((c) => !tr(c, lang)).length;
-  const ns = all[0].filter((n) => (n.shape === 'grid' || n.shape === 'bars') && ps.some((p) => p.show.has(n.id)))
-    .map((n) => all.map((f) => f.find((m) => m.id === n.id)!).reduce((a, b) => (blanks(b) < blanks(a) ? b : a)));
+  // v44 (L802, eye E2): a variant reads only the frame(s) it draws, never the base figure's version of a grid. B4 eye X4 (L822):
+  // a grid's table is its version in the frame the point is about: `data_step` (1-based) when the spec names one, else the last
+  // frame that shows it (a stepped figure's end state: the 8 shards, not the 1 hot key it starts from).
+  const want = variant === undefined && spec.data_step !== undefined ? ps[spec.data_step - 1] ?? fail(`data_step ${spec.data_step}: không có bước này`) : undefined;
+  const ns = ps[0].nodes.filter((n) => (n.shape === 'grid' || n.shape === 'bars') && ps.some((p) => p.show.has(n.id)))
+    .map((n) => [...(want ? [want] : []), ...[...ps].reverse()].find((p) => p.show.has(n.id))!.nodes.find((m) => m.id === n.id)!);
   return ns.map((n, i) => {
     const head = (n.head ?? []).map((c) => tr(c, lang));
     const rows = n.cells?.map((r) => r.map((c) => tr(c, lang))) ?? (n.items ?? []).map((it) => [tr(it.label, lang), tr(it.note, lang) || String(it.value)]); // bars: label, value

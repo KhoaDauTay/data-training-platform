@@ -7,7 +7,7 @@ import { parse as yaml } from 'yaml';
 import { generalNow } from '../src/content';
 import { SKILLS } from '../src/progress';
 import {
-  byName, cardProblems, explainOf, judge, needsPlan, parseBestCard, parseHabits, parseTracks, planScan, RELEASED, sideOf, sideScript,
+  BP_META, byName, cardProblems, explainOf, judge, needsPlan, parseBestCard, parseHabits, parseTracks, planScan, RELEASED, sideOf, sideScript,
   type BpCard, type Pair, type Side,
 } from '../src/engine/best';
 import { codeOf } from '../src/engine/content';
@@ -105,6 +105,20 @@ describe('thẻ Best Practice: cấu trúc (132 thẻ, cả track chưa phát h�
     expect(() => parseBestCard({ fm: fm({ runtime: 'lab', setup: undefined, expect: { code: '23505', fails: 'good' } }), body }, path)).toThrow(/fails: good/);
     expect(() => parseBestCard({ fm: { ...fm({}), id: 'e-bp-s05' }, body }, path)).toThrow(/id phải là e-bp-s04/);
     expect(() => parseBestCard({ fm: fm({}), body }, 'content/engine/best/sql/x.md')).toThrow(/đường dẫn/);
+  });
+
+  it('v44 B4 (L812): figures: trên thẻ đầy đủ, mục phải có trong thẻ; index (BP_META) không mang figures', () => {
+    const p = '../content/engine/best/postgres/s04-identity-not-serial.md';
+    const [, f, body] = FM.exec(raw[p].replace(/\r\n/g, '\n'))!;
+    const card = (figures: unknown) => parseBestCard({ fm: { ...yaml(f), figures }, body }, p.slice(3)) as BpCard;
+    expect(card([{ name: 'pg-x', at: 'idea' }, { name: 'pg-y', at: 'why', variant: 'v', step: 1 }]).figures)
+      .toEqual([{ name: 'pg-x', at: 'idea' }, { name: 'pg-y', at: 'why', variant: 'v', step: 1 }]);
+    expect(() => card([{ name: 'pg-x', at: 'recap' }])).toThrow(/at "recap"/);
+    expect(() => card({ name: 'pg-x' })).toThrow(/danh sách/);
+    expect(() => card([{ name: 'pg-x', at: 'example' }])).toThrow(/không có mục "example"/); // s04 has no ## Ví dụ
+    expect('figures' in parseBestCard({ fm: { ...yaml(f), figures: [{ name: 'pg-x', at: 'idea' }] } }, p.slice(3))).toBe(false);
+    expect(BP_META).not.toContain('figures');
+    expect(cards.filter((c) => c.figures).map((c) => c.id).sort()).toEqual(['e-bp-a01', 'e-bp-p13', 'e-bp-q07']);
   });
 });
 

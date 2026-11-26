@@ -544,6 +544,7 @@ try {
     for (const [i, sql] of ENGINE_LAB.steps.entries()) {
       const at = (what) => `document.querySelector('[data-ek="${ENGINE_LAB.id}-s${i}-${what}"]')`;
       await ev(`${at('open')}?.click()`); // F13 (L480): only the current step has an editor until opened
+      await waitFor(`step ${i} editor`, `!!${at('code')}`, 15000); // v44: the step editor can mount after the click returns
       await ev(`(t => { t.value = ${S(sql)}; t.dispatchEvent(new Event('input', { bubbles: true })); })(${at('code')})`);
       await ev(`${at('submit')}.click()`);
       await waitFor(`step ${i + 1} passed`, `[...document.querySelectorAll('#engine-page [role=status].good')].length > ${i}`, 90000);
@@ -556,6 +557,7 @@ try {
   const submitStep = async (l, i) => {
     const at = (what) => `document.querySelector('[data-ek="${l.id}-s${i}-${what}"]')`;
     await ev(`${at('open')}?.click()`); // F13 (L480): a later step (the heap lab's step 2) is opened before typing
+    await waitFor(`step ${i} editor`, `!!${at('code')}`, 15000); // v44: the step editor can mount after the click returns
     await ev(`(t => { t.value = ${S(l.lab.steps[i].solution)}; t.dispatchEvent(new Event('input', { bubbles: true })); })(${at('code')})`);
     await ev(`${at('submit')}.click()`);
     await waitFor(`${l.id} step ${i + 1} passed`, `(${at('code')})?.closest('[data-step]').querySelector('[role=status]')?.classList.contains('good')`, 120000);

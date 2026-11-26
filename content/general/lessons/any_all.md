@@ -4,6 +4,7 @@ title: "ANY và ALL: so một giá trị với cả danh sách"
 title_en: "ANY and ALL: compare one value with a whole list"
 minutes: 25
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
+figures: [{ name: sql-any-all, at: idea }]
 objectives:
   - vi: "Viết \"lớn hơn ít nhất một\" bằng `> ANY` và \"lớn hơn tất cả\" bằng `> ALL`."
     en: "Write \"greater than at least one\" with `> ANY` and \"greater than all\" with `> ALL`."

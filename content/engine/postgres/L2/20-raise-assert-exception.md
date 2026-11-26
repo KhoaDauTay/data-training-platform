@@ -17,6 +17,7 @@ objectives:
   - vi: Dùng `ASSERT` cho điều phải luôn đúng, không cho kiểm tra dữ liệu vào, và biết khối bắt lỗi hoàn tác phần việc bên trong nó.
     en: Use `ASSERT` for things that must always hold, never for input checks, and know a catching block undoes the work inside it.
 requires: [e-pg-l2-19]
+figures: [{ name: pg-exception-subtx, at: idea }]
 sources:
   - https://www.postgresql.org/docs/18/plpgsql-errors-and-messages.html
   - https://www.postgresql.org/docs/18/plpgsql-control-structures.html
@@ -130,6 +131,8 @@ Khối `BEGIN ... EXCEPTION WHEN condition THEN ... END` bắt lỗi theo tên (
 Nhiều người nghĩ bắt lỗi là bỏ qua lỗi và giữ mọi thứ đã làm. Thật ra khối có `EXCEPTION` chạy trong một subtransaction: khi lỗi xảy ra, mọi thay đổi bên trong khối bị hoàn tác trước khi nhánh bắt lỗi chạy. Subtransaction có giá, nên đừng bọc mọi câu bằng `EXCEPTION` khi không cần.
 
 `ASSERT condition, 'message'` báo lỗi `P0004` khi điều kiện sai, để bắt lỗi lập trình. Tham số `plpgsql.check_asserts` có thể tắt nó, nên không bao giờ dùng `ASSERT` để kiểm tra dữ liệu vào.
+
+Hình từng bước ở cuối mục này theo hàm `open_two` của mục Ví dụ: dòng ghi trong khối bị hoàn tác, dòng ghi ngoài khối thì còn.
 
 ## Cú pháp
 
@@ -290,6 +293,8 @@ A `BEGIN ... EXCEPTION WHEN condition THEN ... END` block catches errors by name
 Many people think catching an error ignores it and keeps everything done so far. In fact a block with `EXCEPTION` runs in a subtransaction: on an error, every change inside the block is undone before the handler runs. Subtransactions have a cost, so do not wrap every statement in `EXCEPTION` without a reason.
 
 `ASSERT condition, 'message'` raises `P0004` when the condition is false, to catch programming bugs. The setting `plpgsql.check_asserts` can turn it off, so never use `ASSERT` to check input.
+
+The step-through figure at the end of this section follows the Example's `open_two` function: the row written inside the block is undone, the one written outside stays.
 
 ## Syntax
 

@@ -8,6 +8,7 @@ title_en: "Atomic counters and sets with ADD"
 kind: lab
 runtime: browser
 minutes: 10
+figures: [{ name: dy-atomic-add, at: idea }]
 objectives:
   - vi: Tăng một số bằng `ADD`, kể cả khi thuộc tính chưa có.
     en: Increase a number with `ADD`, even when the attribute does not exist yet.
@@ -121,6 +122,8 @@ Mỗi lần ai đó mở trang một cuốn sách, bạn muốn cộng 1 vào l�
 
 Trang về UpdateExpression của AWS ghi: nhìn chung nên dùng `SET` thay cho `ADD` để thao tác idempotent (gửi lại nhiều lần vẫn cho cùng kết quả). Nhưng `SET a = a + :n` cũng cộng lại mỗi lần gửi; chỉ một điều kiện trên chính thuộc tính đang sửa (bài trước) mới làm lần gửi lại vô hại. `ADD` vẫn là cách duy nhất để thêm phần tử vào tập hợp.
 
+Hình từng bước ở cuối mục này nhập 10 cuốn `978-0-02` bằng `SET`, bằng `ADD`, rồi gửi lại cùng `ADD` một lần nữa.
+
 ## Cú pháp
 
 ```text
@@ -202,6 +205,8 @@ Every time someone opens a book's page, you want to add 1 to its view count. Rea
 `DELETE` works only on sets: it removes elements. A set cannot be empty, so removing the last element removes the attribute. `ADD` does not work on `L` lists; lists use `list_append`.
 
 The AWS page on update expressions says that, in general, you should use `SET` rather than `ADD` to keep operations idempotent. But `SET a = a + :n` also adds again on every send; only a condition on the attribute being changed (previous lesson) makes a retry harmless. `ADD` is still the only way to add elements to a set.
+
+The step-through figure at the end of this section receives 10 copies of `978-0-02` with `SET`, with `ADD`, then sends the same `ADD` once more.
 
 ## Syntax
 

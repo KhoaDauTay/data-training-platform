@@ -15,6 +15,7 @@ objectives:
   - vi: Đo cái giá của index thừa trên UPDATE bằng `n_tup_hot_upd`
     en: Measure the cost of extra indexes on UPDATEs with `n_tup_hot_upd`
 requires: [e-pg-l5-11]
+figures: [{ name: pg-index-write-cost, at: idea }]
 sources:
   - https://www.postgresql.org/docs/18/indexes-intro.html
   - https://www.postgresql.org/docs/18/monitoring-stats.html
@@ -122,6 +123,8 @@ Một index trên cột hay bị sửa còn chặn HOT update. HOT chỉ xảy r
 
 Trước khi xóa: con số 0 chỉ đúng cho khoảng bộ đếm ghi lại và chỉ trên server này (replica có bộ đếm riêng); index giữ khóa chính hay `UNIQUE` vẫn làm việc khi ghi dù không ai đọc. Xóa trên server thật bằng `DROP INDEX CONCURRENTLY` để không khóa bảng.
 
+Hình từng bước ở cuối mục này đặt `idx_scan` của năm index cạnh số UPDATE được HOT trên hai bảng của lab.
+
 ## Cú pháp
 
 ```sql
@@ -221,6 +224,8 @@ Many people think adding an index makes things faster, and more is better. In fa
 An index on a frequently changed column also blocks HOT updates. A HOT update only happens when the UPDATE changes no indexed column and the page has room; then Postgres need not add an entry to any index. `n_tup_hot_upd` in `pg_stat_user_tables` counts HOT updates, so comparing it with `n_tup_upd` shows the cost of extra indexes.
 
 Before dropping: a zero only holds for the time the counters covered and only on this server (each replica has its own counters); an index behind a primary key or `UNIQUE` still works on writes even if nobody reads it. On a real server drop with `DROP INDEX CONCURRENTLY` so the table is not locked.
+
+The step-through figure at the end of this section puts the `idx_scan` of five indexes next to the HOT UPDATE counts on the lab's two tables.
 
 ## Syntax
 

@@ -1,0 +1,49 @@
+# DY-B6-4 (v46 Batch 6, L850–L859): SET overwrites, ADD adds on the server, and a resent ADD adds again. Lesson: e-dy-l2-05 (Ý chính).
+# Data (lab.setup, run on dynoxide): 978-0-02 stock 3; UpdateItem SET stock = :n (10) → 10; ADD stock :n (10) → 13 (each 1 WCU);
+# the same ADD sent once more → 23 (the lesson's own arithmetic: ADD is not idempotent). Bars at half scale, the note is the value.
+# Source: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html
+title: { vi: "SET ghi đè, ADD cộng thêm, gửi lại thì cộng nữa", en: "SET overwrites, ADD adds, a resend adds again" }
+caption:
+  vi: "Cuốn 978-0-02 có stock 3, nhập thêm 10 cuốn (:n = 10). SET stock = :n ghi đè thành 10; ADD stock :n cộng ngay trên server thành 13, không cần đọc trước. ADD không idempotent: SDK gửi lại cùng request thì thành 23."
+  en: "Book 978-0-02 has stock 3, and 10 copies arrive (:n = 10). SET stock = :n overwrites it to 10; ADD stock :n adds on the server to make 13, with no read first. ADD is not idempotent: if the SDK resends the same request, it becomes 23."
+alt:
+  vi: "ADD là bộ đếm nguyên tử: cộng ngay trên server nên không mất lượt cộng nào khi nhiều request chạy cùng lúc. Đổi lại, mỗi lần gửi là một lần cộng, kể cả lần gửi lại."
+  en: "ADD is an atomic counter: it adds on the server, so no addition is lost when many requests run at once. In return, every send is one more addition, a resend included."
+nodes:
+  - { id: cmd, mono: true, label: "SET stock = :n", sub: ":n = 10", tone: dead }
+  - id: bar
+    shape: bars
+    label: { vi: "stock của 978-0-02", en: "stock of 978-0-02" }
+    items:
+      - { label: { vi: "trước", en: before }, value: 1.5, note: "3", tone: cell }
+      - { label: "SET :n", value: 5, note: "10", tone: dead }
+      - { label: "ADD :n", value: 6.5, note: "13", tone: ghost }
+      - { label: { vi: "ADD gửi lại", en: "ADD resent" }, value: 11.5, note: "23", tone: ghost }
+rows:
+  - [cmd]
+  - [bar]
+edges:
+  - { from: cmd, to: bar }
+steps:
+  - say: { vi: "SET ghi đè: 3 cuốn đang có bị quên.", en: "SET overwrites: the 3 copies on hand are forgotten." }
+    alt: { vi: "SET stock = :n đặt stock bằng đúng 10, nên 3 cuốn đã có trong kho biến mất khỏi con số.", en: "SET stock = :n sets stock to exactly 10, so the 3 copies already in stock vanish from the figure." }
+  - say: { vi: "ADD cộng ngay trên server: 3 + 10 = 13.", en: "ADD adds on the server: 3 + 10 = 13." }
+    alt: { vi: "ADD stock :n cộng 10 vào giá trị đang có mà không đọc trước, nên stock thành 13 và hai lượt cộng cùng lúc không đè nhau.", en: "ADD stock :n adds 10 to the current value without reading it first, so stock becomes 13 and two additions at once never overwrite each other." }
+    set:
+      cmd: { label: "ADD stock :n", tone: live }
+      bar:
+        items:
+          - { label: { vi: "trước", en: before }, value: 1.5, note: "3", tone: cell }
+          - { label: "SET :n", value: 5, note: "10", tone: ghost }
+          - { label: "ADD :n", value: 6.5, note: "13", tone: live }
+          - { label: { vi: "ADD gửi lại", en: "ADD resent" }, value: 11.5, note: "23", tone: ghost }
+  - say: { vi: "Gửi lại cùng ADD: cộng thêm lần nữa.", en: "Resend the same ADD: it adds once more." }
+    alt: { vi: "Nếu mạng chập chờn và SDK gửi lại đúng request đó, DynamoDB cộng thêm 10 nữa thành 23, vì bộ đếm không nhận ra lần gửi lại.", en: "If the network hiccups and the SDK resends that exact request, DynamoDB adds 10 again to make 23, since the counter cannot tell a resend apart." }
+    set:
+      cmd: { label: "ADD stock :n", sub: { vi: "gửi lại lần 2", en: "sent a second time" }, tone: warm }
+      bar:
+        items:
+          - { label: { vi: "trước", en: before }, value: 1.5, note: "3", tone: cell }
+          - { label: "SET :n", value: 5, note: "10", tone: ghost }
+          - { label: "ADD :n", value: 6.5, note: "13", tone: live }
+          - { label: { vi: "ADD gửi lại", en: "ADD resent" }, value: 11.5, note: "23", tone: warm }

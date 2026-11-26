@@ -8,6 +8,7 @@
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 import { analyze, samplePath, type OverlapFrame } from '../scripts/overlap-check.mjs';
+import { parseBestCard, type BpCard } from '../src/engine/best';
 import { parseEngineLesson, type EngineLesson } from '../src/engine/content';
 import type { Shape } from '../src/engine/viz/engineVizCore';
 import { resolveViz } from '../src/engine/viz/engineViz';
@@ -15,6 +16,8 @@ import { altTables, altText, type FigRef, type FigSpec, layout, linkGap, MARGIN,
 import { GLYPHS } from '../src/engine/viz/glyphs';
 import { parseFullLesson } from '../src/fullLesson';
 import { fullLessons, lessonIdOf } from '../src/generalLessonSources';
+import { lessonSource } from '../src/lessonSources';
+import { parseLessons } from '../src/lessons';
 import { VI_DIACRITIC } from './generalRules';
 
 const specs = Object.fromEntries(Object.entries(import.meta.glob<FigSpec>('../content/figures/*.yml', { import: 'default', eager: true }))
@@ -22,11 +25,21 @@ const specs = Object.fromEntries(Object.entries(import.meta.glob<FigSpec>('../co
 const engineFiles = import.meta.glob<string>('../content/engine/*/{L*,ext}/*.md', { query: '?raw', import: 'default', eager: true });
 const engine: EngineLesson[] = Object.entries(engineFiles).map(([p, s]) => parseEngineLesson(s, p, parse));
 const general = await Promise.all(Object.entries(fullLessons).map(async ([p, load]) => parseFullLesson(await load(), lessonIdOf(p))));
+/** v46 (L860): quick lessons (content/lessons.yml) carry one `figure:` each, drawn with the General (`sql`) prefix. */
+const quick = parseLessons(lessonSource);
 const SHORT = { postgres: 'pg', mongodb: 'mg', dynamodb: 'dy', design: 'ds', stack: 'st' } as const;
+// v44 B4 (P1, L812): Best Practice cards host figures too (engineBest's FIG_TRACK)
+const best = Object.entries(import.meta.glob<string>('../content/engine/best/*/*.md', { query: '?raw', import: 'default', eager: true })).map(([p, t]) => {
+  const m = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/.exec(t.replace(/\r\n/g, '\n'))!;
+  return parseBestCard({ fm: parse(m[1]), body: m[2] }, p) as BpCard;
+});
+const BP_SHORT = { sql: 'sql', postgres: 'pg', mongodb: 'mg', dynamodb: 'dy' } as const;
 /** Every figure reference in content: lesson id, its engine short name, the reference. */
 const refs: { id: string; eng: string; f: FigRef }[] = [
   ...engine.flatMap((l) => (l.figures ?? []).map((f) => ({ id: l.id, eng: SHORT[l.engine], f }))),
   ...general.flatMap((l) => (l.figures ?? []).map((f) => ({ id: l.id, eng: 'sql', f }))),
+  ...best.flatMap((c) => (c.figures ?? []).map((f) => ({ id: c.id, eng: BP_SHORT[c.track], f }))),
+  ...quick.flatMap((l) => (l.figure ? [{ id: `quick:${l.id}`, eng: 'sql', f: l.figure }] : [])),
 ];
 const specName = (r: { eng: string; f: FigRef }): string | undefined => [r.f.name, `${r.eng}-${r.f.name}`].find((n) => specs[n]);
 const WIDTHS = [640, 335, 280];
@@ -64,7 +77,7 @@ function extents(f: { nodes: Shape[] }): Map<string, { x0: number; y0: number; x
   const out = new Map<string, { x0: number; y0: number; x1: number; y1: number }>();
   const m = model(f, 0, 0);
   const add = (k: string | undefined, x: number, y: number, w: number, h: number): void => {
-    const id = /^n:([a-z0-9_-]+)/i.exec(k ?? '')?.[1];
+    const id = /^(?:pv:)?n:([a-z0-9_-]+)/i.exec(k ?? '')?.[1]; // v44 B4 X2: a faded preview holds its node's slot too
     if (!id) return;
     const o = out.get(id);
     out.set(id, o ? { x0: Math.min(o.x0, x), y0: Math.min(o.y0, y), x1: Math.max(o.x1, x + w), y1: Math.max(o.y1, y + h) } : { x0: x, y0: y, x1: x + w, y1: y + h });
@@ -93,6 +106,13 @@ describe('v39 figures: content links', () => {
       ];
     });
     expect(bad).toEqual([]);
+  });
+  it('v46 (L860): bài học nhanh có hình là một spec thật (không sơ đồ registry); ≥ 35 bài có hình; cùng hình với bài đầy đủ khi bài đó có', () => {
+    const withFig = quick.filter((l) => l.figure);
+    expect(withFig.length).toBeGreaterThanOrEqual(35);
+    expect(withFig.filter((l) => !specs[l.figure!.name]).map((l) => `${l.id}: ${l.figure!.name}`)).toEqual([]);
+    const full = new Map(general.map((l) => [l.id, (l.figures ?? []).map((f) => f.name)]));
+    expect(withFig.filter((l) => full.has(l.id) && (full.get(l.id) ?? []).length > 0 && !full.get(l.id)!.includes(l.figure!.name)).map((l) => l.id)).toEqual([]);
   });
   it('v42 (L696): không bài hay hình nào viết sơ đồ ER bằng ký tự (||--o{ …): vẽ bằng thực thể và chân chim', () => {
     const raw = import.meta.glob<string>(['../content/engine/**/*.md', '../content/general/**/*.md', '../content/figures/*.yml'], { query: '?raw', import: 'default', eager: true });
@@ -149,7 +169,7 @@ describe('v44: no diagrams drawn with characters', () => {
 describe.each(Object.keys(specs))('v39 figure %s', (name) => {
   const spec = specs[name];
   it('giới hạn: ≤ 12 node, ≤ 14 mũi tên, ≤ 6 bước; tên file = [a-z0-9-]+; VI và EN đủ, EN không dấu', () => {
-    expect(name).toMatch(/^(sql|ds|st|pg|mg|dy)-[a-z0-9-]+$/);
+    expect(name).toMatch(/^(sql|ds|st|pg|mg|dy|bp)-[a-z0-9-]+$/); // v44 B4 (L812): bp- = a Best Practice card's figure
     expect(spec.nodes.length).toBeLessThanOrEqual(12);
     expect((spec.edges ?? []).length).toBeLessThanOrEqual(14);
     expect((spec.steps ?? []).length).toBeLessThanOrEqual(6);
@@ -184,7 +204,7 @@ describe.each(Object.keys(specs))('v39 figure %s', (name) => {
           for (const n of f.nodes) if (n.t === 't') {
             expect(n.size ?? 0, `${at}: "${n.s}"`).toBeGreaterThanOrEqual(13);
             // R1 E14: a note, and a table's or chart's title and sub, keep one line up to NOTE_CH characters on a wide figure
-            const note = W >= WIDE && (notes.has(/^n:(.+)\.t\d+$/.exec(n.k)?.[1] ?? '') || titled.has(/^n:(.+)\.[hs]\d+$/.exec(n.k)?.[1] ?? ''));
+            const note = W >= WIDE && (notes.has(/^(?:pv:)?n:(.+)\.t\d+$/.exec(n.k)?.[1] ?? '') || titled.has(/^(?:pv:)?n:(.+)\.[hs]\d+$/.exec(n.k)?.[1] ?? '')) // v44 B4 X2: pv: = a later step's node, faded;
             expect([...n.s].length, `${at}: "${n.s}"`).toBeLessThanOrEqual(note ? NOTE_CH : 18);
           }
           const ex = [...extents(f).entries()];
@@ -209,7 +229,7 @@ describe.each(Object.keys(specs))('v39 figure %s', (name) => {
             }
           }
           // tokens only: every tone and ink the builder writes maps to an --eng-* alias in the core
-          for (const n of f.nodes) expect(JSON.stringify(n)).not.toMatch(/#[0-9a-f]{3,6}\b|rgb\(|var\(--(?!eng-)/i);
+          for (const n of f.nodes) expect(JSON.stringify({ ...n, s: undefined })).not.toMatch(/#[0-9a-f]{3,6}\b|rgb\(|var\(--(?!eng-)/i); // v44 B4: drawn text is content (TENANT#C02, VOTE#2026), not a colour
           // R1 E10: two arrows into one box land ≥ 16 apart or share one tip (a bus), never a double arrowhead
           for (let p = 0; p < m.arrows.length; p++) for (let q = p + 1; q < m.arrows.length; q++) {
             const [A, B] = [m.arrows[p], m.arrows[q]];
@@ -254,8 +274,16 @@ describe.each(Object.keys(specs))('v39 figure %s', (name) => {
         const shown = new Set(v?.step !== undefined ? spec.steps?.[v.step].show ?? spec.nodes.map((n) => n.id) : v?.show ?? spec.nodes.map((n) => n.id));
         // v44 (L784, L802 eye E2): a variant may patch a grid's rows or bars (another lesson's data), and its tables are the grids its
         // own frame draws, as the variant's and that step's set patch them (never the base's)
-        const patch = (n: FigSpec['nodes'][number]): FigSpec['nodes'][number] => ({ ...n, ...v?.set?.[n.id], ...(v?.step !== undefined ? spec.steps?.[v.step].set?.[n.id] : {}) }) as FigSpec['nodes'][number];
-        const grids = spec.nodes.filter((n) => (n.shape === 'grid' || n.shape === 'bars') && (v?.step !== undefined || v?.show ? shown.has(n.id) : true)).map(patch);
+        // B4 eye X4 (L822): the base figure's table is the node in `data_step`, else in the last step that shows it
+        const lastStep = (id: string): number | undefined => {
+          const st = spec.steps ?? [];
+          if (spec.data_step !== undefined && (!st[spec.data_step - 1]?.show || st[spec.data_step - 1].show!.includes(id))) return spec.data_step - 1;
+          for (let i = st.length - 1; i >= 0; i--) if (!st[i].show || st[i].show!.includes(id)) return i;
+          return undefined;
+        };
+        const stepOf = (id: string): number | undefined => (v ? v.step : lastStep(id));
+        const patch = (n: FigSpec['nodes'][number]): FigSpec['nodes'][number] => { const k = stepOf(n.id); return ({ ...n, ...v?.set?.[n.id], ...(k !== undefined ? spec.steps?.[k].set?.[n.id] : {}) }) as FigSpec['nodes'][number]; };
+        const grids = spec.nodes.filter((n) => (n.shape === 'grid' || n.shape === 'bars') && (v?.step !== undefined || v?.show ? shown.has(n.id) : !spec.steps?.length || spec.steps.some((st) => !st.show || st.show.includes(n.id)))).map(patch); // v44 B4: a node only a variant shows has no table in the base figure
         expect(tables.length, `${lang} bảng dữ liệu`).toBe(grids.length);
         for (const [i, t] of tables.entries()) {
           expect(t.caption, lang).not.toBe('');

@@ -1,0 +1,43 @@
+# v46 (L866): < ANY = below at least one value (the largest), < ALL = below every value (the smallest). Lessons: any_all (Ý chính) + its quick lesson.
+# Data (lab, checked in PGlite 2026-11-26): Drinks prices 9000, 12000, 18000, 22000, 25000, 35000. Snacks: 15000, 16000, 20000,
+# 28000 are < ANY (true) and 45000, 89000 are not; no snack is < ALL (none is below 9000). The lesson's first example keeps the 4.
+# Source: https://www.postgresql.org/docs/current/functions-subquery.html#FUNCTIONS-SUBQUERY-ANY-SOME
+title: { vi: "< ANY so với giá lớn nhất, < ALL với giá nhỏ nhất", en: "< ANY compares with the largest, < ALL with the smallest" }
+caption:
+  vi: "Giá mỗi món ăn vặt so với 6 giá đồ uống. < ANY chỉ cần một giá thỏa; < ALL phải thỏa với cả 6."
+  en: "Each snack's price against the 6 drink prices. < ANY needs one price to hold; < ALL must hold for all 6."
+alt:
+  vi: "< ANY đúng khi giá nhỏ hơn ít nhất một giá trong danh sách, tức nhỏ hơn giá lớn nhất; < ALL chỉ đúng khi nhỏ hơn mọi giá, tức nhỏ hơn giá nhỏ nhất. Vì vậy 4 món ăn vặt qua < ANY mà không món nào qua < ALL."
+  en: "< ANY is true when the price is below at least one price in the list, that is below the largest; < ALL is true only when it is below every price, that is below the smallest. So 4 snacks pass < ANY and none passes < ALL."
+nodes:
+  - id: drinks
+    shape: bars
+    label: { vi: "Giá đồ uống", en: "Drink prices" }
+    items:
+      - { label: Mineral water, value: 1.8, note: "9000", tone: warm }
+      - { label: Green tea, value: 2.4, note: "12000" }
+      - { label: Iced coffee, value: 3.6, note: "18000" }
+      - { label: Coconut water, value: 4.4, note: "22000" }
+      - { label: Milk tea, value: 5, note: "25000" }
+      - { label: Orange juice, value: 7, note: "35000", tone: new }
+  - { id: any, shape: key, mono: true, label: "< ANY", sub: "< 35000 (max)", tone: new }
+  - { id: all, shape: key, mono: true, label: "< ALL", sub: "< 9000 (min)", tone: warm }
+  - id: snacks
+    shape: grid
+    label: { vi: "Món ăn vặt", en: "Snacks" }
+    head: [price_vnd, "< ANY", "< ALL"]
+    cells:
+      - ["15000", "true", "false"]
+      - ["16000", "true", "false"]
+      - ["20000", "true", "false"]
+      - ["28000", "true", "false"]
+      - ["45000", "false", "false"]
+      - ["89000", "false", "false"]
+    cellTone: { "0:1": new, "1:1": new, "2:1": new, "3:1": new }
+rows:
+  - [drinks]
+  - [any, all]
+  - [snacks]
+edges:
+  - { from: any, to: snacks }
+  - { from: all, to: snacks }

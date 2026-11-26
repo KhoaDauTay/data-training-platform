@@ -4,6 +4,7 @@ title: "CROSS JOIN: dựng lưới mọi tổ hợp"
 title_en: "CROSS JOIN: build a grid of every combination"
 minutes: 25
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
+figures: [{ name: sql-cross-grid, at: idea }]
 objectives:
   - vi: Nối mọi dòng của bảng này với mọi dòng của bảng kia để có một lưới đầy đủ.
     en: Pair every row of one table with every row of another to get a full grid.

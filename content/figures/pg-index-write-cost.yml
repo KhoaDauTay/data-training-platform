@@ -1,0 +1,52 @@
+# B5-11 (v46 Batch 5, L844): an index nobody reads still costs every write, and one on a changed column blocks HOT. Lesson:
+# e-pg-l5-16 (Ý chính). Data: the lab setup (after its reads and the two UPDATEs), PGlite (tools/v46-b5/check1.log):
+# pg_stat_user_indexes.idx_scan on tickets: tickets_customer_idx 2, tickets_pkey 2, tickets_status_opened_idx 1,
+# tickets_opened_idx 0, tickets_status_idx 0; UPDATE … SET status on 40 rows: tickets (5 indexes, two of them on status)
+# n_tup_hot_upd 0 of 40, tickets_lean (pkey + customer only) 40 of 40. Index names lose the `tickets_` prefix and `_idx` to fit
+# 18 characters (the caption says so). Sources: https://www.postgresql.org/docs/18/monitoring-stats.html,
+# https://www.postgresql.org/docs/18/storage-hot.html
+title: { vi: "Index không ai đọc vẫn tốn ở mỗi lần ghi", en: "An index nobody reads still costs every write" }
+caption:
+  vi: "Bảng tickets của lab có năm index (tên bỏ tiền tố tickets_ và đuôi _idx); tickets_lean có cùng dữ liệu, chỉ giữ khóa chính và index customer."
+  en: "The lab's tickets table has five indexes (names without the tickets_ prefix and _idx ending); tickets_lean holds the same data with only the primary key and the customer index."
+alt:
+  vi: "idx_scan bằng 0 cho thấy index chưa từng được đọc, nhưng mọi lần ghi vẫn phải sửa nó. Index trên cột hay đổi như status còn chặn HOT update, nên mỗi UPDATE phải thêm mục vào mọi index. Kết quả: 0 trong 40 UPDATE là HOT ở tickets, 40 trong 40 ở tickets_lean."
+  en: "An idx_scan of 0 shows an index has never been read, yet every write still has to update it. An index on a column that changes, like status, also blocks HOT updates, so each UPDATE adds entries to every index. Result: 0 of 40 UPDATEs are HOT on tickets, 40 of 40 on tickets_lean."
+nodes:
+  - id: rd
+    shape: bars
+    label: { vi: "idx_scan: số lần đọc", en: "idx_scan: times read" }
+    sub: tickets
+    head: [index, idx_scan]
+    items:
+      - { label: customer, value: 2, note: "2", tone: live }
+      - { label: pkey, value: 2, note: "2", tone: live }
+      - { label: status_opened, value: 1, note: "1", tone: live }
+      - { label: opened, value: 0, note: "0", tone: dead }
+      - { label: status, value: 0, note: "0", tone: dead }
+  - { id: up, shape: key, label: UPDATE status, sub: { vi: "40 dòng", en: "40 rows" }, tone: new }
+  - id: hot
+    shape: bars
+    label: { vi: "UPDATE là HOT", en: "UPDATEs that were HOT" }
+    sub: n_tup_hot_upd / n_tup_upd
+    head: [{ vi: "bảng", en: table }, HOT]
+    items:
+      - { label: { vi: "tickets, 5 index", en: "tickets, 5 indexes" }, value: 0, note: "0 / 40", tone: dead }
+      - { label: { vi: "lean, 2 index", en: "lean, 2 indexes" }, value: 8, note: "40 / 40", tone: live }
+rows:
+  - [rd]
+  - [up]
+  - [hot]
+edges:
+  - { from: rd, to: up, label: { vi: "status có index", en: "status indexed" } }
+  - { from: up, to: hot }
+steps:
+  - say: { vi: "Hai index chưa từng được đọc.", en: "Two indexes were never read." }
+    alt: { vi: "Từ lần reset bộ đếm, opened và status có idx_scan bằng 0, còn status_opened với cùng cột đầu đã phục vụ câu lọc theo status.", en: "Since the counters were reset, opened and status have an idx_scan of 0, while status_opened, with the same first column, served the query filtering on status." }
+    set:
+      hot:
+        items:
+          - { label: { vi: "tickets, 5 index", en: "tickets, 5 indexes" }, value: 0, note: "?", tone: ghost }
+          - { label: { vi: "lean, 2 index", en: "lean, 2 indexes" }, value: 0, note: "?", tone: ghost }
+  - say: { vi: "Đổi status: tickets không được HOT lần nào.", en: "Changing status: tickets gets no HOT update." }
+    alt: { vi: "status nằm trong hai index của tickets nên cả 40 UPDATE phải thêm mục vào mọi index, còn tickets_lean không có index trên status nên cả 40 lần đều là HOT.", en: "status sits in two of tickets' indexes, so all 40 UPDATEs must add entries to every index, while tickets_lean has no index on status, so all 40 are HOT." }

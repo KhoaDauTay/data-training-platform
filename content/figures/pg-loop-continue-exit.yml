@@ -1,0 +1,44 @@
+# B5-8 (v46 Batch 5, L843): one pass of the lesson's DO block, row by row: CONTINUE skips the rest of one turn, EXIT leaves the
+# loop. Lesson: e-pg-l2-19 (Ý chính). Data: the lab's six orders and the lesson's Example DO block, PGlite
+# (tools/v46-b5/check1.log): FOR r IN SELECT id, amount FROM orders ORDER BY id; CONTINUE WHEN amount < 200000; total += amount;
+# EXIT WHEN total > 2000000; INSERT order_log. Orders 1 (120000) and 3 (80000) are skipped, 2 (650000 → 650000) and 4 (1250000 →
+# 1900000) are logged, 5 (300000 → 2200000) exits before its INSERT, 6 is never read; order_log holds 2 and 4.
+# Source: https://www.postgresql.org/docs/18/plpgsql-control-structures.html
+title: { vi: "Một vòng FOR: CONTINUE và EXIT", en: "One FOR loop: CONTINUE and EXIT" }
+caption:
+  vi: "Khối DO của mục Ví dụ chạy trên sáu đơn của lab, theo id. Cột tổng là biến total sau lượt đó."
+  en: "The Example's DO block running over the lab's six orders, by id. The total column is the variable total after that turn."
+alt:
+  vi: "Vòng FOR chạy từng dòng một: CONTINUE bỏ phần còn lại của lượt hiện tại rồi sang dòng sau, còn EXIT thoát hẳn vòng nên các dòng sau không bao giờ được đọc. Kết quả: order_log có đơn 2 và 4."
+  en: "A FOR loop runs one row at a time: CONTINUE skips the rest of the current turn and moves to the next row, while EXIT leaves the loop so later rows are never read. Result: order_log holds orders 2 and 4."
+nodes:
+  - { id: lp, shape: key, label: "FOR r IN … LOOP", sub: "ORDER BY id", tone: new }
+  - id: g
+    shape: grid
+    label: orders
+    head: [id, amount, total, { vi: "lượt này", en: this turn }]
+    cells: [["1", "120000", "", ""], ["2", "650000", "", ""], ["3", "80000", "", ""], ["4", "1250000", "", ""], ["5", "300000", "", ""], ["6", "990000", "", ""]]
+  - { id: lg, shape: table, label: order_log, sub: { vi: "chưa có dòng", en: "no rows yet" } }
+rows:
+  - [lp]
+  - [g, lg]
+phone:
+  rows: [[lp], [g], [lg]]
+edges:
+  - { from: lp, to: g }
+  - { from: g, to: lg, label: INSERT }
+steps:
+  - say: { vi: "Đơn dưới 200000: CONTINUE, sang dòng sau.", en: "Orders under 200000: CONTINUE, next row." }
+    alt: { vi: "Đơn 1 và đơn 3 dưới 200000 nên CONTINUE bỏ phần còn lại của lượt: không cộng vào total, không ghi log.", en: "Orders 1 and 3 are under 200000, so CONTINUE skips the rest of the turn: nothing is added to total and nothing is logged." }
+    set:
+      g: { rowTone: [ghost, null, ghost, null, null, null], cells: [["1", "120000", "", CONTINUE], ["2", "650000", "", ""], ["3", "80000", "", CONTINUE], ["4", "1250000", "", ""], ["5", "300000", "", ""], ["6", "990000", "", ""]] }
+  - say: { vi: "Đơn 2 và 4: cộng tổng rồi ghi log.", en: "Orders 2 and 4: add to the total, then log." }
+    alt: { vi: "Đơn 2 đưa total lên 650000 và đơn 4 lên 1900000, cả hai chưa vượt 2000000 nên mỗi đơn được ghi một dòng vào order_log.", en: "Order 2 brings total to 650000 and order 4 to 1900000, neither past 2000000, so each one writes a row into order_log." }
+    set:
+      g: { rowTone: [ghost, live, ghost, live, null, null], cells: [["1", "120000", "", CONTINUE], ["2", "650000", "650000", { vi: "ghi log", en: logged }], ["3", "80000", "", CONTINUE], ["4", "1250000", "1900000", { vi: "ghi log", en: logged }], ["5", "300000", "", ""], ["6", "990000", "", ""]] }
+      lg: { sub: { vi: "đơn 2, đơn 4", en: "orders 2, 4" }, tone: live }
+  - say: { vi: "Đơn 5 đẩy tổng quá 2000000: EXIT.", en: "Order 5 pushes the total past 2000000: EXIT." }
+    alt: { vi: "Đơn 5 đưa total lên 2200000, EXIT thoát vòng trước lệnh INSERT, nên đơn 5 không được ghi và đơn 6 không bao giờ được đọc.", en: "Order 5 brings total to 2200000 and EXIT leaves the loop before the INSERT, so order 5 is not logged and order 6 is never read." }
+    set:
+      g: { rowTone: [ghost, live, ghost, live, dead, ghost], cells: [["1", "120000", "", CONTINUE], ["2", "650000", "650000", { vi: "ghi log", en: logged }], ["3", "80000", "", CONTINUE], ["4", "1250000", "1900000", { vi: "ghi log", en: logged }], ["5", "300000", "2200000", EXIT], ["6", "990000", "", { vi: "không đọc", en: never read }]] }
+      lg: { sub: { vi: "đơn 2, đơn 4", en: "orders 2, 4" }, tone: live }

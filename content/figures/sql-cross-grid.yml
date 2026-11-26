@@ -1,0 +1,44 @@
+# v46 (L864; v42 plan Appendix B candidate `sql-cross-grid`): CROSS JOIN pairs every row with every row. Lessons: cross_join (Ý chính) + its quick lesson.
+# Data (lab, checked in PGlite 2026-11-26): stores in Da Nang = Hai Chau, Son Tra; dim_date 2026-10-29..31.
+# SELECT s.name, d.date_key FROM stores s CROSS JOIN dim_date d WHERE s.city = 'Da Nang' AND d.date_key BETWEEN '2026-10-29' AND '2026-10-31'
+# ORDER BY s.name, d.date_key → 6 rows (Son Tra had 0 orders on 29 and 31 Oct: the grid keeps those cells for the LEFT JOIN that follows).
+# R1 (L625): the result is one row per pair. Source: https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-JOIN
+title: { vi: "CROSS JOIN dựng mọi tổ hợp", en: "CROSS JOIN builds every combination" }
+caption:
+  vi: "2 cửa hàng ở Đà Nẵng × 3 ngày = 6 dòng. Không có ON: mỗi cửa hàng gặp đủ mọi ngày."
+  en: "2 Da Nang stores × 3 days = 6 rows. There is no ON: every store meets every day."
+alt:
+  vi: "CROSS JOIN ghép mỗi dòng của bảng này với mọi dòng của bảng kia, không cần điều kiện nối, nên số dòng là tích của hai bên. Lưới đầy đủ này giữ cả những ô chưa có số liệu, như một ngày cửa hàng không có đơn. Kết quả: 2 × 3 = 6 dòng."
+  en: "CROSS JOIN pairs each row of one table with every row of the other, with no join condition, so the row count is the product of the two sides. This full grid keeps cells that have no data yet, such as a day a store had no order. Result: 2 × 3 = 6 rows."
+nodes:
+  - id: s
+    shape: grid
+    label: stores s
+    head: [name]
+    cells: [[Hai Chau], [Son Tra]]
+    toneOf: { "Hai Chau": new, "Son Tra": warm }
+  - id: d
+    shape: grid
+    label: dim_date d
+    head: [date_key]
+    cells: [["2026-10-29"], ["2026-10-30"], ["2026-10-31"]]
+  - id: res
+    shape: grid
+    label: { vi: "Kết quả", en: "Result" }
+    head: [name, date_key]
+    cells:
+      - [Hai Chau, "2026-10-29"]
+      - [Hai Chau, "2026-10-30"]
+      - [Hai Chau, "2026-10-31"]
+      - [Son Tra, "2026-10-29"]
+      - [Son Tra, "2026-10-30"]
+      - [Son Tra, "2026-10-31"]
+    toneOf: { "Hai Chau": new, "Son Tra": warm }
+  - { id: n, shape: note, label: { vi: "2 × 3 = 6 dòng", en: "2 × 3 = 6 rows" } }
+rows:
+  - [s, d]
+  - [res]
+  - [n]
+edges:
+  - { from: s, to: res }
+  - { from: d, to: res }

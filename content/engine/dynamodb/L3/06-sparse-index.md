@@ -5,6 +5,7 @@ level: L3
 module: secondary
 title: "Sparse index: index chỉ chứa item đáng quan tâm"
 title_en: "Sparse index: an index that holds only the items that matter"
+figures: [{ name: dy-sparse-gsi, at: idea }]
 kind: lab
 runtime: browser
 minutes: 10
@@ -225,6 +226,8 @@ Nhiều người nghĩ đổi `status` là đủ để đơn rời index. Thật
 
 Lab chạy bằng dynoxide; `ScannedCount` là số đo thật.
 
+Hình dưới vẽ ba đơn ở Hue: đơn không có openSince không vào index.
+
 ## Cú pháp
 
 ```text
@@ -307,6 +310,8 @@ The trick: add a "flag" attribute only while the item is in a state you want to 
 Many people think changing `status` is enough for an order to leave the index. In fact `openOrders` has no `status` key; only having or not having `openSince` decides. In return, a Scan of the index reads only the open work, far cheaper than a filtered Scan of the table.
 
 The lab runs on dynoxide; `ScannedCount` is a real figure.
+
+The figure below draws three orders in Hue: the one without openSince is not in the index.
 
 ## Syntax
 
