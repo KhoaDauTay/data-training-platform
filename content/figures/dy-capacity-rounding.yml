@@ -2,22 +2,23 @@
 # Data: the lesson's Example (1500 items × 64 B by one Query = 96000 B = 93.75 KB → 96 KB → 24 RCU strong, 12 eventual; by
 # GetItem 1500 × 0.5 = 750 RCU eventual) and its predict (BatchGetItem 1.5 KB + 6.5 KB → 4 + 8 = 12 KB = 3 RCU strong).
 # Deviation: e-dy-l2-08 / -10 are not given the figure (their own examples carry the item size and the 1 KB write rule; the
-# write rule is a footnote here). Source: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/read-write-operations.html
+# write rule is a footnote here). R3 (E19): every row ends in RCU (BatchGetItem's 12 KB = 1.5 RCU eventual, 3 strong);
+# thousands carry a space in VI (no-break, so 1 500 stays on one line). Source: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/read-write-operations.html
 title: { vi: "Làm tròn 4 KB ở đâu", en: "Where the 4 KB rounding happens" }
 caption:
   vi: "Query cộng cỡ mọi item đã đọc rồi làm tròn một lần; GetItem và BatchGetItem làm tròn từng item. Vì thế item hay đọc cùng nhau nên chung một partition key. 1 RCU = một lần đọc nhất quán mạnh tới 4 KB, nhất quán cuối tốn một nửa."
   en: "Query adds up the size of every item read and rounds once; GetItem and BatchGetItem round each item. That is why items read together should share a partition key. 1 RCU = one strongly consistent read of up to 4 KB; an eventually consistent read costs half."
 alt:
-  vi: "Ba cách đọc. Query 1500 item 64 B: cộng được 96 000 B, làm tròn một lần thành 96 KB, tốn 24 RCU nhất quán mạnh hay 12 RCU nhất quán cuối. GetItem 1500 lần: mỗi item làm tròn lên 4 KB, tốn 1500 × 0,5 = 750 RCU nhất quán cuối. BatchGetItem hai item 1,5 KB và 6,5 KB: làm tròn thành 4 KB và 8 KB, tổng 12 KB, không phải 8. Ghi chú: ghi làm tròn theo 1 KB; projection và COUNT không làm rẻ hơn."
-  en: "Three ways to read. Query 1500 items of 64 B: they add up to 96,000 B, rounded once to 96 KB, costing 24 RCU strongly consistent or 12 RCU eventually consistent. GetItem 1500 times: each item rounds up to 4 KB, costing 1500 × 0.5 = 750 RCU eventually consistent. BatchGetItem of two items, 1.5 KB and 6.5 KB: rounded to 4 KB and 8 KB, 12 KB in all, not 8. Notes: writes round to 1 KB; a projection and COUNT are no cheaper."
+  vi: "Ba cách đọc. Query 1 500 item 64 B: cộng được 96 000 B, làm tròn một lần thành 96 KB, tốn 24 RCU nhất quán mạnh hay 12 RCU nhất quán cuối. GetItem 1 500 lần: mỗi item làm tròn lên 4 KB, tốn 1 500 × 0,5 = 750 RCU nhất quán cuối. BatchGetItem hai item 1,5 KB và 6,5 KB: làm tròn thành 4 KB và 8 KB, tổng 12 KB, không phải 8: 1,5 RCU nhất quán cuối. Ghi chú: ghi làm tròn theo 1 KB; projection và COUNT không làm rẻ hơn."
+  en: "Three ways to read. Query 1500 items of 64 B: they add up to 96,000 B, rounded once to 96 KB, costing 24 RCU strongly consistent or 12 RCU eventually consistent. GetItem 1500 times: each item rounds up to 4 KB, costing 1500 × 0.5 = 750 RCU eventually consistent. BatchGetItem of two items, 1.5 KB and 6.5 KB: rounded to 4 KB and 8 KB, 12 KB in all, not 8: 1.5 RCU eventually consistent. Notes: writes round to 1 KB; a projection and COUNT are no cheaper."
 align: true
 nodes:
-  - { id: q, label: Query, sub: "1500 × 64 B" }
+  - { id: q, label: Query, sub: { vi: "1\u00a0500 × 64 B", en: "1,500 × 64 B" } }
   - { id: qr, label: { vi: "96 000 B → 96 KB", en: "96,000 B → 96 KB" }, sub: { vi: "12 RCU, đọc cuối", en: "12 RCU, eventual" }, tone: live }
-  - { id: g, label: GetItem × 1500, sub: { vi: "mỗi item → 4 KB", en: "each item → 4 KB" } }
-  - { id: gr, label: { vi: "1500 × 0,5", en: "1500 × 0.5" }, sub: { vi: "750 RCU, đọc cuối", en: "750 RCU, eventual" }, tone: warm }
+  - { id: g, label: { vi: "GetItem × 1\u00a0500", en: "GetItem × 1,500" }, sub: { vi: "mỗi item → 4 KB", en: "each item → 4 KB" } }
+  - { id: gr, label: { vi: "1\u00a0500 × 0,5", en: "1,500 × 0.5" }, sub: { vi: "750 RCU, đọc cuối", en: "750 RCU, eventual" }, tone: warm }
   - { id: b, label: BatchGetItem, sub: { vi: "1,5 KB + 6,5 KB", en: "1.5 KB + 6.5 KB" } }
-  - { id: br, label: "4 + 8 = 12 KB", sub: { vi: "không phải 8 KB", en: "not 8 KB" }, tone: warm }
+  - { id: br, label: "4 + 8 = 12 KB", sub: { vi: "1,5 RCU, đọc cuối", en: "1.5 RCU, eventual" }, tone: warm }
   - { id: n2, shape: note, label: { vi: "ghi: làm tròn 1 KB", en: "writes: round to 1 KB" } }
   - { id: n3, shape: note, label: { vi: "Projection, COUNT: không rẻ hơn", en: "Projection, COUNT: no cheaper" } }
 rows:

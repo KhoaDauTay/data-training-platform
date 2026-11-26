@@ -2,6 +2,7 @@
 # Data (lab.setup, run on mingo): customers c1 An, c2 Binh, c3 Chi, c4 Dung; orders 1, 2 (c1), 3 (c2), 4 (c3).
 # $lookup → An [1, 2], Binh [3], Chi [4], Dung []; + $unwind "$orders" → 4 documents (An×2, Binh, Chi);
 # + preserveNullAndEmptyArrays: true → 5, Dung without an orders field. One row per output document (R1).
+# R3 (E21): Dung's lost row is a dead cell saying "không ra tài liệu", not struck through.
 # Not placed in e-mg-l2-07/-08: their labs use other data (9 orders with stores; 6 customers). Sources:
 # https://www.mongodb.com/docs/manual/reference/operator/aggregation/unwind/, https://www.mongodb.com/docs/manual/reference/operator/aggregation/lookup/
 title: { vi: "$lookup giữ mọi người, $unwind bỏ mảng rỗng", en: "$lookup keeps everyone, $unwind drops the empty" }
@@ -24,8 +25,7 @@ nodes:
     label: $unwind
     sub: { vi: "4 tài liệu, mất Dung", en: "4 documents, no Dung" }
     head: [name, orders]
-    cells: [[An, "1"], [An, "2"], [Binh, "3"], [Chi, "4"], [Dung, { vi: "không ra dòng", en: "no output" }]]
-    strike: [4]
+    cells: [[An, "1"], [An, "2"], [Binh, "3"], [Chi, "4"], [Dung, { vi: "không ra tài liệu", en: "no document" }]]
     cellTone: { "4:1": dead }
 rows:
   - [lk, uw]
@@ -36,8 +36,8 @@ steps:
     alt: { vi: "Sau $lookup, bốn khách đều còn, mỗi người có mảng orders: An có đơn 1 và 2, Binh có đơn 3, Chi có đơn 4, Dung có mảng rỗng.", en: "After $lookup all four customers remain, each with an orders array: An has orders 1 and 2, Binh has order 3, Chi has order 4, Dung has an empty array." }
     show: [lk]
   - say: { vi: "$unwind không tạo tài liệu cho mảng rỗng: Dung biến mất, không báo lỗi.", en: "$unwind makes no document for an empty array: Dung vanishes without an error." }
-    alt: { vi: "$unwind: \"$orders\" tách mỗi phần tử thành một tài liệu: An đơn 1, An đơn 2, Binh đơn 3, Chi đơn 4, tổng 4 tài liệu. Mảng của Dung rỗng nên không ra tài liệu nào: Dung bị gạch, không có lỗi.", en: "$unwind: \"$orders\" turns each element into a document: An order 1, An order 2, Binh order 3, Chi order 4, 4 documents in all. Dung's array is empty, so no document comes out: Dung is struck out, with no error." }
+    alt: { vi: "$unwind: \"$orders\" tách mỗi phần tử thành một tài liệu: An đơn 1, An đơn 2, Binh đơn 3, Chi đơn 4, tổng 4 tài liệu. Mảng của Dung rỗng nên không ra tài liệu nào: Dung không ra tài liệu nào, không có lỗi.", en: "$unwind: \"$orders\" turns each element into a document: An order 1, An order 2, Binh order 3, Chi order 4, 4 documents in all. Dung's array is empty, so no document comes out: Dung has no document, with no error." }
   - say: { vi: "Giữ lại bằng preserveNullAndEmptyArrays.", en: "Keep it with preserveNullAndEmptyArrays." }
     alt: { vi: "Với preserveNullAndEmptyArrays: true, Dung quay lại thành tài liệu thứ năm, không có trường orders. Kết quả giống LEFT JOIN: 5 tài liệu.", en: "With preserveNullAndEmptyArrays: true, Dung comes back as a fifth document with no orders field. The result is like a LEFT JOIN: 5 documents." }
     set:
-      uw: { label: { vi: "$unwind + preserve", en: "$unwind + preserve" }, sub: { vi: "5 tài liệu, có Dung", en: "5 documents, Dung kept" }, cells: [[An, "1"], [An, "2"], [Binh, "3"], [Chi, "4"], [Dung, { vi: "(không có trường)", en: "(no field)" }]], strike: [], cellTone: { "4:1": live } }
+      uw: { label: { vi: "$unwind + preserve", en: "$unwind + preserve" }, sub: { vi: "5 tài liệu, có Dung", en: "5 documents, Dung kept" }, cells: [[An, "1"], [An, "2"], [Binh, "3"], [Chi, "4"], [Dung, { vi: "(không có trường)", en: "(no field)" }]], cellTone: { "4:1": live } }

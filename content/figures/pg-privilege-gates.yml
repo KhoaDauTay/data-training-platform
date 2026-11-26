@@ -9,8 +9,8 @@ caption:
   vi: "GRANT readers TO linh cho linh dùng quyền của nhóm readers. Muốn đọc sales.orders phải qua cả ba cửa: CONNECT vào database (PUBLIC có sẵn), USAGE trên schema sales, SELECT trên bảng. GRANT USAGE ON SCHEMA sales TO readers mở cửa giữa."
   en: "GRANT readers TO linh lets linh use the group readers' privileges. Reading sales.orders takes all three doors: CONNECT on the database (PUBLIC has it), USAGE on schema sales, SELECT on the table. GRANT USAGE ON SCHEMA sales TO readers opens the middle door."
 alt:
-  vi: "linh, vai trò đăng nhập được, là thành viên của nhóm readers. readers đi qua ba cửa theo thứ tự: database với CONNECT, schema sales với USAGE, bảng sales.orders với SELECT."
-  en: "linh, a role that can log in, is a member of the group readers. readers passes three doors in order: the database with CONNECT, schema sales with USAGE, table sales.orders with SELECT."
+  vi: "Vai trò linh, đăng nhập được, là thành viên của nhóm readers. Nhóm readers đi qua ba cửa theo thứ tự: database với CONNECT, schema sales với USAGE, bảng sales.orders với SELECT."
+  en: "The role linh, which can log in, is a member of the group readers. The group readers passes three doors in order: the database with CONNECT, schema sales with USAGE, table sales.orders with SELECT."
 nodes:
   - { id: linh, label: linh, sub: LOGIN }
   - { id: rd, label: readers, sub: { vi: "nhóm, NOLOGIN", en: "group, NOLOGIN" } }

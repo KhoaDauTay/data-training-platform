@@ -224,8 +224,8 @@ define<VacuumModel>('pg-vacuum-flow', { pages: ['ldld', 'llln', 'ddll'] }, (m, t
   type St = { vac?: boolean; fsm?: boolean; vm?: boolean; ios?: boolean; frozen?: boolean };
   const draw = (s: St): Shape[] => {
     // v39 R1 E25 (L629): the map labels sit 4 units above their boxes; a legend spells out AV/AF and the dashed (off) state
-    const out: Shape[] = [text('vmh', 10, 182, tr('Visibility map', 'Visibility map'), { size: SM, ink: 'muted' }), text('fsmh', 10, 232, tr('Free space map', 'Free space map'), { size: SM, ink: 'muted' }),
-      text('lg1', 10, 274, 'AV = all-visible · AF = all-frozen', { size: SM, ink: 'muted' }), text('lg2', 10, 292, tr('AV/AF nét đứt = bit chưa bật', 'dashed AV/AF = bit not set'), { size: SM, ink: 'muted' })];
+    const out: Shape[] = [text('vmh', 10, 182, tr('Visibility map', 'Visibility map'), { size: SM, ink: 'muted' }), text('fsmh', 10, 232, tr('Free space map: phần tô = chỗ trống', 'Free space map: filled = free space'), { size: SM, ink: 'muted' }), // v41 R3 (E11): the fill is free space, said in words
+      text('lg1', 10, 292, 'AV = all-visible · AF = all-frozen', { size: SM, ink: 'muted' }), text('lg2', 10, 310, tr('AV/AF nét đứt = bit chưa bật', 'dashed AV/AF = bit not set'), { size: SM, ink: 'muted' })];
     pages.forEach((p, i) => {
       const x = px(i);
       out.push({ k: `pg${i}`, t: 'r', x, y: 28, w: PW, h: 136, tone: 'plain' }, text(`pgt${i}`, x + 6, 40, tr(`trang ${i}`, `page ${i}`), { size: SM, b: true }));
@@ -235,18 +235,18 @@ define<VacuumModel>('pg-vacuum-flow', { pages: ['ldld', 'llln', 'ddll'] }, (m, t
         out.push(...box(`t${i}.${j}`, x + 6, 50 + j * 22, PW - 12, 18, '', tone), text(`tl${i}.${j}`, x + 12, 59 + j * 22, gone ? tr('trống', 'free') : c === 'd' ? tr('chết', 'dead') : c === 'n' ? tr('đang chạy', 'in progress') : s.frozen ? 'frozen' : tr('sống', 'live'), { size: SM }));
       });
       const allVis = s.vm && !p.includes('n') && (s.vac || !p.includes('d'));
-      out.push(...box(`av${i}`, x, 194, PW / 2 - 2, 22, 'AV', allVis ? (s.ios ? 'new' : 'live') : 'ghost'));
+      out.push(...box(`av${i}`, x, 194, PW / 2 - 2, 22, 'AV', allVis ? 'live' : 'ghost'));
       out.push(...box(`af${i}`, x + PW / 2 + 2, 194, PW / 2 - 2, 22, 'AF', s.frozen && allVis ? 'ptr' : 'ghost'));
       const free = (s.fsm ? [...p].filter((c) => c === 'd').length + 1 : 1) / 6;
       out.push({ k: `fb${i}`, t: 'r', x, y: 244, w: PW, h: 10, tone: 'ghost' }, { k: `ff${i}`, t: 'r', x, y: 244, w: Math.max(4, PW * free), h: 10, tone: s.fsm ? 'new' : 'cell' });
       if (s.ios && !allVis) out.push({ k: `hf${i}`, t: 'r', x: x - 2, y: 26, w: PW + 4, h: 140, tone: 'warm', o: 0.5 }, text(`hft${i}`, x + PW / 2, 14, 'Heap Fetch', { a: 'm', size: SM, ink: 'warm', b: true }));
     });
-    if (s.ios) out.push(text('iot', 330, 182, tr('Index Only Scan đọc AV trước', 'Index Only Scan reads AV first'), { a: 'e', size: SM, ink: 'new', b: true }));
+    if (s.ios) out.push(text('iot', 10, 274, tr('Index Only Scan đọc AV trước', 'Index Only Scan reads AV first'), { size: SM, ink: 'new', b: true })); // R3 (E11): under the maps, not beside their label
     return out;
   };
   const deadN = pages.join('').split('d').length - 1;
   return {
-    title: tr('VACUUM, visibility map và free space map', 'VACUUM, the visibility map and the free space map'), w: 340, h: 302,
+    title: tr('VACUUM, visibility map và free space map', 'VACUUM, the visibility map and the free space map'), w: 340, h: 320,
     frames: [
       { say: fill(tr('Ba trang heap có {d} tuple chết (bản cũ sau UPDATE/DELETE). Bit all-visible (AV) và all-frozen (AF) đều tắt; free space map ghi trang gần đầy.', 'Three heap pages hold {d} dead tuples (old versions after UPDATE/DELETE). The all-visible (AV) and all-frozen (AF) bits are off; the free space map says the pages are nearly full.'), { d: deadN }), nodes: draw({}) },
       { say: tr('VACUUM gom TID của tuple chết, xóa các mục index trỏ tới chúng, rồi đánh dấu line pointer là unused: chỗ đó dùng lại được (nhưng file không co lại).', 'VACUUM collects the dead tuples\' TIDs, deletes the index entries that point at them, then marks the line pointers unused: the space can be reused (the file does not shrink).'), nodes: draw({ vac: true }) },
