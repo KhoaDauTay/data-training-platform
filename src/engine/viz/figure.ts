@@ -13,20 +13,28 @@ import type { Lang } from './registry';
 export type Bi = string | { vi: string; en: string };
 export interface FigNode {
   id: string;
-  /** box (default), key (pill), grid (cells; `label` above, `sub` below), bars (horizontal bars), note (text only) */
-  shape?: 'box' | 'key' | 'grid' | 'bars' | 'note';
+  /** box (default), key (pill), grid (cells; `label` above, `sub` below), bars (horizontal bars), note (text only),
+   * table (v40: a cylinder, a stored table), doc (v40: a page with a folded corner, a file or document) */
+  shape?: 'box' | 'key' | 'grid' | 'bars' | 'note' | 'table' | 'doc';
   label?: Bi; sub?: Bi; tone?: Tone; mono?: boolean;
   head?: Bi[]; cells?: Bi[][]; toneOf?: Record<string, Tone>; rowTone?: (Tone | null)[]; colTone?: (Tone | null)[]; strike?: number[];
+  /** v40: one grid cell, `"<body row>:<col>"` → tone, drawn with a bold edge (the highlight; words still carry the meaning) */
+  cellTone?: Record<string, Tone>;
   items?: { label: Bi; value: number; note?: Bi; tone?: Tone }[]; mark?: number;
 }
-/** `from`/`to` = a node id, or `grid#row` for a link; `link` = a plain line between neighbours (drawn only side by side). */
+/** `from`/`to` = a node id, or `grid#row` for a link; `link` = a plain line between neighbours (a `grid#row` link is drawn
+ * only side by side; a node-to-node link (v40) is routed like an arrow, without a head). */
 export interface FigEdge { from: string; to: string; label?: Bi; dash?: boolean; link?: boolean }
+/** v40: a dashed frame around whole author rows (one level), its label in a band on top. */
+export interface FigGroup { id: string; label: Bi; nodes: string[] }
 type Patch = Record<string, Partial<FigNode>>;
 export interface FigStep { say: Bi; show?: string[]; set?: Patch }
 export interface FigSpec {
-  title: Bi; caption: Bi; nodes: FigNode[]; rows: string[][]; edges?: FigEdge[]; steps?: FigStep[];
-  /** P5: `set`/`show` change the static figure; `step: i` draws step i alone, static */
-  variants?: Record<string, { set?: Patch; show?: string[]; step?: number; caption?: Bi }>;
+  title: Bi; caption: Bi; nodes: FigNode[]; rows: string[][]; edges?: FigEdge[]; steps?: FigStep[]; groups?: FigGroup[];
+  /** v40 (R1 E11): the text alternative written by hand; without it one is generated from the nodes and arrows */
+  alt?: Bi;
+  /** P5: `set`/`show` change the static figure; `step: i` draws step i alone, static; v40 (R1 E8): own title, caption, alt */
+  variants?: Record<string, { set?: Patch; show?: string[]; step?: number; title?: Bi; caption?: Bi; alt?: Bi }>;
 }
 export interface FigRef { name: string; at: string; variant?: string; step?: number }
 
@@ -114,9 +122,11 @@ function size(n: FigNode, lang: Lang, room: number): Sized {
   }
   const ls = boxLines(n, lang);
   if (shape === 'note') return { w: Math.ceil(widest(ls)), h: tall(ls) };
-  const padX = shape === 'key' ? 14 : 10;
-  return { w: Math.ceil(Math.max(64, widest(ls) + 2 * padX)), h: tall(ls) + 2 * PAD_Y };
+  const padX = shape === 'key' ? 14 : shape === 'doc' ? 16 : 10;
+  return { w: Math.ceil(Math.max(64, widest(ls) + 2 * padX)), h: tall(ls) + 2 * PAD_Y + (shape === 'table' ? CAP : 0) };
 }
+/** v40: a cylinder's cap is an ellipse 2·5 tall (cubic halves, no arc: the checker's path sampler reads M L H V Q C Z). */
+const CAP = 10;
 
 // ── layout (svg-system §2.1–2.3, §3) ─────────────────────────────────────────────────────────────────────────────
 export interface Rect { x: number; y: number; w: number; h: number }
@@ -137,73 +147,43 @@ function plans(spec: FigSpec, lang: Lang, variant?: string): Plan[] {
 /** Lays the spec out `W` units wide (W = the svg's own width in px, 280–640) and returns the renderer's Diagram. */
 export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): Diagram {
   const ps = plans(spec, lang, variant);
-  const room = W - 2 * MARGIN;
   const byId = new Map(spec.nodes.map((n) => [n.id, n]));
   // every frame's version of a node gets the same box: the largest
   const dims = new Map<string, Sized>();
   for (const p of ps) for (const n of p.nodes) {
-    const s = size(n, lang, room);
+    const s = size(n, lang, W - 2 * MARGIN);
     const o = dims.get(n.id);
     dims.set(n.id, o ? { w: Math.max(o.w, s.w), h: Math.max(o.h, s.h) } : s);
   }
   const edges = spec.edges ?? [];
-  const between = (a: string, b: string): FigEdge | undefined => edges.find((e) => (base(e.from) === a && base(e.to) === b) || (base(e.from) === b && base(e.to) === a));
-  const gapOf = (a: string, b: string): number => {
-    const e = between(a, b);
-    return !e ? GAP_X : e.link ? 32 : Math.max(24, e.label ? Math.ceil(textWidth(tr(e.label, lang), SS)) + 12 : 0);
-  };
-  // rows wrap, in order, when they do not fit
-  const vrows: string[][] = [];
-  for (const row of spec.rows) {
-    let cur: string[] = [];
-    let used = 0;
-    for (const id of row) {
-      const d = dims.get(id) ?? fail(`rows: không có node "${id}"`);
-      if (d.w > room) fail(`${id} rộng ${d.w} > ${room} (W ${W})`);
-      const add = (cur.length ? gapOf(cur[cur.length - 1], id) : 0) + d.w;
-      if (cur.length && used + add > room) {
-        vrows.push(cur);
-        cur = [id];
-        used = d.w;
-      } else {
-        cur.push(id);
-        used += add;
-      }
-    }
-    if (cur.length) vrows.push(cur);
+  const gridLink = (e: FigEdge): boolean => !!e.link && (e.from.includes('#') || e.to.includes('#'));
+  // v40: a side lane (16 units at the right) for every edge between rows that are not neighbours; reserving them can
+  // change the wrapping, so lay out again until the count is stable
+  let reserve = 0;
+  let pl = placeRows(spec, lang, W, dims, reserve);
+  for (let i = 0; i < 3; i++) {
+    const need = edges.filter((e) => !gridLink(e) && Math.abs(pl.rowOf.get(base(e.from))! - pl.rowOf.get(base(e.to))!) > 1).length;
+    if (need <= reserve) break;
+    reserve = need;
+    pl = placeRows(spec, lang, W, dims, reserve);
   }
-  const rowOf = new Map<string, number>();
-  vrows.forEach((r, i) => r.forEach((id) => rowOf.set(id, i)));
-  for (const n of spec.nodes) if (!rowOf.has(n.id)) fail(`node "${n.id}" không nằm trong rows`);
-  // a labelled vertical edge widens its gap
-  const labelled = new Set(edges.filter((e) => e.label && !e.link && Math.abs(rowOf.get(base(e.from))! - rowOf.get(base(e.to))!) === 1)
-    .map((e) => Math.min(rowOf.get(base(e.from))!, rowOf.get(base(e.to))!)));
-  const at = new Map<string, Rect>();
-  let y = MARGIN;
-  const bands: [number, number][] = [];
-  vrows.forEach((r, i) => {
-    const hh = Math.max(...r.map((id) => dims.get(id)!.h));
-    const width = r.reduce((a, id, j) => a + dims.get(id)!.w + (j ? gapOf(r[j - 1], id) : 0), 0);
-    let x = Math.round((W - width) / 2);
-    r.forEach((id, j) => {
-      if (j) x += gapOf(r[j - 1], id);
-      const d = dims.get(id)!;
-      at.set(id, { x, y: y + Math.round((hh - d.h) / 2), w: d.w, h: d.h });
-      x += d.w;
-    });
-    bands.push([y, y + hh]);
-    y += hh + (i < vrows.length - 1 ? (labelled.has(i) ? GAP_LABEL : GAP_Y) : 0);
-  });
-  const H = y + MARGIN;
+  const { vrows, rowOf, at, bands, H, CW } = pl;
 
   // routes: decided once from the geometry (the same for every frame)
   const lanes = new Map<number, number>();
+  let side = 0;
+  const lane = (gap: number): number => {
+    const k = lanes.get(gap) ?? 0;
+    lanes.set(gap, k + 1);
+    return Math.round((bands[gap][1] + bands[gap + 1][0]) / 2) + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * 8;
+  };
   const routes = edges.map((e) => {
     const a = at.get(base(e.from)) ?? fail(`edge: không có node "${e.from}"`);
     const b = at.get(base(e.to)) ?? fail(`edge: không có node "${e.to}"`);
     const ra = rowOf.get(base(e.from))!, rb = rowOf.get(base(e.to))!;
     const label = tr(e.label, lang);
-    if (e.link) {
+    const plain = !!e.link; // a link has no head and ends on the box edge
+    if (gridLink(e)) {
       if (ra !== rb) return undefined; // stacked on a phone: the text alternative keeps it
       const [l, r] = a.x < b.x ? [e.from, e.to] : [e.to, e.from];
       const L = at.get(base(l))!, R = at.get(base(r))!;
@@ -213,28 +193,27 @@ export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): 
       if (Math.abs(vrows[ra].indexOf(base(e.from)) - vrows[ra].indexOf(base(e.to))) !== 1) fail(`${e.from}→${e.to}: cùng hàng nhưng không cạnh nhau`);
       const cy = Math.round((Math.max(a.y, b.y) + Math.min(a.y + a.h, b.y + b.h)) / 2);
       const right = a.x < b.x;
-      const x1 = right ? a.x + a.w + 2 : a.x - 2;
-      const [x2] = stopAt(x1, cy, b.x + b.w / 2, cy, STROKE, b); // the core's rule (L620): the tip stays 3 units outside b
+      const x1 = plain ? (right ? a.x + a.w : a.x) : right ? a.x + a.w + 2 : a.x - 2;
+      const x2 = plain ? (right ? b.x : b.x + b.w) : stopAt(x1, cy, b.x + b.w / 2, cy, STROKE, b)[0]; // the core's rule (L620): the tip stays 3 units outside b
       return { e, d: `M${x1} ${cy} L${x2} ${cy}`, lab: label ? { x: (x1 + x2) / 2, y: cy - 6 - lineH(SS) / 2, a: 'm' as const, s: label } : undefined };
     }
-    if (Math.abs(ra - rb) !== 1) fail(`${e.from}→${e.to}: hai hàng không liền nhau (cần đổi rows)`);
     const down = rb > ra;
-    const y1 = down ? a.y + a.h + 2 : a.y - 2;
-    const y2 = (x: number, from: number): number => stopAt(x, from, x, b.y + b.h / 2, STROKE, b)[1];
+    const y1 = plain ? (down ? a.y + a.h : a.y) : down ? a.y + a.h + 2 : a.y - 2;
+    const end = (x: number, from: number): number => (plain ? (down ? b.y : b.y + b.h) : stopAt(x, from, x, b.y + b.h / 2, STROKE, b)[1]);
+    if (Math.abs(ra - rb) !== 1) {
+      if (label) fail(`${e.from}→${e.to}: nhãn trên làn bên chưa hỗ trợ`);
+      return { e, d: laneRoute(a, b, ra, rb, CW + 8 + 16 * side++, lane, end) };
+    }
     const lo = Math.max(a.x, b.x), hi = Math.min(a.x + a.w, b.x + b.w);
     if (hi - lo >= 24) {
       const x = Math.round((lo + hi) / 2);
-      const ye = y2(x, y1);
+      const ye = end(x, y1);
       return { e, d: `M${x} ${y1} L${x} ${ye}`, lab: label ? { x: x + 6, y: (y1 + ye) / 2, a: undefined, s: label } : undefined };
     }
-    if (label) fail(`${e.from}→${e.to}: nhãn trên đường gấp khúc chưa hỗ trợ`);
-    const gap = Math.min(ra, rb);
-    const k = lanes.get(gap) ?? 0;
-    lanes.set(gap, k + 1);
-    const ym = Math.round((bands[gap][1] + bands[gap + 1][0]) / 2) + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * 8;
+    const ym = lane(Math.min(ra, rb));
     // the elbow lands on the part of b nearest the source, so two arrows into one box never share a tip
     const ax = Math.round(a.x + a.w / 2), bx = Math.round(Math.min(b.x + b.w - 12, Math.max(b.x + 12, ax)));
-    return { e, d: `M${ax} ${y1} L${ax} ${ym} L${bx} ${ym} L${bx} ${y2(bx, ym)}` };
+    return { e, d: `M${ax} ${y1} L${ax} ${ym} L${bx} ${ym} L${bx} ${end(bx, ym)}`, lab: label ? elbowLabel(label, ax, bx, ym, e) : undefined };
   });
   /** A link end's y: a grid row's middle (`grid#2`), else the node's middle. */
   function anchorY(end: string, r: Rect): number {
@@ -244,11 +223,12 @@ export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): 
     return Math.round(r.y + tall(titleLines(n, lang, 'label')) + (n.label === undefined ? 0 : 4) + ((n.head ? 1 : 0) + Number(row) + 0.5) * ROW_H);
   }
 
-  /** data-from/data-to name a box the checker can find: a box or key end (a grid or bars end has no single rect, the checker finds its nearest cell). */
-  const boxy = (end: string): boolean => ['box', 'key'].includes(byId.get(base(end))?.shape ?? 'box');
+  /** data-from/data-to name a box the checker can find: a box, key, table or doc end (a grid or bars end has no single rect, the checker finds its nearest cell). */
+  const boxy = (end: string): boolean => ['box', 'key', 'table', 'doc'].includes(byId.get(base(end))?.shape ?? 'box');
   const ends = (e: FigEdge): Record<string, string> => ({ ...(boxy(e.from) ? { 'data-from': `n:${base(e.from)}` } : {}), ...(boxy(e.to) ? { 'data-to': `n:${base(e.to)}` } : {}) });
+  const parentOf = groupOf(spec);
   const frames: Frame[] = ps.map((p) => {
-    const shapes: Shape[] = [];
+    const shapes: Shape[] = [...groupShapes(spec, lang, at, CW)]; // under everything: frame order is paint order
     routes.forEach((r, i) => {
       if (!r || !p.show.has(base(r.e.from)) || !p.show.has(base(r.e.to))) return;
       const k = `e:${i}`;
@@ -257,10 +237,138 @@ export function layout(spec: FigSpec, lang: Lang, W: number, variant?: string): 
         : { k, t: 'p', d: r.d, ink: 'edge', w: STROKE, arrow: true, dash: r.e.dash, attrs: ends(r.e) });
       if (r.lab) shapes.push({ k: `${k}.l`, t: 't', x: r.lab.x, y: r.lab.y, s: r.lab.s, size: SS, a: r.lab.a, ink: 'muted' });
     });
-    for (const n of p.nodes) if (p.show.has(n.id)) shapes.push(...draw(n, at.get(n.id)!, lang));
+    for (const n of p.nodes) if (p.show.has(n.id)) shapes.push(...draw(n, at.get(n.id)!, lang, parentOf.get(n.id)));
     return { say: p.say, nodes: shapes };
   });
-  return { title: tr(spec.title, lang), w: W, h: H, frames, maxW: 640 };
+  const v = variant === undefined ? undefined : spec.variants?.[variant];
+  return { title: tr(v?.title ?? spec.title, lang), w: W, h: H, frames, maxW: 640 };
+}
+
+// ── v40 layout pieces: rows and groups, side lanes, elbow labels ───────────────────────────────────────────────────
+const GPAD = 10, GBAND = 20, GAP_ELBOW = 64;
+/** Node id → its group's key (`g:<id>`); a group must hold whole author rows, consecutive. */
+function groupOf(spec: FigSpec): Map<string, string> {
+  const m = new Map<string, string>();
+  for (const g of spec.groups ?? []) {
+    const rs = spec.rows.map((r, i) => [r, i] as const).filter(([r]) => r.some((id) => g.nodes.includes(id)));
+    if (rs.some(([r]) => !r.every((id) => g.nodes.includes(id))) || rs.flatMap(([r]) => r).length !== g.nodes.length
+      || rs.some(([, i], j) => j > 0 && i !== rs[j - 1][1] + 1)) fail(`nhóm ${g.id}: phải gồm trọn các hàng liền nhau`);
+    for (const id of g.nodes) m.set(id, `g:${g.id}`);
+  }
+  return m;
+}
+/** Wraps the author rows into rows that fit, places them (a row with two or more tables or charts aligns their tops, R1 E3),
+ * and leaves room for group bands and `reserve` side lanes at the right (CW = the width boxes may use). */
+function placeRows(spec: FigSpec, lang: Lang, W: number, dims: Map<string, Sized>, reserve: number) {
+  const CW = W - MARGIN - 16 * reserve; // boxes end before CW; lanes run at CW + 8, CW + 24…
+  const edges = spec.edges ?? [];
+  const parentOf = groupOf(spec);
+  const between = (a: string, b: string): FigEdge[] => edges.filter((e) => (base(e.from) === a && base(e.to) === b) || (base(e.from) === b && base(e.to) === a));
+  const gapOf = (a: string, b: string, room: number): number => {
+    const es = between(a, b);
+    if (!es.length) return GAP_X;
+    const lab = Math.max(0, ...es.map((e) => (e.label ? Math.ceil(textWidth(tr(e.label, lang), SS)) + 12 : 0)));
+    // R1 E4/E5: crossing pair lines need room to be traced; take what the row has left, up to 24 + 16 per line
+    const links = es.filter((e) => e.link).length;
+    const want = links ? Math.max(32, Math.min(24 + 16 * links, room - dims.get(a)!.w - dims.get(b)!.w)) : 24;
+    return Math.max(want, lab);
+  };
+  const vrows: string[][] = [];
+  const vg: (string | undefined)[] = [];
+  for (const row of spec.rows) {
+    const g = parentOf.get(row[0]);
+    const room = CW - MARGIN - (g ? 2 * GPAD : 0);
+    let cur: string[] = [];
+    let used = 0;
+    for (const id of row) {
+      const d = dims.get(id) ?? fail(`rows: không có node "${id}"`);
+      if (d.w > room) fail(`${id} rộng ${d.w} > ${room} (W ${W})`);
+      const add = (cur.length ? gapOf(cur[cur.length - 1], id, room) : 0) + d.w;
+      if (cur.length && used + add > room) {
+        vrows.push(cur);
+        vg.push(g);
+        cur = [id];
+        used = d.w;
+      } else {
+        cur.push(id);
+        used += add;
+      }
+    }
+    if (cur.length) {
+      vrows.push(cur);
+      vg.push(g);
+    }
+  }
+  const rowOf = new Map<string, number>();
+  vrows.forEach((r, i) => r.forEach((id) => rowOf.set(id, i)));
+  for (const n of spec.nodes) if (!rowOf.has(n.id)) fail(`node "${n.id}" không nằm trong rows`);
+  // a labelled edge between neighbouring rows widens its gap (room for the label beside a straight arrow or above an elbow)
+  const labelled = new Set(edges.filter((e) => e.label && Math.abs(rowOf.get(base(e.from))! - rowOf.get(base(e.to))!) === 1)
+    .map((e) => Math.min(rowOf.get(base(e.from))!, rowOf.get(base(e.to))!)));
+  const at = new Map<string, Rect>();
+  let y = MARGIN;
+  const bands: [number, number][] = [];
+  vrows.forEach((r, i) => {
+    if (vg[i] && vg[i] !== vg[i - 1]) y += GBAND + GPAD;
+    const hh = Math.max(...r.map((id) => dims.get(id)!.h));
+    const room = CW - MARGIN - (vg[i] ? 2 * GPAD : 0);
+    const width = r.reduce((a, id, j) => a + dims.get(id)!.w + (j ? gapOf(r[j - 1], id, room) : 0), 0);
+    const top = r.filter((id) => ['grid', 'bars'].includes(spec.nodes.find((n) => n.id === id)?.shape ?? '')).length >= 2;
+    let x = Math.round((CW + MARGIN - width) / 2);
+    r.forEach((id, j) => {
+      if (j) x += gapOf(r[j - 1], id, room);
+      const d = dims.get(id)!;
+      at.set(id, { x, y: y + (top ? 0 : Math.round((hh - d.h) / 2)), w: d.w, h: d.h });
+      x += d.w;
+    });
+    bands.push([y, y + hh]);
+    y += hh;
+    if (vg[i] && vg[i] !== vg[i + 1]) y += GPAD;
+    if (i < vrows.length - 1) y += labelled.has(i) ? GAP_ELBOW : GAP_Y;
+  });
+  return { vrows, rowOf, at, bands, H: y + MARGIN, CW };
+}
+/** The dashed group frames and their labels, keys `g:<id>` (the checker's parent of every member box). */
+function groupShapes(spec: FigSpec, lang: Lang, at: Map<string, Rect>, CW: number): Shape[] {
+  return (spec.groups ?? []).flatMap((g) => {
+    const rs = g.nodes.map((id) => at.get(id)!);
+    const y0 = Math.min(...rs.map((r) => r.y)), y1 = Math.max(...rs.map((r) => r.y + r.h));
+    const [s, more] = wrap(tr(g.label, lang));
+    if (more !== undefined) fail(`nhóm ${g.id}: nhãn > 18 ký tự`);
+    const k = `g:${g.id}`;
+    const top = y0 - GBAND - GPAD;
+    return [{ k, t: 'r', x: MARGIN, y: top, w: CW - MARGIN, h: y1 + GPAD - top, tone: 'ghost', rx: 12 } as Shape,
+      { k: `${k}.t`, t: 't', x: MARGIN + 10, y: top + GBAND / 2 + 2, s, size: SS, b: true, ink: 'muted', attrs: { 'data-owner': k } } as Shape];
+  });
+}
+/** A side lane: out into the gap next to the source row, across to the lane at the right, along it, then back through the
+ * gap next to the target row and into the target (never across a row's neighbours). */
+function laneRoute(a: Rect, b: Rect, ra: number, rb: number, lx: number, lane: (gap: number) => number, end: (x: number, from: number) => number): string {
+  const down = rb > ra;
+  const ax = Math.round(a.x + a.w / 2), bx = Math.round(b.x + b.w / 2);
+  const y1 = down ? a.y + a.h + 2 : a.y - 2;
+  const ys = lane(down ? ra : ra - 1), yt = lane(down ? rb - 1 : rb);
+  return `M${ax} ${y1} L${ax} ${ys} L${lx} ${ys} L${lx} ${yt} L${bx} ${yt} L${bx} ${end(bx, yt)}`;
+}
+/** An elbow's label sits above its run, between the two legs; a run too short for it is a content error. */
+function elbowLabel(s: string, ax: number, bx: number, ym: number, e: FigEdge): { x: number; y: number; a: 'm'; s: string } {
+  if (Math.abs(bx - ax) < textWidth(s, SS) + 16) fail(`${e.from}→${e.to}: đoạn ngang quá ngắn cho nhãn "${s}"`);
+  return { x: (ax + bx) / 2, y: ym - 6 - lineH(SS) / 2, a: 'm', s };
+}
+
+/** v40: a cylinder (`table`) or a folded page (`doc`): one filled path (the box, key `n:<id>`), one open path (the cap's
+ * front edge or the fold), then the text, kept clear of both. */
+function pageShapes(n: FigNode, r: Rect, lang: Lang, attrs?: Record<string, string>): Shape[] {
+  const k = `n:${n.id}`;
+  const { x, y, w, h } = r;
+  const tone = n.tone ?? 'cell';
+  const q = (CAP / 2) * (4 / 3); // a cubic through the ellipse's far point
+  const [body, edge] = n.shape === 'table'
+    ? [`M${x} ${y + CAP / 2} C${x} ${y + CAP / 2 - q} ${x + w} ${y + CAP / 2 - q} ${x + w} ${y + CAP / 2} L${x + w} ${y + h - CAP / 2} C${x + w} ${y + h - CAP / 2 + q} ${x} ${y + h - CAP / 2 + q} ${x} ${y + h - CAP / 2} Z`,
+      `M${x} ${y + CAP / 2} C${x} ${y + CAP / 2 + q} ${x + w} ${y + CAP / 2 + q} ${x + w} ${y + CAP / 2}`]
+    : [`M${x} ${y} L${x + w - CAP} ${y} L${x + w} ${y + CAP} L${x + w} ${y + h} L${x} ${y + h} Z`, `M${x + w - CAP} ${y} L${x + w - CAP} ${y + CAP} L${x + w} ${y + CAP}`];
+  return [{ k, t: 'p', d: body, tone, ink: 'edge', w: 1.2, attrs }, { k: `${k}.e`, t: 'p', d: edge, ink: 'edge', w: 1.2 },
+    ...lines(`${k}.t`, boxLines(n, lang), x + w / 2, y + PAD_Y + (n.shape === 'table' ? CAP : 0), { ink: tone === 'ghost' ? 'muted' : 'ink' }, k)];
 }
 
 /** Text lines centred on (cx, top…), each its own <text> (dominant-baseline middle). */
@@ -275,15 +383,17 @@ function lines(k: string, ls: Line[], cx: number, top: number, more: Partial<Ext
 }
 
 /** One node's shapes. Keys: `n:<id>` (its box), `n:<id>.t<i>` (its lines), `n:<id>:<r>:<c>` (a grid cell)… */
-function draw(n: FigNode, r: Rect, lang: Lang): Shape[] {
+function draw(n: FigNode, r: Rect, lang: Lang, parent?: string): Shape[] {
   const k = `n:${n.id}`;
   const shape = n.shape ?? 'box';
   const ink = n.tone === 'ghost' ? 'muted' : 'ink';
+  const attrs = parent ? { 'data-parent': parent } : undefined;
   if (shape === 'box' || shape === 'key') {
     const ls = boxLines(n, lang);
-    return [{ k, t: 'r', x: r.x, y: r.y, w: r.w, h: r.h, tone: n.tone ?? 'cell', rx: shape === 'key' ? r.h / 2 : 8 },
+    return [{ k, t: 'r', x: r.x, y: r.y, w: r.w, h: r.h, tone: n.tone ?? 'cell', rx: shape === 'key' ? r.h / 2 : 8, attrs },
       ...lines(`${k}.t`, ls, r.x + r.w / 2, r.y + PAD_Y, { ink }, k)];
   }
+  if (shape === 'table' || shape === 'doc') return pageShapes(n, r, lang, attrs);
   if (shape === 'note') return lines(`${k}.t`, boxLines(n, lang), r.x + r.w / 2, r.y, { ink: 'ink' });
   const out: Shape[] = [];
   const t = titleLines(n, lang, 'label'), sb = titleLines(n, lang, 'sub');
@@ -300,9 +410,10 @@ function draw(n: FigNode, r: Rect, lang: Lang): Shape[] {
       row.forEach((v, c) => {
         const s = cellText(n, v, lang);
         const ck = `${k}:${i}:${c}`;
-        const tone: Tone = head ? 'cell' : n.toneOf?.[s] ?? n.rowTone?.[body] ?? n.colTone?.[c] ?? n.tone ?? 'plain';
+        const hl = head ? undefined : n.cellTone?.[`${body}:${c}`];
+        const tone: Tone = head ? 'cell' : hl ?? n.toneOf?.[s] ?? n.rowTone?.[body] ?? n.colTone?.[c] ?? n.tone ?? 'plain';
         if (s) {
-          out.push({ k: ck, t: 'r', x, y, w: cols[c], h: ROW_H, tone, rx: 0 },
+          out.push({ k: ck, t: 'r', x, y, w: cols[c], h: ROW_H, tone, rx: 0, bold: !!hl },
             { k: `${ck}.t`, t: 't', x: x + cols[c] / 2, y: y + ROW_H / 2, s, size: SS, b: head, mono: !!n.mono && !head, a: 'm', ink: tone === 'ghost' ? 'muted' : 'ink',
               attrs: { 'data-owner': ck, ...(n.mono && !head ? { lang: 'en' } : {}) } });
         }
@@ -333,11 +444,13 @@ function draw(n: FigNode, r: Rect, lang: Lang): Shape[] {
 
 // ── text alternative (svg-system §6): every node and every edge, generated ────────────────────────────────────
 const WORDS = {
-  vi: { parts: 'Thành phần', arrows: 'Mũi tên', links: 'Đường nối', dashed: 'nét đứt', alt: 'Sơ đồ bằng lời', box: 'hộp', key: 'nhãn', grid: 'bảng', bars: 'biểu đồ cột', note: 'ghi chú', mark: 'mốc' },
-  en: { parts: 'Parts', arrows: 'Arrows', links: 'Links', dashed: 'dashed', alt: 'The figure in words', box: 'box', key: 'label', grid: 'table', bars: 'bar chart', note: 'note', mark: 'mark' },
+  vi: { parts: 'Thành phần', arrows: 'Mũi tên', links: 'Đường nối', dashed: 'nét đứt', alt: 'Sơ đồ bằng lời', box: 'hộp', key: 'nhãn', grid: 'bảng', bars: 'biểu đồ cột', note: 'ghi chú', mark: 'mốc', table: 'bảng lưu', doc: 'tệp' },
+  en: { parts: 'Parts', arrows: 'Arrows', links: 'Links', dashed: 'dashed', alt: 'The figure in words', box: 'box', key: 'label', grid: 'table', bars: 'bar chart', note: 'note', mark: 'mark', table: 'stored table', doc: 'file' },
 };
 const nameOf = (n: FigNode, lang: Lang): string => [tr(n.label, lang), tr(n.sub, lang)].filter(Boolean).join(', ');
 export function altText(spec: FigSpec, lang: Lang, variant?: string): string[] {
+  const own = (variant === undefined ? undefined : spec.variants?.[variant]?.alt) ?? spec.alt; // v40 (R1 E11): written by hand
+  if (own !== undefined) return [tr(own, lang)];
   const w = WORDS[lang];
   const nodes = merge(spec.nodes, variant ? spec.variants?.[variant]?.set : undefined);
   const byId = new Map(nodes.map((n) => [n.id, n]));
@@ -392,7 +505,7 @@ export async function mountFigure(host: HTMLElement, ref: FigRef, deps: Deps, en
     W = w;
     const i = v?.index ?? step ?? ref.step ?? 0;
     v?.destroy();
-    v = mount(host, layout(spec, lang, W, ref.variant), lang, i, { name: ref.name, caption: tr(spec.caption, lang), alt: altText(spec, lang, ref.variant), altTitle: WORDS[lang].alt });
+    v = mount(host, layout(spec, lang, W, ref.variant), lang, i, { name: ref.name, caption: tr((ref.variant === undefined ? undefined : spec.variants?.[ref.variant]?.caption) ?? spec.caption, lang), alt: altText(spec, lang, ref.variant), altTitle: WORDS[lang].alt });
   };
   draw();
   const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(() => draw()) : undefined;
