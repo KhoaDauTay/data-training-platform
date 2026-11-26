@@ -8,16 +8,26 @@ const DATE_OID = 1082;
 /** int2/4/8, oid, float4/8, numeric: right-aligned with tabular figures so digits line up (Plan 8b 8.1). */
 const NUMERIC_OIDS = new Set([20, 21, 23, 26, 700, 701, 1700]);
 
+const TIMESTAMP_OID = 1114;
+const p2 = (n: number): string => String(n).padStart(2, '0');
+/** psql's text: `YYYY-MM-DD HH:MM:SS[.fff]` (fraction only when non-zero, trailing zeros dropped). */
+const stamp = (y: number, mo: number, d: number, h: number, mi: number, s: number, ms: number): string =>
+  `${y}-${p2(mo + 1)}-${p2(d)} ${p2(h)}:${p2(mi)}:${p2(s)}${ms ? `.${String(ms).padStart(3, '0').replace(/0+$/, '')}` : ''}`;
 /**
- * `type` omitted (e.g. grader samples): a Date at UTC midnight is shown as a plain date. Timestamps are shown in the
- * session's time zone (UTC in PGlite), the way psql prints them, never the machine's: date_trunc('month', d) is
- * "2026-07-01 00:00:00", not "07:00:00" in Vietnam.
+ * Values print exactly as Postgres prints them, never shifted by the viewer's time zone (v45 S-00). PGlite parses
+ * `timestamp` (1114, no zone) as LOCAL wall-clock time, `date` (1082) as UTC midnight and `timestamptz` (1184) as the real
+ * instant; so 1114 is read back with the local getters, 1082 and 1184 with the UTC ones (timestamptz in the session zone,
+ * UTC in PGlite, as psql shows it: date_trunc('month', d) is "2026-07-01 00:00:00", not "07:00:00" in Vietnam).
+ * `type` omitted (e.g. grader samples): UTC midnight = a date, else the local wall clock (a `timestamp`, the common case).
  */
 export function formatCell(v: unknown, type?: number): string {
   if (v === null || v === undefined) return 'NULL';
   if (v instanceof Date) {
-    const midnight = v.getUTCHours() === 0 && v.getUTCMinutes() === 0 && v.getUTCSeconds() === 0;
-    return type === DATE_OID || (type === undefined && midnight) ? v.toISOString().slice(0, 10) : v.toISOString().slice(0, 19).replace('T', ' ');
+    const utcMidnight = v.getUTCHours() === 0 && v.getUTCMinutes() === 0 && v.getUTCSeconds() === 0 && v.getUTCMilliseconds() === 0;
+    if (type === DATE_OID || (type === undefined && utcMidnight)) return v.toISOString().slice(0, 10);
+    if (type === TIMESTAMP_OID || type === undefined)
+      return stamp(v.getFullYear(), v.getMonth(), v.getDate(), v.getHours(), v.getMinutes(), v.getSeconds(), v.getMilliseconds());
+    return stamp(v.getUTCFullYear(), v.getUTCMonth(), v.getUTCDate(), v.getUTCHours(), v.getUTCMinutes(), v.getUTCSeconds(), v.getUTCMilliseconds());
   }
   if (typeof v === 'object') return JSON.stringify(v);
   return String(v);
