@@ -1,0 +1,64 @@
+# B4-10 (tools/v42/diagram-plan-v42.md): the key prefix plus an IAM condition keep tenants apart in one table. Lessons:
+# e-dy-l5-09 (Ý chính), variant `keys` in e-dy-l3-14 (Ý chính; it keeps its registry dy-single-table as viz:).
+# Data: the IAM rules are quoted from the lesson (docs-only: no IAM in dynoxide). Rows are real items of e-dy-l3-14's lab (SK cut
+# to SHIP#…#SH-<id>, the full key is 23 characters). RCU by tenant: dynoxide on e-dy-l5-09's two runnable Queries
+# (tools/v42/b4check.log): C02 eventually consistent 0.5 RCU, C01 strongly consistent 1.0 RCU (the plan's r-101 / r-102).
+# Deviation: Scan sits beside the table (a dashed arrow, labelled) and the Query comes from above, so the two arrows never share a
+# side; the variant's GSI1PK values are cut to TENANT#C0n#… (22 characters), the grid's sub names the rest (all three are open shipments in the lab); no row links (side by side the rows already line up).
+# Source: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/specifying-conditions.html
+title: { vi: "Một bảng chung, mỗi khách một tiền tố khóa", en: "One shared table, one key prefix per tenant" }
+caption:
+  vi: "Credentials của khách C02 có điều kiện dynamodb:LeadingKeys = TENANT#C02, nên Query chỉ chạm item của C02. Scan không mang khóa nên phải bị cấm."
+  en: "Tenant C02's credentials carry the condition dynamodb:LeadingKeys = TENANT#C02, so a Query touches only C02's items. Scan carries no key, so it must be denied."
+alt:
+  vi: "Trong bảng chung, mã khách đứng đầu mọi khóa và điều kiện IAM dynamodb:LeadingKeys giới hạn mỗi khách ở tiền tố của mình. Chi phí từng khách phải tự cộng từ ConsumedCapacity của mỗi request."
+  en: "In a shared table the tenant id leads every key, and the IAM condition dynamodb:LeadingKeys limits each tenant to its own prefix. Per-tenant cost must be summed from each request's ConsumedCapacity."
+nodes:
+  - { id: iam, shape: key, mono: true, label: "LeadingKeys = TENANT#C02" }
+  - { id: q, label: Query C02, tone: live }
+  - id: t
+    shape: grid
+    label: Portal
+    head: [PK, SK]
+    cells: [["TENANT#C01", "SHIP#…#SH-1004"], ["TENANT#C02", "SHIP#…#SH-1008"], ["TENANT#C02", "SHIP#…#SH-1014"]]
+    rowTone: [ghost, live, live]
+  - id: gk
+    shape: grid
+    label: GSI byTenantStatus
+    sub: "… = STATUS#open"
+    head: [GSI1PK]
+    cells: [["TENANT#C01#…"], ["TENANT#C02#…"], ["TENANT#C02#…"]]
+    rowTone: [ghost, live, live]
+  - { id: s, label: Scan, sub: { vi: "không có khóa: cấm", en: "no key: denied" }, tone: dead }
+  - id: bill
+    shape: bars
+    label: { vi: "RCU theo khách", en: "RCU by tenant" }
+    items:
+      - { label: C01, value: 10, note: "1.0" }
+      - { label: C02, value: 5, note: "0.5", tone: live }
+rows:
+  - [iam]
+  - [q]
+  - [t, gk, s]
+  - [bill]
+edges:
+  - { from: iam, to: q }
+  - { from: q, to: t, label: { vi: "chỉ C02", en: C02 only } }
+  - { from: s, to: t, dash: true }
+steps:
+  - say: { vi: "Mọi khóa mở đầu bằng mã khách.", en: "Every key starts with the tenant id." }
+    show: [iam, q, t]
+    alt: { vi: "Điều kiện IAM so tiền tố partition key với danh tính, nên credentials của C02 chỉ chạm item TENANT#C02.", en: "The IAM condition compares the partition-key prefix with the identity, so C02's credentials touch only TENANT#C02 items." }
+  - say: { vi: "Scan không mang khóa: phải cấm.", en: "Scan carries no key: deny it." }
+    show: [iam, q, t, s, bill]
+    alt: { vi: "ForAllValues đúng khi request không có khóa, nên Scan lọt qua trừ khi thêm điều kiện Null và không cấp Scan.", en: "ForAllValues is true when a request has no key, so Scan slips through unless the Null condition is added and Scan is not granted." }
+variants:
+  keys:
+    show: [t, gk]
+    title: { vi: "Khóa của GSI cũng mở đầu bằng mã khách", en: "GSI keys start with the tenant id too" }
+    caption:
+      vi: "Bảng Portal: PK = TENANT#C02 cho mọi lô của khách C02, và GSI byTenantStatus có GSI1PK = TENANT#C02#STATUS#open, nên mỗi mẫu truy cập của một khách là một Query."
+      en: "The Portal table: PK = TENANT#C02 for every shipment of tenant C02, and the GSI byTenantStatus has GSI1PK = TENANT#C02#STATUS#open, so each access pattern of one tenant is one Query."
+    alt:
+      vi: "Cả khóa của GSI cũng phải mở đầu bằng mã khách, nếu không điều kiện IAM không giữ được index. Một GSI chỉ theo status gom lô của mọi khách vào một partition key."
+      en: "GSI keys must start with the tenant id too, or the IAM condition cannot protect the index. A GSI on status alone puts every tenant's shipments under one partition key."

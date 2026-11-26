@@ -5,6 +5,7 @@ level: L4
 module: patterns
 title: "Sparse GSI: index chỉ chứa thứ bạn cần tìm"
 title_en: "Sparse GSI: an index holding only what you look for"
+figures: [{ name: dy-sparse-gsi, at: idea, variant: queue }]
 kind: lab
 runtime: browser
 minutes: 10
@@ -202,6 +203,8 @@ Nhiều người nghĩ đặt thuộc tính thành một giá trị như `CLOSED
 
 Lab chạy bằng dynoxide trong trình duyệt.
 
+Hình dưới vẽ ba phiếu: phiếu không có open_queue không vào GSI.
+
 ## Cú pháp
 
 ```text
@@ -291,6 +294,8 @@ How to use it: set the GSI key attribute when the item enters the state you sear
 Many people think setting the attribute to a value such as `CLOSED` is enough to "switch it off". In fact DynamoDB does not read meanings: while the attribute is there, the item is in the GSI. You must `REMOVE` it.
 
 The lab runs on dynoxide in the browser.
+
+The figure below draws three tickets: the one without open_queue is not in the GSI.
 
 ## Syntax
 

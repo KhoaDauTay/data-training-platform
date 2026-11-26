@@ -8,6 +8,7 @@
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 import { analyze, samplePath, type OverlapFrame } from '../scripts/overlap-check.mjs';
+import { parseBestCard, type BpCard } from '../src/engine/best';
 import { parseEngineLesson, type EngineLesson } from '../src/engine/content';
 import type { Shape } from '../src/engine/viz/engineVizCore';
 import { resolveViz } from '../src/engine/viz/engineViz';
@@ -23,10 +24,17 @@ const engineFiles = import.meta.glob<string>('../content/engine/*/{L*,ext}/*.md'
 const engine: EngineLesson[] = Object.entries(engineFiles).map(([p, s]) => parseEngineLesson(s, p, parse));
 const general = await Promise.all(Object.entries(fullLessons).map(async ([p, load]) => parseFullLesson(await load(), lessonIdOf(p))));
 const SHORT = { postgres: 'pg', mongodb: 'mg', dynamodb: 'dy', design: 'ds', stack: 'st' } as const;
+// v44 B4 (P1, L812): Best Practice cards host figures too (engineBest's FIG_TRACK)
+const best = Object.entries(import.meta.glob<string>('../content/engine/best/*/*.md', { query: '?raw', import: 'default', eager: true })).map(([p, t]) => {
+  const m = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/.exec(t.replace(/\r\n/g, '\n'))!;
+  return parseBestCard({ fm: parse(m[1]), body: m[2] }, p) as BpCard;
+});
+const BP_SHORT = { sql: 'sql', postgres: 'pg', mongodb: 'mg', dynamodb: 'dy' } as const;
 /** Every figure reference in content: lesson id, its engine short name, the reference. */
 const refs: { id: string; eng: string; f: FigRef }[] = [
   ...engine.flatMap((l) => (l.figures ?? []).map((f) => ({ id: l.id, eng: SHORT[l.engine], f }))),
   ...general.flatMap((l) => (l.figures ?? []).map((f) => ({ id: l.id, eng: 'sql', f }))),
+  ...best.flatMap((c) => (c.figures ?? []).map((f) => ({ id: c.id, eng: BP_SHORT[c.track], f }))),
 ];
 const specName = (r: { eng: string; f: FigRef }): string | undefined => [r.f.name, `${r.eng}-${r.f.name}`].find((n) => specs[n]);
 const WIDTHS = [640, 335, 280];
@@ -149,7 +157,7 @@ describe('v44: no diagrams drawn with characters', () => {
 describe.each(Object.keys(specs))('v39 figure %s', (name) => {
   const spec = specs[name];
   it('giới hạn: ≤ 12 node, ≤ 14 mũi tên, ≤ 6 bước; tên file = [a-z0-9-]+; VI và EN đủ, EN không dấu', () => {
-    expect(name).toMatch(/^(sql|ds|st|pg|mg|dy)-[a-z0-9-]+$/);
+    expect(name).toMatch(/^(sql|ds|st|pg|mg|dy|bp)-[a-z0-9-]+$/); // v44 B4 (L812): bp- = a Best Practice card's figure
     expect(spec.nodes.length).toBeLessThanOrEqual(12);
     expect((spec.edges ?? []).length).toBeLessThanOrEqual(14);
     expect((spec.steps ?? []).length).toBeLessThanOrEqual(6);
@@ -209,7 +217,7 @@ describe.each(Object.keys(specs))('v39 figure %s', (name) => {
             }
           }
           // tokens only: every tone and ink the builder writes maps to an --eng-* alias in the core
-          for (const n of f.nodes) expect(JSON.stringify(n)).not.toMatch(/#[0-9a-f]{3,6}\b|rgb\(|var\(--(?!eng-)/i);
+          for (const n of f.nodes) expect(JSON.stringify({ ...n, s: undefined })).not.toMatch(/#[0-9a-f]{3,6}\b|rgb\(|var\(--(?!eng-)/i); // v44 B4: drawn text is content (TENANT#C02, VOTE#2026), not a colour
           // R1 E10: two arrows into one box land ≥ 16 apart or share one tip (a bus), never a double arrowhead
           for (let p = 0; p < m.arrows.length; p++) for (let q = p + 1; q < m.arrows.length; q++) {
             const [A, B] = [m.arrows[p], m.arrows[q]];
@@ -255,7 +263,7 @@ describe.each(Object.keys(specs))('v39 figure %s', (name) => {
         // v44 (L784, L802 eye E2): a variant may patch a grid's rows or bars (another lesson's data), and its tables are the grids its
         // own frame draws, as the variant's and that step's set patch them (never the base's)
         const patch = (n: FigSpec['nodes'][number]): FigSpec['nodes'][number] => ({ ...n, ...v?.set?.[n.id], ...(v?.step !== undefined ? spec.steps?.[v.step].set?.[n.id] : {}) }) as FigSpec['nodes'][number];
-        const grids = spec.nodes.filter((n) => (n.shape === 'grid' || n.shape === 'bars') && (v?.step !== undefined || v?.show ? shown.has(n.id) : true)).map(patch);
+        const grids = spec.nodes.filter((n) => (n.shape === 'grid' || n.shape === 'bars') && (v?.step !== undefined || v?.show ? shown.has(n.id) : !spec.steps?.length || spec.steps.some((st) => !st.show || st.show.includes(n.id)))).map(patch); // v44 B4: a node only a variant shows has no table in the base figure
         expect(tables.length, `${lang} bảng dữ liệu`).toBe(grids.length);
         for (const [i, t] of tables.entries()) {
           expect(t.caption, lang).not.toBe('');

@@ -1,0 +1,41 @@
+# B4-5 (tools/v42/diagram-plan-v42.md): a big seller needs a second shard-key field to split. Lesson: e-mg-l5-12 (Ý chính).
+# Data: the lesson's runnable count on mingo (demo_setup, tools/v42/b4check.log): S07 7, S03 2, S12 1 of 10 orders.
+# Deviation: the bars show the three sellers (the plan's "others 3" = S03 2 + S12 1); zone GOLD is a frame around the two chunks
+# (a group), not a box they point into; the compound key is two mono lines (it is 29 characters), so its "S07 splits" sub moved
+# into the two arrows it sends; the chunk months are an illustration of splitting by createdAt, not the lab's dates, and the
+# alt does not name them.
+# Source: https://www.mongodb.com/docs/manual/core/zone-sharding/
+title: { vi: "Người bán lớn cần trường thứ hai trong shard key", en: "A big seller needs a second shard-key field" }
+caption:
+  vi: "S07 có 7 trong 10 đơn. Với shard key chỉ tenantId, mọi đơn của S07 là một giá trị khóa; thêm createdAt thì chia được thành nhiều chunk, và zone ghim cả khoảng đó lên một shard mạnh."
+  en: "S07 has 7 of 10 orders. With tenantId alone as the shard key, all of S07's orders are one key value; adding createdAt splits them into chunks, and a zone pins that whole range to a strong shard."
+alt:
+  vi: "Trong collection chung, tenantId đứng đầu shard key, và một trường thứ hai cho đơn của người bán lớn chia được ra nhiều chunk. Zone ghim khoảng của người bán đó lên shard riêng."
+  en: "In a shared collection tenantId leads the shard key, and a second field lets a big seller's orders split across chunks. A zone pins that seller's range to its own shard."
+nodes:
+  - id: b
+    shape: bars
+    label: { vi: "đơn theo người bán", en: "orders by seller" }
+    items:
+      - { label: S07, value: 7, tone: warm }
+      - { label: S03, value: 2 }
+      - { label: S12, value: 1 }
+  - { id: k1, shape: key, mono: true, label: "{ tenantId: 1 }", sub: { vi: "S07 = 1 giá trị", en: "S07 = 1 value" }, tone: dead }
+  - { id: k2, shape: key, mono: true, label: "{ tenantId: 1, createdAt: 1 }", tone: live }
+  - { id: c1, label: chunk S07, sub: { vi: "tháng 9", en: Sep } }
+  - { id: c2, label: chunk S07, sub: { vi: "tháng 10", en: Oct } }
+groups:
+  - { id: z, label: zone GOLD, nodes: [c1, c2] }
+rows:
+  - [b]
+  - [k1, k2]
+  - [c1, c2]
+edges:
+  - { from: k2, to: c1 }
+  - { from: k2, to: c2 }
+steps:
+  - say: { vi: "Chỉ tenantId: S07 dồn một chunk.", en: "tenantId only: S07 in one chunk." }
+    show: [b, k1]
+    alt: { vi: "Mọi đơn của S07 cùng một giá trị khóa, nên không chia được qua nhiều chunk.", en: "All of S07's orders share one key value, so they cannot split across chunks." }
+  - say: { vi: "Thêm createdAt, ghim khoảng S07 lên zone mạnh.", en: "Add createdAt, pin S07's range to a strong zone." }
+    alt: { vi: "Khóa kép chia đơn của S07 theo thời gian, và zone phủ đúng khoảng tiền tố S07 trên shard phần cứng mạnh.", en: "The compound key splits S07's orders by time, and a zone covers S07's prefix range on stronger hardware." }

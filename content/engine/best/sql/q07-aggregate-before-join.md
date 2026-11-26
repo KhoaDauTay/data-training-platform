@@ -6,6 +6,7 @@ level: L2
 module: q
 title: "Gộp trước rồi mới join hai bảng con"
 title_en: "Aggregate before joining two child tables"
+figures: [{ name: bp-fanout-join, at: idea }]
 kind: quiz
 minutes: 4
 objectives:
@@ -59,6 +60,8 @@ quiz:
 
 Không join một bảng cha với **hai** bảng con (cùng là quan hệ 1-n: một dòng cha, nhiều dòng con) rồi mới `sum`. Gộp từng bảng con về đúng grain (mức chi tiết) của bảng cha trước, bằng truy vấn con (subquery) hoặc CTE, rồi mới join.
 
+Hình dưới vẽ khoản trả của đơn 1204 lặp lại trên ba dòng hàng.
+
 ## Vì sao
 
 - Join hai quan hệ 1-n nhân số dòng (fan-out).
@@ -74,6 +77,8 @@ Trên `lab`, đơn từ 2026-10-01: bản join thẳng cho tổng đã trả 295
 ## Key idea
 
 Never join a parent table to **two** child tables (both 1-n: one parent row, many child rows) and then `sum`. Aggregate each child to the parent's grain (level of detail) first, in a subquery or CTE, and only then join.
+
+The figure below draws order 1204's payment repeated on its three item lines.
 
 ## Why
 

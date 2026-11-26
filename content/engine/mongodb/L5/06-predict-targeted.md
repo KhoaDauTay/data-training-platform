@@ -5,6 +5,7 @@ level: L5
 module: sharding-ts
 title: "Đoán định tuyến: truy vấn tới một shard hay mọi shard?"
 title_en: "Predict the routing: one shard or every shard?"
+figures: [{ name: mg-shard-routing, at: idea }]
 kind: predict
 minutes: 6
 runtime: docs
@@ -65,6 +66,8 @@ Cluster có 10 shard, và trang tìm đơn bỗng chậm như khi chỉ có mộ
 
 Nhiều người nghĩ chỉ cần bộ lọc có vài trường của shard key. Thật ra thứ tự mới quyết định: với `{ a, b, c }`, chỉ `{ a }`, `{ a, b }` hoặc đủ ba là tiền tố. `{ b, c }` giống như không có shard key. `updateMany()` và `deleteMany()` cũng là broadcast khi bộ lọc không chọn được shard. Ngoại lệ có chủ đích: aggregation trên lượng lớn dữ liệu có thể lợi từ scatter-gather vì chạy song song trên mọi shard.
 
+Hình dưới so một bộ lọc có tiền tố shard key với một bộ lọc thiếu trường đầu.
+
 ## Tóm tắt
 
 - Targeted = bộ lọc có shard key đầy đủ hoặc một tiền tố của nó.
@@ -83,6 +86,8 @@ The cluster has 10 shards, yet the order search page is suddenly as slow as with
 This is a prediction based on the MongoDB docs (page "Routing with mongos"); the browser has no sharded cluster. A query that holds the shard key, or a prefix of a compound shard key, goes to the shard (or set of shards) holding the matching chunks: targeted. A query without the shard key goes to every shard, and `mongos` waits for all of them and merges: broadcast, or scatter-gather. Adding shards does not make this kind scale linearly.
 
 Many people think the filter only needs a few fields of the shard key. In fact the order decides: with `{ a, b, c }`, only `{ a }`, `{ a, b }` or all three are prefixes. `{ b, c }` is as good as no shard key. `updateMany()` and `deleteMany()` are broadcast too when the filter cannot pick a shard. A deliberate exception: aggregation over a large amount of data can benefit from scatter-gather because it runs in parallel on every shard.
+
+The figure below compares a filter with a shard-key prefix and a filter missing the first field.
 
 ## Recap
 
