@@ -103,7 +103,7 @@ Có mạng tuyến không có nghĩa là phải có CSDL đồ thị. Bài này 
 
 **Độ sâu thay đổi: CTE đệ quy, trên đồ thị vừa phải.** "Đi tới đâu được", "đường ít chặng nhất", "có vòng không" cần `WITH RECURSIVE`, `SEARCH` và `CYCLE` như các bài trước. Cách liệt kê mọi đường hợp với đồ thị nhỏ; số đường tăng rất nhanh khi đồ thị lớn và nhiều nhánh.
 
-**Khi nào CSDL đồ thị đáng dùng.** Tài liệu Neo4j nói CSDL đồ thị lưu quan hệ ngay cạnh nút và không dùng JOIN để đi theo quan hệ, nên duyệt nhiều bước là việc chính của nó. Cypher viết một mẫu nhiều bước gọn trong một dòng, và có sẵn `SHORTEST` cho đường ít bước nhảy nhất; đường có trọng số dùng thư viện GDS. Dấu hiệu nên cân nhắc: phần lớn câu hỏi là đi đường với độ sâu thay đổi, nhiều kiểu quan hệ đan nhau, cần thuật toán đồ thị.
+**Khi nào CSDL đồ thị đáng dùng.** Tài liệu Neo4j nói CSDL đồ thị lưu quan hệ ngay cạnh nút và không dùng JOIN để đi theo quan hệ, nên duyệt nhiều bước là việc chính của nó. Cypher viết một mẫu nhiều bước gọn trong một dòng, và có sẵn `SHORTEST` cho đường ít bước nhảy nhất; đường có trọng số dùng thư viện GDS (Graph Data Science). Dấu hiệu nên cân nhắc: phần lớn câu hỏi là đi đường với độ sâu thay đổi, nhiều kiểu quan hệ đan nhau, cần thuật toán đồ thị.
 
 **Khi nào ở lại PostgreSQL.** Đồ thị chỉ là một phần nhỏ của dữ liệu quan hệ, cần ràng buộc và giao dịch chung với các bảng khác, hoặc độ sâu nhỏ và biết trước. Thêm một hệ thống nữa là thêm việc đồng bộ dữ liệu giữa hai nơi.
 
@@ -206,7 +206,7 @@ Having a route network does not mean you need a graph database. This lesson sets
 
 **Varying depth: a recursive CTE, on a moderate graph.** "Where can I get to", "the route with the fewest legs", "is there a loop" need `WITH RECURSIVE`, `SEARCH` and `CYCLE` as in the earlier lessons. Listing every route suits small graphs; the number of routes grows very fast when a graph is large and branches a lot.
 
-**When a graph database is worth it.** The Neo4j docs say a graph database stores relationships right next to the nodes and does not use JOINs to follow them, so many-step traversal is its main job. Cypher writes a many-step pattern on one line, and has `SHORTEST` built in for the path with the fewest hops; weighted paths use the GDS library. Signs to weigh it: most questions walk paths of varying depth, many relationship types interweave, graph algorithms are needed.
+**When a graph database is worth it.** The Neo4j docs say a graph database stores relationships right next to the nodes and does not use JOINs to follow them, so many-step traversal is its main job. Cypher writes a many-step pattern on one line, and has `SHORTEST` built in for the path with the fewest hops; weighted paths use the GDS (Graph Data Science) library. Signs to weigh it: most questions walk paths of varying depth, many relationship types interweave, graph algorithms are needed.
 
 **When to stay on PostgreSQL.** The graph is a small part of relational data, it needs constraints and transactions shared with other tables, or the depth is small and known in advance. Adding another system means keeping data in sync between two places.
 

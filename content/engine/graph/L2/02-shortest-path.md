@@ -19,6 +19,7 @@ objectives:
 requires: [e-gr-l2-01]
 sources:
   - https://www.postgresql.org/docs/18/queries-with.html
+  - { url: "https://www.postgresql.org/docs/release/14.0/", title: "PostgreSQL 14 release notes: SEARCH and CYCLE" }
   - { url: "https://neo4j.com/docs/cypher-manual/current/patterns/shortest-paths/", title: "Cypher Manual: Shortest paths" }
 lab:
   setup: |
@@ -138,7 +139,7 @@ quiz:
 
 **Ít chặng hay ít ngày.** Ít chặng nhất chưa chắc ít ngày nhất. Đường `VNDAD>KRPUS>USLAX` có 2 chặng, 19.8 ngày; đường `VNDAD>HKHKG>KRPUS>USLAX` có 3 chặng, 19.4 ngày. Muốn theo trọng số thì cộng dồn `days` trong CTE rồi xếp theo tổng. Cách liệt kê mọi đường chỉ hợp với đồ thị nhỏ: số đường tăng rất nhanh khi đồ thị lớn.
 
-**Trong Cypher.** Tài liệu Cypher nói `SHORTEST k` giữ k đường ngắn nhất theo số bước nhảy, và đường ngắn nhất có trọng số cần thư viện GDS:
+**Trong Cypher.** Tài liệu Cypher nói `SHORTEST k` giữ k đường ngắn nhất theo số bước nhảy, và đường ngắn nhất có trọng số cần thư viện GDS (Graph Data Science):
 
 ```text
 MATCH p = SHORTEST 1
@@ -292,7 +293,7 @@ Ba câu hỏi: đường ít chặng nhất tới `USLAX`, thứ tự duyệt th
 
 **Fewest legs or fewest days.** The fewest legs is not always the fewest days. Route `VNDAD>KRPUS>USLAX` has 2 legs and 19.8 days; route `VNDAD>HKHKG>KRPUS>USLAX` has 3 legs and 19.4 days. To go by weight, add up `days` in the CTE and sort by the total. Listing every route only suits small graphs: the number of routes grows very fast as a graph grows.
 
-**In Cypher.** The Cypher docs say `SHORTEST k` keeps the k shortest paths by number of hops, and a weighted shortest path needs the GDS library:
+**In Cypher.** The Cypher docs say `SHORTEST k` keeps the k shortest paths by number of hops, and a weighted shortest path needs the GDS (Graph Data Science) library:
 
 ```text
 MATCH p = SHORTEST 1

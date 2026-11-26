@@ -106,8 +106,8 @@ quiz:
       vi: "Trông như `count(o.dst)` chỉ đếm cạnh ra nên phải là 2, nhưng phép nối thứ hai ghép mỗi cạnh ra với từng cạnh vào: 2 × 3 = 6 dòng, và `o.dst` có giá trị trên cả 6 dòng. Đếm bậc ra và bậc vào trong hai truy vấn con riêng thì không có phép nhân này."
       en: "It looks as if `count(o.dst)` counts only outgoing edges and must be 2, but the second join pairs each outgoing edge with every incoming edge: 2 × 3 = 6 rows, and `o.dst` has a value on all 6. Counting out-degree and in-degree in two separate subqueries avoids that multiplication."
   - q:
-      vi: "Theo tài liệu Neo4j GDS, độ trung tâm bậc (degree centrality) với hướng `NATURAL` (mặc định) đếm gì?"
-      en: "According to the Neo4j GDS docs, what does degree centrality count with orientation `NATURAL` (the default)?"
+      vi: "Theo tài liệu Neo4j GDS (Graph Data Science), độ trung tâm bậc (degree centrality) với hướng `NATURAL` (mặc định) đếm gì?"
+      en: "According to the Neo4j GDS (Graph Data Science) docs, what does degree centrality count with orientation `NATURAL` (the default)?"
     options:
       - { vi: "Bậc vào của mỗi nút", en: "Each node's in-degree" }
       - { vi: "Bậc ra của mỗi nút", en: "Each node's out-degree" }
@@ -124,7 +124,7 @@ Cảng nào là đầu mối của mạng tuyến? Câu hỏi đơn giản nhấ
 
 ## Ý chính
 
-**Bậc.** Bậc (degree) của một nút là số cạnh chạm vào nó. Với đồ thị có hướng, bậc ra (out-degree) đếm cạnh có `src` là nút đó, bậc vào (in-degree) đếm cạnh có `dst` là nút đó. Tài liệu Neo4j GDS định nghĩa độ trung tâm bậc (degree centrality) đúng như vậy: hướng `NATURAL` là bậc ra, `REVERSE` là bậc vào, `UNDIRECTED` cộng cả hai.
+**Bậc.** Bậc (degree) của một nút là số cạnh chạm vào nó. Với đồ thị có hướng, bậc ra (out-degree) đếm cạnh có `src` là nút đó, bậc vào (in-degree) đếm cạnh có `dst` là nút đó. Tài liệu Neo4j GDS (Graph Data Science) định nghĩa độ trung tâm bậc (degree centrality) đúng như vậy: hướng `NATURAL` là bậc ra, `REVERSE` là bậc vào, `UNDIRECTED` cộng cả hai.
 
 **Tổng bậc bằng UNION ALL.** Mỗi cạnh có hai đầu. Lấy cột `src` `UNION ALL` cột `dst` rồi đếm theo mã là ra tổng bậc. Phải là `UNION ALL`: `UNION` bỏ trùng nên mỗi cảng chỉ còn một dòng.
 
@@ -257,7 +257,7 @@ Which port is the hub of the route network? The simplest question is how many le
 
 ## Key idea
 
-**Degree.** A node's degree is the number of edges touching it. In a directed graph, the out-degree counts the edges whose `src` is that node, and the in-degree counts the edges whose `dst` is that node. The Neo4j GDS docs define degree centrality exactly this way: orientation `NATURAL` is the out-degree, `REVERSE` the in-degree, `UNDIRECTED` the sum of both.
+**Degree.** A node's degree is the number of edges touching it. In a directed graph, the out-degree counts the edges whose `src` is that node, and the in-degree counts the edges whose `dst` is that node. The Neo4j GDS (Graph Data Science) docs define degree centrality exactly this way: orientation `NATURAL` is the out-degree, `REVERSE` the in-degree, `UNDIRECTED` the sum of both.
 
 **Total degree with UNION ALL.** Each edge has two ends. Take column `src` `UNION ALL` column `dst` and count per code to get the total degree. It must be `UNION ALL`: `UNION` drops duplicates, so each port would keep a single row.
 

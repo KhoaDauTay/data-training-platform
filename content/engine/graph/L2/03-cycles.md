@@ -19,6 +19,7 @@ objectives:
 requires: [e-gr-l2-01]
 sources:
   - https://www.postgresql.org/docs/18/queries-with.html
+  - { url: "https://www.postgresql.org/docs/release/14.0/", title: "PostgreSQL 14 release notes: SEARCH and CYCLE" }
   - https://www.postgresql.org/docs/18/sql-select.html
 lab:
   setup: |
