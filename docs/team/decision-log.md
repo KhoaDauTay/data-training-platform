@@ -878,3 +878,4 @@ Quyết định do user chốt trực tiếp (D1–D6) nằm ở cuối `docs/te
 | L1058 | 2026-11-27 | v47 open: ngân sách | Main 315/500 KB gz. `engineFigure` 15/16 KB (glob tên 3 spec mới); mỗi `fig-*` ≤ 2 KB; `lessons` 32/35; `learnui` 21/25. | — | — |
 | L1059 | 2026-11-27 | v47 open: dành sẵn | Dải L1050–L1059 của việc này; số còn lại không dùng. | — | — |
 | L1100 | 2026-11-27 | Ngân sách ngine 40 → 52 KB, ngineFigure 16 → 19 KB | Sau Redis + OLAP: ngine 39,6/40, ngineFigure 15,9/16. Năm track nữa (time-series, search, telemetry, stream, graph) đang làm song song, mỗi track thêm chỉ mục bài và ~10 spec sơ đồ; nâng một lần thay vì để từng nhánh tự nâng. |
+| L1101 | 2026-11-27 | Ngân sách ngineui 22 → 25 KB | Sau Redis, OLAP và Search còn ~190 B. Mỗi track mới thêm mục vào bảng tên, icon và regex id trong ngineView; còn time-series, telemetry, stream, graph đang làm. Văn bản dài của track vẫn phải ở chunk lazy riêng. |
