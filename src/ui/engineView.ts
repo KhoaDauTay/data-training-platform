@@ -347,7 +347,7 @@ function extRow(ok: Set<string>): HTMLElement {
     d.h('h2', { id: 'engine-ext', class: d.ui.GROUP_TITLE }, et('level.EXT')),
     d.h('ul', { class: d.ui.LIST }, d.ui.listRow({
       lead: p.total && p.done === p.total ? leadDisc('done', '') : d.h('span', { class: 'grid size-10 place-items-center rounded-full bg-accent-soft text-accent' }, d.icon('puzzle', 'size-6')),
-      title: et('ext.title'), sub: `${et('ext.short')} · ${et('progress', { k: p.done, n: p.total })}`, action: rowLink(d.engineHash('postgres', 'EXT'), et('ext.go'), true),
+      title: et('ext.title'), sub: `${et('ext.short')} · ${et('progress', { k: p.done, n: p.total })}`, action: rowLink(d.engineHash('postgres', 'EXT'), et('ext.go'), false), // L1093: the hero holds the page's one primary
     })));
 }
 
