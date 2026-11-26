@@ -9,8 +9,8 @@ caption:
   vi: "Một câu UPDATE trên 3 dòng: BEFORE STATEMENT một lần, BEFORE ROW trước mỗi dòng (sửa được NEW, hoặc RETURN NULL để bỏ dòng), rồi AFTER ROW ba lần sau dòng cuối (giá trị trả về bị bỏ qua), cuối cùng AFTER STATEMENT một lần."
   en: "One UPDATE on 3 rows: BEFORE STATEMENT once, BEFORE ROW before each row (it can change NEW, or RETURN NULL to skip the row), then AFTER ROW three times after the last row (its return value is ignored), and AFTER STATEMENT once at the end."
 alt:
-  vi: "Từ trên xuống, cho câu UPDATE products SET price = price + 1.00 trên 3 dòng: BEFORE STATEMENT chạy 1 lần. BEFORE ROW chạy cho từng dòng ngay trước khi ghi: pen 10.00 thành 11.00, book 50.00 thành 51.00, bag 120.00 thành 121.00; đây là lúc còn sửa được NEW. Sau dòng cuối, AFTER ROW chạy 3 lần và ghi price_audit. Cuối cùng AFTER STATEMENT chạy 1 lần và đọc NEW TABLE. OLD là giá cũ, NEW là giá mới."
-  en: "From top to bottom, for UPDATE products SET price = price + 1.00 on 3 rows: BEFORE STATEMENT fires once. BEFORE ROW fires for each row just before it is written: pen 10.00 becomes 11.00, book 50.00 becomes 51.00, bag 120.00 becomes 121.00; this is when NEW can still be changed. After the last row, AFTER ROW fires 3 times and writes price_audit. Finally AFTER STATEMENT fires once and reads NEW TABLE. OLD is the old price, NEW the new one."
+  vi: "Một câu UPDATE trên 3 dòng gọi trigger STATEMENT một lần và trigger ROW một lần cho mỗi dòng. BEFORE ROW chạy trước khi dòng được ghi nên còn sửa được NEW hoặc bỏ dòng; AFTER ROW chạy sau dòng cuối nên chỉ ghi lại được việc đã xảy ra, như ghi price_audit."
+  en: "One UPDATE on 3 rows fires STATEMENT triggers once and ROW triggers once per row. BEFORE ROW runs before the row is written, so it can still change NEW or skip the row; AFTER ROW runs after the last row, so it can only record what happened, such as writing price_audit."
 groups:
   - { id: br, label: BEFORE ROW ×3, nodes: [r1, r2, r3] }
 nodes:

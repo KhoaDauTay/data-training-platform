@@ -9,8 +9,8 @@ caption:
   vi: "Mỗi tầng có schema riêng; đổi tầng dưới không bắt tầng trên đổi theo. Đó là độc lập dữ liệu: logic giữa tầng ngoài và tầng khái niệm, vật lý giữa tầng khái niệm và tầng trong."
   en: "Each level has its own schema; changing a lower level does not force the level above to change. That is data independence: logical between the external and conceptual levels, physical between the conceptual and internal levels."
 alt:
-  vi: "Ba tầng xếp từ trên xuống. Tầng ngoài: view price_list chỉ có tên và giá, view cheap_products cho nhóm bán hàng. Giữa tầng ngoài và tầng khái niệm là nhãn độc lập logic. Tầng khái niệm: bảng products với khóa chính và NOT NULL. Giữa tầng khái niệm và tầng trong là nhãn độc lập vật lý. Tầng trong: file chia trang 8 kB, và chỗ cho index products_price_idx, chưa có."
-  en: "Three levels from top to bottom. External level: the view price_list with names and prices only, and the view cheap_products for the sales team. Between the external and conceptual levels sits the label logical independence. Conceptual level: the table products with a primary key and NOT NULL. Between the conceptual and internal levels sits the label physical independence. Internal level: a file cut into 8 kB pages, and room for the index products_price_idx, not there yet."
+  vi: "Cơ sở dữ liệu có ba tầng, mỗi tầng một schema riêng: tầng ngoài là các view người dùng thấy, tầng khái niệm là bảng, tầng trong là file và index. Đổi tầng dưới không bắt tầng trên đổi theo, và đó là độc lập dữ liệu."
+  en: "A database has three levels, each with its own schema: the external level is the views users see, the conceptual level the tables, the internal level the files and indexes. Changing a lower level does not force the level above to change, and that is data independence."
 groups:
   - { id: ext, label: { vi: "Tầng ngoài", en: "External level" }, nodes: [v1, v2] }
   - { id: con, label: { vi: "Tầng khái niệm", en: "Conceptual level" }, nodes: [tbl] }
@@ -31,15 +31,16 @@ rows:
   - [file, idx]
 steps:
   - say: { vi: "Mỗi tầng có schema riêng; người dùng chỉ thấy tầng ngoài.", en: "Each level has its own schema; users only see the external level." }
+    alt: { vi: "Người dùng chỉ làm việc với các view ở tầng ngoài, nên họ không cần biết bảng products hay file bên dưới được tổ chức thế nào.", en: "Users only work with the views at the external level, so they need not know how the table products or the files below are organised." }
   - say: { vi: "Thêm cột stock: view cũ vẫn chạy. Đó là độc lập logic.", en: "Add the column stock: old views still run. That is logical independence." }
-    alt: { vi: "Bảng products có thêm cột stock; hai view vẫn chạy, không phải sửa: độc lập logic.", en: "The table products gains the column stock; both views still run with no edit: logical independence." }
+    alt: { vi: "Thêm cột stock vào bảng products mà hai view vẫn chạy không cần sửa, vì chúng chỉ gọi tên các cột cũ: đó là độc lập logic.", en: "Adding the column stock to products leaves both views running with no edit, because they only name the old columns: that is logical independence." }
     set:
       tbl: { sub: "+ stock", tone: new }
       lg: { tone: new }
       v1: { sub: { vi: "vẫn chạy", en: "still runs" }, tone: live }
       v2: { sub: { vi: "vẫn chạy", en: "still runs" }, tone: live }
   - say: { vi: "Thêm index: câu SQL không đổi một ký tự. Đó là độc lập vật lý.", en: "Add an index: the SQL does not change one character. That is physical independence." }
-    alt: { vi: "Index products_price_idx được thêm ở tầng trong; câu SQL của hai view không đổi một ký tự: độc lập vật lý.", en: "The index products_price_idx is added at the internal level; the SQL of both views does not change one character: physical independence." }
+    alt: { vi: "Thêm index products_price_idx ở tầng trong chỉ đổi cách đọc dữ liệu, còn câu SQL không đổi một ký tự: đó là độc lập vật lý.", en: "Adding the index products_price_idx at the internal level only changes how data is read, while the SQL does not change one character: that is physical independence." }
     set:
       idx: { sub: { vi: "index mới", en: "new index" }, tone: new }
       tbl: { sub: "+ stock" }

@@ -10,8 +10,8 @@ caption:
   vi: "Shared buffers là các trang 8 kB dùng chung cho mọi kết nối; mọi lần đọc ghi bảng đi qua đây, và checkpoint mới ghi trang bẩn xuống đĩa. work_mem là bộ nhớ riêng của từng nút sort hay hash; vượt quá thì tràn ra file tạm. Tăng shared_buffers không cứu được một sort tràn đĩa."
   en: "Shared buffers are 8 kB pages shared by every connection; every table read and write goes through them, and a checkpoint, not COMMIT, writes dirty pages to disk. work_mem is the private memory of each sort or hash node; past it, the node spills to temp files. Raising shared_buffers never fixes a spilling sort."
 alt:
-  vi: "Hai nhóm xếp dọc. Ở trên, bộ nhớ chung: shared_buffers 128 MB gồm các trang 8 kB (minh họa 6 trang; trang bẩn được tô và gọi tên), hai đường đọc và checkpoint nối nó với file bảng trên đĩa. Bên dưới, riêng từng kết nối: mỗi kết nối có work_mem 4 MB, và một Sort quá work_mem tràn ra file tạm."
-  en: "Two groups, one above the other. At the top, shared memory: shared_buffers of 128 MB made of 8 kB pages (6 shown as an illustration), with the read path and the checkpoint linking it to the table files on disk. Below, per connection: each connection has 4 MB of work_mem, and a Sort larger than work_mem spills to temp files."
+  vi: "Postgres có hai loại bộ nhớ khác nhau: shared buffers dùng chung cho mọi kết nối để giữ trang bảng, còn work_mem là phần riêng của từng nút sort hay hash. Vì vậy tăng shared_buffers không cứu được một sort tràn ra đĩa; chỉ work_mem mới cứu được."
+  en: "Postgres has two different kinds of memory: shared buffers, used by every connection to hold table pages, and work_mem, the private memory of each sort or hash node. So raising shared_buffers never fixes a sort that spills to disk; only work_mem does."
 groups:
   - { id: sh, label: { vi: "bộ nhớ chung", en: "shared memory" }, nodes: [sb, rd, ck] }
   - { id: pr, label: { vi: "riêng từng kết nối", en: "per connection" }, nodes: [c1, c2, srt] }
@@ -40,15 +40,15 @@ edges:
   - { from: srt, to: tmp, label: { vi: "tràn đĩa", en: "spills" } }
 steps:
   - say: { vi: "Mọi đọc ghi bảng đi qua shared buffers.", en: "Every table read and write goes through shared buffers." }
-    alt: { vi: "Một lần đọc tìm trang trong shared buffers (hit) hoặc nạp nó từ file bảng trên đĩa (read).", en: "A read finds the page in shared buffers (hit) or loads it from the table files on disk (read)." }
+    alt: { vi: "Mọi lần đọc bảng đều đi qua shared buffers: trang có sẵn là hit, trang chưa có phải nạp từ file bảng trên đĩa và là read.", en: "Every table read goes through shared buffers: a page already there is a hit, a page that is not must be loaded from the table files on disk and is a read." }
   - say: { vi: "COMMIT không ghi trang; checkpoint mới ghi.", en: "COMMIT does not write the page; a checkpoint does." }
-    alt: { vi: "UPDATE big … WHERE id = 1 sửa trang p0 trong bộ nhớ: p0 thành trang bẩn. COMMIT không ghi nó xuống đĩa; checkpoint mới ghi trang bẩn vào file bảng.", en: "UPDATE big … WHERE id = 1 changes page p0 in memory: p0 becomes dirty. COMMIT does not write it to disk; a checkpoint writes the dirty page to the table files." }
+    alt: { vi: "UPDATE chỉ sửa trang p0 trong bộ nhớ nên p0 thành trang bẩn; COMMIT không ghi nó xuống đĩa, phải đợi checkpoint mới ghi vào file bảng.", en: "UPDATE only changes page p0 in memory, so p0 becomes dirty; COMMIT does not write it to disk, it waits for a checkpoint to write it to the table files." }
     set:
       rd: { tone: plain }
       ck: { tone: new }
       sb: { sub: { vi: "p0: trang bẩn", en: "p0: dirty page" }, cellTone: { "0:0": warm } }
   - say: { vi: "Sort dùng work_mem riêng, không dùng shared buffers.", en: "A sort uses private work_mem, not shared buffers." }
-    alt: { vi: "Bên dưới, nhóm riêng: mỗi kết nối có work_mem 4 MB cho mỗi nút sort hay hash. Sort của kết nối 2 lớn hơn work_mem nên tràn ra file tạm trên đĩa (external merge Disk), không đụng tới shared buffers.", en: "Below, the private group: each connection has 4 MB of work_mem per sort or hash node. Connection 2's sort is larger than work_mem, so it spills to temp files on disk (external merge Disk) without touching shared buffers." }
+    alt: { vi: "Sort của kết nối 2 cần nhiều hơn work_mem 4 MB riêng của nó nên tràn ra file tạm trên đĩa (external merge Disk), dù shared buffers còn trống bao nhiêu đi nữa.", en: "Connection 2's sort needs more than its own 4 MB of work_mem, so it spills to temp files on disk (external merge Disk), however much room shared buffers has." }
     set:
       rd: { tone: plain }
       sb: { sub: { vi: "p0: trang bẩn", en: "p0: dirty page" }, cellTone: { "0:0": warm } }

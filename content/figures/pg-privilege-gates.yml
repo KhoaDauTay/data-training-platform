@@ -9,8 +9,8 @@ caption:
   vi: "GRANT readers TO linh cho linh dùng quyền của nhóm readers. Muốn đọc sales.orders phải qua cả ba cửa: CONNECT vào database (PUBLIC có sẵn), USAGE trên schema sales, SELECT trên bảng. GRANT USAGE ON SCHEMA sales TO readers mở cửa giữa."
   en: "GRANT readers TO linh lets linh use the group readers' privileges. Reading sales.orders takes all three doors: CONNECT on the database (PUBLIC has it), USAGE on schema sales, SELECT on the table. GRANT USAGE ON SCHEMA sales TO readers opens the middle door."
 alt:
-  vi: "Vai trò linh, đăng nhập được, là thành viên của nhóm readers. Nhóm readers đi qua ba cửa theo thứ tự: database với CONNECT, schema sales với USAGE, bảng sales.orders với SELECT."
-  en: "The role linh, which can log in, is a member of the group readers. The group readers passes three doors in order: the database with CONNECT, schema sales with USAGE, table sales.orders with SELECT."
+  vi: "Muốn đọc một bảng phải qua đủ ba cửa theo thứ tự: CONNECT vào database, USAGE trên schema, SELECT trên bảng; thiếu một cửa là bị chặn dù các cửa kia đã mở. Vai trò linh có các quyền đó nhờ là thành viên của nhóm readers."
+  en: "Reading a table takes three doors in order: CONNECT on the database, USAGE on the schema, SELECT on the table; one missing door blocks you even when the others are open. The role linh gets these privileges as a member of the group readers."
 nodes:
   - { id: linh, label: linh, sub: LOGIN }
   - { id: rd, label: readers, sub: { vi: "nhóm, NOLOGIN", en: "group, NOLOGIN" } }
@@ -27,9 +27,9 @@ edges:
   - { from: g2, to: g3 }
 steps:
   - say: { vi: "Quyền trên bảng chưa đủ: phải qua được schema.", en: "A table grant is not enough: the schema must let you in." }
-    alt: { vi: "CONNECT có (PUBLIC có sẵn), SELECT trên bảng có, nhưng USAGE trên schema sales thiếu: bị chặn ở cửa thứ hai, nên quyền SELECT chưa dùng được.", en: "CONNECT is granted (PUBLIC has it) and so is SELECT on the table, but USAGE on schema sales is missing: stopped at the second door, so the SELECT cannot be used yet." }
+    alt: { vi: "readers có CONNECT (PUBLIC có sẵn) và SELECT trên bảng, nhưng thiếu USAGE trên schema sales nên bị chặn ở cửa giữa và quyền SELECT chưa dùng được.", en: "readers has CONNECT (PUBLIC has it) and SELECT on the table, but lacks USAGE on schema sales, so it is stopped at the middle door and the SELECT cannot be used yet." }
   - say: { vi: "Thêm USAGE trên schema: đủ ba cửa, đọc được.", en: "Add USAGE on the schema: all three doors open, the read works." }
-    alt: { vi: "Sau GRANT USAGE ON SCHEMA sales TO readers, cả ba cửa đều mở: linh, qua nhóm readers, đọc được 3 dòng của sales.orders.", en: "After GRANT USAGE ON SCHEMA sales TO readers all three doors are open: linh, through the group readers, reads the 3 rows of sales.orders." }
+    alt: { vi: "GRANT USAGE ON SCHEMA sales TO readers mở cửa giữa, nên cả ba cửa đều mở và linh, qua nhóm readers, đọc được sales.orders.", en: "GRANT USAGE ON SCHEMA sales TO readers opens the middle door, so all three doors are open and linh, through the group readers, can read sales.orders." }
     set:
       g2: { sub: USAGE ✓, tone: live }
       g3: { sub: { vi: "SELECT ✓ · 3 dòng", en: "SELECT ✓ · 3 rows" } }

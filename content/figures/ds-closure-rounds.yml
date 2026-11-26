@@ -7,8 +7,8 @@ caption:
   vi: "{a,d}⁺ chỉ lớn lên khi cả vế trái của một phụ thuộc đã nằm trong tập, và dừng khi một vòng không thêm gì. a và d không ở vế phải nào, nên có mặt trong mọi khóa."
   en: "{a,d}⁺ grows only when a whole left side is already inside the set, and stops when a round adds nothing. a and d are on no right side, so they are in every key."
 alt:
-  vi: "Ba phụ thuộc: a → b, b → c, {c,d} → e, đều đang chờ. Năm thuộc tính a, b, c, d, e."
-  en: "Three dependencies: a → b, b → c, {c,d} → e, all waiting. Five attributes a, b, c, d, e."
+  vi: "Bao đóng {a,d}⁺ lớn dần từng vòng: một phụ thuộc chỉ được dùng khi cả vế trái của nó đã nằm trong tập, và việc tính dừng khi một vòng không thêm gì. Ở đây bao đóng chứa đủ năm thuộc tính, nên {a,d} là khóa."
+  en: "The closure {a,d}⁺ grows round by round: a dependency fires only when its whole left side is already in the set, and the work stops when a round adds nothing. Here the closure reaches all five attributes, so {a,d} is a key."
 nodes:
   - { id: f1, shape: key, mono: true, label: "a → b", sub: { vi: "chờ", en: "waiting" }, tone: ghost }
   - { id: f2, shape: key, mono: true, label: "b → c", sub: { vi: "chờ", en: "waiting" }, tone: ghost }
@@ -27,22 +27,23 @@ rows:
   - [key]
 steps:
   - say: { vi: "Bắt đầu từ {a,d}.", en: "Start from {a,d}." }
+    alt: { vi: "Tập bắt đầu chỉ có {a,d} và chưa phụ thuộc nào được dùng; mỗi vòng sẽ xét xem vế trái của phụ thuộc nào đã nằm trọn trong tập.", en: "The set starts as just {a,d} and no dependency has fired yet; each round checks which dependency has its whole left side inside the set." }
     show: [f1, f2, f3, set]
   - say: { vi: "a đã có trong tập, nên a → b thêm b.", en: "a is inside the set, so a → b adds b." }
-    alt: { vi: "Vòng 1: a có trong tập nên a → b dùng được, thêm b: {a,b,d}.", en: "Round 1: a is inside, so a → b fires and adds b: {a,b,d}." }
+    alt: { vi: "a đã có trong tập nên a → b dùng được và thêm b, tập thành {a,b,d}.", en: "a is already in the set, so a → b fires and adds b, giving {a,b,d}." }
     show: [f1, f2, f3, set]
     set:
       f1: { sub: { vi: "vòng 1", en: "round 1" }, tone: new }
       set: { label: { vi: "vòng 1", en: "round 1" }, colTone: [new, new, ghost, new, ghost], sub: "{a,b,d}" }
   - say: { vi: "b vừa vào, nên b → c thêm c.", en: "b just came in, so b → c adds c." }
-    alt: { vi: "Vòng 2: b → c thêm c: {a,b,c,d}.", en: "Round 2: b → c adds c: {a,b,c,d}." }
+    alt: { vi: "b vừa vào nên b → c giờ dùng được và thêm c, tập thành {a,b,c,d}.", en: "b has just come in, so b → c can now fire and adds c, giving {a,b,c,d}." }
     show: [f1, f2, f3, set]
     set:
       f1: { sub: { vi: "vòng 1", en: "round 1" }, tone: live }
       f2: { sub: { vi: "vòng 2", en: "round 2" }, tone: new }
       set: { label: { vi: "vòng 2", en: "round 2" }, colTone: [new, new, new, new, ghost], sub: "{a,b,c,d}" }
   - say: { vi: "Cả c và d đã có, nên {c,d} → e thêm e: đủ mọi thuộc tính, {a,d} là khóa.", en: "c and d are both inside, so {c,d} → e adds e: every attribute, {a,d} is a key." }
-    alt: { vi: "Vòng 3: c và d đều đã có nên {c,d} → e thêm e: {a,b,c,d,e}. Bao đóng chứa mọi thuộc tính, nên {a,d} là khóa.", en: "Round 3: c and d are both inside, so {c,d} → e adds e: {a,b,c,d,e}. The closure holds every attribute, so {a,d} is a key." }
+    alt: { vi: "c và d đều đã có nên {c,d} → e thêm e, và vì bao đóng đã chứa mọi thuộc tính nên {a,d} là khóa.", en: "c and d are both in, so {c,d} → e adds e, and since the closure now holds every attribute, {a,d} is a key." }
     set:
       f1: { sub: { vi: "vòng 1", en: "round 1" }, tone: live }
       f2: { sub: { vi: "vòng 2", en: "round 2" }, tone: live }

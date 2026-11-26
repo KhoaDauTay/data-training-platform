@@ -7,8 +7,8 @@ caption:
   vi: "Thành phố là của khách, không phải của đơn. Lưu nó ở mỗi đơn sinh ra ba kiểu hỏng: sửa, xóa và thêm."
   en: "The city belongs to the customer, not to the order. Storing it on every order causes three kinds of damage: update, delete and insert."
 alt:
-  vi: "Bảng ex_orders: đơn 1, 2, 3 của khách 1 ở Hue, đơn 4 của khách 2 ở Hoi An. Thành phố của khách 1 nằm ở ba bản sao. Mỗi bước là một trường hợp riêng, bắt đầu lại từ bảng này."
-  en: "Table ex_orders: orders 1, 2, 3 of customer 1 in Hue, order 4 of customer 2 in Hoi An. Customer 1's city sits in three copies. Each step is a separate case, starting again from this table."
+  vi: "Thành phố là của khách chứ không phải của đơn, nên lưu nó ở mỗi đơn làm một sự thật có nhiều bản sao. Từ đó sinh ra ba kiểu hỏng: sửa sót bản sao, xóa đơn mất luôn thành phố, và khách chưa có đơn thì không có chỗ ghi."
+  en: "The city belongs to the customer, not to the order, so storing it on every order turns one fact into many copies. That causes three kinds of damage: an update misses a copy, deleting an order loses the city, and a customer with no order has nowhere to be stored."
 nodes:
   - id: t
     shape: grid
@@ -23,16 +23,16 @@ rows:
   - [badge]
 steps:
   - say: { vi: "Sửa một bản sao, quên hai bản kia.", en: "Fix one copy, forget the other two." }
-    alt: { vi: "Sửa: thành phố của đơn 1 đổi sang Da Nang, hai bản còn lại vẫn Hue, nên khách 1 có hai thành phố.", en: "Update: order 1's city becomes Da Nang while the other two copies stay Hue, so customer 1 has two cities." }
+    alt: { vi: "Sửa thành phố ở đơn 1 sang Da Nang mà quên hai bản còn lại, nên khách 1 giờ có hai thành phố mâu thuẫn nhau.", en: "Changing the city on order 1 to Da Nang but not the other two copies leaves customer 1 with two conflicting cities." }
     set:
       t: { cells: [["1", "1", Da Nang], ["2", "1", Hue], ["3", "1", Hue], ["4", "2", Hoi An]], cellTone: { "0:2": new, "1:2": warm, "2:2": warm } }
   - say: { vi: "Xóa đơn cuối của khách 2: thành phố của khách cũng mất.", en: "Delete customer 2's last order: the customer's city is gone too." }
-    alt: { vi: "Xóa: dòng đơn 4 bị gạch; thành phố Hoi An của khách 2 mất theo.", en: "Delete: order 4's row is struck; customer 2's city, Hoi An, is lost with it." }
+    alt: { vi: "Xóa đơn 4, đơn duy nhất của khách 2, thì thành phố Hoi An của khách cũng mất theo vì nó chỉ được lưu trên đơn đó.", en: "Deleting order 4, customer 2's only order, also loses the city Hoi An, because it was stored only on that order." }
     set:
       t: { strike: [3], rowTone: [null, null, null, dead] }
       badge: { label: { vi: "mất Hoi An", en: "Hoi An lost" }, sub: { vi: "thành phố khách 2", en: "customer 2's city" } }
   - say: { vi: "Khách mới chưa có đơn: không có chỗ ghi thành phố, vì order_id là khóa.", en: "A new customer with no order: no place to store the city, because order_id is the key." }
-    alt: { vi: "Thêm: khách 3 ở Hue chưa có đơn nào thì không có chỗ, vì order_id là khóa và không được trống.", en: "Insert: customer 3 in Hue with no order yet has no place, because order_id is the key and cannot be empty." }
+    alt: { vi: "Khách 3 ở Hue chưa có đơn nào thì không thêm được dòng, vì order_id là khóa và không được để trống.", en: "Customer 3 in Hue has no order yet, so no row can be added, because order_id is the key and cannot be empty." }
     set:
       t: { cells: [["1", "1", Hue], ["2", "1", Hue], ["3", "1", Hue], ["4", "2", Hoi An], ["—", "3", Hue]], rowTone: [null, null, null, null, dead], cellTone: { "4:0": dead } }
       badge: { label: { vi: "không có chỗ", en: "no place" }, sub: { vi: "cho khách 3", en: "for customer 3" } }

@@ -10,8 +10,8 @@ caption:
   vi: "Phần trước mốc được giữ; ROLLBACK TO SAVEPOINT chỉ bỏ phần sau mốc và đưa transaction đang hỏng (25P02) về trạng thái dùng được."
   en: "The part before the marker is kept; ROLLBACK TO SAVEPOINT undoes only the part after it and makes a broken transaction (25P02) usable again."
 alt:
-  vi: "Dòng thời gian của một transaction trên hai tài khoản, 1 có 100 và 2 có 50: các lệnh nối nhau bằng mũi tên, từ BEGIN tới COMMIT."
-  en: "The timeline of one transaction on two accounts, 1 with 100 and 2 with 50: the statements are joined by arrows, from BEGIN to COMMIT."
+  vi: "SAVEPOINT đặt một mốc giữa transaction để khi một lệnh sau mốc lỗi, ROLLBACK TO chỉ bỏ phần sau mốc thay vì bỏ cả transaction. Phần trước mốc, ở đây là việc chuyển tiền, vẫn được COMMIT giữ lại."
+  en: "A SAVEPOINT sets a marker inside a transaction so that when a statement after it fails, ROLLBACK TO undoes only the part after the marker instead of the whole transaction. The part before it, here the transfer, is still kept by COMMIT."
 nodes:
   - { id: b, shape: key, label: BEGIN }
   - { id: u1, label: UPDATE, sub: "id 1: 100 → 70", tone: new }
@@ -35,12 +35,12 @@ edges:
   - { from: rb, to: cm, label: { vi: "dùng lại được", en: "usable again" } }
 steps:
   - say: { vi: "Chuyển tiền xong, đặt mốc before_fee.", en: "Money moved, marker before_fee set." }
-    alt: { vi: "BEGIN, UPDATE tài khoản 1 từ 100 xuống 70, UPDATE tài khoản 2 từ 50 lên 80, rồi SAVEPOINT before_fee.", en: "BEGIN, UPDATE account 1 from 100 down to 70, UPDATE account 2 from 50 up to 80, then SAVEPOINT before_fee." }
+    alt: { vi: "Hai lệnh UPDATE chuyển 30 từ tài khoản 1 sang tài khoản 2, rồi SAVEPOINT before_fee đánh dấu chỗ việc chuyển tiền đã xong.", en: "Two UPDATEs move 30 from account 1 to account 2, then SAVEPOINT before_fee marks the point where the transfer is done." }
     show: [b, u1, u2, sp]
   - say: { vi: "Một lệnh lỗi: mọi lệnh sau bị từ chối (25P02).", en: "One statement fails: every later one is refused (25P02)." }
     show: [b, u1, u2, sp, fee]
-    alt: { vi: "Sau mốc, lệnh thu phí 500 vi phạm CHECK và lỗi 23514. Transaction hỏng: mọi lệnh sau, kể cả SELECT, bị từ chối với mã 25P02.", en: "After the marker, the fee of 500 breaks the CHECK and fails with 23514. The transaction is broken: every later statement, even a SELECT, is refused with code 25P02." }
+    alt: { vi: "Lệnh thu phí 500 vi phạm CHECK (23514), và từ đó transaction hỏng: mọi lệnh sau, kể cả SELECT, bị từ chối với mã 25P02.", en: "The fee of 500 breaks the CHECK (23514), and from then on the transaction is broken: every later statement, even a SELECT, is refused with code 25P02." }
   - say: { vi: "ROLLBACK TO quay về mốc; COMMIT giữ việc chuyển tiền.", en: "ROLLBACK TO goes back to the marker; COMMIT keeps the transfer." }
-    alt: { vi: "ROLLBACK TO before_fee quay về mốc SAVEPOINT (mũi tên nét đứt): lệnh phí bị bỏ, transaction dùng lại được. COMMIT giữ hai lệnh UPDATE trước mốc: tài khoản 1 còn 70, tài khoản 2 có 80.", en: "ROLLBACK TO before_fee goes back to the SAVEPOINT marker (the dashed arrow): the fee statement is dropped and the transaction is usable again. COMMIT keeps the two UPDATEs before the marker: account 1 has 70, account 2 has 80." }
+    alt: { vi: "ROLLBACK TO before_fee bỏ lệnh phí và làm transaction dùng lại được, nên COMMIT vẫn giữ việc chuyển tiền: tài khoản 1 còn 70, tài khoản 2 có 80.", en: "ROLLBACK TO before_fee drops the fee statement and makes the transaction usable again, so COMMIT still keeps the transfer: account 1 has 70, account 2 has 80." }
     set:
       fee: { sub: { vi: "đã bỏ", en: "undone" }, tone: ghost }
