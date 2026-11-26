@@ -60,8 +60,8 @@ predict:
   answer: 1
   trap: 0
   why:
-    vi: "Nghe hợp lý vì với B-tree, đúng là `%` ở đầu làm index vô dụng. Nhưng `pg_trgm` tách chuỗi thành các bộ ba ký tự (\"ngo\", \"goc\", \"oc \"...) và GIN lưu mỗi bộ ba kèm danh sách dòng. Câu `ILIKE '%ngoc uyen 12%'` lấy giao các danh sách đó, rồi `Recheck Cond` kiểm lại chuỗi thật, vì có bộ ba chung chưa chắc đã khớp cả cụm."
-    en: "It sounds right because with a B-tree a leading `%` does make the index useless. But `pg_trgm` splits strings into three-letter groups (\"ngo\", \"goc\", \"oc \"...) and GIN stores each group with its list of rows. `ILIKE '%ngoc uyen 12%'` intersects those lists, then `Recheck Cond` checks the real string, because sharing trigrams does not guarantee the whole phrase matches."
+    vi: "Seq Scan nghe hợp lý vì với B-tree, `%` ở đầu đúng là làm index vô dụng. Nhưng `pg_trgm` tách chuỗi thành các bộ ba ký tự (trigram: \"ngo\", \"goc\", \"oc \"...) và GIN lưu mỗi bộ ba kèm danh sách dòng chứa nó. Câu `ILIKE '%ngoc uyen 12%'` lấy giao các danh sách đó, rồi `Recheck Cond` kiểm lại chuỗi thật, vì có đủ bộ ba chung chưa chắc các bộ ba nằm liền nhau đúng thứ tự. Chính bước kiểm lại đó khiến không thể có Index Scan trả thẳng đúng dòng."
+    en: "A Seq Scan sounds right because with a B-tree a leading `%` does make the index useless. But `pg_trgm` splits strings into three-letter groups (trigrams: \"ngo\", \"goc\", \"oc \"...) and GIN stores each group with the list of rows holding it. `ILIKE '%ngoc uyen 12%'` intersects those lists, then `Recheck Cond` checks the real string, because having all the trigrams does not prove they sit together in the right order. That recheck is why there is no Index Scan returning the exact rows."
 quiz:
   - q:
       vi: "Cùng index `customers_name_trgm`, ô tìm nhận chuỗi ngắn: `WHERE name ILIKE '%an%'`. Kế hoạch là gì?"
@@ -73,8 +73,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì câu dài hơn vừa đi qua index, nhưng index trigram chỉ tìm được bằng các bộ ba nằm trọn trong mẫu. `%an%` không có bộ ba nào, và chuỗi \"an\" lại có trong hơn nửa số tên, nên Postgres đọc cả bảng. Ô tìm thật thường đợi người dùng gõ ít nhất 3 ký tự."
-      en: "It sounds right because the longer search just went through the index, but a trigram index can only search with groups of three that lie entirely inside the pattern. `%an%` has none, and \"an\" appears in more than half of the names anyway, so Postgres reads the whole table. Real search boxes usually wait for at least 3 characters."
+      vi: "Câu dài hơn vừa đi qua index nên dễ nghĩ mọi `ILIKE` cũng vậy, nhưng index trigram chỉ tìm được bằng các bộ ba ký tự nằm trọn trong mẫu. `%an%` chỉ có hai ký tự, không tạo ra bộ ba nào, nên index không loại được dòng nào và Postgres đọc cả bảng. Index Only Scan cũng không có: GIN chỉ lưu các bộ ba, không lưu nguyên tên để trả về. Ô tìm thật thường đợi người dùng gõ ít nhất 3 ký tự."
+      en: "The longer search just went through the index, so every `ILIKE` seems to, but a trigram index can only search with three-letter groups that lie entirely inside the pattern. `%an%` has only two characters and makes no trigram, so the index rules out no row and Postgres reads the whole table. There is no Index Only Scan either: GIN stores only the trigrams, not the whole name to return. Real search boxes usually wait for at least 3 characters."
 ---
 ## Mở bài
 

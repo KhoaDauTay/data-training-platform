@@ -1,0 +1,39 @@
+# v43 R2 (extensions-plan §b, lesson e-pg-ext-04): exact nearest neighbours measure every row; an HNSW index walks a sparse top
+# layer down to the dense bottom layer and measures only a few hundred points, so the answer is approximate. Data: the lesson
+# lab (3,000 products, 4-dimension hand-written "taste" vectors; plan checked in PGlite 0.5.16 + pgvector 0.8.7). Layer counts
+# are an illustration. Source: https://github.com/pgvector/pgvector
+title: { vi: "Tìm hàng giống: đo hết hay đi theo lớp", en: "Finding similar goods: measure all, or walk the layers" }
+caption:
+  vi: "Không index thì đo khoảng cách tới mọi dòng rồi sắp. HNSW đi từ lớp thưa xuống lớp dày và chỉ đo các điểm trên đường đi."
+  en: "Without an index every row is measured, then sorted. HNSW walks from a sparse layer down to a dense one and measures only the points on its way."
+alt:
+  vi: "Không có index, tìm 5 hàng giống nhất phải đo khoảng cách tới cả 3 000 hàng rồi sắp xếp. Index HNSW xuống dần từ lớp ít điểm tới lớp đủ điểm, chỉ đo những điểm nằm trên đường đi, nên nhanh hơn nhiều nhưng kết quả là gần đúng."
+  en: "With no index, finding the 5 most similar goods means measuring the distance to all 3,000 and sorting. An HNSW index steps down from a layer with few points to the layer with all of them, measuring only the points on its way, so it is much faster but the result is approximate."
+nodes:
+  - { id: q, label: { vi: "vector truy vấn", en: "query vector" }, sub: "taste <=> q" }
+  - { id: top, label: { vi: "lớp trên", en: "top layer" }, sub: { vi: "vài điểm", en: "a few points" }, tone: ghost }
+  - { id: mid, label: { vi: "lớp giữa", en: "middle layer" }, sub: { vi: "nhiều hơn", en: "more points" }, tone: ghost }
+  - { id: bot, label: { vi: "lớp đáy", en: "bottom layer" }, sub: { vi: "mọi điểm", en: "every point" }, tone: ghost }
+  - { id: scan, label: Seq Scan + Sort, sub: { vi: "đo 3 000 dòng", en: "reads 3,000 rows" }, tone: live }
+  - { id: out, shape: key, label: { vi: "5 hàng gần nhất", en: "the 5 nearest" } }
+rows:
+  - [q]
+  - [top, mid, bot]
+  - [scan]
+  - [out]
+edges:
+  - { from: q, to: top }
+  - { from: top, to: mid }
+  - { from: mid, to: bot }
+  - { from: scan, to: out }
+steps:
+  - say: { vi: "Không index: đo mọi dòng, sắp, lấy 5.", en: "No index: measure every row, sort, take 5." }
+    alt: { vi: "Seq Scan tính khoảng cách cosine từ vector truy vấn tới cả 3 000 hàng, rồi Sort giữ 5 hàng gần nhất.", en: "Seq Scan computes the cosine distance from the query vector to all 3,000 products, then Sort keeps the 5 nearest." }
+  - say: { vi: "HNSW: xuống từng lớp, chỉ đo điểm trên đường.", en: "HNSW: go down layer by layer, measuring only points on the way." }
+    alt: { vi: "Index HNSW bắt đầu ở lớp trên rất thưa, mỗi lớp lại đi tới điểm gần hơn, và ở lớp đáy trả 5 hàng gần nhất nó tìm được.", en: "The HNSW index starts in the very sparse top layer, moves to a closer point on each layer, and on the bottom layer returns the 5 nearest products it found." }
+    set:
+      top: { tone: live }
+      mid: { tone: live }
+      bot: { tone: live }
+      scan: { label: Index Scan, sub: { vi: "qua HNSW", en: "via HNSW" } }
+      out: { label: { vi: "5 hàng gần nhất, gần đúng", en: "the 5 nearest, approximate" } }

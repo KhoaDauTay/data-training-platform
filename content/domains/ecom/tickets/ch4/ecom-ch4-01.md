@@ -63,7 +63,7 @@ Ví dụ: tuần 1–7/6/2026, kiện nào được hẹn giao từ 3 ngày tr�
 
 ## Hints
 1. Thông tin giao hàng nằm ở danh mục giao hàng, mã đơn nằm ở đơn hàng. Số ngày trễ là ngày giao thực tế trừ ngày hẹn, như ví dụ mẫu.
-2. Bảng `deliveries` (cột `courier`, `shipped_on`, `promised_on`, `delivered_on`) ghép `orders` qua `o.id = d.order_id`. Trễ hơn 2 ngày là `d.delivered_on - d.promised_on > 2`; sắp xếp `ORDER BY 5 DESC, o.code`.
+2. Bảng `deliveries` (cột `courier`, `shipped_on`, `promised_on`, `delivered_on`) nối `orders` qua `o.id = d.order_id`. Trễ hơn 2 ngày là `d.delivered_on - d.promised_on > 2`; sắp xếp `ORDER BY 5 DESC, o.code`.
 3. `SELECT o.code, d.city, d.promised_on, d.delivered_on, d.delivered_on - d.promised_on FROM deliveries d JOIN orders o ON ... WHERE ... ORDER BY 5 DESC, o.code`
 
 ## Solution

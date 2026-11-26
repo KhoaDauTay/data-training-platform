@@ -78,7 +78,7 @@ pitfalls:
     wrong: "SELECT name, category, price_vnd FROM products WHERE ROW_NUMBER() OVER (PARTITION BY category ORDER BY price_vnd DESC) <= 2"
     fix: "WITH r AS (SELECT name, category, price_vnd, ROW_NUMBER() OVER (PARTITION BY category ORDER BY price_vnd DESC) AS rn FROM products) SELECT name, category, price_vnd FROM r WHERE rn <= 2"
     why:
-      vi: "Hàm cửa sổ chạy sau `WHERE`, nên `WHERE` chưa thấy hạng: Postgres báo 42P20. Tính hạng trong một CTE (hoặc truy vấn con) rồi lọc ở câu ngoài."
+      vi: "Hàm cửa sổ chạy sau `WHERE`, nên `WHERE` chưa thấy hạng: Postgres báo lỗi 42P20 (hàm cửa sổ không được dùng trong điều kiện lọc). Tính hạng trong một CTE (hoặc truy vấn con) rồi lọc ở câu ngoài."
       en: "Window functions run after `WHERE`, so `WHERE` cannot see the rank yet: Postgres raises 42P20. Compute the rank in a CTE (or a subquery) and filter in the outer query."
   - title: { vi: "ROW_NUMBER khi đề bài nói đồng hạng", en: "ROW_NUMBER when the question allows ties" }
     wrong: "WITH r AS (SELECT id, name, birth_year, ROW_NUMBER() OVER (ORDER BY birth_year DESC) AS rn FROM customers WHERE city = 'Hue') SELECT id, name, birth_year FROM r WHERE rn <= 3"

@@ -79,8 +79,8 @@ ORDER BY platform
 ```
 
 ## Hints
-1. Bước 1 gộp hai bảng riêng (chi phí theo kênh, khách mới theo kênh) rồi ghép chúng theo kênh. Bước 2 là phễu như bài phễu tháng, nhưng nhóm theo thiết bị. Bước 3 gắn nhóm giá trị cho từng khoản rồi đếm có điều kiện.
-2. Bước 1: hai khối `WITH` (`spend`, `signups`), ghép `g.channel = s.channel`, chia `ROUND(s.amount / g.n, 0)`. Bước 2: `ROUND(100.0 * count(*) FILTER (WHERE order_id IS NOT NULL) / count(*), 2)`. Bước 3: nền tảng là `o.platform`, `count(*) FILTER (WHERE band = 1)`.
+1. Bước 1 gộp hai bảng riêng (chi phí theo kênh, khách mới theo kênh) rồi nối chúng theo kênh. Bước 2 là phễu như việc "Phễu mua hàng từng tháng", nhưng nhóm theo thiết bị. Bước 3 gắn nhóm giá trị cho từng khoản rồi đếm có điều kiện.
+2. Bước 1: hai khối `WITH` (`spend`, `signups`), nối `g.channel = s.channel`, chia `ROUND(s.amount / g.n, 0)`. Bước 2: `ROUND(100.0 * count(*) FILTER (WHERE order_id IS NOT NULL) / count(*), 2)`. Bước 3: nền tảng là `o.platform`, `count(*) FILTER (WHERE band = 1)`.
 3. `WITH spend AS (...), signups AS (...) SELECT s.channel, g.n, s.amount, ROUND(s.amount / g.n, 0) FROM spend s JOIN signups g ON ... ORDER BY s.channel`
 
 # EN
@@ -96,6 +96,6 @@ For October 2026, per device type: the number of sessions, sessions that added s
 For the payments collected successfully in October 2026, by the platform the customer ordered on: how many small payments (under 200 thousand VND), how many medium ones (from 200 thousand to under 500 thousand), how many large ones (500 thousand or more). Sort by platform name.
 
 ## Hints
-1. Step 1 aggregates two separate tables (spend per channel, new customers per channel), then joins them on the channel. Step 2 is the funnel of the monthly funnel task, grouped by device instead. Step 3 gives each payment a value band, then counts with conditions.
+1. Step 1 aggregates two separate tables (spend per channel, new customers per channel), then joins them on the channel. Step 2 is the funnel of the task "The monthly purchase funnel", grouped by device instead. Step 3 gives each payment a value band, then counts with conditions.
 2. Step 1: two `WITH` blocks (`spend`, `signups`), joined on `g.channel = s.channel`, divided with `ROUND(s.amount / g.n, 0)`. Step 2: `ROUND(100.0 * count(*) FILTER (WHERE order_id IS NOT NULL) / count(*), 2)`. Step 3: the platform is `o.platform`, `count(*) FILTER (WHERE band = 1)`.
 3. `WITH spend AS (...), signups AS (...) SELECT s.channel, g.n, s.amount, ROUND(s.amount / g.n, 0) FROM spend s JOIN signups g ON ... ORDER BY s.channel`

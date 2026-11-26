@@ -68,8 +68,8 @@ lab:
       solution: CREATE UNIQUE INDEX products_sku_ci ON products (tenant_id, lower(sku))
       check: catalog
       hint:
-        vi: "Như bài `e-ds-l2-07`: `CREATE UNIQUE INDEX products_sku_ci ON products (tenant_id, lower(sku))`."
-        en: "As in lesson `e-ds-l2-07`: `CREATE UNIQUE INDEX products_sku_ci ON products (tenant_id, lower(sku))`."
+        vi: "Một index duy nhất trên `tenant_id` và biểu thức `lower(sku)`, nên `SKU-1` và `sku-1` của cùng người bán bị coi là trùng: `CREATE UNIQUE INDEX products_sku_ci ON products (tenant_id, lower(sku))`."
+        en: "A unique index on `tenant_id` and the expression `lower(sku)`, so `SKU-1` and `sku-1` of one seller count as duplicates: `CREATE UNIQUE INDEX products_sku_ci ON products (tenant_id, lower(sku))`."
     - name: { vi: Người bán nóng, en: The hot seller }
       task:
         vi: "Ba người bán nhiều đơn nhất: `tenant_id`, số đơn `orders`, phần trăm trên tổng `share` (làm tròn 1 chữ số), xếp theo số đơn giảm dần rồi `tenant_id`."
@@ -111,8 +111,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì schema riêng tách mọi người khỏi nhau, nhưng 49 người bán nhỏ không có vấn đề gì và sẽ phải gánh việc đổi cấu trúc gấp 50. Vì mọi khóa bắt đầu bằng tenant_id, dữ liệu của người bán 1 tách ra được trọn vẹn: chọn theo tenant_id, chép cha trước con sau, rồi đổi một dòng định tuyến."
-      en: "It sounds right because own schemas separate everyone, but the 49 small sellers have no problem and would carry 50 times the schema changes. Because every key starts with tenant_id, seller 1's data comes out whole: select it by tenant_id, copy parents first, then change one routing row."
+      vi: "Schema riêng nghe như tách được mọi người, nhưng 49 người bán nhỏ không có vấn đề gì mà phải gánh 50 schema, mỗi lần đổi cấu trúc chạy 50 lần. Xóa đơn cũ của mọi người làm mất dữ liệu mà không chữa nguyên nhân: tải vẫn đến từ người bán 1. Vì mọi khóa bắt đầu bằng `tenant_id`, dữ liệu của người bán 1 tách ra trọn vẹn: chọn theo `tenant_id`, chép cha trước con sau, rồi đổi một dòng định tuyến."
+      en: "Own schemas sound like they separate everyone, but the 49 small sellers have no problem and would carry 50 schemas, with every schema change run 50 times. Deleting everyone's old orders loses data without curing the cause: the load still comes from seller 1. Because every key starts with `tenant_id`, seller 1's data comes out whole: select it by `tenant_id`, copy parents first, then change one routing row."
   - q:
       vi: "Bảng `orders` đã có khóa chính `(tenant_id, id)`. Vì sao trang của người bán 1 vẫn cần index `(tenant_id, placed_on)`?"
       en: "Table `orders` already has the primary key `(tenant_id, id)`. Why does seller 1's page still need the index `(tenant_id, placed_on)`?"
@@ -123,8 +123,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nhiều người nghĩ cột đầu đúng là đủ. Thật ra với người bán nóng, `tenant_id = 1` vẫn còn 6.000 dòng; cột thứ hai của index phải là cột mà câu lọc theo khoảng, để đọc đúng tuần cần thiết."
-      en: "Many people think the right first column is enough. In fact for the hot seller `tenant_id = 1` still leaves 6,000 rows; the index's second column must be the one the query filters by range, so it reads only the week it needs."
+      vi: "Khóa chính dùng được cho `tenant_id = 1`, nhưng chỉ thu hẹp tới mọi đơn của người bán 1: mỗi đơn thứ năm là của họ, tức 30.000 ÷ 5 = 6.000 dòng. Trong khóa chính, các dòng đó sắp theo `id`, không theo ngày, nên câu phải đọc cả 6.000 rồi lọc ra tuần cuối (7 trên 31 ngày). Index `(tenant_id, placed_on)` sắp đơn của người bán 1 theo ngày, nên câu đọc thẳng đoạn từ `2026-10-25`."
+      en: "The primary key can serve `tenant_id = 1`, but it only narrows to all of seller 1's orders: every fifth order is theirs, so 30,000 ÷ 5 = 6,000 rows. In the primary key those rows are sorted by `id`, not by date, so the query must read all 6,000 and keep the last week (7 of 31 days). The index `(tenant_id, placed_on)` sorts seller 1's orders by date, so the query reads straight from `2026-10-25`."
 ---
 ## Mở bài
 

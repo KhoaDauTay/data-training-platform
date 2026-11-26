@@ -64,8 +64,8 @@ predict:
   answer: 1
   trap: 0
   why:
-    vi: "\"Cả hai\" nghe hợp lý vì `pad` không có index, điều kiện HOT người ta hay nhớ. Cột không có index mới là một nửa điều kiện. `jobs_full` xếp 58 dòng vào trang 0 và chỉ còn 48 byte trống, nên bản mới phải sang trang khác: không HOT. `jobs_room` chỉ xếp 40 dòng/trang, chừa khoảng 30 % cho UPDATE, nên bản mới ở lại trang 0: HOT."
-    en: "\"Both\" sounds right because `pad` has no index, the HOT condition people usually remember. An unindexed column is only half the condition. `jobs_full` packs 58 rows into page 0 and leaves just 48 bytes free, so the new version must move to another page: not HOT. `jobs_room` puts only 40 rows per page, keeping about 30% for UPDATEs, so the new version stays on page 0: HOT."
+    vi: "\"Cả hai\" nghe hợp lý vì `pad` không có index, điều kiện HOT người ta hay nhớ, nhưng đó mới là một nửa: trang của bản cũ còn phải có chỗ. Mỗi dòng tốn khoảng 140 byte (tuple 136 + line pointer 4). Với `fillfactor` 100, `jobs_full` xếp 58 dòng vào trang 0 và chỉ còn 48 byte trống, nên bản mới phải sang trang khác: không HOT. Với 70, `jobs_room` dừng ở 40 dòng (70 % × 8192 ÷ 140 ≈ 40), chừa khoảng 30 % trang, nên bản mới ở lại trang 0: HOT. Prune không cứu được `jobs_full`: trang chưa có dead tuple nào để dọn."
+    en: "\"Both\" sounds right because `pad` has no index, the HOT condition people usually remember, but that is only half: the old version's page must also have room. Each row costs about 140 bytes (a 136-byte tuple + a 4-byte line pointer). At `fillfactor` 100, `jobs_full` packs 58 rows into page 0 and leaves just 48 bytes free, so the new version must move to another page: not HOT. At 70, `jobs_room` stops at 40 rows (70% × 8192 ÷ 140 ≈ 40), keeping about 30% of the page, so the new version stays on page 0: HOT. Pruning cannot save `jobs_full`: the page has no dead tuple to clear yet."
 quiz:
   - q:
       vi: "Bảng `jobs` đã đầy trang, tỉ lệ HOT thấp. Bạn chạy `ALTER TABLE jobs SET (fillfactor = 70)` rồi UPDATE tiếp một dòng cũ (cột không có index). Lần này có HOT không?"
@@ -77,8 +77,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì `ALTER TABLE` chạy xong ngay và `reloptions` đổi liền, nhưng lệnh không động vào dữ liệu đã có. Thử trên PGlite: bảng 200 dòng nạp ở fillfactor 100, đổi sang 70, UPDATE dòng 10 vẫn sang trang 3 (không HOT). Sau `VACUUM FULL` viết lại bảng, UPDATE dòng 20 ở lại trang 0 và là HOT."
-      en: "It sounds right because `ALTER TABLE` finishes at once and `reloptions` changes immediately, but the command does not touch existing data. Tried on PGlite: a 200-row table loaded at fillfactor 100, switched to 70, and the UPDATE of row 10 still moves to page 3 (not HOT). After `VACUUM FULL` rewrites the table, the UPDATE of row 20 stays on page 0 and is HOT."
+      vi: "\"Áp ngay cho mọi trang\" nghe hợp lý vì `ALTER TABLE` chạy xong ngay và `reloptions` đổi liền, nhưng lệnh chỉ ghi tham số mới, không động vào trang đã có. Trang cũ vẫn đầy, nên bản mới vẫn phải sang trang khác. Thử trên PGlite: bảng 200 dòng nạp ở fillfactor 100, đổi sang 70, UPDATE dòng 10 vẫn sang trang 3 (không HOT). Sau `VACUUM FULL` viết lại bảng theo 70 %, UPDATE dòng 20 ở lại trang 0 và là HOT. Fillfactor có cho cả bảng lẫn index, không chỉ index."
+      en: "\"Applies to every page at once\" sounds right because `ALTER TABLE` finishes at once and `reloptions` changes immediately, but the command only records the new setting and does not touch existing pages. The old pages are still full, so the new version must still move to another page. Tried on PGlite: a 200-row table loaded at fillfactor 100, switched to 70, and the UPDATE of row 10 still moves to page 3 (not HOT). After `VACUUM FULL` rewrites the table at 70%, the UPDATE of row 20 stays on page 0 and is HOT. Tables have a fillfactor too, not only indexes."
 ---
 ## Mở bài
 

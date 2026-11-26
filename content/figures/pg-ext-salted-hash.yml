@@ -1,0 +1,24 @@
+# v43 EXT-07 (tools/v43/extensions-plan.md): one password, two salts, two hashes; the check reuses the stored salt. Lesson: e-pg-ext-07 (Ý chính).
+# Data (PGlite 0.5.16 + pgcrypto, lesson setup): binh and chi both crypt('hoian123', gen_salt('bf', 8)); every bcrypt hash starts
+# with $2a$08$ and is 60 characters; the salts are random, so the figure names them "salt A"/"salt B" instead of showing bytes.
+# Source: https://www.postgresql.org/docs/18/pgcrypto.html (crypt, gen_salt)
+title: { vi: "Một mật khẩu, hai chuỗi băm", en: "One password, two hashes" }
+caption:
+  vi: "gen_salt('bf', 8) sinh muối mới cho mỗi người, crypt ghi muối đó vào đầu chuỗi băm. Khi đăng nhập, crypt(input, pw_hash) đọc lại đúng muối đã lưu."
+  en: "gen_salt('bf', 8) makes a new salt for each person, and crypt writes that salt at the start of the hash. At login, crypt(input, pw_hash) reads the stored salt back."
+alt:
+  vi: "Hai nhân viên dùng cùng một mật khẩu nhưng mỗi người nhận một muối ngẫu nhiên riêng, nên hai chuỗi băm khác nhau và không lộ việc họ trùng mật khẩu. Khi đăng nhập, phép kiểm dùng lại muối nằm sẵn trong chuỗi băm đã lưu, nên không cần cất muối ở chỗ khác."
+  en: "Two staff members use the same password but each gets a random salt of their own, so the two hashes differ and do not reveal that the passwords match. At login, the check reuses the salt already stored inside the hash, so the salt needs no other home."
+nodes:
+  - { id: pw, label: hoian123, sub: { vi: "cùng mật khẩu", en: "same password" } }
+  - { id: hb, label: binh, sub: { vi: "muối A, băm 1", en: "salt A, hash 1" }, tone: live }
+  - { id: hc, label: chi, sub: { vi: "muối B, băm 2", en: "salt B, hash 2" }, tone: live }
+  - { id: chk, label: { vi: "kiểm đăng nhập", en: "login check" }, sub: { vi: "dùng lại muối B", en: "reuses salt B" }, tone: new }
+rows:
+  - [pw]
+  - [hb, hc]
+  - [chk]
+edges:
+  - { from: pw, to: hb }
+  - { from: pw, to: hc }
+  - { from: hc, to: chk }

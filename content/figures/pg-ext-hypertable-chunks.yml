@@ -1,0 +1,37 @@
+# v43 R2 (extensions-plan §b, lesson e-pg-ext-12): a hypertable is one table over time-range chunks; a query on the last 7 days
+# reads only the newest chunk. In-game today is 2026-10-31, chunk interval 7 days (the TimescaleDB default). Illustration, not
+# measured (TimescaleDB does not run in the browser). Source: https://www.tigerdata.com/docs/use-timescale/latest/hypertables
+title: { vi: "Một bảng, nhiều khúc theo thời gian", en: "One table, chunks by time" }
+caption:
+  vi: "Bạn ghi và đọc một bảng; bên dưới, mỗi khúc giữ 7 ngày. Câu hỏi 7 ngày gần nhất chỉ mở khúc mới nhất."
+  en: "You write and read one table; underneath, each chunk holds 7 days. A question about the last 7 days opens only the newest chunk."
+alt:
+  vi: "Hypertable là một bảng duy nhất với người dùng, nhưng dữ liệu nằm trong các khúc, mỗi khúc một khoảng thời gian. Câu lọc theo cột thời gian chỉ đọc các khúc chạm khoảng đó, nên bảng càng dài thì câu về tuần gần nhất vẫn rẻ như cũ."
+  en: "A hypertable is a single table to its users, but the data sits in chunks, each covering one time range. A query filtered on the time column reads only the chunks that touch that range, so however long the table grows, a question about the last week stays as cheap."
+nodes:
+  - { id: tbl, shape: table, label: container_events, sub: hypertable }
+  - id: chunks
+    shape: grid
+    label: { vi: "các khúc 7 ngày", en: "7-day chunks" }
+    head: [{ vi: "khúc", en: "chunk" }, { vi: "khoảng", en: "range" }, { vi: "đọc", en: "read" }]
+    cells:
+      - ["1", { vi: "03/10–09/10", en: "3–9 Oct" }, ""]
+      - ["2", { vi: "10/10–16/10", en: "10–16 Oct" }, ""]
+      - ["3", { vi: "17/10–23/10", en: "17–23 Oct" }, ""]
+      - ["4", { vi: "24/10–30/10", en: "24–30 Oct" }, ""]
+  - { id: q, label: { vi: "7 ngày gần nhất", en: "the last 7 days" }, sub: { vi: "từ 24/10", en: "from 24 Oct" }, tone: ghost }
+rows:
+  - [tbl]
+  - [chunks]
+  - [q]
+edges:
+  - { from: tbl, to: chunks, label: { vi: "theo thời gian", en: "by time" } }
+  - { from: q, to: chunks }
+steps:
+  - say: { vi: "Mỗi dòng mới vào khúc của khoảng thời gian chứa nó.", en: "Each new row goes to the chunk of its time range." }
+    alt: { vi: "Mỗi dòng ghi vào container_events được đặt vào khúc có khoảng 7 ngày chứa event_time của nó.", en: "Each row written to container_events is placed in the chunk whose 7-day range holds its event_time." }
+  - say: { vi: "Câu 7 ngày gần nhất chỉ mở khúc 4.", en: "The last-7-days query opens chunk 4 only." }
+    alt: { vi: "Câu lọc event_time từ 24/10 bỏ qua ba khúc cũ và chỉ đọc khúc 4.", en: "The query filtered on event_time from 24 Oct skips the three older chunks and reads chunk 4 only." }
+    set:
+      q: { tone: live }
+      chunks: { cells: [["1", { vi: "03/10–09/10", en: "3–9 Oct" }, { vi: "không", en: "no" }], ["2", { vi: "10/10–16/10", en: "10–16 Oct" }, { vi: "không", en: "no" }], ["3", { vi: "17/10–23/10", en: "17–23 Oct" }, { vi: "không", en: "no" }], ["4", { vi: "24/10–30/10", en: "24–30 Oct" }, { vi: "có", en: "yes" }]], cellTone: { "3:2": new } }

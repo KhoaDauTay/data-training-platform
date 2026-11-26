@@ -97,8 +97,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì cả hai đều là \"bộ nhớ\", nhưng shared buffers là bộ đệm trang dùng chung, còn sort dùng bộ nhớ riêng của câu, giới hạn bởi `work_mem`. Đặt 1 GB cho cả máy chủ thì nguy hiểm: `work_mem` áp cho mỗi nút sort hay hash của mỗi câu, nên 100 kết nối có thể đòi nhiều lần 100 GB."
-      en: "It sounds right because both are \"memory\", but shared buffers are the shared page cache, while a sort uses the query's private memory, limited by `work_mem`. Setting 1 GB server-wide is dangerous: `work_mem` applies to every sort or hash node of every query, so 100 connections could ask for many times 100 GB."
+      vi: "Tăng `shared_buffers` nghe hợp lý vì cả hai đều là \"bộ nhớ\", nhưng shared buffers là bộ đệm trang dùng chung cho mọi bảng, còn sort dùng bộ nhớ riêng của câu, giới hạn bởi `work_mem`. Đặt 1 GB cho cả máy chủ thì nguy hiểm: `work_mem` áp cho mỗi nút sort hay hash của mỗi câu, nên 100 kết nối × 1 GB đã là 100 GB, và một câu có hai nút sort thì gấp đôi. `SET LOCAL` chỉ đổi giá trị trong transaction của báo cáo, nên chỉ câu đó được thêm bộ nhớ."
+      en: "Raising `shared_buffers` sounds right because both are \"memory\", but shared buffers are the page cache shared by every table, while a sort uses the query's private memory, limited by `work_mem`. Setting 1 GB server-wide is dangerous: `work_mem` applies to every sort or hash node of every query, so 100 connections × 1 GB is already 100 GB, and a query with two sort nodes doubles that. `SET LOCAL` changes the value only inside the report's transaction, so only that query gets more memory."
   - q:
       vi: "Ngay sau `CHECKPOINT`, bạn sửa một dòng của bảng 120 trang. `pg_buffercache` báo bao nhiêu trang bẩn của bảng?"
       en: "Right after a `CHECKPOINT` you update one row of a 120-page table. How many of the table's pages does `pg_buffercache` show as dirty?"
@@ -108,8 +108,8 @@ quiz:
       - { vi: "0: COMMIT đã ghi trang xuống đĩa", en: "0: COMMIT already wrote the page to disk" }
     answer: 1
     why:
-      vi: "Trang bẩn là trang đã đổi trong bộ nhớ mà chưa ghi xuống đĩa. CHECKPOINT làm sạch mọi trang; UPDATE chỉ làm bẩn trang nó sửa (ở lab, bản mới nằm cùng trang nhờ HOT). COMMIT không ghi trang: nó chỉ chờ WAL bền."
-      en: "A dirty page is a page changed in memory but not yet written to disk. The CHECKPOINT cleaned every page; the UPDATE only dirties the page it changes (in the lab the new version stays on the same page thanks to HOT). COMMIT does not write pages: it only waits for the WAL to be durable."
+      vi: "Trang bẩn (dirty page) là trang đã đổi trong bộ nhớ mà chưa ghi xuống đĩa. CHECKPOINT vừa ghi mọi trang xuống đĩa nên cả 120 trang đều sạch; UPDATE chỉ làm bẩn trang nó sửa, không phải cả bảng (ở lab, bản mới nằm cùng trang nhờ HOT update). Không phải 0: COMMIT không ghi trang, nó chỉ chờ WAL (nhật ký ghi trước) bền, còn trang bẩn chờ checkpoint sau."
+      en: "A dirty page is a page changed in memory but not yet written to disk. The CHECKPOINT just wrote every page out, so all 120 pages are clean; the UPDATE only dirties the page it changes, not the whole table (in the lab the new version stays on the same page thanks to a HOT update). Not 0: COMMIT does not write pages, it only waits for the WAL (write-ahead log) to be durable, and the dirty page waits for the next checkpoint."
 ---
 ## Mở bài
 

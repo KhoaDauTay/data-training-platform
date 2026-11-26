@@ -8,6 +8,7 @@ title_en: Relational algebra and SQL
 kind: concept
 runtime: browser
 minutes: 15
+figures: [{ name: ds-algebra-tree, at: idea }, { name: ds-algebra-tree, at: example, variant: pushed }]
 objectives:
   - vi: Đọc được một biểu thức đại số quan hệ (σ, π, ρ, ∪, −, ∩, ×, ⋈, γ) và viết câu SQL tương ứng.
     en: Read a relational algebra expression (σ, π, ρ, ∪, −, ∩, ×, ⋈, γ) and write the matching SQL.
@@ -62,8 +63,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì `SELECT city FROM emp` trả năm dòng, nhưng đó là SQL, không phải đại số. Kết quả của phép chiếu là một quan hệ, tức một tập: ba thành phố, ba bộ."
-      en: "It sounds right because `SELECT city FROM emp` returns five rows, but that is SQL, not the algebra. A projection returns a relation, which is a set: three cities, three tuples."
+      vi: "Năm nghe hợp lý vì `SELECT city FROM emp` trả năm dòng, nhưng đó là SQL, vốn giữ dòng trùng. Trong đại số, kết quả phép chiếu là một quan hệ, tức một tập: hai bộ (tuple) giống hệt nhau gộp làm một. Không cần biết khóa: chỉ cần đếm giá trị khác nhau của `city`, là ba, nên ra ba bộ."
+      en: "Five sounds right because `SELECT city FROM emp` returns five rows, but that is SQL, which keeps duplicates. In the algebra a projection returns a relation, which is a set: two identical tuples merge into one. No key is needed: just count the distinct values of `city`, which is three, so three tuples."
   - q:
       vi: "Phép nào sau đây có thể viết lại bằng các phép khác, nên không thuộc tập phép cơ bản?"
       en: "Which operator can be rewritten with the others, so it is not one of the basic operators?"
@@ -74,8 +75,8 @@ quiz:
     answer: 0
     trap: 2
     why:
-      vi: "Nhiều người nghĩ tích × là phép phụ vì ít ai viết nó. Thật ra tích là phép cơ bản; phép nối mới là tích cộng phép chọn, và phép giao là hai lần phép trừ."
-      en: "Many people think × is a derived operator because nobody writes it. In fact the product is basic; a join is a product followed by a selection, and intersection is two differences."
+      vi: "Tích × nghe như phép phụ vì ít ai viết nó, nhưng không phép nào khác ghép được mọi cặp bộ từ hai quan hệ, nên nó là phép cơ bản; chính phép nối mới là tích rồi chọn. Phép chọn σ cũng cơ bản: chỉ nó lọc bộ theo điều kiện. Phép giao thì suy ra được: `R − (R − S)` bỏ khỏi R những bộ không có trong S, còn lại đúng phần chung."
+      en: "× sounds derived because few people write it, but no other operator pairs every tuple of two relations, so it is basic; it is the join that is a product followed by a selection. Selection σ is basic too: only it filters tuples by a condition. Intersection can be derived: `R − (R − S)` removes from R the tuples not in S, leaving exactly the common part."
 ---
 ## Mở bài
 
@@ -89,9 +90,11 @@ Từ các phép cơ bản suy ra phép **nối** ⋈: tích rồi chọn. Nối 
 
 Khác biệt quan trọng: đại số làm trên tập, SQL làm trên đa tập. `SELECT city FROM emp` giữ dòng trùng; muốn đúng phép chiếu phải `DISTINCT`. `UNION` bỏ trùng như đại số, `UNION ALL` thì không.
 
-SQL không chỉ có truy vấn. Lệnh chia thành bốn nhóm: DDL định nghĩa cấu trúc (`CREATE`, `ALTER`, `DROP`), DML đọc và ghi dữ liệu (`SELECT`, `INSERT`, `UPDATE`, `DELETE`), DCL phân quyền (`GRANT`, `REVOKE`), TCL điều khiển giao dịch (`BEGIN`, `COMMIT`, `ROLLBACK`). Đại số chỉ mô tả phần đọc.
+SQL không chỉ có truy vấn. Lệnh chia thành bốn nhóm: DDL định nghĩa cấu trúc (`CREATE`, `ALTER`, `DROP`), DML đọc và ghi dữ liệu (`SELECT`, `INSERT`, `UPDATE`, `DELETE`), DCL phân quyền (`GRANT`, `REVOKE`), TCL điều khiển transaction (`BEGIN`, `COMMIT`, `ROLLBACK`). Đại số chỉ mô tả phần đọc.
 
-Hai biểu thức **tương đương** khi cho cùng kết quả trên mọi dữ liệu, và optimizer sống nhờ điều đó. Nó đẩy phép chọn xuống sát bảng (σ trước ⋈) để phép nối nhận ít bộ hơn, đổi chỗ và nhóm lại các phép nối (⋈ giao hoán và kết hợp) để tìm thứ tự rẻ nhất, gộp các phép chiếu liên tiếp thành một. Trong `EXPLAIN`, dòng `Filter` ngay dưới một `Seq Scan` là phép chọn đã được đẩy xuống, và thứ tự các nút `Join` là thứ tự nối planner chọn. Planner làm việc trên cây đại số, nên viết bảng nào trước trong `FROM` thường không đổi kế hoạch. Ngoại lệ là chỗ luật không cho đổi: nối ngoài không giao hoán tùy ý, và điều kiện đặt ở `ON` khác ở `WHERE`. Bài `e-pg-l4-05` xem điều này trên kế hoạch thật.
+Hai biểu thức **tương đương** khi cho cùng kết quả trên mọi dữ liệu, và planner (bộ lập kế hoạch) sống nhờ điều đó. Nó đẩy phép chọn xuống sát bảng (σ trước ⋈) để phép nối nhận ít bộ hơn, đổi chỗ và nhóm lại các phép nối (⋈ giao hoán và kết hợp) để tìm thứ tự rẻ nhất, gộp các phép chiếu liên tiếp thành một. Trong `EXPLAIN`, dòng `Filter` ngay dưới một `Seq Scan` là phép chọn đã được đẩy xuống, và thứ tự các nút `Join` là thứ tự nối planner chọn. Planner làm việc trên cây đại số, nên viết bảng nào trước trong `FROM` thường không đổi kế hoạch. Ngoại lệ là chỗ luật không cho đổi: nối ngoài không giao hoán tùy ý, và điều kiện đặt ở `ON` khác ở `WHERE`. Bài `e-pg-l4-05` xem điều này trên kế hoạch thật.
+
+Hình dưới vẽ câu `SELECT DISTINCT e.name, d.title FROM emp e JOIN dept d ON e.dept_id = d.id WHERE e.city = 'Hue'` thành cây phép toán, rồi đẩy σ xuống sát `emp`.
 
 ## Ví dụ
 
@@ -129,6 +132,8 @@ Gom nhóm γ: số người mỗi phòng.
 ```sql
 SELECT dept_id, count(*) AS people FROM emp GROUP BY dept_id ORDER BY dept_id;
 ```
+
+Hình cuối phần này là cây sau khi đẩy σ xuống: phép nối chỉ nhận 3 bộ của `emp` mà kết quả vẫn là 3 bộ.
 
 ## Lỗi hay gặp
 
@@ -188,7 +193,9 @@ An important difference: the algebra works on sets, SQL on multisets. `SELECT ci
 
 SQL is more than queries. Statements fall into four groups: DDL defines structure (`CREATE`, `ALTER`, `DROP`), DML reads and writes data (`SELECT`, `INSERT`, `UPDATE`, `DELETE`), DCL grants access (`GRANT`, `REVOKE`), TCL controls transactions (`BEGIN`, `COMMIT`, `ROLLBACK`). The algebra describes only the reading part.
 
-Two expressions are **equivalent** when they give the same result on every database, and the optimizer lives on that. It pushes selections down next to the tables (σ before ⋈) so joins receive fewer tuples, swaps and regroups joins (⋈ is commutative and associative) to find the cheapest order, and merges consecutive projections into one. In `EXPLAIN`, a `Filter` line right under a `Seq Scan` is a selection that was pushed down, and the order of the `Join` nodes is the join order the planner chose. Because the planner works on the algebra tree, not on the order of the words you typed, which table you write first in `FROM` usually does not change the plan. The exceptions are where the rules forbid a swap: outer joins do not commute freely, and a condition in `ON` is not the same as one in `WHERE`. Lesson `e-pg-l4-05` looks at this on real plans.
+Two expressions are **equivalent** when they give the same result on every database, and the planner lives on that. It pushes selections down next to the tables (σ before ⋈) so joins receive fewer tuples, swaps and regroups joins (⋈ is commutative and associative) to find the cheapest order, and merges consecutive projections into one. In `EXPLAIN`, a `Filter` line right under a `Seq Scan` is a selection that was pushed down, and the order of the `Join` nodes is the join order the planner chose. Because the planner works on the algebra tree, not on the order of the words you typed, which table you write first in `FROM` usually does not change the plan. The exceptions are where the rules forbid a swap: outer joins do not commute freely, and a condition in `ON` is not the same as one in `WHERE`. Lesson `e-pg-l4-05` looks at this on real plans.
+
+The figure below draws the query `SELECT DISTINCT e.name, d.title FROM emp e JOIN dept d ON e.dept_id = d.id WHERE e.city = 'Hue'` as a tree of operators, then pushes σ down to `emp`.
 
 ## Example
 
@@ -226,6 +233,8 @@ Grouping γ: people per department.
 ```sql
 SELECT dept_id, count(*) AS people FROM emp GROUP BY dept_id ORDER BY dept_id;
 ```
+
+The last figure of this section is the tree after pushing σ down: the join takes only 3 tuples of `emp` and the result is still 3 tuples.
 
 ## Common mistakes
 

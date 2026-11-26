@@ -35,7 +35,7 @@ reflect:
   why: { vi: "Ngày đầu tháng giữ cả năm lẫn tháng, nên mỗi tháng của mỗi năm là một nhóm riêng và vẫn sắp đúng thứ tự thời gian.", en: "The first day of the month keeps both the year and the month, so every month of every year is its own group and still sorts in time order." }
 wrong:
   - sql: "SELECT extract(month FROM disbursed_on) AS month, count(*), sum(principal) FROM loans WHERE disbursed_on >= '{{from}}' AND disbursed_on < '{{to}}' GROUP BY 1 ORDER BY 1"
-    vi: "Bạn đang gom theo số tháng (1 đến 12). Đề cần ghi tháng bằng ngày đầu tháng, để tháng của hai năm khác nhau không gộp vào nhau."
+    vi: "Bạn đang gom theo số tháng (1 đến 12). Đề cần ghi tháng bằng ngày đầu tháng, để tháng của hai năm khác nhau không rơi vào cùng một nhóm."
     en: "You are grouping by the month number (1 to 12). The request wants each month as its first day, so months of different years never mix."
 ---
 Mình cần đường giải ngân theo tháng trong mười hai tháng để lên chỉ tiêu cho các chi nhánh năm sau.

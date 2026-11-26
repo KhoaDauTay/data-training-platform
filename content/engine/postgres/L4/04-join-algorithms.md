@@ -51,7 +51,7 @@ quiz:
       - { vi: "Nested Loop 20.000 lần", en: "A Nested Loop running 20,000 times" }
     answer: 1
     trap: 0
-    why: { vi: "Nghe hợp lý vì phép nối không đổi, nhưng ở bước 3 Merge Join thắng là nhờ `ORDER BY` dùng lại thứ tự của nó. Không cần thứ tự nữa, hai lần đọc tuần tự cộng một bảng băm rẻ hơn hai lần đi index. Merge Join chỉ thắng khi thứ tự có sẵn hoặc được dùng lại.", en: "It sounds right because the join itself is unchanged, but in step 3 the Merge Join won only because the `ORDER BY` reused its order. Once no order is needed, two sequential reads plus one hash table beat two index walks. A Merge Join only wins when the order is free or reused." }
+    why: { vi: "\"Vẫn Merge Join\" nghe hợp lý vì phép nối không đổi, nhưng ở bước 3 Merge Join thắng chỉ vì kết quả của nó đã sắp theo `o.id`, nên `ORDER BY` khỏi phải sắp lại. Bỏ `ORDER BY` thì thứ tự đó không còn giá trị: đọc tuần tự hai bảng rồi băm một bên (Hash Join) rẻ hơn đi hết hai index theo thứ tự. Nested Loop 20.000 lần thì là 20.000 lần tra index, đắt hơn cả hai cách kia khi phải nối mọi dòng.", en: "\"Still a Merge Join\" sounds right because the join is unchanged, but in step 3 the Merge Join won only because its output was already sorted by `o.id`, so the `ORDER BY` needed no sort. Drop the `ORDER BY` and that order is worth nothing: reading both tables sequentially and hashing one side (Hash Join) is cheaper than walking two indexes in order. A Nested Loop running 20,000 times means 20,000 index probes, dearer than both when every row must be joined." }
   - q: { vi: "Câu lấy đơn của đúng khách 42 chạy bằng Nested Loop. Đồng nghiệp đề nghị đặt `enable_nestloop = off` cho cả server vì \"Nested Loop luôn chậm\". Bạn trả lời sao?", en: "The query for customer 42's orders runs as a Nested Loop. A colleague suggests `enable_nestloop = off` for the whole server because \"Nested Loop is always slow\". What do you answer?" }
     options:
       - { vi: "Đồng ý: Nested Loop là thuật toán chậm nhất, nên cấm hẳn", en: "Agree: Nested Loop is the slowest algorithm, so ban it" }
@@ -59,7 +59,7 @@ quiz:
       - { vi: "Không cần: tham số đó không tồn tại", en: "No need: that parameter does not exist" }
     answer: 1
     trap: 0
-    why: { vi: "Nghe hợp lý vì Nested Loop chậm là thứ hay thấy trong các câu tệ, nhưng thủ phạm thường là ước lượng sai: planner tưởng phía ngoài có 10 dòng, thật ra có 10.000. Với đúng một khách, một lần tra index là không thể nhanh hơn. Các tham số `enable_*` cũng không cấm hẳn: PostgreSQL 18 chỉ ưu tiên kế hoạch có ít nút bị tắt nhất, và vẫn dùng nút bị tắt khi không có cách khác, ghi `Disabled: true`.", en: "It sounds right because a slow Nested Loop is common in bad queries, but the culprit is usually a wrong estimate: the planner expected 10 outer rows and got 10,000. For exactly one customer, one index probe cannot be beaten. The `enable_*` settings do not ban anything either: PostgreSQL 18 only prefers the plan with the fewest disabled nodes, and still uses a disabled node when there is no other way, marking it `Disabled: true`." }
+    why: { vi: "Đồng ý nghe hợp lý vì Nested Loop chậm hay xuất hiện trong các câu tệ, nhưng khi đó thủ phạm là ước lượng số dòng (row estimate) sai: ví dụ planner tưởng phía ngoài có 10 dòng nên chọn lặp, thật ra có 10.000 và vòng lặp chạy 10.000 lần. Ở câu này phía ngoài đúng một khách, nên chỉ có một lần tra index vào `orders`: không cách nào rẻ hơn. Tham số `enable_nestloop` có thật, nhưng nó không cấm hẳn: PostgreSQL 18 chỉ ưu tiên kế hoạch có ít nút bị tắt nhất, và vẫn dùng nút bị tắt khi không có cách khác, ghi `Disabled: true`.", en: "Agreeing sounds reasonable because slow Nested Loops show up in bad queries, but there the culprit is a wrong row estimate: for example the planner expects 10 outer rows and picks a loop, then 10,000 arrive and the loop runs 10,000 times. Here the outer side is exactly one customer, so there is a single index probe into `orders`: nothing is cheaper. The `enable_nestloop` setting does exist, but it bans nothing: PostgreSQL 18 only prefers the plan with the fewest disabled nodes, and still uses a disabled node when there is no other way, marking it `Disabled: true`." }
 ---
 ## Mở bài
 
@@ -75,7 +75,7 @@ Merge Join: hai phía đã sắp theo khóa nối được đi song song như kh
 
 Trong kế hoạch, nút con đầu tiên là phía ngoài. Với Hash Join, nút con có tên `Hash` là phía được băm.
 
-Nhiều người nghĩ Nested Loop là thuật toán chậm, cần tránh. Thật ra nó chỉ chậm khi planner đoán sai số dòng phía ngoài. Planner chọn theo chi phí, nên ước lượng sai (bài trước) là nguyên nhân số một của thuật toán nối sai; sửa ước lượng, đừng tắt thuật toán.
+Nhiều người nghĩ Nested Loop là thuật toán chậm, cần tránh. Thật ra nó chỉ chậm khi planner ước lượng sai số dòng phía ngoài. Planner chọn theo chi phí, nên ước lượng số dòng sai (xem bài trước về thống kê mở rộng) là nguyên nhân số một của thuật toán nối sai; sửa ước lượng, đừng tắt thuật toán.
 
 ## Cú pháp
 
@@ -199,7 +199,7 @@ Merge Join: both sides, sorted on the join key, are walked side by side like a z
 
 In a plan, the first child node is the outer side. In a Hash Join, the child named `Hash` is the side being hashed.
 
-Many people think a Nested Loop is the slow algorithm to avoid. In fact it is only slow when the planner misjudges the outer row count. The planner chooses by cost, so a wrong estimate (previous lesson) is the number one cause of a wrong join algorithm; fix the estimate, do not switch the algorithm off.
+Many people think a Nested Loop is the slow algorithm to avoid. In fact it is only slow when the planner underestimates the outer row count. The planner chooses by cost, so a wrong row estimate (see the earlier lesson on extended statistics) is the number one cause of a wrong join algorithm; fix the estimate, do not switch the algorithm off.
 
 ## Syntax
 

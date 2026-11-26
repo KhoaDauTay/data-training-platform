@@ -1,3 +1,24 @@
+# v43 R2 (L730): Extensions shelf modules (e-pg-ext-04, 08–14)
+- id: ext-vector
+  module: ext-vector
+  level: EXT
+  vi: Tìm theo vector
+  en: Vector search
+- id: ext-types
+  module: ext-types
+  level: EXT
+  vi: Kiểu dữ liệu từ extension
+  en: Data types from extensions
+- id: ext-analysis
+  module: ext-analysis
+  level: EXT
+  vi: Phân tích và quan sát
+  en: Analysis and observability
+- id: ext-server
+  module: ext-server
+  level: EXT
+  vi: Extension chỉ có trên server
+  en: Server-only extensions
 - id: ddl
   module: ddl
   level: L1
@@ -427,3 +448,47 @@
   after:
     vi: chẩn đoán một bảng chậm từ thống kê, kế hoạch, phân vùng, index và RLS, rồi đưa ra kết luận
     en: diagnose a slow table from statistics, plans, partitions, indexes and RLS, then reach a conclusion
+- id: ext-basics
+  module: ext-basics
+  level: EXT
+  vi: Extension cơ bản
+  en: Extension basics
+  title:
+    vi: Extension cơ bản
+    en: Extension basics
+  after:
+    vi: cài, xem và gỡ một extension, và biết gỡ thì mất những gì
+    en: install, list and remove an extension, and know what removing it takes with it
+- id: ext-geo
+  module: ext-geo
+  level: EXT
+  vi: Bản đồ với PostGIS
+  en: Maps with PostGIS
+  title:
+    vi: Bản đồ với PostGIS
+    en: Maps with PostGIS
+  after:
+    vi: đo khoảng cách thật giữa các cảng và tìm đơn trong một vùng giao hàng bằng index GiST
+    en: measure real distances between ports and find orders inside a delivery zone through a GiST index
+- id: ext-text
+  module: ext-text
+  level: EXT
+  vi: Tìm chữ gần đúng
+  en: Fuzzy text search
+  title:
+    vi: Tìm chữ gần đúng
+    en: Fuzzy text search
+  after:
+    vi: tìm tên gõ sai và tìm tiếng Việt không dấu, có index phục vụ
+    en: find mistyped names and search Vietnamese without diacritics, served by an index
+- id: ext-security
+  module: ext-security
+  level: EXT
+  vi: Băm và mã hóa
+  en: Hashing and encryption
+  title:
+    vi: Băm và mã hóa
+    en: Hashing and encryption
+  after:
+    vi: lưu mật khẩu bằng băm có muối và mã hóa một cột nhạy cảm
+    en: store passwords as salted hashes and encrypt one sensitive column

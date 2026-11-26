@@ -18,7 +18,7 @@ import { extensionsOf, replayOf } from '../src/engine/pglab/runner';
 import { enginePathOf } from '../src/route';
 import sourcesTs from '../src/engineSources.ts?raw';
 
-const files = import.meta.glob<LessonSource>('../content/engine/*/L*/*.md', { query: '?fm', import: 'default', eager: true });
+const files = import.meta.glob<LessonSource>('../content/engine/*/{L*,ext}/*.md', { query: '?fm', import: 'default', eager: true });
 const lessons: EngineLesson[] = Object.entries(files).map(([p, s]) => parseEngineLesson(s, p));
 const lang = () => 'en' as const;
 const node = (globalThis as unknown as { process: { getBuiltinModule(id: string): unknown } }).process;

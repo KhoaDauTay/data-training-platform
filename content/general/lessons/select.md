@@ -104,8 +104,8 @@ quiz:
     answer: 2
     trap: 0
     why:
-      vi: "Trên bảng nhỏ vừa nạp, dòng thường ra theo thứ tự chèn nên dễ tin đó là luật. Postgres không hứa điều đó: sau khi sửa dữ liệu hay đổi kế hoạch chạy, thứ tự có thể khác. Thứ tự chỉ chắc chắn khi có `ORDER BY` (bài tiếp theo của Phần 1)."
-      en: "On a small, freshly loaded table rows often come back in insert order, so it is easy to believe that is the rule. Postgres promises nothing: after updates or a different plan the order can change. Only `ORDER BY` (later in Part 1) guarantees one."
+      vi: "Trên bảng nhỏ vừa nạp, dòng thường ra theo thứ tự chèn nên dễ tin đó là luật. Postgres không hứa điều đó: sau khi sửa dữ liệu hay đổi kế hoạch chạy, thứ tự có thể khác. Thứ tự chỉ chắc chắn khi có `ORDER BY` (bài \"ORDER BY: xếp kết quả theo thứ tự bạn muốn\")."
+      en: "On a small, freshly loaded table rows often come back in insert order, so it is easy to believe that is the rule. Postgres promises nothing: after updates or a different plan the order can change. Only `ORDER BY` (lesson \"ORDER BY: put the result in the order you want\") guarantees one."
 recap:
   - vi: "`SELECT` chọn cột, `FROM` chọn bảng; số dòng không đổi, chỉ số cột đổi."
     en: "`SELECT` picks columns, `FROM` picks the table; the number of rows stays the same, only the columns change."

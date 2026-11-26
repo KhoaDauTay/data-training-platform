@@ -3,11 +3,12 @@ id: conditional_agg
 title: "Gộp có điều kiện: FILTER và SUM(CASE …)"
 title_en: "Conditional aggregates: FILTER and SUM(CASE …)"
 minutes: 25
+figures: [{ name: sql-case-buckets, at: idea, variant: filter }]
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Đếm hay cộng nhiều nhóm con trong cùng một dòng kết quả, như số đơn online và tại quầy.
     en: Count or sum several sub-groups on one result row, such as online and in-store orders.
-  - vi: Tính tỉ lệ phần trăm từ hai số đếm mà không bị cắt phần lẻ.
+  - vi: Tính tỉ lệ phần trăm từ hai số đếm mà không bị cắt phần thập phân.
     en: Compute a percentage from two counts without losing the fraction.
   - vi: Giữ đủ mọi nhóm, kể cả nhóm có số đếm bằng 0.
     en: Keep every group, including those whose count is 0.
@@ -52,7 +53,7 @@ examples:
       GROUP BY store_id
       ORDER BY store_id
     read:
-      vi: "Từ 5,4% (cửa hàng 3) tới 7,9% (cửa hàng 2). Nhân với `100.0` trước khi chia để phép chia giữ phần lẻ, rồi làm tròn một chữ số."
+      vi: "Từ 5,4% (cửa hàng 3) tới 7,9% (cửa hàng 2). Nhân với `100.0` trước khi chia để phép chia giữ phần thập phân, rồi làm tròn một chữ số."
       en: "From 5.4% (store 3) to 7.9% (store 2). Multiply by `100.0` before dividing so the division keeps the fraction, then round to one decimal."
   - title: { vi: "Cách viết chạy ở mọi hệ", en: "The spelling that runs everywhere" }
     sql: |-
@@ -77,7 +78,7 @@ pitfalls:
     wrong: "SELECT store_id, 100 * count(*) FILTER (WHERE status = 'CANCELLED') / count(*) AS cancel_pct FROM orders GROUP BY store_id ORDER BY store_id"
     fix: "SELECT store_id, round(100.0 * count(*) FILTER (WHERE status = 'CANCELLED') / count(*), 1) AS cancel_pct FROM orders GROUP BY store_id ORDER BY store_id"
     why:
-      vi: "`count` trả số nguyên, nên `100 * … / …` cắt phần lẻ: 7,9% thành 7, và hai cửa hàng khác nhau trông như bằng nhau. Dùng `100.0`."
+      vi: "`count` trả số nguyên, nên `100 * … / …` cắt phần thập phân: 7,9% thành 7, và hai cửa hàng khác nhau trông như bằng nhau. Dùng `100.0`."
       en: "`count` returns whole numbers, so `100 * … / …` drops the fraction: 7.9% becomes 7, and two different stores look equal. Use `100.0`."
   - title: { vi: "count(CASE …) đếm cả số 0", en: "count(CASE …) counts the zeros too" }
     wrong: "SELECT count(CASE WHEN status = 'PAID' THEN 1 ELSE 0 END) AS paid FROM orders WHERE order_date >= '2026-10-01'"
@@ -139,6 +140,8 @@ Hàm gộp có điều kiện đếm hay cộng chỉ một phần dòng **bên 
 
 Nhiều người nghĩ **muốn đếm một loại thì lọc ở `WHERE`**. Làm vậy thì tổng số và các loại khác mất theo, và nhóm không có dòng nào thỏa sẽ biến mất thay vì hiện số 0. Điều kiện chỉ dành cho một cột thì đặt vào chính cột đó.
 
+Hình cuối mục này đếm ba hạng giá trong một dòng kết quả, mỗi hạng một `FILTER`.
+
 ## Cú pháp
 
 `FILTER` đứng ngay sau ngoặc đóng của hàm gộp.
@@ -154,6 +157,8 @@ The operations director wants a table: one row per store, with the number of ord
 A conditional aggregate counts or sums only part of the rows **inside** a group, while the other columns still see the whole group. Postgres has `FILTER (WHERE …)` after the aggregate; the spelling that runs everywhere is `sum(CASE WHEN … THEN 1 ELSE 0 END)`. That way one result row carries several different counts.
 
 Many people think **to count one kind of row you filter in `WHERE`**. Then the total and the other kinds disappear too, and a group with no matching row vanishes instead of showing 0. A condition meant for one column belongs in that column.
+
+The figure at the end of this section counts three price tiers in one result row, one `FILTER` each.
 
 ## Syntax
 

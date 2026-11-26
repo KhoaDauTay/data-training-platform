@@ -55,6 +55,8 @@ export interface MeDeps {
   generalNow: typeof Content.generalNow; loadGeneral: typeof Content.loadGeneral;
   moduleTitle: typeof Progress.moduleTitle; startToday: () => void;
   engineTrees: () => Readonly<Record<string, Parameters<typeof Mastery.engineLevels>[0]>> | undefined;
+  /** v43 (L722): the PostgreSQL Extensions shelf, a plain k/n line (no level, no badge). */
+  engineExt: () => { done: number; total: number } | undefined;
 }
 let d: MeDeps;
 export const initMe = (deps: MeDeps): void => void (d = deps);
@@ -235,6 +237,11 @@ function measure(list: Scope[]): Measured {
   return { levels, parts, engines, badges };
 }
 
+function extLine(): HTMLElement | null {
+  const p = d.engineExt();
+  return p?.total ? d.h('p', { class: 'm-0 flex items-center gap-2 text-body-sm', 'data-me': 'ext' }, d.icon('puzzle', 'size-4 shrink-0 text-accent'), m('map.ext', { k: p.done, n: p.total })) : null;
+}
+
 function skillMapCard(x: Measured): HTMLElement {
   const lang = d.getLang();
   const due = [...x.levels.values()].filter((s) => s.review).length;
@@ -281,7 +288,8 @@ function skillMapCard(x: Measured): HTMLElement {
         ? d.h('ul', { class: 'm-0 list-none space-y-2 p-0' }, ...ENGINES.map((e) => d.h('li', { class: 'flex flex-wrap items-center gap-2' },
           d.h('span', { class: 'flex w-40 items-center gap-2 text-body-sm font-semibold' }, d.icon(ENGINE_ICON[e], 'size-4 shrink-0 text-accent'), engineName(e)),
           d.h('ol', { class: 'm-0 grid min-w-0 flex-1 list-none grid-cols-5 gap-1 p-0' }, ...LEVELS.filter((lv) => e !== 'stack' || lv <= 'L3').map((lv) => cell(e, lv))))))
-        : d.h('p', { class: 'm-0 text-body-sm text-muted', 'aria-live': 'polite' }, m('map.engineLoading'))));
+        : d.h('p', { class: 'm-0 text-body-sm text-muted', 'aria-live': 'polite' }, m('map.engineLoading')),
+      extLine()));
 }
 
 function badgeName(b: Badge, list: Scope[]): { name: string; cond: string; icon: Icons.IconName } {

@@ -37,8 +37,8 @@ Phòng kế toán phải báo cáo tiền giảm giá theo từng chương trìn
 Các đơn đặt từ tháng {{first}} đến hết tháng {{last}}: mỗi mã giảm giá đã được dùng ở bao nhiêu đơn không bị hủy? Gửi mã, tên chương trình và số đơn. Nhiều đơn nhất lên đầu; bằng nhau thì mã xếp theo thứ tự chữ cái.
 
 ## Hints
-1. Đơn hàng ghi mã giảm giá đã dùng (nếu có). Ghép danh mục mã giảm giá với đơn, bỏ đơn đã hủy, rồi đếm theo từng mã.
-2. Ghép `o.voucher_id = v.id`, lọc `o.status <> 'cancelled'`, gom nhóm theo `v.code, v.campaign`, xếp `ORDER BY 3 DESC, v.code`.
+1. Đơn hàng ghi mã giảm giá đã dùng (nếu có). Nối danh mục mã giảm giá với đơn, bỏ đơn đã hủy, rồi đếm theo từng mã.
+2. Nối `o.voucher_id = v.id`, lọc `o.status <> 'cancelled'`, gom nhóm theo `v.code, v.campaign`, xếp `ORDER BY 3 DESC, v.code`.
 3. `SELECT v.code, v.campaign, count(*) FROM vouchers v JOIN orders o ON ... WHERE ... GROUP BY v.code, v.campaign ORDER BY 3 DESC, v.code`
 
 ## Solution

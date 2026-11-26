@@ -94,8 +94,8 @@ quiz:
       - { vi: "`NOT IN` bỏ qua mọi dòng của câu con khi gặp NULL", en: "`NOT IN` ignores every row of the subquery once it meets a NULL" }
     answer: 0
     why:
-      vi: "\"Thống kê cũ\" nghe hợp lý vì một dòng mới vừa được thêm, nhưng đây là đáp số chứ không phải kế hoạch, và thống kê không bao giờ đổi đáp số. `x NOT IN (a, b, NULL)` nghĩa là `x <> a AND x <> b AND x <> NULL`; vế cuối là NULL, nên cả biểu thức không bao giờ là true. Viết `NOT EXISTS`, hoặc lọc `customer_id IS NOT NULL` trong câu con."
-      en: "\"Stale statistics\" sounds right because a row was just added, but this is a result, not a plan, and statistics never change a result. `x NOT IN (a, b, NULL)` means `x <> a AND x <> b AND x <> NULL`; the last part is NULL, so the whole expression is never true. Write `NOT EXISTS`, or filter `customer_id IS NOT NULL` in the subquery."
+      vi: "\"Thống kê cũ\" nghe hợp lý vì một dòng mới vừa được thêm, nhưng đây là đáp số chứ không phải kế hoạch, và thống kê không bao giờ đổi đáp số. `x NOT IN (a, b, NULL)` nghĩa là `x <> a AND x <> b AND x <> NULL`; vế cuối là NULL, nên cả biểu thức không bao giờ là true, và `WHERE` chỉ giữ dòng true. `NOT IN` không bỏ qua dòng nào của câu con; chính việc nó so với cả dòng NULL mới gây ra kết quả rỗng. Viết `NOT EXISTS`, hoặc lọc `customer_id IS NOT NULL` trong câu con."
+      en: "\"Stale statistics\" sounds right because a row was just added, but this is a result, not a plan, and statistics never change a result. `x NOT IN (a, b, NULL)` means `x <> a AND x <> b AND x <> NULL`; the last part is NULL, so the whole expression is never true, and `WHERE` keeps only true rows. `NOT IN` ignores no row of the subquery; comparing against the NULL row too is exactly what empties the result. Write `NOT EXISTS`, or filter `customer_id IS NOT NULL` in the subquery."
 ---
 
 ## Mở bài

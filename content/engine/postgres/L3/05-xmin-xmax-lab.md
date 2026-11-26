@@ -121,8 +121,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì sau ROLLBACK không ai thấy dòng nào, nhưng ROLLBACK chỉ ghi transaction là `aborted`. Tuple vẫn chiếm chỗ trên trang (lab thấy lp 5 do transaction hủy chèn) cho tới khi VACUUM thu hồi."
-      en: "It sounds right because after the ROLLBACK nobody sees any row, but ROLLBACK only records the transaction as `aborted`. The tuples keep their space on the pages (the lab sees lp 5 inserted by an aborted transaction) until VACUUM reclaims it."
+      vi: "\"ROLLBACK xóa sạch\" nghe hợp lý vì sau ROLLBACK không ai thấy dòng nào, nhưng ROLLBACK chỉ ghi trạng thái transaction là `aborted`; nó không đi xóa từng tuple. 1 triệu tuple vẫn chiếm chỗ trên trang, vô hình, cho tới khi VACUUM thu hồi (bước 3 của lab thấy đúng điều này ở lp 5). Index không phải điều kiện: chính các trang của bảng đã to ra."
+      en: "\"ROLLBACK wipes everything out\" sounds right because after the ROLLBACK nobody sees any row, but ROLLBACK only records the transaction's status as `aborted`; it does not go back and delete each tuple. The million tuples keep their space on the pages, invisible, until VACUUM reclaims it (step 3 of the lab sees exactly this at lp 5). An index is not the condition: the table's own pages have grown."
   - q:
       vi: "Một dòng có `xmax` khác 0, vậy mà `SELECT` vẫn trả nó. Vì sao?"
       en: "A row has a non-zero `xmax`, yet `SELECT` still returns it. Why?"
@@ -133,8 +133,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì DELETE đúng là ghi `xmax`, nhưng `xmax` còn được ghi khi khóa dòng và vẫn ở lại khi transaction xóa bị hủy. Dòng chỉ vô hình khi `xmax` là một xóa hay sửa thật đã commit; cờ `HEAP_XMAX_LOCK_ONLY` và `txid_status` cho bạn phân biệt."
-      en: "It sounds right because DELETE does stamp `xmax`, but `xmax` is also stamped when a row is locked, and it stays when the deleting transaction rolls back. A row is invisible only when `xmax` is a real committed delete or update; the `HEAP_XMAX_LOCK_ONLY` flag and `txid_status` tell them apart."
+      vi: "\"Đã bị xóa\" nghe hợp lý vì DELETE đúng là ghi `xmax`, nhưng `xmax` còn được ghi khi giữ row lock (`FOR UPDATE`, như tài khoản 3 của lab), và vẫn ở lại khi transaction xóa bị hủy. Dòng chỉ vô hình khi `xmax` là một DELETE hay UPDATE thật đã commit; cờ `HEAP_XMAX_LOCK_ONLY` và `txid_status` cho bạn phân biệt. `SELECT` không đọc bản sao nào trong bộ nhớ: nó đọc chính tuple trên trang và xét `xmin`, `xmax`."
+      en: "\"It was deleted\" sounds right because DELETE does stamp `xmax`, but `xmax` is also stamped when a row lock is taken (`FOR UPDATE`, like the lab's account 3), and it stays when the deleting transaction rolls back. A row is invisible only when `xmax` is a real committed DELETE or UPDATE; the `HEAP_XMAX_LOCK_ONLY` flag and `txid_status` tell them apart. `SELECT` reads no copy in memory: it reads the tuple on the page and checks `xmin` and `xmax`."
 ---
 ## Mở bài
 

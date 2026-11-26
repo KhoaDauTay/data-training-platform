@@ -33,6 +33,13 @@ describe('pglab runtime', () => {
         'SELECT count(*) FROM pg_stat_statements', // pg_stat_statements
         "SELECT 'a.b.c'::ltree", // ltree
         "SELECT encode(digest('x', 'sha256'), 'hex')", // pgcrypto
+        "SELECT 'A@b.VN'::citext = 'a@B.vn'", // citext (v43)
+        "SELECT levenshtein('VNDAD', 'VNDDA')", // fuzzystrmatch
+        "SELECT unaccent('Hội An')", // unaccent
+        "SELECT uuid_generate_v5(uuid_ns_url(), 'VNDAD')", // uuid-ossp
+        "SELECT 'color=>do'::hstore -> 'color'", // hstore
+        "SELECT count(*) FROM normal_rand(3, 0, 1)", // tablefunc
+        "SELECT '[1,2]'::vector <-> '[1,3]'::vector", // vector
       ],
       checks: [{ kind: 'rows', step: 3, rows: [[1]] }],
     });
@@ -56,6 +63,38 @@ describe('pglab runtime', () => {
     expect(km).toBeLessThan(625);
     expect(r.steps[2].rows[0][0]).toBe(true);
   }, 120_000);
+
+  it('v43 (L724): pgvector tìm láng giềng gần nhất thật (L2 và cosine), có index HNSW', async () => {
+    const r = await runLabScript({
+      extensions: ['vector'],
+      steps: [
+        'CREATE TABLE items (id int PRIMARY KEY, v vector(3))',
+        "INSERT INTO items VALUES (1, '[1,0,0]'), (2, '[0,1,0]'), (3, '[0.9,0.1,0]'), (4, '[0,0,1]')",
+        'CREATE INDEX ON items USING hnsw (v vector_l2_ops)',
+        "SELECT id FROM items ORDER BY v <-> '[1,0.05,0]' LIMIT 2",
+        "SELECT id FROM items ORDER BY v <=> '[0,0,2]' LIMIT 1",
+        "SELECT extversion FROM pg_extension WHERE extname = 'vector'",
+      ],
+    });
+    expect(okSteps(r).filter(([, s]) => s !== 'ok')).toEqual([]);
+    expect(r.steps[3].rows).toEqual([[1], [3]]);
+    expect(r.steps[4].rows).toEqual([[4]]);
+    expect(String(r.steps[5].rows[0][0])).toMatch(/^\d+\.\d+/);
+  }, 60_000);
+
+  it('v43 (L723): unaccent bỏ dấu tiếng Việt, gồm cả đ → d', async () => {
+    const r = await runLabScript({ extensions: ['unaccent'], steps: ["SELECT unaccent('Đèn lồng Hội An')"] });
+    expect(r.steps[0].rows).toEqual([['Den long Hoi An']]);
+  });
+
+  it('v43 (L725): CREATE EXTENSION trong một bước (không IF NOT EXISTS) tự chạy được, kể cả "uuid-ossp"', async () => {
+    const r = await runLabScript({
+      extensions: ['citext', 'uuid-ossp'],
+      steps: ['CREATE EXTENSION citext', 'CREATE EXTENSION "uuid-ossp"', "SELECT 'A'::citext = 'a'", "SELECT uuid_generate_v5(uuid_ns_url(), 'VNDAD') = uuid_generate_v5(uuid_ns_url(), 'VNDAD')"],
+    });
+    expect(okSteps(r).filter(([, s]) => s !== 'ok')).toEqual([]);
+    expect([r.steps[2].rows, r.steps[3].rows]).toEqual([[[true]], [[true]]]);
+  });
 
   it('extensionsOf nhận PostGIS từ CREATE EXTENSION và từ hàm ST_*', () => {
     expect(extensionsOf('CREATE EXTENSION postgis')).toEqual(['postgis']);

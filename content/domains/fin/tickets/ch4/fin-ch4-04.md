@@ -25,10 +25,10 @@ reflect:
     - { vi: "Sổ vay bỏ qua ngày lễ khi lưu", en: "The loan book skips holidays when saving" }
     - { vi: "Gom theo ngày chỉ đúng với ngày làm việc", en: "Grouping by day only works for working days" }
   answer: 0
-  why: { vi: "Muốn có đủ mọi ngày thì phải tạo ra một trục ngày riêng, rồi ghép trái sổ vay vào trục đó.", en: "To get every day you have to create a separate axis of days, then left join the loan book onto it." }
+  why: { vi: "Muốn có đủ mọi ngày thì phải tạo ra một trục ngày riêng, rồi nối trái sổ vay vào trục đó.", en: "To get every day you have to create a separate axis of days, then left join the loan book onto it." }
 wrong:
   - sql: "SELECT disbursed_on, sum(principal) FROM loans WHERE disbursed_on BETWEEN '{{from}}' AND '{{to}}' GROUP BY disbursed_on ORDER BY disbursed_on"
-    vi: "Thiếu các ngày không giải ngân: sổ vay không có dòng nào cho những ngày đó. Tạo trục ngày đủ 15 ngày rồi ghép trái sổ vay vào, ngày trống ghi 0."
+    vi: "Thiếu các ngày không giải ngân: sổ vay không có dòng nào cho những ngày đó. Tạo trục ngày đủ 15 ngày rồi nối trái sổ vay vào, ngày trống ghi 0."
     en: "The days with nothing paid out are missing: the loan book has no rows for them. Build an axis of all 15 days, left join the loan book onto it, and write 0 for empty days."
 ---
 Mình đang lập kế hoạch tiền mặt cho mùa Tết năm sau và cần xem năm nay tiền giải ngân đi ra từng ngày thế nào quanh kỳ nghỉ. Những ngày không giải ngân đồng nào cũng phải có trên bảng, vì đó chính là thứ mình cần thấy.
@@ -37,8 +37,8 @@ Mình đang lập kế hoạch tiền mặt cho mùa Tết năm sau và cần xe
 Mỗi ngày từ {{d1}} đến hết {{d2}}, kể cả ngày không có khoản giải ngân nào: ngày và tổng tiền giải ngân trong ngày (ngày không giải ngân ghi 0). Ngày sớm nhất lên đầu.
 
 ## Hints
-1. Sổ vay không có dòng cho ngày không giải ngân. Tạo trục ngày đủ 15 ngày, ghép trái sổ vay vào trục, rồi cộng tiền theo ngày; ngày không có gì thì thay ô trống bằng 0. Bài nâng cao "Trục ngày" giải thích cách này.
-2. `FROM generate_series('{{from}}'::date, '{{to}}', interval '1 day') AS d` cho mỗi ngày một dòng. Ghép `LEFT JOIN loans l ON l.disbursed_on = d`; tiền là `COALESCE(sum(l.principal), 0)`; ngày là `d::date`.
+1. Sổ vay không có dòng cho ngày không giải ngân. Tạo trục ngày đủ 15 ngày, nối trái sổ vay vào trục, rồi cộng tiền theo ngày; ngày không có gì thì thay ô trống bằng 0. Bài nâng cao "Trục ngày" giải thích cách này.
+2. `FROM generate_series('{{from}}'::date, '{{to}}', interval '1 day') AS d` cho mỗi ngày một dòng. Nối `LEFT JOIN loans l ON l.disbursed_on = d`; tiền là `COALESCE(sum(l.principal), 0)`; ngày là `d::date`.
 3. `SELECT d::date AS day, COALESCE(sum(l.principal), 0) FROM generate_series(...) AS d LEFT JOIN loans l ON ... GROUP BY d ORDER BY d`
 
 ## Solution

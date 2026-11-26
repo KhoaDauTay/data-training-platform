@@ -25,6 +25,9 @@ export class LabFailedError extends Error {
   }
 }
 
+/** Extensions whose first run in a worker is slow (download + template build, session.ts PREINSTALLED). */
+const HEAVY: readonly string[] = ['postgis'];
+
 type Msg =
   | { type: 'ready' }
   | { type: 'initError'; message: string }
@@ -39,9 +42,11 @@ export class PgLabClient implements ScriptRunner {
   private worker?: Worker;
   private booted?: Promise<void>;
   private settleBoot?: (e?: Error) => void;
-  private pending?: { id: number; resolve: (r: ScriptResult) => void; reject: (e: Error) => void; timer: ReturnType<typeof setTimeout> };
+  private pending?: { id: number; resolve: (r: ScriptResult) => void; reject: (e: Error) => void; timer: ReturnType<typeof setTimeout>; ext?: readonly string[] };
   private chain: Promise<unknown> = Promise.resolve();
   private nextId = 1;
+  /** v43 (L726): heavy extensions this worker has run once (its PostGIS template is built); a new worker starts empty. */
+  private warm = new Set<string>();
 
   /** Rejects with LabTimeoutError, LabResetError or LabFailedError. A Postgres error is a step result, not a rejection. */
   run(script: LabScript): Promise<ScriptResult> {
@@ -59,14 +64,16 @@ export class PgLabClient implements ScriptRunner {
     await this.spawn();
     const w = this.worker;
     if (!w) throw new LabResetError(); // reset() between the boot and this lab
-    const ms = script.timeoutMs ?? LAB_TIMEOUT_MS;
+    // v43 (L726): the first PostGIS lab of a worker downloads ~20 MB and builds its template (~9 s in Node): boot limit, not 20 s
+    const cold = (script.extensions ?? []).some((x) => HEAVY.includes(x) && !this.warm.has(x));
+    const ms = script.timeoutMs ?? (cold ? LAB_BOOT_TIMEOUT_MS : LAB_TIMEOUT_MS);
     return new Promise<ScriptResult>((resolve, reject) => {
       const id = this.nextId++;
       const timer = setTimeout(() => {
         this.kill(new LabTimeoutError(ms));
         void this.spawn().catch(() => undefined); // fresh runtime ready for the next lab
       }, ms);
-      this.pending = { id, resolve, reject, timer };
+      this.pending = { id, resolve, reject, timer, ext: script.extensions };
       w.postMessage({ id, script });
     });
   }
@@ -93,7 +100,10 @@ export class PgLabClient implements ScriptRunner {
       if (!p || p.id !== m.id) return;
       clearTimeout(p.timer);
       this.pending = undefined;
-      if (m.type === 'result') p.resolve(m.result);
+      if (m.type === 'result') {
+        for (const x of HEAVY) if ((p.ext ?? []).includes(x)) this.warm.add(x); // a result = its template is built
+        p.resolve(m.result);
+      }
       else p.reject(new LabFailedError(m.message));
     };
     w.onerror = (e: ErrorEvent) => this.kill(new LabFailedError(e.message || 'worker error'));
@@ -103,6 +113,7 @@ export class PgLabClient implements ScriptRunner {
   private kill(e: Error): void {
     this.worker?.terminate();
     this.worker = undefined;
+    this.warm.clear();
     const boot = this.booted;
     this.booted = undefined;
     if (this.settleBoot) {

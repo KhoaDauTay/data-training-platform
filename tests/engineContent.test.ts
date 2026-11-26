@@ -12,7 +12,7 @@ import { labRun } from './generalRules';
 import { gradable, honestOf, honestRow } from '../src/engine/labs';
 import { ENGINE_DICT, type EngineKey } from '../src/i18n/engine';
 
-const files = import.meta.glob<string>(['../content/engine/*/L*/*.md', './fixtures/engine/*/L*/*.md'], { query: '?raw', import: 'default', eager: true });
+const files = import.meta.glob<string>(['../content/engine/*/{L*,ext}/*.md', './fixtures/engine/*/L*/*.md'], { query: '?raw', import: 'default', eager: true });
 const moduleFiles = import.meta.glob<string>(['../content/engine/*/modules.yml', './fixtures/engine/*/modules.yml'], { query: '?raw', import: 'default', eager: true });
 const fixture = (p: string): boolean => p.includes('/fixtures/');
 const parsed = Object.entries(files).map(([p, s]) => ({ p, l: parseEngineLesson(s, p, parse) }));

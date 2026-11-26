@@ -110,8 +110,8 @@ quiz:
       - { vi: "Tạm bỏ các ràng buộc rồi thêm lại sau", en: "Drop the constraints for a while and add them back later" }
     answer: 1
     why:
-      vi: "Tạm bỏ ràng buộc nghe tiện vì file sẽ nạp không vấp lỗi, nhưng dòng sai sẽ lọt vào và việc thêm lại ràng buộc sẽ thất bại. Một transaction là \"tất cả hoặc không gì\": một dòng vi phạm `CHECK` hay khóa ngoại làm cả transaction hỏng, và `ROLLBACK` bỏ mọi thứ đã ghi trong đó."
-      en: "Dropping the constraints sounds handy because the file loads without errors, but the bad rows get in and adding the constraints back then fails. A transaction is \"all or nothing\": one row breaking the `CHECK` or the foreign key breaks the whole transaction, and `ROLLBACK` discards everything written in it."
+      vi: "Tạm bỏ ràng buộc nghe tiện vì file sẽ nạp không vấp lỗi, nhưng dòng sai sẽ lọt vào và việc thêm lại ràng buộc sẽ thất bại. 500 câu INSERT riêng lẻ thì mỗi câu tự commit, nên các dòng trước dòng sai đã được lưu: nhận một nửa. Một transaction là \"tất cả hoặc không gì\": một dòng vi phạm `CHECK` hay khóa ngoại làm cả transaction hỏng, và `ROLLBACK` bỏ mọi thứ đã ghi trong đó."
+      en: "Dropping the constraints sounds handy because the file loads without errors, but the bad rows get in and adding the constraints back then fails. With 500 separate INSERTs each one commits on its own, so the rows before the bad one are already saved: half a load. A transaction is \"all or nothing\": one row breaking the `CHECK` or the foreign key breaks the whole transaction, and `ROLLBACK` discards everything written in it."
   - q:
       vi: "Sau khi có index, câu đếm tất cả lượt đăng ký có `seats >= 1` (mọi dòng) sẽ dùng kế hoạch nào?"
       en: "With the index in place, which plan will a count of all sign-ups with `seats >= 1` (every row) use?"
@@ -132,8 +132,8 @@ quiz:
       - { vi: "Có, nhưng phải là index `UNIQUE`", en: "Yes, but it has to be a `UNIQUE` index" }
     answer: 1
     why:
-      vi: "Nghe hợp lý vì bước 4 vừa cho thấy index làm câu theo sự kiện đi nhanh. Nhưng ở đó mỗi sự kiện chỉ chiếm một phần nhỏ của 20.000 lượt; báo cáo thì cần cả 20.000 dòng, và đã thử trên lab: có index trên `seats`, câu đếm `seats >= 1` vẫn là Seq Scan. Index không được dùng vẫn phải cập nhật ở mỗi lần ghi."
-      en: "It sounds right because step 4 just showed an index speeding up the per-event query. But there each event is a small part of the 20,000 sign-ups; the report needs all 20,000 rows, and on the lab data, with an index on `seats`, the `seats >= 1` count is still a Seq Scan. An index nobody uses still has to be updated on every write."
+      vi: "\"Có\" nghe hợp lý vì bước 4 vừa cho thấy index làm câu theo sự kiện đi nhanh. Nhưng ở đó mỗi sự kiện chỉ chiếm một phần nhỏ của 20.000 lượt; báo cáo thì cần cả 20.000 dòng, và đã thử trên lab: có index trên `seats`, câu đếm `seats >= 1` vẫn là Seq Scan. Index không được dùng vẫn phải cập nhật ở mỗi lần ghi. `UNIQUE` còn tệ hơn: nhiều lượt cùng số chỗ, nên index đó không tạo được."
+      en: "\"Yes\" sounds right because step 4 just showed an index speeding up the per-event query. But there each event is a small part of the 20,000 sign-ups; the report needs all 20,000 rows, and on the lab data, with an index on `seats`, the `seats >= 1` count is still a Seq Scan. An index nobody uses still has to be updated on every write. `UNIQUE` is worse: many sign-ups share a seat count, so that index could not even be built."
   - q:
       vi: "Vì sao bước upsert phải đến sau bước thêm ràng buộc duy nhất?"
       en: "Why must the upsert step come after the unique constraint step?"
@@ -143,8 +143,8 @@ quiz:
       - { vi: "Không cần: index `registrations_event_idx` trên `event_id` là đủ", en: "It need not: index `registrations_event_idx` on `event_id` is enough" }
     answer: 0
     why:
-      vi: "Upsert chỉ biết thế nào là trùng khi database cấm trùng. Index thường trên `event_id` không cấm gì, và cũng không phủ đúng cặp `event_id, email`, nên không làm trọng tài cho `ON CONFLICT` được."
-      en: "An upsert only knows what a duplicate is when the database forbids duplicates. The plain index on `event_id` forbids nothing and does not cover the pair `event_id, email`, so it cannot be the arbiter for `ON CONFLICT`."
+      vi: "Đây không phải chuyện tốc độ: `ON CONFLICT (event_id, email)` chỉ nhận ra một dòng trùng nhờ một ràng buộc hay index duy nhất trên đúng cặp cột đó. Thiếu nó, Postgres không biết \"trùng\" là gì và báo lỗi `42P10`. Index thường trên `event_id` không cấm trùng gì, lại chỉ có một cột, nên không dùng được cho `ON CONFLICT`."
+      en: "This is not about speed: `ON CONFLICT (event_id, email)` can only spot a duplicate through a unique constraint or index on exactly that pair. Without one, Postgres has no notion of \"duplicate\" and fails with `42P10`. The plain index on `event_id` forbids no duplicates and has only one column, so `ON CONFLICT` cannot use it."
 ---
 ## Mở bài
 

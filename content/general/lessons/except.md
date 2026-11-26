@@ -103,8 +103,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Sau bẫy `NOT IN`, nghi ngờ NULL là phản xạ tốt, nhưng ở đây không đúng. `EXCEPT`, `INTERSECT`, `UNION` và `DISTINCT` so dòng theo kiểu \"có giống nhau không\", trong đó NULL giống NULL."
-      en: "After the `NOT IN` trap, distrusting NULL is a good reflex, but not here. `EXCEPT`, `INTERSECT`, `UNION` and `DISTINCT` compare rows as \"are they the same\", where NULL is the same as NULL."
+      vi: "Sau bẫy `NOT IN` (một NULL trong danh sách làm câu ra 0 dòng), nghi ngờ NULL là phản xạ tốt, nhưng ở đây không đúng. `EXCEPT`, `INTERSECT`, `UNION` và `DISTINCT` so dòng theo kiểu \"có giống nhau không\", trong đó NULL giống NULL."
+      en: "After the `NOT IN` trap (one NULL in the list makes the query return 0 rows), distrusting NULL is a good reflex, but not here. `EXCEPT`, `INTERSECT`, `UNION` and `DISTINCT` compare rows as \"are they the same\", where NULL is the same as NULL."
 recap:
   - vi: "`EXCEPT` = có ở bên trái, không có ở bên phải; không đối xứng."
     en: "`EXCEPT` = on the left, not on the right; not symmetric."

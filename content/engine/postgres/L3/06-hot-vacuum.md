@@ -36,8 +36,8 @@ quiz:
     answer: 1
     trap: 2
     why:
-      vi: "\"Cả hai đều HOT nếu trang còn chỗ\" nghe hợp lý vì chỗ trống là điều kiện người ta hay nhớ nhất, nhưng đó mới là một nửa. HOT cần cả hai: không đổi cột nào mà index dùng (trừ BRIN), và trang còn chỗ. Câu thứ hai đổi `updated_at`, một cột có index, nên luôn phải chèn mục mới vào mọi index."
-      en: "\"Both can be HOT if the page has room\" sounds right because free space is the condition people remember best, but it is only half. HOT needs both: no column used by an index changes (BRIN aside), and the page has room. The second statement changes `updated_at`, an indexed column, so it always inserts new entries into every index."
+      vi: "\"Cả hai đều HOT nếu trang còn chỗ\" nghe hợp lý vì chỗ trống là điều kiện người ta hay nhớ nhất, nhưng đó mới là một nửa. HOT update (heap-only tuple: bản mới chỉ nằm trong heap, index không thêm mục nào) cần cả hai điều kiện: không đổi cột nào mà index dùng (trừ BRIN), và trang còn chỗ. Câu đầu chỉ đổi `note`, không có index, nên HOT được. Câu thứ hai đổi `updated_at`, một cột có index, nên dù trang còn chỗ nó vẫn phải chèn mục mới vào mọi index."
+      en: "\"Both can be HOT if the page has room\" sounds right because free space is the condition people remember best, but it is only half. A HOT update (heap-only tuple: the new version lives only in the heap and no index gets an entry) needs both conditions: no column used by an index changes (BRIN aside), and the page has room. The first statement only changes `note`, which has no index, so it can be HOT. The second changes `updated_at`, an indexed column, so even with room on the page it must insert new entries into every index."
   - q:
       vi: "Việc nào không phải là một trong bốn lý do chạy VACUUM theo docs chính thức?"
       en: "Which of these is not one of the four reasons to VACUUM listed in the docs?"
@@ -49,8 +49,8 @@ quiz:
     answer: 2
     trap: 1
     why:
-      vi: "Nghe hợp lý khi nghĩ visibility map là việc riêng của index, nhưng chính VACUUM bật bit all-visible cho từng trang, và index-only scan dựa vào bit đó. Bốn lý do trong docs là: thu hồi chỗ, cập nhật thống kê cho planner, cập nhật visibility map, chống wraparound. VACUUM không sắp xếp lại dòng (đó là `CLUSTER`)."
-      en: "It sounds right if you think the visibility map belongs to the indexes, but it is VACUUM that sets each page's all-visible bit, and index-only scans rely on that bit. The four reasons in the docs are: recover space, update planner statistics, update the visibility map, protect against wraparound. VACUUM never reorders rows (that is `CLUSTER`)."
+      vi: "Cập nhật visibility map dễ bị chọn nếu nghĩ đó là việc riêng của index, nhưng chính VACUUM bật bit all-visible (mọi dòng của trang đều thấy được với mọi transaction) cho từng trang, và index-only scan dựa vào bit đó để khỏi đọc heap. Bốn lý do trong docs là: thu hồi chỗ của dead tuple, cập nhật thống kê cho planner, cập nhật visibility map, chống XID wraparound (số transaction 32 bit quay vòng). VACUUM không sắp xếp lại dòng; sắp theo một index là việc của `CLUSTER`."
+      en: "Updating the visibility map is easy to pick if you think it belongs to the indexes, but it is VACUUM that sets each page's all-visible bit (every row on the page is visible to every transaction), and index-only scans rely on that bit to skip the heap. The four reasons in the docs are: recover the space of dead rows, update planner statistics, update the visibility map, protect against XID wraparound (the 32-bit transaction number wrapping round). VACUUM never reorders rows; sorting by an index is the job of `CLUSTER`."
   - q:
       vi: "Bảng `orders` (index trên `id` và `updated_at`) nhận rất nhiều câu `UPDATE orders SET note = 'x' WHERE id = 1`, và các UPDATE này đang HOT. Một đồng nghiệp đề xuất thêm index trên `note` cho nhanh. Điều gì xảy ra với các UPDATE đó?"
       en: "Table `orders` (indexes on `id` and `updated_at`) takes a lot of `UPDATE orders SET note = 'x' WHERE id = 1` statements, and these UPDATEs are HOT. A colleague suggests an index on `note` to make things faster. What happens to those UPDATEs?"
@@ -61,8 +61,8 @@ quiz:
     answer: 2
     trap: 0
     why:
-      vi: "Nghe hợp lý vì index đúng là làm câu đọc nhanh hơn, nhưng UPDATE này tìm dòng bằng `id`, đã có khóa chính. Index trên cột bị sửa phá điều kiện đầu của HOT: bản mới cần một mục trong mọi index, nên bảng và index cùng phình nhanh hơn. Chỉ thêm index khi có câu đọc cần nó."
-      en: "It sounds right because an index does speed up reads, but this UPDATE finds its row by `id`, which already has the primary key. An index on the changed column breaks the first HOT condition: every new version needs an entry in every index, so table and indexes both grow faster. Only add an index when a read needs it."
+      vi: "\"Nhanh hơn\" nghe hợp lý vì index đúng là giúp tìm dòng, nhưng UPDATE này tìm dòng bằng `id`, đã có index. \"Không đổi\" cũng sai: index nào cũng phải được cập nhật khi ghi. Index trên `note`, chính cột bị sửa, phá điều kiện đầu của HOT update (không đổi cột có index): mỗi bản mới cần một mục trong cả ba index, nên bảng và index cùng phình nhanh hơn. Chỉ thêm index khi có câu đọc cần nó."
+      en: "\"Faster\" sounds right because an index does help find rows, but this UPDATE finds its row by `id`, which is already indexed. \"No change\" is wrong too: every index must be maintained on writes. An index on `note`, the very column being changed, breaks the first HOT condition (no indexed column changes): every new version needs an entry in all three indexes, so table and indexes both grow faster. Only add an index when a read needs it."
 ---
 ## Mở bài
 

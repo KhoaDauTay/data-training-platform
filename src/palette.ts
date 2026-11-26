@@ -27,7 +27,7 @@ export function paletteItems(src: PaletteSources, lang: 'vi' | 'en', hash: Palet
     const [id, engine, level] = [str(l.id), str(l.engine), str(l.level)];
     const title = (lang === 'en' && str(l.title_en)) || str(l.title);
     return id && engine && level && title
-      ? [{ kind: 'lesson', title, sub: `${engine === 'design' ? designName : engine === 'stack' ? stackName : ENGINE_NAME[engine] ?? engine} · ${level}`, href: hash.lesson(engine, level, id) }] : [];
+      ? [{ kind: 'lesson', title, sub: `${engine === 'design' ? designName : engine === 'stack' ? stackName : ENGINE_NAME[engine] ?? engine} · ${level === 'EXT' ? 'Extensions' : level}`, href: hash.lesson(engine, level, id) }] : [];
   }).sort((a, b) => a.href.localeCompare(b.href));
   const terms = (Array.isArray(src.terms) ? (src.terms as TermRaw[]) : []).flatMap((t): PaletteItem[] => {
     const [id, term, vi] = [str(t.id), str(t.term), str(t.vi_term).replace(/`/g, '')];

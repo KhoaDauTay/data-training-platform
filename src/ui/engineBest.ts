@@ -27,7 +27,7 @@ type LessonMeta = Record<string, { fm: unknown }>;
 
 let d: EngineDeps;
 /** Main values engineView does not take: a skill's label (content/skills.yml) for the skill chips. */
-let main: { skill: (id: string) => { vi: string; en: string } | undefined; sourceTitle: (u: string, title?: string) => string };
+let main: { skill: (id: string) => { vi: string; en: string } | undefined; sourceTitle: (u: string, title?: string) => string; inline: (text: string) => (Node | string)[] };
 const rt = { of: bestRouteOf, hash: bestHash };
 let index: BpMeta[] = [];
 let tracks: Track[] = [];
@@ -78,17 +78,8 @@ const setTips = (f: (p: BpPref) => Partial<BpPref>): void => {
 };
 
 // ---- small text helpers (./content's blocksOf is engineView's: importing it would make a shared chunk)
-/** v38 R3 (R3-10, L597): a lesson id in a card's prose (`e-ds-l4-09`) links to that lesson by its title, styled like engineView's xrefs. */
-function idLink(id: string): HTMLElement | null {
-  if (!/^e-(pg|mg|dy|ds|st)-l[1-5]-\d\d$/.test(id)) return null;
-  const fm = Object.values(lessonsMeta).map((x) => x.fm as { id?: string; engine?: string; level?: string; title?: string; title_en?: string }).find((x) => x.id === id);
-  return fm?.engine && fm.level ? d.h('a', { href: d.engineHash(fm.engine, fm.level, id), 'data-xref': '', class: 'font-semibold text-accent-ink underline decoration-1 underline-offset-[3px] hover:decoration-2' },
-    (lang() === 'vi' ? fm.title : fm.title_en) ?? id, d.icon('arrowRight', 'ml-0.5 inline size-3.5 align-[-2px]')) : null;
-}
-function inline(text: string): (Node | string)[] {
-  return text.split(/(`[^`\n]+`)/).filter(Boolean).flatMap((p) => (p.length > 1 && p.startsWith('`') && p.endsWith('`') ? [idLink(p.slice(1, -1)) ?? d.h('code', { class: '[overflow-wrap:anywhere]' }, p.slice(1, -1))]
-    : p.split(/(\*\*[^*\n]+\*\*)/).filter(Boolean).map((q) => (q.length > 4 && q.startsWith('**') && q.endsWith('**') ? d.h('strong', {}, q.slice(2, -2)) : q))));
-}
+/** v44 (L790): engineView's inline (code, bold, every lesson or card id as a titled link), handed in by src/ui/engine.ts. */
+const inline = (text: string): (Node | string)[] => main.inline(text);
 function prose(text: string): HTMLElement {
   const out: HTMLElement[] = [];
   const parts = text.replace(/\r\n/g, '\n').split(/^```[a-z]*\n([\s\S]*?)^```[ \t]*$/m);

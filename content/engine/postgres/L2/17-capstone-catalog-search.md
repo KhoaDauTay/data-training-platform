@@ -47,8 +47,8 @@ lab:
       target: SELECT id, name FROM catalog WHERE name ILIKE '%valve 12%'
       check: catalog
       hint:
-        vi: "B-tree không giúp `%` ở đầu. Cần GIN với opclass trigram (`pg_trgm` đã bật)."
-        en: "A B-tree cannot help a leading `%`. You need GIN with the trigram opclass (`pg_trgm` is enabled)."
+        vi: "B-tree không giúp `%` ở đầu. Cần GIN với operator class trigram (bộ toán tử mà index hiểu; `pg_trgm` đã bật)."
+        en: "A B-tree cannot help a leading `%`. You need GIN with the trigram operator class (the set of operators the index understands; `pg_trgm` is enabled)."
     - task:
         vi: "Bộ lọc \"hàng xuất xứ Nhật\" chạy `attrs @> '{\"origin\":\"JP\"}'`. Tạo index GIN tên `catalog_attrs_idx` nhỏ nhất có thể cho đúng toán tử này."
         en: "The \"made in Japan\" filter runs `attrs @> '{\"origin\":\"JP\"}'`. Create the smallest GIN index for exactly this operator, named `catalog_attrs_idx`."
@@ -56,8 +56,8 @@ lab:
       target: SELECT id FROM catalog WHERE attrs @> '{"origin":"JP"}'
       check: catalog
       hint:
-        vi: "Chỉ cần `@>`, nên chọn opclass `jsonb_path_ops`."
-        en: "Only `@>` is needed, so choose the `jsonb_path_ops` opclass."
+        vi: "Chỉ cần `@>`, nên chọn operator class `jsonb_path_ops`: nó chỉ phục vụ `@>` nên index nhỏ hơn loại mặc định."
+        en: "Only `@>` is needed, so choose the `jsonb_path_ops` operator class: it serves only `@>`, so the index is smaller than the default one."
     - task:
         vi: "Báo cáo \"hàng mới thêm trong một tuần\" lọc theo `added_at`. Hàng được thêm theo đúng thứ tự thời gian. Tạo index BRIN tên `catalog_added_brin` trên `added_at`, với `pages_per_range = 8` (tham số lưu trữ của index viết trong `WITH (...)` sau danh sách cột)."
         en: "The \"added this week\" report filters on `added_at`. Items are added in time order. Create a BRIN index named `catalog_added_brin` on `added_at`, with `pages_per_range = 8` (an index storage parameter goes in `WITH (...)` after the column list)."
@@ -96,8 +96,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì index thường làm câu lọc nhanh hơn, nhưng index chỉ có lợi khi câu lấy một phần nhỏ của bảng. Lấy 10.000 trên 30.000 dòng thì đọc tuần tự rẻ hơn; bảng đã có bốn index (khóa chính và ba index vừa tạo), index thứ năm chỉ thêm một lần ghi index cho mỗi `INSERT`."
-      en: "It sounds right because indexes usually speed up filters, but an index only pays off when a query reads a small part of the table. Reading 10,000 of 30,000 rows is cheaper sequentially; the table already has four indexes (the primary key and the three you built), and a fifth just adds one more index write to every `INSERT`."
+      vi: "Index chỉ có lợi khi câu lấy một phần nhỏ của bảng. Mỗi màu là 30.000 ÷ 3 = 10.000 dòng; lấy chừng ấy thì đọc tuần tự cả bảng rẻ hơn nhảy qua index cho từng dòng, nên planner vẫn chọn Seq Scan. Hash thay B-tree không đổi gì: vấn đề là 1/3 bảng, không phải loại index. Bảng đã có bốn index (khóa chính và ba index vừa tạo); index thứ năm không được dùng mà vẫn thêm một lần ghi index cho mỗi `INSERT`."
+      en: "An index only pays off when a query reads a small part of the table. Each color is 30,000 ÷ 3 = 10,000 rows; reading that many is cheaper as one sequential pass than jumping through the index row by row, so the planner still picks a Seq Scan. A Hash index instead of a B-tree changes nothing: the problem is 1/3 of the table, not the index type. The table already has four indexes (the primary key and the three you built); a fifth would go unused yet add one more index write to every `INSERT`."
   - q:
       vi: "\"`SELECT count(*) FROM catalog` sẽ đếm bằng khóa chính, nên rất nhanh.\" Trên bảng vừa nạp (chưa VACUUM), kế hoạch thật là gì?"
       en: "\"`SELECT count(*) FROM catalog` counts through the primary key, so it is instant.\" On this freshly loaded (never vacuumed) table, what is the real plan?"
@@ -108,8 +108,8 @@ quiz:
     answer: 1
     trap: 0
     why:
-      vi: "Nghe hợp lý vì `catalog_pkey` nhỏ hơn bảng mà vẫn có mặt mọi dòng; nhưng Postgres không lưu sẵn số dòng chính xác: do MVCC, mỗi transaction có thể thấy số dòng khác nhau. Khi visibility map còn trống, index không giúp được và kế hoạch là `Aggregate` trên `Seq Scan on catalog`. Sau VACUUM, planner có thể chọn Index Only Scan, nhưng vẫn phải đi qua mọi mục index."
-      en: "It sounds right because `catalog_pkey` is smaller than the table yet lists every row, but Postgres keeps no exact stored row count: with MVCC, each transaction may see a different number of rows. While the visibility map is empty the index cannot help, and the plan is an `Aggregate` over `Seq Scan on catalog`. After VACUUM the planner may pick an Index Only Scan, but it still walks every index entry."
+      vi: "Index Only Scan nghe hợp lý vì `catalog_pkey` nhỏ hơn bảng mà vẫn có mặt mọi dòng. Nhưng index không ghi dòng nào còn sống: với MVCC (mỗi transaction thấy phiên bản dòng của riêng nó), chỉ bảng mới biết dòng nào nhìn thấy được. Postgres cũng không lưu sẵn số dòng chính xác, vì mỗi transaction có thể thấy một số khác. Visibility map (bản đồ đánh dấu trang mà mọi dòng đều nhìn thấy được) chỉ được điền khi VACUUM chạy; bảng vừa nạp nên nó còn trống, và kế hoạch là `Aggregate` trên `Seq Scan on catalog`. Sau VACUUM, planner có thể chọn Index Only Scan, nhưng vẫn phải đi qua mọi mục index."
+      en: "An Index Only Scan sounds right because `catalog_pkey` is smaller than the table yet lists every row. But the index does not record which rows are alive: under MVCC (each transaction sees its own row versions), only the table knows which rows are visible. Postgres keeps no exact stored row count either, since each transaction may see a different number. The visibility map (a map of pages whose rows are all visible) is filled only by VACUUM; the table is freshly loaded, so it is empty and the plan is an `Aggregate` over `Seq Scan on catalog`. After VACUUM the planner may pick an Index Only Scan, but it still walks every index entry."
 ---
 ## Mở bài
 

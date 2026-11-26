@@ -8,7 +8,7 @@ verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Viết một điều kiện so sánh trên cột số, chữ và ngày để giữ đúng những dòng cần.
     en: Write a comparison on a number, text or date column to keep exactly the rows you need.
-  - vi: Ghép nhiều điều kiện bằng `AND`, `OR`, `NOT`, `IN` và `BETWEEN`, có ngoặc đúng chỗ.
+  - vi: Kết hợp nhiều điều kiện bằng `AND`, `OR`, `NOT`, `IN` và `BETWEEN`, có ngoặc đúng chỗ.
     en: Combine conditions with `AND`, `OR`, `NOT`, `IN` and `BETWEEN`, with brackets in the right place.
   - vi: Nhận ra khi một điều kiện chạy êm nhưng giữ sai dòng.
     en: Notice when a condition runs quietly but keeps the wrong rows.
@@ -57,7 +57,7 @@ examples:
       WHERE category IN ('Snacks', 'Stationery')
         AND price_vnd < 20000
     read:
-      vi: "4 món rẻ hơn 20.000 đồng thuộc một trong hai nhóm hàng. `IN` gọn hơn hai phép so bằng nối bằng `OR`, và không cần lo ngoặc."
+      vi: "4 món rẻ hơn 20.000 đồng thuộc một trong hai nhóm hàng. `IN` gọn hơn hai phép so bằng kết hợp bằng `OR`, và không cần lo ngoặc."
       en: "4 items under 20,000 VND that belong to one of the two categories. `IN` is shorter than two equalities joined by `OR`, and needs no worry about brackets."
   - title: { vi: "Ngoặc quanh OR", en: "Brackets around OR" }
     sql: |-
@@ -110,10 +110,10 @@ quiz:
     answer: 0
     trap: 1
     why:
-      vi: "Nhiều hàm khoảng trong lập trình bỏ đầu cuối, nên người ta hay nghĩ SQL cũng vậy. `BETWEEN` thì tính cả hai đầu. Lưu ý: trên cột có giờ (`timestamp`), `'2026-10-31'` là nửa đêm đầu ngày, nên phần còn lại của ngày 31 bị bỏ; Phần 3 dạy cách viết khoảng nửa mở."
-      en: "Many range functions in programming leave out the upper end, so people expect SQL to do the same. `BETWEEN` includes both ends. Note: on a column with a time (`timestamp`), `'2026-10-31'` is midnight at the start of the day, so the rest of the 31st is left out; Part 3 shows the half-open range."
+      vi: "Nhiều hàm khoảng trong lập trình bỏ đầu cuối, nên người ta hay nghĩ SQL cũng vậy. `BETWEEN` thì tính cả hai đầu. Lưu ý: trên cột có giờ (`timestamp`), `'2026-10-31'` là nửa đêm đầu ngày, nên phần còn lại của ngày 31 bị bỏ; bài \"Tính toán với ngày: khoảng cách, cộng ngày và khoảng nửa mở\" dạy cách viết khoảng nửa mở."
+      en: "Many range functions in programming leave out the upper end, so people expect SQL to do the same. `BETWEEN` includes both ends. Note: on a column with a time (`timestamp`), `'2026-10-31'` is midnight at the start of the day, so the rest of the 31st is left out; the lesson \"Date arithmetic: gaps, adding days and half-open ranges\" shows the half-open range."
   - q:
-      vi: "Vì sao `WHERE category IN ('Snacks', 'Stationery')` an toàn hơn hai phép so bằng nối bằng `OR` khi còn điều kiện khác?"
+      vi: "Vì sao `WHERE category IN ('Snacks', 'Stationery')` an toàn hơn hai phép so bằng kết hợp bằng `OR` khi còn điều kiện khác?"
       en: "Why is `WHERE category IN ('Snacks', 'Stationery')` safer than two equalities joined by `OR` when there are other conditions?"
     options:
       - { vi: "Vì IN luôn nhanh hơn OR", en: "Because IN is always faster than OR" }
@@ -145,7 +145,7 @@ Trưởng nhóm chăm sóc khách hỏi: "Ai là khách của mình ở Huế?" 
 
 `WHERE` đặt sau `FROM` và mang một điều kiện. Postgres xét từng dòng của bảng: điều kiện đúng thì giữ, sai thì bỏ. Cột của kết quả không đổi, chỉ số dòng ít đi. Điều kiện là một phép so sánh (`=`, `<>`, `<`, `>`…), và nhiều điều kiện ghép lại bằng `AND` (cả hai cùng đúng) hoặc `OR` (ít nhất một đúng).
 
-Nhiều người nghĩ **Postgres đọc điều kiện từ trái sang phải như một câu văn**. Thật ra `AND` luôn được ghép trước `OR`, giống phép nhân đi trước phép cộng. Câu chạy được nhưng nghĩa khác điều bạn định nói, và không có lỗi nào cảnh báo. Ngoặc là cách để nói rõ ý mình.
+Nhiều người nghĩ **Postgres đọc điều kiện từ trái sang phải như một câu văn**. Thật ra `AND` luôn được tính trước `OR`, giống phép nhân đi trước phép cộng. Câu chạy được nhưng nghĩa khác điều bạn định nói, và không có lỗi nào cảnh báo. Ngoặc là cách để nói rõ ý mình.
 
 Hình cuối mục này dùng lại bảng `stores`: `WHERE city = 'Da Nang'` giữ hai dòng đầu và gạch ba dòng còn lại, nhưng không bớt cột nào. `SELECT` cắt theo chiều dọc, `WHERE` cắt theo chiều ngang.
 

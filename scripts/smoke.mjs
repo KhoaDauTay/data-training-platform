@@ -592,6 +592,8 @@ try {
   await step(`engine ${ENGINE.quiz.id}: quiz answered right, lesson completed`, async () => {
     await openLesson(ENGINE.quiz);
     for (const [i, q] of ENGINE.quiz.quiz.entries()) {
+      // the live site failed here twice (v40, v44): the lesson's quiz can render after openLesson returns, so wait for it
+      await waitFor(`quiz option ${i}`, `!!document.querySelector('[data-ek="${ENGINE.quiz.id}-q${i}-${q.answer}"]')`, 15000);
       await ev(`document.querySelector('[data-ek="${ENGINE.quiz.id}-q${i}-${q.answer}"]').click()`);
       await ev(`document.querySelector('[data-ek="${ENGINE.quiz.id}-q${i}-check"]').click()`);
     }

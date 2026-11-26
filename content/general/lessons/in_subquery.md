@@ -53,8 +53,8 @@ examples:
       WHERE city = 'Hue'
         AND id NOT IN (SELECT customer_id FROM orders WHERE order_date >= '2026-09-01' AND customer_id IS NOT NULL)
     read:
-      vi: "9 khách ở Huế không đặt đơn nào từ tháng 9. `customer_id IS NOT NULL` trong truy vấn con là phần quan trọng: thiếu nó, kết quả là 0 dòng (xem bẫy 1). Hình cuối mục này cho thấy vì sao cần lọc NULL: một ô trống làm `NOT IN` trả 0 dòng."
-      en: "9 customers in Hue with no order since September. The `customer_id IS NOT NULL` in the subquery is the key part: without it the result is 0 rows (see pitfall 1). The figure at the end of this section shows why the NULL filter is needed: one empty cell makes `NOT IN` return 0 rows."
+      vi: "9 khách ở Huế không đặt đơn nào từ tháng 9. `customer_id IS NOT NULL` trong truy vấn con là phần quan trọng: thiếu nó, kết quả là 0 dòng (xem lỗi hay gặp \"NOT IN gặp một NULL\"). Hình cuối mục này cho thấy vì sao cần lọc NULL: một ô trống làm `NOT IN` trả 0 dòng."
+      en: "9 customers in Hue with no order since September. The `customer_id IS NOT NULL` in the subquery is the key part: without it the result is 0 rows (see the pitfall \"NOT IN meets a NULL\"). The figure at the end of this section shows why the NULL filter is needed: one empty cell makes `NOT IN` return 0 rows."
 pitfalls:
   - title: { vi: "NOT IN gặp một NULL", en: "NOT IN meets a NULL" }
     wrong: "SELECT id, name FROM customers WHERE city = 'Hue' AND id NOT IN (SELECT customer_id FROM orders WHERE order_date >= '2026-09-01')"

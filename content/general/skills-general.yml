@@ -6,7 +6,7 @@
   label: { vi: "Ghép mọi cặp (CROSS JOIN)", en: "Cross join" }
   syntax: "FROM stores s CROSS JOIN dim_date d"
   when: { vi: "Cần một lưới đủ mọi tổ hợp (mọi cửa hàng × mọi ngày) để ô trống cũng hiện ra.", en: "You need a full grid of every combination (every store × every day) so the empty cells show too." }
-  trap: { vi: "Số dòng là tích hai bảng: lọc bảng trước khi ghép, và đừng quên điều kiện nối khi bạn thật ra muốn JOIN.", en: "The row count is the product of both tables: filter each table before pairing, and do not drop the join condition when you really meant a JOIN." }
+  trap: { vi: "Số dòng là tích hai bảng: lọc bảng trước khi nối, và đừng quên điều kiện nối khi bạn thật ra muốn JOIN.", en: "The row count is the product of both tables: filter each table before pairing, and do not drop the join condition when you really meant a JOIN." }
 
 - id: any_all
   label: { vi: "So với mọi giá trị (ANY / ALL)", en: "ANY / ALL" }
