@@ -203,11 +203,13 @@ function explain(id: string, fo: FigOpts, items?: HTMLElement[]): HTMLElement {
       D.h('div', {}, D.h('p', { class: LABEL }, w.point), D.h('div', { id: `${id}-alt`, class: 'mt-1 grid gap-1 text-body' }, ...fo.alt.map((p) => D.h('p', { class: 'm-0' }, p)))),
       items?.length ? D.h('div', {}, D.h('p', { class: LABEL }, w.steps), D.h('ol', { class: 'm-0 mt-1 grid list-decimal gap-1.5 pl-5' }, ...items)) : '',
       tables.length ? D.h('details', { class: 'min-w-0', 'data-fig-data': '' }, D.h('summary', { class: 'cursor-pointer font-bold text-muted' }, w.data),
-        ...tables.map((t) => D.h('div', { class: 'mt-2 max-w-full overflow-x-auto', tabindex: '0', role: 'group', 'aria-label': t.caption },
+        // v44 B4 eye X1: the visible title is a line of the block's width (a <caption> is capped at its table's width and broke
+        // narrow tables' titles one word per line); the caption stays for screen readers
+        ...tables.flatMap((t) => [D.h('p', { class: 'm-0 mt-2 font-bold', 'aria-hidden': 'true' }, t.caption), D.h('div', { class: 'mt-1 max-w-full overflow-x-auto', tabindex: '0', role: 'group', 'aria-label': t.caption },
           D.h('table', { class: 'w-auto border-collapse text-body-sm' },
-            D.h('caption', { class: 'pb-1 text-left font-bold' }, t.caption),
+            D.h('caption', { class: 'sr-only' }, t.caption),
             t.head.length ? D.h('thead', {}, D.h('tr', {}, ...t.head.map((c) => D.h('th', { scope: 'col', class: HEAD }, c)))) : '',
-            D.h('tbody', {}, ...t.rows.map((r) => D.h('tr', {}, ...r.map((c) => D.h('td', { class: CELL }, c))))))))) : ''));
+            D.h('tbody', {}, ...t.rows.map((r) => D.h('tr', {}, ...r.map((c) => D.h('td', { class: CELL }, c)))))))])) : ''));
 }
 let figs = 0;
 export function mount(host: HTMLElement, d: Diagram, lang: Lang, start = 0, fo?: FigOpts): VizHandle {

@@ -8,6 +8,7 @@ title_en: Ranges with $bucket, several reports with $facet
 kind: lab
 runtime: browser
 minutes: 12
+figures: [{ name: mg-bucket-ranges, at: idea }]
 objectives:
   - vi: Chia tài liệu vào các khoảng giá trị bằng `$bucket`.
     en: Put documents into value ranges with `$bucket`.
@@ -109,6 +110,8 @@ Mỗi pipeline con trong `$facet` nhận cùng một bản sao đầu vào và k
 
 Làm được: dựng biểu đồ phân bố theo khoảng và trả nhiều chỉ số cho một trang tổng quan trong một lệnh.
 
+Hình từng bước ở cuối mục này chia tám đơn của lab theo `total`: với đủ cận, với `default`, và khi thiếu `default`.
+
 ## Cú pháp
 
 ```text
@@ -202,6 +205,8 @@ The dashboard needs a histogram of orders by value range, the number of orders p
 Each sub-pipeline of `$facet` gets the same copy of the input and cannot see the other sub-pipelines' results. Because the whole result sits in one document, it is bound by the size limit of one document (16 MiB on MongoDB); `$facet` suits summary numbers, not returning thousands of documents.
 
 You can now: build a range histogram and return several dashboard numbers in one command.
+
+The step-through figure at the end of this section splits the lab's eight orders by `total`: with every bound, with `default`, and without `default`.
 
 ## Syntax
 

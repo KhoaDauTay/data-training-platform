@@ -6,6 +6,7 @@ level: L4
 module: p
 title: "Biết lệnh DDL lấy lock gì, và luôn đặt lock_timeout"
 title_en: "Know each DDL's lock, and always set lock_timeout"
+figures: [{ name: bp-lock-queue, at: idea }]
 kind: quiz
 minutes: 4
 objectives:
@@ -52,6 +53,8 @@ quiz:
 
 Trước khi chạy migration (script đổi schema theo từng bước), tra lock mode của từng lệnh (docs, hoặc thử trong transaction rồi đọc `pg_locks`). Lệnh lấy `ACCESS EXCLUSIVE` (phần lớn `ALTER TABLE`) phải ngắn, chạy sau `SET LOCAL lock_timeout` vài giây, và có thử lại.
 
+Hình dưới vẽ hàng chờ phía sau một ALTER TABLE và cách lock_timeout gỡ nó.
+
 ## Vì sao
 
 - Lệnh DDL đang **chờ** lock cũng chặn mọi truy vấn xếp sau nó.
@@ -68,6 +71,8 @@ Chạy bản Nên trên PGlite (PostgreSQL 18.6), đọc `pg_locks` trước `CO
 ## Key idea
 
 Before running a migration (a script that changes the schema step by step), look up each statement's lock mode (the docs, or try it in a transaction and read `pg_locks`). Statements that take `ACCESS EXCLUSIVE` (most `ALTER TABLE` forms) must be short, run after a `SET LOCAL lock_timeout` of a few seconds, and be retried.
+
+The figure below draws the queue behind an ALTER TABLE and how lock_timeout clears it.
 
 ## Why
 

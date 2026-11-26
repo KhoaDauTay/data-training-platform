@@ -3,7 +3,8 @@ id: multi_cte
 title: "Nhiều CTE: xây câu trả lời từng bước"
 title_en: "Several CTEs: build the answer step by step"
 minutes: 25
-verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
+verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
+figures: [{ name: sql-cte-chain, at: idea }]
 objectives:
   - vi: Viết nhiều CTE trong một `WITH`, bước sau đọc kết quả bước trước.
     en: Write several CTEs in one `WITH`, a later step reading an earlier one's result.

@@ -5,6 +5,7 @@ level: L4
 module: scale
 title: "Lab: khách nóng, hậu tố chỉ cho khách lớn"
 title_en: "Lab: a hot tenant, a suffix for the big tenant only"
+figures: [{ name: dy-write-sharding, at: idea, variant: tenant }]
 kind: lab
 runtime: browser
 minutes: 15
@@ -165,6 +166,8 @@ Chi phí theo từng khách: DynamoDB tính và báo `ConsumedCapacity` theo t�
 
 Lab chạy bằng dynoxide: item, `ScannedCount` và RCU là số đo. Throttle và adaptive capacity thì không: dynoxide không bao giờ throttle, nên phần đó là luật của AWS.
 
+Hình dưới vẽ khách C09 chia ba khóa, còn khách nhỏ giữ một khóa.
+
 ## Cú pháp
 
 ```text
@@ -291,6 +294,8 @@ The suffix is only for the tenant that needs it. Table `Tenants` records each te
 Cost per tenant: DynamoDB computes and reports `ConsumedCapacity` per request, while CloudWatch metrics are per table and index. To know what each tenant costs, the application adds each request's `ConsumedCapacity` to that request's tenant id. Contributor Insights shows which keys are accessed most.
 
 The lab runs on dynoxide: items, `ScannedCount` and RCU are measured. Throttling and adaptive capacity are not: dynoxide never throttles, so that part is AWS's rule.
+
+The figure below draws tenant C09 split over three keys while a small tenant keeps one.
 
 ## Syntax
 

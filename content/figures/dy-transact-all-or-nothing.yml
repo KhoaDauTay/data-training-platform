@@ -1,0 +1,71 @@
+# B4-9 (tools/v42/diagram-plan-v42.md): both updates or neither, at twice the capacity. Lessons: e-dy-l4-11 (Ý chính), variants
+# `cancel` in e-dy-l4-13 and `partiql` in e-dy-l4-15 (Ý chính).
+# Data: e-dy-l4-11 (docs-only: TransactWriteItems is not in dynoxide 1.5.0) quotes 2 items × 1 WCU × 2 = 4 WCU, success or cancel.
+# dynoxide on e-dy-l4-15's lab (tools/v42/b4check.log): ExecuteTransaction w3 -50000 → w2 +50000 succeeds with 4 WCU measured;
+# w2 (balance 50000) -100000 → w3 +100000 is cancelled with reasons [ConditionalCheckFailed, None]; e-dy-l4-13's predict moves
+# 100000 from w2 to w1 (w1 300000, w2 50000, its setup) and is cancelled the same way, so cancel draws w2 → w1.
+# Deviation: the group is labelled "one transaction" (not TransactWriteItems), because the `cancel` and `partiql` lessons run
+# ExecuteTransaction and a group label cannot change per variant; the caption names the API. The "still 4 WCU" key is the
+# reasons grid's sub. The sub "if amount ≥ 100000" is "nếu số dư ≥ 100000" in VI (the field name made it 19 characters).
+# Source: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/transaction-apis.html
+title: { vi: "Transaction: cả hai hoặc không", en: "A transaction: both or neither" }
+caption:
+  vi: "TransactWriteItems chuyển 100000 từ w1 sang w2, với điều kiện số dư w1 đủ. Hai lần ghi cùng thành công hoặc cùng bị hủy, và giá là 4 WCU trong cả hai trường hợp."
+  en: "TransactWriteItems moves 100000 from w1 to w2, on condition that w1's balance is enough. Both writes succeed together or are cancelled together, and the price is 4 WCU either way."
+alt:
+  vi: "TransactWriteItems áp dụng mọi hành động hoặc không hành động nào, khác BatchWriteItem. Giá gấp đôi, và một transaction bị hủy vẫn tiêu capacity."
+  en: "TransactWriteItems applies every action or none, unlike BatchWriteItem. It costs double, and a cancelled transaction still consumes capacity."
+nodes:
+  - { id: u1, label: Update w1 -100000, sub: { vi: "nếu số dư ≥ 100000", en: "if amount ≥ 100000" }, tone: live }
+  - { id: u2, label: Update w2 +100000, tone: live }
+  - { id: ok, shape: key, label: { vi: "cả hai, 4 WCU", en: "both, 4 WCU" }, tone: live }
+  - id: no
+    shape: grid
+    label: { vi: "lý do hủy", en: cancel reasons }
+    sub: { vi: "vẫn tính 4 WCU", en: "still 4 WCU" }
+    head: [{ vi: "hành động", en: action }, { vi: "lý do", en: reason }]
+    cells: [["1", { vi: "điều kiện sai", en: condition failed }], ["2", { vi: "None (không lỗi)", en: "None (no error)" }]]
+    rowTone: [dead, null]
+groups:
+  - { id: tx, label: { vi: "một transaction", en: one transaction }, nodes: [u1, u2] }
+rows:
+  - [u1, u2]
+  - [ok, no]
+edges:
+  - { id: e1, from: tx, to: ok }
+  - { id: e2, from: tx, to: no }
+steps:
+  - say: { vi: "Đủ tiền: hai lần ghi cùng thành công.", en: "Enough money: both writes succeed." }
+    show: [u1, u2, ok, e1]
+    alt: { vi: "DynamoDB đọc và ghi mỗi item hai lần (chuẩn bị rồi commit), nên giá gấp đôi.", en: "DynamoDB reads and writes each item twice (prepare, then commit), so the cost doubles." }
+  - say: { vi: "Thiếu tiền: hủy cả hai, lý do theo thứ tự.", en: "Not enough: both cancelled, reasons in order." }
+    show: [u1, u2, no, e2]
+    alt: { vi: "Điều kiện ở hành động 1 sai nên không hành động nào được áp dụng, và capacity vẫn bị tính.", en: "The condition on action 1 fails, so no action is applied, and the capacity is still charged." }
+    set:
+      u1: { tone: dead }
+      u2: { tone: ghost }
+variants:
+  cancel:
+    step: 1
+    set:
+      u1: { label: UPDATE w2 -100000, sub: { vi: "số dư 50000", en: balance 50000 } }
+      u2: { label: UPDATE w1 +100000 }
+    title: { vi: "Một điều kiện sai hủy cả transaction", en: "One failed condition cancels the whole transaction" }
+    caption:
+      vi: "ExecuteTransaction chuyển 100000 từ w2 sang w1, nhưng w2 chỉ có 50000. Câu 1 có điều kiện sai nên cả hai câu bị hủy; CancellationReasons là ConditionalCheckFailed, rồi None."
+      en: "ExecuteTransaction moves 100000 from w2 to w1, but w2 holds only 50000. Statement 1's condition fails, so both statements are cancelled; CancellationReasons is ConditionalCheckFailed, then None."
+    alt:
+      vi: "Chỉ một câu có điều kiện sai là không câu nào được ghi, nên không có trạng thái trừ xong mà chưa cộng. Lý do hủy được liệt kê theo đúng thứ tự câu lệnh."
+      en: "One statement with a failed condition means no statement is written, so there is no state where the debit happened without the credit. The cancellation reasons are listed in statement order."
+  partiql:
+    step: 0
+    set:
+      u1: { label: UPDATE w3 -50000, sub: { vi: "nếu số dư ≥ 50000", en: "if amount ≥ 50000" } }
+      u2: { label: UPDATE w2 +50000 }
+    title: { vi: "Transaction PartiQL thành công", en: "A PartiQL transaction that succeeds" }
+    caption:
+      vi: "ExecuteTransaction chuyển 50000 từ w3 sang w2; dynoxide đo 4 WCU cho hai item."
+      en: "ExecuteTransaction moves 50000 from w3 to w2; dynoxide measures 4 WCU for the two items."
+    alt:
+      vi: "Transaction PartiQL theo cùng luật tất-cả-hoặc-không và cùng giá 4 WCU. Điều kiện số dư nằm ngay trong WHERE của câu UPDATE."
+      en: "A PartiQL transaction follows the same all-or-nothing rule and the same 4 WCU price. The balance condition sits right in the UPDATE statement's WHERE."

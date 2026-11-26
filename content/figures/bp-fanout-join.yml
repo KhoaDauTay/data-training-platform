@@ -1,0 +1,51 @@
+# B4-12 (tools/v42/diagram-plan-v42.md): two child tables multiply each other before sum. Card: e-bp-q07 (Ý chính).
+# Data (PGlite on lab, the card's pair, tools/v42/b4check.log): order 1204 has 3 order_items lines and 1 payment of 295000; joined
+# to both children the payment appears on lines 1, 2, 3 (sum 885000). Orders from 2026-10-01: bad sum 295481100 over 648 rows,
+# good 98493700 over 207 orders, 3.0 times. Bars are drawn to scale (3 : 1) with the totals in millions as notes.
+# Deviation: the plan's "October" bars label is "from 2026-10-01" (the card's filter); `good` is two mono-free lines (26 characters).
+# Eye FJ1: the fix has its own edge from payments (summed per order) to the right total; EN says "summed per order".
+# Source: https://www.postgresql.org/docs/18/queries-with.html
+title: { vi: "Join hai bảng con rồi mới sum", en: "Joining two child tables before sum" }
+caption:
+  vi: "Đơn 1204 có 3 dòng hàng và 1 khoản trả 295000. Join đơn với cả order_items và payments thì khoản trả lặp lại trên mỗi dòng hàng, nên sum cộng nó ba lần."
+  en: "Order 1204 has 3 item lines and 1 payment of 295000. Joining the order to both order_items and payments repeats the payment on every item line, so sum adds it three times."
+alt:
+  vi: "Join một bảng cha với hai bảng con rồi mới sum làm tổng tiền phình theo số dòng con, và câu vẫn chạy. Kết quả: 295,5 triệu thay vì 98,5 triệu."
+  en: "Joining a parent to two child tables before summing inflates the total by the number of child rows, and the query still runs. Result: 295.5 million instead of 98.5 million."
+nodes:
+  - { id: o, label: { vi: "đơn 1204", en: order 1204 } }
+  - { id: it, shape: grid, label: order_items, head: [line_no], cells: [["1"], ["2"], ["3"]] }
+  - { id: pay, shape: grid, label: payments, head: [amount_vnd], cells: [["295000"]] }
+  - id: j
+    shape: grid
+    label: { vi: "sau JOIN", en: after JOIN }
+    head: [line_no, amount_vnd]
+    cells: [["1", "295000"], ["2", "295000"], ["3", "295000"]]
+    rowTone: [null, warm, warm]
+  - { id: bad, shape: key, label: sum = 885000, tone: dead }
+  - { id: good, shape: key, label: { vi: "gộp trước rồi join: 295000", en: "summed per order: 295000" }, tone: live }
+  - id: tot
+    shape: bars
+    label: { vi: "đơn từ 2026-10-01", en: "orders since 2026-10-01" }
+    items:
+      - { label: { vi: "sai", en: wrong }, value: 15, note: { vi: "295,5 triệu", en: 295.5M }, tone: dead }
+      - { label: { vi: "đúng", en: right }, value: 5, note: { vi: "98,5 triệu", en: 98.5M }, tone: live }
+rows:
+  - [o]
+  - [it, pay]
+  - [j]
+  - [bad, good]
+  - [tot]
+edges:
+  - { from: o, to: it }
+  - { from: o, to: pay }
+  - { from: it, to: j }
+  - { from: pay, to: j }
+  - { from: j, to: bad }
+  - { id: fix, from: pay, to: good }
+steps:
+  - say: { vi: "Một khoản trả lặp theo số dòng hàng.", en: "One payment repeats once per item line." }
+    show: [o, it, pay, j, bad]
+    alt: { vi: "Nối đơn với hai bảng con 1-n nhân số dòng, nên khoản 295000 xuất hiện ba lần.", en: "Joining an order to two one-to-many children multiplies rows, so the 295000 payment appears three times." }
+  - say: { vi: "Gộp từng bảng con về mức đơn rồi mới nối.", en: "Aggregate each child to the order's grain, then join." }
+    alt: { vi: "Mỗi đơn chỉ còn một dòng tổng trả, nên phép cộng không còn lặp.", en: "Each order keeps a single payment total, so the sum no longer repeats." }

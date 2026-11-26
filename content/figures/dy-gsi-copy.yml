@@ -1,0 +1,69 @@
+# B4-6 (tools/v42/diagram-plan-v42.md): a GSI is a second table DynamoDB keeps for you, with only what you project. Lessons:
+# e-dy-l3-03 (Ý chính), variant `query` in e-dy-l3-04 (Ví dụ). Name chosen to avoid the registry dy-gsi-projection (e-dy-l3-02).
+# Data: e-dy-l3-03's Solution (CreateTable Shipments: key customerId + orderId, GSI byStatus = status + orderId, INCLUDE total;
+# AttributeDefinitions customerId, orderId, status, no total); the two Shipments rows are a sample (the title says so).
+# Variant (dynoxide on e-dy-l3-04's lab, tools/v42/b4check.log): table Orders, Query byStatus status = NEW → Count 18,
+# ScannedCount 18, items carry customerId, orderId, status, total (city is not projected); rows O-136 and O-172 are the first two.
+# Deviation: the tables are drawn one attribute per row (5 columns do not fit 280), so customerId is visible and carried into the
+# GSI (eye GC1); the base table is Orders with city (e-dy-l3-04's names, ids simplified, GC3); `ad` is a grid of the real
+# AttributeDefinitions with AttributeType (GC2), no connector; the variant's
+# "18 · ScannedCount 18" is the key's sub "ScannedCount 18" (the line is 20 characters), the 18 items are in the grid's sub.
+# Source: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GSI.html
+title: { vi: "GSI là một bản sao DynamoDB giữ hộ", en: "A GSI is a copy DynamoDB keeps for you" }
+caption:
+  vi: "GSI byStatus lấy status làm partition key, orderId làm sort key, và chỉ chép khóa của bảng cùng total. city không được chiếu nên không có trong index."
+  en: "The GSI byStatus takes status as its partition key and orderId as its sort key, and copies only the table key plus total. city is not projected, so it is not in the index."
+alt:
+  vi: "GSI là một bản sao có khóa khác do DynamoDB tự giữ, chứa khóa của bảng và các trường được chiếu. Chiếu càng ít, index càng rẻ để ghi và đọc."
+  en: "A GSI is a copy with different keys that DynamoDB maintains, holding the table key and the projected fields. The less you project, the cheaper it is to write and read."
+nodes:
+  - id: t
+    shape: grid
+    label: { vi: "Orders (minh họa)", en: "Orders (sample)" }
+    sub: { vi: "khóa: customerId + orderId", en: "key: customerId + orderId" }
+    head: [{ vi: "thuộc tính", en: attribute }, O-1, O-2]
+    cells: [[customerId, C-1, C-2], [orderId, O-1, O-2], [status, NEW, PAID], [total, "120", "80"], [city, Hue, Hoi An]]
+    rowTone: [new, new, null, null, ghost]
+  - { id: q, shape: key, mono: true, label: "Query status = NEW", sub: ScannedCount 18, tone: live }
+  - id: g
+    shape: grid
+    label: GSI byStatus
+    sub: { vi: "không có city", en: no city }
+    head: [{ vi: "thuộc tính", en: attribute }, O-1, O-2]
+    cells: [[status, NEW, PAID], [orderId, O-1, O-2], [customerId, C-1, C-2], [total, "120", "80"]]
+    rowTone: [new, new, null, null]
+  - id: ad
+    shape: grid
+    label: { vi: "khai báo khóa", en: key definitions }
+    sub: { vi: "chỉ khóa, không total", en: "keys only, no total" }
+    head: [AttributeName, AttributeType]
+    cells: [[customerId, S], [orderId, S], [status, S]]
+rows:
+  - [t, q]
+  - [g, ad]
+edges:
+  - { from: t, to: g, label: { vi: "DynamoDB chép", en: copied by DynamoDB } }
+  - { from: q, to: g }
+steps:
+  - say: { vi: "Khóa mới, chỉ chép phần được chiếu.", en: "New keys, only the projected part copied." }
+    show: [t, g]
+    alt: { vi: "GSI có khóa riêng và mang theo khóa của bảng cùng các trường INCLUDE, nên city không có trong index.", en: "A GSI has its own keys and carries the table key plus the INCLUDE fields, so city is not in the index." }
+  - say: { vi: "AttributeDefinitions chỉ khai thuộc tính làm khóa.", en: "AttributeDefinitions lists only key attributes." }
+    show: [t, g, ad]
+    alt: { vi: "Danh sách này chỉ cho DynamoDB kiểu của các khóa, nên total được chiếu mà không cần khai.", en: "The list only tells DynamoDB the key types, so total is projected without being declared." }
+variants:
+  query:
+    show: [q, g]
+    set:
+      g:
+        sub: { vi: "1 trong 18 item NEW", en: "1 of 18 NEW items" }
+        head: [{ vi: "thuộc tính", en: attribute }, { vi: "giá trị", en: value }]
+        cells: [[status, NEW], [orderId, "2026-10-01#O-136"], [customerId, C-09], [total, "140000"]]
+        rowTone: [new, new, null, null]
+    title: { vi: "Query trên GSI byStatus", en: "A Query on the GSI byStatus" }
+    caption:
+      vi: "Query status = NEW trên GSI byStatus của bảng Orders trả 18 item, mỗi item chỉ có customerId, orderId, status và total; city không được chiếu."
+      en: "A Query status = NEW on the GSI byStatus of the Orders table returns 18 items, each with only customerId, orderId, status and total; city is not projected."
+    alt:
+      vi: "Query trên GSI đọc đúng các item NEW, nên ScannedCount bằng Count. Item trả về chỉ mang khóa và các trường được chiếu."
+      en: "A Query on the GSI reads exactly the NEW items, so ScannedCount equals Count. The items it returns carry only the keys and the projected fields."

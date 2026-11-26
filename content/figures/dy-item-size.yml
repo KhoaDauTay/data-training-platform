@@ -1,0 +1,50 @@
+# DY-B6-5 (v46 Batch 6, L850–L859): an item's size is the sum of its attributes, names included. Lesson: e-dy-l2-08 (Ý chính).
+# Data: rule arithmetic from the lesson's own quiz (AWS rules; the in-browser engine only estimates sizes): item 978-0-04 with
+# isbn "978-0-04" = 4 + 8 = 12, price 88000 = 5 + 1 (digits "88") + 1 = 7, tags [nosql, perf] = 4 + 3 + (1 + 5) + (1 + 4) = 18;
+# 37 bytes for capacity and the 400 KB limit, 37 + 100 = 137 for storage billing. Bars at half scale, the note is the sum.
+# Source: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/CapacityUnitCalculations.html
+title: { vi: "Cỡ item: cộng từng thuộc tính, kể cả tên", en: "Item size: add up each attribute, names too" }
+caption:
+  vi: "Item 978-0-04 có isbn (chuỗi), price 88000 (số) và tags [nosql, perf] (danh sách). Chuỗi là byte của tên cộng byte của giá trị; số là tên cộng 1 byte cho mỗi 2 chữ số có nghĩa cộng 1; danh sách là tên cộng 3 byte, mỗi phần tử thêm 1 byte. 100 byte phụ phí chỉ dùng để tính tiền lưu trữ."
+  en: "Item 978-0-04 has isbn (a string), price 88000 (a number) and tags [nosql, perf] (a list). A string is its name's bytes plus its value's; a number is its name plus 1 byte per 2 significant digits plus 1; a list is its name plus 3 bytes, plus 1 byte per element. The 100 bytes of overhead count only for storage billing."
+alt:
+  vi: "DynamoDB tính tiền đọc ghi theo cỡ item, và cỡ đó gồm cả tên thuộc tính, nên tên dài làm mọi item nặng thêm. Phụ phí 100 byte mỗi item chỉ cộng vào tiền lưu trữ."
+  en: "DynamoDB charges reads and writes by item size, and that size includes the attribute names, so long names make every item heavier. The 100-byte overhead per item only adds to storage billing."
+nodes:
+  - id: sz
+    shape: bars
+    label: { vi: "byte mỗi thuộc tính", en: "bytes per attribute" }
+    items:
+      - { label: isbn, value: 6, note: "4 + 8 = 12", tone: live }
+      - { label: price, value: 3.5, note: "5 + 1 + 1 = 7", tone: live }
+      - { label: tags, value: 9, note: "4 + 3 + 11 = 18", tone: ghost }
+  - { id: tot, shape: key, label: { vi: "cỡ item 37 byte", en: "item size 37 bytes" }, sub: { vi: "RCU, WCU, 400 KB", en: "RCU, WCU, 400 KB" }, tone: ghost }
+  - { id: sto, label: { vi: "lưu trữ: 137 byte", en: "storage: 137 bytes" }, sub: { vi: "37 + 100 phụ phí", en: "37 + 100 overhead" }, tone: ghost }
+rows:
+  - [sz]
+  - [tot, sto]
+edges:
+  - { from: sz, to: tot }
+  - { from: tot, to: sto }
+steps:
+  - say: { vi: "Chuỗi và số: byte của tên cộng byte của giá trị.", en: "Strings and numbers: the name's bytes plus the value's." }
+    alt: { vi: "isbn là 4 byte tên cộng 8 byte giá trị, còn price là 5 byte tên cộng 1 byte cho hai chữ số 88 (số 0 ở cuối bị bỏ) cộng 1, tổng 19 byte.", en: "isbn is a 4-byte name plus an 8-byte value, and price is a 5-byte name plus 1 byte for the two digits 88 (trailing zeros dropped) plus 1, 19 bytes in all." }
+  - say: { vi: "Danh sách thêm 3 byte, mỗi phần tử thêm 1 byte.", en: "A list adds 3 bytes, and 1 byte per element." }
+    alt: { vi: "tags là 4 byte tên, 3 byte của danh sách, rồi mỗi phần tử 1 byte cộng cỡ của nó, nên được 18 và cả item là 37 byte.", en: "tags is a 4-byte name, 3 bytes for the list, then 1 byte plus its size for each element, which gives 18 and 37 bytes for the whole item." }
+    set:
+      sz:
+        items:
+          - { label: isbn, value: 6, note: "4 + 8 = 12", tone: cell }
+          - { label: price, value: 3.5, note: "5 + 1 + 1 = 7", tone: cell }
+          - { label: tags, value: 9, note: "4 + 3 + 11 = 18", tone: live }
+      tot: { tone: live }
+  - say: { vi: "100 byte phụ phí chỉ dùng để tính tiền lưu trữ.", en: "The 100 bytes of overhead count only for storage." }
+    alt: { vi: "Capacity và giới hạn 400 KB dùng 37 byte, còn hóa đơn lưu trữ tính 137 byte vì cộng thêm 100 byte phụ phí của item.", en: "Capacity and the 400 KB limit use 37 bytes, while the storage bill counts 137 bytes because it adds the item's 100 bytes of overhead." }
+    set:
+      sz:
+        items:
+          - { label: isbn, value: 6, note: "4 + 8 = 12", tone: cell }
+          - { label: price, value: 3.5, note: "5 + 1 + 1 = 7", tone: cell }
+          - { label: tags, value: 9, note: "4 + 3 + 11 = 18", tone: cell }
+      tot: { tone: live }
+      sto: { tone: warm }

@@ -5,6 +5,7 @@ level: L4
 module: transactions
 title: "TransactWriteItems: tất cả hoặc không gì cả"
 title_en: "TransactWriteItems: all or nothing"
+figures: [{ name: dy-transact-all-or-nothing, at: idea }]
 kind: concept
 runtime: docs
 minutes: 10
@@ -53,6 +54,8 @@ Giá gấp đôi: DynamoDB đọc/ghi mỗi item hai lần (prepare + commit). K
 Nhiều người nghĩ transaction bị hủy thì không tốn gì. Thật ra capacity vẫn bị tiêu như khi thành công, nên đừng gom quá nhiều hành động vào một transaction.
 
 Bộ máy trong trình duyệt (dynoxide 1.5.0) trả `UnsupportedOperation` cho `TransactWriteItems`, nên API này chưa chạy được ở đây. Hai bài sau dùng phần chạy được: `TransactGetItems` và transaction PartiQL `ExecuteTransaction`.
+
+Hình dưới vẽ hai lần ghi trong một transaction, lúc thành công và lúc bị hủy.
 
 ## Cú pháp
 
@@ -138,6 +141,8 @@ Double price: DynamoDB reads/writes each item twice (prepare + commit). With a `
 Many people think a cancelled transaction costs nothing. In fact the capacity is consumed as if it had succeeded, so do not pack too many actions into one transaction.
 
 The in-browser engine (dynoxide 1.5.0) returns `UnsupportedOperation` for `TransactWriteItems`, so this API does not run here yet. The next two lessons use what does run: `TransactGetItems` and the PartiQL transaction `ExecuteTransaction`.
+
+The figure below draws two writes in one transaction, when it succeeds and when it is cancelled.
 
 ## Syntax
 

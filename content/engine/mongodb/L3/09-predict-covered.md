@@ -5,6 +5,7 @@ level: L3
 module: esr-explain
 title: "Đoán kế hoạch: truy vấn có được phủ?"
 title_en: "Predict the plan: is the query covered?"
+figures: [{ name: mg-covered-query, at: idea }]
 kind: predict
 minutes: 6
 runtime: docs
@@ -74,6 +75,8 @@ Trong explain, truy vấn được phủ có stage `IXSCAN` không phải con ch
 
 Nhiều người nghĩ projection chỉ trả những trường được ghi ra. Thật ra `_id` luôn được trả về trừ khi ghi `_id: 0`, nên `{ title: 1 }` vẫn cần `_id`, và truy vấn phải mở tài liệu để lấy nó.
 
+Hình dưới so hai projection: một phải mở tài liệu để lấy _id, một chỉ đọc index.
+
 ## Tóm tắt
 
 - Được phủ = trả lời chỉ từ index, không mở tài liệu.
@@ -98,6 +101,8 @@ This is a prediction based on the MongoDB docs (pages "Query Optimization" and "
 In explain, a covered query has an `IXSCAN` stage that is not a descendant of a `FETCH` stage: MongoDB opens no document.
 
 Many people think a projection returns only the fields it names. In fact `_id` is always returned unless you write `_id: 0`, so `{ title: 1 }` still needs `_id`, and the query must open documents to get it.
+
+The figure below compares two projections: one must open documents to get _id, the other reads only the index.
 
 ## Recap
 
