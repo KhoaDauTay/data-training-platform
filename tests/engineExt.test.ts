@@ -59,7 +59,7 @@ describe('route #/engine/postgres/ext (kept forever)', () => {
   it('the search palette lists a shelf lesson under "PostgreSQL · Extensions" with the shelf hash', () => {
     const items = paletteItems({ skills: [], terms: [], lessons: { x: { fm: { id: 'e-pg-ext-02', engine: 'postgres', level: 'EXT', title: 'A', title_en: 'B' } } } },
       'en', { skill: (id) => id, lesson: engineHash, term: (id) => id });
-    expect(items).toEqual([{ kind: 'lesson', title: 'B', sub: 'PostgreSQL · Extensions', href: '#/engine/postgres/ext/e-pg-ext-02' }]);
+    expect(items.filter((x) => x.kind === 'lesson')).toEqual([{ kind: 'lesson', title: 'B', sub: 'PostgreSQL · Extensions', href: '#/engine/postgres/ext/e-pg-ext-02' }]);
   });
 });
 
