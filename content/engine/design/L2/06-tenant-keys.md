@@ -117,7 +117,7 @@ Ba thói quen đi kèm: đánh index cho khóa ngoại ghép ở bảng con (xó
 
 **Số riêng cho từng tenant**: một sequence chung vẫn đủ cho `(tenant_id, id)`, số chỉ có khoảng trống. Khi người bán muốn hóa đơn của mình bắt đầu từ 1 và liền nhau, dùng một bảng đếm theo tenant: `UPDATE counters SET n = n + 1 WHERE tenant_id = 2 RETURNING n` trong cùng giao dịch ghi hóa đơn. Lệnh này giữ lock trên dòng đếm của đúng một tenant, nên hai người bán không phải chờ nhau.
 
-Hình từng bước thứ nhất ở cuối mục này so ba cách chia khách; nó mở ở bước Pool (mọi khách chung bảng), cho thấy vì sao `tenant_id` phải đứng đầu khóa. Hình thứ hai vẽ khóa ngoại ghép của lab: ba người bán cùng có khách số 7, và đơn của người bán 1 không trỏ được tới khách (2, 7).
+Hình từng bước thứ nhất ở cuối mục này so ba cách chia khách; nó mở ở bước Pool (mọi khách chung bảng), cho thấy vì sao `tenant_id` phải đứng đầu khóa. Hình thứ hai vẽ khóa ngoại ghép của lab: ba người bán cùng có khách số 7, và đơn của người bán 1 ghi khách 7 chỉ trỏ tới (1, 7), không bao giờ tới (2, 7).
 
 ## Cú pháp
 
@@ -263,7 +263,7 @@ Three habits come with it: index the composite foreign key on the child side (de
 
 **Per-tenant numbers**: one shared sequence is still enough for `(tenant_id, id)`; the numbers just have gaps. When a seller wants its invoices to start at 1 with no gaps, use a counter table per tenant: `UPDATE counters SET n = n + 1 WHERE tenant_id = 2 RETURNING n` in the same transaction that writes the invoice. It holds a lock on one tenant's counter row only, so two sellers never wait for each other.
 
-The first step-through figure at the end of this section compares the three ways to split tenants; it opens on the Pool step (every tenant in one table), which shows why `tenant_id` leads the key. The second draws the lab's composite foreign key: three sellers all have customer 7, and seller 1's order cannot point at customer (2, 7).
+The first step-through figure at the end of this section compares the three ways to split tenants; it opens on the Pool step (every tenant in one table), which shows why `tenant_id` leads the key. The second draws the lab's composite foreign key: three sellers all have customer 7, and seller 1's order naming customer 7 points at (1, 7), never at (2, 7).
 
 ## Syntax
 

@@ -1,7 +1,7 @@
 # B2-3 (tools/v42/diagram-plan-v42.md): two columns must match, so an order cannot point at another seller's customer. Lessons:
 # e-ds-l2-06 (Ý chính), e-ds-l2-07 (Ý chính, variant `unique`, static). Data run on PGlite (tools/v42/b2check.log): the l2-06 lab
-# customers holds 3 sellers × 10, so customer 7 exists for sellers 1, 2, 3; the Example ex_orders (1, 1, 7) points at (1, 7), and
-# an order of seller 2 naming (2, 77) fails 23503. Variant: the l2-07 lab table shoppers, where sellers 1 and 2 both hold
+# customers holds 3 sellers × 10, so customer 7 exists for sellers 1, 2, 3; the Example ex_orders (1, 1, 7) can only mean (1, 7)
+# (the key in step 2); an order of seller 1 naming a customer only seller 2 has (added (2, 11), then (1, 3, 11)) fails 23503. Variant: the l2-07 lab table shoppers, where sellers 1 and 2 both hold
 # an@mail.vn. Source: https://www.postgresql.org/docs/18/ddl-constraints.html#DDL-CONSTRAINTS-FK
 title: { vi: "Khóa ngoại ghép giữ đơn và khách cùng một người bán", en: "A composite foreign key keeps an order and its customer with one seller" }
 caption:
@@ -20,7 +20,7 @@ nodes:
     head: [tenant_id, id]
     cells: [["1", "7"], ["2", "7"], ["3", "7"]]
     cellTone: { "0:0": new }
-  - { id: bad, shape: key, label: { vi: "đơn của 1 → (2, 7)", en: "seller 1 → (2, 7)" }, sub: { vi: "23503: bị chặn", en: "23503: refused" }, tone: dead }
+  - { id: bad, shape: key, label: { vi: "đơn của 1 → số 7", en: "seller 1 → id 7" }, sub: { vi: "chỉ là (1, 7)", en: "means (1, 7) only" }, tone: live }
 rows:
   - [sel, cus, ord]
   - [g, bad]
@@ -33,7 +33,7 @@ steps:
     alt: { vi: "Khóa chính (tenant_id, id) cho mỗi người bán đánh số riêng, nên ba người bán cùng có khách số 7.", en: "The primary key (tenant_id, id) lets each seller number on its own, so three sellers all have customer 7." }
     show: [sel, cus, ord, g]
   - say: { vi: "Khóa ngoại ghép chặn tham chiếu chéo.", en: "The composite foreign key blocks cross-references." }
-    alt: { vi: "Khóa ngoại so cả tenant_id lẫn customer_id cùng lúc, nên đơn của người bán 1 không trỏ được tới khách của người bán 2.", en: "The foreign key compares tenant_id and customer_id together, so seller 1's order cannot point at seller 2's customer." }
+    alt: { vi: "Khóa ngoại so cả tenant_id lẫn customer_id cùng lúc, nên đơn của người bán 1 ghi khách 7 chỉ trỏ tới (1, 7), không bao giờ tới khách của người bán 2.", en: "The foreign key compares tenant_id and customer_id together, so seller 1's order naming customer 7 points at (1, 7) and never at seller 2's customer." }
 variants:
   unique:
     show: [sel, cus, g, bad]
