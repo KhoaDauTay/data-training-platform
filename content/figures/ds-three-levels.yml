@@ -1,22 +1,22 @@
 # DS-1 (tools/v39/diagram-plan.md): external, conceptual, internal. Lesson: e-ds-l1-01 (Ý chính).
 # Data: the lesson's own objects: table products (id, name, price; PK, NOT NULL), views price_list (Example) and cheap_products (lab,
 # "the sales team"), the column stock (lab step 2), the index products_price_idx (Example), 8 kB pages.
-# Deviation: the users are named in the views' subs and the two independences in the step sentences and caption; like the plan's
+# Deviation: the sales team (lab step 1: cheap_products) is named in a sub and the two independences in the step sentences and caption; like the plan's
 # sketch, the levels are bands with no arrows (arrows into a wrapped band left no room for its label on a 320 phone). Sources: the lesson's (ANSI/SPARC); https://www.postgresql.org/docs/current/storage-page-layout.html
 title: { vi: "Ba tầng và hai kiểu độc lập", en: "Three levels, two kinds of independence" }
 caption:
   vi: "Mỗi tầng có schema riêng; đổi tầng dưới không bắt tầng trên đổi theo. Đó là độc lập dữ liệu: logic giữa tầng ngoài và tầng khái niệm, vật lý giữa tầng khái niệm và tầng trong."
   en: "Each level has its own schema; changing a lower level does not force the level above to change. That is data independence: logical between the external and conceptual levels, physical between the conceptual and internal levels."
 alt:
-  vi: "Ba tầng xếp từ trên xuống. Tầng ngoài: view price_list cho nhóm bán hàng và view cheap_products cho kế toán, cả hai đọc bảng products. Tầng khái niệm: bảng products với id, name, price, khóa chính và NOT NULL. Tầng trong: file chia trang 8 kB, và chỗ cho index products_price_idx. Bước 2: thêm cột stock vào products, hai view vẫn chạy, đó là độc lập logic. Bước 3: thêm index products_price_idx, câu SQL không đổi một ký tự, đó là độc lập vật lý."
-  en: "Three levels from top to bottom. External level: the view price_list for the sales team and the view cheap_products for accounts, both reading the table products. Conceptual level: the table products with id, name, price, a primary key and NOT NULL. Internal level: a file cut into 8 kB pages, and room for the index products_price_idx. Step 2: add the column stock to products, and both views still run: logical independence. Step 3: add the index products_price_idx, and the SQL does not change one character: physical independence."
+  vi: "Ba tầng xếp từ trên xuống. Tầng ngoài: view price_list chỉ có tên và giá, view cheap_products cho nhóm bán hàng, cả hai đọc bảng products. Tầng khái niệm: bảng products với id, name, price, khóa chính và NOT NULL. Tầng trong: file chia trang 8 kB, và chỗ cho index products_price_idx. Bước 2: thêm cột stock vào products, hai view vẫn chạy, đó là độc lập logic. Bước 3: thêm index products_price_idx, câu SQL không đổi một ký tự, đó là độc lập vật lý."
+  en: "Three levels from top to bottom. External level: the view price_list with names and prices only, and the view cheap_products for the sales team, both reading the table products. Conceptual level: the table products with id, name, price, a primary key and NOT NULL. Internal level: a file cut into 8 kB pages, and room for the index products_price_idx. Step 2: add the column stock to products, and both views still run: logical independence. Step 3: add the index products_price_idx, and the SQL does not change one character: physical independence."
 groups:
   - { id: ext, label: { vi: "Tầng ngoài", en: "External level" }, nodes: [v1, v2] }
   - { id: con, label: { vi: "Tầng khái niệm", en: "Conceptual level" }, nodes: [tbl] }
   - { id: int, label: { vi: "Tầng trong", en: "Internal level" }, nodes: [file, idx] }
 nodes:
-  - { id: v1, mono: true, label: price_list, sub: { vi: "view, bán hàng", en: "view, sales" } }
-  - { id: v2, mono: true, label: cheap_products, sub: { vi: "view, kế toán", en: "view, accounts" } }
+  - { id: v1, mono: true, label: price_list, sub: view }
+  - { id: v2, mono: true, label: cheap_products, sub: { vi: "view, bán hàng", en: "view, sales" } }
   - { id: tbl, shape: table, mono: true, label: products, sub: "PK · NOT NULL" }
   - { id: file, shape: doc, label: file, sub: { vi: "trang 8 kB", en: "8 kB pages" } }
   - { id: idx, mono: true, label: products_price_idx, sub: { vi: "chưa có", en: "not yet" }, tone: ghost }

@@ -5,15 +5,15 @@
 # Source: https://www.postgresql.org/docs/current/functions-window.html
 title: { vi: "Ba cách xếp hạng khi đồng hạng", en: "Three rankings on a tie" }
 caption:
-  vi: "Ba hàm chỉ khác nhau ở chỗ đồng hạng và ở số đứng sau nó. Dòng cuối là minh họa người kế tiếp, không có trong dữ liệu."
-  en: "The three functions differ only on a tie and on the number after it. The last row illustrates the next person; it is not in the data."
+  vi: "Khách Hue sinh từ 1998, năm sinh giảm dần. Ba hàm chỉ khác nhau ở chỗ đồng hạng và ở số đứng sau nó; dòng cuối là minh họa người kế tiếp, không có trong dữ liệu."
+  en: "Hue customers born 1998 or later, by birth year descending. The three functions differ only on a tie and on the number after it; the last row illustrates the next person and is not in the data."
 alt:
   vi: "Khách ở Hue sinh từ 1998, xếp theo năm sinh giảm dần. Le Khanh 2004: rn 1, rk 1, drk 1. Vo Lan 1999: 2, 2, 2. Bui Trang và Bui Hoa cùng sinh 1998, đồng hạng: ROW_NUMBER cho 3 và 4 (ai trước là tùy), RANK và DENSE_RANK cho cả hai hạng 3. Dòng minh họa người kế tiếp, sinh 1997: ROW_NUMBER 5, RANK nhảy sang 5, DENSE_RANK sang 4. rn là ROW_NUMBER, rk là RANK, drk là DENSE_RANK."
   en: "Hue customers born 1998 or later, ordered by birth year descending. Le Khanh 2004: rn 1, rk 1, drk 1. Vo Lan 1999: 2, 2, 2. Bui Trang and Bui Hoa were both born in 1998, a tie: ROW_NUMBER gives 3 and 4 (which first is arbitrary), RANK and DENSE_RANK give both rank 3. An illustrative next person, born 1997: ROW_NUMBER 5, RANK jumps to 5, DENSE_RANK to 4. rn is ROW_NUMBER, rk is RANK, drk is DENSE_RANK."
 nodes:
   - id: t
     shape: grid
-    label: { vi: "Hue, sinh từ 1998", en: "Hue, born 1998 on" }
+    label: { vi: "Hue, theo năm sinh", en: "Hue, by birth year" }
     head: [{ vi: "tên", en: name }, { vi: "năm", en: year }, rn, rk, drk]
     cells:
       - [Le Khanh, "2004", "1", "1", "1"]

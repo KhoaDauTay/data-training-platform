@@ -1,5 +1,5 @@
 # DS-7 (tools/v39/diagram-plan.md): one fact stored three times. Lesson: e-ds-l4-01 (Ý chính).
-# Data: the Example ex_orders (order_id, customer_id, customer_city, product): (1, 1, Hue, pen), (2, 1, Hue, ink), (3, 1, Hue, paper),
+# Data (checked in PGlite): the Example ex_orders (order_id, customer_id, customer_city, product; product is not drawn, 4 columns are 313 > 264 at 320): (1, 1, Hue, pen), (2, 1, Hue, ink), (3, 1, Hue, paper),
 # (4, 2, Hoi An, bag). Update: UPDATE … SET customer_city = 'Da Nang' WHERE order_id = 1 → customer 1 has 2 cities. Delete: DELETE …
 # WHERE customer_id = 2 → no row about customer 2. Insert: a customer with no order has no row (Common mistakes: 23502 on order_id).
 title: { vi: "Một sự thật lưu ba lần", en: "One fact stored three times" }
@@ -7,8 +7,8 @@ caption:
   vi: "Thành phố là của khách, không phải của đơn. Lưu nó ở mỗi đơn sinh ra ba kiểu hỏng: sửa, xóa và thêm."
   en: "The city belongs to the customer, not to the order. Storing it on every order causes three kinds of damage: update, delete and insert."
 alt:
-  vi: "Bảng ex_orders: đơn 1, 2, 3 của khách 1 ở Hue (pen, ink, paper), đơn 4 của khách 2 ở Hoi An (bag). Thành phố của khách 1 nằm ở ba bản sao. Bước 1, sửa: đổi thành phố của đơn 1 sang Da Nang, hai bản còn lại vẫn Hue, nên khách 1 có hai thành phố. Bước 2, xóa: xóa đơn 4, thành phố Hoi An của khách 2 mất theo. Bước 3, thêm: khách 3 ở Hue chưa có đơn nào thì không có chỗ, vì order_id là khóa và không được trống."
-  en: "Table ex_orders: orders 1, 2, 3 of customer 1 in Hue (pen, ink, paper), order 4 of customer 2 in Hoi An (bag). Customer 1's city sits in three copies. Step 1, update: order 1's city becomes Da Nang while the other two copies stay Hue, so customer 1 has two cities. Step 2, delete: deleting order 4 loses customer 2's city, Hoi An, too. Step 3, insert: customer 3 in Hue with no order yet has no place, because order_id is the key and cannot be empty."
+  vi: "Bảng ex_orders: đơn 1, 2, 3 của khách 1 ở Hue, đơn 4 của khách 2 ở Hoi An. Thành phố của khách 1 nằm ở ba bản sao. Bước 1, sửa: đổi thành phố của đơn 1 sang Da Nang, hai bản còn lại vẫn Hue, nên khách 1 có hai thành phố. Bước 2, xóa: xóa đơn 4, thành phố Hoi An của khách 2 mất theo. Bước 3, thêm: khách 3 ở Hue chưa có đơn nào thì không có chỗ, vì order_id là khóa và không được trống."
+  en: "Table ex_orders: orders 1, 2, 3 of customer 1 in Hue, order 4 of customer 2 in Hoi An. Customer 1's city sits in three copies. Step 1, update: order 1's city becomes Da Nang while the other two copies stay Hue, so customer 1 has two cities. Step 2, delete: deleting order 4 loses customer 2's city, Hoi An, too. Step 3, insert: customer 3 in Hue with no order yet has no place, because order_id is the key and cannot be empty."
 nodes:
   - id: t
     shape: grid

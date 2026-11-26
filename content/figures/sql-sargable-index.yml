@@ -1,6 +1,6 @@
-# GB-8 (tools/v39/diagram-plan.md): leave the column bare. Lessons: sargable (Ý chính), cast (Lỗi hay gặp, the `customer_id::text = '42'` pitfall).
+# GB-8 (tools/v39/diagram-plan.md): leave the column bare. Lessons: sargable (Ý chính), cast (Lỗi hay gặp, pitfall `price_vnd::text > '50000'`).
 # Plans (lab, checked in PGlite with EXPLAIN): order_date >= '2026-10-01' AND order_date < '2026-11-01' → Bitmap Index Scan on
-# orders_order_date_idx; date_trunc('month', order_date) = '2026-10-01' → Seq Scan (customer_id::text = '42' → Seq Scan too).
+# orders_order_date_idx; date_trunc('month', order_date) = '2026-10-01' → Seq Scan. The last order is on 10-31, so the strip ends there.
 # Sources: https://www.postgresql.org/docs/current/indexes-types.html#INDEXES-TYPES-BTREE ,
 # https://www.postgresql.org/docs/current/indexes-expressional.html
 title: { vi: "Để cột trần thì chỉ mục mới cắt được", en: "Leave the column bare so the index can cut" }
@@ -8,11 +8,11 @@ caption:
   vi: "Chỉ mục xếp theo giá trị gốc của cột, nên chỉ điều kiện trên cột trần mới chọn được một đoạn liền."
   en: "An index is sorted by the column's raw value, so only a condition on the bare column can pick one contiguous stretch."
 alt:
-  vi: "Chỉ mục orders_order_date_idx xếp các ngày theo thứ tự: 09-30, 10-01, …, 10-31, 11-01. Điều kiện order_date >= '2026-10-01' AND order_date < '2026-11-01' để cột trần: Postgres nhảy tới 10-01 và đọc một đoạn liền tới hết 10-31, kế hoạch là Bitmap Index Scan. Điều kiện date_trunc('month', order_date) = '2026-10-01' bọc cột trong một hàm: chỉ mục không xếp theo kết quả của hàm, nên phải tính hàm cho mọi dòng, kế hoạch là Seq Scan. Cách sửa: đổi phía hằng số, đừng đổi cột."
-  en: "The index orders_order_date_idx keeps the dates in order: 09-30, 10-01, …, 10-31, 11-01. The condition order_date >= '2026-10-01' AND order_date < '2026-11-01' leaves the column bare: Postgres jumps to 10-01 and reads one stretch to the end of 10-31, and the plan is a Bitmap Index Scan. The condition date_trunc('month', order_date) = '2026-10-01' wraps the column in a function: the index is not sorted by the function's result, so the function runs on every row, and the plan is a Seq Scan. The fix: change the constant side, not the column."
+  vi: "Chỉ mục orders_order_date_idx xếp các ngày theo thứ tự: 09-29, 09-30, 10-01, …, 10-31. Điều kiện order_date >= '2026-10-01' AND order_date < '2026-11-01' để cột trần: Postgres nhảy tới 10-01 và đọc một đoạn liền tới hết 10-31, kế hoạch là Bitmap Index Scan. Điều kiện date_trunc('month', order_date) = '2026-10-01' bọc cột trong một hàm: chỉ mục không xếp theo kết quả của hàm, nên phải tính hàm cho mọi dòng, kế hoạch là Seq Scan. Cách sửa: đổi phía hằng số, đừng đổi cột."
+  en: "The index orders_order_date_idx keeps the dates in order: 09-29, 09-30, 10-01, …, 10-31. The condition order_date >= '2026-10-01' AND order_date < '2026-11-01' leaves the column bare: Postgres jumps to 10-01 and reads one stretch to the end of 10-31, and the plan is a Bitmap Index Scan. The condition date_trunc('month', order_date) = '2026-10-01' wraps the column in a function: the index is not sorted by the function's result, so the function runs on every row, and the plan is a Seq Scan. The fix: change the constant side, not the column."
 nodes:
-  - { id: idx, shape: grid, mono: true, label: { vi: "chỉ mục order_date", en: "order_date index" }, cells: [["09-30", "10-01", "…", "10-31", "11-01"]], sub: { vi: "đã xếp theo ngày", en: "sorted by date" } }
-  - { id: good, shape: grid, mono: true, label: { vi: "cột để trần", en: "bare column" }, cells: [["09-30", "10-01", "…", "10-31", "11-01"]], colTone: [ghost, new, new, new, ghost], sub: { vi: "đọc 1 đoạn liền", en: "reads 1 stretch" } }
+  - { id: idx, shape: grid, mono: true, label: { vi: "chỉ mục order_date", en: "order_date index" }, cells: [["09-29", "09-30", "10-01", "…", "10-31"]], sub: { vi: "đã xếp theo ngày", en: "sorted by date" } }
+  - { id: good, shape: grid, mono: true, label: { vi: "cột để trần", en: "bare column" }, cells: [["09-29", "09-30", "10-01", "…", "10-31"]], colTone: [ghost, ghost, new, new, new], sub: { vi: "đọc 1 đoạn liền", en: "reads 1 stretch" } }
   - { id: gplan, shape: key, mono: true, label: Bitmap Index Scan, tone: live }
   - { id: bad, shape: grid, mono: true, label: { vi: "hàm bọc cột", en: "function on column" }, cells: [["f()", "f()", "f()", "f()", "f()"]], colTone: [warm, warm, warm, warm, warm], sub: { vi: "tính f() mọi dòng", en: "f() on every row" } }
   - { id: bplan, shape: key, mono: true, label: Seq Scan, tone: dead }
