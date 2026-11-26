@@ -6,7 +6,7 @@ import type { Lang, Params } from './index';
  * (tests/i18n.test.ts): code spans VI = EN, EN without diacritics. Nothing on the page is scored or saved.
  */
 const vi = {
-  'title': 'Chọn engine nào?',
+  'title': 'Chọn CSDL nào?',
   'intro': 'Cùng một cửa hàng, ba engine: PostgreSQL, MongoDB và DynamoDB. Mỗi ô ghi rõ điều nó nói đã chạy thật trong trình duyệt hay chỉ lấy từ tài liệu.',
   'dataset': 'Các số có nhãn "Đo trong trình duyệt" đến từ chính ba runtime mà trang Engine dùng (PGlite, mingo, dynoxide), trên một cửa hàng mẫu {n} đơn nạp giống nhau vào cả ba; một test chạy lại từng số đó. Các số khác lấy từ tài liệu, có link tới trang đã đọc.',
   'legend': 'Nhãn',
@@ -43,7 +43,7 @@ const vi = {
 export type CmpKey = keyof typeof vi;
 
 const en: Record<CmpKey, string> = {
-  'title': 'Which engine?',
+  'title': 'Which database?',
   'intro': 'One shop, three engines: PostgreSQL, MongoDB and DynamoDB. Each cell says whether what it claims really ran in the browser or comes from the docs only.',
   'dataset': 'Figures labelled "Measured in the browser" come from the same three runtimes the Engine pages use (PGlite, mingo, dynoxide), on a sample shop of {n} orders loaded the same way into all three; a test reruns each of them. Other figures come from the docs, with a link to the page that was read.',
   'legend': 'Labels',
