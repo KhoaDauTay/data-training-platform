@@ -4,7 +4,9 @@
 // ends exactly on the static frame, and the chunk uses colour tokens only.
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import type { GsapArt } from '../src/art/load';
+import { samplePath } from '../scripts/overlap-check.mjs';
 import * as V from '../src/engine/viz/engineViz';
+import { textWidth } from '../src/engine/viz/figure';
 import { getLang } from '../src/i18n';
 import { h } from '../src/ui/dom';
 import { s } from '../src/ui/svg';
@@ -116,6 +118,39 @@ function arrowTips(svg: SVGSVGElement, name: string, step: number): string[] {
   }
   return bad;
 }
+/**
+ * v41.1 (L682): rule (i) of scripts/overlap-check.mjs for the registry diagrams. Every arrowhead (the path's last 10 units,
+ * plus the tip 0.75·w past its end) stays ≥ 5 units from every visible label's box: width from the glyph table
+ * (figure.ts textWidth), the text box getBBox() gives around the middle baseline in Edge (0.78 em above, 0.64 em below, measured on the old diagrams).
+ */
+function headOnText(svg: SVGSVGElement, name: string, step: number): string[] {
+  const at = (el: Element, a: string) => Number(el.getAttribute(a));
+  const seen = (el: Element) => !el.closest('defs') && Number(el.getAttribute('opacity') ?? 1) > 0.05;
+  const texts = [...svg.querySelectorAll('text')].filter((el) => seen(el) && el.textContent?.trim()).map((el) => {
+    const st = el.getAttribute('style') ?? '';
+    const size = Number(/font-size:([\d.]+)px/.exec(st)?.[1] ?? 12.5);
+    const w = textWidth(el.textContent!, size, /700/.test(st), /monospace/.test(st));
+    const a = el.getAttribute('text-anchor');
+    const x = at(el, 'x') - (a === 'middle' ? w / 2 : a === 'end' ? w : 0);
+    return { s: el.textContent!, x, y: at(el, 'y') - 0.78 * size, w, h: 1.42 * size };
+  });
+  const dist = ([x, y]: number[], r: (typeof texts)[number]) => Math.hypot(Math.max(r.x - x, 0, x - r.x - r.w), Math.max(r.y - y, 0, y - r.y - r.h));
+  const bad: string[] = [];
+  for (const el of svg.querySelectorAll('line[marker-end], path[marker-end]')) {
+    if (!seen(el)) continue;
+    const sw = Number(/stroke-width:([\d.]+)/.exec(el.getAttribute('style') ?? '')?.[1] ?? 1);
+    const pts: number[][] = samplePath(el.tagName === 'line' ? `M${at(el, 'x1')} ${at(el, 'y1')} L${at(el, 'x2')} ${at(el, 'y2')}` : el.getAttribute('d')!);
+    const [p, q] = [pts.at(-2)!, pts.at(-1)!];
+    const len = Math.hypot(q[0] - p[0], q[1] - p[1]) || 1;
+    const tip = [q[0] + ((q[0] - p[0]) / len) * 0.75 * sw, q[1] + ((q[1] - p[1]) / len) * 0.75 * sw];
+    const head = [...pts.filter((pt, n) => n > 0 && Math.hypot(pt[0] - q[0], pt[1] - q[1]) <= 10), tip];
+    for (const t of texts) {
+      const g = Math.min(...head.map((pt) => dist(pt, t)));
+      if (g < 5) bad.push(`${name}#${step + 1} ${el.getAttribute('data-k')} arrowhead ${g.toFixed(1)} from text "${t.s}"`);
+    }
+  }
+  return bad;
+}
 
 describe('engineViz registry', () => {
   it('registers every Postgres diagram (and the NoSQL ones done so far)', () => {
@@ -147,7 +182,7 @@ describe('engineViz registry', () => {
           expect(fig.querySelector('li[aria-current=step]')?.textContent).toBe(v.texts[i]);
           expect(v.texts[i].length).toBeLessThan(420);
           if (lang === 'en') expect(v.texts[i]).not.toMatch(/[ăâđêôơưạảấầẩẫậắằẳẵặẹẻẽếềểễệỉịọỏốồổỗộớờởỡợụủứừửữựỳỵỷỹ]/i);
-          bad.push(...checkFrame(svg, name, i), ...arrowTips(svg, name, i));
+          bad.push(...checkFrame(svg, name, i), ...arrowTips(svg, name, i), ...headOnText(svg, name, i));
         }
         expect(bad).toEqual([]);
         v.destroy();

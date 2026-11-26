@@ -30,7 +30,8 @@ define<BtreeModel>('pg-btree', { leaves: [[3, 8, 12, 15], [20, 25, 28, 29], [41,
       l.forEach((key) => { kx += kw(key); out.push(text(key.k, kx - kw(key) / 2, 127, key.v, { a: 'm', size: SM, b: true, ink: key.tone === 'dead' ? 'dead' : key.tone === 'new' ? 'new' : 'ink' })); });
       if (i) out.push(line(`sib${i}`, xs[i - 1] + ws[i - 1], 152, xs[i], 152, { ink: 'ptr', arrow: true, w: 1 }));
     });
-    out.push(text('leafl', 10, 166, tr('lá (nối anh em →)', 'leaves (sibling links →)'), { size: SM, ink: 'muted' }));
+    // v41.1 (L681): 2 lower, ≥ 5 below the sibling arrows (rule i)
+    out.push(text('leafl', 10, 168, tr('lá (nối anh em →)', 'leaves (sibling links →)'), { size: SM, ink: 'muted' }));
     return out;
   };
   const K = (v: number, tone?: Tone, suffix = ''): Key => ({ v: String(v), k: `k${v}${suffix}`, tone });

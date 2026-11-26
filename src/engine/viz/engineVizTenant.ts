@@ -174,7 +174,7 @@ define<RlsPathModel>('pg-rls-path', RLS_PATH_SAMPLE, (m, tr) => {
     ['Executor', tr('lọc dòng', 'filters rows')],
     ['COMMIT', tr('trả kết nối', 'returns it')],
   ];
-  const Y = (i: number) => 8 + i * 48; // E04, v39 F3 (L621): 14 units between boxes, room for a 1.8 arrowhead (3 + 6·w)
+  const Y = (i: number) => 8 + i * 56; // E04; v41.1 (L680): 22 units between boxes, tips 5 short, heads ≥ 5 from labels (rule i)
   const X0 = 124;
   const BYPASS = 6;
   const draw = (at: number): Shape[] => {
@@ -182,7 +182,7 @@ define<RlsPathModel>('pg-rls-path', RLS_PATH_SAMPLE, (m, tr) => {
     STAGES.forEach(([label, sub], i) => {
       const tone: Tone = at === BYPASS ? (i === 3 ? 'dead' : i === 3 - 1 || i === 4 ? 'new' : 'cell') : i === at ? 'new' : i < at ? 'live' : 'cell';
       out.push(...box(`s${i}`, 10, Y(i), 104, 34, label, tone, sub));
-      if (i < STAGES.length - 1) out.push(line(`a${i}`, 62, Y(i) + 34, 62, Y(i + 1), { ink: at !== BYPASS && i < at ? 'new' : 'edge', arrow: true, w: at !== BYPASS && i < at ? 1.8 : 1.2, dash: at === BYPASS && (i === 2 || i === 3), to: { x: 10, y: Y(i + 1), w: 104, h: 34 } }));
+      if (i < STAGES.length - 1) out.push(line(`a${i}`, 62, Y(i) + 34, 62, Y(i + 1), { ink: at !== BYPASS && i < at ? 'new' : 'edge', arrow: true, w: at !== BYPASS && i < at ? 1.8 : 1.2, dash: at === BYPASS && (i === 2 || i === 3), to: { x: 10, y: Y(i + 1) - 2, w: 104, h: 38 } }));
     });
     // v39 F3: the bypass lane runs at 128 (the step's boxes start at 136), so the last leg holds the head, TIP short of Executor
     if (at === BYPASS) out.push({ k: 'skip', t: 'p', d: `M114 ${Y(2) + 17} H128 V${Y(4) + 17} H${114 + TIP + 0.75 * 1.4}`, ink: 'dead', w: 1.4, arrow: true, dash: true });
@@ -222,7 +222,7 @@ define<RlsPathModel>('pg-rls-path', RLS_PATH_SAMPLE, (m, tr) => {
   };
   const v = { t: m.tenant, n: m.total, k: m.owned, s: m.seen, d: m.owned - m.seen };
   return {
-    title: tr('Đường đi của một câu qua RLS', 'A query\'s path through RLS'), w: 340, h: 292,
+    title: tr('Đường đi của một câu qua RLS', 'A query\'s path through RLS'), w: 340, h: 330,
     frames: [
       { say: tr('Ứng dụng mượn một kết nối từ pool, chạy bằng vai trò app (không sở hữu bảng). Kết nối chưa biết khách nào.', 'The application borrows a pooled connection that runs as role app (not the table owner). The connection knows no tenant yet.'), nodes: draw(0) },
       { say: fill(tr('BEGIN rồi SET LOCAL app.tenant_id = \'{t}\': khách hiện tại chỉ sống trong transaction này.', 'BEGIN, then SET LOCAL app.tenant_id = \'{t}\': the current tenant lives only inside this transaction.'), v), nodes: draw(1) },

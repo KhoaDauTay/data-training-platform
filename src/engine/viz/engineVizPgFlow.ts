@@ -59,8 +59,9 @@ define<unknown>('pg-query-path', QUERY_PATH_SAMPLE, (m0, tr) => {
     ['ex', 'Executor', tr('chạy kế hoạch', 'runs the plan')],
     ['bu', 'Shared buffers', tr('trang 8 KB', '8 KB pages')],
   ];
-  // v31 F5: 34-high stages, room for two SM lines; v39 F3 (L621): 14 units between them, room for a 1.8 arrowhead (3 + 6·w)
-  const Y = (i: number) => 8 + i * 48;
+  // v31 F5: 34-high stages, room for two SM lines; v41.1 (L680): 22 units between them, so a 1.8 arrowhead whose tip stops 5
+  // short of the next stage stays ≥ 5 from both stages' labels (overlap rule i)
+  const Y = (i: number) => 8 + i * 56;
   // v31 F5 (L510): stage column 104 wide, the right column 206: 27 monospace characters at SM
   const X0 = 124;
   const PW = 206;
@@ -80,11 +81,11 @@ define<unknown>('pg-query-path', QUERY_PATH_SAMPLE, (m0, tr) => {
     STAGES.forEach(([k, label, sub], i) => {
       const on = i === at || (at === 5 && i === 6) || (at === 6 && (i === 0 || i === 5));
       out.push(...box(k, 10, Y(i), 104, 34, label, on ? 'new' : i < at ? 'live' : 'cell', sub));
-      if (i < STAGES.length - 1) out.push(line(`a${i}`, 62, Y(i) + 34, 62, Y(i + 1), { ink: i < at ? 'new' : 'edge', arrow: true, w: i < at ? 1.8 : 1.2, to: { x: 10, y: Y(i + 1), w: 104, h: 34 } }));
+      if (i < STAGES.length - 1) out.push(line(`a${i}`, 62, Y(i) + 34, 62, Y(i + 1), { ink: i < at ? 'new' : 'edge', arrow: true, w: i < at ? 1.8 : 1.2, to: { x: 10, y: Y(i + 1) - 2, w: 104, h: 38 } }));
     });
     // v39 F3: the return runs in the right column's free lane (step 7 draws only the heading and the result there), so its
     // last leg is long enough for the head, which stops TIP short of the client's box
-    if (at === 6) out.push({ k: 'ret', t: 'p', d: `M114 ${Y(5) + 17} H140 V${Y(0) + 17} H${114 + TIP + 0.75 * 1.8}`, ink: 'new', w: 1.8, arrow: true });
+    if (at === 6) out.push({ k: 'ret', t: 'p', d: `M114 ${Y(5) + 17} H140 V${Y(0) + 26} H${114 + TIP + 0.75 * 1.8}`, ink: 'new', w: 1.8, arrow: true });
     const head = [tr('Câu SQL (chỉ là chữ)', 'The SQL (just text)'), 'parse tree', 'query tree', tr('sau rewriter', 'after the rewriter'),
       tr('kế hoạch rẻ nhất', 'the cheapest plan'), tr('chạy: kéo dòng lên', 'running: rows flow up'), tr('kết quả', 'the result')][at];
     out.push(text('qh', X0, 14, head, { size: SM, b: true, ink: 'muted' }));
@@ -99,7 +100,7 @@ define<unknown>('pg-query-path', QUERY_PATH_SAMPLE, (m0, tr) => {
   };
   const src = m.recorded ? fill(tr('Kế hoạch ghi sẵn từ {p}.', 'The plan was recorded from {p}.'), { p: m.recorded }) : tr('Kế hoạch là kết quả thật của bài.', 'The plan is this lesson\'s real result.');
   return {
-    title: tr('Đường đi của một câu truy vấn', 'The path of a query'), w: 340, h: 340,
+    title: tr('Đường đi của một câu truy vấn', 'The path of a query'), w: 340, h: 386,
     frames: [
       { say: tr('Ứng dụng gửi câu SQL dạng chữ qua kết nối. Postgres có một tiến trình backend cho mỗi kết nối, mọi tầng bên dưới chạy trong tiến trình đó. (PGlite chạy cùng các tầng này trong WASM, với một kết nối.)', 'The client sends the SQL as text over its connection. Postgres runs one backend process per connection, and every layer below runs inside it. (PGlite runs the same layers in WASM, with one connection.)'), nodes: draw(0) },
       { say: tr('Parser kiểm cú pháp và dựng cây phân tích (parse tree). Nó chưa đọc catalog: lỗi cú pháp (42601) dừng ở đây.', 'The parser checks the syntax and builds a parse tree. It has not read the catalog yet: a syntax error (42601) stops here.'), nodes: draw(1) },
@@ -252,7 +253,8 @@ define<ReplicationModel>('pg-replication', REPLICATION_SAMPLE, (m, tr) => {
   // v31 F5 (L510): LSN marks 55 apart on two alternating rows, so the 13-character monospace labels never touch
   // v31 F5: 34-high boxes, room for two SM lines; v39 F3 (L621): 14 units between them for the arrowheads, so everything
   // below the boxes moved down 18
-  const RY = (i: number) => 36 + i * 48;
+  // v41.1 (L680): 22 between them (tips 5 short of the box, rule i), so everything below the boxes moved down 24 more
+  const RY = (i: number) => 36 + i * 56;
   const LSN: [string, string, number][] = [['sent', '0/3000A8', 280], ['write', '0/300060', 225], ['flush', '0/300028', 170], ['replay', '0/2FFF90', 115]];
   const draw = (s: St): Shape[] => {
     const tone = (k: string): Tone => (s.on.includes(k) ? 'new' : 'cell');
@@ -269,20 +271,20 @@ define<ReplicationModel>('pg-replication', REPLICATION_SAMPLE, (m, tr) => {
       ...box('sw', 180, RY(2), 150, 34, s.logical ? tr('thay đổi từng dòng', 'row changes') : 'pg_wal', s.slot ? 'ghost' : tone('sw'), s.logical ? 'INSERT/UPDATE/DELETE' : undefined),
       ...box('st', 180, RY(1), 150, 34, s.logical ? tr('áp từng dòng', 'applies rows') : tr('startup (replay)', 'startup (replay)'), s.slot ? 'ghost' : tone('st')),
       ...box('sd', 180, RY(0), 150, 34, s.logical ? tr('bảng của bên nhận', 'subscriber tables') : tr('dữ liệu · chỉ đọc', 'data · read-only'), s.slot ? 'ghost' : tone('sd')),
-      ...[0, 1, 2].map((i) => line(`pa${i}`, 85, RY(i) + 34, 85, RY(i + 1), { ink: s.on.includes(['wb', 'pw', 'ws'][i]) ? 'new' : 'edge', arrow: true, to: { x: 10, y: RY(i + 1), w: 150, h: 34 } })),
-      ...[0, 1, 2].map((i) => line(`sa${i}`, 255, RY(3 - i), 255, RY(2 - i) + 34, { ink: s.on.includes(['sw', 'st', 'sd'][i]) ? 'new' : 'edge', arrow: true, to: { x: 180, y: RY(2 - i), w: 150, h: 34 } })),
+      ...[0, 1, 2].map((i) => line(`pa${i}`, 85, RY(i) + 34, 85, RY(i + 1), { ink: s.on.includes(['wb', 'pw', 'ws'][i]) ? 'new' : 'edge', arrow: true, to: { x: 10, y: RY(i + 1) - 2, w: 150, h: 38 } })),
+      ...[0, 1, 2].map((i) => line(`sa${i}`, 255, RY(3 - i), 255, RY(2 - i) + 34, { ink: s.on.includes(['sw', 'st', 'sd'][i]) ? 'new' : 'edge', arrow: true, to: { x: 180, y: RY(2 - i) - 2, w: 150, h: 38 } })),
       line('net', 160, RY(3) + 17, 180, RY(3) + 17, { ink: s.on.includes('wr') ? 'new' : 'edge', arrow: true, dash: s.slot, to: { x: 180, y: RY(3), w: 150, h: 34 } }),
-      text('tcp', 170, 232, 'TCP', { a: 'm', size: SM, ink: 'muted' }),
+      text('tcp', 170, 256, 'TCP', { a: 'm', size: SM, ink: 'muted' }),
     ];
-    if (s.sync) out.push({ k: 'ack', t: 'p', d: `M180 ${RY(3) + 8} H170 V${RY(0) + 17} H${160 + TIP + 0.75 * 1.4}`, ink: 'new', w: 1.4, arrow: true, dash: true }, text('ackt', 170, 252, tr('ack về primary', 'ack to the primary'), { a: 'm', size: SM, ink: 'new', b: true }));
-    if (s.async) out.push(text('asy', 10, 252, tr('COMMIT xong khi primary ghi xong pg_wal', 'COMMIT returns once the primary wrote pg_wal'), { size: SM, ink: 'warm', b: true }));
+    if (s.sync) out.push({ k: 'ack', t: 'p', d: `M180 ${RY(3) + 8} H170 V${RY(0) + 17} H${160 + TIP + 0.75 * 1.4}`, ink: 'new', w: 1.4, arrow: true, dash: true }, text('ackt', 170, 276, tr('ack về primary', 'ack to the primary'), { a: 'm', size: SM, ink: 'new', b: true }));
+    if (s.async) out.push(text('asy', 10, 276, tr('COMMIT xong khi primary ghi xong pg_wal', 'COMMIT returns once the primary wrote pg_wal'), { size: SM, ink: 'warm', b: true }));
     if (s.lsn) {
-      out.push(line('ax', 10, 288, 330, 288, { ink: 'edge', arrow: true }), text('axt', 10, 326, tr('LSN (số ví dụ) tăng →', 'LSN (made-up) grows →'), { size: SM, ink: 'muted' }));
-      LSN.forEach(([k, v, x], i) => out.push({ k: `lm${k}`, t: 'c', x, y: 288, r: 4, tone: i ? 'ptr' : 'new' }, text(`lt${k}`, x, i % 2 ? 308 : 272, `${k} ${v}`, { a: 'm', size: SM, mono: true })));
+      out.push(line('ax', 10, 312, 330, 312, { ink: 'edge', arrow: true }), text('axt', 10, 350, tr('LSN (số ví dụ) tăng →', 'LSN (made-up) grows →'), { size: SM, ink: 'muted' }));
+      LSN.forEach(([k, v, x], i) => out.push({ k: `lm${k}`, t: 'c', x, y: 312, r: 4, tone: i ? 'ptr' : 'new' }, text(`lt${k}`, x, i % 2 ? 332 : 296, `${k} ${v}`, { a: 'm', size: SM, mono: true })));
     }
     if (s.real) {
       const W = (320 - (slots.length - 1) * 6) / Math.max(1, slots.length);
-      slots.forEach((sl, i) => out.push(...box(`sl${i}`, 10 + i * (W + 6), 262, W, 40, cut(sl.slot_name, Math.floor((W - 8) / 7.3)), held(sl) ? 'warm' : 'cell',
+      slots.forEach((sl, i) => out.push(...box(`sl${i}`, 10 + i * (W + 6), 286, W, 40, cut(sl.slot_name, Math.floor((W - 8) / 7.3)), held(sl) ? 'warm' : 'cell',
         cut(`wal_status: ${sl.wal_status ?? 'NULL'}`, Math.floor((W - 8) / 6.6)))));
     }
     return out;
@@ -290,7 +292,7 @@ define<ReplicationModel>('pg-replication', REPLICATION_SAMPLE, (m, tr) => {
   const slotText = slots.map((s) => `${s.slot_name} (${held(s) ? tr('đã giữ WAL', 'already holds WAL') : tr('chưa giữ WAL', 'holds no WAL yet')}, wal_status ${s.wal_status ?? 'NULL'})`).join('; ') || tr('không có slot nào', 'none');
   const src = m.recorded ? fill(tr('ghi từ {p}', 'recorded from {p}'), { p: m.recorded }) : tr('đọc thật trong bài', 'read live in the lesson');
   return {
-    title: tr('Nhân bản: WAL tới standby (minh họa)', 'Replication: WAL to a standby (illustration)'), w: 340, h: 336,
+    title: tr('Nhân bản: WAL tới standby (minh họa)', 'Replication: WAL to a standby (illustration)'), w: 340, h: 360,
     frames: [
       { say: tr('Sơ đồ minh họa: trình duyệt chỉ có một máy Postgres (PGlite), không có standby, nên phần streaming không chạy thật và LSN là số ví dụ. Trên primary, COMMIT ghi bản ghi WAL vào WAL buffers rồi xả xuống pg_wal.', 'An illustration: the browser has a single Postgres server (PGlite) and no standby, so streaming does not really run here and the LSNs are made up. On the primary, COMMIT writes a WAL record into the WAL buffers, then flushes it to pg_wal.'), nodes: draw({ on: ['be', 'wb', 'pw'] }) },
       { say: tr('Streaming (nhân bản vật lý): walsender đọc pg_wal và gửi byte WAL qua TCP tới walreceiver của standby, nơi chúng được ghi vào pg_wal của standby. Cả cluster được chép, không chọn bảng.', 'Streaming (physical replication): the walsender reads pg_wal and ships the WAL bytes over TCP to the standby\'s walreceiver, which writes them into the standby\'s pg_wal. The whole cluster is copied; no table is picked.'), nodes: draw({ on: ['pw', 'ws', 'wr', 'sw'] }) },

@@ -185,7 +185,8 @@ define<MvccModel>('pg-mvcc-timeline', { xids: [100, 101], before: 'price 10', af
   const lanes: Shape[] = [
     text('la', 10, LA, tr('Phiên A', 'Session A'), { b: true }), text('lb', 10, LB, tr('Phiên B', 'Session B'), { b: true }),
     line('ra', 78, LA, 330, LA, { ink: 'edge' }), line('rb', 78, LB, 330, LB, { ink: 'edge' }),
-    line('ax', 70, 122, 330, 122, { ink: 'muted', arrow: true, w: 1 }), text('axt', 330, 132, tr('thời gian', 'time'), { a: 'e', size: SM, ink: 'muted' }),
+    // v41.1 (L681): the axis name sits under the arrowhead, not on it (rule i)
+    line('ax', 70, 122, 330, 122, { ink: 'muted', arrow: true, w: 1 }), text('axt', 330, 140, tr('thời gian', 'time'), { a: 'e', size: SM, ink: 'muted' }),
   ];
   const ev = (k: string, x: number, y: number, label: string, tone: Tone = 'cell'): Shape[] => box(k, x - 28, y - 12, 56, 24, label, tone);
   const v = (st: 0 | 1 | 2, sees?: 1 | 2): Shape[] => {

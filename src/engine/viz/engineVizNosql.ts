@@ -132,7 +132,7 @@ define<PipeModel>('mg-aggregation-pipeline', {
   // v31 F5 + S5 (L510, L513): bars ≤ 70 units so "1000 docs" stays inside 340 at SM; the stages still to come are drawn
   // as dashed ghosts from step 1, so the frame is the whole pipeline (no empty space) and later steps only change tone.
   const row = (k: string, i: number, label: string, sub: string, n: number | undefined, tone: Tone, prev?: number): Shape[] => {
-    const y = 14 + i * 48; // v39 F3 (L621): 14 units between stages, room for the arrowhead
+    const y = 14 + i * 56; // v41.1 (L680): 22 units between stages, the tip 5 short, the head ≥ 5 from both labels (rule i)
     const w = Math.max(3, ((n ?? 0) / max) * 70);
     return [
       ...box(k, 10, y, 132, 34, label, tone, cut(sub, 18)),
@@ -144,7 +144,7 @@ define<PipeModel>('mg-aggregation-pipeline', {
   };
   const frame = (upto: number): Shape[] => [
     ...row('src', 0, 'collection', 'orders', m.input, 'cell'),
-    ...st.flatMap((s, i) => [line(`ln${i}`, 76, 48 + i * 48, 76, 62 + i * 48, { ink: i < upto ? 'ptr' : 'edge', arrow: true, to: { x: 10, y: 62 + i * 48, w: 132, h: 34 } }),
+    ...st.flatMap((s, i) => [line(`ln${i}`, 76, 48 + i * 56, 76, 70 + i * 56, { ink: i < upto ? 'ptr' : 'edge', arrow: true, to: { x: 10, y: 68 + i * 56, w: 132, h: 38 } }),
       ...row(`s${i}`, i + 1, s.op, s.arg ?? '', i < upto ? s.out : undefined, i >= upto ? 'ghost' : i === upto - 1 ? 'new' : 'cell', i ? st[i - 1].out : m.input)]),
   ];
   const sayOf = (s: PipeModel['stages'][number], prev: number): string => {
@@ -155,7 +155,7 @@ define<PipeModel>('mg-aggregation-pipeline', {
     return base;
   };
   return {
-    title: tr('Pipeline tổng hợp', 'The aggregation pipeline'), w: 340, h: 14 + (st.length + 1) * 48 - 6,
+    title: tr('Pipeline tổng hợp', 'The aggregation pipeline'), w: 340, h: 14 + (st.length + 1) * 56 - 14,
     frames: [
       { say: fill(tr('Collection có {n} tài liệu đi vào pipeline (số minh họa, không phải dữ liệu lab bên dưới).', 'The collection\'s {n} documents enter the pipeline (illustrative numbers, not the lab data below).'), { n: m.input }), nodes: frame(0) },
       ...st.map((s, i) => ({ say: sayOf(s, i ? st[i - 1].out : m.input), nodes: frame(i + 1) })),
