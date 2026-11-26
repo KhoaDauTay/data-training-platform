@@ -20,6 +20,21 @@ export interface PaletteHashes { skill: (id: string) => string; lesson: (engine:
 const str = (x: unknown): string => (typeof x === 'string' ? x : '');
 const ENGINE_NAME: Record<string, string> = { postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB', redis: 'Redis' };
 
+/** [VI title, EN title, hash, extra search words]: a page result each (v47, L1092). */
+const PAGES: readonly (readonly [string, string, string, string])[] = [
+  ['Cơ sở dữ liệu', 'Databases', '#/engine', 'csdl engine'],
+  ['Best Practice', 'Best Practice', '#/engine/best', 'thực hành tốt good practice'],
+  ['8 thói quen tốt', '8 good habits', '#/engine/best/habits', 'best practice'],
+  ['Kệ Extension', 'Extensions shelf', '#/engine/postgres/ext', 'postgresql postgis pgvector'],
+  ['Lộ trình NoSQL', 'NoSQL path', '#/engine/mongodb/path', 'mongodb'],
+  ['Thuật ngữ CSDL', 'Database terms', '#/engine/terms', 'glossary từ điển'],
+  ['Chọn CSDL nào?', 'Which database?', '#/engine/compare', 'so sánh compare engine'],
+  ['Luyện SQL', 'Practise SQL', '#/practice', 'practice ôn tập review'],
+  ['Luyện SQL · Sửa câu lỗi', 'Practise SQL · Fix the query', '#/practice', 'practice'],
+  ['Luyện SQL · Giải thích câu này', 'Practise SQL · Explain this query', '#/practice', 'practice'],
+  ['Luyện SQL · Đề trộn theo Phần', 'Practise SQL · Mixed review per Part', '#/practice', 'practice'],
+];
+
 export function paletteItems(src: PaletteSources, lang: 'vi' | 'en', hash: PaletteHashes, designName = 'Design', stackName = 'Data stack', roomName = 'Interview room'): PaletteItem[] {
   const skills = src.skills.map((s): PaletteItem => ({ kind: 'skill', title: s.label[lang], alt: s.id, href: hash.skill(s.id) }));
   const lessons = Object.values(src.lessons).flatMap((x): PaletteItem[] => {
@@ -36,7 +51,10 @@ export function paletteItems(src: PaletteSources, lang: 'vi' | 'en', hash: Palet
   // v47 S4 (L984): the one interview room, one result per tab (searchable as "interview" or "phong van" in both languages)
   const rooms = hash.interview ? ([['sql', 'SQL'], ['pg', 'PostgreSQL'], ['mg', 'MongoDB'], ['dy', 'DynamoDB']] as const)
     .map(([tab, name]): PaletteItem => ({ kind: 'page', title: `${roomName} · ${name}`, alt: 'interview phỏng vấn', href: hash.interview!(tab) })) : [];
-  return [...skills, ...lessons, ...terms, ...rooms];
+  // L1092 (eye E-01): the pages a newcomer names (hub rows, Practise sections); the hashes are kept forever (canonicalHash)
+  const pages = PAGES.map(([vi, en, href, alt]): PaletteItem => ({ kind: 'page', title: lang === 'en' ? en : vi, alt: `${lang === 'en' ? vi : en} ${alt}`, href }));
+  return [...skills, ...rooms, ...pages, ...lessons, ...terms]; // pages before the ~300 lessons and terms: the 30 cap never hides them
+
 }
 
 /** Lower case, no Vietnamese marks: "Lọc dòng" matches "loc dong". */

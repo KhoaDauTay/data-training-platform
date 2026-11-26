@@ -167,7 +167,9 @@ function drillParts(g: General, d: Drill, tk: Ticket, run?: Session.PracticeRun)
   const group = groupOf(g, d);
   const what = nameOf(g, d);
   const fix = d.kind === 'fix';
-  const title = fix ? lt('sets.fixTitle') : d.kind === 'challenge' ? lt('drill.challenge', { what }) : lt('drill.title', { what, i: group.findIndex((x) => x.id === d.id) + 1, n: group.length });
+  const title = fix ? lt('sets.fixTitle') : d.kind === 'challenge' ? lt('drill.challenge', { what })
+    // L1095 (eye E-09): a run (entry check, review, mixed set) has its own counter in the banner; no second "i/4" here
+    : run ? lt('drill.titleRun', { what }) : lt('drill.title', { what, i: group.findIndex((x) => x.id === d.id) + 1, n: group.length });
   const hintsLater = run?.set?.kind === 'mix' && run.wrong === 0 && !run.result;
   const node = d.node ? g.nodes.find((n) => n.id === d.node) : undefined;
   const lessonBtn = (open: () => void) => h('button', { type: 'button', class: 'px-2 py-0.5 text-body-sm', onclick: open }, lt('drill.openLesson'));

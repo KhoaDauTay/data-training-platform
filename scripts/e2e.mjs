@@ -303,7 +303,8 @@ async function boot(domain = 'logistics') {
   const vis = (sel) => `(b => b && b.offsetParent && !b.disabled)(document.querySelector('dialog[open] ${sel}'))`;
   for (let i = 0; i < 10; i++) {
     if (!(await ev(`!!document.querySelector('dialog[open] [data-w]')`))) break;
-    for (const w of ['knows', `pick-${domain}`, 'next']) {
+    // L1090: "knows" is asked only after the goal "I know SQL" (then Skip the entry check)
+    for (const w of ['knows', `pick-${domain}`, 'goal-sql', 'skip', 'next']) {
       if (await ev(vis(`[data-w="${w}"]`))) { await ev(`document.querySelector('dialog[open] [data-w="${w}"]').click()`); break; }
     }
     await sleep(400);

@@ -19,7 +19,7 @@ describe('welcome goal step (S3)', () => {
     w('next')!.click();
     expect(title()).toBe('Bạn muốn học gì?');
     expect(['goal-analyst', 'goal-sql', 'goal-internals', 'goal-engineer'].every((x) => w(x))).toBe(true);
-    expect(w('next')).not.toBeNull();
+    expect(w('next')!.textContent).toBe('Bỏ qua: học phân tích dữ liệu'); // L1091 (E-08): Next with no card says what it picks
     expect(byId('welcome-step').textContent).toBe('Bước 2/4');
     expect(await problems()).toEqual([]);
   });
@@ -87,6 +87,19 @@ describe('welcome goal step (S3)', () => {
     openModal()!.close();
     expect(JSON.parse(localStorage.getItem('cargo-query/tour')!)).toMatchObject({ knows: true });
     localStorage.removeItem('cargo-query/tour');
+  });
+
+  it('L1090 (E-03): the analyst is not asked "do you know SQL?" again: one Start, a quiet link back to the goals', async () => {
+    (await import('../src/ui/welcome')).openWelcome(false); // the domain is known now: lang → goal → start
+    w('next')!.click();
+    w('goal-analyst')!.click();
+    expect(w('knows')).toBeNull();
+    expect(w('begin')!.textContent).toBe('Bắt đầu');
+    expect(byId('welcome-dialog').textContent).not.toContain('Bạn đã biết SQL chưa?');
+    expect(await problems()).toEqual([]);
+    w('regoal')!.click();
+    expect(title()).toBe('Bạn muốn học gì?');
+    openModal()!.close();
   });
 
   it('"Take the entry check" lands on the learning path as "knows SQL" and starts the check run there', async () => {
