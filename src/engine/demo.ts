@@ -1,4 +1,4 @@
-import { blocksOf, onPg, type EngineId, type EngineLesson, type SectionId } from './content';
+import { blocksOf, onPg, runEngine, type EngineId, type EngineLesson, type SectionId } from './content';
 import type { LabOutput } from './labs';
 import { splitSql } from './pglab/split';
 import type { ScriptResult, ScriptStep } from './pglab/script';
@@ -48,11 +48,11 @@ export function demoBlock(engine: EngineId, sec: SectionId, lang: string, code: 
 
 /** The code blocks of "Ví dụ" then "Lỗi hay gặp", in page order (code is identical in VI and EN: lessonProblems). */
 export const demoBlocks = (l: EngineLesson, lang: 'vi' | 'en' = 'vi'): DemoBlock[] =>
-  l.sections.filter((s) => DEMO_SECS.includes(s.id)).flatMap((s) => blocksOf(s.text[lang]).flatMap((b) => (b.kind === 'code' ? [demoBlock(l.engine, s.id, b.lang, b.code)] : [])));
+  l.sections.filter((s) => DEMO_SECS.includes(s.id)).flatMap((s) => blocksOf(s.text[lang]).flatMap((b) => (b.kind === 'code' ? [demoBlock(runEngine(l), s.id, b.lang, b.code)] : [])));
 
 /** The data a lesson's examples run on (undefined: PostgreSQL's empty database, or DynamoDB with no tables). */
 export const demoSetup = (l: Pick<EngineLesson, 'engine' | 'lab' | 'demoSetup'>): string | undefined =>
-  l.lab?.setup ?? l.demoSetup ?? (l.engine === 'mongodb' ? 'shop' : undefined);
+  l.lab?.setup ?? l.demoSetup ?? (runEngine(l) === 'mongodb' ? 'shop' : undefined);
 
 /** A WRONG block and the FIX right after it run (and show) together: the indexes of `i`'s pair, or `[i]`. */
 export const pairOf = (bs: readonly DemoBlock[], i: number): number[] =>

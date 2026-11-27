@@ -24,6 +24,15 @@ export const ENGINE_SHORT: Record<EngineId, 'pg' | 'mg' | 'dy' | 'rd' | 'ds' | '
 export const onPg = (e: EngineId): boolean => e === 'postgres' || e === 'design' || e === 'stack' || e === 'olap' || e === 'search' || e === 'timeseries' || e === 'telemetry' || e === 'graph' || e === 'stream';
 /** v47 (L1012): a search lesson whose data (lab.setup, else demo_setup) is a JSON index runs on BoonData's Elasticsearch-style interpreter (src/engine/search/), not PostgreSQL. */
 export const isEsLesson = (l: { engine: EngineId; lab?: Lab; demoSetup?: string }): boolean => l.engine === 'search' && /^\s*\{/.test(l.lab?.setup ?? l.demoSetup ?? '');
+/**
+ * v48 (L1190): the engine a lesson's lab and examples run on. A time-series lesson whose data (lab.setup, else demo_setup) is
+ * MongoDB `{"collections": …}` JSON runs on mingo, DynamoDB `{"tables": …}` JSON on dynoxide; any other lesson on its own engine.
+ */
+export const runEngine = (l: { engine: EngineId; lab?: Lab; demoSetup?: string }): EngineId => {
+  if (l.engine !== 'timeseries') return l.engine;
+  const s = l.lab?.setup ?? l.demoSetup ?? '';
+  return /^\s*\{\s*"collections"/.test(s) ? 'mongodb' : /^\s*\{\s*"tables"/.test(s) ? 'dynamodb' : l.engine;
+};
 export const LEVELS = ['L1', 'L2', 'L3', 'L4', 'L5'] as const;
 /** A rung of an engine's ladder (the trees, badges and skill map hold only these). */
 export type Rung = (typeof LEVELS)[number];

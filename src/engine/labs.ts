@@ -1,7 +1,7 @@
 import type { QueryResult } from '../db/run';
 import type { GradeResult } from '../grader';
 import type { slowVerdict } from '../planCheck';
-import { isEsLesson, onPg, type EngineId, type EngineLesson, type Lab, type LabStep } from './content';
+import { isEsLesson, onPg, runEngine, type EngineId, type EngineLesson, type Lab, type LabStep } from './content';
 import type { Capacity, ReadMode } from './dynamo/cost';
 import type { ScriptResult, ScriptStep } from './pglab/script';
 
@@ -130,9 +130,10 @@ export function pgLabRunner(env: LabEnv): LabRunner {
  * `plan` only with `setup` (ENG-PGLAB); rows/catalog always. MongoDB grades `doc`; DynamoDB `doc` and `catalog` (its runner compares any step, L299). A lesson
  * marked `runtime: docs` never runs here. Update with each new runner.
  */
-export const gradable = (l: EngineLesson, step: LabStep): boolean =>
+export const gradable = (l: EngineLesson, step: LabStep): boolean => gradableOn(runEngine(l), l, step); // v48 (L1190): a time-series lesson may run on mingo / dynoxide
+const gradableOn = (e: EngineId, l: EngineLesson, step: LabStep): boolean =>
   !!LAB_RUNNERS[l.engine] && l.runtime !== 'docs'
-  && (onPg(l.engine) ? step.check !== 'doc' && !(step.check === 'plan' && !l.lab?.setup) : step.check === 'doc' || (l.engine === 'dynamodb' && step.check === 'catalog'));
+  && (onPg(e) ? step.check !== 'doc' && !(step.check === 'plan' && !l.lab?.setup) : step.check === 'doc' || (e === 'dynamodb' && step.check === 'catalog'));
 
 /**
  * The one honest runtime label beside a lesson's title (product-design-db-engine §3.6, checklist L1), derived from what
@@ -147,7 +148,7 @@ const RUNS: Record<EngineId, Honest> = { postgres: 'pg', mongodb: 'mingo', dynam
  * over a PGlite `samples` table (`promql`); the rest of both tracks is real PostgreSQL.
  */
 const runOf = (l: Pick<EngineLesson, 'engine' | 'lab' | 'demoSetup'>): Honest =>
-  isEsLesson(l) ? 'es' : l.lab?.steps.some((s) => s.lang === 'promql') ? 'promql' : RUNS[l.engine];
+  isEsLesson(l) ? 'es' : l.lab?.steps.some((s) => s.lang === 'promql') ? 'promql' : RUNS[runEngine(l)];
 export const honestOf = (l: Pick<EngineLesson, 'engine' | 'runtime' | 'viz' | 'lab' | 'predict' | 'demoSetup'>): Honest =>
   l.runtime !== 'docs' && LAB_RUNNERS[l.engine] && (l.lab || (l.predict && onPg(l.engine))) ? runOf(l) : l.viz ? 'diagram' : 'docs';
 
@@ -158,7 +159,8 @@ export const honestOf = (l: Pick<EngineLesson, 'engine' | 'runtime' | 'viz' | 'l
  * simulation; telemetry's `promql` module is PromQL except its capstone (PostgreSQL).
  */
 const rowRun = (l: Pick<EngineLesson, 'engine' | 'module' | 'kind'>): Honest =>
-  l.engine === 'search' ? (l.module === 'postgres' ? 'pg' : 'es') : l.engine === 'telemetry' && l.module === 'promql' && l.kind !== 'capstone' ? 'promql' : RUNS[l.engine];
+  l.engine === 'search' ? (l.module === 'postgres' ? 'pg' : 'es') : l.engine === 'telemetry' && l.module === 'promql' && l.kind !== 'capstone' ? 'promql'
+    : l.engine === 'timeseries' && (l.module === 'mongo' || l.module === 'dynamo') ? (l.module === 'mongo' ? 'mingo' : 'dynoxide') : RUNS[l.engine]; // v48 (L1190): time-series L4 modules
 export const honestRow = (l: Pick<EngineLesson, 'engine' | 'runtime' | 'viz' | 'module' | 'kind'>): Honest =>
   l.runtime !== 'docs' && LAB_RUNNERS[l.engine] ? rowRun(l) : l.viz ? 'diagram' : 'docs';
 
@@ -200,4 +202,21 @@ LAB_RUNNERS.search = async (env) => {
 };
 // v47 (L1037): telemetry labs are PostgreSQL labs; a `lang: promql` step goes to the PromQL simulation (lazy `promqlRunner` chunk)
 LAB_RUNNERS.telemetry = async (env) => (await import('./telemetry/promqlRunner')).tmRunner(env, await LAB_RUNNERS.postgres!(env));
-LAB_RUNNERS.design = LAB_RUNNERS.stack = LAB_RUNNERS.olap = LAB_RUNNERS.timeseries = LAB_RUNNERS.graph = LAB_RUNNERS.stream = LAB_RUNNERS.postgres; // v47 (L1080): graph too // v47 (L970): timeseries too // v47 (L990): olap too // v45 (L742): stack labs too // v28 R4 (L420): design labs are PostgreSQL labs (`lab` schema, or the lab runtime with `setup`)
+LAB_RUNNERS.design = LAB_RUNNERS.stack = LAB_RUNNERS.olap = LAB_RUNNERS.graph = LAB_RUNNERS.stream = LAB_RUNNERS.postgres; // v47 (L1080): graph too // v47 (L970): timeseries too // v47 (L990): olap too // v45 (L742): stack labs too // v28 R4 (L420): design labs are PostgreSQL labs (`lab` schema, or the lab runtime with `setup`)
+// v48 (L1190): time-series labs are PostgreSQL labs, except the L4 lessons whose data is MongoDB or DynamoDB JSON (runEngine)
+LAB_RUNNERS.timeseries = async (env) => {
+  const pg = await LAB_RUNNERS.postgres!(env);
+  const other: Partial<Record<EngineId, Promise<LabRunner>>> = {};
+  const pick = (setup?: string): Promise<LabRunner> => {
+    const e = runEngine({ engine: 'timeseries', lab: { setup, steps: [] } });
+    if (e === 'timeseries') return Promise.resolve(pg);
+    return (other[e] ??= LAB_RUNNERS[e]!(env).catch((x: unknown) => { delete other[e]; throw x; }));
+  };
+  return {
+    demo: async (setup, steps) => (await pick(setup)).demo!(setup, steps),
+    prepare: async (lab) => (await pick(lab.setup)).prepare(lab),
+    run: async (lab, code, step) => (await pick(lab.setup)).run(lab, code, step),
+    check: async (lab, step, code) => (await pick(lab.setup)).check(lab, step, code),
+    explain: async (lab, sql) => (await pick(lab.setup)).explain!(lab, sql),
+  };
+};

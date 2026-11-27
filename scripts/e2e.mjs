@@ -1038,7 +1038,9 @@ function capstonePivot(lab) {
 /** v23 PG-C lessons (L268): VACUUM size, count(*) predict, Buffers line, unused indexes, REINDEX. */
 const NEW_V23 = ['e-pg-l3-16', 'e-pg-l3-17', 'e-pg-l3-18', 'e-pg-l5-16', 'e-pg-l5-17'];
 /** Same rule as src/engine/labs.ts gradable(). */
-const gradableStep = (l, st) => l.runtime !== 'docs' && ((l.engine === 'postgres' || l.engine === 'design' || l.engine === 'stack' || l.engine === 'olap' || l.engine === 'timeseries' || l.engine === 'telemetry' || l.engine === 'graph' || l.engine === 'stream') ? st.check !== 'doc' && !(st.check === 'plan' && !l.lab?.setup) : st.check === 'doc' || (l.engine === 'dynamodb' && st.check === 'catalog')); // L299
+/** Same rule as src/engine/content.ts runEngine() (v48 L1190): a time-series lesson on MongoDB / DynamoDB JSON data. */
+const runEngine = (l) => { const s = l.engine === 'timeseries' ? String(l.lab?.setup ?? l.demo_setup ?? '') : ''; return /^\s*\{\s*"collections"/.test(s) ? 'mongodb' : /^\s*\{\s*"tables"/.test(s) ? 'dynamodb' : l.engine; };
+const gradableStep = (l0, st, l = { ...l0, engine: runEngine(l0) }) => l.runtime !== 'docs' && ((l.engine === 'postgres' || l.engine === 'design' || l.engine === 'stack' || l.engine === 'olap' || l.engine === 'timeseries' || l.engine === 'telemetry' || l.engine === 'graph' || l.engine === 'stream') ? st.check !== 'doc' && !(st.check === 'plan' && !l.lab?.setup) : st.check === 'doc' || (l.engine === 'dynamodb' && st.check === 'catalog')); // L299
 SECTIONS.engine = async () => {
   await shared();
   const counts = { lessons: 0, passed: 0, steps: 0, predicts: 0, capstones: 0, capPlans: 0, refused: 0, failedLessons: [] };

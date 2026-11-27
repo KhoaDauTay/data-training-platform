@@ -7,3 +7,15 @@
 - id: storage
   vi: Lưu trữ và giữ dữ liệu
   en: Storage and retention
+- id: mongo
+  vi: MongoDB
+  en: MongoDB
+- id: dynamo
+  vi: DynamoDB
+  en: DynamoDB
+- id: tsdb
+  vi: TSDB tự làm gì
+  en: What a TSDB automates
+- id: forecast
+  vi: Dự báo cơ bản
+  en: Forecasting basics

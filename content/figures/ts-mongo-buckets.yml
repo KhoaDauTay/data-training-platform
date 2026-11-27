@@ -1,0 +1,27 @@
+# v48 (L1191): 12 reefer readings grouped by container (metaField) and by 30-minute bucket ($dateTrunc). Lesson: e-ts-l4-01 (Ý chính).
+# Data = the lab: CQRU1001 8 readings, CQRU1002 4 readings, 00:00–01:10 UTC on 30 Oct; step 2's averages.
+title: { vi: "Gom theo nhãn và ô", en: "Grouped by label and bucket" }
+caption:
+  vi: "12 tài liệu chia theo container (metaField box), rồi theo ô 30 phút: CQRU1001 có 3 ô, CQRU1002 có 3 ô."
+  en: "12 documents split by container (metaField box), then by 30-minute bucket: CQRU1001 has 3 buckets, CQRU1002 has 3."
+alt:
+  vi: "Collection time-series xếp số đo cùng một container và gần nhau về thời gian vào cùng nhóm lưu trữ. Câu `$group` với `$dateTrunc` hỏi theo đúng hai chiều đó: nhãn của chuỗi và ô thời gian."
+  en: "A time series collection stores readings of the same container and close in time together. A `$group` with `$dateTrunc` asks along those same two axes: the series label and the time bucket."
+nodes:
+  - { id: raw, shape: doc, label: readings, sub: { vi: "12 tài liệu", en: "12 documents" }, tone: ghost }
+  - id: a
+    shape: grid
+    label: CQRU1001
+    sub: { vi: "trung bình mỗi ô", en: "average per bucket" }
+    cells: [["00:00", "00:30", "01:00"], ["-17.5", "-15.5", "-18.25"]]
+  - id: b
+    shape: grid
+    label: CQRU1002
+    sub: { vi: "trung bình mỗi ô", en: "average per bucket" }
+    cells: [["00:00", "00:30", "01:00"], ["-19.75", "-19", "-19.5"]]
+rows:
+  - [raw]
+  - [a, b]
+edges:
+  - { from: raw, to: a, label: "box" }
+  - { from: raw, to: b, label: "box" }

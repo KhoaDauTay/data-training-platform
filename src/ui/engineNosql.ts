@@ -48,7 +48,7 @@ export function tablesPanel(deps: EngineDeps, l: EngineLesson): HTMLElement | nu
         h('p', { class: 'my-1 text-body-sm text-muted' }, nt('tables.keys', { keys: (x.KeySchema ?? []).map((k) => `${k.AttributeName} (${k.KeyType})`).join(', ') })),
         items[0] ? h('p', { class: 'my-1 text-body-sm text-muted' }, nt('tables.sampleItem')) : null, items[0] ? json(items[0]) : null));
     });
-  return boxes.length ? h('div', { class: 'flex flex-col gap-1.5' }, h('h3', { class: 'm-0 text-body-sm font-bold' }, nt(l.engine === 'mongodb' ? 'tables.colls' : 'tables.dynamo')), ...boxes) : null;
+  return boxes.length ? h('div', { class: 'flex flex-col gap-1.5' }, h('h3', { class: 'm-0 text-body-sm font-bold' }, nt(j.collections ? 'tables.colls' : 'tables.dynamo')), ...boxes) : null;
 }
 
 /** Above the editor: what grades this step besides its result (route R5's rule bar, or an expected error). */

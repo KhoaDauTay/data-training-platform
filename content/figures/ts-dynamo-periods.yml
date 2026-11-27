@@ -1,0 +1,18 @@
+# v48 (L1191): AWS time-series pattern, one table per period. Lesson: e-ts-l4-03 (Ý chính).
+# Data = the lab: Readings_2026_09 (4 items, no writes), Readings_2026_10 (11 items, current), Readings_2026_11 (step 3, prebuilt).
+title: { vi: "Mỗi tháng một bảng", en: "One table per month" }
+caption:
+  vi: "Tháng 10 nhận mọi lượt ghi; tháng 9 không còn ghi nên giảm capacity; tháng 11 được dựng sẵn trước khi tháng 10 hết."
+  en: "October takes every write; September is no longer written so its capacity is lowered; November is built before October ends."
+alt:
+  vi: "Tách chuỗi thời gian thành mỗi kỳ một bảng để cấp nhiều capacity cho kỳ đang ghi và ít cho kỳ cũ. Kỳ cũ có thể lưu trữ hoặc xóa cả bảng thay vì xóa từng item."
+  en: "Splitting a time series into one table per period gives most capacity to the period being written and little to old ones. An old period can be archived or dropped as a whole table instead of deleting item by item."
+nodes:
+  - { id: sep, shape: table, label: Readings_2026_09, sub: { vi: "cũ: ít capacity", en: "old: low capacity" }, tone: ghost }
+  - { id: oct, shape: table, label: Readings_2026_10, sub: { vi: "đang ghi", en: "being written" }, tone: live }
+  - { id: nov, shape: table, label: Readings_2026_11, sub: { vi: "dựng sẵn", en: "prebuilt" }, tone: new }
+rows:
+  - [sep, oct, nov]
+edges:
+  - { from: sep, to: oct, label: { vi: "hết kỳ", en: "period ends" } }
+  - { from: oct, to: nov, label: { vi: "hết kỳ", en: "period ends" } }

@@ -1,5 +1,5 @@
 import {
-  blocksOf, docsNoteKey, ENGINES, engineXp, isEsLesson, isRight, onPg, lessonPassed, parseEngineLesson, parseModules, partsOf, progressOf, treeOf,
+  blocksOf, docsNoteKey, ENGINES, engineXp, isEsLesson, isRight, onPg, runEngine, lessonPassed, parseEngineLesson, parseModules, partsOf, progressOf, treeOf,
   type EngineId, type EngineLesson, type Kind, type LabStep, type LessonSource, type Level, type ModuleName, type Rung, type Question, type SectionId, type Tree,
 } from '../engine/content';
 import { gradable, honestOf, honestRow, LAB_RUNNERS, type Honest, type LabEnv, type LabOutput, type LabRunner, type LabVerdict } from '../engine/labs';
@@ -605,7 +605,7 @@ const PLAN_VIZ = /plan-tree|query-path|explain/;
 function chunksFor(l: EngineLesson): 'ready' | 'loading' | 'failed' {
   const wantPred = !!l.predict || l.kind === 'capstone' || (!!l.viz && PLAN_VIZ.test(l.viz));
   const wantCap = l.kind === 'capstone' && !!LAB_RUNNERS[l.engine];
-  const wantNosql = !onPg(l.engine) && !!l.lab;
+  const wantNosql = !onPg(runEngine(l)) && !!l.lab;
   if (wantNosql && nosqlMod === undefined) {
     nosqlMod = 'loading';
     import('./engineNosql').then((m) => { nosqlMod = m; }, () => { nosqlMod = 'failed'; }).finally(() => d.rerender());
@@ -669,7 +669,7 @@ const tableBox = (name: string, line: string, body: Node): HTMLElement =>
 /** "Tables used" (L280, blind-pg.md: names the steps need were never shown). Postgres reads it from the lab itself on first open. */
 function tablesPanel(l: EngineLesson, v: Visit): HTMLElement | null {
   const { h } = d;
-  if (!onPg(l.engine)) return N()?.tablesPanel(d, l) ?? null; // v25: the NoSQL panel lives in the engineNosql chunk
+  if (!onPg(runEngine(l))) return N()?.tablesPanel(d, l) ?? null; // v25: the NoSQL panel lives in the engineNosql chunk
   const t = v.tables;
   const body = t === undefined ? null : t === 'busy' ? h('p', { class: 'my-1 flex items-center gap-2 text-body-sm text-muted' }, d.loader(), et('tables.loading'))
     : 'error' in t ? d.errorView(t.error, false)
@@ -710,7 +710,7 @@ function labView(l: EngineLesson, v: Visit): HTMLElement {
     cardHead(`${l.id}-lab`, 'kindLab', et('lab.title')),
     cap && cc ? cap.capBar(cc) : null,
     h('div', { class: 'flex flex-col gap-3 rounded-(--r-ctl) bg-info-soft p-4 text-body-sm ring-1 ring-info-line' },
-      h('p', { class: 'm-0' }, !live ? et('lab.noRunner') : l.engine === 'mongodb' ? et('lab.dataMongo') : l.engine === 'dynamodb' ? et('lab.dataDynamo') : l.engine === 'redis' ? et('lab.dataRedis') : isEsLesson(l) ? et('search.sim') : l.lab!.setup ? et('lab.dataPg') : et('lab.data')),
+      h('p', { class: 'm-0' }, !live ? et('lab.noRunner') : runEngine(l) === 'mongodb' ? et('lab.dataMongo') : runEngine(l) === 'dynamodb' ? et('lab.dataDynamo') : l.engine === 'redis' ? et('lab.dataRedis') : isEsLesson(l) ? et('search.sim') : l.lab!.setup ? et('lab.dataPg') : et('lab.data')),
       // v43 (L726): the PostGIS tarball (~20 MB) is not precached; say so before the first Run
       live && onPg(l.engine) && /\bpostgis\b/i.test(l.lab!.setup ?? '') ? h('p', { class: 'm-0 text-muted', 'data-postgis-note': '' }, et('lab.postgisOnce')) : null,
       // v46 S-13 (L835): the dbt notice again where the Jinja is typed
@@ -737,8 +737,8 @@ function labView(l: EngineLesson, v: Visit): HTMLElement {
             h('h3', { class: 'm-0 text-caption font-bold tracking-wider text-muted uppercase' }, et('lab.step', { i: i + 1, n: steps.length }),
               h('span', { 'data-step-lang': '' }, ` · ${stepLang(l, s)}`),
               i === cur ? h('span', { class: 'ml-2 text-accent-ink' }, `· ${et('cap.current')}`) : null),
-            h('p', { class: 'm-0' }, ...inline(s.task[lang()])), onPg(l.engine) ? pgBar(d, s) : N()?.stepTop(d, s))),
-        ed ? codeBox(`${key}-code`, v.code[i] ?? '', et('lab.code', { i: i + 1 }), onPg(l.engine) && !isEsLesson(l), {
+            h('p', { class: 'm-0' }, ...inline(s.task[lang()])), onPg(runEngine(l)) ? pgBar(d, s) : N()?.stepTop(d, s))),
+        ed ? codeBox(`${key}-code`, v.code[i] ?? '', et('lab.code', { i: i + 1 }), onPg(runEngine(l)) && !isEsLesson(l), {
           change: (x) => { v.code[i] = x; }, run: () => void labAction(l, v, i, false), submit: () => void labAction(l, v, i, true),
         }) : null,
         live && !ed ? h('div', { class: 'flex flex-wrap items-center gap-3' },
@@ -752,7 +752,7 @@ function labView(l: EngineLesson, v: Visit): HTMLElement {
         h('details', {}, h('summary', { class: 'cursor-pointer text-body-sm font-semibold text-accent-ink' }, et('lab.hint')), h('p', { class: 'mt-2 mb-0 text-body-sm' }, ...inline(s.hint[lang()]))),
         h('p', { role: 'status', 'data-ek': `${key}-status`, class: cls.cx('m-0 text-body-sm', msg ? (msg.ok ? 'good' : 'bad') : '') }, ...inline(msg?.text ?? '')),
         s.fact && passed ? h('p', { class: 'm-0 rounded-(--r-inset) bg-good-soft p-3 text-body-sm ring-1 ring-good-line' }, h('b', {}, `${et('lab.fact')}: `), ...inline(s.fact[lang()])) : null,
-        out ? h('div', { class: 'overflow-x-auto', tabindex: '0' }, shown ? d.renderResult(shown, undefined, undefined, onPg(l.engine) ? undefined : et(l.engine === 'mongodb' ? 'res.docs' : l.engine === 'redis' ? 'res.lines' : 'res.items', { n: shown.rows.length }), l.engine === 'stack' ? { empty: false } : undefined) : d.errorView((out as { error: unknown }).error, false)) : null,
+        out ? h('div', { class: 'overflow-x-auto', tabindex: '0' }, shown ? d.renderResult(shown, undefined, undefined, onPg(runEngine(l)) ? undefined : et(runEngine(l) === 'mongodb' ? 'res.docs' : l.engine === 'redis' ? 'res.lines' : 'res.items', { n: shown.rows.length }), l.engine === 'stack' ? { empty: false } : undefined) : d.errorView((out as { error: unknown }).error, false)) : null,
         shown ? R().metaView(d, shown) : null,
         shown ? N()?.stepEnd(d, s, shown, passed, key) : null,
         shown ? R().insideView(d, vizSlot, shown, `${key}-inside`) : null,
@@ -763,7 +763,7 @@ function labView(l: EngineLesson, v: Visit): HTMLElement {
 
 /** eye-v47b B-05 (L1113): the language a step's editor takes, on its card (product names: the same in VI and EN). */
 const stepLang = (l: EngineLesson, s: LabStep): string => (s.lang === 'promql' ? 'PromQL' : isEsLesson(l) ? 'Query DSL' : l.engine === 'redis' ? 'Redis'
-  : l.engine === 'mongodb' ? 'mongosh' : l.engine === 'dynamodb' ? 'JSON / PartiQL' : dbtLab(l) ? 'SQL + Jinja' : 'SQL');
+  : runEngine(l) === 'mongodb' ? 'mongosh' : runEngine(l) === 'dynamodb' ? 'JSON / PartiQL' : dbtLab(l) ? 'SQL + Jinja' : 'SQL');
 
 /** The capstone's finish card (nothing until it is done, or for another kind / a lab with no runner). */
 function capDoneView(l: EngineLesson, v: Visit): HTMLElement | null {

@@ -1,4 +1,4 @@
-import { blocksOf, isEsLesson, onPg, SECTIONS, type EngineId, type EngineLesson, type SectionId } from '../engine/content';
+import { blocksOf, isEsLesson, onPg, runEngine, SECTIONS, type EngineId, type EngineLesson, type SectionId } from '../engine/content';
 import { figureSlot } from '../engine/figureSlot';
 import { DEMO_SECS, demoBlocks, demoSetup, errCode, pairOf, pgDemoOut, pgDemoScript, type DemoBlock, type DemoOut } from '../engine/demo';
 import type { LabEnv, LabOutput, LabRunner } from '../engine/labs';
@@ -68,7 +68,7 @@ async function run(x: FullCtx, bs: DemoBlock[], i: number): Promise<void> {
       r.catch(() => runners.delete(l.engine)); // the next click retries
     }
     const rn = await r;
-    if (onPg(l.engine) && !isEsLesson(l)) { // v47: an Elasticsearch-style lesson runs its blocks one by one
+    if (onPg(runEngine(l)) && !isEsLesson(l)) { // v47: an Elasticsearch-style lesson runs its blocks one by one
       const { steps, span } = pgDemoScript(bs, idx[idx.length - 1]);
       const res = await rn.demo!(setup, steps);
       idx.forEach((j, n) => outs.set(keys[n], pgDemoOut(res, span[j])));
@@ -88,7 +88,7 @@ async function run(x: FullCtx, bs: DemoBlock[], i: number): Promise<void> {
     for (const k of keys) outs.set(k, { error: shown });
   }
   const o = outs.get(keyOf(l, i));
-  if (o && o !== 'busy') d.announce('result' in o ? ft('run.rows', { n: o.result.rows.length, ms: Math.round(o.result.ms ?? 0), u: unitOf(l.engine, o.result.rows.length) }) : bs[i].error && errCode(o.error) === bs[i].error ? ft('run.expected', { code: bs[i].error!, rt: RT[l.engine] }) : '');
+  if (o && o !== 'busy') d.announce('result' in o ? ft('run.rows', { n: o.result.rows.length, ms: Math.round(o.result.ms ?? 0), u: unitOf(runEngine(l), o.result.rows.length) }) : bs[i].error && errCode(o.error) === bs[i].error ? ft('run.expected', { code: bs[i].error!, rt: RT[runEngine(l)] }) : '');
   d.rerender();
 }
 
@@ -103,12 +103,12 @@ function outView(b: DemoBlock, o: DemoOut | 'busy' | undefined): (Node | null)[]
   if ('result' in o) {
     const r = o.result;
     // R2 E07 (L578d): a WRONG block that runs is still the wrong way: no green check, the line says so (every engine)
-    const rows = { n: r.rows.length, ms: Math.round(r.ms ?? 0), u: unitOf(c.l.engine, r.rows.length) };
+    const rows = { n: r.rows.length, ms: Math.round(r.ms ?? 0), u: unitOf(runEngine(c.l), r.rows.length) };
     return [b.error ? line(false, ft('run.unexpected', { code: b.error })) : b.mark === 'wrong' ? line(false, ft('run.rowsWrong', rows)) : line(true, ft('run.rows', rows)),
       h('div', { class: 'overflow-x-auto', tabindex: '0' }, d.renderResult(r, undefined, c.l.engine === 'redis' ? 40 : 5, ft('run.caption', rows), c.l.engine === 'stack' ? { empty: false } : undefined)), c.meta(r)];
   }
   const got = errCode(o.error);
-  return [b.error && got === b.error ? line(true, ft('run.expected', { code: got, rt: RT[c.l.engine] })) : null,
+  return [b.error && got === b.error ? line(true, ft('run.expected', { code: got, rt: RT[runEngine(c.l)] })) : null,
     h('div', { role: b.error && got === b.error ? false : 'status' }, d.errorView(o.error, false))];
 }
 
@@ -149,7 +149,7 @@ export function sections(x: FullCtx, keep: (id: SectionId) => boolean): HTMLElem
     return h('section', { id: `ek-${s.id}`, 'data-sec': s.id, class: 'flex scroll-mt-4 flex-col gap-3', 'aria-labelledby': `ek-${s.id}-h` },
       head(`ek-${s.id}-h`, SEC_ICON[s.id], SECTIONS[s.id][c.lang === 'vi' ? 0 : 1],
         s.id === 'example' && n && c.make ? h('span', { class: 'text-body-sm text-muted tabular-nums' }, ft('run.ran', { k: ran, n })) : null),
-      s.id === 'example' && n && c.make ? h('p', { class: 'm-0 text-body-sm text-muted' }, ft(l.engine === 'redis' ? 'run.noteSim' : 'run.note', { rt: RT[l.engine] })) : null,
+      s.id === 'example' && n && c.make ? h('p', { class: 'm-0 text-body-sm text-muted' }, ft(l.engine === 'redis' ? 'run.noteSim' : 'run.note', { rt: RT[runEngine(l)] })) : null,
       ...blocksOf(s.text[c.lang]).map((b) => b.kind === 'p' ? h('p', { class: 'm-0' }, ...c.inline(b.text, true))
         : b.kind === 'ul' ? h('ul', { class: 'm-0 list-disc space-y-1 pl-5' }, ...b.items.map((t) => h('li', {}, ...c.inline(t, true))))
           // v38 (R2 E10): a marked block that cannot run here (```text) still gets its Sai/Sửa card, without Run

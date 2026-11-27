@@ -1,0 +1,29 @@
+# v48 (L1191): DynamoDB TTL, the items of CQRU1001 against now = 1793404800 (00:00 UTC 31 Oct). Lesson: e-ts-l4-04 (Ý chính).
+# Data = the lab: 2 items expired (30 Oct 00:00, 30 Oct 12:00), still in the table; 3 valid. Step 2: Count 3, ScannedCount 5.
+title: { vi: "Hết hạn chưa chắc đã xóa", en: "Expired is not yet deleted" }
+caption:
+  vi: "Hai item của CQRU1001 đã quá hạn nhưng TTL chưa xóa, nên Query vẫn đọc 5; lọc expires_at > bây giờ còn 3."
+  en: "Two CQRU1001 items are past expiry but TTL has not deleted them, so the Query still reads 5; filtering expires_at > now leaves 3."
+alt:
+  vi: "TTL xóa item hết hạn trong vòng vài ngày, không đúng giây hết hạn, nên item quá hạn vẫn có thể hiện trong kết quả. Bộ lọc theo thời điểm hiện tại bỏ chúng khỏi kết quả, nhưng chúng vẫn được đọc."
+  en: "TTL deletes expired items within a few days, not at the exact second, so an expired item can still show up in results. A filter on the current time drops them from the result, but they are still read."
+nodes:
+  - id: exp
+    shape: grid
+    label: { vi: "đã quá hạn", en: "expired" }
+    sub: { vi: "chờ TTL xóa", en: "waiting for TTL" }
+    cells: [["27/10 00:00", "27/10 12:00"]]
+    colTone: [ghost, ghost]
+  - id: ok
+    shape: grid
+    label: { vi: "còn hạn", en: "still valid" }
+    sub: { vi: "expires_at > bây giờ", en: "expires_at > now" }
+    cells: [["28/10 06:00", "29/10 00:00", "30/10 00:00"]]
+    colTone: [live, live, live]
+  - { id: q, label: Query, sub: { vi: "đọc 5, trả 3", en: "reads 5, returns 3" } }
+rows:
+  - [exp, ok]
+  - [q]
+edges:
+  - { from: exp, to: q, label: { vi: "bị lọc", en: "filtered" } }
+  - { from: ok, to: q }

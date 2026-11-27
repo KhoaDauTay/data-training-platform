@@ -1,0 +1,21 @@
+# v48 (L1191): the L4 capstone's report path on 28 reefer documents (night of 30 Oct, Tien Sa). Lesson: e-ts-l4-05 (Ý chính).
+# Data = the lab: CQRU2001 16 readings (2 marks filled), CQRU2002 12 (6 filled); CQRU2001 warmer than -16 at 19:30 and 19:50.
+title: { vi: "Từ số đo tới cảnh báo", en: "From readings to alert" }
+caption:
+  vi: "28 số đo thành 36 mốc sau khi lấp (8 mốc lấp); chỉ CQRU2001 ấm hơn -16 độ, lần đầu lúc 19:30."
+  en: "28 readings become 36 marks after filling (8 filled); only CQRU2001 is warmer than -16 degrees, first at 19:30."
+alt:
+  vi: "Báo cáo đêm đi qua ba nhánh: trung bình theo giờ trên số đo thật, lấp mốc cho màn hình, và cảnh báo lọc trước khi gom. Số mốc được lấp cho biết phần nào không phải đo thật."
+  en: "The night report goes three ways: hourly averages on real readings, filled marks for the screen, and an alert that filters before grouping. The number of filled marks says which part was not really measured."
+nodes:
+  - { id: raw, shape: doc, label: readings, sub: { vi: "28 tài liệu", en: "28 documents" } }
+  - { id: hour, label: { vi: "theo giờ", en: "hourly" }, sub: "$dateTrunc" }
+  - { id: fill, label: { vi: "36 mốc", en: "36 marks" }, sub: { vi: "8 mốc lấp", en: "8 filled" }, tone: new }
+  - { id: alert, label: CQRU2001, sub: { vi: "> -16 lúc 19:30", en: "> -16 at 19:30" }, tone: warm }
+rows:
+  - [raw]
+  - [hour, fill, alert]
+edges:
+  - { from: raw, to: hour }
+  - { from: raw, to: fill, label: "$densify" }
+  - { from: raw, to: alert, label: "$match" }

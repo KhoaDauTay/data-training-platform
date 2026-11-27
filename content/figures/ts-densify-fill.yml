@@ -1,0 +1,25 @@
+# v48 (L1191): $densify adds the three missing 10-minute marks of CQRU1002, $fill locf fills them. Lesson: e-ts-l4-02 (Ý chính).
+# Data = the lab: CQRU1002 00:00 -20, 00:20 -19.5, 00:30 -19, 01:00 -19.5 (00:10, 00:40, 00:50 missing); step 2's result.
+title: { vi: "Thêm mốc rồi lấp", en: "Add the marks, then fill" }
+caption:
+  vi: "$densify thêm ba tài liệu chỉ có ts; $fill với locf cho chúng số đo gần nhất trước đó: -20, -19 và -19."
+  en: "$densify adds three documents holding only ts; $fill with locf gives them the latest earlier reading: -20, -19 and -19."
+alt:
+  vi: "`$densify` chỉ tạo tài liệu cho mốc thiếu, chưa có số đo; `$fill` mới điền số. Số được điền là giá trị lấp, không phải số đo thật, nên nên đánh dấu chúng."
+  en: "`$densify` only creates documents for the missing marks, with no reading yet; `$fill` is what fills the numbers. A filled number is not a real reading, so mark the filled documents."
+nodes:
+  - id: raw
+    shape: grid
+    label: { vi: "đo được", en: "measured" }
+    cells: [["00:00", "00:10", "00:20", "00:30", "00:40", "00:50", "01:00"], ["-20", "—", "-19.5", "-19", "—", "—", "-19.5"]]
+    colTone: [null, ghost, null, null, ghost, ghost, null]
+  - id: filled
+    shape: grid
+    label: { vi: "sau $fill locf", en: "after $fill locf" }
+    cells: [["00:00", "00:10", "00:20", "00:30", "00:40", "00:50", "01:00"], ["-20", "-20", "-19.5", "-19", "-19", "-19", "-19.5"]]
+    colTone: [null, new, null, null, new, new, null]
+rows:
+  - [raw]
+  - [filled]
+edges:
+  - { from: raw, to: filled, label: "$densify + $fill" }
