@@ -28,7 +28,14 @@ export const LEVELS = ['L1', 'L2', 'L3', 'L4', 'L5'] as const;
 /** A rung of an engine's ladder (the trees, badges and skill map hold only these). */
 export type Rung = (typeof LEVELS)[number];
 /** v43 (L720): `EXT` = the PostgreSQL Extensions shelf (content/engine/postgres/ext/), never in a tree: no badge, no XP. */
-export type Level = Rung | 'EXT';
+/** v48 (L1240): `MAP` = the Database design topic maps shelf (content/engine/design/maps/), same rules as `EXT`. */
+export type Level = Rung | 'EXT' | 'MAP';
+/** A shelf level (never in a tree, no badge, no XP), its folder and route segment, and the one engine it belongs to. */
+export const SHELVES = { EXT: { dir: 'ext', engine: 'postgres' }, MAP: { dir: 'maps', engine: 'design' } } as const;
+export type Shelf = keyof typeof SHELVES;
+export const isShelf = (lv: string | undefined): lv is Shelf => lv === 'EXT' || lv === 'MAP';
+/** A folder or route segment (`ext`, `maps`) → its shelf level. */
+export const shelfOfDir = (dir: string | undefined): Shelf | undefined => (dir === 'ext' ? 'EXT' : dir === 'maps' ? 'MAP' : undefined);
 export const KINDS = ['concept', 'lab', 'predict', 'quiz', 'capstone'] as const;
 export type Kind = (typeof KINDS)[number];
 export const CHECKS = ['rows', 'plan', 'catalog', 'doc'] as const;
@@ -128,7 +135,7 @@ export interface EngineLesson {
 
 /** `e-pg-l1-01`: engine short name, level, the file's NN. */
 export const lessonIdFor = (engine: EngineId, level: Level, nn: string): string => `e-${ENGINE_SHORT[engine]}-${level.toLowerCase()}-${nn}`;
-const PATH_RE = /engine\/(postgres|mongodb|dynamodb|redis|design|stack|olap|search|timeseries|telemetry|graph|stream)\/(L[1-5]|ext)\/(\d{2})-[a-z0-9-]+\.md$/;
+const PATH_RE = /engine\/(postgres|mongodb|dynamodb|redis|design|stack|olap|search|timeseries|telemetry|graph|stream)\/(L[1-5]|ext|maps)\/(\d{2})-[a-z0-9-]+\.md$/;
 const FM_RE = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/;
 const EN_RE = /^# EN[ \t]*$/m;
 
@@ -186,8 +193,8 @@ export function parseEngineLesson(source: string | LessonSource, path: string, y
     return { name: String(m.name), layer: m.layer as ModelSpec['layer'], ...(m.materialized ? { materialized: m.materialized as ModelSpec['materialized'] } : {}) };
   };
 
-  const [engine, level, nn] = [where[1] as EngineId, (where[2] === 'ext' ? 'EXT' : where[2]) as Level, where[3]];
-  if (level === 'EXT' && engine !== 'postgres') fail('ext/ chỉ có ở content/engine/postgres/ext');
+  const [engine, level, nn] = [where[1] as EngineId, (shelfOfDir(where[2]) ?? where[2]) as Level, where[3]];
+  if (isShelf(level) && engine !== SHELVES[level].engine) fail(`${SHELVES[level].dir}/ chỉ có ở content/engine/${SHELVES[level].engine}/${SHELVES[level].dir}`);
   const kind = KINDS.includes(fm.kind as Kind) ? (fm.kind as Kind) : fail(`kind phải là một trong ${KINDS.join(', ')}`);
   const lesson: EngineLesson = {
     id: str('id'),
@@ -364,8 +371,8 @@ export const lessonPassed = (l: EngineLesson, passed: ReadonlySet<string>, grada
 
 /** XP on the first completion only (L220): concept/quiz/predict 5, lab 10 (like a General drill), capstone 20 (like a challenge). */
 export const ENGINE_XP: Record<Kind, number> = { concept: 5, quiz: 5, predict: 5, lab: 10, capstone: 20 };
-/** v43 (L721): the Extensions shelf gives no XP (the user: "full lessons, no XP"). */
-export const engineXp = (l: EngineLesson, done: boolean): number => (done || l.level === 'EXT' ? 0 : ENGINE_XP[l.kind]);
+/** v43 (L721): the Extensions shelf gives no XP (the user: "full lessons, no XP"); v48 (L1241): the topic maps shelf neither. */
+export const engineXp = (l: EngineLesson, done: boolean): number => (done || isShelf(l.level) ? 0 : ENGINE_XP[l.kind]);
 
 export interface Tree { engine: EngineId; levels: { level: Rung; modules: { id: string; name: Bi; lessons: EngineLesson[] }[] }[] }
 /** One engine's lessons by level, then module (modules.yml order, then first appearance), then file order. */

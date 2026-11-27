@@ -1,5 +1,5 @@
 import {
-  blocksOf, docsNoteKey, ENGINES, engineXp, isEsLesson, isRight, onPg, lessonPassed, parseEngineLesson, parseModules, partsOf, progressOf, treeOf,
+  blocksOf, docsNoteKey, ENGINES, engineXp, isEsLesson, isRight, isShelf, onPg, SHELVES, type Shelf, lessonPassed, parseEngineLesson, parseModules, partsOf, progressOf, treeOf,
   type EngineId, type EngineLesson, type Kind, type LabStep, type LessonSource, type Level, type ModuleName, type Rung, type Question, type SectionId, type Tree,
 } from '../engine/content';
 import { gradable, honestOf, honestRow, LAB_RUNNERS, type Honest, type LabEnv, type LabOutput, type LabRunner, type LabVerdict } from '../engine/labs';
@@ -99,7 +99,7 @@ export function initEngine(deps: EngineDeps, src: EngineSources, bp: Record<stri
 /** Full lessons (sections, lab, quiz), parsed from their own chunk on first open; a failed load is retried by Retry. */
 let fullSrc: EngineSources['full'] = {};
 const fulls = new Map<string, EngineLesson | 'loading' | 'failed'>();
-const pathOf = (l: EngineLesson): string | undefined => Object.keys(fullSrc).find((p) => p.includes(`/${l.engine}/${l.level === 'EXT' ? 'ext' : l.level}/${String(l.order).padStart(2, '0')}-`));
+const pathOf = (l: EngineLesson): string | undefined => Object.keys(fullSrc).find((p) => p.includes(`/${l.engine}/${isShelf(l.level) ? SHELVES[l.level].dir : l.level}/${String(l.order).padStart(2, '0')}-`));
 export function fullLesson(l: EngineLesson): EngineLesson | 'loading' | 'failed' {
   const have = fulls.get(l.id);
   if (have) return have;
@@ -114,11 +114,22 @@ const done = (): Set<string> => new Set(d.app.save.completed);
 const lang = (): 'vi' | 'en' => d.getLang();
 const flat = (e: EngineId): EngineLesson[] => trees[e].levels.flatMap((l) => l.modules.flatMap((m) => m.lessons));
 const lessonHash = (l: EngineLesson): string => d.engineHash(l.engine, l.level, l.id);
-const levelName = (lv: Level): string => (lv === 'EXT' ? et('level.EXT') : `${lv} · ${et(`level.${lv}`)}`);
+const levelName = (lv: Level): string => (isShelf(lv) ? et(`level.${lv}`) : `${lv} · ${et(`level.${lv}`)}`);
 const levelOf = (e: EngineId, lv: string | undefined) => trees[e].levels.find((x) => x.level === lv && x.modules.length);
 /** v43 (L720): the PostgreSQL Extensions shelf, in file order (never in a tree: no badge, no level row, no XP). */
 const extLessons = (): EngineLesson[] => lessons.filter((l) => l.level === 'EXT').sort((a, b) => a.order - b.order);
-const moduleName = (e: EngineId, id: string): { vi: string; en: string } => {
+/**
+ * v48 (L1242): the topic maps shelf: the multi-tenant map `e-ds-l4-09` first (it keeps its id, level and XP, L4 counts it),
+ * then the design/maps/ files in file order. The hub row, the sidebar and the shelf page all count k/n from this list.
+ */
+const mapLessons = (): EngineLesson[] => [...lessons.filter((l) => l.id === TOPIC_HUB), ...lessons.filter((l) => l.level === 'MAP').sort((a, b) => a.order - b.order)];
+/** The lessons a shelf lesson walks through (prev/next), in shelf order. */
+const shelfLessons = (s: Shelf): EngineLesson[] => (s === 'EXT' ? extLessons() : mapLessons());
+/** v48 (L1243): the maps' groups, each a question; order = the shelf page's (the multi-tenant map's group first). */
+export const MAP_GROUPS = ['ops', 'concurrent', 'time', 'values', 'model'] as const;
+const mapGroupOf = (l: EngineLesson): string => (l.id === TOPIC_HUB ? 'ops' : l.module);
+const moduleName = (e: EngineId, id: string, lv?: Level): { vi: string; en: string } => {
+  if (lv === 'MAP' && (MAP_GROUPS as readonly string[]).includes(id)) return { vi: ENGINE_DICT.vi[`maps.g.${id}` as EngineKey], en: ENGINE_DICT.en[`maps.g.${id}` as EngineKey] };
   const n = modNames[e]?.find((x) => x.id === id);
   return n ? { vi: n.vi, en: n.en } : { vi: id, en: id };
 };
@@ -145,7 +156,7 @@ export function inline(text: string, marked = false): (Node | string)[] {
  * learner never reads `e-pg-l4-03`. The word before stays prose ("bài Thống kê nhiều cột ↗"); without a title (never for
  * shipped content: tests/engineBpLink.test.ts) the link says "bài liên quan" and swallows that word, so no "bài bài".
  */
-const ID = String.raw`e-(?:(?:pg|mg|dy|rd|ds|st|ol|sr|ts|tm|gr|sm)-(?:l[1-5]|ext)-|bp-[a-z])\d\d`; // v43: + the Extensions shelf (e-pg-ext-NN)
+const ID = String.raw`e-(?:(?:pg|mg|dy|rd|ds|st|ol|sr|ts|tm|gr|sm)-(?:l[1-5]|ext|map)-|bp-[a-z])\d\d`; // v43: + the Extensions shelf (e-pg-ext-NN); v48: + topic maps (e-ds-map-NN)
 const PRE = String.raw`(?:(?<=^|[\s(])(?:bài|thẻ|lab|lesson|card) )?`;
 const CODE = new RegExp(`(${PRE}\x60${ID}\x60|\x60[^\x60\n]+\x60)`);
 const BARE = new RegExp(String.raw`(${PRE}\b${ID}(?![\w-]))`);
@@ -154,9 +165,9 @@ let bpTitles: Record<string, { vi: string; en: string }> = {};
 function idRef(seg: string): (Node | string)[] {
   const word = /^\S+ /.exec(seg)?.[0] ?? '';
   const id = seg.slice(word.length).replace(/`/g, '');
-  const m = /^e-(pg|mg|dy|rd|ds|st|ol|sr|ts|tm|gr|sm)-(l[1-5]|ext)-/.exec(id);
+  const m = /^e-(pg|mg|dy|rd|ds|st|ol|sr|ts|tm|gr|sm)-(l[1-5]|ext|map)-/.exec(id);
   const title = m ? lessons.find((x) => x.id === id)?.title : bpTitles[id];
-  const href = m ? d.engineHash(SHORT[m[1] as keyof typeof SHORT], (m[2] === 'ext' ? 'EXT' : m[2].toUpperCase()) as Level, id) : bpHashOf(id);
+  const href = m ? d.engineHash(SHORT[m[1] as keyof typeof SHORT], m[2].toUpperCase() as Level, id) : bpHashOf(id);
   if (!href) return [seg]; // an e-bp code with no track letter: content tests keep this from shipping
   // v38 R3 (R3-05, L593): a completed lesson or card gets the done tick (with its sr-only word), so the hub's map shows progress
   const a = xref(href, title?.[lang()] ?? et('xref.related'), d.app.save.completed.includes(id));
@@ -224,7 +235,7 @@ export function subOf(): HomeView.PageSub | undefined {
   }
   const lesson = r.lesson ? lessons.find((x) => x.id === r.lesson && x.engine === e) : undefined;
   if (lesson) return { title: lesson.title[lang()], trail: [top, eng, { href: d.engineHash(e, lesson.level), text: levelName(lesson.level) }] };
-  if (e === 'postgres' && r.level === 'EXT') return { title: levelName('EXT'), trail: [top, eng] };
+  if (isShelf(r.level) && SHELVES[r.level].engine === e) return { title: levelName(r.level), trail: [top, eng] };
   const lv = levelOf(e, r.level);
   if (lv) return { title: levelName(lv.level), trail: [top, eng] };
   return { title: nameOf(e), trail: [top] };
@@ -253,8 +264,8 @@ export function enginePage(): HTMLElement {
   const extra = typeof full === 'object' ? chunksFor(full) : undefined;
   const terms = lesson ? termsView() : undefined; // v27: the glossary chunk loads beside the lesson's; a failed one = no term buttons
   const f = extra && extra !== 'ready' ? extra : terms === 'loading' && typeof full === 'object' ? 'loading' : full;
-  const shelf = engine === 'postgres' && r.level === 'EXT';
-  const page = !lesson ? (engine ? (shelf ? extPage() : lv ? levelPage(engine, lv.level) : enginePg(engine)) : overview())
+  const shelf = engine && isShelf(r.level) && SHELVES[r.level].engine === engine ? r.level : undefined;
+  const page = !lesson ? (engine ? (shelf ? shelfPage(shelf) : lv ? levelPage(engine, lv.level) : enginePg(engine)) : overview())
     : f === 'loading' ? loadingLine()
       : f === 'failed' ? failedBox(() => { fulls.delete(lesson.id); if (predMod === 'failed') predMod = undefined; if (capMod === 'failed') capMod = undefined; if (nosqlMod === 'failed') nosqlMod = undefined; if (fullMod === 'failed') fullMod = undefined; if (resMod === 'failed') resMod = undefined; d.rerender(); })
         : lessonPage(f!);
