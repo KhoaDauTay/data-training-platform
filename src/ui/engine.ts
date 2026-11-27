@@ -2,7 +2,9 @@ import { grade } from '../grader';
 import { slowVerdict } from '../planCheck';
 import { getLang, locale, t } from '../i18n';
 import { engineCompareHash, engineCompareOf, engineHash, engineInterviewHash, engineInterviewOf, enginePathHash, enginePathOf, enginePlayOf, engineRouteOf, engineTermsHash, engineTermsOf, hashOf, interviewTabHash, type IvTab } from '../route';
-import { ROUTE_SKILLS } from '../progress';
+import { PARTS, ROUTE_SKILLS } from '../progress';
+import { loadTickets } from '../content';
+import { knownSkills } from '../home';
 import { actions, app, persist } from '../state';
 import { BTN_GHOST, BTN_GO, BTN_SECONDARY, CARD, cx, DONE_PILL, isDark, PILL } from '../theme';
 import { optionOrder } from '../tickets';
@@ -48,6 +50,12 @@ const baseDeps = (): EngineDeps => ({
   cheer: { mascot, react, badge: () => illustration('aspect-square', (il) => il.doneBadge()) },
 });
 
+/** eye-v47b B-13 (L1131): the SQL route Parts whose every skill is learned, by the learning path's rule (General follows Logistics). */
+function sqlDone(): ReadonlySet<number> {
+  const known = knownSkills(app.save, loadTickets('logistics'), ROUTE_SKILLS.map((x) => x.id));
+  return new Set(PARTS.filter((p) => p.skills.every((s) => known.has(s))).map((p) => p.n));
+}
+
 function engineChunk(): Promise<EngineView> {
   pending ??= Promise.all([import('./engineView'), import('../engineSources'), import('./engineBest'), import('../bestSources'), import('../bestMongoIndex'), import('../bestDynamoIndex'), import('./engineHub'), import('./engineTrack')])
     .then(([m, src, b, bs, bm, bd, hub, track]) => {
@@ -55,6 +63,7 @@ function engineChunk(): Promise<EngineView> {
         ...baseDeps(),
         best: (e) => b.entry(e),
         track, skill: (id) => ROUTE_SKILLS.find((x) => x.id === id)?.label, // v47 S2 (L940)
+        sqlDone, // eye-v47b B-13 (L1131)
       };
       const bpMeta = { ...bs.meta, ...bm.meta, ...bd.meta };
       m.initEngine(deps, src, bpMeta, hub); // v44 (L790): card titles for the id links; v47 S1 (L902): the landing and sidebar chunk

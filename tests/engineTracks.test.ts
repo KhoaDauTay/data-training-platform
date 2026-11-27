@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import * as src from '../src/engineSources';
 import { ENGINES, parseEngineLesson, treeOf, type EngineLesson } from '../src/engine/content';
-import { afterLesson, DIVE, levelNext, minutesOf, PRACTICE, PREREQS, relatedLesson, termLesson } from '../src/engine/tracks';
+import { afterLesson, DIVE, firstTodo, levelNext, minutesOf, PRACTICE, PREREQS, relatedLesson, termLesson } from '../src/engine/tracks';
 import { parseGlossary, aliasesOf } from '../src/engine/glossary';
 import { ROUTE_SKILLS, PARTS } from '../src/progress';
 import { engineRouteOf, engineHash } from '../src/route';
@@ -23,6 +23,11 @@ describe('bảng khóa học (I4)', () => {
   it('tổng thời gian = tổng minutes', () => {
     expect(minutesOf(flat('postgres'))).toBe(flat('postgres').reduce((a, l) => a + l.minutes, 0));
     expect(minutesOf(flat('postgres'))).toBeGreaterThan(60);
+  });
+  it('B-13 (L1131): chip SQL Phần a–b trỏ Phần đầu chưa xong; xong cả dải thì undefined (✓)', () => {
+    expect(firstTodo([1, 10], new Set())).toBe(1);
+    expect(firstTodo([1, 10], new Set([1, 2, 3, 5]))).toBe(4);
+    expect(firstTodo([1, 4], new Set([1, 2, 3, 4, 7]))).toBeUndefined();
   });
 });
 

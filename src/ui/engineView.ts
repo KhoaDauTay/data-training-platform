@@ -62,6 +62,8 @@ export interface EngineDeps {
   /** v47 S2 (L940): the lazy engineTrack chunk (track facts, level chooser, "next" buttons, cross-links) and route skill labels. */
   track?: typeof import('./engineTrack');
   skill?: (id: string) => { vi: string; en: string } | undefined;
+  /** eye-v47b B-13 (L1131): the SQL route Parts whose every skill is learned (main's knownSkills), for the prerequisite chips. */
+  sqlDone?: () => ReadonlySet<number>;
 }
 /** src/engineSources.ts: the lesson index (list fields only), one lazy chunk per lesson, and every engine's modules.yml. */
 export interface EngineSources { meta: Record<string, LessonSource>; full: Record<string, () => Promise<LessonSource>>; modules: Record<string, unknown> }

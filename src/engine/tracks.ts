@@ -24,6 +24,10 @@ export const PREREQS: Partial<Record<EngineId, Prereq[]>> = {
   graph: [{ sql: [1, 7] }], // v47 (L1080): joins, self-join, CTEs
 };
 
+/** eye-v47b B-13 (L1131): the first SQL Part of a..b not in `done` (the chip's target); undefined = the whole range is done. */
+export const firstTodo = ([a, b]: readonly [number, number], done: ReadonlySet<number>): number | undefined =>
+  Array.from({ length: b - a + 1 }, (_, i) => a + i).find((n) => !done.has(n));
+
 /** Total minutes of a list of lessons (track card: "≈ N h"). */
 export const minutesOf = (ls: readonly EngineLesson[]): number => ls.reduce((a, x) => a + x.minutes, 0);
 

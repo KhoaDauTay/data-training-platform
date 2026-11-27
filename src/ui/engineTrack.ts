@@ -1,5 +1,5 @@
 import type { EngineId, EngineLesson, Level } from '../engine/content';
-import { afterLesson, DIVE, levelNext, minutesOf, PRACTICE, PREREQS, relatedLesson, termLesson } from '../engine/tracks';
+import { afterLesson, DIVE, firstTodo, levelNext, minutesOf, PRACTICE, PREREQS, relatedLesson, termLesson } from '../engine/tracks';
 import { TRACK_DICT, type TrackKey } from '../i18n/engineTrack';
 import type { EngineDeps } from './engineView';
 import type { HubCtx } from './engineHub';
@@ -32,7 +32,9 @@ export function facts(c: HubCtx, e: EngineId, above = false): HTMLElement {
   const ok = c.done();
   const all = c.flat(e);
   const pre = PREREQS[e];
-  const links = (pre ?? []).map((p) => ('sql' in p ? chip(c, `#/learn/sql/${p.sql[0]}`, tr(c, 'pre.sql', { a: p.sql[0], b: p.sql[1] }), false, above)
+  const sql = c.d.sqlDone?.() ?? new Set<number>();
+  // eye-v47b B-13 (L1131): "SQL Phần a–b" opens the first Part of the range not finished yet, with ✓ once the whole range is
+  const links = (pre ?? []).map((p) => ('sql' in p ? ((at) => chip(c, `#/learn/sql/${at ?? p.sql[0]}`, tr(c, 'pre.sql', { a: p.sql[0], b: p.sql[1] }), at === undefined, above))(firstTodo(p.sql, sql))
     : chip(c, c.d.engineHash(p.engine, p.to), `${c.nameOf(p.engine)} ${p.to}`, levelDone(c, p.engine, p.to, ok), above)));
   return c.d.h('div', { class: 'flex flex-col gap-1', 'data-track-facts': e },
     `for.${e}` in TRACK_DICT.vi ? c.d.h('p', { class: 'm-0 text-body-sm' }, c.d.h('span', { class: 'font-semibold' }, `${tr(c, 'for')}: `),
