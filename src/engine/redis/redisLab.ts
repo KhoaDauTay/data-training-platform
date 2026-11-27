@@ -20,6 +20,7 @@ const TEXT = {
     otherError: 'Redis báo lỗi `{got}`, còn bước này muốn lỗi `{c}`.',
     errorLast: 'Dòng cuối báo lỗi: {got}',
     state: 'Câu trả lời đúng, nhưng dữ liệu sau các lệnh khác lời giải ở khóa `{key}`.',
+    heard: 'Câu trả lời đúng, nhưng tin nhắn mà các client đăng ký nhận được khác lời giải.',
   },
   en: {
     empty: 'There is no command to grade yet.',
@@ -30,18 +31,25 @@ const TEXT = {
     otherError: 'Redis answered with the error `{got}`, but this step wants `{c}`.',
     errorLast: 'The last line failed: {got}',
     state: 'The reply is right, but after your commands the data differs from the solution at key `{key}`.',
+    heard: 'The reply is right, but the messages the subscribed clients received differ from the solution.',
   },
 };
 const fill = (s: string, p: Record<string, string | number>): string => s.replace(/\{(\w+)\}/g, (_, k: string) => String(p[k] ?? ''));
 
-export interface Line { cmd: string; reply: Reply; client: number }
-/** One script on `db`: replies in order. `directives` = read `@advance`/`@client` (setup, Solutions, examples). */
+/** `push` = a message PUBLISH delivered to a subscribed client (printed as that client's line, never graded as the last reply). */
+export interface Line { cmd: string; reply: Reply; client: number; push?: true }
+/**
+ * One script on `db`: replies in order. `directives` = read `@advance`/`@client`/`@cluster` (setup, Solutions, examples).
+ * v48 (L1172): `@cluster` makes the server a cluster node owning every slot (CLUSTER KEYSLOT, CROSSSLOT); after each line, the
+ * messages it delivered follow as push lines of the receiving client.
+ */
 export function runScript(db: RedisSim, text: string, directives = true): Line[] {
   const out: Line[] = [];
   let client = 0;
   for (const raw of text.replace(/\r\n/g, '\n').split('\n')) {
     const line = raw.trim();
     if (!line || line.startsWith('#')) continue;
+    if (directives && line === '@cluster') { db.cluster = true; continue; }
     const d = directives ? /^@(advance|client)\s+(\d+)$/.exec(line) : null;
     if (d) {
       if (d[1] === 'advance') db.advance(Number(d[2]));
@@ -49,9 +57,12 @@ export function runScript(db: RedisSim, text: string, directives = true): Line[]
       continue;
     }
     out.push({ cmd: line, reply: db.exec(line, client), client });
+    for (const [c, reply] of db.pushes()) out.push({ cmd: '', reply, client: c, push: true });
   }
   return out;
 }
+const said = (lines: Line[]): Line[] => lines.filter((l) => !l.push);
+const heard = (lines: Line[]): string => lines.filter((l) => l.push).map((l) => `${l.client}:${format(l.reply)}`).join('|');
 
 /** The keyspace a step starts from: setup + the Solutions of the steps before `step`. */
 export function freshFor(lab: Pick<Lab, 'setup' | 'steps'>, step = 0): RedisSim {
@@ -62,8 +73,9 @@ export function freshFor(lab: Pick<Lab, 'setup' | 'steps'>, step = 0): RedisSim 
 }
 
 /** Commands whose array reply has no defined order in Redis (hash/set iteration order): graded as a multiset. */
-const UNORDERED = new Set(['keys', 'smembers', 'sinter', 'sunion', 'sdiff', 'hkeys', 'hvals', 'hgetall', 'scan']);
+const UNORDERED = new Set(['keys', 'smembers', 'sinter', 'sunion', 'sdiff', 'hkeys', 'hvals', 'hgetall', 'scan', 'config', 'pubsub']);
 const nameOf = (cmd: string): string => (parseLine(cmd)?.[0] ?? '').toLowerCase();
+const PAIRS = new Set(['hgetall', 'config']);
 /** A reply as a comparable string; `free` = array elements as a multiset (HGETALL as field/value pairs). */
 function key(r: Reply, free = false, pairs = false): string {
   if (r.t !== 'arr' || !free) return format(r);
@@ -73,7 +85,7 @@ function key(r: Reply, free = false, pairs = false): string {
 /** `like` = the Solution's line: its command decides the order rule, so both sides are compared the same way. */
 const replyKey = (l: Line, ordered: boolean, like: Line = l): string => {
   const n = nameOf(like.cmd);
-  return key(l.reply, !ordered && UNORDERED.has(n), n === 'hgetall');
+  return key(l.reply, !ordered && UNORDERED.has(n), PAIRS.has(n));
 };
 
 /** The output table: one row per printed line (redis-cli text), the command beside its first line. */
@@ -95,7 +107,7 @@ export function redisRunner(env: { lang(): 'vi' | 'en' }): LabRunner {
     // `step` undefined = a lesson example (directives allowed, fresh setup); a lab editor passes its step index.
     run: async (lab, code, step) => {
       const lines = runScript(freshFor(lab, step ?? 0), code, step === undefined);
-      const last = lines.at(-1);
+      const last = said(lines).at(-1);
       if (last && last.reply.t === 'err') {
         // redis-cli keeps going after an error; the page shows a failed last line as an error (the expected-error examples need its code)
         throw Object.assign(new Error(lines.map((l) => `> ${l.cmd}\n${format(l.reply)}`).join('\n')), { code: codeOf(last.reply) ?? 'ERR' });
@@ -107,7 +119,7 @@ export function redisRunner(env: { lang(): 'vi' | 'en' }): LabRunner {
       const i = Math.max(0, lab.steps.indexOf(step));
       const mine = freshFor(lab, i);
       const got = runScript(mine, code, false);
-      const last = got.at(-1);
+      const last = said(got).at(-1);
       if (!last) return { ok: false, reason: 'wrong', message: t().empty };
       if (step.error) {
         const c = codeOf(last.reply);
@@ -115,11 +127,14 @@ export function redisRunner(env: { lang(): 'vi' | 'en' }): LabRunner {
         return c === step.error ? { ok: true } : { ok: false, reason: 'wrong', message: fill(t().otherError, { got: c, c: step.error }) };
       }
       const ref = freshFor(lab, i);
-      const want = runScript(ref, step.solution).at(-1)!;
+      const wantLines = runScript(ref, step.solution);
+      const want = said(wantLines).at(-1)!;
       if (replyKey(last, step.ordered, want) !== replyKey(want, step.ordered)) {
         const msg = last.reply.t === 'err' ? fill(t().errorLast, { got: format(last.reply) }) : fill(t().reply, { got: format(last.reply).split('\n')[0] });
         return { ok: false, reason: 'wrong', message: msg };
       }
+      // v48 (L1172): the messages subscribers received must be the Solution's too (same channel, same text, same receivers)
+      if (heard(got) !== heard(wantLines)) return { ok: false, reason: 'wrong', message: t().heard };
       const adv = step.expect?.advance ?? 0;
       if (adv) { mine.advance(adv); ref.advance(adv); }
       // L953b: the keyspace must end like the Solution's (type, value, time to live), so a write whose reply happens to match
@@ -128,7 +143,7 @@ export function redisRunner(env: { lang(): 'vi' | 'en' }): LabRunner {
       const diff = [...new Set([...Object.keys(ma), ...Object.keys(mb)])].sort().find((k) => JSON.stringify(ma[k]) !== JSON.stringify(mb[k]));
       if (diff !== undefined) return { ok: false, reason: 'wrong', message: fill(t().state, { key: diff }) };
       if (step.after) {
-        const a = runScript(mine, step.after, false), b = runScript(ref, step.after, false);
+        const a = said(runScript(mine, step.after, false)), b = said(runScript(ref, step.after, false));
         const bad = a.findIndex((x, k) => replyKey(x, step.ordered, b[k]) !== replyKey(b[k], step.ordered));
         if (bad >= 0) return { ok: false, reason: 'wrong', message: fill(t().after, { after: a[bad].cmd, got: format(a[bad].reply).split('\n')[0] }) };
       }

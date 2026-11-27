@@ -100,7 +100,7 @@ Kho Redis của Chợ Lồng Đèn đã có chuỗi, hash, list, set và sorted 
 
 **Mỗi khóa một kiểu.** `TYPE key` trả `string`, `hash`, `list`, `set`, `zset`, hoặc `none` khi không có khóa. Một khóa chỉ giữ một kiểu, nên lệnh của kiểu khác bị từ chối với `WRONGTYPE`. Kiểu được quyết định bởi lệnh đầu tiên tạo ra khóa.
 
-**Tìm khóa: SCAN thay KEYS.** `KEYS cache:*` trả đủ mọi khóa khớp mẫu, nhưng nó duyệt cả không gian khóa trong một lệnh, và trong lúc đó mọi khách khác phải chờ. `SCAN 0 MATCH cache:*` trả một con trỏ và một đợt khóa; gọi tiếp với con trỏ vừa nhận cho tới khi con trỏ về `0`. Trình mô phỏng trả hết trong một đợt với con trỏ `0`, nhưng cách gọi giống Redis thật.
+**Tìm khóa: SCAN thay KEYS.** `KEYS cache:*` trả đủ mọi khóa khớp mẫu, nhưng nó duyệt cả không gian khóa trong một lệnh, và trong lúc đó mọi khách khác phải chờ. `SCAN 0 MATCH cache:*` trả một con trỏ và một đợt khóa; gọi tiếp với con trỏ vừa nhận cho tới khi con trỏ về `0`. Mỗi lần gọi, trình mô phỏng xét khoảng 10 khóa (mặc định `COUNT 10`) như Redis; số con trỏ của nó khác số của Redis thật, nên chỉ dùng lại đúng con trỏ vừa nhận.
 
 **Đếm và xóa.** `EXISTS a b` trả số khóa có (một khóa ghi hai lần được đếm hai lần), `DEL a b` xóa nhiều khóa và trả số đã xóa, `DBSIZE` đếm mọi khóa mà không phải liệt kê.
 
@@ -194,7 +194,7 @@ Lantern Market's Redis now holds strings, hashes, lists, sets and sorted sets si
 
 **One type per key.** `TYPE key` returns `string`, `hash`, `list`, `set`, `zset`, or `none` when there is no key. A key holds one type, so a command of another type is refused with `WRONGTYPE`. The type is decided by the first command that creates the key.
 
-**Finding keys: SCAN, not KEYS.** `KEYS cache:*` returns every matching key, but it walks the whole keyspace in one command, and meanwhile every other client waits. `SCAN 0 MATCH cache:*` returns a cursor and a batch of keys; call it again with the cursor you got until the cursor comes back as `0`. The simulator returns everything in one batch with cursor `0`, but the call is the same as on real Redis.
+**Finding keys: SCAN, not KEYS.** `KEYS cache:*` returns every matching key, but it walks the whole keyspace in one command, and meanwhile every other client waits. `SCAN 0 MATCH cache:*` returns a cursor and a batch of keys; call it again with the cursor you got until the cursor comes back as `0`. On each call the simulator looks at about 10 keys (the default `COUNT 10`), like Redis; its cursor numbers differ from a real server's, so only ever pass back the cursor you just got.
 
 **Counting and deleting.** `EXISTS a b` returns how many of the keys exist (a key named twice counts twice), `DEL a b` deletes several keys and returns how many it deleted, `DBSIZE` counts every key without listing them.
 
