@@ -110,9 +110,9 @@ describe('analyzer, mapping, Query DSL', () => {
     expect(r.rows).toEqual([['by', 'tea', 2, 15], ['by', 'lamp', 1, 30], ['by', 'silk', 1, 5]]);
     expect(err(() => q(i, { aggs: { by: { terms: { field: 'c' } } } }))).toBe('illegal_argument_exception');
   });
-  it('sort theo trường: _score là null; sort trên text bị từ chối', () => {
+  it('sort theo trường: _score là null, cột sort = giá trị sắp của hit; sort trên text bị từ chối', () => {
     const i = ix([{ n: 'a', p: 30 }, { n: 'b', p: 10 }]);
-    expect(q(i, { sort: [{ p: 'asc' }] }).rows).toEqual([['2', null, 'b', 10], ['1', null, 'a', 30]]);
+    expect(q(i, { sort: [{ p: 'asc' }] }).rows).toEqual([['2', null, 'b', 10, '10'], ['1', null, 'a', 30, '30']]); // v48: + the hit's sort values
     expect(err(() => q(i, { sort: ['n'] }))).toBe('illegal_argument_exception');
   });
 });

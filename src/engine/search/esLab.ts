@@ -19,7 +19,8 @@ const TEXT = {
     order: 'Đúng các dòng, nhưng thứ tự chưa đúng.',
     rows: 'Request chạy được nhưng kết quả khác lời giải ở dòng `{row}`.',
     error: 'Request bị từ chối: {code}: {msg}',
-    kinds: { hits: 'danh sách tài liệu (hits)', aggs: 'bảng nhóm (aggregation)', tokens: 'danh sách token (_analyze)', mapping: 'mapping (_mapping)' },
+    extra: 'Đúng các tài liệu và điểm, nhưng cột {col} khác lời giải (ví dụ {id}: {got} thay vì {want}).',
+    kinds: { hits: 'danh sách tài liệu (hits)', aggs: 'bảng nhóm (aggregation)', tokens: 'danh sách token (_analyze)', mapping: 'mapping (_mapping)', count: 'một con số (_count)', segments: 'danh sách segment (_segments)', ack: 'một xác nhận (_refresh, _forcemerge)' },
   },
   en: {
     empty: 'There is no request to grade yet.',
@@ -30,7 +31,8 @@ const TEXT = {
     order: 'The right rows, but not in the right order.',
     rows: 'The request runs but its result differs from the solution at row `{row}`.',
     error: 'The request was refused: {code}: {msg}',
-    kinds: { hits: 'a list of documents (hits)', aggs: 'a bucket table (aggregation)', tokens: 'a token list (_analyze)', mapping: 'a mapping (_mapping)' },
+    extra: 'The right documents and scores, but the {col} column differs from the solution (for example {id}: {got} instead of {want}).',
+    kinds: { hits: 'a list of documents (hits)', aggs: 'a bucket table (aggregation)', tokens: 'a token list (_analyze)', mapping: 'a mapping (_mapping)', count: 'a number (_count)', segments: 'a segment list (_segments)', ack: 'an acknowledgement (_refresh, _forcemerge)' },
   },
 };
 const fill = (s: string, p: Record<string, string | number>): string => s.replace(/\{(\w+)\}/g, (_, k: string) => String(p[k] ?? ''));
@@ -48,12 +50,16 @@ export const toOutput = (r: EsResult, ms = 0): LabOutput => ({ columns: r.column
 /** "Tables used" asks the lab for information_schema (engineView TABLES_SQL); here the answer is the index and its fields. */
 const TABLES = /^SELECT c\.table_name::text AS t\b/;
 
+const extraCols = (r: EsResult): string[] => r.columns.filter((c) => c === 'sort' || c.startsWith('highlight.'));
 /** Grades `mine` against the Solution's result `want`: undefined = the same. */
 export function compare(want: EsResult, mine: EsResult, ordered: boolean, lang: 'vi' | 'en'): string | undefined {
   const t = TEXT[lang];
   if (want.kind !== mine.kind) return fill(t.kind, { want: t.kinds[want.kind], got: t.kinds[mine.kind] });
   const approx = want.approx || mine.approx;
-  const keyOf = (r: EsResult, i: number): string => (approx && r.kind === 'hits' ? String(r.rows[i][0]) : r.keys[i]);
+  // hits: `_id|_score` plus only the extra columns the Solution asked for (a player's extra highlight or sort is not wrong)
+  const extras = want.kind === 'hits' ? extraCols(want) : [];
+  const keyOf = (r: EsResult, i: number): string => (r.kind !== 'hits' ? r.keys[i]
+    : [approx ? String(r.rows[i][0]) : r.keys[i].split('|').slice(0, 2).join('|'), ...extras.map((c) => String(r.rows[i][r.columns.indexOf(c)] ?? '—'))].join('|'));
   const a = want.rows.map((_, i) => keyOf(want, i)), b = mine.rows.map((_, i) => keyOf(mine, i));
   if (a.length !== b.length) return fill(t.count, { got: b.length, want: a.length });
   if (a.join('\n') === b.join('\n')) return undefined;
@@ -64,6 +70,13 @@ export function compare(want: EsResult, mine: EsResult, ordered: boolean, lang: 
     const wi = ids(want), mi = ids(mine);
     const stray = mi.find((x, i) => (ordered ? wi[i] !== x : !wi.includes(x)));
     if (stray === undefined || [...wi].sort().join() === [...mi].sort().join()) {
+      // v48 (L1212): the same documents and scores, so the difference is in an extra column (highlight.*, sort)
+      for (const c of extraCols(want)) {
+        const j = want.columns.indexOf(c), jm = mine.columns.indexOf(c);
+        const cell = (r: EsResult, k: number, id: unknown): string => (k < 0 ? '—' : String(r.rows.find((x) => x[0] === id)?.[k] ?? null));
+        const bad = want.rows.find((r) => cell(mine, jm, r[0]) !== cell(want, j, r[0]));
+        if (bad && want.rows.every((r) => cell(mine, 1, r[0]) === cell(want, 1, r[0]))) return fill(t.extra, { col: c, id: String(bad[0]), got: cell(mine, jm, bad[0]), want: cell(want, j, bad[0]) });
+      }
       const id = wi.find((x) => want.rows.find((r) => r[0] === x)?.[1] !== mine.rows.find((r) => r[0] === x)?.[1]) ?? wi[0];
       return fill(t.scores, { id, got: String(mine.rows.find((r) => r[0] === id)?.[1]), want: String(want.rows.find((r) => r[0] === id)?.[1]) });
     }
