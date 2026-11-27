@@ -33,7 +33,7 @@ const best = Object.entries(import.meta.glob<string>('../content/engine/best/*/*
   const m = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/.exec(t.replace(/\r\n/g, '\n'))!;
   return parseBestCard({ fm: parse(m[1]), body: m[2] }, p) as BpCard;
 });
-const BP_SHORT = { sql: 'sql', postgres: 'pg', mongodb: 'mg', dynamodb: 'dy' } as const;
+const BP_SHORT = { sql: 'sql', postgres: 'pg', mongodb: 'mg', dynamodb: 'dy', redis: 'rd', timeseries: 'ts', olap: 'ol', search: 'sr', telemetry: 'tm', stream: 'sm', graph: 'gr' } as const; // v48 BP-C (L1150)
 /** Every figure reference in content: lesson id, its engine short name, the reference. */
 const refs: { id: string; eng: string; f: FigRef }[] = [
   ...engine.flatMap((l) => (l.figures ?? []).map((f) => ({ id: l.id, eng: SHORT[l.engine], f }))),

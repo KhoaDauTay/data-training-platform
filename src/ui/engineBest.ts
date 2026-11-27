@@ -1,6 +1,6 @@
 import { BP_TIPS_KEY, parseBpTips, type BpPref } from '../bpPref';
 import {
-  bestHash, bestRouteOf, BP_SECTIONS, byName, explainOf, judge, needsPlan, parseBestCard, parseHabits, parseTracks, planScan, sideOf, sideScript,
+  bestHash, bestRouteOf, BP_SECTIONS, byName, explainOf, judge, needsPlan, parseBestCard, parseHabits, parseTracks, planScan, promqlSideOf, redisSideOf, sideOf, sideScript,
   type BpCard, type BpMeta, type CardSource, type Habits, type Pair, type Side, type Track, type TrackId, type Verdict,
 } from '../engine/best';
 import type { Question } from '../engine/content';
@@ -97,7 +97,7 @@ function prose(text: string): HTMLElement {
 }
 const section = (id: keyof typeof BP_SECTIONS, c: BpCard): string | undefined => c.sections.find((s) => s.id === id)?.text[lang()];
 /** v44 B4 (P1, L812): the card's figures for section `at` (figureSlot, the same lazy engineFigure chunk as Engine lessons). */
-const FIG_TRACK: Record<TrackId, string> = { sql: 'sql', postgres: 'pg', mongodb: 'mg', dynamodb: 'dy' };
+const FIG_TRACK: Record<TrackId, string> = { sql: 'sql', postgres: 'pg', mongodb: 'mg', dynamodb: 'dy', redis: 'rd', timeseries: 'ts', olap: 'ol', search: 'sr', telemetry: 'tm', stream: 'sm', graph: 'gr' };
 const figs = (c: BpCard, at: keyof typeof BP_SECTIONS): HTMLElement[] =>
   (c.figures ?? []).filter((f) => f.at === at).map((f) => figureSlot(`${c.id}|${f.name}|${at}`, f, d.viz, FIG_TRACK[c.track]));
 const pill = (cls: string, ...kids: (Node | string | null)[]): HTMLElement => d.h('span', { class: d.cls.cx(d.cls.PILL, cls) }, ...kids);
@@ -354,13 +354,45 @@ async function dynamoSide(p: Pair, code: string): Promise<Side> {
     return failSide(e);
   }
 }
+/** v48 (L1151): a `redis` side runs on BoonData's interpreter (redisLab chunk): fresh keyspace + `setup`, the last line's reply. */
+async function redisSide(p: Pair, code: string): Promise<Side> {
+  try {
+    const [r, i] = await Promise.all([import('../engine/redis/redisLab'), import('../engine/redis/interpreter')]);
+    return redisSideOf(r.runScript(r.freshFor({ setup: p.setup, steps: [] }), code).at(-1), i.format);
+  } catch (e) {
+    return failSide(e);
+  }
+}
+/** v48 (L1151): an `es` side runs on BoonData's Elasticsearch-style interpreter (esLab chunk) over the card's JSON index. */
+async function esSide(p: Pair, code: string): Promise<Side> {
+  try {
+    const out = await (await import('../engine/search/esLab')).esRunner(d.lab).run({ setup: p.setup, steps: [] }, code.trim());
+    return { columns: out.columns, rows: out.rows };
+  } catch (e) {
+    return failSide(e);
+  }
+}
+/** v48 (L1151): a `promql` side: the card's SQL builds `samples` on a fresh database (the lab worker), then the PromQL simulation reads it. */
+async function promSide(p: Pair, code: string): Promise<Side> {
+  try {
+    const [m, pq] = await Promise.all([import('../engine/telemetry/promqlRunner'), import('../engine/telemetry/promql')]);
+    const r = await (await lab()).run({ setup: p.setup, steps: [m.SAMPLES_SQL], timeoutMs: 20_000 });
+    const err = r.setupError ?? r.steps[0]?.error;
+    return err ? failSide(err) : promqlSideOf(r.steps[0]?.rows ?? [], code, pq);
+  } catch (e) {
+    return failSide(e);
+  }
+}
+const SIDES: Partial<Record<Pair['runtime'], (p: Pair, code: string) => Promise<Side>>> = { lab: labSide, mingo: mingoSide, dynoxide: dynamoSide, redis: redisSide, es: esSide, promql: promSide };
+const SIM = new Set<Pair['runtime']>(['redis', 'es', 'promql']);
+const RUN_KEY: Partial<Record<Pair['runtime'], BestKey>> = { lab: 'run.lab', mingo: 'run.mingo', dynoxide: 'run.dynoxide', redis: 'run.redis', es: 'run.es', promql: 'run.promql' };
 async function runBoth(c: BpCard): Promise<void> {
   const v = visitOf(c.id);
   if (v.run === 'busy') return;
   v.run = 'busy';
   d.rerender();
   try {
-    const side = c.pair.runtime === 'lab' ? labSide : c.pair.runtime === 'mingo' ? mingoSide : c.pair.runtime === 'dynoxide' ? dynamoSide : engineSide;
+    const side = SIDES[c.pair.runtime] ?? engineSide;
     const bad = await side(c.pair, c.pair.bad); // one after the other, in the existing queue (§3.2)
     const good = await side(c.pair, c.pair.good);
     v.run = { bad, good, v: judge(c.pair, bad, good) };
@@ -381,6 +413,7 @@ function conclusion(c: BpCard, bad: Side, good: Side, v: Verdict): string {
     case 'plan': return bt('v.plan', { table: c.pair.expect?.table ?? '', bad: String(v.bad), good: String(v.good) });
     case 'cost': return bt('v.cost', { bad: num(v.bad), good: num(v.good) });
     case 'size': return bt('v.size', { bad: num(v.bad), good: num(v.good) });
+    case 'count': return bt('v.count', { bad: num(v.bad), good: num(v.good) });
     case 'cap': return bt('v.cap', { bad: num(v.bad), good: num(v.good), unit: c.pair.expect?.compare === 'wcu' ? 'WCU' : 'RCU' });
     case 'error': return bt(v.side === 'bad' ? 'v.errorBad' : 'v.errorGood', { code: v.code ?? '' });
     default: return bt('v.runs');
@@ -443,7 +476,7 @@ function cardPage(c: BpCard): HTMLElement {
       pill('bg-code text-ink', c.level), h('span', { class: 'font-bold tabular-nums' }, c.code.toUpperCase()),
       h('a', { href: rt.hash(c.track), class: cls.cx(cls.PILL, 'min-h-6 bg-code text-ink no-underline hover:bg-accent-soft') }, bt(`area.${c.module}` as BestKey)), // ≥ 24 px target (ux-audit)
       p.runtime === 'none' ? pill('bg-info-soft text-ink', d.icon('docsOnly', 'size-4'), bt('honest.none', { date: c.verified.date }))
-        : pill('bg-good-soft text-ink', h('span', { class: 'inline-block size-2 rounded-full bg-current', 'aria-hidden': 'true' }), bt('honest.run', { version: c.verified.version })),
+        : pill('bg-good-soft text-ink', h('span', { class: 'inline-block size-2 rounded-full bg-current', 'aria-hidden': 'true' }), bt(SIM.has(p.runtime) ? 'honest.sim' : 'honest.run', { version: c.verified.version })),
       c.lint ? h('button', {
         type: 'button', 'aria-pressed': muted ? 'false' : 'true', 'data-ek': 'bp-rule',
         class: cls.cx(cls.PILL, 'min-h-6 border-0', muted ? 'bg-code text-muted' : 'bg-sun text-sun-ink'),
@@ -462,7 +495,7 @@ function cardPage(c: BpCard): HTMLElement {
         : h('div', { class: 'flex flex-wrap items-center gap-3' },
           h('button', { type: 'button', class: cls.cx(cls.BTN_SECONDARY, 'inline-flex items-center gap-2 px-5 py-2'), 'data-ek': 'bp-run', disabled: v.run === 'busy', onclick: () => void runBoth(c) },
             v.run === 'busy' ? d.loader() : d.icon('kindLab', 'size-4'), bt(v.run === 'busy' ? 'running' : 'runBoth')),
-          h('span', { class: 'text-caption text-muted' }, bt(p.runtime === 'lab' ? 'run.lab' : p.runtime === 'mingo' ? 'run.mingo' : p.runtime === 'dynoxide' ? 'run.dynoxide' : 'run.engine'), v.run === 'busy' ? ` · ${bt('run.first')}` : '')),
+          h('span', { class: 'text-caption text-muted' }, bt(RUN_KEY[p.runtime] ?? 'run.engine'), v.run === 'busy' ? ` · ${bt('run.first')}` : '')),
       h('p', {
         role: 'status', 'data-verdict': res ? (res.v.ok ? res.v.kind : 'odd') : false,
         class: cls.cx('m-0 rounded-(--r-inset) text-body-sm text-ink', res && 'px-4 py-3 font-semibold ring-1', res && (!res.v.ok || res.v.kind === 'diff' || res.v.kind === 'error' ? 'bg-warn-soft ring-warn-line' : 'bg-good-soft ring-good-line')),

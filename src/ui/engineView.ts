@@ -173,7 +173,9 @@ const xref = (href: string, text: string, seen = false): HTMLElement => d.h('a',
  * v34 (L545, handoff item 4): a Best Practice card id (`e-bp-s10`) → its card's route. The track follows the code's letter
  * (content/engine/best/<track>/<code>-…), so no card index has to load here; tests/engineBpLink.test.ts checks every card.
  */
-const BP_TRACK: Record<string, string> = { a: 'sql', q: 'sql', i: 'postgres', p: 'postgres', s: 'postgres', x: 'postgres', m: 'mongodb', d: 'dynamodb' };
+// v48 BP-C (L1150): + r Redis, t time-series, o OLAP, e search (Elasticsearch), l telemetry, c streaming (CDC), g graph
+const BP_TRACK: Record<string, string> = { a: 'sql', q: 'sql', i: 'postgres', p: 'postgres', s: 'postgres', x: 'postgres', m: 'mongodb', d: 'dynamodb',
+  r: 'redis', t: 'timeseries', o: 'olap', e: 'search', l: 'telemetry', c: 'stream', g: 'graph' };
 export const bpHashOf = (id: string): string | undefined => {
   const m = /^e-bp-([a-z])\d\d$/.exec(id);
   const track = m && BP_TRACK[m[1]];

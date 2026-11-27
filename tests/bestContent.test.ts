@@ -7,7 +7,7 @@ import { parse as yaml } from 'yaml';
 import { generalNow } from '../src/content';
 import { SKILLS } from '../src/progress';
 import {
-  BP_META, byName, cardProblems, explainOf, judge, needsPlan, parseBestCard, parseHabits, parseTracks, planScan, RELEASED, sideOf, sideScript,
+  BP_META, byName, cardProblems, explainOf, judge, needsPlan, parseBestCard, parseHabits, parseTracks, planScan, promqlSideOf, redisSideOf, RELEASED, sameRows, sideOf, sideScript,
   type BpCard, type Pair, type Side,
 } from '../src/engine/best';
 import { codeOf } from '../src/engine/content';
@@ -18,6 +18,12 @@ import { labRun } from './generalRules';
 import * as sources from '../src/bestSources';
 import * as mongoIndex from '../src/bestMongoIndex';
 import * as dynamoIndex from '../src/bestDynamoIndex';
+import * as v48Index from '../src/bestV48Index';
+import { freshFor, runScript } from '../src/engine/redis/redisLab';
+import { format as redisFormat } from '../src/engine/redis/interpreter';
+import { esRunner } from '../src/engine/search/esLab';
+import { SAMPLES_SQL } from '../src/engine/telemetry/promqlRunner';
+import * as promql from '../src/engine/telemetry/promql';
 import { loadDataset, runMongo } from '../src/engine/mongo/engineMongo';
 import { mongoRunner } from '../src/engine/mongo/runner';
 import { DynamoEngine } from '../src/engine/dynamo/engine';
@@ -33,12 +39,17 @@ const cards = Object.entries(raw).map(([path, text]) => {
   return parseBestCard({ fm: yaml(m[1]), body: m[2] }, path) as BpCard;
 });
 const released = cards.filter((c) => RELEASED.includes(c.track));
+/** v48 BP-C (L1150): cards per v47 track (6–8 each). */
+const V48_COUNT = { redis: 7, timeseries: 6, olap: 6, search: 6, telemetry: 6, stream: 6, graph: 6 } as const;
+const V48 = Object.keys(V48_COUNT) as (keyof typeof V48_COUNT)[];
+const V48_TOTAL = Object.values(V48_COUNT).reduce((a, b) => a + b, 0);
 const DIACRITIC = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i;
 
-describe('thẻ Best Practice: cấu trúc (132 thẻ, cả track chưa phát hành)', () => {
-  it('132 thẻ, id duy nhất; phát hành cả 132 (SQL 30 + PostgreSQL 31 + MongoDB 39 + DynamoDB 32, v26 L383; v35 + X08; v36 + M39)', () => {
-    expect(cards).toHaveLength(132);
-    expect(new Set(cards.map((c) => c.id)).size).toBe(132);
+describe('thẻ Best Practice: cấu trúc (132 + v48 thẻ, cả track chưa phát hành)', () => {
+  it('132 + v48 thẻ, id duy nhất; phát hành tất cả (SQL 30 + PostgreSQL 31 + MongoDB 39 + DynamoDB 32, v26 L383; v35 + X08; v36 + M39; v48 L1150 + 7 track)', () => {
+    expect(cards).toHaveLength(132 + V48_TOTAL);
+    expect(new Set(cards.map((c) => c.id)).size).toBe(132 + V48_TOTAL);
+    for (const [t, n] of Object.entries(V48_COUNT)) expect([t, released.filter((c) => c.track === t).length]).toEqual([t, n]);
     expect(released.filter((c) => c.track === 'sql')).toHaveLength(30);
     expect(released.filter((c) => c.track === 'postgres')).toHaveLength(31);
     expect(released.filter((c) => c.track === 'mongodb')).toHaveLength(39);
@@ -64,7 +75,7 @@ describe('thẻ Best Practice: cấu trúc (132 thẻ, cả track chưa phát h�
     const all = parseTracks(yaml(sourcesTracks()), true);
     for (const c of cards) expect([c.id, all.find((t) => t.id === c.track)?.areas.includes(c.module)]).toEqual([c.id, true]);
     const shown = parseTracks(sources.tracks);
-    expect(shown.map((t) => t.id)).toEqual(['sql', 'postgres', 'mongodb', 'dynamodb']);
+    expect(shown.map((t) => t.id)).toEqual(['sql', 'postgres', 'mongodb', 'dynamodb', 'redis', 'timeseries', 'olap', 'search', 'telemetry', 'stream', 'graph']);
     const ids = new Set(released.map((c) => c.id));
     for (const t of shown) for (const g of t.gallery) expect([t.id, g, ids.has(g)]).toEqual([t.id, g, true]);
     expect(shown[0].gallery.length).toBeGreaterThanOrEqual(8);
@@ -82,7 +93,12 @@ describe('thẻ Best Practice: cấu trúc (132 thẻ, cả track chưa phát h�
     expect(dy).toHaveLength(32);
     expect(dy.every((p) => /\/best\/dynamodb\//.test(p))).toBe(true);
     expect(typeof sources.full.dynamodb).toBe('function');
-    for (const [p, s] of Object.entries({ ...sources.meta, ...mongoIndex.meta, ...dynamoIndex.meta })) expect(parseBestCard(s, p)).toEqual(expect.objectContaining({ id: expect.stringMatching(/^e-bp-[qasipxmd]\d\d$/) }));
+    // v48 BP-C (L1152): the seven v47 tracks share one index chunk (bpindexV48); each has its own full-card loader
+    const v48 = Object.keys(v48Index.meta);
+    expect(v48).toHaveLength(V48_TOTAL);
+    expect(v48.every((p) => /\/best\/(redis|timeseries|olap|search|telemetry|stream|graph)\//.test(p))).toBe(true);
+    for (const t of V48) expect([t, typeof sources.full[t]]).toEqual([t, 'function']);
+    for (const [p, s] of Object.entries({ ...sources.meta, ...mongoIndex.meta, ...dynamoIndex.meta, ...v48Index.meta })) expect(parseBestCard(s, p)).toEqual(expect.objectContaining({ id: expect.stringMatching(/^e-bp-[qasipxmdrtoelcg]\d\d$/) }));
   });
 
   it('habits.yml: 8 thói quen, mã VI = EN, EN không dấu, mỗi thói quen có ≥ 1 thẻ đã phát hành', () => {
@@ -141,7 +157,7 @@ async function labSide(p: Pair, sql: string): Promise<Side> {
 }
 
 describe('thẻ Best Practice: cặp Không nên / Nên chạy thật (132 thẻ phát hành)', () => {
-  const runnable = released.filter((c) => c.pair.runtime !== 'none' && c.pair.runtime !== 'mingo' && c.pair.runtime !== 'dynoxide');
+  const runnable = released.filter((c) => ['lab', 'engine', 'engine-hb'].includes(c.pair.runtime)); // v48: redis/es/promql have their own blocks below
   it('mỗi thẻ "none" là check syntax; mọi thẻ chạy được là một câu mỗi bên (trang không có splitSql, nó nằm cạnh PGlite)', () => {
     for (const c of released) if (c.pair.runtime === 'none') expect([c.id, c.pair.check]).toEqual([c.id, 'syntax']);
     for (const c of released) {
@@ -173,6 +189,8 @@ describe('thẻ Best Practice: cặp Không nên / Nên chạy thật (132 thẻ
       good = sideOf(p, rg);
     }
     const v = judge(p, bad, good);
+    // v48 (L1153): a v47-track card that says `same` and measures cost must also give the same rows (the cheaper query is not a different answer)
+    if ((V48 as string[]).includes(c.track) && p.check === 'same') expect([c.id, sameRows(bad, good)]).toEqual([c.id, true]);
     expect([c.id, v, bad.error, good.error]).toEqual([c.id, expect.objectContaining({ ok: true }), ...(p.check === 'error'
       ? (p.expect?.fails === 'good' ? [undefined, expect.anything()] : [expect.anything(), undefined]) : [undefined, undefined])]);
   });
@@ -263,4 +281,67 @@ describe('thẻ Best Practice DynamoDB: cặp chạy thật trên dynoxide', () 
     const [bad, good] = [await side(p, p.bad), await side(p, p.good)];
     expect([c.id, judge(p, bad, good)]).toEqual([c.id, expect.objectContaining({ ok: true })]);
   }, 60_000);
+});
+
+// v48 BP-C (L1150–L1153): the cards of the seven v47 tracks. Redis and search pairs run on BoonData's own interpreters through
+// the same entry points the card page uses (redisLab runScript + redisSideOf, esRunner.run); PromQL pairs build `samples` with
+// the card's SQL on a fresh PGlite database (SAMPLES_SQL, as a telemetry lab does) and evaluate with promqlSideOf; the PG-runtime
+// tracks run in the `engine` block above. Each pair must show what its check claims: the Avoid side really is wrong, refused,
+// counts more, or costs more.
+describe('thẻ Best Practice v48: các track mới', () => {
+  const mine = released.filter((c) => (V48 as string[]).includes(c.track));
+  const trackOf = new Map<string, string>(Object.values(import.meta.glob<string>('../content/engine/*/L*/*.md', { query: '?raw', import: 'default', eager: true }))
+    .map((t) => [/^id:\s*(\S+)/m.exec(t)?.[1] ?? '', /^engine:\s*(\S+)/m.exec(t)?.[1] ?? '']));
+  it('mỗi thẻ chạy được (không có thẻ chỉ cú pháp), "runs" tối đa một thẻ mỗi track, bài liên quan thuộc đúng track', () => {
+    for (const c of mine) {
+      expect([c.id, c.pair.runtime === 'none']).toEqual([c.id, false]);
+      expect([c.id, c.requires.length > 0, c.requires.every((r) => trackOf.get(r) === c.track)]).toEqual([c.id, true, true]);
+    }
+    for (const t of V48) expect([t, mine.filter((c) => c.track === t && c.pair.check === 'runs').length <= 1]).toEqual([t, true]);
+    expect(mine.filter((c) => c.track === 'redis').every((c) => c.pair.runtime === 'redis')).toBe(true);
+    expect(mine.filter((c) => c.track === 'search').every((c) => c.pair.runtime === 'es')).toBe(true);
+    expect(mine.filter((c) => c.pair.runtime === 'promql').map((c) => c.id).sort()).toEqual(['e-bp-l01', 'e-bp-l02', 'e-bp-l03']);
+  });
+
+  it('mỗi thẻ có link từ bài học của track (Tóm tắt / Recap nhắc id thẻ, VI và EN)', () => {
+    const lessons = import.meta.glob<string>('../content/engine/*/L*/*.md', { query: '?raw', import: 'default', eager: true });
+    const texts = Object.values(lessons).filter((t) => (V48 as string[]).includes(/^engine:\s*(\S+)/m.exec(t)?.[1] ?? ''));
+    for (const c of mine) {
+      const n = texts.reduce((k, t) => k + (t.split(c.id).length - 1), 0);
+      expect([c.id, n >= 2]).toEqual([c.id, true]);
+    }
+  });
+
+  const redisSide = (p: Pair, code: string): Side => redisSideOf(runScript(freshFor({ setup: p.setup, steps: [] }), code).at(-1), redisFormat);
+  it.each(mine.filter((c) => c.pair.runtime === 'redis').map((c) => [c.id, c]))('%s: check của thẻ đúng trên bộ thông dịch Redis', (_id, c) => {
+    const p = c.pair;
+    const [bad, good] = [redisSide(p, p.bad), redisSide(p, p.good)];
+    expect([c.id, judge(p, bad, good)]).toEqual([c.id, expect.objectContaining({ ok: true })]);
+  });
+
+  const esSide = async (p: Pair, code: string): Promise<Side> => {
+    try {
+      const out = await esRunner({ lang: () => 'en' }).run({ setup: p.setup, steps: [] } as never, code.trim());
+      return { columns: out.columns, rows: out.rows };
+    } catch (e) {
+      const x = e as { code?: string; message?: string };
+      return { columns: [], rows: [], error: { code: x.code, message: x.message ?? String(e) } };
+    }
+  };
+  it.each(mine.filter((c) => c.pair.runtime === 'es').map((c) => [c.id, c]))('%s: check của thẻ đúng trên bộ mô phỏng Elasticsearch', async (_id, c) => {
+    const p = c.pair;
+    const [bad, good] = [await esSide(p, p.bad), await esSide(p, p.good)];
+    expect([c.id, judge(p, bad, good)]).toEqual([c.id, expect.objectContaining({ ok: true })]);
+  });
+
+  const promSide = async (p: Pair, code: string): Promise<Side> => {
+    const r = await runLabScript({ setup: p.setup, steps: [SAMPLES_SQL], timeoutMs: 20_000 });
+    const err = r.setupError ?? r.steps[0]?.error;
+    return err ? { columns: [], rows: [], error: err } : promqlSideOf(r.steps[0].rows, code, promql);
+  };
+  it.each(mine.filter((c) => c.pair.runtime === 'promql').map((c) => [c.id, c]))('%s: check của thẻ đúng trên bộ mô phỏng PromQL', async (_id, c) => {
+    const p = c.pair;
+    const [bad, good] = [await promSide(p, p.bad), await promSide(p, p.good)];
+    expect([c.id, judge(p, bad, good), bad.error, good.error]).toEqual([c.id, expect.objectContaining({ ok: true }), undefined, undefined]);
+  }, 30_000);
 });

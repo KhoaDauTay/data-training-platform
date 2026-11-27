@@ -13,4 +13,12 @@ export const full: Partial<Record<TrackId, () => Promise<{ cards: Record<string,
   postgres: () => import('./bestPg'),
   mongodb: () => import('./bestMongo'),
   dynamodb: () => import('./bestDynamo'),
+  // v48 BP-C (L1152): the v47 tracks, one chunk each (their list fields: src/bestV48Index.ts)
+  redis: () => import('./bestRedis'),
+  timeseries: () => import('./bestTimeseries'),
+  olap: () => import('./bestOlap'),
+  search: () => import('./bestSearch'),
+  telemetry: () => import('./bestTelemetry'),
+  stream: () => import('./bestStream'),
+  graph: () => import('./bestGraph'),
 };

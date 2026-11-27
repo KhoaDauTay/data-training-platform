@@ -11,6 +11,7 @@
 import type { Bi, Question } from './content';
 import { type FigRef, parseFigures } from './figureSlot';
 import type { LabScript, ScriptResult } from './pglab/script';
+import type { Reply } from './redis/interpreter';
 
 /**
  * v24 BP-UI (L346): `#/engine/best[/<track>[/<card id>]]` (and `#/engine/best/habits`) → its parts; undefined on any other
@@ -23,11 +24,14 @@ export const bestRouteOf = (hash: string): { track?: string; id?: string } | und
 };
 export const bestHash = (track?: string, id?: string): string => `#/engine/best${track ? `/${track}${id ? `/${id}` : ''}` : ''}`;
 
-export const TRACKS = ['sql', 'postgres', 'mongodb', 'dynamodb'] as const;
+// v48 BP-C (L1150): one track per v47 engine, the track id = the engine id (so entry(engine) links each engine page).
+export const TRACKS = ['sql', 'postgres', 'mongodb', 'dynamodb', 'redis', 'timeseries', 'olap', 'search', 'telemetry', 'stream', 'graph'] as const;
 export type TrackId = (typeof TRACKS)[number];
-export const RELEASED: readonly TrackId[] = ['sql', 'postgres', 'mongodb', 'dynamodb'];
+export const RELEASED: readonly TrackId[] = TRACKS;
 export const BP_LEVELS = ['L1', 'L2', 'L3', 'L4', 'L5'] as const;
-export const RUNTIMES = ['lab', 'engine', 'engine-hb', 'mingo', 'dynoxide', 'none'] as const;
+// v48 (L1151): `redis` = BoonData's Redis interpreter, `es` = its Elasticsearch-style interpreter, `promql` = the PromQL simulation over a
+// `samples` table built by the card's SQL setup. Simulations, labelled as such on the card (`honest.sim`).
+export const RUNTIMES = ['lab', 'engine', 'engine-hb', 'mingo', 'dynoxide', 'redis', 'es', 'promql', 'none'] as const;
 export type BpRuntime = (typeof RUNTIMES)[number];
 export const BP_CHECKS = ['diff', 'same', 'plan', 'error', 'runs', 'syntax'] as const;
 export type BpCheck = (typeof BP_CHECKS)[number];
@@ -39,7 +43,7 @@ export type BpSectionId = keyof typeof BP_SECTIONS;
  * `good`: the scan node of a `plan` card; `code`: the SQLSTATE of an `error` card; `fails` (catalogue §17.3): which side
  * must raise it (default `bad`; `good` = the safe version refuses, the other one writes). `rcu`/`wcu` are DynamoDB's (v26).
  */
-export interface BpExpect { compare?: 'cost' | 'size' | 'rcu' | 'wcu'; table?: string; bad?: string; good?: string; code?: string; fails?: 'bad' | 'good' }
+export interface BpExpect { compare?: 'cost' | 'size' | 'rcu' | 'wcu' | 'count'; table?: string; bad?: string; good?: string; code?: string; fails?: 'bad' | 'good' }
 export interface Pair { runtime: BpRuntime; check: BpCheck; setup?: string; bad: string; good: string; expect?: BpExpect }
 export interface Track { id: TrackId; areas: string[]; title: Bi; after: Bi; gallery: string[] }
 export interface Habit { text: Bi; points: Bi[]; cards: string[] }
@@ -59,7 +63,7 @@ export interface BpCard extends BpMeta {
 export const BP_META = 'id,engine,track,level,module,title,title_en,avoid,lint,skills';
 export interface CardSource { fm: unknown; body?: string }
 
-const PATH_RE = /engine\/best\/(sql|postgres|mongodb|dynamodb)\/([a-z]\d\d)-[a-z0-9-]+\.md$/;
+const PATH_RE = /engine\/best\/(sql|postgres|mongodb|dynamodb|redis|timeseries|olap|search|telemetry|stream|graph)\/([a-z]\d\d)-[a-z0-9-]+\.md$/;
 const EN_RE = /^# EN[ \t]*$/m;
 
 export function parseBestCard(src: CardSource, path: string): BpCard | BpMeta {
@@ -186,7 +190,8 @@ export function parseHabits(v: unknown): Habits {
 export const codeOf = (text: string): string[] =>
   [...text.matchAll(/```[a-z]*\n([\s\S]*?)```|`([^`\n]+)`/g)].map((m) => (m[1] ?? m[2]).trim()).sort();
 const DIACRITIC = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i;
-const HOSTS = /^https:\/\/(www\.postgresql\.org|wiki\.postgresql\.org|www\.mongodb\.com\/docs|docs\.aws\.amazon\.com|www\.sqlstyle\.guide|sqlstyle\.guide)\//;
+// v48 (L1151): + the vendors' own docs of the v47 tracks.
+const HOSTS = /^https:\/\/(www\.postgresql\.org|wiki\.postgresql\.org|www\.mongodb\.com\/docs|docs\.aws\.amazon\.com|www\.sqlstyle\.guide|sqlstyle\.guide|redis\.io\/docs|valkey\.io|www\.elastic\.co\/(docs|guide)|clickhouse\.com\/docs|prometheus\.io\/docs|opentelemetry\.io\/docs|kafka\.apache\.org|debezium\.io\/documentation|neo4j\.com\/docs)\//;
 /** §4.3 content rules beyond parsing: EN without diacritics, code VI = EN, official https sources. */
 export function cardProblems(c: BpCard): string[] {
   const out: string[] = [];
@@ -248,7 +253,7 @@ export function byName(columns: string[], rows: unknown[][]): Pick<Side, 'column
 export type Verdict =
   | { kind: 'diff' | 'same' | 'runs'; ok: boolean }
   | { kind: 'plan' | 'cost'; ok: boolean; bad?: string | number; good?: string | number }
-  | { kind: 'size' | 'cap'; ok: boolean; bad?: number; good?: number }
+  | { kind: 'size' | 'cap' | 'count'; ok: boolean; bad?: number; good?: number }
   | { kind: 'error'; ok: boolean; side: 'bad' | 'good'; code?: string };
 /** Does the pair show what its `check` says (§4.3)? `ok: false` on the page = an unexpected result, said as it is. */
 export function judge(p: Pair, bad: Side, good: Side): Verdict {
@@ -265,9 +270,10 @@ export function judge(p: Pair, bad: Side, good: Side): Verdict {
     // v26: the Prefer side uses less measured capacity (a COUNT or a write shows no comparable rows, so only the number counts).
     return { kind: 'cap', bad: bad.cap, good: good.cap, ok: fine && good.cap! < bad.cap! };
   }
-  if (x.compare === 'size') {
+  if (x.compare === 'size' || x.compare === 'count') {
+    // v48 (L1151): `count` = a number of keys, series, rows or partitions the side returns (not bytes): the Prefer side's is smaller
     const [b, g] = [Number(bad.rows[0]?.[0]), Number(good.rows[0]?.[0])];
-    return { kind: 'size', bad: b, good: g, ok: fine && g < b };
+    return { kind: x.compare, bad: b, good: g, ok: fine && g < b };
   }
   if (p.check === 'diff') return { kind: 'diff', ok: fine && !sameRows(bad, good) };
   if (p.check === 'same') return { kind: 'same', ok: fine && sameRows(bad, good) };
@@ -290,4 +296,35 @@ export function sideOf(p: Pair, r: ScriptResult): Side {
   const steps = needsPlan(p) ? r.steps.slice(0, -1) : r.steps;
   const last = steps[steps.length - 1];
   return { columns: last?.columns ?? [], rows: last?.rows ?? [], ...(needsPlan(p) ? planScan(r.steps[r.steps.length - 1]?.rows[0]?.[0], p.expect?.table) : {}) };
+}
+
+// ---- v48 BP-C (L1151): the three simulations. Shared by the page and tests/bestContent.test.ts, so both measure the same side.
+
+/**
+ * runtime redis: the side's script runs on a fresh keyspace after `setup` (redisLab runScript; `@advance`/`@client` read),
+ * and the side is the reply of its LAST line only (the command text never counts, so `diff`/`same` compare replies): an
+ * integer as a number (for `compare: count`), an array one row per element, an error with its code (ERR, WRONGTYPE…).
+ */
+export function redisSideOf(last: { reply: Reply } | undefined, format: (r: Reply) => string): Side {
+  const r = last?.reply;
+  if (!r) return { columns: [], rows: [], error: { message: 'no command' } };
+  if (r.t === 'err') return { columns: [], rows: [], error: { code: r.cli ? undefined : r.v.split(' ')[0], message: format(r) } };
+  if (r.t === 'int') return { columns: ['reply'], rows: [[r.v]] };
+  if (r.t === 'arr' || r.t === 'seq') return { columns: ['reply'], rows: r.v.map((x) => [format(x)]) };
+  return { columns: ['reply'], rows: [[format(r)]] };
+}
+
+/**
+ * runtime promql: the card's SQL `setup` builds a `samples` table on a fresh database; `rows` = its SAMPLES_SQL rows
+ * (src/engine/telemetry/promqlRunner.ts), the clock = the newest sample, like a telemetry lab. `pq` = that module's runPromql
+ * and seriesOf, passed in (a value import here would pull the PromQL chunk into engineBest).
+ */
+export function promqlSideOf(rows: unknown[][], code: string, pq: { runPromql: (q: string, d: never, at: number) => { columns: string[]; rows: unknown[][] }; seriesOf: (r: unknown[][]) => unknown }): Side {
+  try {
+    if (!rows.length) return { columns: [], rows: [], error: { message: 'the card has no samples' } };
+    return pq.runPromql(code.trim(), pq.seriesOf(rows) as never, Number(rows[0][4]));
+  } catch (e) {
+    const x = e as { code?: unknown; message?: string };
+    return { columns: [], rows: [], error: { code: typeof x.code === 'string' ? x.code : undefined, message: x.message ?? String(e) } };
+  }
 }

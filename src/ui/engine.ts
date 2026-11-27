@@ -49,14 +49,14 @@ const baseDeps = (): EngineDeps => ({
 });
 
 function engineChunk(): Promise<EngineView> {
-  pending ??= Promise.all([import('./engineView'), import('../engineSources'), import('./engineBest'), import('../bestSources'), import('../bestMongoIndex'), import('../bestDynamoIndex'), import('./engineHub'), import('./engineTrack')])
-    .then(([m, src, b, bs, bm, bd, hub, track]) => {
+  pending ??= Promise.all([import('./engineView'), import('../engineSources'), import('./engineBest'), import('../bestSources'), import('../bestMongoIndex'), import('../bestDynamoIndex'), import('./engineHub'), import('./engineTrack'), import('../bestV48Index')])
+    .then(([m, src, b, bs, bm, bd, hub, track, b48]) => {
       const deps: EngineDeps = {
         ...baseDeps(),
         best: (e) => b.entry(e),
         track, skill: (id) => ROUTE_SKILLS.find((x) => x.id === id)?.label, // v47 S2 (L940)
       };
-      const bpMeta = { ...bs.meta, ...bm.meta, ...bd.meta };
+      const bpMeta = { ...bs.meta, ...bm.meta, ...bd.meta, ...b48.meta }; // v48 (L1152): + the v47 tracks' cards
       m.initEngine(deps, src, bpMeta, hub); // v44 (L790): card titles for the id links; v47 S1 (L902): the landing and sidebar chunk
       b.initBest(deps, { ...bs, meta: bpMeta }, src.meta, { skill: (id) => ROUTE_SKILLS.find((x) => x.id === id)?.label, sourceTitle: m.sourceTitle, inline: m.inline });
       best = b;

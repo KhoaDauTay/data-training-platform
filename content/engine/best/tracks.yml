@@ -27,3 +27,47 @@
   after:
     vi: "Bạn đọc DynamoDB bằng khóa thay vì quét cả bảng, và biết những lỗi request mà AWS sẽ từ chối trước khi chạy."
     en: "You read DynamoDB through keys instead of scanning the table, and know which requests AWS rejects before they run."
+# v48 BP-C (L1150): one track per v47 engine (id = engine id). Letters: r Redis, t time-series, o OLAP, e search, l telemetry,
+# c streaming/CDC, g graph. No gallery: the catalogue's §13.4 ranking covers SQL only.
+- id: redis
+  areas: [r]
+  title: { vi: "Redis", en: "Redis" }
+  after:
+    vi: "Bạn dùng Redis như một bộ đệm có hạn: key luôn có thời gian sống, bộ đếm tăng nguyên tử, và không lệnh nào khóa cả máy chủ."
+    en: "You use Redis as a cache with limits: keys always expire, counters increase atomically, and no command blocks the whole server."
+- id: timeseries
+  areas: [t]
+  title: { vi: "Chuỗi thời gian", en: "Time-series" }
+  after:
+    vi: "Bạn lưu thời điểm thật, gom theo khung giờ không mất khung trống, và tính tốc độ từ counter mà không bị lệch khi thiết bị khởi động lại."
+    en: "You store real instants, bucket by time without losing empty buckets, and compute rates from counters that survive restarts."
+- id: olap
+  areas: [o]
+  title: { vi: "OLAP", en: "OLAP" }
+  after:
+    vi: "Bạn viết truy vấn phân tích không đếm trùng, chỉ đọc cột và ngày cần đọc, và biết khi nào một số gần đúng là đủ."
+    en: "You write analytical queries that never double count, read only the columns and days they need, and know when an approximate number is enough."
+- id: search
+  areas: [e]
+  title: { vi: "Tìm kiếm", en: "Search" }
+  after:
+    vi: "Bạn chọn đúng kiểu trường (text hay keyword), tách phần tính điểm khỏi phần lọc, và không phân trang sâu bằng from."
+    en: "You pick the right field type (text or keyword), keep scoring apart from filtering, and never page deep with from."
+- id: telemetry
+  areas: [l]
+  title: { vi: "Telemetry", en: "Telemetry" }
+  after:
+    vi: "Bạn đọc counter bằng rate, tính phân vị từ histogram đúng cách, và giữ số series trong tầm kiểm soát."
+    en: "You read counters with rate, compute percentiles from histograms correctly, and keep the number of series under control."
+- id: stream
+  areas: [c]
+  title: { vi: "Luồng sự kiện", en: "Streaming" }
+  after:
+    vi: "Bạn xử lý sự kiện đến hai lần hoặc sai thứ tự mà kết quả vẫn đúng, và ghi dữ liệu cùng sự kiện trong một transaction."
+    en: "You handle events that arrive twice or out of order and still get the right result, and write the data and its event in one transaction."
+- id: graph
+  areas: [g]
+  title: { vi: "Đồ thị", en: "Graph" }
+  after:
+    vi: "Bạn duyệt đồ thị bằng recursive CTE luôn dừng, không lặp vô tận trên vòng, và không nhân bản đường đi."
+    en: "You traverse graphs with recursive CTEs that always stop, never loop on a cycle, and do not multiply paths."
