@@ -16,9 +16,9 @@ objectives:
     en: Create an index that removes the sort for a window function, and know when the planner still prefers to sort
 requires: [e-pg-l4-04, e-pg-l2-02]
 sources:
-  - https://www.postgresql.org/docs/18/queries-table-expressions.html
-  - https://www.postgresql.org/docs/18/tutorial-window.html
-  - https://www.postgresql.org/docs/18/using-explain.html
+  - { url: https://www.postgresql.org/docs/18/queries-table-expressions.html, title_vi: "Biểu thức bảng" }
+  - { url: https://www.postgresql.org/docs/18/tutorial-window.html, title_vi: "Hướng dẫn › hàm cửa sổ" }
+  - { url: https://www.postgresql.org/docs/18/using-explain.html, title_vi: "Dùng EXPLAIN" }
 lab:
   setup: |
     CREATE TABLE customers (id int PRIMARY KEY, region int NOT NULL);

@@ -18,8 +18,8 @@ objectives:
     en: Explain safe expressions and why the calculus is as expressive as the algebra.
 requires: [e-ds-l5-02]
 sources:
-  - https://doi.org/10.1145/362384.362685
-  - https://www.postgresql.org/docs/18/functions-subquery.html
+  - { url: https://doi.org/10.1145/362384.362685, title_vi: "Bài báo ACM 10.1145/362384.362685" }
+  - { url: https://www.postgresql.org/docs/18/functions-subquery.html, title_vi: "Biểu thức truy vấn con (EXISTS)" }
 lab:
   setup: |
     CREATE TABLE students (id int PRIMARY KEY, name text NOT NULL, city text NOT NULL);

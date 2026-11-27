@@ -18,9 +18,9 @@ objectives:
     en: Compute a consumer group's lag per partition.
 requires: [e-sm-l1-02]
 sources:
-  - { url: "https://kafka.apache.org/41/getting-started/introduction/#main-concepts-and-terminology", title: "Kafka docs: Main concepts and terminology (partitions, ordering)" }
-  - { url: "https://kafka.apache.org/41/configuration/producer-configs/", title: "Kafka docs: Producer configs (partitioner.class)" }
-  - { url: "https://www.postgresql.org/docs/18/functions-math.html", title: "PostgreSQL 18 docs: Mathematical functions" }
+  - { url: "https://kafka.apache.org/41/getting-started/introduction/#main-concepts-and-terminology", title: "Kafka docs: Main concepts and terminology (partitions, ordering)", title_vi: "Tài liệu Kafka: khái niệm và thuật ngữ chính (thứ tự trong từng partition)" }
+  - { url: "https://kafka.apache.org/41/configuration/producer-configs/", title: "Kafka docs: Producer configs (partitioner.class)", title_vi: "Tài liệu Kafka: cấu hình producer (partitioner.class)" }
+  - { url: "https://www.postgresql.org/docs/18/functions-math.html", title: "PostgreSQL 18 docs: Mathematical functions", title_vi: "Hàm toán học" }
 lab:
   setup: |
     CREATE TABLE topic_log (

@@ -20,10 +20,13 @@ requires: [e-mg-l3-05, e-mg-l3-12]
 sources:
   - url: https://www.mongodb.com/docs/atlas/build-multi-tenant-arch/
     title: "Build a Multi-Tenant Architecture"
+    title_vi: "Xây kiến trúc nhiều khách thuê"
   - url: https://www.mongodb.com/docs/manual/tutorial/equality-sort-range-guideline/
     title: "The ESR (Equality, Sort, Range) Guideline"
+    title_vi: "Quy tắc ESR (so bằng, sắp xếp, khoảng)"
   - url: https://www.mongodb.com/docs/manual/core/indexes/index-types/index-compound/
     title: "Compound Indexes"
+    title_vi: "Index kép (compound)"
 lab:
   setup: |
     {"collections": {"orders": [

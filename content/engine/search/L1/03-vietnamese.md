@@ -18,9 +18,9 @@ objectives:
     en: Keep an extra sub-field with accents (a multi-field) for exact search when the customer types accents.
 requires: [e-sr-l1-02]
 sources:
-  - https://www.elastic.co/docs/reference/text-analysis/analysis-asciifolding-tokenfilter
-  - https://www.elastic.co/docs/reference/elasticsearch/mapping-reference/multi-fields
-  - https://www.elastic.co/docs/reference/query-languages/query-dsl/query-dsl-match-query
+  - { url: https://www.elastic.co/docs/reference/text-analysis/analysis-asciifolding-tokenfilter, title_vi: "Bộ lọc token ASCII folding" }
+  - { url: https://www.elastic.co/docs/reference/elasticsearch/mapping-reference/multi-fields, title_vi: "Một trường, nhiều cách index (multi-fields)" }
+  - { url: https://www.elastic.co/docs/reference/query-languages/query-dsl/query-dsl-match-query, title_vi: "Truy vấn match" }
 lab:
   setup: |
     {"index": "shop",

@@ -19,12 +19,12 @@ objectives:
 requires: [e-pg-l1-13]
 figures: [{ name: pg-delete-truncate-drop, at: idea }]
 sources:
-  - https://www.postgresql.org/docs/18/sql-droptable.html
-  - https://www.postgresql.org/docs/18/sql-truncate.html
-  - https://www.postgresql.org/docs/18/sql-delete.html
-  - https://www.postgresql.org/docs/18/sql-createtableas.html
-  - https://www.postgresql.org/docs/18/sql-createtable.html
-  - https://www.postgresql.org/docs/18/ddl-depend.html
+  - { url: https://www.postgresql.org/docs/18/sql-droptable.html, title_vi: "DROP TABLE" }
+  - { url: https://www.postgresql.org/docs/18/sql-truncate.html, title_vi: "TRUNCATE" }
+  - { url: https://www.postgresql.org/docs/18/sql-delete.html, title_vi: "DELETE" }
+  - { url: https://www.postgresql.org/docs/18/sql-createtableas.html, title_vi: "CREATE TABLE AS" }
+  - { url: https://www.postgresql.org/docs/18/sql-createtable.html, title_vi: "CREATE TABLE" }
+  - { url: https://www.postgresql.org/docs/18/ddl-depend.html, title_vi: "Theo dõi phụ thuộc giữa các đối tượng" }
 lab:
   setup: |
     CREATE TABLE customers (

@@ -18,9 +18,9 @@ objectives:
     en: "Read the oplog window and what happens when a secondary falls too far behind"
 requires: [e-mg-l5-01]
 sources:
-  - https://www.mongodb.com/docs/manual/core/replica-set-oplog/
-  - https://www.mongodb.com/docs/manual/core/replica-set-elections/
-  - https://www.mongodb.com/docs/manual/reference/method/rs.initiate/
+  - { url: https://www.mongodb.com/docs/manual/core/replica-set-oplog/, title_vi: "Oplog của replica set" }
+  - { url: https://www.mongodb.com/docs/manual/core/replica-set-elections/, title_vi: "Bầu primary trong replica set" }
+  - { url: https://www.mongodb.com/docs/manual/reference/method/rs.initiate/, title_vi: "rs.initiate()" }
 quiz:
   - q:
       vi: "Primary mất kết nối. Với cấu hình mặc định, sau bao lâu các thành viên coi nó là không tới được?"

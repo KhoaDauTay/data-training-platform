@@ -15,9 +15,9 @@ objectives:
     en: Build an extended reference by copying a few customer fields into the order, and precompute a value (computed pattern).
 requires: [e-mg-l2-11]
 sources:
-  - https://www.mongodb.com/docs/manual/data-modeling/best-practices/
-  - https://www.mongodb.com/docs/manual/data-modeling/design-patterns/
-  - https://www.mongodb.com/docs/manual/reference/operator/aggregation/arrayelemat/
+  - { url: https://www.mongodb.com/docs/manual/data-modeling/best-practices/, title_vi: "Mô hình hóa dữ liệu: thực hành tốt" }
+  - { url: https://www.mongodb.com/docs/manual/data-modeling/design-patterns/, title_vi: "Mẫu thiết kế" }
+  - { url: https://www.mongodb.com/docs/manual/reference/operator/aggregation/arrayelemat/, title_vi: "$arrayElemAt" }
 lab:
   setup: |
     {"collections": {

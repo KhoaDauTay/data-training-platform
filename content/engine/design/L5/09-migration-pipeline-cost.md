@@ -20,10 +20,13 @@ requires: [e-ds-l5-08]
 sources:
   - url: https://www.postgresql.org/docs/18/plpgsql-transactions.html
     title: "PL/pgSQL › Transaction Management"
+    title_vi: "PL/pgSQL › quản lý transaction"
   - url: https://www.postgresql.org/docs/18/plpgsql-statements.html#PLPGSQL-STATEMENTS-EXECUTING-DYN
     title: "PL/pgSQL › Executing Dynamic Commands"
+    title_vi: "PL/pgSQL › chạy câu lệnh động"
   - url: https://www.postgresql.org/docs/18/infoschema-columns.html
     title: "information_schema.columns"
+    title_vi: "information_schema.columns"
 lab:
   setup: |
     CREATE TABLE shards (

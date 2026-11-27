@@ -16,8 +16,8 @@ objectives:
     en: Describe how DynamoDB hashes the partition key to pick a partition, and why items with the same partition key sit together in sort key order.
 requires: [e-dy-l1-01]
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.CoreComponents.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.Partitions.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.CoreComponents.html, title_vi: "Cách hoạt động: các thành phần chính" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.Partitions.html, title_vi: "Cách hoạt động: partition" }
 quiz:
   - q:
       vi: Bảng `Orders` có khóa (`customerId`, `orderId`). Hai item nào không thể cùng tồn tại?

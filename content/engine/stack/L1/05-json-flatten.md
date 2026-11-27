@@ -18,10 +18,10 @@ objectives:
     en: Read the Snowflake form (`VARIANT`, `:`, `FLATTEN`) and write the PostgreSQL equivalent.
 requires: [e-st-l1-02]
 sources:
-  - https://www.postgresql.org/docs/18/functions-json.html
-  - https://www.postgresql.org/docs/18/queries-table-expressions.html#QUERIES-LATERAL
-  - { url: "https://docs.snowflake.com/en/sql-reference/functions/flatten", title: "Snowflake docs: FLATTEN" }
-  - { url: "https://docs.snowflake.com/en/sql-reference/data-types-semistructured", title: "Snowflake docs: Semi-structured data types" }
+  - { url: https://www.postgresql.org/docs/18/functions-json.html, title_vi: "Hàm và toán tử JSON" }
+  - { url: https://www.postgresql.org/docs/18/queries-table-expressions.html#QUERIES-LATERAL, title_vi: "Biểu thức bảng › truy vấn con LATERAL" }
+  - { url: "https://docs.snowflake.com/en/sql-reference/functions/flatten", title: "Snowflake docs: FLATTEN", title_vi: "Tài liệu Snowflake: FLATTEN" }
+  - { url: "https://docs.snowflake.com/en/sql-reference/data-types-semistructured", title: "Snowflake docs: Semi-structured data types", title_vi: "Tài liệu Snowflake: kiểu dữ liệu bán cấu trúc" }
 lab:
   setup: |
     CREATE SCHEMA raw_pay;

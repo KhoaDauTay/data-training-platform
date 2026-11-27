@@ -18,10 +18,10 @@ objectives:
     en: Know that such a matview does not see existing data, so it has to be backfilled.
 requires: [e-ol-l3-01, e-ol-l2-02]
 sources:
-  - { url: "https://clickhouse.com/docs/materialized-view/incremental-materialized-view", title: "ClickHouse docs: Incremental materialized view" }
-  - { url: "https://clickhouse.com/docs/engines/table-engines/mergetree-family/aggregatingmergetree", title: "ClickHouse docs: AggregatingMergeTree" }
-  - { url: "https://clickhouse.com/docs/best-practices/use-materialized-views", title: "ClickHouse docs: Use materialized views" }
-  - { url: "https://www.postgresql.org/docs/18/sql-createtrigger.html", title: "PostgreSQL 18 docs: CREATE TRIGGER" }
+  - { url: "https://clickhouse.com/docs/materialized-view/incremental-materialized-view", title: "ClickHouse docs: Incremental materialized view", title_vi: "Tài liệu ClickHouse: materialized view tăng dần" }
+  - { url: "https://clickhouse.com/docs/engines/table-engines/mergetree-family/aggregatingmergetree", title: "ClickHouse docs: AggregatingMergeTree", title_vi: "Tài liệu ClickHouse: AggregatingMergeTree" }
+  - { url: "https://clickhouse.com/docs/best-practices/use-materialized-views", title: "ClickHouse docs: Use materialized views", title_vi: "Tài liệu ClickHouse: dùng materialized view" }
+  - { url: "https://www.postgresql.org/docs/18/sql-createtrigger.html", title: "PostgreSQL 18 docs: CREATE TRIGGER", title_vi: "CREATE TRIGGER" }
 lab:
   setup: |
     CREATE TABLE events (

@@ -17,10 +17,10 @@ objectives:
     en: "Build a case-insensitive index with a collation and know that the query must state the same collation"
 requires: [e-mg-l3-01]
 sources:
-  - https://www.mongodb.com/docs/manual/core/index-sparse/
-  - https://www.mongodb.com/docs/manual/core/index-hidden/
-  - https://www.mongodb.com/docs/manual/core/index-case-insensitive/
-  - https://www.mongodb.com/docs/manual/reference/collation/
+  - { url: https://www.mongodb.com/docs/manual/core/index-sparse/, title_vi: "Index thưa (sparse)" }
+  - { url: https://www.mongodb.com/docs/manual/core/index-hidden/, title_vi: "Index ẩn" }
+  - { url: https://www.mongodb.com/docs/manual/core/index-case-insensitive/, title_vi: "Index không phân biệt hoa thường" }
+  - { url: https://www.mongodb.com/docs/manual/reference/collation/, title_vi: "Collation" }
 demo_setup: '{"collections": {"movies": [{"_id": 1, "rated": "PG"}, {"_id": 2}, {"_id": 3, "rated": null}, {"_id": 4, "rated": "R"}], "fruit": [{"_id": 1, "type": "apple"}, {"_id": 2, "type": "Apple"}, {"_id": 3, "type": "APPLE"}]}}'
 quiz:
   - q:

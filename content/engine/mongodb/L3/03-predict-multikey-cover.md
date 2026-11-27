@@ -16,8 +16,8 @@ objectives:
     en: "Fix a projection so a query on an array field is covered"
 requires: [e-mg-l3-01]
 sources:
-  - https://www.mongodb.com/docs/manual/core/indexes/index-types/index-multikey/
-  - https://www.mongodb.com/docs/manual/core/query-optimization/
+  - { url: https://www.mongodb.com/docs/manual/core/indexes/index-types/index-multikey/, title_vi: "Index multikey (trên mảng)" }
+  - { url: https://www.mongodb.com/docs/manual/core/query-optimization/, title_vi: "Tối ưu truy vấn" }
 predict:
   sql: |
     db.movies.createIndex( { genres: 1, title: 1 } )

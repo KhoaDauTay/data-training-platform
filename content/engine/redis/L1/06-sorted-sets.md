@@ -18,9 +18,9 @@ objectives:
   - vi: Lọc theo khoảng điểm bằng ZRANGEBYSCORE và giữ điểm cao nhất bằng ZADD GT.
     en: Filter by a score range with ZRANGEBYSCORE and keep the best score with ZADD GT.
 sources:
-  - { url: "https://redis.io/docs/latest/develop/data-types/sorted-sets/", title: "Redis docs: Sorted sets" }
-  - { url: "https://valkey.io/commands/zadd/", title: "Valkey docs: ZADD" }
-  - { url: "https://valkey.io/commands/zrange/", title: "Valkey docs: ZRANGE" }
+  - { url: "https://redis.io/docs/latest/develop/data-types/sorted-sets/", title: "Redis docs: Sorted sets", title_vi: "Tài liệu Redis: sorted set" }
+  - { url: "https://valkey.io/commands/zadd/", title: "Valkey docs: ZADD", title_vi: "Tài liệu Valkey: ZADD" }
+  - { url: "https://valkey.io/commands/zrange/", title: "Valkey docs: ZRANGE", title_vi: "Tài liệu Valkey: ZRANGE" }
 lab:
   setup: |
     ZADD sales:2026-10 120 store:1 340 store:2 310 store:3 90 store:4

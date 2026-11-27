@@ -19,9 +19,9 @@ objectives:
     en: "Keep the computed values right when the order changes, in the same write"
 requires: [e-mg-l4-01]
 sources:
-  - https://www.mongodb.com/docs/manual/data-modeling/design-patterns/handle-computed-values/
-  - https://www.mongodb.com/docs/manual/tutorial/update-documents-with-aggregation-pipeline/
-  - https://www.mongodb.com/docs/manual/reference/operator/aggregation/map/
+  - { url: https://www.mongodb.com/docs/manual/data-modeling/design-patterns/handle-computed-values/, title_vi: "Lưu sẵn giá trị tính toán" }
+  - { url: https://www.mongodb.com/docs/manual/tutorial/update-documents-with-aggregation-pipeline/, title_vi: "Cập nhật bằng aggregation pipeline" }
+  - { url: https://www.mongodb.com/docs/manual/reference/operator/aggregation/map/, title_vi: "$map" }
 lab:
   setup: |
     {"collections": {"orders": [

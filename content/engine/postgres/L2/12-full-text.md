@@ -19,10 +19,10 @@ objectives:
     en: Pick the query builder that fits what users type (`plainto_tsquery`, `websearch_to_tsquery`).
 requires: [e-pg-l2-11]
 sources:
-  - https://www.postgresql.org/docs/18/textsearch-intro.html
-  - https://www.postgresql.org/docs/18/textsearch-controls.html
-  - https://www.postgresql.org/docs/18/textsearch-tables.html
-  - https://www.postgresql.org/docs/18/textsearch-indexes.html
+  - { url: https://www.postgresql.org/docs/18/textsearch-intro.html, title_vi: "Nhập môn tìm kiếm toàn văn" }
+  - { url: https://www.postgresql.org/docs/18/textsearch-controls.html, title_vi: "Điều khiển tìm kiếm toàn văn" }
+  - { url: https://www.postgresql.org/docs/18/textsearch-tables.html, title_vi: "Bảng và index cho tìm kiếm toàn văn" }
+  - { url: https://www.postgresql.org/docs/18/textsearch-indexes.html, title_vi: "Index cho tìm kiếm toàn văn" }
 lab:
   setup: |
     CREATE TABLE articles (

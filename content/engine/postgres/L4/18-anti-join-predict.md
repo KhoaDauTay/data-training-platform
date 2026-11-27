@@ -16,8 +16,8 @@ objectives:
     en: Explain why `NOT IN` returns nothing when the right side holds one NULL
 requires: [e-pg-l4-04, e-pg-l1-05]
 sources:
-  - https://www.postgresql.org/docs/18/functions-subquery.html
-  - https://www.postgresql.org/docs/18/using-explain.html
+  - { url: https://www.postgresql.org/docs/18/functions-subquery.html, title_vi: "Biểu thức truy vấn con (EXISTS)" }
+  - { url: https://www.postgresql.org/docs/18/using-explain.html, title_vi: "Dùng EXPLAIN" }
 lab:
   setup: |
     CREATE TABLE customers (id int PRIMARY KEY, region int NOT NULL);

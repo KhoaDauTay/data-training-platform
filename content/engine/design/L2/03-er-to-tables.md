@@ -18,9 +18,9 @@ objectives:
     en: Read the catalog back to check that the diagram became the right tables.
 requires: [e-ds-l2-02]
 sources:
-  - https://doi.org/10.1145/320434.320440
-  - https://www.postgresql.org/docs/18/ddl-constraints.html
-  - https://www.postgresql.org/docs/18/catalog-pg-constraint.html
+  - { url: https://doi.org/10.1145/320434.320440, title_vi: "Bài báo ACM 10.1145/320434.320440" }
+  - { url: https://www.postgresql.org/docs/18/ddl-constraints.html, title_vi: "Ràng buộc" }
+  - { url: https://www.postgresql.org/docs/18/catalog-pg-constraint.html, title_vi: "pg_constraint" }
 lab:
   setup: |
     CREATE TABLE customers (id int PRIMARY KEY, name text NOT NULL);

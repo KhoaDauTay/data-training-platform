@@ -18,9 +18,9 @@ objectives:
     en: Remove a whole old month with `DETACH PARTITION` then `DROP TABLE`, instead of a row-by-row `DELETE`.
 requires: [e-ts-l3-01]
 sources:
-  - https://www.postgresql.org/docs/18/ddl-partitioning.html
-  - https://www.postgresql.org/docs/18/sql-altertable.html
-  - https://www.postgresql.org/docs/18/ddl-partition-pruning.html
+  - { url: https://www.postgresql.org/docs/18/ddl-partitioning.html, title_vi: "Phân vùng bảng (partitioning)" }
+  - { url: https://www.postgresql.org/docs/18/sql-altertable.html, title_vi: "ALTER TABLE (REPLICA IDENTITY)" }
+  - { url: https://www.postgresql.org/docs/18/ddl-partition-pruning.html, title_vi: "Loại bỏ partition (partition pruning)" }
 lab:
   setup: |
     CREATE TABLE metrics (

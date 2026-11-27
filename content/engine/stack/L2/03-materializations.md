@@ -18,9 +18,9 @@ objectives:
     en: Avoid an incremental filter that drops late rows.
 requires: [e-st-l2-02]
 sources:
-  - { url: "https://docs.getdbt.com/docs/build/materializations", title: "dbt docs: Materializations" }
-  - { url: "https://docs.getdbt.com/docs/build/incremental-models", title: "dbt docs: Configure incremental models" }
-  - https://www.postgresql.org/docs/18/queries-with.html#QUERIES-WITH-MODIFYING
+  - { url: "https://docs.getdbt.com/docs/build/materializations", title: "dbt docs: Materializations", title_vi: "Tài liệu dbt: materialization" }
+  - { url: "https://docs.getdbt.com/docs/build/incremental-models", title: "dbt docs: Configure incremental models", title_vi: "Tài liệu dbt: cấu hình model incremental" }
+  - { url: https://www.postgresql.org/docs/18/queries-with.html#QUERIES-WITH-MODIFYING, title_vi: "Câu lệnh ghi dữ liệu trong WITH" }
 lab:
   setup: |
     CREATE SCHEMA raw_shop;

@@ -18,10 +18,10 @@ objectives:
     en: See on PostgreSQL why sampling and scaling up works for a count but not for a distinct count.
 requires: [e-ol-l3-01]
 sources:
-  - { url: "https://clickhouse.com/docs/sql-reference/aggregate-functions/reference/uniq", title: "ClickHouse docs: uniq" }
-  - { url: "https://clickhouse.com/docs/sql-reference/aggregate-functions/reference/quantile", title: "ClickHouse docs: quantile" }
-  - { url: "https://www.postgresql.org/docs/18/sql-select.html#SQL-FROM", title: "PostgreSQL 18 docs: SELECT (TABLESAMPLE)" }
-  - { url: "https://www.postgresql.org/docs/18/functions-aggregate.html#FUNCTIONS-ORDEREDSET-TABLE", title: "PostgreSQL 18 docs: Ordered-Set Aggregate Functions" }
+  - { url: "https://clickhouse.com/docs/sql-reference/aggregate-functions/reference/uniq", title: "ClickHouse docs: uniq", title_vi: "Tài liệu ClickHouse: uniq" }
+  - { url: "https://clickhouse.com/docs/sql-reference/aggregate-functions/reference/quantile", title: "ClickHouse docs: quantile", title_vi: "Tài liệu ClickHouse: quantile" }
+  - { url: "https://www.postgresql.org/docs/18/sql-select.html#SQL-FROM", title: "PostgreSQL 18 docs: SELECT (TABLESAMPLE)", title_vi: "SELECT (TABLESAMPLE)" }
+  - { url: "https://www.postgresql.org/docs/18/functions-aggregate.html#FUNCTIONS-ORDEREDSET-TABLE", title: "PostgreSQL 18 docs: Ordered-Set Aggregate Functions", title_vi: "Hàm gộp › hàm gộp có thứ tự (ordered-set)" }
 demo_setup: |
   CREATE TABLE visits (
     id int, container_id int,

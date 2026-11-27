@@ -18,8 +18,8 @@ objectives:
     en: Compute one day's error budget burn rate.
 requires: [e-tm-l1-02]
 sources:
-  - { url: "https://grafana.com/docs/grafana-cloud/alerting-and-irm/slo/introduction/", title: "Grafana: Introduction to Grafana SLO" }
-  - { url: "https://prometheus.io/docs/practices/histograms/", title: "Prometheus: Histograms (share of requests within a target)" }
+  - { url: "https://grafana.com/docs/grafana-cloud/alerting-and-irm/slo/introduction/", title: "Grafana: Introduction to Grafana SLO", title_vi: "Grafana: nhập môn Grafana SLO" }
+  - { url: "https://prometheus.io/docs/practices/histograms/", title: "Prometheus: Histograms (share of requests within a target)", title_vi: "Prometheus: histogram và summary" }
 lab:
   setup: |
     CREATE TABLE requests_daily (

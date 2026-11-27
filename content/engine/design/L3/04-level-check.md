@@ -15,9 +15,9 @@ objectives:
     en: Tell partial from transitive dependencies, and remember that data can only refute a dependency.
 requires: [e-ds-l3-03]
 sources:
-  - https://doi.org/10.1145/362384.362685
-  - https://www.bkent.net/Doc/simple5.htm
-  - https://www.postgresql.org/docs/18/queries-with.html
+  - { url: https://doi.org/10.1145/362384.362685, title_vi: "Bài báo ACM 10.1145/362384.362685" }
+  - { url: https://www.bkent.net/Doc/simple5.htm, title_vi: "William Kent: hướng dẫn đơn giản về năm dạng chuẩn" }
+  - { url: https://www.postgresql.org/docs/18/queries-with.html, title_vi: "Truy vấn WITH (CTE)" }
 lab:
   setup: |
     CREATE TABLE fds (id int PRIMARY KEY, lhs text[] NOT NULL, rhs text NOT NULL);

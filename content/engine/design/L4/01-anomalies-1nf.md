@@ -18,10 +18,10 @@ objectives:
     en: Split a comma-separated list column into a child table.
 requires: [e-ds-l3-03]
 sources:
-  - https://doi.org/10.1145/362384.362685
-  - https://www.bkent.net/Doc/simple5.htm
-  - https://www.postgresql.org/docs/18/functions-srf.html
-  - https://www.postgresql.org/docs/18/functions-string.html
+  - { url: https://doi.org/10.1145/362384.362685, title_vi: "Bài báo ACM 10.1145/362384.362685" }
+  - { url: https://www.bkent.net/Doc/simple5.htm, title_vi: "William Kent: hướng dẫn đơn giản về năm dạng chuẩn" }
+  - { url: https://www.postgresql.org/docs/18/functions-srf.html, title_vi: "Hàm trả về nhiều dòng (set returning)" }
+  - { url: https://www.postgresql.org/docs/18/functions-string.html, title_vi: "Hàm và toán tử chuỗi" }
 lab:
   setup: |
     CREATE TABLE customers_raw (id int PRIMARY KEY, name text NOT NULL, phones text);

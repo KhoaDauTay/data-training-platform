@@ -16,9 +16,9 @@ objectives:
     en: Count matching documents with `countDocuments`.
 requires: [e-mg-l1-07]
 sources:
-  - https://www.mongodb.com/docs/manual/reference/method/cursor.sort/
-  - https://www.mongodb.com/docs/manual/reference/method/cursor.skip/
-  - https://www.mongodb.com/docs/manual/reference/method/db.collection.countdocuments/
+  - { url: https://www.mongodb.com/docs/manual/reference/method/cursor.sort/, title_vi: "cursor.sort()" }
+  - { url: https://www.mongodb.com/docs/manual/reference/method/cursor.skip/, title_vi: "cursor.skip()" }
+  - { url: https://www.mongodb.com/docs/manual/reference/method/db.collection.countdocuments/, title_vi: "db.collection.countDocuments()" }
 lab:
   setup: |
     {"collections": {"products": [

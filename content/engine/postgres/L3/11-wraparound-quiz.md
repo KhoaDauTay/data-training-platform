@@ -18,8 +18,8 @@ objectives:
 requires: [e-pg-l3-10]
 figures: [{ name: pg-xid-wraparound, at: idea }]
 sources:
-  - https://www.postgresql.org/docs/18/routine-vacuuming.html
-  - https://www.postgresql.org/docs/18/runtime-config-vacuum.html
+  - { url: https://www.postgresql.org/docs/18/routine-vacuuming.html, title_vi: "VACUUM định kỳ" }
+  - { url: https://www.postgresql.org/docs/18/runtime-config-vacuum.html, title_vi: "Cấu hình VACUUM" }
 quiz:
   - q:
       vi: "XID là số 32 bit so theo modulo 2³². Mỗi bảng phải được VACUUM (freeze) ít nhất một lần trong khoảng bao nhiêu transaction?"

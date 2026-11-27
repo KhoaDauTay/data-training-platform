@@ -15,8 +15,8 @@ objectives:
     en: Explain why an update on a single document is atomic.
 requires: [e-mg-l1-06, e-mg-l1-08, e-mg-l1-10]
 sources:
-  - https://www.mongodb.com/docs/manual/crud/
-  - https://www.mongodb.com/docs/manual/core/write-operations-atomicity/
+  - { url: https://www.mongodb.com/docs/manual/crud/, title_vi: "Thao tác CRUD" }
+  - { url: https://www.mongodb.com/docs/manual/core/write-operations-atomicity/, title_vi: "Tính nguyên tử của thao tác ghi" }
 lab:
   setup: |
     {"collections": {

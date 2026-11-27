@@ -17,8 +17,8 @@ objectives:
     en: "Send every command of a transaction through its session"
 requires: [e-mg-l4-07]
 sources:
-  - https://www.mongodb.com/docs/manual/core/transactions/
-  - https://www.mongodb.com/docs/manual/core/transactions-production-consideration/
+  - { url: https://www.mongodb.com/docs/manual/core/transactions/, title_vi: "Transaction" }
+  - { url: https://www.mongodb.com/docs/manual/core/transactions-production-consideration/, title_vi: "Transaction khi chạy thật: những điều cần lưu ý" }
 quiz:
   - q:
       vi: "Một đơn hàng và các dòng của nó nằm trong cùng một tài liệu. Cập nhật tổng tiền và thêm một dòng trong một lệnh `updateOne`. Có cần transaction không?"

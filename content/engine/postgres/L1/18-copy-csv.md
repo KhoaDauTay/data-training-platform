@@ -18,10 +18,10 @@ objectives:
     en: Know that a `COPY` file lives on the server, and that a client uses `STDIN`/`STDOUT` instead (psql's `\copy`).
 requires: [e-pg-l1-15]
 sources:
-  - https://www.postgresql.org/docs/18/sql-copy.html
-  - https://www.postgresql.org/docs/18/app-psql.html#APP-PSQL-META-COMMANDS-COPY
-  - https://www.postgresql.org/docs/18/functions-admin.html#FUNCTIONS-ADMIN-GENFILE
-  - https://www.postgresql.org/docs/18/predefined-roles.html
+  - { url: https://www.postgresql.org/docs/18/sql-copy.html, title_vi: "COPY" }
+  - { url: https://www.postgresql.org/docs/18/app-psql.html#APP-PSQL-META-COMMANDS-COPY, title_vi: "psql › lệnh \\copy" }
+  - { url: https://www.postgresql.org/docs/18/functions-admin.html#FUNCTIONS-ADMIN-GENFILE, title_vi: "Hàm quản trị › truy cập file chung" }
+  - { url: https://www.postgresql.org/docs/18/predefined-roles.html, title_vi: "Vai trò định sẵn" }
 lab:
   setup: |
     CREATE TABLE orders (id int PRIMARY KEY, customer text NOT NULL, status text NOT NULL, total numeric(12,0));

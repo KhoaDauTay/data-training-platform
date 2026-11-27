@@ -18,10 +18,10 @@ objectives:
     en: Write queries that do not break when the source adds a new column.
 requires: [e-st-l1-02]
 sources:
-  - { url: "https://fivetran.com/docs/core-concepts/system-columns-and-tables", title: "Fivetran docs: System columns and tables" }
-  - { url: "https://docs.airbyte.com/platform/understanding-airbyte/airbyte-metadata-fields", title: "Airbyte docs: Airbyte metadata fields" }
-  - { url: "https://docs.airbyte.com/platform/using-airbyte/core-concepts/sync-modes/incremental-append", title: "Airbyte docs: Incremental Sync - Append" }
-  - https://www.postgresql.org/docs/18/sql-insert.html
+  - { url: "https://fivetran.com/docs/core-concepts/system-columns-and-tables", title: "Fivetran docs: System columns and tables", title_vi: "Tài liệu Fivetran: cột và bảng hệ thống" }
+  - { url: "https://docs.airbyte.com/platform/understanding-airbyte/airbyte-metadata-fields", title: "Airbyte docs: Airbyte metadata fields", title_vi: "Tài liệu Airbyte: các trường metadata của Airbyte" }
+  - { url: "https://docs.airbyte.com/platform/using-airbyte/core-concepts/sync-modes/incremental-append", title: "Airbyte docs: Incremental Sync - Append", title_vi: "Tài liệu Airbyte: đồng bộ tăng dần, nối thêm" }
+  - { url: https://www.postgresql.org/docs/18/sql-insert.html, title_vi: "INSERT" }
 lab:
   setup: |
     CREATE SCHEMA raw_shop;

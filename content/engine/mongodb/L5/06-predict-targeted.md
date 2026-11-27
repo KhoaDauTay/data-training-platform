@@ -16,8 +16,8 @@ objectives:
     en: "Recognise which filters are a prefix of a compound shard key"
 requires: [e-mg-l5-05]
 sources:
-  - https://www.mongodb.com/docs/manual/core/sharded-cluster-query-router/
-  - https://www.mongodb.com/docs/manual/core/sharding-choose-a-shard-key/
+  - { url: https://www.mongodb.com/docs/manual/core/sharded-cluster-query-router/, title_vi: "Bộ định tuyến truy vấn mongos" }
+  - { url: https://www.mongodb.com/docs/manual/core/sharding-choose-a-shard-key/, title_vi: "Chọn shard key" }
 predict:
   sql: |
     sh.shardCollection("shop.orders", { a: 1, b: 1, c: 1 })

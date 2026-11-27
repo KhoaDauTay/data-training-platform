@@ -18,9 +18,9 @@ objectives:
     en: Know why duplicates must be removed before deleted rows are dropped.
 requires: [e-st-l2-08, e-st-l2-04]
 sources:
-  - { url: "https://fivetran.com/docs/core-concepts/system-columns-and-tables", title: "Fivetran docs: System columns and tables" }
-  - { url: "https://docs.getdbt.com/docs/build/data-tests", title: "dbt docs: Add data tests to your DAG" }
-  - https://www.postgresql.org/docs/18/sql-select.html#SQL-DISTINCT
+  - { url: "https://fivetran.com/docs/core-concepts/system-columns-and-tables", title: "Fivetran docs: System columns and tables", title_vi: "Tài liệu Fivetran: cột và bảng hệ thống" }
+  - { url: "https://docs.getdbt.com/docs/build/data-tests", title: "dbt docs: Add data tests to your DAG", title_vi: "Tài liệu dbt: thêm data test vào DAG" }
+  - { url: https://www.postgresql.org/docs/18/sql-select.html#SQL-DISTINCT, title_vi: "SELECT DISTINCT ON" }
 lab:
   setup: |
     CREATE SCHEMA raw_shop;

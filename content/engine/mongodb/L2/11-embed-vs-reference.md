@@ -17,9 +17,9 @@ objectives:
 requires: [e-mg-l2-08]
 demo_setup: '{"collections": {"orders": [{"_id": 3, "customer": "c1", "customerName": "An", "lines": [{"sku": "p5", "qty": 1}, {"sku": "p1", "qty": 4}]}, {"_id": 4, "customer": "c3", "customerName": "Chi", "lines": [{"sku": "p3", "qty": 10}]}], "reviews": [{"_id": "r980", "productId": "p1", "stars": 4}, {"_id": "r981", "productId": "p1", "stars": 5}, {"_id": "r982", "productId": "p3", "stars": 3}]}}'
 sources:
-  - https://www.mongodb.com/docs/manual/data-modeling/best-practices/
-  - https://www.mongodb.com/docs/manual/core/write-operations-atomicity/
-  - https://www.mongodb.com/docs/manual/reference/limits/
+  - { url: https://www.mongodb.com/docs/manual/data-modeling/best-practices/, title_vi: "Mô hình hóa dữ liệu: thực hành tốt" }
+  - { url: https://www.mongodb.com/docs/manual/core/write-operations-atomicity/, title_vi: "Tính nguyên tử của thao tác ghi" }
+  - { url: https://www.mongodb.com/docs/manual/reference/limits/, title_vi: "Giới hạn và ngưỡng" }
 quiz:
   - q:
       vi: Các dòng hàng của một đơn luôn được đọc và sửa cùng đơn, mỗi đơn có vài dòng. Nên lưu thế nào?

@@ -18,8 +18,8 @@ objectives:
     en: Fill an empty slot with the latest earlier reading (last observation carried forward, LOCF) with `LATERAL`.
 requires: [e-ts-l1-03]
 sources:
-  - https://www.postgresql.org/docs/18/functions-srf.html
-  - https://www.postgresql.org/docs/18/queries-table-expressions.html#QUERIES-LATERAL
+  - { url: https://www.postgresql.org/docs/18/functions-srf.html, title_vi: "Hàm trả về nhiều dòng (set returning)" }
+  - { url: https://www.postgresql.org/docs/18/queries-table-expressions.html#QUERIES-LATERAL, title_vi: "Biểu thức bảng › truy vấn con LATERAL" }
 lab:
   setup: |
     CREATE TABLE readings (

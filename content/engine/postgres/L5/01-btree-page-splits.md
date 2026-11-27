@@ -15,9 +15,9 @@ objectives:
   - { vi: "Đi từ gốc xuống lá bằng `bt_page_items`", en: "Walk from the root to a leaf with `bt_page_items`" }
 requires: []
 sources:
-  - https://www.postgresql.org/docs/18/btree.html
-  - https://www.postgresql.org/docs/18/pageinspect.html
-  - https://www.postgresql.org/docs/18/sql-createindex.html
+  - { url: https://www.postgresql.org/docs/18/btree.html, title_vi: "Index B-tree" }
+  - { url: https://www.postgresql.org/docs/18/pageinspect.html, title_vi: "pageinspect" }
+  - { url: https://www.postgresql.org/docs/18/sql-createindex.html, title_vi: "CREATE INDEX" }
 viz: pg-btree
 lab:
   setup: |

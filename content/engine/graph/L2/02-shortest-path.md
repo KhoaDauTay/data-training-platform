@@ -18,9 +18,9 @@ objectives:
     en: Tell the fewest legs apart from the fewest days (a weighted route).
 requires: [e-gr-l2-01]
 sources:
-  - https://www.postgresql.org/docs/18/queries-with.html
-  - { url: "https://www.postgresql.org/docs/release/14.0/", title: "PostgreSQL 14 release notes: SEARCH and CYCLE" }
-  - { url: "https://neo4j.com/docs/cypher-manual/current/patterns/shortest-paths/", title: "Cypher Manual: Shortest paths" }
+  - { url: https://www.postgresql.org/docs/18/queries-with.html, title_vi: "Truy vấn WITH (CTE)" }
+  - { url: "https://www.postgresql.org/docs/release/14.0/", title: "PostgreSQL 14 release notes: SEARCH and CYCLE", title_vi: "Ghi chú phát hành PostgreSQL 14: SEARCH và CYCLE" }
+  - { url: "https://neo4j.com/docs/cypher-manual/current/patterns/shortest-paths/", title: "Cypher Manual: Shortest paths", title_vi: "Cypher Manual: đường đi ngắn nhất" }
 lab:
   setup: |
     CREATE TABLE ports (code text PRIMARY KEY);

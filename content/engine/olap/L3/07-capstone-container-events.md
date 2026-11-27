@@ -18,10 +18,10 @@ objectives:
     en: Add a BRIN index to the events table and total by port with a grand total using `ROLLUP`.
 requires: [e-ol-l3-03, e-ol-l3-04, e-ol-l2-01]
 sources:
-  - { url: "https://clickhouse.com/docs/engines/table-engines/mergetree-family/replacingmergetree", title: "ClickHouse docs: ReplacingMergeTree" }
-  - { url: "https://clickhouse.com/docs/sql-reference/statements/select/from", title: "ClickHouse docs: FROM clause (FINAL modifier)" }
-  - { url: "https://www.postgresql.org/docs/18/sql-select.html#SQL-DISTINCT", title: "PostgreSQL 18 docs: SELECT DISTINCT ON" }
-  - { url: "https://www.postgresql.org/docs/18/brin.html", title: "PostgreSQL 18 docs: BRIN Indexes" }
+  - { url: "https://clickhouse.com/docs/engines/table-engines/mergetree-family/replacingmergetree", title: "ClickHouse docs: ReplacingMergeTree", title_vi: "Tài liệu ClickHouse: ReplacingMergeTree" }
+  - { url: "https://clickhouse.com/docs/sql-reference/statements/select/from", title: "ClickHouse docs: FROM clause (FINAL modifier)", title_vi: "Tài liệu ClickHouse: mệnh đề FROM (FINAL)" }
+  - { url: "https://www.postgresql.org/docs/18/sql-select.html#SQL-DISTINCT", title: "PostgreSQL 18 docs: SELECT DISTINCT ON", title_vi: "SELECT DISTINCT ON" }
+  - { url: "https://www.postgresql.org/docs/18/brin.html", title: "PostgreSQL 18 docs: BRIN Indexes", title_vi: "Index BRIN" }
 lab:
   setup: |
     CREATE TABLE container_events (

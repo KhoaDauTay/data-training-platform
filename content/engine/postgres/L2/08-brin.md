@@ -19,9 +19,9 @@ objectives:
     en: Check the correlation between values and physical position before choosing BRIN.
 requires: [e-pg-l2-07]
 sources:
-  - https://www.postgresql.org/docs/18/brin.html
-  - https://www.postgresql.org/docs/18/indexes-types.html
-  - https://www.postgresql.org/docs/18/view-pg-stats.html
+  - { url: https://www.postgresql.org/docs/18/brin.html, title_vi: "Index BRIN" }
+  - { url: https://www.postgresql.org/docs/18/indexes-types.html, title_vi: "Các loại index" }
+  - { url: https://www.postgresql.org/docs/18/view-pg-stats.html, title_vi: "pg_stats" }
 lab:
   setup: |
     CREATE TABLE readings (

@@ -18,8 +18,8 @@ objectives:
     en: Tell a subtotal row's NULL from a real NULL in the data with `GROUPING()`.
 requires: [e-ol-l1-03]
 sources:
-  - { url: "https://www.postgresql.org/docs/18/queries-table-expressions.html#QUERIES-GROUPING-SETS", title: "PostgreSQL 18 docs: GROUPING SETS, CUBE, and ROLLUP" }
-  - { url: "https://www.postgresql.org/docs/18/functions-aggregate.html#FUNCTIONS-GROUPING-TABLE", title: "PostgreSQL 18 docs: Grouping Operations" }
+  - { url: "https://www.postgresql.org/docs/18/queries-table-expressions.html#QUERIES-GROUPING-SETS", title: "PostgreSQL 18 docs: GROUPING SETS, CUBE, and ROLLUP", title_vi: "GROUPING SETS, CUBE và ROLLUP" }
+  - { url: "https://www.postgresql.org/docs/18/functions-aggregate.html#FUNCTIONS-GROUPING-TABLE", title: "PostgreSQL 18 docs: Grouping Operations", title_vi: "Hàm gộp › thao tác nhóm (GROUPING)" }
 lab:
   setup: |
     CREATE TABLE moves (

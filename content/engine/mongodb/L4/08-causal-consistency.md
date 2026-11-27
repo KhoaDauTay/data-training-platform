@@ -18,9 +18,9 @@ objectives:
     en: "Spot a stale secondary read outside a session and how to fix it"
 requires: [e-mg-l4-07]
 sources:
-  - https://www.mongodb.com/docs/manual/core/read-isolation-consistency-recency/
-  - https://www.mongodb.com/docs/manual/core/causal-consistency-read-write-concerns/
-  - https://www.mongodb.com/docs/manual/reference/write-concern/
+  - { url: https://www.mongodb.com/docs/manual/core/read-isolation-consistency-recency/, title_vi: "Cô lập, nhất quán và độ mới khi đọc" }
+  - { url: https://www.mongodb.com/docs/manual/core/causal-consistency-read-write-concerns/, title_vi: "Nhất quán nhân quả, read concern và write concern" }
+  - { url: https://www.mongodb.com/docs/manual/reference/write-concern/, title_vi: "Write concern" }
 quiz:
   - q:
       vi: "Trong session nhất quán nhân quả, bạn ghi `w: \"majority\"` rồi đọc từ secondary với read concern `majority`. Lần đọc thấy gì?"

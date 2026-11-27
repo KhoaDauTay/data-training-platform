@@ -20,9 +20,9 @@ objectives:
     en: Read the header and line pointers of a page with `pageinspect`
 requires: []
 sources:
-  - https://www.postgresql.org/docs/18/storage-page-layout.html
-  - https://www.postgresql.org/docs/18/ddl-system-columns.html
-  - https://www.postgresql.org/docs/18/pageinspect.html
+  - { url: https://www.postgresql.org/docs/18/storage-page-layout.html, title_vi: "Cấu trúc trang dữ liệu" }
+  - { url: https://www.postgresql.org/docs/18/ddl-system-columns.html, title_vi: "Cột hệ thống" }
+  - { url: https://www.postgresql.org/docs/18/pageinspect.html, title_vi: "pageinspect" }
 quiz:
   - q:
       vi: "Header trang có `lower` = 36 và `upper` = 8088. Trang này có bao nhiêu line pointer?"

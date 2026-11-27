@@ -19,10 +19,10 @@ objectives:
     en: Count the rows a statement changed with the transition table of a STATEMENT trigger.
 requires: [e-pg-l2-18]
 sources:
-  - https://www.postgresql.org/docs/18/trigger-definition.html
-  - https://www.postgresql.org/docs/18/sql-createtrigger.html
-  - https://www.postgresql.org/docs/18/plpgsql-trigger.html
-  - https://www.postgresql.org/docs/18/sql-droptrigger.html
+  - { url: https://www.postgresql.org/docs/18/trigger-definition.html, title_vi: "Trigger hoạt động thế nào" }
+  - { url: https://www.postgresql.org/docs/18/sql-createtrigger.html, title_vi: "CREATE TRIGGER" }
+  - { url: https://www.postgresql.org/docs/18/plpgsql-trigger.html, title_vi: "Hàm trigger" }
+  - { url: https://www.postgresql.org/docs/18/sql-droptrigger.html, title_vi: "DROP TRIGGER" }
 lab:
   setup: |
     CREATE TABLE products (

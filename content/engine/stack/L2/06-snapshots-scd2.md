@@ -18,9 +18,9 @@ objectives:
     en: Write an "as of" query and join a fact to a snapshot without multiplying rows.
 requires: [e-st-l2-04]
 sources:
-  - { url: "https://docs.getdbt.com/docs/build/snapshots", title: "dbt docs: Add snapshots to your DAG" }
-  - https://www.postgresql.org/docs/18/sql-merge.html
-  - { url: "https://www.kimballgroup.com/data-warehouse-business-intelligence-resources/kimball-techniques/dimensional-modeling-techniques/type-2/", title: "Kimball Group: Type 2 slowly changing dimension" }
+  - { url: "https://docs.getdbt.com/docs/build/snapshots", title: "dbt docs: Add snapshots to your DAG", title_vi: "Tài liệu dbt: thêm snapshot vào DAG" }
+  - { url: https://www.postgresql.org/docs/18/sql-merge.html, title_vi: "MERGE" }
+  - { url: "https://www.kimballgroup.com/data-warehouse-business-intelligence-resources/kimball-techniques/dimensional-modeling-techniques/type-2/", title: "Kimball Group: Type 2 slowly changing dimension", title_vi: "Kimball Group: dimension thay đổi chậm loại 2" }
 lab:
   setup: |
     CREATE SCHEMA raw_shop;

@@ -16,9 +16,9 @@ objectives:
   - { vi: "Biết vì sao một partition key ít giá trị khác nhau dễ thành điểm nóng", en: "Know why a partition key with few distinct values easily becomes a hot spot" }
 requires: []
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.Partitions.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/burst-adaptive-capacity.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-partition-key-design.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.Partitions.html, title_vi: "Cách hoạt động: partition" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/burst-adaptive-capacity.html, title_vi: "Capacity dự phòng (burst) và tự điều chỉnh (adaptive)" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-partition-key-design.html, title_vi: "Thực hành tốt cho partition key" }
 figures: [{ name: dy-partitions, at: example }]
 quiz:
   - q: { vi: "Hai item có cùng partition key nhưng khác sort key. DynamoDB đặt chúng ở đâu?", en: "Two items share a partition key but have different sort keys. Where does DynamoDB put them?" }

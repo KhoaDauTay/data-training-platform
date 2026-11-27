@@ -20,10 +20,13 @@ requires: [e-ds-l4-08]
 sources:
   - url: https://docs.aws.amazon.com/wellarchitected/latest/saas-lens/silo-pool-and-bridge-models.html
     title: "Silo, Pool, and Bridge Models"
+    title_vi: "Mô hình silo, pool và bridge"
   - url: https://www.postgresql.org/docs/18/ddl-constraints.html#DDL-CONSTRAINTS-FK
     title: "Constraints › Foreign Keys"
+    title_vi: "Ràng buộc › khóa ngoại"
   - url: https://www.postgresql.org/docs/18/ddl-rowsecurity.html
     title: "Row Security Policies"
+    title_vi: "Chính sách bảo mật theo dòng (RLS)"
 lab:
   setup: |
     CREATE TABLE invoices (

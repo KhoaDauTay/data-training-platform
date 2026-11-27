@@ -15,8 +15,8 @@ objectives:
     en: "Fix an index's field order to remove the SORT stage"
 requires: [e-mg-l3-05]
 sources:
-  - https://www.mongodb.com/docs/manual/tutorial/equality-sort-range-guideline/
-  - https://www.mongodb.com/docs/manual/reference/explain-results/
+  - { url: https://www.mongodb.com/docs/manual/tutorial/equality-sort-range-guideline/, title_vi: "Quy tắc ESR (so bằng, sắp xếp, khoảng)" }
+  - { url: https://www.mongodb.com/docs/manual/reference/explain-results/, title_vi: "Đọc kết quả explain" }
 predict:
   sql: |
     db.movies.createIndex({ directors: 1, runtime: 1, year: 1 })

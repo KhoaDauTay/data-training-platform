@@ -18,9 +18,9 @@ objectives:
     en: Meet `TransactionCanceledException` when one condition is false, and see that no item was written.
 requires: [e-dy-l4-13]
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ql-reference.multiplestatements.transactions.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_ExecuteTransaction.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/transaction-apis.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ql-reference.multiplestatements.transactions.html, title_vi: "PartiQL: transaction nhiều câu lệnh" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_ExecuteTransaction.html, title_vi: "API ExecuteTransaction" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/transaction-apis.html, title_vi: "API transaction" }
 lab:
   setup: |
     {"tables": [

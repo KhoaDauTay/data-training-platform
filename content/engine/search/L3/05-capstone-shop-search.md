@@ -16,9 +16,9 @@ objectives:
     en: "Pick the right `bool` slot for each condition so the scores are not skewed."
 requires: [e-sr-l2-03, e-sr-l2-05, e-sr-l3-01]
 sources:
-  - https://www.elastic.co/docs/reference/query-languages/query-dsl/query-dsl-bool-query
-  - https://www.elastic.co/docs/reference/query-languages/query-dsl/query-dsl-match-query
-  - https://www.elastic.co/docs/reference/aggregations/search-aggregations-bucket-terms-aggregation
+  - { url: https://www.elastic.co/docs/reference/query-languages/query-dsl/query-dsl-bool-query, title_vi: "Truy vấn bool" }
+  - { url: https://www.elastic.co/docs/reference/query-languages/query-dsl/query-dsl-match-query, title_vi: "Truy vấn match" }
+  - { url: https://www.elastic.co/docs/reference/aggregations/search-aggregations-bucket-terms-aggregation, title_vi: "Aggregation terms" }
 lab:
   setup: |
     {"index": "shop",

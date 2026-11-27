@@ -15,9 +15,9 @@ objectives:
   - { vi: "Chọn hay không chọn DAX cho một mẫu truy cập", en: "Decide whether an access pattern should use DAX" }
 requires: [e-dy-l4-06]
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DAX.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DAX.concepts.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DAX.consistency.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DAX.html, title_vi: "DAX (bộ nhớ đệm trong bộ nhớ)" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DAX.concepts.html, title_vi: "Khái niệm DAX" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DAX.consistency.html, title_vi: "DAX và tính nhất quán" }
 quiz:
   - q: { vi: "Ứng dụng ghi một item qua DAX bằng `UpdateItem`, rồi chạy lại đúng `Query` đã chạy một phút trước. `Query` trả gì?", en: "An app writes an item through DAX with `UpdateItem`, then reruns the exact `Query` it ran a minute ago. What does the `Query` return?" }
     options:

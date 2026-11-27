@@ -15,8 +15,8 @@ objectives:
   - { vi: "Xếp hạng câu theo tổng thời gian thay vì theo một lần chạy chậm", en: "Rank queries by total time instead of by one slow run" }
 requires: []
 sources:
-  - https://www.postgresql.org/docs/18/pgstatstatements.html
-  - https://www.postgresql.org/docs/18/monitoring-stats.html
+  - { url: https://www.postgresql.org/docs/18/pgstatstatements.html, title_vi: "pg_stat_statements" }
+  - { url: https://www.postgresql.org/docs/18/monitoring-stats.html, title_vi: "Hệ thống thống kê hoạt động" }
 lab:
   setup: |
     CREATE EXTENSION IF NOT EXISTS pg_stat_statements;

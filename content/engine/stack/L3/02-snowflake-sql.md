@@ -18,11 +18,11 @@ objectives:
     en: Know why `QUALIFY` filters after window functions while `WHERE` cannot filter on them.
 requires: [e-st-l1-05]
 sources:
-  - { url: "https://docs.snowflake.com/en/sql-reference/constructs/qualify", title: "Snowflake docs: QUALIFY" }
-  - { url: "https://docs.snowflake.com/en/sql-reference/functions/iff", title: "Snowflake docs: IFF" }
-  - { url: "https://docs.snowflake.com/en/sql-reference/functions/ilike", title: "Snowflake docs: ILIKE" }
-  - https://www.postgresql.org/docs/18/tutorial-window.html
-  - https://www.postgresql.org/docs/18/functions-json.html
+  - { url: "https://docs.snowflake.com/en/sql-reference/constructs/qualify", title: "Snowflake docs: QUALIFY", title_vi: "Tài liệu Snowflake: QUALIFY" }
+  - { url: "https://docs.snowflake.com/en/sql-reference/functions/iff", title: "Snowflake docs: IFF", title_vi: "Tài liệu Snowflake: IFF" }
+  - { url: "https://docs.snowflake.com/en/sql-reference/functions/ilike", title: "Snowflake docs: ILIKE", title_vi: "Tài liệu Snowflake: ILIKE" }
+  - { url: https://www.postgresql.org/docs/18/tutorial-window.html, title_vi: "Hướng dẫn › hàm cửa sổ" }
+  - { url: https://www.postgresql.org/docs/18/functions-json.html, title_vi: "Hàm và toán tử JSON" }
 lab:
   setup: |
     CREATE SCHEMA raw_pay;

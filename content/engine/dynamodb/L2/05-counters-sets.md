@@ -18,8 +18,8 @@ objectives:
     en: Explain why an atomic counter is not idempotent.
 requires: [e-dy-l2-03]
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithItems.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html, title_vi: "Biểu thức cập nhật (update expression)" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithItems.html, title_vi: "Làm việc với item" }
 lab:
   setup: |
     {"tables": [{"TableName":"Books","KeySchema":[{"AttributeName":"isbn","KeyType":"HASH"}],"AttributeDefinitions":[{"AttributeName":"isbn","AttributeType":"S"}],"BillingMode":"PAY_PER_REQUEST"}],

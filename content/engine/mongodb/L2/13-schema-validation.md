@@ -15,10 +15,10 @@ objectives:
     en: Choose `validationLevel` and `validationAction` for a collection that already holds old data.
 requires: [e-mg-l2-11]
 sources:
-  - https://www.mongodb.com/docs/manual/core/schema-validation/
-  - https://www.mongodb.com/docs/manual/core/schema-validation/specify-json-schema/
-  - https://www.mongodb.com/docs/manual/core/schema-validation/specify-validation-level/
-  - https://www.mongodb.com/docs/manual/core/schema-validation/handle-invalid-documents/
+  - { url: https://www.mongodb.com/docs/manual/core/schema-validation/, title_vi: "Kiểm tra schema" }
+  - { url: https://www.mongodb.com/docs/manual/core/schema-validation/specify-json-schema/, title_vi: "Khai báo JSON Schema" }
+  - { url: https://www.mongodb.com/docs/manual/core/schema-validation/specify-validation-level/, title_vi: "Chọn mức kiểm tra (validation level)" }
+  - { url: https://www.mongodb.com/docs/manual/core/schema-validation/handle-invalid-documents/, title_vi: "Xử lý tài liệu không hợp lệ" }
 quiz:
   - q:
       vi: 'Collection `orders` có validator đòi `total` kiểu `"int"` và không ghi gì thêm. Lệnh `insertOne({ _id: 10, total: "big" })` thì sao?'

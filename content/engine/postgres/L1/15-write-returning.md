@@ -18,10 +18,10 @@ objectives:
     en: Read back the rows you just wrote with `RETURNING`, including the previous values through `old` (Postgres 18).
 requires: [e-pg-l1-03]
 sources:
-  - https://www.postgresql.org/docs/18/sql-insert.html
-  - https://www.postgresql.org/docs/18/sql-update.html
-  - https://www.postgresql.org/docs/18/sql-delete.html
-  - https://www.postgresql.org/docs/18/dml-returning.html
+  - { url: https://www.postgresql.org/docs/18/sql-insert.html, title_vi: "INSERT" }
+  - { url: https://www.postgresql.org/docs/18/sql-update.html, title_vi: "UPDATE" }
+  - { url: https://www.postgresql.org/docs/18/sql-delete.html, title_vi: "DELETE" }
+  - { url: https://www.postgresql.org/docs/18/dml-returning.html, title_vi: "Lấy lại dữ liệu từ dòng vừa ghi (RETURNING)" }
 lab:
   setup: |
     CREATE TABLE products (

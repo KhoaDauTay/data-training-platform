@@ -15,8 +15,8 @@ objectives:
     en: Use expressions, batches and PartiQL in the right place.
 requires: [e-dy-l2-04, e-dy-l2-05, e-dy-l2-06, e-dy-l2-07]
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithItems.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.ConditionExpressions.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithItems.html, title_vi: "Làm việc với item" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.ConditionExpressions.html, title_vi: "Biểu thức điều kiện (condition expression)" }
 lab:
   setup: |
     {"tables": [{"TableName":"Books","KeySchema":[{"AttributeName":"isbn","KeyType":"HASH"}],"AttributeDefinitions":[{"AttributeName":"isbn","AttributeType":"S"}],"BillingMode":"PAY_PER_REQUEST"}],

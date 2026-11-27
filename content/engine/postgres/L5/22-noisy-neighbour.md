@@ -18,12 +18,16 @@ figures: [{ name: pg-noisy-neighbour, at: idea }]
 sources:
   - url: https://www.postgresql.org/docs/18/sql-alterrole.html
     title: "ALTER ROLE"
+    title_vi: "ALTER ROLE"
   - url: https://www.postgresql.org/docs/18/runtime-config-client.html
     title: "Client Connection Defaults"
+    title_vi: "Cấu hình mặc định cho kết nối"
   - url: https://www.postgresql.org/docs/18/plpgsql-trigger.html
     title: "PL/pgSQL › Trigger Functions"
+    title_vi: "Hàm trigger"
   - url: https://www.postgresql.org/docs/18/errcodes-appendix.html
     title: "Error Codes"
+    title_vi: "Mã lỗi"
 lab:
   setup: |
     DO $$

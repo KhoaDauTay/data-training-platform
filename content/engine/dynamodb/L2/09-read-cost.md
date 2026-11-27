@@ -16,8 +16,8 @@ objectives:
     en: Know that a projection, `Select COUNT` and a missing item never make a read cheaper.
 requires: [e-dy-l2-08, e-dy-l1-09]
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/read-write-operations.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Constraints.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/read-write-operations.html, title_vi: "Thao tác đọc và ghi" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Constraints.html, title_vi: "Giới hạn" }
 predict:
   sql: |
     {"op": "BatchGetItem", "input": {"RequestItems": {"Books": {

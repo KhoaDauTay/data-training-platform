@@ -18,8 +18,8 @@ objectives:
     en: Explain why a user id or an order id must not be a label.
 requires: [e-tm-l1-02]
 sources:
-  - { url: "https://prometheus.io/docs/practices/naming/", title: "Prometheus: Metric and label naming" }
-  - { url: "https://prometheus.io/docs/concepts/data_model/", title: "Prometheus: Data model" }
+  - { url: "https://prometheus.io/docs/practices/naming/", title: "Prometheus: Metric and label naming", title_vi: "Prometheus: đặt tên metric và label" }
+  - { url: "https://prometheus.io/docs/concepts/data_model/", title: "Prometheus: Data model", title_vi: "Prometheus: mô hình dữ liệu" }
 lab:
   setup: |
     CREATE TABLE metrics (

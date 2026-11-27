@@ -18,9 +18,9 @@ objectives:
     en: Read a request count from a counter as the difference between two readings.
 requires: [e-pg-l1-01]
 sources:
-  - { url: "https://opentelemetry.io/docs/concepts/signals/", title: "OpenTelemetry: Signals" }
-  - { url: "https://opentelemetry.io/docs/concepts/signals/traces/", title: "OpenTelemetry: Traces" }
-  - { url: "https://opentelemetry.io/docs/concepts/signals/logs/", title: "OpenTelemetry: Logs" }
+  - { url: "https://opentelemetry.io/docs/concepts/signals/", title: "OpenTelemetry: Signals", title_vi: "OpenTelemetry: các loại tín hiệu" }
+  - { url: "https://opentelemetry.io/docs/concepts/signals/traces/", title: "OpenTelemetry: Traces", title_vi: "OpenTelemetry: trace (span, id của span cha)" }
+  - { url: "https://opentelemetry.io/docs/concepts/signals/logs/", title: "OpenTelemetry: Logs", title_vi: "OpenTelemetry: log (TraceId, SpanId)" }
 lab:
   setup: |
     CREATE TABLE metrics (

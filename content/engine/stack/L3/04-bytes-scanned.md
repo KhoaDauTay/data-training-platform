@@ -18,11 +18,11 @@ objectives:
     en: Estimate the bytes a query reads from each column's size and the partitions it touches.
 requires: [e-st-l3-01]
 sources:
-  - { url: "https://docs.cloud.google.com/bigquery/docs/best-practices-costs", title: "BigQuery docs: Best practices for controlling costs" }
-  - { url: "https://docs.cloud.google.com/bigquery/docs/best-practices-performance-compute", title: "BigQuery docs: Optimize query computation (Avoid SELECT *)" }
-  - { url: "https://docs.cloud.google.com/bigquery/docs/partitioned-tables", title: "BigQuery docs: Introduction to partitioned tables" }
-  - { url: "https://docs.cloud.google.com/bigquery/docs/clustered-tables", title: "BigQuery docs: Introduction to clustered tables" }
-  - https://www.postgresql.org/docs/18/ddl-partitioning.html
+  - { url: "https://docs.cloud.google.com/bigquery/docs/best-practices-costs", title: "BigQuery docs: Best practices for controlling costs", title_vi: "Tài liệu BigQuery: thực hành tốt để kiểm soát chi phí" }
+  - { url: "https://docs.cloud.google.com/bigquery/docs/best-practices-performance-compute", title: "BigQuery docs: Optimize query computation (Avoid SELECT *)", title_vi: "Tài liệu BigQuery: tối ưu tính toán của truy vấn (tránh SELECT *)" }
+  - { url: "https://docs.cloud.google.com/bigquery/docs/partitioned-tables", title: "BigQuery docs: Introduction to partitioned tables", title_vi: "Tài liệu BigQuery: nhập môn bảng phân vùng" }
+  - { url: "https://docs.cloud.google.com/bigquery/docs/clustered-tables", title: "BigQuery docs: Introduction to clustered tables", title_vi: "Tài liệu BigQuery: nhập môn bảng clustered" }
+  - { url: https://www.postgresql.org/docs/18/ddl-partitioning.html, title_vi: "Phân vùng bảng (partitioning)" }
 demo_setup: |
   CREATE TABLE app_events (
     day date, user_id int, kind text,

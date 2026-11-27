@@ -19,10 +19,10 @@ objectives:
     en: Know that a plain `CREATE INDEX` blocks writes while `CONCURRENTLY` does not, but is slower and has traps.
 requires: [e-pg-l2-13]
 sources:
-  - https://www.postgresql.org/docs/18/using-explain.html
-  - https://www.postgresql.org/docs/18/sql-explain.html
-  - https://www.postgresql.org/docs/18/sql-createindex.html
-  - https://www.postgresql.org/docs/18/explicit-locking.html
+  - { url: https://www.postgresql.org/docs/18/using-explain.html, title_vi: "Dùng EXPLAIN" }
+  - { url: https://www.postgresql.org/docs/18/sql-explain.html, title_vi: "EXPLAIN" }
+  - { url: https://www.postgresql.org/docs/18/sql-createindex.html, title_vi: "CREATE INDEX" }
+  - { url: https://www.postgresql.org/docs/18/explicit-locking.html, title_vi: "Khóa tường minh" }
 lab:
   setup: |
     CREATE TABLE orders (id int PRIMARY KEY, status text NOT NULL);

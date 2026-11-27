@@ -18,9 +18,9 @@ objectives:
     en: Build the schema step by step and check it with a real query.
 requires: [e-ds-l2-03]
 sources:
-  - https://doi.org/10.1145/320434.320440
-  - https://www.postgresql.org/docs/18/ddl-constraints.html
-  - https://www.postgresql.org/docs/18/sql-createtable.html
+  - { url: https://doi.org/10.1145/320434.320440, title_vi: "Bài báo ACM 10.1145/320434.320440" }
+  - { url: https://www.postgresql.org/docs/18/ddl-constraints.html, title_vi: "Ràng buộc" }
+  - { url: https://www.postgresql.org/docs/18/sql-createtable.html, title_vi: "CREATE TABLE" }
 lab:
   setup: |
     CREATE TABLE specialties (id int PRIMARY KEY, name text NOT NULL UNIQUE);

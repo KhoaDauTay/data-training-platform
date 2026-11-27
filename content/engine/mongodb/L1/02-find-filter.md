@@ -15,8 +15,8 @@ objectives:
     en: Filter on a field of an embedded document with dot notation.
 requires: [e-mg-l1-01]
 sources:
-  - https://www.mongodb.com/docs/manual/tutorial/query-documents/
-  - https://www.mongodb.com/docs/manual/tutorial/query-embedded-documents/
+  - { url: https://www.mongodb.com/docs/manual/tutorial/query-documents/, title_vi: "Truy vấn tài liệu" }
+  - { url: https://www.mongodb.com/docs/manual/tutorial/query-embedded-documents/, title_vi: "Truy vấn tài liệu lồng nhau" }
 lab:
   setup: |
     {"collections": {"customers": [

@@ -18,9 +18,9 @@ objectives:
     en: "Do the merge yourself: build a table keeping only the version with the largest `ver`."
 requires: [e-ol-l3-01]
 sources:
-  - { url: "https://clickhouse.com/docs/engines/table-engines/mergetree-family/replacingmergetree", title: "ClickHouse docs: ReplacingMergeTree" }
-  - { url: "https://clickhouse.com/docs/sql-reference/statements/select/from", title: "ClickHouse docs: FROM clause (FINAL modifier)" }
-  - { url: "https://www.postgresql.org/docs/18/sql-select.html#SQL-DISTINCT", title: "PostgreSQL 18 docs: SELECT DISTINCT ON" }
+  - { url: "https://clickhouse.com/docs/engines/table-engines/mergetree-family/replacingmergetree", title: "ClickHouse docs: ReplacingMergeTree", title_vi: "Tài liệu ClickHouse: ReplacingMergeTree" }
+  - { url: "https://clickhouse.com/docs/sql-reference/statements/select/from", title: "ClickHouse docs: FROM clause (FINAL modifier)", title_vi: "Tài liệu ClickHouse: mệnh đề FROM (FINAL)" }
+  - { url: "https://www.postgresql.org/docs/18/sql-select.html#SQL-DISTINCT", title: "PostgreSQL 18 docs: SELECT DISTINCT ON", title_vi: "SELECT DISTINCT ON" }
 lab:
   setup: |
     CREATE TABLE status_events (

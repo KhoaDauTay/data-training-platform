@@ -16,7 +16,7 @@ objectives:
     en: Drop `_id` from the result and return one field of an embedded document.
 requires: [e-mg-l1-02]
 sources:
-  - https://www.mongodb.com/docs/manual/tutorial/project-fields-from-query-results/
+  - { url: https://www.mongodb.com/docs/manual/tutorial/project-fields-from-query-results/, title_vi: "Chọn trường trả về của truy vấn" }
 lab:
   setup: |
     {"collections": {

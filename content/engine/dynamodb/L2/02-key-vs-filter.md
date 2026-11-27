@@ -16,9 +16,9 @@ objectives:
     en: Move a condition onto the sort key whenever possible, so fewer items are read.
 requires: [e-dy-l2-01]
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.FilterExpression.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.KeyConditionExpressions.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.ExpressionAttributeNames.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.FilterExpression.html, title_vi: "Query: biểu thức lọc (filter expression)" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.KeyConditionExpressions.html, title_vi: "Query: điều kiện trên khóa (key condition expression)" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.ExpressionAttributeNames.html, title_vi: "Tên thuộc tính trong biểu thức" }
 lab:
   setup: |
     {"tables": [{"TableName":"Orders","KeySchema":[{"AttributeName":"customerId","KeyType":"HASH"},{"AttributeName":"orderId","KeyType":"RANGE"}],"AttributeDefinitions":[{"AttributeName":"customerId","AttributeType":"S"},{"AttributeName":"orderId","AttributeType":"S"}],"BillingMode":"PAY_PER_REQUEST"}],

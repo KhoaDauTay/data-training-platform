@@ -18,10 +18,10 @@ objectives:
     en: Reconcile the consumer with the source and explain which row differs and why.
 requires: [e-sm-l2-03, e-sm-l2-04, e-sm-l2-02, e-sm-l3-03]
 sources:
-  - { url: "https://debezium.io/documentation/reference/stable/transformations/outbox-event-router.html", title: "Debezium docs: Outbox Event Router" }
-  - { url: "https://debezium.io/documentation/faq/", title: "Debezium FAQ (at least once when things go wrong)" }
-  - { url: "https://kafka.apache.org/41/getting-started/introduction/#main-concepts-and-terminology", title: "Kafka docs: Main concepts and terminology (ordering per partition)" }
-  - { url: "https://www.postgresql.org/docs/18/sql-insert.html#SQL-ON-CONFLICT", title: "PostgreSQL 18 docs: INSERT ... ON CONFLICT" }
+  - { url: "https://debezium.io/documentation/reference/stable/transformations/outbox-event-router.html", title: "Debezium docs: Outbox Event Router", title_vi: "Tài liệu Debezium: Outbox Event Router" }
+  - { url: "https://debezium.io/documentation/faq/", title: "Debezium FAQ (at least once when things go wrong)", title_vi: "Hỏi đáp Debezium (ít nhất một lần khi có lỗi)" }
+  - { url: "https://kafka.apache.org/41/getting-started/introduction/#main-concepts-and-terminology", title: "Kafka docs: Main concepts and terminology (ordering per partition)", title_vi: "Tài liệu Kafka: khái niệm và thuật ngữ chính (thứ tự trong từng partition)" }
+  - { url: "https://www.postgresql.org/docs/18/sql-insert.html#SQL-ON-CONFLICT", title: "PostgreSQL 18 docs: INSERT ... ON CONFLICT", title_vi: "INSERT … ON CONFLICT" }
 lab:
   setup: |
     CREATE TABLE shipments (

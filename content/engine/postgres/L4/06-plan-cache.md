@@ -16,10 +16,10 @@ objectives:
   - { vi: "Biết dùng `plan_cache_mode` và `EXPLAIN (GENERIC_PLAN)` để chẩn đoán", en: "Use `plan_cache_mode` and `EXPLAIN (GENERIC_PLAN)` to diagnose" }
 requires: [e-pg-l4-02]
 sources:
-  - https://www.postgresql.org/docs/18/sql-prepare.html
-  - https://www.postgresql.org/docs/18/runtime-config-query.html
-  - https://www.postgresql.org/docs/18/sql-explain.html
-  - https://www.postgresql.org/docs/18/view-pg-prepared-statements.html
+  - { url: https://www.postgresql.org/docs/18/sql-prepare.html, title_vi: "PREPARE" }
+  - { url: https://www.postgresql.org/docs/18/runtime-config-query.html, title_vi: "Cấu hình planner" }
+  - { url: https://www.postgresql.org/docs/18/sql-explain.html, title_vi: "EXPLAIN" }
+  - { url: https://www.postgresql.org/docs/18/view-pg-prepared-statements.html, title_vi: "pg_prepared_statements" }
 viz: pg-plan-tree
 lab:
   setup: |

@@ -16,8 +16,8 @@ objectives:
     en: "Tell \"a majority wrote the oplog\" from \"the secondary applied the write\""
 requires: [e-mg-l4-07, e-mg-l4-08]
 sources:
-  - https://www.mongodb.com/docs/manual/reference/write-concern/
-  - https://www.mongodb.com/docs/manual/core/read-isolation-consistency-recency/
+  - { url: https://www.mongodb.com/docs/manual/reference/write-concern/, title_vi: "Write concern" }
+  - { url: https://www.mongodb.com/docs/manual/core/read-isolation-consistency-recency/, title_vi: "Cô lập, nhất quán và độ mới khi đọc" }
 predict:
   sql: |
     db.payments.insertOne(

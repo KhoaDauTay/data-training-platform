@@ -17,8 +17,8 @@ objectives:
     en: "Filter events with a pipeline without breaking the resume token"
 requires: [e-mg-l4-07]
 sources:
-  - https://www.mongodb.com/docs/manual/changestreams/
-  - https://www.mongodb.com/docs/manual/core/replica-set-oplog/
+  - { url: https://www.mongodb.com/docs/manual/changestreams/, title_vi: "Change stream" }
+  - { url: https://www.mongodb.com/docs/manual/core/replica-set-oplog/, title_vi: "Oplog của replica set" }
 quiz:
   - q:
       vi: "Ứng dụng nghe change stream bị dừng hai ngày. Cửa sổ oplog chỉ còn 24 giờ. Mở lại với `resumeAfter` token cũ thì sao?"

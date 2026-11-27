@@ -18,9 +18,9 @@ objectives:
     en: Count the nodes reachable in 2 steps, a simple measure of reach.
 requires: [e-gr-l2-01]
 sources:
-  - { url: "https://neo4j.com/docs/graph-data-science/current/algorithms/degree-centrality/", title: "Neo4j GDS docs: Degree Centrality" }
-  - https://www.postgresql.org/docs/18/functions-aggregate.html
-  - https://www.postgresql.org/docs/18/queries-union.html
+  - { url: "https://neo4j.com/docs/graph-data-science/current/algorithms/degree-centrality/", title: "Neo4j GDS docs: Degree Centrality", title_vi: "Tài liệu Neo4j GDS: độ trung tâm theo bậc (degree centrality)" }
+  - { url: https://www.postgresql.org/docs/18/functions-aggregate.html, title_vi: "Hàm gộp" }
+  - { url: https://www.postgresql.org/docs/18/queries-union.html, title_vi: "Gộp kết quả truy vấn (UNION, INTERSECT, EXCEPT)" }
 lab:
   setup: |
     CREATE TABLE ports (code text PRIMARY KEY);

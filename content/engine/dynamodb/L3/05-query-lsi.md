@@ -17,8 +17,8 @@ objectives:
     en: See why filtering `total` on the base table reads the whole item collection while the LSI does not.
 requires: [e-dy-l3-02]
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/LSI.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_Query.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/LSI.html, title_vi: "Local secondary index (LSI)" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_Query.html, title_vi: "API Query" }
 lab:
   setup: |
     {"tables": [{"TableName":"Orders","BillingMode":"PAY_PER_REQUEST","KeySchema":[{"AttributeName":"customerId","KeyType":"HASH"},{"AttributeName":"orderId","KeyType":"RANGE"}],"AttributeDefinitions":[{"AttributeName":"customerId","AttributeType":"S"},{"AttributeName":"orderId","AttributeType":"S"},{"AttributeName":"total","AttributeType":"N"},{"AttributeName":"status","AttributeType":"S"},{"AttributeName":"openSince","AttributeType":"S"},{"AttributeName":"city","AttributeType":"S"}],"LocalSecondaryIndexes":[{"IndexName":"byTotal","KeySchema":[{"AttributeName":"customerId","KeyType":"HASH"},{"AttributeName":"total","KeyType":"RANGE"}],"Projection":{"ProjectionType":"ALL"}}],"GlobalSecondaryIndexes":[{"IndexName":"byStatus","KeySchema":[{"AttributeName":"status","KeyType":"HASH"},{"AttributeName":"orderId","KeyType":"RANGE"}],"Projection":{"ProjectionType":"INCLUDE","NonKeyAttributes":["total"]}},{"IndexName":"openOrders","KeySchema":[{"AttributeName":"city","KeyType":"HASH"},{"AttributeName":"openSince","KeyType":"RANGE"}],"Projection":{"ProjectionType":"KEYS_ONLY"}}]}],

@@ -15,9 +15,9 @@ objectives:
     en: Read the catalog to see which rules a table already has.
 requires: [e-ds-l1-02]
 sources:
-  - https://www.postgresql.org/docs/18/catalog-pg-constraint.html
-  - https://www.postgresql.org/docs/18/infoschema-columns.html
-  - https://doi.org/10.1145/362384.362685
+  - { url: https://www.postgresql.org/docs/18/catalog-pg-constraint.html, title_vi: "pg_constraint" }
+  - { url: https://www.postgresql.org/docs/18/infoschema-columns.html, title_vi: "information_schema.columns" }
+  - { url: https://doi.org/10.1145/362384.362685, title_vi: "Bài báo ACM 10.1145/362384.362685" }
 lab:
   setup: |
     CREATE TABLE customers (id int PRIMARY KEY, email text NOT NULL UNIQUE, city text);

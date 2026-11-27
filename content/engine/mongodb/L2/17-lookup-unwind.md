@@ -16,8 +16,8 @@ objectives:
     en: Keep every customer with `preserveNullAndEmptyArrays`, or by leaving out `$unwind`.
 requires: [e-mg-l2-08, e-mg-l2-11]
 sources:
-  - https://www.mongodb.com/docs/manual/reference/operator/aggregation/lookup/
-  - https://www.mongodb.com/docs/manual/reference/operator/aggregation/unwind/
+  - { url: https://www.mongodb.com/docs/manual/reference/operator/aggregation/lookup/, title_vi: "$lookup" }
+  - { url: https://www.mongodb.com/docs/manual/reference/operator/aggregation/unwind/, title_vi: "$unwind" }
 predict:
   sql: "db.customers.aggregate([{ $lookup: { from: 'orders', localField: '_id', foreignField: 'customer', as: 'orders' } }, { $unwind: '$orders' }])"
   q:

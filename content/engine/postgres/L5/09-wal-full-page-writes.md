@@ -16,10 +16,10 @@ objectives:
   - { vi: "Giải thích vì sao checkpoint dày làm WAL phình", en: "Explain why frequent checkpoints inflate WAL volume" }
 requires: []
 sources:
-  - https://www.postgresql.org/docs/18/wal-configuration.html
-  - https://www.postgresql.org/docs/18/wal-intro.html
-  - https://www.postgresql.org/docs/18/pgwalinspect.html
-  - https://www.postgresql.org/docs/18/runtime-config-wal.html
+  - { url: https://www.postgresql.org/docs/18/wal-configuration.html, title_vi: "Cấu hình WAL và checkpoint" }
+  - { url: https://www.postgresql.org/docs/18/wal-intro.html, title_vi: "Ghi nhật ký trước (write-ahead logging)" }
+  - { url: https://www.postgresql.org/docs/18/pgwalinspect.html, title_vi: "pg_walinspect" }
+  - { url: https://www.postgresql.org/docs/18/runtime-config-wal.html, title_vi: "Cấu hình WAL" }
 lab:
   setup: |
     CREATE EXTENSION IF NOT EXISTS pg_walinspect;

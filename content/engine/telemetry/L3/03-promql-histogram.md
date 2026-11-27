@@ -18,9 +18,9 @@ objectives:
     en: Use `avg by` and `sum by` on the rate of `_count`.
 requires: [e-tm-l3-02, e-tm-l2-02]
 sources:
-  - { url: "https://prometheus.io/docs/prometheus/latest/querying/functions/", title: "Prometheus: histogram_quantile()" }
-  - { url: "https://prometheus.io/docs/practices/histograms/", title: "Prometheus: Histograms and summaries" }
-  - { url: "https://github.com/prometheus/prometheus/blob/v3.5.0/promql/quantile.go", title: "Prometheus v3.5.0 source: BucketQuantile" }
+  - { url: "https://prometheus.io/docs/prometheus/latest/querying/functions/", title: "Prometheus: histogram_quantile()", title_vi: "Prometheus: histogram_quantile()" }
+  - { url: "https://prometheus.io/docs/practices/histograms/", title: "Prometheus: Histograms and summaries", title_vi: "Prometheus: histogram và summary" }
+  - { url: "https://github.com/prometheus/prometheus/blob/v3.5.0/promql/quantile.go", title: "Prometheus v3.5.0 source: BucketQuantile", title_vi: "Mã nguồn Prometheus v3.5.0: BucketQuantile" }
 lab:
   setup: |
     CREATE TABLE samples (

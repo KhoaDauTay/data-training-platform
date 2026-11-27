@@ -20,10 +20,13 @@ requires: [e-ds-l5-10]
 sources:
   - url: https://www.postgresql.org/docs/18/ddl-rowsecurity.html
     title: "Row Security Policies"
+    title_vi: "Chính sách bảo mật theo dòng (RLS)"
   - url: https://www.postgresql.org/docs/18/functions-admin.html#FUNCTIONS-ADMIN-SET
     title: "System Administration Functions › Configuration Settings"
+    title_vi: "Hàm quản trị › đọc và đặt cấu hình"
   - url: https://www.postgresql.org/docs/18/indexes-multicolumn.html
     title: "Multicolumn Indexes"
+    title_vi: "Index nhiều cột"
 lab:
   setup: |
     CREATE TABLE shards (

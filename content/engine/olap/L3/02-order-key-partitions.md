@@ -18,10 +18,10 @@ objectives:
     en: Insert in large batches, since every insert creates a part.
 requires: [e-ol-l3-01]
 sources:
-  - { url: "https://clickhouse.com/docs/data-modeling/schema-design", title: "ClickHouse docs: Schema design" }
-  - { url: "https://clickhouse.com/docs/engines/table-engines/mergetree-family/mergetree", title: "ClickHouse docs: MergeTree" }
-  - { url: "https://clickhouse.com/docs/best-practices/selecting-an-insert-strategy", title: "ClickHouse docs: Selecting an insert strategy" }
-  - { url: "https://www.postgresql.org/docs/18/view-pg-stats.html", title: "PostgreSQL 18 docs: pg_stats" }
+  - { url: "https://clickhouse.com/docs/data-modeling/schema-design", title: "ClickHouse docs: Schema design", title_vi: "Tài liệu ClickHouse: thiết kế schema" }
+  - { url: "https://clickhouse.com/docs/engines/table-engines/mergetree-family/mergetree", title: "ClickHouse docs: MergeTree", title_vi: "Tài liệu ClickHouse: MergeTree" }
+  - { url: "https://clickhouse.com/docs/best-practices/selecting-an-insert-strategy", title: "ClickHouse docs: Selecting an insert strategy", title_vi: "Tài liệu ClickHouse: chọn cách ghi dữ liệu" }
+  - { url: "https://www.postgresql.org/docs/18/view-pg-stats.html", title: "PostgreSQL 18 docs: pg_stats", title_vi: "pg_stats" }
 demo_setup: |
   CREATE TABLE ev (
     port text, ts timestamp

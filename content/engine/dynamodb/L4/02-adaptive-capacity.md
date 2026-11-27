@@ -14,8 +14,8 @@ objectives:
   - { vi: "Biết trần cứng còn lại: 3000 RCU và 1000 WCU cho một khóa chính, và không tách collection khi bảng có LSI", en: "Know the hard ceiling that remains: 3000 RCU and 1000 WCU for one primary key, and no collection split when the table has an LSI" }
 requires: [e-dy-l4-01]
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/burst-adaptive-capacity.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.Partitions.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/burst-adaptive-capacity.html, title_vi: "Capacity dự phòng (burst) và tự điều chỉnh (adaptive)" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.Partitions.html, title_vi: "Cách hoạt động: partition" }
 viz: dy-partitions
 figures: [{ name: dy-adaptive-capacity, at: example }]
 quiz:

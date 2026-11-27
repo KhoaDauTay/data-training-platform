@@ -18,9 +18,9 @@ objectives:
     en: "Find queries that read a lot and return nothing, and add up the wasted reads"
 requires: [e-mg-l3-06, e-mg-l3-07]
 sources:
-  - https://www.mongodb.com/docs/manual/tutorial/analyze-query-plan/
-  - https://www.mongodb.com/docs/manual/reference/explain-results/
-  - https://www.mongodb.com/docs/manual/reference/operator/aggregation/divide/
+  - { url: https://www.mongodb.com/docs/manual/tutorial/analyze-query-plan/, title_vi: "Phân tích kế hoạch truy vấn" }
+  - { url: https://www.mongodb.com/docs/manual/reference/explain-results/, title_vi: "Đọc kết quả explain" }
+  - { url: https://www.mongodb.com/docs/manual/reference/operator/aggregation/divide/, title_vi: "$divide" }
 lab:
   setup: |
     {"collections": {"slowlog": [

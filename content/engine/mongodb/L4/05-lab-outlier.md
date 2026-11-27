@@ -18,9 +18,9 @@ objectives:
     en: "Trim an unusual document's array while keeping the total count"
 requires: [e-mg-l4-01]
 sources:
-  - https://www.mongodb.com/docs/manual/data-modeling/design-patterns/group-data/outlier-pattern/
-  - https://www.mongodb.com/docs/manual/data-modeling/design-patterns/group-data/
-  - https://www.mongodb.com/docs/manual/reference/operator/query/size/
+  - { url: https://www.mongodb.com/docs/manual/data-modeling/design-patterns/group-data/outlier-pattern/, title_vi: "Mẫu outlier" }
+  - { url: https://www.mongodb.com/docs/manual/data-modeling/design-patterns/group-data/, title_vi: "Gom nhóm dữ liệu" }
+  - { url: https://www.mongodb.com/docs/manual/reference/operator/query/size/, title_vi: "$size" }
 lab:
   setup: |
     {"collections": {"products": [

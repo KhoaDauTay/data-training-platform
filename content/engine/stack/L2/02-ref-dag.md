@@ -18,9 +18,9 @@ objectives:
     en: Recognise the two DAG errors, a ref to a missing model and a cycle, before running.
 requires: [e-st-l2-01]
 sources:
-  - { url: "https://docs.getdbt.com/reference/dbt-jinja-functions/ref", title: "dbt docs: ref" }
-  - { url: "https://docs.getdbt.com/docs/build/models", title: "dbt docs: About dbt models" }
-  - https://www.postgresql.org/docs/18/infoschema-view-table-usage.html
+  - { url: "https://docs.getdbt.com/reference/dbt-jinja-functions/ref", title: "dbt docs: ref", title_vi: "Tài liệu dbt: ref" }
+  - { url: "https://docs.getdbt.com/docs/build/models", title: "dbt docs: About dbt models", title_vi: "Tài liệu dbt: model trong dbt" }
+  - { url: https://www.postgresql.org/docs/18/infoschema-view-table-usage.html, title_vi: "information_schema.view_table_usage" }
 lab:
   setup: |
     CREATE SCHEMA raw_shop;

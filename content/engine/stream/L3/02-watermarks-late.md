@@ -18,8 +18,8 @@ objectives:
     en: Apply a grace period to decide which late events are still accepted and which are dropped.
 requires: [e-sm-l3-01]
 sources:
-  - { url: "https://kafka.apache.org/41/streams/developer-guide/dsl-api/#windowing", title: "Kafka Streams docs: Windowing (grace period)" }
-  - { url: "https://www.postgresql.org/docs/18/sql-expressions.html#SYNTAX-WINDOW-FUNCTIONS", title: "PostgreSQL 18 docs: Window function calls (frames)" }
+  - { url: "https://kafka.apache.org/41/streams/developer-guide/dsl-api/#windowing", title: "Kafka Streams docs: Windowing (grace period)", title_vi: "Tài liệu Kafka Streams: cửa sổ thời gian (grace period)" }
+  - { url: "https://www.postgresql.org/docs/18/sql-expressions.html#SYNTAX-WINDOW-FUNCTIONS", title: "PostgreSQL 18 docs: Window function calls (frames)", title_vi: "Biểu thức › gọi hàm cửa sổ (khung cửa sổ)" }
 lab:
   setup: |
     CREATE TABLE arrivals (

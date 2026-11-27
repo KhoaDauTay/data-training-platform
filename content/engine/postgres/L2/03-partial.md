@@ -19,8 +19,8 @@ objectives:
     en: Use a partial unique index so the database enforces "at most one open task per person".
 requires: [e-pg-l2-02]
 sources:
-  - https://www.postgresql.org/docs/18/indexes-partial.html
-  - https://www.postgresql.org/docs/18/sql-createindex.html
+  - { url: https://www.postgresql.org/docs/18/indexes-partial.html, title_vi: "Index một phần (partial)" }
+  - { url: https://www.postgresql.org/docs/18/sql-createindex.html, title_vi: "CREATE INDEX" }
 lab:
   setup: |
     CREATE TABLE tasks (

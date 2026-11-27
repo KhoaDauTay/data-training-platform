@@ -17,10 +17,10 @@ objectives:
     en: Tell a deleted tuple, an aborted transaction's tuple and a lock-only `xmax` apart
 requires: [e-pg-l3-04, e-pg-l3-02]
 sources:
-  - https://www.postgresql.org/docs/18/storage-page-layout.html
-  - https://www.postgresql.org/docs/18/ddl-system-columns.html
-  - https://www.postgresql.org/docs/18/pageinspect.html
-  - https://www.postgresql.org/docs/18/mvcc-intro.html
+  - { url: https://www.postgresql.org/docs/18/storage-page-layout.html, title_vi: "Cấu trúc trang dữ liệu" }
+  - { url: https://www.postgresql.org/docs/18/ddl-system-columns.html, title_vi: "Cột hệ thống" }
+  - { url: https://www.postgresql.org/docs/18/pageinspect.html, title_vi: "pageinspect" }
+  - { url: https://www.postgresql.org/docs/18/mvcc-intro.html, title_vi: "Nhập môn MVCC" }
 lab:
   setup: |
     CREATE EXTENSION IF NOT EXISTS pageinspect;

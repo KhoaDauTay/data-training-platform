@@ -18,10 +18,13 @@ requires: [e-dy-l5-08, e-dy-l3-14]
 sources:
   - url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/specifying-conditions.html
     title: "IAM policy conditions for fine-grained access"
+    title_vi: "Điều kiện trong IAM policy để giới hạn quyền chi tiết"
   - url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ServiceQuotas.html
     title: "Quotas"
+    title_vi: "Hạn mức dịch vụ (quota)"
   - url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Tagging.html
     title: "Tagging resources"
+    title_vi: "Gắn tag cho tài nguyên"
 demo_setup: |
   {"tables": [{"TableName": "Portal", "BillingMode": "PAY_PER_REQUEST", "KeySchema": [{"AttributeName": "PK", "KeyType": "HASH"}, {"AttributeName": "SK", "KeyType": "RANGE"}], "AttributeDefinitions": [{"AttributeName": "PK", "AttributeType": "S"}, {"AttributeName": "SK", "AttributeType": "S"}]}],
    "items": {"Portal": [

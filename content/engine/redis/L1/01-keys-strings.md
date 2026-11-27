@@ -17,9 +17,9 @@ objectives:
   - vi: Tăng một bộ đếm bằng INCR thay vì đọc rồi ghi lại.
     en: Raise a counter with INCR instead of reading and writing it back.
 sources:
-  - { url: "https://valkey.io/topics/data-types/", title: "Valkey docs: Data types" }
-  - { url: "https://redis.io/docs/latest/develop/data-types/strings/", title: "Redis docs: Strings" }
-  - { url: "https://valkey.io/commands/incr/", title: "Valkey docs: INCR" }
+  - { url: "https://valkey.io/topics/data-types/", title: "Valkey docs: Data types", title_vi: "Tài liệu Valkey: kiểu dữ liệu" }
+  - { url: "https://redis.io/docs/latest/develop/data-types/strings/", title: "Redis docs: Strings", title_vi: "Tài liệu Redis: string" }
+  - { url: "https://valkey.io/commands/incr/", title: "Valkey docs: INCR", title_vi: "Tài liệu Valkey: INCR" }
 lab:
   setup: |
     SET shop:name "Lantern Market"

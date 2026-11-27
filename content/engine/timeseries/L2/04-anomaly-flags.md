@@ -18,8 +18,8 @@ objectives:
     en: Merge consecutive readings above the threshold into one episode (gaps and islands) to raise one alert.
 requires: [e-ts-l2-03]
 sources:
-  - https://www.postgresql.org/docs/18/functions-window.html
-  - https://www.postgresql.org/docs/18/functions-aggregate.html#FUNCTIONS-AGGREGATE-STATISTICS-TABLE
+  - { url: https://www.postgresql.org/docs/18/functions-window.html, title_vi: "Hàm cửa sổ (window function)" }
+  - { url: https://www.postgresql.org/docs/18/functions-aggregate.html#FUNCTIONS-AGGREGATE-STATISTICS-TABLE, title_vi: "Hàm gộp › hàm gộp thống kê" }
 lab:
   setup: |
     CREATE TABLE temps (

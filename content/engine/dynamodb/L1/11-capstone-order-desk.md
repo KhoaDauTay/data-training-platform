@@ -15,8 +15,8 @@ objectives:
     en: Choose between GetItem, Query, UpdateItem and DeleteItem without any Scan.
 requires: [e-dy-l1-07, e-dy-l1-09, e-dy-l1-10]
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithItems.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithItems.html, title_vi: "Làm việc với item" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.html, title_vi: "Query" }
 lab:
   setup: |
     {"tables": [{"TableName":"Orders","KeySchema":[{"AttributeName":"customerId","KeyType":"HASH"},{"AttributeName":"orderId","KeyType":"RANGE"}],"AttributeDefinitions":[{"AttributeName":"customerId","AttributeType":"S"},{"AttributeName":"orderId","AttributeType":"S"}],"BillingMode":"PAY_PER_REQUEST"}],

@@ -15,8 +15,8 @@ objectives:
     en: Read an existing schema back into an ER diagram with the catalog.
 requires: [e-ds-l2-04]
 sources:
-  - https://doi.org/10.1145/320434.320440
-  - https://www.postgresql.org/docs/18/catalog-pg-constraint.html
+  - { url: https://doi.org/10.1145/320434.320440, title_vi: "Bài báo ACM 10.1145/320434.320440" }
+  - { url: https://www.postgresql.org/docs/18/catalog-pg-constraint.html, title_vi: "pg_constraint" }
 lab:
   setup: |
     CREATE TABLE authors (id int PRIMARY KEY, name text NOT NULL);

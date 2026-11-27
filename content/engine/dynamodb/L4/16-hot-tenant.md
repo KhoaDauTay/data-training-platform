@@ -21,10 +21,13 @@ requires: [e-dy-l4-05, e-dy-l3-14]
 sources:
   - url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-partition-key-sharding.html
     title: "Write sharding"
+    title_vi: "Chia nhỏ lượt ghi (write sharding)"
   - url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/burst-adaptive-capacity.html
     title: "Burst and adaptive capacity"
+    title_vi: "Capacity dự phòng (burst) và tự điều chỉnh (adaptive)"
   - url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/read-write-operations.html
     title: "Read and write operations"
+    title_vi: "Thao tác đọc và ghi"
 lab:
   setup: |
     {"tables": [

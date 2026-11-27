@@ -18,9 +18,9 @@ objectives:
     en: Put the check and the effect in one statement, that is, one transaction.
 requires: [e-sm-l2-01]
 sources:
-  - { url: "https://www.postgresql.org/docs/18/sql-insert.html#SQL-ON-CONFLICT", title: "PostgreSQL 18 docs: INSERT ... ON CONFLICT" }
-  - { url: "https://www.postgresql.org/docs/18/queries-with.html#QUERIES-WITH-MODIFYING", title: "PostgreSQL 18 docs: Data-modifying statements in WITH" }
-  - { url: "https://debezium.io/documentation/faq/", title: "Debezium FAQ (duplicates after failures)" }
+  - { url: "https://www.postgresql.org/docs/18/sql-insert.html#SQL-ON-CONFLICT", title: "PostgreSQL 18 docs: INSERT ... ON CONFLICT", title_vi: "INSERT … ON CONFLICT" }
+  - { url: "https://www.postgresql.org/docs/18/queries-with.html#QUERIES-WITH-MODIFYING", title: "PostgreSQL 18 docs: Data-modifying statements in WITH", title_vi: "Câu lệnh ghi dữ liệu trong WITH" }
+  - { url: "https://debezium.io/documentation/faq/", title: "Debezium FAQ (duplicates after failures)", title_vi: "Hỏi đáp Debezium (ít nhất một lần khi có lỗi)" }
 lab:
   setup: |
     CREATE TABLE inbox_batch (

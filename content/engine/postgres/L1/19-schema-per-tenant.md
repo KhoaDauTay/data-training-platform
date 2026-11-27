@@ -18,10 +18,13 @@ requires: [e-pg-l1-06]
 sources:
   - url: https://www.postgresql.org/docs/18/ddl-schemas.html
     title: "Schemas"
+    title_vi: "Schema"
   - url: https://www.postgresql.org/docs/18/sql-createschema.html
     title: "CREATE SCHEMA"
+    title_vi: "CREATE SCHEMA"
   - url: https://www.postgresql.org/docs/18/infoschema-columns.html
     title: "information_schema.columns"
+    title_vi: "information_schema.columns"
 lab:
   setup: |
     -- Lantern Market: each seller gets its own schema with the same tables

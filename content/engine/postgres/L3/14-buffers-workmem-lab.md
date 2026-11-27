@@ -17,10 +17,10 @@ objectives:
     en: See `external merge Disk:` when `work_mem` is too small and `quicksort Memory:` when it is enough
 requires: [e-pg-l3-12]
 sources:
-  - https://www.postgresql.org/docs/18/pgbuffercache.html
-  - https://www.postgresql.org/docs/18/runtime-config-resource.html
-  - https://www.postgresql.org/docs/18/wal-configuration.html
-  - https://www.postgresql.org/docs/18/using-explain.html
+  - { url: https://www.postgresql.org/docs/18/pgbuffercache.html, title_vi: "pg_buffercache" }
+  - { url: https://www.postgresql.org/docs/18/runtime-config-resource.html, title_vi: "Cấu hình tài nguyên (bộ nhớ)" }
+  - { url: https://www.postgresql.org/docs/18/wal-configuration.html, title_vi: "Cấu hình WAL và checkpoint" }
+  - { url: https://www.postgresql.org/docs/18/using-explain.html, title_vi: "Dùng EXPLAIN" }
 lab:
   setup: |
     CREATE EXTENSION IF NOT EXISTS pg_buffercache;

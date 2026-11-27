@@ -16,11 +16,11 @@ objectives:
     en: Choose a `KEYS_ONLY`, `INCLUDE` or `ALL` projection from the questions that will read the index.
 requires: [e-dy-l3-01]
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/SecondaryIndexes.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GSI.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/LSI.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ServiceQuotas.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Constraints.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/SecondaryIndexes.html, title_vi: "Secondary index" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GSI.html, title_vi: "Global secondary index (GSI)" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/LSI.html, title_vi: "Local secondary index (LSI)" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ServiceQuotas.html, title_vi: "Hạn mức dịch vụ (quota)" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Constraints.html, title_vi: "Giới hạn" }
 demo_setup: |
   {"tables": [{"TableName": "Orders", "BillingMode": "PAY_PER_REQUEST", "KeySchema": [{"AttributeName": "customerId", "KeyType": "HASH"}, {"AttributeName": "orderId", "KeyType": "RANGE"}], "AttributeDefinitions": [{"AttributeName": "customerId", "AttributeType": "S"}, {"AttributeName": "orderId", "AttributeType": "S"}, {"AttributeName": "status", "AttributeType": "S"}, {"AttributeName": "total", "AttributeType": "N"}], "LocalSecondaryIndexes": [{"IndexName": "byTotal", "KeySchema": [{"AttributeName": "customerId", "KeyType": "HASH"}, {"AttributeName": "total", "KeyType": "RANGE"}], "Projection": {"ProjectionType": "ALL"}}], "GlobalSecondaryIndexes": [{"IndexName": "byStatus", "KeySchema": [{"AttributeName": "status", "KeyType": "HASH"}, {"AttributeName": "orderId", "KeyType": "RANGE"}], "Projection": {"ProjectionType": "KEYS_ONLY"}}]}],
    "items": {"Orders": [

@@ -20,12 +20,16 @@ requires: [e-ds-l2-06]
 sources:
   - url: https://www.postgresql.org/docs/18/ddl-constraints.html#DDL-CONSTRAINTS-UNIQUE-CONSTRAINTS
     title: "Constraints › Unique Constraints"
+    title_vi: "Ràng buộc › ràng buộc UNIQUE"
   - url: https://www.postgresql.org/docs/18/indexes-unique.html
     title: "Unique Indexes"
+    title_vi: "Index UNIQUE"
   - url: https://www.postgresql.org/docs/18/indexes-partial.html
     title: "Partial Indexes"
+    title_vi: "Index một phần (partial)"
   - url: https://www.postgresql.org/docs/18/ddl-rowsecurity.html
     title: "Row Security Policies"
+    title_vi: "Chính sách bảo mật theo dòng (RLS)"
 lab:
   setup: |
     CREATE TABLE sellers (id int PRIMARY KEY, name text NOT NULL);

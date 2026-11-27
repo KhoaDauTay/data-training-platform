@@ -17,10 +17,10 @@ objectives:
     en: Reject a plausible fix with measurements, then choose the right one
 requires: [e-pg-l3-08, e-pg-l3-13, e-pg-l3-16, e-pg-l3-18]
 sources:
-  - https://www.postgresql.org/docs/18/storage-hot.html
-  - https://www.postgresql.org/docs/18/monitoring-stats.html
-  - https://www.postgresql.org/docs/18/pgwalinspect.html
-  - https://www.postgresql.org/docs/18/sql-createtable.html
+  - { url: https://www.postgresql.org/docs/18/storage-hot.html, title_vi: "Cập nhật HOT (heap-only tuple)" }
+  - { url: https://www.postgresql.org/docs/18/monitoring-stats.html, title_vi: "Hệ thống thống kê hoạt động" }
+  - { url: https://www.postgresql.org/docs/18/pgwalinspect.html, title_vi: "pg_walinspect" }
+  - { url: https://www.postgresql.org/docs/18/sql-createtable.html, title_vi: "CREATE TABLE" }
 lab:
   setup: |
     CREATE EXTENSION IF NOT EXISTS pg_walinspect;

@@ -16,9 +16,9 @@ objectives:
     en: Get effectively-once results when writing to PostgreSQL - save the result and the offset in the same transaction.
 requires: [e-sm-l2-02, e-sm-l3-02]
 sources:
-  - { url: "https://kafka.apache.org/41/design/design/", title: "Kafka docs: Design (delivery semantics, idempotent producer, transactions)" }
-  - { url: "https://debezium.io/documentation/faq/", title: "Debezium FAQ (at least once when things go wrong)" }
-  - { url: "https://www.postgresql.org/docs/18/logicaldecoding-explanation.html", title: "PostgreSQL 18 docs: Logical decoding concepts (changes sent again after a crash)" }
+  - { url: "https://kafka.apache.org/41/design/design/", title: "Kafka docs: Design (delivery semantics, idempotent producer, transactions)", title_vi: "Tài liệu Kafka: thiết kế (bảo đảm giao nhận, producer idempotent, transaction)" }
+  - { url: "https://debezium.io/documentation/faq/", title: "Debezium FAQ (at least once when things go wrong)", title_vi: "Hỏi đáp Debezium (ít nhất một lần khi có lỗi)" }
+  - { url: "https://www.postgresql.org/docs/18/logicaldecoding-explanation.html", title: "PostgreSQL 18 docs: Logical decoding concepts (changes sent again after a crash)", title_vi: "Khái niệm logical decoding (thay đổi được gửi lại sau khi máy sập)" }
 lab:
   setup: |
     CREATE TABLE events (

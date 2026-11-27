@@ -18,9 +18,9 @@ objectives:
     en: "Pick the right field for `term`: a `keyword` field, with the exact capitals that were stored."
 requires: [e-sr-l1-01]
 sources:
-  - https://www.elastic.co/docs/manage-data/data-store/mapping/dynamic-field-mapping
-  - https://www.elastic.co/docs/reference/elasticsearch/mapping-reference/text
-  - https://www.elastic.co/docs/reference/elasticsearch/mapping-reference/keyword
+  - { url: https://www.elastic.co/docs/manage-data/data-store/mapping/dynamic-field-mapping, title_vi: "Mapping trường động" }
+  - { url: https://www.elastic.co/docs/reference/elasticsearch/mapping-reference/text, title_vi: "Kiểu trường text" }
+  - { url: https://www.elastic.co/docs/reference/elasticsearch/mapping-reference/keyword, title_vi: "Kiểu trường keyword" }
 lab:
   setup: |
     {"index": "shop",

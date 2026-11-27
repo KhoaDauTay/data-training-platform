@@ -17,11 +17,11 @@ objectives:
     en: Use `IS NULL`, `IS DISTINCT FROM` and `coalesce` in the right places.
 requires: [e-pg-l1-04]
 sources:
-  - https://www.postgresql.org/docs/18/functions-comparison.html
-  - https://www.postgresql.org/docs/18/functions-aggregate.html
-  - https://www.postgresql.org/docs/18/functions-subquery.html
-  - https://www.postgresql.org/docs/18/functions-conditional.html
-  - https://www.postgresql.org/docs/18/ddl-constraints.html
+  - { url: https://www.postgresql.org/docs/18/functions-comparison.html, title_vi: "Toán tử so sánh (IS DISTINCT FROM)" }
+  - { url: https://www.postgresql.org/docs/18/functions-aggregate.html, title_vi: "Hàm gộp" }
+  - { url: https://www.postgresql.org/docs/18/functions-subquery.html, title_vi: "Biểu thức truy vấn con (EXISTS)" }
+  - { url: https://www.postgresql.org/docs/18/functions-conditional.html, title_vi: "Biểu thức điều kiện" }
+  - { url: https://www.postgresql.org/docs/18/ddl-constraints.html, title_vi: "Ràng buộc" }
 lab:
   setup: |
     CREATE TABLE staff (id int PRIMARY KEY, dept_id int, bonus int);

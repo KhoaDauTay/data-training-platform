@@ -18,9 +18,9 @@ objectives:
     en: Write a filter on the partition column so PostgreSQL skips partitions that do not match.
 requires: [e-ol-l2-02]
 sources:
-  - { url: "https://clickhouse.com/docs/engines/table-engines/mergetree-family/mergetree", title: "ClickHouse docs: MergeTree" }
-  - { url: "https://www.postgresql.org/docs/18/brin.html", title: "PostgreSQL 18 docs: BRIN Indexes" }
-  - { url: "https://www.postgresql.org/docs/18/ddl-partitioning.html", title: "PostgreSQL 18 docs: Table Partitioning" }
+  - { url: "https://clickhouse.com/docs/engines/table-engines/mergetree-family/mergetree", title: "ClickHouse docs: MergeTree", title_vi: "Tài liệu ClickHouse: MergeTree" }
+  - { url: "https://www.postgresql.org/docs/18/brin.html", title: "PostgreSQL 18 docs: BRIN Indexes", title_vi: "Index BRIN" }
+  - { url: "https://www.postgresql.org/docs/18/ddl-partitioning.html", title: "PostgreSQL 18 docs: Table Partitioning", title_vi: "Phân vùng bảng (partitioning)" }
 lab:
   setup: |
     CREATE TABLE events (

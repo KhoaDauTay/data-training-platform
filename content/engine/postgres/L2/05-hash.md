@@ -17,8 +17,8 @@ objectives:
 requires: [e-pg-l2-04]
 figures: [{ name: pg-hash-equal-only, at: idea }]
 sources:
-  - https://www.postgresql.org/docs/18/indexes-types.html
-  - https://www.postgresql.org/docs/18/hash-index.html
+  - { url: https://www.postgresql.org/docs/18/indexes-types.html, title_vi: "Các loại index" }
+  - { url: https://www.postgresql.org/docs/18/hash-index.html, title_vi: "Index hash" }
 lab:
   setup: |
     CREATE TABLE sessions (

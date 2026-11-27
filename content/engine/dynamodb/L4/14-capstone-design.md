@@ -14,10 +14,10 @@ objectives:
   - { vi: "Ước lượng WCU/RCU và số shard cho bảng xếp hạng", en: "Estimate WCU/RCU and the shard count for the leaderboard" }
 requires: [e-dy-l4-05, e-dy-l4-08, e-dy-l4-10]
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-general-nosql-design.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-partition-key-sharding.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-indexes-general-sparse-indexes.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/read-write-operations.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-general-nosql-design.html, title_vi: "Thực hành tốt: thiết kế NoSQL" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-partition-key-sharding.html, title_vi: "Chia nhỏ lượt ghi (write sharding)" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-indexes-general-sparse-indexes.html, title_vi: "Thực hành tốt: index thưa" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/read-write-operations.html, title_vi: "Thao tác đọc và ghi" }
 viz: dy-single-table
 lab:
   setup: |

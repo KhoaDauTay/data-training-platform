@@ -16,9 +16,9 @@ objectives:
 requires: [e-pg-l4-07]
 viz: pg-partition-prune
 sources:
-  - https://www.postgresql.org/docs/18/ddl-partitioning.html
-  - https://www.postgresql.org/docs/18/sql-createindex.html
-  - https://www.postgresql.org/docs/18/sql-createtable.html
+  - { url: https://www.postgresql.org/docs/18/ddl-partitioning.html, title_vi: "Phân vùng bảng (partitioning)" }
+  - { url: https://www.postgresql.org/docs/18/sql-createindex.html, title_vi: "CREATE INDEX" }
+  - { url: https://www.postgresql.org/docs/18/sql-createtable.html, title_vi: "CREATE TABLE" }
 lab:
   setup: |
     CREATE TABLE events (id bigint NOT NULL, created_on date NOT NULL, kind text NOT NULL) PARTITION BY RANGE (created_on);

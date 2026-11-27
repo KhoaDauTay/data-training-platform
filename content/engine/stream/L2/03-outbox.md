@@ -18,9 +18,9 @@ objectives:
     en: Play the relay, reading the outbox in order and then marking rows as sent.
 requires: [e-sm-l2-02]
 sources:
-  - { url: "https://debezium.io/documentation/reference/stable/transformations/outbox-event-router.html", title: "Debezium docs: Outbox Event Router" }
-  - { url: "https://www.postgresql.org/docs/18/queries-with.html#QUERIES-WITH-MODIFYING", title: "PostgreSQL 18 docs: Data-modifying statements in WITH" }
-  - { url: "https://www.postgresql.org/docs/18/functions-json.html", title: "PostgreSQL 18 docs: JSON functions and operators" }
+  - { url: "https://debezium.io/documentation/reference/stable/transformations/outbox-event-router.html", title: "Debezium docs: Outbox Event Router", title_vi: "Tài liệu Debezium: Outbox Event Router" }
+  - { url: "https://www.postgresql.org/docs/18/queries-with.html#QUERIES-WITH-MODIFYING", title: "PostgreSQL 18 docs: Data-modifying statements in WITH", title_vi: "Câu lệnh ghi dữ liệu trong WITH" }
+  - { url: "https://www.postgresql.org/docs/18/functions-json.html", title: "PostgreSQL 18 docs: JSON functions and operators", title_vi: "Hàm và toán tử JSON" }
 lab:
   setup: |
     CREATE TABLE shipments (

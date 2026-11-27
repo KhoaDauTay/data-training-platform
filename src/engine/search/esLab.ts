@@ -13,7 +13,7 @@ const TEXT = {
   vi: {
     empty: 'Chưa có request nào để chấm.',
     kind: 'Bước này cần {want}, còn request của bạn trả {got}.',
-    count: 'Request chạy được, nhưng trả {got} dòng; bước này cần {want}.',
+    count: 'Request chạy được, nhưng trả {got} kết quả; bước này cần {want}.',
     docs: 'Request chạy được, nhưng danh sách tài liệu khác lời giải: `{id}` không đúng chỗ.',
     scores: 'Đúng các tài liệu, nhưng điểm `_score` khác lời giải (ví dụ `{id}`: {got} thay vì {want}). Xem lại phần nào tính điểm, phần nào chỉ lọc.',
     order: 'Đúng dữ liệu, nhưng thứ tự chưa đúng.',
@@ -24,7 +24,7 @@ const TEXT = {
   en: {
     empty: 'There is no request to grade yet.',
     kind: 'This step needs {want}, but your request returns {got}.',
-    count: 'The request runs, but returns {got} rows; this step needs {want}.',
+    count: 'The request runs, but returns {got} results; this step needs {want}.',
     docs: 'The request runs, but the list of documents differs from the solution: `{id}` is not where it should be.',
     scores: 'The right documents, but `_score` differs from the solution (for example `{id}`: {got} instead of {want}). Check which part scores and which part only filters.',
     order: 'The data is right, but not in the right order.',

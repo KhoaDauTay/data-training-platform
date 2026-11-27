@@ -16,9 +16,9 @@ objectives:
     en: Read last night's run log and answer "is it safe to publish" before sending a report.
 requires: [e-st-l2-05]
 sources:
-  - { url: "https://airflow.apache.org/docs/apache-airflow/stable/core-concepts/dags.html", title: "Airflow docs: Dags" }
-  - { url: "https://airflow.apache.org/docs/apache-airflow/stable/core-concepts/tasks.html", title: "Airflow docs: Tasks" }
-  - { url: "https://docs.getdbt.com/reference/commands/build", title: "dbt docs: build" }
+  - { url: "https://airflow.apache.org/docs/apache-airflow/stable/core-concepts/dags.html", title: "Airflow docs: Dags", title_vi: "Tài liệu Airflow: DAG" }
+  - { url: "https://airflow.apache.org/docs/apache-airflow/stable/core-concepts/tasks.html", title: "Airflow docs: Tasks", title_vi: "Tài liệu Airflow: task" }
+  - { url: "https://docs.getdbt.com/reference/commands/build", title: "dbt docs: build", title_vi: "Tài liệu dbt: lệnh build" }
 demo_setup: |
   CREATE TABLE task_runs (
     task_id text, try_number int,

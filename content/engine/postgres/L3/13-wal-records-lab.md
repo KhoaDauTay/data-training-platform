@@ -17,11 +17,11 @@ objectives:
     en: See the full-page image on the first change after a checkpoint and link `pd_lsn` to the WAL
 requires: [e-pg-l3-12, e-pg-l3-07]
 sources:
-  - https://www.postgresql.org/docs/18/pgwalinspect.html
-  - https://www.postgresql.org/docs/18/wal-internals.html
-  - https://www.postgresql.org/docs/18/wal-reliability.html
-  - https://www.postgresql.org/docs/18/runtime-config-wal.html
-  - https://www.postgresql.org/docs/18/storage-page-layout.html
+  - { url: https://www.postgresql.org/docs/18/pgwalinspect.html, title_vi: "pg_walinspect" }
+  - { url: https://www.postgresql.org/docs/18/wal-internals.html, title_vi: "WAL bên trong" }
+  - { url: https://www.postgresql.org/docs/18/wal-reliability.html, title_vi: "Độ tin cậy" }
+  - { url: https://www.postgresql.org/docs/18/runtime-config-wal.html, title_vi: "Cấu hình WAL" }
+  - { url: https://www.postgresql.org/docs/18/storage-page-layout.html, title_vi: "Cấu trúc trang dữ liệu" }
 lab:
   setup: |
     CREATE EXTENSION IF NOT EXISTS pageinspect;

@@ -15,9 +15,9 @@ objectives:
   - { vi: "Tránh bẫy advisory lock trong câu có `LIMIT`", en: "Avoid the advisory-lock trap in a query with `LIMIT`" }
 requires: [e-pg-l4-09]
 sources:
-  - https://www.postgresql.org/docs/18/explicit-locking.html
-  - https://www.postgresql.org/docs/18/functions-admin.html
-  - https://www.postgresql.org/docs/18/view-pg-locks.html
+  - { url: https://www.postgresql.org/docs/18/explicit-locking.html, title_vi: "Khóa tường minh" }
+  - { url: https://www.postgresql.org/docs/18/functions-admin.html, title_vi: "Hàm quản trị hệ thống" }
+  - { url: https://www.postgresql.org/docs/18/view-pg-locks.html, title_vi: "pg_locks" }
 viz: pg-lock-matrix
 lab:
   setup: |

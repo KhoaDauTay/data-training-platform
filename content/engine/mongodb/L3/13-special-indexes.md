@@ -19,12 +19,12 @@ objectives:
     en: "Know that a hashed index spreads data for sharding but cannot serve range queries"
 requires: [e-mg-l3-01]
 sources:
-  - https://www.mongodb.com/docs/manual/core/indexes/index-types/index-wildcard/
-  - https://www.mongodb.com/docs/manual/core/indexes/index-types/index-wildcard/reference/restrictions/
-  - https://www.mongodb.com/docs/manual/core/indexes/index-types/index-text/
-  - https://www.mongodb.com/docs/manual/core/indexes/index-types/index-geospatial/
-  - https://www.mongodb.com/docs/manual/reference/geojson/
-  - https://www.mongodb.com/docs/manual/core/indexes/index-types/index-hashed/
+  - { url: https://www.mongodb.com/docs/manual/core/indexes/index-types/index-wildcard/, title_vi: "Index wildcard" }
+  - { url: https://www.mongodb.com/docs/manual/core/indexes/index-types/index-wildcard/reference/restrictions/, title_vi: "Index wildcard: giới hạn" }
+  - { url: https://www.mongodb.com/docs/manual/core/indexes/index-types/index-text/, title_vi: "Index text" }
+  - { url: https://www.mongodb.com/docs/manual/core/indexes/index-types/index-geospatial/, title_vi: "Index không gian địa lý" }
+  - { url: https://www.mongodb.com/docs/manual/reference/geojson/, title_vi: "Đối tượng GeoJSON" }
+  - { url: https://www.mongodb.com/docs/manual/core/indexes/index-types/index-hashed/, title_vi: "Index hashed" }
 quiz:
   - q:
       vi: "Mỗi sản phẩm lưu thuộc tính riêng trong `attributes` (áo có `size`, laptop có `ram`, sách có `isbn`), và bạn cần lọc theo bất kỳ thuộc tính nào. Index nào hợp nhất?"

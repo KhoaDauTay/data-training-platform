@@ -15,8 +15,8 @@ objectives:
   - { vi: "Đọc cây phân vùng bằng `pg_partition_tree`", en: "Read the partition tree with `pg_partition_tree`" }
 requires: [e-pg-l4-02]
 sources:
-  - https://www.postgresql.org/docs/18/ddl-partitioning.html
-  - https://www.postgresql.org/docs/18/functions-admin.html
+  - { url: https://www.postgresql.org/docs/18/ddl-partitioning.html, title_vi: "Phân vùng bảng (partitioning)" }
+  - { url: https://www.postgresql.org/docs/18/functions-admin.html, title_vi: "Hàm quản trị hệ thống" }
 viz: pg-partition-prune
 lab:
   setup: |

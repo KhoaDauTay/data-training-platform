@@ -18,9 +18,9 @@ objectives:
     en: Conclude with numbers, not with a hunch.
 requires: [e-tm-l2-04, e-tm-l2-03, e-tm-l2-02]
 sources:
-  - { url: "https://opentelemetry.io/docs/concepts/signals/", title: "OpenTelemetry: Signals" }
-  - { url: "https://opentelemetry.io/docs/concepts/signals/logs/", title: "OpenTelemetry: Logs (TraceId, SpanId)" }
-  - { url: "https://prometheus.io/docs/practices/histograms/", title: "Prometheus: Histograms and summaries" }
+  - { url: "https://opentelemetry.io/docs/concepts/signals/", title: "OpenTelemetry: Signals", title_vi: "OpenTelemetry: các loại tín hiệu" }
+  - { url: "https://opentelemetry.io/docs/concepts/signals/logs/", title: "OpenTelemetry: Logs (TraceId, SpanId)", title_vi: "OpenTelemetry: log (TraceId, SpanId)" }
+  - { url: "https://prometheus.io/docs/practices/histograms/", title: "Prometheus: Histograms and summaries", title_vi: "Prometheus: histogram và summary" }
 lab:
   setup: |
     CREATE TABLE metrics (

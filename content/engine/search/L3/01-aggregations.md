@@ -18,9 +18,9 @@ objectives:
     en: "Build facets for a search box: the aggregation runs on exactly the documents that match the search."
 requires: [e-sr-l1-04]
 sources:
-  - https://www.elastic.co/docs/reference/aggregations/search-aggregations-bucket-terms-aggregation
-  - https://www.elastic.co/docs/reference/aggregations/search-aggregations-metrics-avg-aggregation
-  - https://www.elastic.co/docs/explore-analyze/query-filter/aggregations
+  - { url: https://www.elastic.co/docs/reference/aggregations/search-aggregations-bucket-terms-aggregation, title_vi: "Aggregation terms" }
+  - { url: https://www.elastic.co/docs/reference/aggregations/search-aggregations-metrics-avg-aggregation, title_vi: "Aggregation avg" }
+  - { url: https://www.elastic.co/docs/explore-analyze/query-filter/aggregations, title_vi: "Aggregation" }
 lab:
   setup: |
     {"index": "shop",

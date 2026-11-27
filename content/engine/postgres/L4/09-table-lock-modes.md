@@ -15,10 +15,10 @@ objectives:
   - { vi: "Thấy lock thật mà chính câu của mình đang giữ qua `pg_locks`, và đặt `lock_timeout` trước một migration", en: "See the real locks your own statement holds through `pg_locks`, and set `lock_timeout` before a migration" }
 requires: []
 sources:
-  - https://www.postgresql.org/docs/18/explicit-locking.html
-  - https://www.postgresql.org/docs/18/sql-lock.html
-  - https://www.postgresql.org/docs/18/view-pg-locks.html
-  - https://www.postgresql.org/docs/18/runtime-config-client.html
+  - { url: https://www.postgresql.org/docs/18/explicit-locking.html, title_vi: "Khóa tường minh" }
+  - { url: https://www.postgresql.org/docs/18/sql-lock.html, title_vi: "LOCK" }
+  - { url: https://www.postgresql.org/docs/18/view-pg-locks.html, title_vi: "pg_locks" }
+  - { url: https://www.postgresql.org/docs/18/runtime-config-client.html, title_vi: "Cấu hình mặc định cho kết nối" }
 viz: pg-lock-matrix
 lab:
   setup: |

@@ -18,11 +18,11 @@ objectives:
     en: Limit read access to a few columns, and drop a role that still holds privileges.
 requires: [e-pg-l1-06]
 sources:
-  - https://www.postgresql.org/docs/18/user-manag.html
-  - https://www.postgresql.org/docs/18/ddl-priv.html
-  - https://www.postgresql.org/docs/18/sql-grant.html
-  - https://www.postgresql.org/docs/18/sql-revoke.html
-  - https://www.postgresql.org/docs/18/functions-info.html
+  - { url: https://www.postgresql.org/docs/18/user-manag.html, title_vi: "Vai trò trong database" }
+  - { url: https://www.postgresql.org/docs/18/ddl-priv.html, title_vi: "Quyền" }
+  - { url: https://www.postgresql.org/docs/18/sql-grant.html, title_vi: "GRANT" }
+  - { url: https://www.postgresql.org/docs/18/sql-revoke.html, title_vi: "REVOKE" }
+  - { url: https://www.postgresql.org/docs/18/functions-info.html, title_vi: "Hàm thông tin hệ thống" }
 lab:
   setup: |
     CREATE TABLE customers (

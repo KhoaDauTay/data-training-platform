@@ -18,8 +18,8 @@ objectives:
     en: Split the window per device with `PARTITION BY`.
 requires: [e-ts-l1-05]
 sources:
-  - https://www.postgresql.org/docs/18/sql-expressions.html#SYNTAX-WINDOW-FUNCTIONS
-  - https://www.postgresql.org/docs/18/tutorial-window.html
+  - { url: https://www.postgresql.org/docs/18/sql-expressions.html#SYNTAX-WINDOW-FUNCTIONS, title_vi: "Biểu thức › gọi hàm cửa sổ (khung cửa sổ)" }
+  - { url: https://www.postgresql.org/docs/18/tutorial-window.html, title_vi: "Hướng dẫn › hàm cửa sổ" }
 lab:
   setup: |
     CREATE TABLE temps (

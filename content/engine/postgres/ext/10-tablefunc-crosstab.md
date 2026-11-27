@@ -19,8 +19,8 @@ objectives:
   - vi: Nhận ra vì sao dạng một tham số dồn giá trị sang sai cột khi thiếu dữ liệu.
     en: See why the one-argument form slides values into the wrong column when data is missing.
 sources:
-  - https://www.postgresql.org/docs/18/tablefunc.html
-  - https://www.postgresql.org/docs/18/sql-expressions.html#SYNTAX-AGGREGATES
+  - { url: https://www.postgresql.org/docs/18/tablefunc.html, title_vi: "tablefunc" }
+  - { url: https://www.postgresql.org/docs/18/sql-expressions.html#SYNTAX-AGGREGATES, title_vi: "Biểu thức › biểu thức gộp" }
 lab:
   setup: |
     CREATE EXTENSION IF NOT EXISTS tablefunc;

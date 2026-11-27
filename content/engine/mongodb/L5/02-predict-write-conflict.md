@@ -15,8 +15,8 @@ objectives:
     en: "Tell a conflict outside a transaction from one inside a multi-document transaction"
 requires: [e-mg-l5-01]
 sources:
-  - https://www.mongodb.com/docs/manual/core/wiredtiger/
-  - https://www.mongodb.com/docs/manual/core/transactions-production-consideration/
+  - { url: https://www.mongodb.com/docs/manual/core/wiredtiger/, title_vi: "Bộ lưu trữ WiredTiger" }
+  - { url: https://www.mongodb.com/docs/manual/core/transactions-production-consideration/, title_vi: "Transaction khi chạy thật: những điều cần lưu ý" }
 predict:
   sql: |
     // client A

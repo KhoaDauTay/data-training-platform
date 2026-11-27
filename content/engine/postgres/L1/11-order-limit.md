@@ -19,9 +19,9 @@ objectives:
     en: Write `ORDER BY` on the indexed column itself, not on an expression the index does not hold.
 requires: [e-pg-l1-10]
 sources:
-  - https://www.postgresql.org/docs/18/indexes-ordering.html
-  - https://www.postgresql.org/docs/18/using-explain.html
-  - https://www.postgresql.org/docs/18/queries-limit.html
+  - { url: https://www.postgresql.org/docs/18/indexes-ordering.html, title_vi: "Index và ORDER BY" }
+  - { url: https://www.postgresql.org/docs/18/using-explain.html, title_vi: "Dùng EXPLAIN" }
+  - { url: https://www.postgresql.org/docs/18/queries-limit.html, title_vi: "LIMIT và OFFSET" }
 lab:
   setup: |
     CREATE TABLE orders (

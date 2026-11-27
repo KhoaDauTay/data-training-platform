@@ -18,9 +18,9 @@ objectives:
     en: Know that a ClickHouse primary key does not have to be unique.
 requires: [e-ol-l2-03]
 sources:
-  - { url: "https://clickhouse.com/docs/engines/table-engines/mergetree-family/mergetree", title: "ClickHouse docs: MergeTree" }
-  - { url: "https://clickhouse.com/docs/optimize/sparse-primary-indexes", title: "ClickHouse docs: A practical introduction to primary indexes" }
-  - { url: "https://www.postgresql.org/docs/18/brin.html", title: "PostgreSQL 18 docs: BRIN Indexes" }
+  - { url: "https://clickhouse.com/docs/engines/table-engines/mergetree-family/mergetree", title: "ClickHouse docs: MergeTree", title_vi: "Tài liệu ClickHouse: MergeTree" }
+  - { url: "https://clickhouse.com/docs/optimize/sparse-primary-indexes", title: "ClickHouse docs: A practical introduction to primary indexes", title_vi: "Tài liệu ClickHouse: nhập môn primary index" }
+  - { url: "https://www.postgresql.org/docs/18/brin.html", title: "PostgreSQL 18 docs: BRIN Indexes", title_vi: "Index BRIN" }
 demo_setup: |
   CREATE TABLE ev AS
   SELECT row_number() OVER (

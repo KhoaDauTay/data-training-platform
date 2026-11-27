@@ -17,9 +17,9 @@ objectives:
     en: Delete an item with `DeleteItem` and get back the deleted image.
 requires: [e-dy-l1-06]
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithItems.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_UpdateItem.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_DeleteItem.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithItems.html, title_vi: "Làm việc với item" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_UpdateItem.html, title_vi: "API UpdateItem" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_DeleteItem.html, title_vi: "API DeleteItem" }
 lab:
   setup: |
     {"tables": [{"TableName":"Books","KeySchema":[{"AttributeName":"isbn","KeyType":"HASH"}],"AttributeDefinitions":[{"AttributeName":"isbn","AttributeType":"S"}],"BillingMode":"PAY_PER_REQUEST"}],

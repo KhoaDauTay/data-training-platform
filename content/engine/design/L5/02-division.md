@@ -18,9 +18,9 @@ objectives:
     en: Handle an empty divisor and duplicate rows in the dividend correctly.
 requires: [e-ds-l5-01]
 sources:
-  - https://doi.org/10.1145/362384.362685
-  - https://www.postgresql.org/docs/18/functions-subquery.html
-  - https://www.postgresql.org/docs/18/queries-union.html
+  - { url: https://doi.org/10.1145/362384.362685, title_vi: "Bài báo ACM 10.1145/362384.362685" }
+  - { url: https://www.postgresql.org/docs/18/functions-subquery.html, title_vi: "Biểu thức truy vấn con (EXISTS)" }
+  - { url: https://www.postgresql.org/docs/18/queries-union.html, title_vi: "Gộp kết quả truy vấn (UNION, INTERSECT, EXCEPT)" }
 lab:
   setup: |
     CREATE TABLE students (id int PRIMARY KEY, name text NOT NULL);

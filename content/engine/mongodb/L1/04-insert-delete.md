@@ -15,8 +15,8 @@ objectives:
     en: Delete the right documents with `deleteOne` and `deleteMany`, and know that an empty filter empties the collection.
 requires: [e-mg-l1-03]
 sources:
-  - https://www.mongodb.com/docs/manual/tutorial/insert-documents/
-  - https://www.mongodb.com/docs/manual/tutorial/delete-documents/
+  - { url: https://www.mongodb.com/docs/manual/tutorial/insert-documents/, title_vi: "Thêm tài liệu" }
+  - { url: https://www.mongodb.com/docs/manual/tutorial/delete-documents/, title_vi: "Xóa tài liệu" }
 lab:
   setup: |
     {"collections": {"products": [

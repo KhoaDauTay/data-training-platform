@@ -19,10 +19,10 @@ objectives:
     en: Fix a column stored with the wrong type so its index works again for the natural filter.
 requires: [e-pg-l1-03]
 sources:
-  - https://www.postgresql.org/docs/18/ddl-alter.html
-  - https://www.postgresql.org/docs/18/sql-altertable.html
-  - https://www.postgresql.org/docs/18/functions-admin.html
-  - https://www.postgresql.org/docs/18/indexes-types.html
+  - { url: https://www.postgresql.org/docs/18/ddl-alter.html, title_vi: "Sửa bảng" }
+  - { url: https://www.postgresql.org/docs/18/sql-altertable.html, title_vi: "ALTER TABLE (REPLICA IDENTITY)" }
+  - { url: https://www.postgresql.org/docs/18/functions-admin.html, title_vi: "Hàm quản trị hệ thống" }
+  - { url: https://www.postgresql.org/docs/18/indexes-types.html, title_vi: "Các loại index" }
 lab:
   setup: |
     CREATE TABLE customers (

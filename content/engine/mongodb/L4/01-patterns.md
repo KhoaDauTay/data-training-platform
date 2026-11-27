@@ -18,9 +18,9 @@ objectives:
     en: "See the price of each pattern: duplicated data, keeping it in sync, code that reads several shapes"
 requires: []
 sources:
-  - https://www.mongodb.com/docs/manual/data-modeling/design-patterns/
-  - https://www.mongodb.com/docs/manual/data-modeling/design-patterns/group-data/
-  - https://www.mongodb.com/docs/manual/data-modeling/design-patterns/data-versioning/
+  - { url: https://www.mongodb.com/docs/manual/data-modeling/design-patterns/, title_vi: "Mẫu thiết kế" }
+  - { url: https://www.mongodb.com/docs/manual/data-modeling/design-patterns/group-data/, title_vi: "Gom nhóm dữ liệu" }
+  - { url: https://www.mongodb.com/docs/manual/data-modeling/design-patterns/data-versioning/, title_vi: "Lưu phiên bản dữ liệu" }
 quiz:
   - q:
       vi: "Một cuốn sách mới nhận nhiều đánh giá hơn hẳn các sách khác, làm tài liệu của nó rất to. Mẫu nào?"

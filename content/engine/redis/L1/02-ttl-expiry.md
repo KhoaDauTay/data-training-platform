@@ -18,9 +18,9 @@ objectives:
   - vi: Biết lệnh nào xóa thời gian sống (SET) và lệnh nào giữ nó (INCR, KEEPTTL).
     en: Know which commands clear the time to live (SET) and which keep it (INCR, KEEPTTL).
 sources:
-  - { url: "https://valkey.io/commands/expire/", title: "Valkey docs: EXPIRE" }
-  - { url: "https://valkey.io/commands/ttl/", title: "Valkey docs: TTL" }
-  - { url: "https://valkey.io/commands/set/", title: "Valkey docs: SET" }
+  - { url: "https://valkey.io/commands/expire/", title: "Valkey docs: EXPIRE", title_vi: "Tài liệu Valkey: EXPIRE" }
+  - { url: "https://valkey.io/commands/ttl/", title: "Valkey docs: TTL", title_vi: "Tài liệu Valkey: TTL" }
+  - { url: "https://valkey.io/commands/set/", title: "Valkey docs: SET", title_vi: "Tài liệu Valkey: SET" }
 lab:
   setup: |
     SET session:lily "cart=3" EX 1800

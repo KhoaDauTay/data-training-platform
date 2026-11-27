@@ -121,11 +121,16 @@ function demoView(bs: DemoBlock[], i: number): HTMLElement {
   const chip = b.mark === 'error' ? h('span', { class: cls.cx(CHIP, 'bg-bad-soft text-bad') }, ft('run.chipError', { code: b.error ?? '' }))
     : b.mark === 'wrong' ? h('span', { class: cls.cx(CHIP, 'bg-bad-soft text-bad') }, ft('run.chipWrong'))
       : b.mark === 'fix' ? h('span', { class: cls.cx(CHIP, 'bg-good-soft text-good') }, ft('run.chipFix')) : null;
+  // v48 B-16 (L1133): a block with no marker chip floats Run in the code's top-right corner from sm (no band holding only the
+  // button); on phones, and beside a chip, Run keeps its row above the code so it never covers a line
+  const float = !chip && b.runs && !!c.make;
+  const btn = b.runs && c.make ? h('button', { type: 'button', class: cls.cx(cls.BTN_SECONDARY, 'ml-auto inline-flex min-h-6 items-center gap-1 px-3 py-1', float && 'sm:absolute sm:top-2 sm:right-2 sm:z-10'), 'data-ek': `${keyOf(c.l, i)}-run`,
+    'aria-disabled': o === 'busy' ? 'true' : false, onclick: () => { if (outs.get(keyOf(x.l, i)) !== 'busy') void run(x, bs, i); } }, c.d.icon('run', 'size-4'), ft(b.mark === 'wrong' ? 'run.wrong' : b.mark === 'fix' ? 'run.fix' : 'run.run')) : null;
+  const pre = h('pre', { tabindex: '0', class: cls.cx('sql m-0 overflow-x-auto', float && 'sm:pr-28'), lang: 'en' }, b.code);
   return h('div', { class: cls.cx(cls.CARD, 'flex min-w-0 flex-col gap-2 p-3'), 'data-demo': String(i) },
-    h('div', { class: 'flex flex-wrap items-center gap-2' }, chip,
-      !b.runs ? h('span', { class: 'ml-auto text-body-sm text-muted' }, ft('run.shownOnly')) : c.make ? h('button', { type: 'button', class: cls.cx(cls.BTN_SECONDARY, 'ml-auto inline-flex min-h-6 items-center gap-1 px-3 py-1'), 'data-ek': `${keyOf(c.l, i)}-run`,
-        'aria-disabled': o === 'busy' ? 'true' : false, onclick: () => { if (outs.get(keyOf(x.l, i)) !== 'busy') void run(x, bs, i); } }, c.d.icon('run', 'size-4'), ft(b.mark === 'wrong' ? 'run.wrong' : b.mark === 'fix' ? 'run.fix' : 'run.run')) : null),
-    h('pre', { tabindex: '0', class: 'sql m-0 overflow-x-auto', lang: 'en' }, b.code),
+    ...(float ? [h('div', { class: 'relative flex min-w-0 flex-col gap-2 sm:block' }, btn, pre)]
+      : [chip || !b.runs || btn ? h('div', { class: 'flex flex-wrap items-center gap-2' }, chip,
+        !b.runs ? h('span', { class: 'ml-auto text-body-sm text-muted' }, ft('run.shownOnly')) : btn) : null, pre]),
     ...outView(b, o).filter((n): n is Node => !!n));
 }
 

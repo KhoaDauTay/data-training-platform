@@ -14,12 +14,12 @@ objectives:
   - { vi: "Chọn DAX, Streams và cách sao lưu cho từng phần của ứng dụng", en: "Choose DAX, Streams and the backup method for each part of the app" }
 requires: [e-dy-l5-02, e-dy-l4-12, e-dy-l5-06]
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-general-nosql-design.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ttl-expired-items.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/transaction-apis.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/read-write-operations.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DAX.consistency.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Streams.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-general-nosql-design.html, title_vi: "Thực hành tốt: thiết kế NoSQL" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ttl-expired-items.html, title_vi: "Item hết hạn TTL" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/transaction-apis.html, title_vi: "API transaction" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/read-write-operations.html, title_vi: "Thao tác đọc và ghi" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DAX.consistency.html, title_vi: "DAX và tính nhất quán" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Streams.html, title_vi: "DynamoDB Streams" }
 viz: dy-single-table
 lab:
   setup: |

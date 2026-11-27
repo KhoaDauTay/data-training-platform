@@ -18,8 +18,8 @@ objectives:
     en: Build a mart that aggregates to the right grain before joining.
 requires: [e-st-l2-02]
 sources:
-  - { url: "https://www.kimballgroup.com/data-warehouse-business-intelligence-resources/kimball-techniques/dimensional-modeling-techniques/grain/", title: "Kimball Group: Grain" }
-  - { url: "https://docs.getdbt.com/best-practices/how-we-structure/4-marts", title: "dbt docs: Marts: business-defined entities" }
+  - { url: "https://www.kimballgroup.com/data-warehouse-business-intelligence-resources/kimball-techniques/dimensional-modeling-techniques/grain/", title: "Kimball Group: Grain", title_vi: "Kimball Group: độ chi tiết (grain)" }
+  - { url: "https://docs.getdbt.com/best-practices/how-we-structure/4-marts", title: "dbt docs: Marts: business-defined entities", title_vi: "Tài liệu dbt: marts, các thực thể theo nghiệp vụ" }
 lab:
   setup: |
     CREATE SCHEMA marts;

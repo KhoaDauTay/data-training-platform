@@ -17,12 +17,12 @@ objectives:
     en: Link the `Heap Fetches` of an index-only scan to the visibility map
 requires: [e-pg-l3-07]
 sources:
-  - https://www.postgresql.org/docs/18/routine-vacuuming.html
-  - https://www.postgresql.org/docs/18/storage-vm.html
-  - https://www.postgresql.org/docs/18/storage-fsm.html
-  - https://www.postgresql.org/docs/18/pgvisibility.html
-  - https://www.postgresql.org/docs/18/pgfreespacemap.html
-  - https://www.postgresql.org/docs/18/indexes-index-only-scans.html
+  - { url: https://www.postgresql.org/docs/18/routine-vacuuming.html, title_vi: "VACUUM định kỳ" }
+  - { url: https://www.postgresql.org/docs/18/storage-vm.html, title_vi: "Bản đồ hiển thị (visibility map)" }
+  - { url: https://www.postgresql.org/docs/18/storage-fsm.html, title_vi: "Bản đồ chỗ trống (free space map)" }
+  - { url: https://www.postgresql.org/docs/18/pgvisibility.html, title_vi: "pg_visibility" }
+  - { url: https://www.postgresql.org/docs/18/pgfreespacemap.html, title_vi: "pg_freespacemap" }
+  - { url: https://www.postgresql.org/docs/18/indexes-index-only-scans.html, title_vi: "Index-only scan và covering index" }
 lab:
   setup: |
     CREATE EXTENSION IF NOT EXISTS pageinspect;

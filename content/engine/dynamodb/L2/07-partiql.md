@@ -15,10 +15,10 @@ objectives:
     en: Tell which `SELECT` becomes a Query and which `SELECT` becomes a Scan.
 requires: [e-dy-l2-02]
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ql-reference.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ql-reference.select.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ql-reference.update.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ql-reference.insert.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ql-reference.html, title_vi: "Tra cứu PartiQL" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ql-reference.select.html, title_vi: "PartiQL: SELECT" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ql-reference.update.html, title_vi: "PartiQL: UPDATE" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ql-reference.insert.html, title_vi: "PartiQL: INSERT" }
 lab:
   setup: |
     {"tables": [{"TableName":"Orders","KeySchema":[{"AttributeName":"customerId","KeyType":"HASH"},{"AttributeName":"orderId","KeyType":"RANGE"}],"AttributeDefinitions":[{"AttributeName":"customerId","AttributeType":"S"},{"AttributeName":"orderId","AttributeType":"S"}],"BillingMode":"PAY_PER_REQUEST"}],

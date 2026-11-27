@@ -15,9 +15,9 @@ objectives:
     en: "Tell partial, sparse and compound indexes apart when you need a unique constraint"
 requires: [e-mg-l3-01, e-mg-l3-02, e-mg-l3-03]
 sources:
-  - https://www.mongodb.com/docs/manual/core/indexes/index-types/index-multikey/
-  - https://www.mongodb.com/docs/manual/core/index-partial/
-  - https://www.mongodb.com/docs/manual/core/index-ttl/
+  - { url: https://www.mongodb.com/docs/manual/core/indexes/index-types/index-multikey/, title_vi: "Index multikey (trên mảng)" }
+  - { url: https://www.mongodb.com/docs/manual/core/index-partial/, title_vi: "Index một phần (partial)" }
+  - { url: https://www.mongodb.com/docs/manual/core/index-ttl/, title_vi: "Index TTL" }
 quiz:
   - q:
       vi: "Bạn muốn `email` là duy nhất, nhưng chỉ với tài liệu có trường `password`. Index nào?"

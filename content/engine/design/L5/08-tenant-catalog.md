@@ -20,10 +20,13 @@ requires: [e-ds-l4-11]
 sources:
   - url: https://www.postgresql.org/docs/18/rangetypes.html
     title: "Range Types"
+    title_vi: "Kiểu khoảng (range)"
   - url: https://www.postgresql.org/docs/18/ddl-constraints.html#DDL-CONSTRAINTS-EXCLUSION
     title: "Constraints › Exclusion Constraints"
+    title_vi: "Ràng buộc › ràng buộc loại trừ (exclusion)"
   - url: https://www.postgresql.org/docs/18/btree-gist.html
     title: "btree_gist"
+    title_vi: "btree_gist"
 lab:
   setup: |
     CREATE EXTENSION btree_gist;

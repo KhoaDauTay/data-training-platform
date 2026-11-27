@@ -15,7 +15,7 @@ objectives:
     en: Keep documents with an empty array using `preserveNullAndEmptyArrays`.
 requires: [e-mg-l2-06]
 sources:
-  - https://www.mongodb.com/docs/manual/reference/operator/aggregation/unwind/
+  - { url: https://www.mongodb.com/docs/manual/reference/operator/aggregation/unwind/, title_vi: "$unwind" }
 lab:
   setup: |
     {"collections": {"orders": [

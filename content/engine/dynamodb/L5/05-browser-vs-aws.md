@@ -13,8 +13,8 @@ objectives:
   - { vi: "Không rút kết luận về hiệu năng từ một bộ máy một nút", en: "Not draw performance conclusions from a single-node engine" }
 requires: [e-dy-l4-02, e-dy-l5-02]
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/burst-adaptive-capacity.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/TTL.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/burst-adaptive-capacity.html, title_vi: "Capacity dự phòng (burst) và tự điều chỉnh (adaptive)" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/TTL.html, title_vi: "Thời gian sống (TTL)" }
 quiz:
   - q: { vi: "Bạn ghi 5000 item mỗi giây vào một partition key trong bộ máy trình duyệt và không thấy throttle. Kết luận nào đúng?", en: "You write 5000 items per second to one partition key in the browser engine and see no throttling. Which conclusion is right?" }
     options:

@@ -18,9 +18,9 @@ objectives:
     en: Check the design with a real business query.
 requires: [e-ds-l4-03]
 sources:
-  - https://www.bkent.net/Doc/simple5.htm
-  - https://www.postgresql.org/docs/18/ddl-constraints.html
-  - https://www.postgresql.org/docs/18/sql-insert.html
+  - { url: https://www.bkent.net/Doc/simple5.htm, title_vi: "William Kent: hướng dẫn đơn giản về năm dạng chuẩn" }
+  - { url: https://www.postgresql.org/docs/18/ddl-constraints.html, title_vi: "Ràng buộc" }
+  - { url: https://www.postgresql.org/docs/18/sql-insert.html, title_vi: "INSERT" }
 lab:
   setup: |
     CREATE TABLE loans_flat (

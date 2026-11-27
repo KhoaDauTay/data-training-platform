@@ -15,9 +15,9 @@ objectives:
   - { vi: "Đọc phía trong/phía ngoài và `Hash Cond`/`Merge Cond` trong kế hoạch", en: "Read the inner/outer side and `Hash Cond`/`Merge Cond` in a plan" }
 requires: [e-pg-l4-02]
 sources:
-  - https://www.postgresql.org/docs/18/planner-optimizer.html
-  - https://www.postgresql.org/docs/18/using-explain.html
-  - https://www.postgresql.org/docs/18/runtime-config-query.html
+  - { url: https://www.postgresql.org/docs/18/planner-optimizer.html, title_vi: "Planner và optimizer" }
+  - { url: https://www.postgresql.org/docs/18/using-explain.html, title_vi: "Dùng EXPLAIN" }
+  - { url: https://www.postgresql.org/docs/18/runtime-config-query.html, title_vi: "Cấu hình planner" }
 viz: pg-plan-tree
 lab:
   setup: |

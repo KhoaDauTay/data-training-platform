@@ -16,10 +16,10 @@ objectives:
     en: Compute new fields with expressions (`$multiply`, `$size`, `$dateToString`) in `$project` or `$set`.
 requires: [e-mg-l2-04]
 sources:
-  - https://www.mongodb.com/docs/manual/reference/operator/aggregation/match/
-  - https://www.mongodb.com/docs/manual/reference/operator/aggregation/project/
-  - https://www.mongodb.com/docs/manual/reference/operator/aggregation/set/
-  - https://www.mongodb.com/docs/manual/reference/operator/aggregation/datetostring/
+  - { url: https://www.mongodb.com/docs/manual/reference/operator/aggregation/match/, title_vi: "$match" }
+  - { url: https://www.mongodb.com/docs/manual/reference/operator/aggregation/project/, title_vi: "$project" }
+  - { url: https://www.mongodb.com/docs/manual/reference/operator/aggregation/set/, title_vi: "$set" }
+  - { url: https://www.mongodb.com/docs/manual/reference/operator/aggregation/datetostring/, title_vi: "$dateToString" }
 lab:
   setup: |
     {"collections": {"orders": [

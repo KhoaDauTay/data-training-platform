@@ -17,8 +17,8 @@ objectives:
 requires: [e-mg-l2-06]
 demo_setup: '{"collections": {"orders": [{"_id": 1, "store": "S1", "status": "paid", "total": 95000}, {"_id": 2, "store": "S2", "status": "shipped", "total": 120000}, {"_id": 3, "store": "S1", "status": "cancelled", "total": 150000}, {"_id": 4, "store": "S2", "status": "paid", "total": 210000}], "store_revenue": [{"_id": "S1", "revenue": 80000, "manager": "Lan"}, {"_id": "S3", "revenue": 50000, "manager": "Hoa"}]}}'
 sources:
-  - https://www.mongodb.com/docs/manual/reference/operator/aggregation/merge/
-  - https://www.mongodb.com/docs/manual/reference/operator/aggregation/out/
+  - { url: https://www.mongodb.com/docs/manual/reference/operator/aggregation/merge/, title_vi: "$merge" }
+  - { url: https://www.mongodb.com/docs/manual/reference/operator/aggregation/out/, title_vi: "$out" }
 quiz:
   - q:
       vi: 'Collection `daily_sales` đã có số liệu của 30 ngày. Bạn chạy một pipeline chỉ tính ngày hôm nay rồi kết thúc bằng `{ $out: "daily_sales" }`. Sau đó collection có gì?'

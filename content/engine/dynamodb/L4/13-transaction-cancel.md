@@ -14,8 +14,8 @@ objectives:
   - { vi: "Đọc danh sách lý do hủy theo thứ tự câu lệnh", en: "Read the list of cancellation reasons in statement order" }
 requires: [e-dy-l4-11]
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ql-reference.multiplestatements.transactions.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/transaction-apis.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ql-reference.multiplestatements.transactions.html, title_vi: "PartiQL: transaction nhiều câu lệnh" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/transaction-apis.html, title_vi: "API transaction" }
 lab:
   setup: |
     {"tables": [

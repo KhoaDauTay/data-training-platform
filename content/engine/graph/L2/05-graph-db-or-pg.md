@@ -18,9 +18,9 @@ objectives:
     en: Write the "what else do similar customers book" suggestion in SQL.
 requires: [e-gr-l2-02, e-gr-l1-03]
 sources:
-  - { url: "https://neo4j.com/docs/getting-started/graph-database/", title: "Neo4j docs: What is a graph database" }
-  - { url: "https://neo4j.com/docs/cypher-manual/current/patterns/shortest-paths/", title: "Cypher Manual: Shortest paths" }
-  - https://www.postgresql.org/docs/18/queries-with.html
+  - { url: "https://neo4j.com/docs/getting-started/graph-database/", title: "Neo4j docs: What is a graph database", title_vi: "Tài liệu Neo4j: cơ sở dữ liệu đồ thị là gì" }
+  - { url: "https://neo4j.com/docs/cypher-manual/current/patterns/shortest-paths/", title: "Cypher Manual: Shortest paths", title_vi: "Cypher Manual: đường đi ngắn nhất" }
+  - { url: https://www.postgresql.org/docs/18/queries-with.html, title_vi: "Truy vấn WITH (CTE)" }
 lab:
   setup: |
     CREATE TABLE bookings (

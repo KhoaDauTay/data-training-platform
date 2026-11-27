@@ -15,8 +15,8 @@ objectives:
     en: Remember the hard limits - 400 KB per item including attribute names, keys of 2048/1024 bytes, at most 1 MB per Query/Scan call.
 requires: [e-dy-l1-02]
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Constraints.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-general-nosql-design.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Constraints.html, title_vi: "Giới hạn" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-general-nosql-design.html, title_vi: "Thực hành tốt: thiết kế NoSQL" }
 quiz:
   - q:
       vi: Một item có hai thuộc tính - "shirt-color" giá trị "R" và "shirt-size" giá trị "M". Cỡ item là bao nhiêu byte?

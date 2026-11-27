@@ -15,9 +15,9 @@ objectives:
   - { vi: "Biết hằng số nào đổi khi bảng nằm trên SSD hoặc gần như nằm hết trong RAM", en: "Know which constants to change when the data sits on SSD or mostly in RAM" }
 requires: []
 sources:
-  - https://www.postgresql.org/docs/18/runtime-config-query.html
-  - https://www.postgresql.org/docs/18/using-explain.html
-  - https://www.postgresql.org/docs/18/planner-stats.html
+  - { url: https://www.postgresql.org/docs/18/runtime-config-query.html, title_vi: "Cấu hình planner" }
+  - { url: https://www.postgresql.org/docs/18/using-explain.html, title_vi: "Dùng EXPLAIN" }
+  - { url: https://www.postgresql.org/docs/18/planner-stats.html, title_vi: "Thống kê mà planner dùng" }
 viz: pg-plan-tree
 lab:
   setup: |

@@ -16,10 +16,10 @@ objectives:
     en: Know that an exposure records which dashboard uses which mart, so you can tell what breaks when a model changes.
 requires: [e-st-l2-02]
 sources:
-  - { url: "https://docs.getdbt.com/docs/build/documentation", title: "dbt docs: About documentation" }
-  - { url: "https://docs.getdbt.com/docs/build/exposures", title: "dbt docs: Add exposures to your DAG" }
-  - https://www.postgresql.org/docs/18/infoschema-view-table-usage.html
-  - https://www.postgresql.org/docs/18/infoschema-view-column-usage.html
+  - { url: "https://docs.getdbt.com/docs/build/documentation", title: "dbt docs: About documentation", title_vi: "Tài liệu dbt: viết tài liệu cho project" }
+  - { url: "https://docs.getdbt.com/docs/build/exposures", title: "dbt docs: Add exposures to your DAG", title_vi: "Tài liệu dbt: thêm exposure vào DAG" }
+  - { url: https://www.postgresql.org/docs/18/infoschema-view-table-usage.html, title_vi: "information_schema.view_table_usage" }
+  - { url: https://www.postgresql.org/docs/18/infoschema-view-column-usage.html, title_vi: "information_schema.view_column_usage" }
 lab:
   setup: |
     CREATE SCHEMA raw_shop;

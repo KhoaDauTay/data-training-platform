@@ -18,8 +18,8 @@ objectives:
     en: Check `pg_stats.correlation` to know whether write order still follows time.
 requires: [e-ts-l3-02]
 sources:
-  - https://www.postgresql.org/docs/18/brin.html
-  - https://www.postgresql.org/docs/18/view-pg-stats.html
+  - { url: https://www.postgresql.org/docs/18/brin.html, title_vi: "Index BRIN" }
+  - { url: https://www.postgresql.org/docs/18/view-pg-stats.html, title_vi: "pg_stats" }
 lab:
   setup: |
     CREATE TABLE gps (

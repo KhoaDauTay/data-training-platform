@@ -16,8 +16,8 @@ objectives:
     en: "Recognise a covered query in explain: an IXSCAN not under a FETCH"
 requires: [e-mg-l3-05]
 sources:
-  - https://www.mongodb.com/docs/manual/core/query-optimization/
-  - https://www.mongodb.com/docs/manual/reference/explain-results/
+  - { url: https://www.mongodb.com/docs/manual/core/query-optimization/, title_vi: "Tối ưu truy vấn" }
+  - { url: https://www.mongodb.com/docs/manual/reference/explain-results/, title_vi: "Đọc kết quả explain" }
 predict:
   sql: |
     db.movies.createIndex( { rated: 1, title: 1 } )

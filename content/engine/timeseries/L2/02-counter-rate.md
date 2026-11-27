@@ -18,9 +18,9 @@ objectives:
     en: Handle a counter that restarts from 0, so the total does not turn negative.
 requires: [e-ts-l2-01]
 sources:
-  - https://www.postgresql.org/docs/18/functions-window.html
-  - https://www.postgresql.org/docs/18/functions-datetime.html#FUNCTIONS-DATETIME-EXTRACT
-  - { url: "https://prometheus.io/docs/prometheus/latest/querying/functions/#rate", title: "Prometheus docs: rate()" }
+  - { url: https://www.postgresql.org/docs/18/functions-window.html, title_vi: "Hàm cửa sổ (window function)" }
+  - { url: https://www.postgresql.org/docs/18/functions-datetime.html#FUNCTIONS-DATETIME-EXTRACT, title_vi: "Hàm ngày giờ › EXTRACT và date_part" }
+  - { url: "https://prometheus.io/docs/prometheus/latest/querying/functions/#rate", title: "Prometheus docs: rate()", title_vi: "Tài liệu Prometheus: rate()" }
 lab:
   setup: |
     CREATE TABLE crane_counter (

@@ -37,13 +37,13 @@ demo_setup: |
   FROM generate_series(0, 10150) AS g;
   ANALYZE container_events;
 sources:
-  - https://www.tigerdata.com/docs/use-timescale/latest/hypertables
-  - https://www.tigerdata.com/docs/reference/timescaledb/hypertables/create_table
-  - https://www.tigerdata.com/docs/use-timescale/latest/continuous-aggregates/create-a-continuous-aggregate
-  - https://www.tigerdata.com/docs/use-timescale/latest/data-retention/create-a-retention-policy
-  - https://www.tigerdata.com/docs/about/latest/timescaledb-editions
-  - https://www.postgresql.org/docs/18/ddl-partitioning.html
-  - https://www.postgresql.org/docs/18/functions-datetime.html#FUNCTIONS-DATETIME-BIN
+  - { url: https://www.tigerdata.com/docs/use-timescale/latest/hypertables, title_vi: "Hypertable" }
+  - { url: https://www.tigerdata.com/docs/reference/timescaledb/hypertables/create_table, title_vi: "Tạo hypertable bằng CREATE TABLE" }
+  - { url: https://www.tigerdata.com/docs/use-timescale/latest/continuous-aggregates/create-a-continuous-aggregate, title_vi: "Tạo continuous aggregate" }
+  - { url: https://www.tigerdata.com/docs/use-timescale/latest/data-retention/create-a-retention-policy, title_vi: "Tạo chính sách giữ dữ liệu (retention)" }
+  - { url: https://www.tigerdata.com/docs/about/latest/timescaledb-editions, title_vi: "Các phiên bản TimescaleDB" }
+  - { url: https://www.postgresql.org/docs/18/ddl-partitioning.html, title_vi: "Phân vùng bảng (partitioning)" }
+  - { url: https://www.postgresql.org/docs/18/functions-datetime.html#FUNCTIONS-DATETIME-BIN, title_vi: "Hàm ngày giờ › date_bin" }
 quiz:
   - q:
       vi: "Bảng sự kiện container phân vùng theo tháng bằng Postgres lõi. Ngày 1/11 một sự kiện mới được ghi nhưng chưa ai tạo phân vùng tháng 11. Chuyện gì xảy ra?"

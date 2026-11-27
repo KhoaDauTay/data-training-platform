@@ -19,9 +19,9 @@ objectives:
   - vi: Biết vì sao dù có lưu xuống đĩa, nguồn đúng của tiền vẫn nên ở PostgreSQL.
     en: Know why, even with saving to disk, the source of truth for money should still be PostgreSQL.
 sources:
-  - { url: "https://valkey.io/topics/persistence/", title: "Valkey docs: Persistence" }
-  - { url: "https://redis.io/docs/latest/operate/oss_and_stack/management/persistence/", title: "Redis docs: Redis persistence" }
-  - { url: "https://valkey.io/topics/valkey.conf/", title: "Valkey docs: valkey.conf" }
+  - { url: "https://valkey.io/topics/persistence/", title: "Valkey docs: Persistence", title_vi: "Tài liệu Valkey: lưu bền dữ liệu (persistence)" }
+  - { url: "https://redis.io/docs/latest/operate/oss_and_stack/management/persistence/", title: "Redis docs: Redis persistence", title_vi: "Tài liệu Redis: lưu bền dữ liệu (persistence)" }
+  - { url: "https://valkey.io/topics/valkey.conf/", title: "Valkey docs: valkey.conf", title_vi: "Tài liệu Valkey: valkey.conf" }
 quiz:
   - q:
       vi: "Redis bật AOF với `appendfsync everysec`. Máy chủ mất điện đột ngột. Tối đa mất bao nhiêu lệnh ghi?"

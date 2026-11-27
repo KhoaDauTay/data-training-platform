@@ -17,11 +17,11 @@ objectives:
   - { vi: "Xóa bảng an toàn: deletion protection, backup và những gì mất theo bảng", en: "Delete a table safely: deletion protection, backups and what goes with the table" }
 requires: [e-dy-l5-04]
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/specifying-conditions.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Programming.Errors.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/metrics-dimensions.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/contributorinsights_HowItWorks.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithTables.Basics.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/specifying-conditions.html, title_vi: "Điều kiện trong IAM policy để giới hạn quyền chi tiết" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Programming.Errors.html, title_vi: "Xử lý lỗi" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/metrics-dimensions.html, title_vi: "Metric và dimension trên CloudWatch" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/contributorinsights_HowItWorks.html, title_vi: "Cách CloudWatch Contributor Insights hoạt động" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithTables.Basics.html, title_vi: "Làm việc với bảng: cơ bản" }
 quiz:
   - q: { vi: "Ứng dụng di động cho mỗi người dùng đọc thẳng bảng `Orders` (partition key = mã người dùng). Làm sao để người A không đọc được đơn của người B?", en: "A mobile app lets each user read the `Orders` table directly (partition key = user id). How do you stop user A from reading user B's orders?" }
     options:

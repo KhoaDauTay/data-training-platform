@@ -19,10 +19,10 @@ objectives:
     en: Know when lowering `fillfactor` is worth it and why changing it does not rewrite old pages
 requires: [e-pg-l3-07]
 sources:
-  - https://www.postgresql.org/docs/18/storage-hot.html
-  - https://www.postgresql.org/docs/18/sql-createtable.html
-  - https://www.postgresql.org/docs/18/sql-altertable.html
-  - https://www.postgresql.org/docs/18/monitoring-stats.html
+  - { url: https://www.postgresql.org/docs/18/storage-hot.html, title_vi: "Cập nhật HOT (heap-only tuple)" }
+  - { url: https://www.postgresql.org/docs/18/sql-createtable.html, title_vi: "CREATE TABLE" }
+  - { url: https://www.postgresql.org/docs/18/sql-altertable.html, title_vi: "ALTER TABLE (REPLICA IDENTITY)" }
+  - { url: https://www.postgresql.org/docs/18/monitoring-stats.html, title_vi: "Hệ thống thống kê hoạt động" }
 lab:
   setup: |
     CREATE TABLE jobs_full(id int PRIMARY KEY, pad char(100)) WITH (fillfactor = 100);

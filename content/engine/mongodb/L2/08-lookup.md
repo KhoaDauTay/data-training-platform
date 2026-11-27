@@ -15,7 +15,7 @@ objectives:
     en: Turn the array that `$lookup` returns into usable fields, and find documents with no match.
 requires: [e-mg-l2-07]
 sources:
-  - https://www.mongodb.com/docs/manual/reference/operator/aggregation/lookup/
+  - { url: https://www.mongodb.com/docs/manual/reference/operator/aggregation/lookup/, title_vi: "$lookup" }
 lab:
   setup: |
     {"collections": {

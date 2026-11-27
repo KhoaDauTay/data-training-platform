@@ -16,9 +16,9 @@ objectives:
     en: Fix a model until its tests return 0 rows, and know which failures to raise with the source's owner instead of patching.
 requires: [e-st-l2-02]
 sources:
-  - { url: "https://docs.getdbt.com/docs/build/data-tests", title: "dbt docs: Add data tests to your DAG" }
-  - { url: "https://docs.getdbt.com/reference/resource-properties/data-tests", title: "dbt docs: data_tests" }
-  - { url: "https://docs.airbyte.com/platform/understanding-airbyte/airbyte-metadata-fields", title: "Airbyte docs: Airbyte metadata fields" }
+  - { url: "https://docs.getdbt.com/docs/build/data-tests", title: "dbt docs: Add data tests to your DAG", title_vi: "Tài liệu dbt: thêm data test vào DAG" }
+  - { url: "https://docs.getdbt.com/reference/resource-properties/data-tests", title: "dbt docs: data_tests", title_vi: "Tài liệu dbt: data_tests" }
+  - { url: "https://docs.airbyte.com/platform/understanding-airbyte/airbyte-metadata-fields", title: "Airbyte docs: Airbyte metadata fields", title_vi: "Tài liệu Airbyte: các trường metadata của Airbyte" }
 lab:
   setup: |
     CREATE SCHEMA raw_shop;

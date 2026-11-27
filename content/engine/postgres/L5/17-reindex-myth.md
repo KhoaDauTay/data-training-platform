@@ -17,10 +17,10 @@ objectives:
 requires: [e-pg-l5-01]
 figures: [{ name: pg-index-two-costs, at: idea }]
 sources:
-  - https://www.postgresql.org/docs/18/sql-reindex.html
-  - https://www.postgresql.org/docs/18/indexes-index-only-scans.html
-  - https://www.postgresql.org/docs/18/sql-explain.html
-  - https://use-the-index-luke.com/sql/anatomy/slow-indexes
+  - { url: https://www.postgresql.org/docs/18/sql-reindex.html, title_vi: "REINDEX" }
+  - { url: https://www.postgresql.org/docs/18/indexes-index-only-scans.html, title_vi: "Index-only scan và covering index" }
+  - { url: https://www.postgresql.org/docs/18/sql-explain.html, title_vi: "EXPLAIN" }
+  - { url: https://use-the-index-luke.com/sql/anatomy/slow-indexes, title_vi: "Vì sao index vẫn chậm" }
 lab:
   setup: |
     CREATE TABLE orders_split(id int PRIMARY KEY, customer_id int NOT NULL, amount int NOT NULL, pad char(100));

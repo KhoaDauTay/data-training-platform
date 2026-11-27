@@ -18,8 +18,8 @@ objectives:
     en: Recognise a snowflake schema, where one dimension points on to another dimension.
 requires: [e-ol-l1-01]
 sources:
-  - { url: "https://clickhouse.com/docs/data-modeling/schema-design", title: "ClickHouse docs: Schema design" }
-  - { url: "https://www.postgresql.org/docs/18/queries-table-expressions.html", title: "PostgreSQL 18 docs: Table Expressions" }
+  - { url: "https://clickhouse.com/docs/data-modeling/schema-design", title: "ClickHouse docs: Schema design", title_vi: "Tài liệu ClickHouse: thiết kế schema" }
+  - { url: "https://www.postgresql.org/docs/18/queries-table-expressions.html", title: "PostgreSQL 18 docs: Table Expressions", title_vi: "Biểu thức bảng" }
 lab:
   setup: |
     CREATE TABLE dim_country (

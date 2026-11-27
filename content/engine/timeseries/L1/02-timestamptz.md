@@ -18,9 +18,9 @@ objectives:
     en: Turn two ports' local `timestamp` values into one shared instant before comparing them.
 requires: [e-ts-l1-01]
 sources:
-  - https://www.postgresql.org/docs/18/datatype-datetime.html
-  - https://www.postgresql.org/docs/18/functions-datetime.html
-  - https://wiki.postgresql.org/wiki/Don%27t_Do_This
+  - { url: https://www.postgresql.org/docs/18/datatype-datetime.html, title_vi: "Kiểu ngày giờ" }
+  - { url: https://www.postgresql.org/docs/18/functions-datetime.html, title_vi: "Hàm và toán tử ngày giờ" }
+  - { url: https://wiki.postgresql.org/wiki/Don%27t_Do_This, title_vi: "Những điều không nên làm" }
 lab:
   setup: |
     CREATE TABLE readings (

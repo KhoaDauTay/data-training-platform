@@ -16,8 +16,8 @@ objectives:
     en: Tell item size (used for capacity and the 400 KB limit) from the 100 bytes of storage overhead.
 requires: [e-dy-l1-03]
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/CapacityUnitCalculations.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Constraints.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/CapacityUnitCalculations.html, title_vi: "Cách tính đơn vị capacity" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Constraints.html, title_vi: "Giới hạn" }
 quiz:
   - q:
       vi: 'Item `{"isbn": "978-0-04", "price": 88000}` (isbn là chuỗi, price là số) nặng bao nhiêu byte?'

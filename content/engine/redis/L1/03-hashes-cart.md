@@ -18,9 +18,9 @@ objectives:
   - vi: Hiểu lỗi WRONGTYPE khi dùng lệnh chuỗi trên một hash.
     en: Understand the WRONGTYPE error when a string command meets a hash.
 sources:
-  - { url: "https://redis.io/docs/latest/develop/data-types/hashes/", title: "Redis docs: Hashes" }
-  - { url: "https://valkey.io/commands/hset/", title: "Valkey docs: HSET" }
-  - { url: "https://valkey.io/commands/hincrby/", title: "Valkey docs: HINCRBY" }
+  - { url: "https://redis.io/docs/latest/develop/data-types/hashes/", title: "Redis docs: Hashes", title_vi: "Tài liệu Redis: hash" }
+  - { url: "https://valkey.io/commands/hset/", title: "Valkey docs: HSET", title_vi: "Tài liệu Valkey: HSET" }
+  - { url: "https://valkey.io/commands/hincrby/", title: "Valkey docs: HINCRBY", title_vi: "Tài liệu Valkey: HINCRBY" }
 lab:
   setup: |
     HSET cart:lily p01 2 p07 1

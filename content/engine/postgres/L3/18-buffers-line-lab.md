@@ -17,9 +17,9 @@ objectives:
     en: Tell shared memory (`shared`) apart from a query's temporary files (`temp`)
 requires: [e-pg-l3-14]
 sources:
-  - https://www.postgresql.org/docs/18/sql-explain.html
-  - https://www.postgresql.org/docs/18/using-explain.html
-  - https://www.postgresql.org/docs/18/runtime-config-resource.html
+  - { url: https://www.postgresql.org/docs/18/sql-explain.html, title_vi: "EXPLAIN" }
+  - { url: https://www.postgresql.org/docs/18/using-explain.html, title_vi: "Dùng EXPLAIN" }
+  - { url: https://www.postgresql.org/docs/18/runtime-config-resource.html, title_vi: "Cấu hình tài nguyên (bộ nhớ)" }
 lab:
   setup: |
     CREATE TABLE trips(id int PRIMARY KEY, driver_id int NOT NULL, km int NOT NULL, pad text);

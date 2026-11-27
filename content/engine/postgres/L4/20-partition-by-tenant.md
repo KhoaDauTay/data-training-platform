@@ -18,10 +18,13 @@ viz: pg-partition-prune
 sources:
   - url: https://www.postgresql.org/docs/18/ddl-partitioning.html
     title: "Table Partitioning"
+    title_vi: "Phân vùng bảng (partitioning)"
   - url: https://www.postgresql.org/docs/18/sql-createtable.html
     title: "CREATE TABLE"
+    title_vi: "CREATE TABLE"
   - url: https://www.postgresql.org/docs/18/sql-altertable.html
     title: "ALTER TABLE"
+    title_vi: "ALTER TABLE (REPLICA IDENTITY)"
 lab:
   setup: |
     -- Lantern Market: seller 1 sells as much as all the others together

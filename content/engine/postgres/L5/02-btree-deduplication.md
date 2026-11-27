@@ -15,8 +15,8 @@ objectives:
   - { vi: "Biết các trường hợp dedup không áp dụng (kể cả mọi index có `INCLUDE`)", en: "Know the cases where deduplication cannot apply (including every index with `INCLUDE`)" }
 requires: [e-pg-l5-01]
 sources:
-  - https://www.postgresql.org/docs/18/btree.html
-  - https://www.postgresql.org/docs/18/pageinspect.html
+  - { url: https://www.postgresql.org/docs/18/btree.html, title_vi: "Index B-tree" }
+  - { url: https://www.postgresql.org/docs/18/pageinspect.html, title_vi: "pageinspect" }
 viz: pg-btree
 lab:
   setup: |

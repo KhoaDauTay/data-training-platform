@@ -18,10 +18,10 @@ objectives:
     en: Keep a precomputed total in step with the data with one `ExecuteTransaction`, and know how Streams do this on AWS.
 requires: [e-dy-l2-05, e-dy-l2-07, e-dy-l2-09]
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.Other.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/read-write-operations.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ql-reference.multiplestatements.transactions.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Streams.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.Other.html, title_vi: "Query: các tùy chọn khác" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/read-write-operations.html, title_vi: "Thao tác đọc và ghi" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ql-reference.multiplestatements.transactions.html, title_vi: "PartiQL: transaction nhiều câu lệnh" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Streams.html, title_vi: "DynamoDB Streams" }
 lab:
   setup: |
     {"tables": [{"TableName":"Shop","KeySchema":[{"AttributeName":"pk","KeyType":"HASH"},{"AttributeName":"sk","KeyType":"RANGE"}],"AttributeDefinitions":[{"AttributeName":"pk","AttributeType":"S"},{"AttributeName":"sk","AttributeType":"S"}],"BillingMode":"PAY_PER_REQUEST"}],

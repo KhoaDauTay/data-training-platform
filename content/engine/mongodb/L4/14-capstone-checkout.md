@@ -18,12 +18,12 @@ objectives:
     en: "Put `$match` before the heavy stages of a reporting pipeline"
 requires: [e-mg-l4-02, e-mg-l4-09, e-mg-l4-11, e-mg-l4-13]
 sources:
-  - https://www.mongodb.com/docs/manual/data-modeling/design-patterns/handle-computed-values/
-  - https://www.mongodb.com/docs/manual/reference/method/db.collection.findOneAndUpdate/
-  - https://www.mongodb.com/docs/manual/core/transactions/
-  - https://www.mongodb.com/docs/manual/reference/write-concern/
-  - https://www.mongodb.com/docs/manual/core/causal-consistency-read-write-concerns/
-  - https://www.mongodb.com/docs/manual/core/aggregation-pipeline-optimization/
+  - { url: https://www.mongodb.com/docs/manual/data-modeling/design-patterns/handle-computed-values/, title_vi: "Lưu sẵn giá trị tính toán" }
+  - { url: https://www.mongodb.com/docs/manual/reference/method/db.collection.findOneAndUpdate/, title_vi: "db.collection.findOneAndUpdate()" }
+  - { url: https://www.mongodb.com/docs/manual/core/transactions/, title_vi: "Transaction" }
+  - { url: https://www.mongodb.com/docs/manual/reference/write-concern/, title_vi: "Write concern" }
+  - { url: https://www.mongodb.com/docs/manual/core/causal-consistency-read-write-concerns/, title_vi: "Nhất quán nhân quả, read concern và write concern" }
+  - { url: https://www.mongodb.com/docs/manual/core/aggregation-pipeline-optimization/, title_vi: "Tối ưu aggregation pipeline" }
 lab:
   setup: |
     {"collections": {

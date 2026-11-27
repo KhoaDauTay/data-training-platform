@@ -18,9 +18,9 @@ objectives:
     en: Detect the loop ships run and the ports that cannot be reached.
 requires: [e-gr-l2-03, e-gr-l2-02]
 sources:
-  - https://www.postgresql.org/docs/18/queries-with.html
-  - https://www.postgresql.org/docs/18/sql-createview.html
-  - { url: "https://neo4j.com/docs/cypher-manual/current/patterns/variable-length-patterns/", title: "Cypher Manual: Variable-length patterns" }
+  - { url: https://www.postgresql.org/docs/18/queries-with.html, title_vi: "Truy vấn WITH (CTE)" }
+  - { url: https://www.postgresql.org/docs/18/sql-createview.html, title_vi: "CREATE VIEW" }
+  - { url: "https://neo4j.com/docs/cypher-manual/current/patterns/variable-length-patterns/", title: "Cypher Manual: Variable-length patterns", title_vi: "Cypher Manual: mẫu độ dài thay đổi" }
 lab:
   setup: |
     CREATE TABLE ports (code text PRIMARY KEY);

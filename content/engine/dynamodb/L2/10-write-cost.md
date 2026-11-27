@@ -15,8 +15,8 @@ objectives:
     en: Know that UpdateItem is charged on the larger of the before and after images, and that transactional writes cost double.
 requires: [e-dy-l2-09]
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/read-write-operations.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithItems.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/read-write-operations.html, title_vi: "Thao tác đọc và ghi" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithItems.html, title_vi: "Làm việc với item" }
 predict:
   sql: |
     {"op": "UpdateItem", "input": {"TableName": "Books",

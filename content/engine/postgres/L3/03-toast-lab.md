@@ -19,10 +19,10 @@ objectives:
     en: Read and change a column's storage strategy with `SET STORAGE`
 requires: [e-pg-l3-02]
 sources:
-  - https://www.postgresql.org/docs/18/storage-toast.html
-  - https://www.postgresql.org/docs/18/sql-altertable.html
-  - https://www.postgresql.org/docs/18/functions-admin.html
-  - https://www.postgresql.org/docs/18/pageinspect.html
+  - { url: https://www.postgresql.org/docs/18/storage-toast.html, title_vi: "TOAST" }
+  - { url: https://www.postgresql.org/docs/18/sql-altertable.html, title_vi: "ALTER TABLE (REPLICA IDENTITY)" }
+  - { url: https://www.postgresql.org/docs/18/functions-admin.html, title_vi: "Hàm quản trị hệ thống" }
+  - { url: https://www.postgresql.org/docs/18/pageinspect.html, title_vi: "pageinspect" }
 lab:
   setup: |
     CREATE EXTENSION IF NOT EXISTS pageinspect;

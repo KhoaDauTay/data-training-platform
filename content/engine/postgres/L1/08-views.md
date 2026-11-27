@@ -19,11 +19,11 @@ objectives:
     en: Avoid three common traps when changing a view and refreshing a materialized view.
 requires: [e-pg-l1-07]
 sources:
-  - https://www.postgresql.org/docs/18/tutorial-views.html
-  - https://www.postgresql.org/docs/18/sql-createview.html
-  - https://www.postgresql.org/docs/18/rules-materializedviews.html
-  - https://www.postgresql.org/docs/18/sql-creatematerializedview.html
-  - https://www.postgresql.org/docs/18/sql-refreshmaterializedview.html
+  - { url: https://www.postgresql.org/docs/18/tutorial-views.html, title_vi: "Hướng dẫn › view" }
+  - { url: https://www.postgresql.org/docs/18/sql-createview.html, title_vi: "CREATE VIEW" }
+  - { url: https://www.postgresql.org/docs/18/rules-materializedviews.html, title_vi: "Materialized view" }
+  - { url: https://www.postgresql.org/docs/18/sql-creatematerializedview.html, title_vi: "CREATE MATERIALIZED VIEW" }
+  - { url: https://www.postgresql.org/docs/18/sql-refreshmaterializedview.html, title_vi: "REFRESH MATERIALIZED VIEW" }
 lab:
   setup: |
     CREATE TABLE orders (

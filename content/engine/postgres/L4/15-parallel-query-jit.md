@@ -15,11 +15,11 @@ objectives:
   - { vi: "Biết JIT bật theo chi phí (`jit_above_cost`) và cần bản build có LLVM", en: "Know that JIT switches on by cost (`jit_above_cost`) and needs an LLVM build" }
 requires: [e-pg-l4-01]
 sources:
-  - https://www.postgresql.org/docs/18/how-parallel-query-works.html
-  - https://www.postgresql.org/docs/18/when-can-parallel-query-be-used.html
-  - https://www.postgresql.org/docs/18/parallel-plans.html
-  - https://www.postgresql.org/docs/18/jit-decision.html
-  - https://www.postgresql.org/docs/18/runtime-config-resource.html
+  - { url: https://www.postgresql.org/docs/18/how-parallel-query-works.html, title_vi: "Truy vấn song song hoạt động thế nào" }
+  - { url: https://www.postgresql.org/docs/18/when-can-parallel-query-be-used.html, title_vi: "Khi nào truy vấn chạy song song được" }
+  - { url: https://www.postgresql.org/docs/18/parallel-plans.html, title_vi: "Kế hoạch song song" }
+  - { url: https://www.postgresql.org/docs/18/jit-decision.html, title_vi: "Khi nào dùng JIT" }
+  - { url: https://www.postgresql.org/docs/18/runtime-config-resource.html, title_vi: "Cấu hình tài nguyên (bộ nhớ)" }
 viz: pg-plan-tree
 lab:
   setup: |

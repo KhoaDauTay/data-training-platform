@@ -18,9 +18,9 @@ objectives:
     en: "Filter again after `$unwind` when you want only one array element"
 requires: [e-mg-l3-10]
 sources:
-  - https://www.mongodb.com/docs/manual/reference/explain-results/
-  - https://www.mongodb.com/docs/manual/core/aggregation-pipeline-optimization/
-  - https://www.mongodb.com/docs/manual/reference/operator/aggregation/unwind/
+  - { url: https://www.mongodb.com/docs/manual/reference/explain-results/, title_vi: "Đọc kết quả explain" }
+  - { url: https://www.mongodb.com/docs/manual/core/aggregation-pipeline-optimization/, title_vi: "Tối ưu aggregation pipeline" }
+  - { url: https://www.mongodb.com/docs/manual/reference/operator/aggregation/unwind/, title_vi: "$unwind" }
 lab:
   setup: |
     {"collections": {"orders": [

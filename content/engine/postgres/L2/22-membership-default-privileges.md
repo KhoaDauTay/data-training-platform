@@ -19,13 +19,13 @@ objectives:
     en: Change a role's attributes with `ALTER ROLE` and drop a role that still owns tables.
 requires: [e-pg-l2-21]
 sources:
-  - https://www.postgresql.org/docs/18/role-membership.html
-  - https://www.postgresql.org/docs/18/sql-grant.html
-  - https://www.postgresql.org/docs/18/sql-alterrole.html
-  - https://www.postgresql.org/docs/18/sql-droprole.html
-  - https://www.postgresql.org/docs/18/sql-alterdefaultprivileges.html
-  - https://www.postgresql.org/docs/18/ddl-schemas.html
-  - https://www.postgresql.org/docs/18/ddl-priv.html
+  - { url: https://www.postgresql.org/docs/18/role-membership.html, title_vi: "Thành viên của vai trò" }
+  - { url: https://www.postgresql.org/docs/18/sql-grant.html, title_vi: "GRANT" }
+  - { url: https://www.postgresql.org/docs/18/sql-alterrole.html, title_vi: "ALTER ROLE" }
+  - { url: https://www.postgresql.org/docs/18/sql-droprole.html, title_vi: "DROP ROLE" }
+  - { url: https://www.postgresql.org/docs/18/sql-alterdefaultprivileges.html, title_vi: "ALTER DEFAULT PRIVILEGES" }
+  - { url: https://www.postgresql.org/docs/18/ddl-schemas.html, title_vi: "Schema" }
+  - { url: https://www.postgresql.org/docs/18/ddl-priv.html, title_vi: "Quyền" }
 lab:
   setup: |
     CREATE SCHEMA sales;

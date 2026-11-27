@@ -18,9 +18,9 @@ objectives:
   - vi: Phân biệt hàng đợi (RPUSH + LPOP) với ngăn xếp (LPUSH + LPOP).
     en: Tell a queue (RPUSH + LPOP) from a stack (LPUSH + LPOP).
 sources:
-  - { url: "https://redis.io/docs/latest/develop/data-types/lists/", title: "Redis docs: Lists" }
-  - { url: "https://valkey.io/commands/lpop/", title: "Valkey docs: LPOP" }
-  - { url: "https://valkey.io/commands/lrange/", title: "Valkey docs: LRANGE" }
+  - { url: "https://redis.io/docs/latest/develop/data-types/lists/", title: "Redis docs: Lists", title_vi: "Tài liệu Redis: list" }
+  - { url: "https://valkey.io/commands/lpop/", title: "Valkey docs: LPOP", title_vi: "Tài liệu Valkey: LPOP" }
+  - { url: "https://valkey.io/commands/lrange/", title: "Valkey docs: LRANGE", title_vi: "Tài liệu Valkey: LRANGE" }
 lab:
   setup: |
     RPUSH orders:pack o101 o102 o103

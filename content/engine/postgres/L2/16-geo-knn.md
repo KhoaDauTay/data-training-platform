@@ -19,10 +19,10 @@ objectives:
     en: Compute real ground distance (metres) from latitude/longitude with `earthdistance`.
 requires: [e-pg-l2-15]
 sources:
-  - https://www.postgresql.org/docs/18/datatype-geometric.html
-  - https://www.postgresql.org/docs/18/functions-geometry.html
-  - https://www.postgresql.org/docs/18/gist.html
-  - https://www.postgresql.org/docs/18/earthdistance.html
+  - { url: https://www.postgresql.org/docs/18/datatype-geometric.html, title_vi: "Kiểu hình học" }
+  - { url: https://www.postgresql.org/docs/18/functions-geometry.html, title_vi: "Hàm và toán tử hình học" }
+  - { url: https://www.postgresql.org/docs/18/gist.html, title_vi: "Index GiST" }
+  - { url: https://www.postgresql.org/docs/18/earthdistance.html, title_vi: "earthdistance" }
 lab:
   setup: |
     CREATE EXTENSION IF NOT EXISTS cube;

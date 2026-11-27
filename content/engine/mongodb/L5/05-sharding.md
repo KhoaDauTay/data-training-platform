@@ -18,9 +18,9 @@ objectives:
     en: "Choose ranged or hashed sharding"
 requires: [e-mg-l5-03]
 sources:
-  - https://www.mongodb.com/docs/manual/core/sharding-shard-key/
-  - https://www.mongodb.com/docs/manual/core/sharding-choose-a-shard-key/
-  - https://www.mongodb.com/docs/manual/core/sharding-balancer-administration/
+  - { url: https://www.mongodb.com/docs/manual/core/sharding-shard-key/, title_vi: "Shard key" }
+  - { url: https://www.mongodb.com/docs/manual/core/sharding-choose-a-shard-key/, title_vi: "Chọn shard key" }
+  - { url: https://www.mongodb.com/docs/manual/core/sharding-balancer-administration/, title_vi: "Quản lý balancer" }
 quiz:
   - q:
       vi: "Shard theo `continent` (7 giá trị). Thêm shard thứ 8 có giúp gì không?"

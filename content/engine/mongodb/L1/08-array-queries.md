@@ -16,9 +16,9 @@ objectives:
     en: Use `$elemMatch` when several conditions must hold on the same element of an array of documents.
 requires: [e-mg-l1-07]
 sources:
-  - https://www.mongodb.com/docs/manual/tutorial/query-arrays/
-  - https://www.mongodb.com/docs/manual/tutorial/query-array-of-documents/
-  - https://www.mongodb.com/docs/manual/reference/operator/query/elemmatch/
+  - { url: https://www.mongodb.com/docs/manual/tutorial/query-arrays/, title_vi: "Truy vấn mảng" }
+  - { url: https://www.mongodb.com/docs/manual/tutorial/query-array-of-documents/, title_vi: "Truy vấn mảng tài liệu con" }
+  - { url: https://www.mongodb.com/docs/manual/reference/operator/query/elemmatch/, title_vi: "$elemMatch" }
 predict:
   sql: 'db.orders.find({ "lines.sku": "p4", "lines.qty": { $gte: 2 } }, { _id: 1 })'
   q:

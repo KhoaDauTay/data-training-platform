@@ -16,9 +16,9 @@ objectives:
     en: Explain why a filtered Scan still reads the whole table.
 requires: [e-dy-l1-08]
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Scan.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-query-scan.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Scan.html, title_vi: "Scan" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.html, title_vi: "Query" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-query-scan.html, title_vi: "Thực hành tốt: Query và Scan" }
 lab:
   setup: |
     {"tables": [{"TableName":"Orders","KeySchema":[{"AttributeName":"customerId","KeyType":"HASH"},{"AttributeName":"orderId","KeyType":"RANGE"}],"AttributeDefinitions":[{"AttributeName":"customerId","AttributeType":"S"},{"AttributeName":"orderId","AttributeType":"S"}],"BillingMode":"PAY_PER_REQUEST"}],

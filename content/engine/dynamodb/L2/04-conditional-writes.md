@@ -18,9 +18,9 @@ objectives:
     en: Know that a rejected write still costs WCU and returns `ConditionalCheckFailedException`.
 requires: [e-dy-l2-03]
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.ConditionExpressions.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithItems.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/read-write-operations.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.ConditionExpressions.html, title_vi: "Biểu thức điều kiện (condition expression)" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithItems.html, title_vi: "Làm việc với item" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/read-write-operations.html, title_vi: "Thao tác đọc và ghi" }
 lab:
   setup: |
     {"tables": [{"TableName":"Books","KeySchema":[{"AttributeName":"isbn","KeyType":"HASH"}],"AttributeDefinitions":[{"AttributeName":"isbn","AttributeType":"S"}],"BillingMode":"PAY_PER_REQUEST"}],

@@ -18,9 +18,9 @@ objectives:
     en: See with SQL which dependency no key enforces after the split, and choose between 3NF and BCNF.
 requires: [e-ds-l4-02]
 sources:
-  - https://www.bkent.net/Doc/simple5.htm
-  - https://doi.org/10.1145/362384.362685
-  - https://www.postgresql.org/docs/18/ddl-constraints.html
+  - { url: https://www.bkent.net/Doc/simple5.htm, title_vi: "William Kent: hướng dẫn đơn giản về năm dạng chuẩn" }
+  - { url: https://doi.org/10.1145/362384.362685, title_vi: "Bài báo ACM 10.1145/362384.362685" }
+  - { url: https://www.postgresql.org/docs/18/ddl-constraints.html, title_vi: "Ràng buộc" }
 lab:
   setup: |
     CREATE TABLE tutoring (

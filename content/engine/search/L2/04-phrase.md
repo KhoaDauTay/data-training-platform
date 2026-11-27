@@ -16,8 +16,8 @@ objectives:
     en: "Explain why the index stores each word's position, and why `đèn lồng` differs from `lồng đèn`."
 requires: [e-sr-l2-01]
 sources:
-  - https://www.elastic.co/docs/reference/query-languages/query-dsl/query-dsl-match-query-phrase
-  - https://www.elastic.co/docs/reference/elasticsearch/mapping-reference/index-options
+  - { url: https://www.elastic.co/docs/reference/query-languages/query-dsl/query-dsl-match-query-phrase, title_vi: "Truy vấn match_phrase" }
+  - { url: https://www.elastic.co/docs/reference/elasticsearch/mapping-reference/index-options, title_vi: "Tham số index_options" }
 lab:
   setup: |
     {"index": "shop",

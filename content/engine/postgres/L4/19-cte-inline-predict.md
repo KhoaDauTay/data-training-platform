@@ -17,8 +17,8 @@ objectives:
     en: Choose between `MATERIALIZED` and `NOT MATERIALIZED` by cost, not by habit
 requires: [e-pg-l4-17]
 sources:
-  - https://www.postgresql.org/docs/18/queries-with.html
-  - https://www.postgresql.org/docs/release/12.0/
+  - { url: https://www.postgresql.org/docs/18/queries-with.html, title_vi: "Truy vấn WITH (CTE)" }
+  - { url: https://www.postgresql.org/docs/release/12.0/, title_vi: "Ghi chú phát hành PostgreSQL 12" }
 lab:
   setup: |
     CREATE TABLE customers (id int PRIMARY KEY, region int NOT NULL);

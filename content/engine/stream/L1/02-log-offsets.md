@@ -18,9 +18,9 @@ objectives:
     en: Save the position the way Kafka means it, the offset of the next event to read.
 requires: [e-sm-l1-01]
 sources:
-  - { url: "https://kafka.apache.org/41/getting-started/introduction/#main-concepts-and-terminology", title: "Kafka docs: Main concepts and terminology" }
-  - { url: "https://kafka.apache.org/41/design/design/", title: "Kafka docs: Design (consumer position, offsets)" }
-  - { url: "https://www.postgresql.org/docs/18/plpgsql-trigger.html", title: "PostgreSQL 18 docs: Trigger functions" }
+  - { url: "https://kafka.apache.org/41/getting-started/introduction/#main-concepts-and-terminology", title: "Kafka docs: Main concepts and terminology", title_vi: "Tài liệu Kafka: khái niệm và thuật ngữ chính (thứ tự trong từng partition)" }
+  - { url: "https://kafka.apache.org/41/design/design/", title: "Kafka docs: Design (consumer position, offsets)", title_vi: "Tài liệu Kafka: thiết kế (bảo đảm giao nhận, producer idempotent, transaction)" }
+  - { url: "https://www.postgresql.org/docs/18/plpgsql-trigger.html", title: "PostgreSQL 18 docs: Trigger functions", title_vi: "Hàm trigger" }
 lab:
   setup: |
     CREATE TABLE events (

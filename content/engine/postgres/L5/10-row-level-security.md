@@ -18,12 +18,16 @@ viz: pg-rls-path
 sources:
   - url: https://www.postgresql.org/docs/18/ddl-rowsecurity.html
     title: "Row Security Policies"
+    title_vi: "Chính sách bảo mật theo dòng (RLS)"
   - url: https://www.postgresql.org/docs/18/sql-createpolicy.html
     title: "CREATE POLICY"
+    title_vi: "CREATE POLICY"
   - url: https://www.postgresql.org/docs/18/sql-createview.html
     title: "CREATE VIEW"
+    title_vi: "CREATE VIEW"
   - url: https://www.postgresql.org/docs/18/view-pg-policies.html
     title: "pg_policies"
+    title_vi: "pg_policies"
 lab:
   setup: |
     DROP TABLE IF EXISTS tickets CASCADE;

@@ -15,7 +15,7 @@ objectives:
   - { vi: "Biết khác biệt giữa `bt_index_check` và `bt_index_parent_check`, và lock mà mỗi hàm cần", en: "Know the difference between `bt_index_check` and `bt_index_parent_check`, and the lock each one needs" }
 requires: [e-pg-l5-01]
 sources:
-  - https://www.postgresql.org/docs/18/amcheck.html
+  - { url: https://www.postgresql.org/docs/18/amcheck.html, title_vi: "amcheck: kiểm tra index và bảng có hỏng không" }
 viz: pg-btree
 lab:
   setup: |

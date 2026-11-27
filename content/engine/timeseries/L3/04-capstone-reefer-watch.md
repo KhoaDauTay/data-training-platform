@@ -18,9 +18,9 @@ objectives:
     en: Build an hourly rollup so reports no longer reread the raw readings.
 requires: [e-ts-l3-03]
 sources:
-  - https://www.postgresql.org/docs/18/queries-table-expressions.html#QUERIES-LATERAL
-  - https://www.postgresql.org/docs/18/functions-window.html
-  - https://www.postgresql.org/docs/18/rules-materializedviews.html
+  - { url: https://www.postgresql.org/docs/18/queries-table-expressions.html#QUERIES-LATERAL, title_vi: "Biểu thức bảng › truy vấn con LATERAL" }
+  - { url: https://www.postgresql.org/docs/18/functions-window.html, title_vi: "Hàm cửa sổ (window function)" }
+  - { url: https://www.postgresql.org/docs/18/rules-materializedviews.html, title_vi: "Materialized view" }
 lab:
   setup: |
     CREATE TABLE reefers (

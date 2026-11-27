@@ -19,11 +19,11 @@ objectives:
 requires: [e-pg-l1-02]
 figures: [{ name: pg-identity-gap, at: idea }]
 sources:
-  - https://www.postgresql.org/docs/18/ddl-identity-columns.html
-  - https://www.postgresql.org/docs/18/functions-sequence.html
-  - https://www.postgresql.org/docs/18/functions-uuid.html
-  - https://www.postgresql.org/docs/18/ddl-generated-columns.html
-  - https://www.postgresql.org/docs/18/sql-createtable.html
+  - { url: https://www.postgresql.org/docs/18/ddl-identity-columns.html, title_vi: "Cột identity" }
+  - { url: https://www.postgresql.org/docs/18/functions-sequence.html, title_vi: "Hàm sequence" }
+  - { url: https://www.postgresql.org/docs/18/functions-uuid.html, title_vi: "Hàm UUID" }
+  - { url: https://www.postgresql.org/docs/18/ddl-generated-columns.html, title_vi: "Cột sinh tự động (generated column)" }
+  - { url: https://www.postgresql.org/docs/18/sql-createtable.html, title_vi: "CREATE TABLE" }
 lab:
   setup: |
     CREATE SEQUENCE invoice_no START 1000 INCREMENT 10;

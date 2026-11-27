@@ -18,9 +18,9 @@ objectives:
     en: "Find documents still on the old version and migrate them one at a time"
 requires: [e-mg-l4-01]
 sources:
-  - https://www.mongodb.com/docs/manual/data-modeling/design-patterns/data-versioning/
-  - https://www.mongodb.com/docs/manual/data-modeling/design-patterns/data-versioning/schema-versioning/
-  - https://www.mongodb.com/docs/manual/reference/operator/query/exists/
+  - { url: https://www.mongodb.com/docs/manual/data-modeling/design-patterns/data-versioning/, title_vi: "Lưu phiên bản dữ liệu" }
+  - { url: https://www.mongodb.com/docs/manual/data-modeling/design-patterns/data-versioning/schema-versioning/, title_vi: "Lưu phiên bản schema" }
+  - { url: https://www.mongodb.com/docs/manual/reference/operator/query/exists/, title_vi: "$exists" }
 lab:
   setup: |
     {"collections": {"customers": [

@@ -13,8 +13,8 @@ objectives:
   - { vi: "So với trần 3000 RCU / 1000 WCU của một partition và tính số shard tối thiểu", en: "Compare with the 3000 RCU / 1000 WCU ceiling of one partition and work out the minimum number of shards" }
 requires: [e-dy-l4-01, e-dy-l4-02]
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/read-write-operations.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/burst-adaptive-capacity.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/read-write-operations.html, title_vi: "Thao tác đọc và ghi" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/burst-adaptive-capacity.html, title_vi: "Capacity dự phòng (burst) và tự điều chỉnh (adaptive)" }
 quiz:
   - q: { vi: "Một khóa nhận 4500 lần đọc nhất quán mạnh mỗi giây, item 3 KB. Partition chứa nó cần bao nhiêu RCU, có vượt trần không?", en: "One key receives 4500 strongly consistent reads per second, item size 3 KB. How many RCU does its partition need, and is it over the ceiling?" }
     options:

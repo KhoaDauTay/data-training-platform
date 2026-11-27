@@ -18,9 +18,9 @@ objectives:
   - vi: Dùng WATCH để EXEC bỏ cuộc khi người khác vừa đổi khóa.
     en: Use WATCH so EXEC gives up when someone else just changed the key.
 sources:
-  - { url: "https://valkey.io/topics/transactions/", title: "Valkey docs: Transactions" }
-  - { url: "https://valkey.io/commands/watch/", title: "Valkey docs: WATCH" }
-  - { url: "https://redis.io/docs/latest/develop/interact/transactions/", title: "Redis docs: Transactions" }
+  - { url: "https://valkey.io/topics/transactions/", title: "Valkey docs: Transactions", title_vi: "Tài liệu Valkey: transaction" }
+  - { url: "https://valkey.io/commands/watch/", title: "Valkey docs: WATCH", title_vi: "Tài liệu Valkey: WATCH" }
+  - { url: "https://redis.io/docs/latest/develop/interact/transactions/", title: "Redis docs: Transactions", title_vi: "Tài liệu Redis: transaction" }
 lab:
   setup: |
     SET stock:p05 2

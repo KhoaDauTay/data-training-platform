@@ -15,9 +15,9 @@ objectives:
   - { vi: "Nhận ra khi nào một câu nhiều bảng có thể nhận kế hoạch kém vì không còn tìm kiếm vét cạn", en: "Recognise when a many-table query can get a weaker plan because the search is no longer exhaustive" }
 requires: [e-pg-l4-04]
 sources:
-  - https://www.postgresql.org/docs/18/explicit-joins.html
-  - https://www.postgresql.org/docs/18/runtime-config-query.html
-  - https://www.postgresql.org/docs/18/geqo.html
+  - { url: https://www.postgresql.org/docs/18/explicit-joins.html, title_vi: "Điều khiển planner bằng JOIN tường minh" }
+  - { url: https://www.postgresql.org/docs/18/runtime-config-query.html, title_vi: "Cấu hình planner" }
+  - { url: https://www.postgresql.org/docs/18/geqo.html, title_vi: "Planner di truyền (GEQO)" }
 viz: pg-plan-tree
 lab:
   setup: |

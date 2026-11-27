@@ -15,9 +15,9 @@ objectives:
   - { vi: "Biết vì sao khóa ngoại dùng `FOR KEY SHARE` để không chặn cập nhật thường", en: "Know why foreign keys use `FOR KEY SHARE` so ordinary updates are not blocked" }
 requires: [e-pg-l4-09]
 sources:
-  - https://www.postgresql.org/docs/18/explicit-locking.html
-  - https://www.postgresql.org/docs/18/sql-select.html
-  - https://www.postgresql.org/docs/18/pageinspect.html
+  - { url: https://www.postgresql.org/docs/18/explicit-locking.html, title_vi: "Khóa tường minh" }
+  - { url: https://www.postgresql.org/docs/18/sql-select.html, title_vi: "SELECT" }
+  - { url: https://www.postgresql.org/docs/18/pageinspect.html, title_vi: "pageinspect" }
 viz: pg-lock-matrix
 lab:
   setup: |

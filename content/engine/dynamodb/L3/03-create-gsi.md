@@ -18,8 +18,8 @@ objectives:
     en: Recognise the `ValidationException` when an index key is missing from `AttributeDefinitions`.
 requires: [e-dy-l3-02, e-dy-l1-04]
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_CreateTable.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GSI.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_CreateTable.html, title_vi: "API CreateTable" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GSI.html, title_vi: "Global secondary index (GSI)" }
 demo_setup: |
   {"tables": [{"TableName": "Seed", "BillingMode": "PAY_PER_REQUEST", "KeySchema": [{"AttributeName": "id", "KeyType": "HASH"}], "AttributeDefinitions": [{"AttributeName": "id", "AttributeType": "S"}]}], "items": {"Seed": [{"id": "x"}]}}
 lab:

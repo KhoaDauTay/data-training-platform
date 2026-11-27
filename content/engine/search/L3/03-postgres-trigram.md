@@ -18,9 +18,9 @@ objectives:
     en: "Compare PostgreSQL's trigrams with Elasticsearch's `fuzziness`: the same job of tolerating typos, measured differently."
 requires: [e-sr-l3-02, e-pg-l2-13]
 sources:
-  - https://www.postgresql.org/docs/18/pgtrgm.html
-  - https://www.postgresql.org/docs/18/unaccent.html
-  - https://www.postgresql.org/docs/18/indexes-expressional.html
+  - { url: https://www.postgresql.org/docs/18/pgtrgm.html, title_vi: "pg_trgm" }
+  - { url: https://www.postgresql.org/docs/18/unaccent.html, title_vi: "unaccent" }
+  - { url: https://www.postgresql.org/docs/18/indexes-expressional.html, title_vi: "Index trên biểu thức" }
 lab:
   setup: |
     CREATE EXTENSION IF NOT EXISTS unaccent;

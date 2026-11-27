@@ -18,9 +18,9 @@ objectives:
     en: Reverse the order with `ScanIndexForward` and take the first N items with `Limit`.
 requires: [e-dy-l1-04, e-dy-l1-05]
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.KeyConditionExpressions.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_Query.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.html, title_vi: "Query" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.KeyConditionExpressions.html, title_vi: "Query: điều kiện trên khóa (key condition expression)" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_Query.html, title_vi: "API Query" }
 lab:
   setup: |
     {"tables": [{"TableName":"Orders","KeySchema":[{"AttributeName":"customerId","KeyType":"HASH"},{"AttributeName":"orderId","KeyType":"RANGE"}],"AttributeDefinitions":[{"AttributeName":"customerId","AttributeType":"S"},{"AttributeName":"orderId","AttributeType":"S"}],"BillingMode":"PAY_PER_REQUEST"}],

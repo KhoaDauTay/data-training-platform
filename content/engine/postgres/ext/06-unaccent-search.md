@@ -19,10 +19,10 @@ objectives:
     en: Build a trigram index on that exact expression, and write the search so it matches the expression and the index is used.
 requires: [e-pg-ext-05]
 sources:
-  - https://www.postgresql.org/docs/18/unaccent.html
-  - https://www.postgresql.org/docs/18/pgtrgm.html
-  - https://www.postgresql.org/docs/18/indexes-expressional.html
-  - https://www.postgresql.org/docs/18/xfunc-volatility.html
+  - { url: https://www.postgresql.org/docs/18/unaccent.html, title_vi: "unaccent" }
+  - { url: https://www.postgresql.org/docs/18/pgtrgm.html, title_vi: "pg_trgm" }
+  - { url: https://www.postgresql.org/docs/18/indexes-expressional.html, title_vi: "Index trên biểu thức" }
+  - { url: https://www.postgresql.org/docs/18/xfunc-volatility.html, title_vi: "Mức thay đổi của hàm (volatility)" }
 lab:
   setup: |
     CREATE EXTENSION IF NOT EXISTS unaccent;

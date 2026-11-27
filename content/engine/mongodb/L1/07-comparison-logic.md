@@ -15,8 +15,8 @@ objectives:
     en: Write an "or" condition with `$or` and know when AND is implicit.
 requires: [e-mg-l1-02]
 sources:
-  - https://www.mongodb.com/docs/manual/reference/mql/query-predicates/comparison/
-  - https://www.mongodb.com/docs/manual/reference/mql/query-predicates/logical/
+  - { url: https://www.mongodb.com/docs/manual/reference/mql/query-predicates/comparison/, title_vi: "Toán tử so sánh" }
+  - { url: https://www.mongodb.com/docs/manual/reference/mql/query-predicates/logical/, title_vi: "Toán tử logic" }
 lab:
   setup: |
     {"collections": {"products": [

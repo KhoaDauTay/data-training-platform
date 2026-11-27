@@ -15,8 +15,8 @@ objectives:
   - { vi: "Đề xuất chỉnh `work_mem` ở đúng phạm vi (phiên, vai trò, transaction) thay vì toàn cục", en: "Propose a `work_mem` change at the right scope (session, role, transaction) instead of globally" }
 requires: [e-pg-l5-11]
 sources:
-  - https://www.postgresql.org/docs/18/runtime-config-resource.html
-  - https://www.postgresql.org/docs/18/using-explain.html
+  - { url: https://www.postgresql.org/docs/18/runtime-config-resource.html, title_vi: "Cấu hình tài nguyên (bộ nhớ)" }
+  - { url: https://www.postgresql.org/docs/18/using-explain.html, title_vi: "Dùng EXPLAIN" }
 lab:
   setup: |
     DROP TABLE IF EXISTS big CASCADE;

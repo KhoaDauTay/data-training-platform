@@ -18,11 +18,11 @@ objectives:
     en: Write the per-event read so it still goes through an index, without wrapping the column in a cast.
 requires: [e-pg-l1-11]
 sources:
-  - https://www.postgresql.org/docs/18/ddl-constraints.html
-  - https://www.postgresql.org/docs/18/sql-createindex.html
-  - https://www.postgresql.org/docs/18/using-explain.html
-  - https://www.postgresql.org/docs/18/tutorial-transactions.html
-  - https://www.postgresql.org/docs/18/sql-insert.html
+  - { url: https://www.postgresql.org/docs/18/ddl-constraints.html, title_vi: "Ràng buộc" }
+  - { url: https://www.postgresql.org/docs/18/sql-createindex.html, title_vi: "CREATE INDEX" }
+  - { url: https://www.postgresql.org/docs/18/using-explain.html, title_vi: "Dùng EXPLAIN" }
+  - { url: https://www.postgresql.org/docs/18/tutorial-transactions.html, title_vi: "Hướng dẫn › transaction" }
+  - { url: https://www.postgresql.org/docs/18/sql-insert.html, title_vi: "INSERT" }
 lab:
   setup: |
     CREATE TABLE events (id int PRIMARY KEY, name text NOT NULL, starts_at timestamptz NOT NULL);

@@ -15,9 +15,9 @@ objectives:
     en: "Know that GridFS splits a large file into chunks across two collections, and when to use it"
 requires: [e-mg-l1-01, e-mg-l5-03]
 sources:
-  - https://www.mongodb.com/docs/manual/core/backups/
-  - https://www.mongodb.com/docs/database-tools/mongodump/
-  - https://www.mongodb.com/docs/manual/core/gridfs/
+  - { url: https://www.mongodb.com/docs/manual/core/backups/, title_vi: "Sao lưu" }
+  - { url: https://www.mongodb.com/docs/database-tools/mongodump/, title_vi: "mongodump" }
+  - { url: https://www.mongodb.com/docs/manual/core/gridfs/, title_vi: "GridFS" }
 quiz:
   - q:
       vi: "Replica set của bạn giữ 2 TB dữ liệu và cần bản sao lưu nhất quán tại một thời điểm. Cách nào hợp nhất?"

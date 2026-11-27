@@ -17,8 +17,10 @@ requires: [e-ds-l4-09]
 sources:
   - url: https://docs.aws.amazon.com/wellarchitected/latest/saas-lens/silo-pool-and-bridge-models.html
     title: "Silo, Pool, and Bridge Models"
+    title_vi: "Mô hình silo, pool và bridge"
   - url: https://docs.aws.amazon.com/pdfs/whitepapers/latest/saas-tenant-isolation-strategies/saas-tenant-isolation-strategies.pdf
     title: "SaaS Tenant Isolation Strategies (PDF)"
+    title_vi: "Chiến lược cô lập khách thuê SaaS (PDF)"
 lab:
   setup: |
     CREATE TABLE seller_plans (

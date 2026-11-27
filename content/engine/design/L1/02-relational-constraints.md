@@ -18,9 +18,9 @@ objectives:
     en: Find the rows that break a rule before adding the constraint, then fix them.
 requires: [e-ds-l1-01]
 sources:
-  - https://doi.org/10.1145/362384.362685
-  - https://www.postgresql.org/docs/18/ddl-constraints.html
-  - https://www.postgresql.org/docs/18/errcodes-appendix.html
+  - { url: https://doi.org/10.1145/362384.362685, title_vi: "Bài báo ACM 10.1145/362384.362685" }
+  - { url: https://www.postgresql.org/docs/18/ddl-constraints.html, title_vi: "Ràng buộc" }
+  - { url: https://www.postgresql.org/docs/18/errcodes-appendix.html, title_vi: "Mã lỗi" }
 lab:
   setup: |
     CREATE TABLE departments (id int NOT NULL, name text NOT NULL);

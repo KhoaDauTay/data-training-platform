@@ -19,12 +19,12 @@ objectives:
 requires: [e-pg-l1-09]
 figures: [{ name: pg-text-compare, at: idea }]
 sources:
-  - https://www.postgresql.org/docs/18/datatype.html
-  - https://www.postgresql.org/docs/18/datatype-datetime.html
-  - https://www.postgresql.org/docs/18/typeconv-oper.html
-  - https://www.postgresql.org/docs/18/indexes-types.html
-  - https://www.postgresql.org/docs/18/indexes-expressional.html
-  - https://www.postgresql.org/docs/18/using-explain.html
+  - { url: https://www.postgresql.org/docs/18/datatype.html, title_vi: "Kiểu dữ liệu" }
+  - { url: https://www.postgresql.org/docs/18/datatype-datetime.html, title_vi: "Kiểu ngày giờ" }
+  - { url: https://www.postgresql.org/docs/18/typeconv-oper.html, title_vi: "Chuyển kiểu cho toán tử" }
+  - { url: https://www.postgresql.org/docs/18/indexes-types.html, title_vi: "Các loại index" }
+  - { url: https://www.postgresql.org/docs/18/indexes-expressional.html, title_vi: "Index trên biểu thức" }
+  - { url: https://www.postgresql.org/docs/18/using-explain.html, title_vi: "Dùng EXPLAIN" }
 lab:
   setup: |
     CREATE TABLE readings (

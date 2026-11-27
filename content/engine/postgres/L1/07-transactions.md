@@ -20,12 +20,12 @@ objectives:
     en: Recognise the "current transaction is aborted" error and know how to get out of it.
 requires: [e-pg-l1-06]
 sources:
-  - https://www.postgresql.org/docs/18/tutorial-transactions.html
-  - https://www.postgresql.org/docs/18/sql-begin.html
-  - https://www.postgresql.org/docs/18/sql-savepoint.html
-  - https://www.postgresql.org/docs/18/sql-rollback-to.html
-  - https://www.postgresql.org/docs/18/mvcc-intro.html
-  - https://www.postgresql.org/docs/18/transaction-iso.html
+  - { url: https://www.postgresql.org/docs/18/tutorial-transactions.html, title_vi: "Hướng dẫn › transaction" }
+  - { url: https://www.postgresql.org/docs/18/sql-begin.html, title_vi: "BEGIN" }
+  - { url: https://www.postgresql.org/docs/18/sql-savepoint.html, title_vi: "SAVEPOINT" }
+  - { url: https://www.postgresql.org/docs/18/sql-rollback-to.html, title_vi: "ROLLBACK TO SAVEPOINT" }
+  - { url: https://www.postgresql.org/docs/18/mvcc-intro.html, title_vi: "Nhập môn MVCC" }
+  - { url: https://www.postgresql.org/docs/18/transaction-iso.html, title_vi: "Mức cô lập transaction" }
 lab:
   setup: |
     CREATE TABLE accounts (id int PRIMARY KEY, balance numeric NOT NULL CHECK (balance >= 0));

@@ -18,10 +18,10 @@ objectives:
     en: Recognise integer overflow and too-long strings, and pick a type wide enough from the start.
 requires: []
 sources:
-  - https://www.postgresql.org/docs/18/datatype.html
-  - https://www.postgresql.org/docs/18/datatype-numeric.html
-  - https://www.postgresql.org/docs/18/datatype-character.html
-  - https://www.postgresql.org/docs/18/datatype-datetime.html
+  - { url: https://www.postgresql.org/docs/18/datatype.html, title_vi: "Kiểu dữ liệu" }
+  - { url: https://www.postgresql.org/docs/18/datatype-numeric.html, title_vi: "Kiểu số" }
+  - { url: https://www.postgresql.org/docs/18/datatype-character.html, title_vi: "Kiểu chuỗi ký tự" }
+  - { url: https://www.postgresql.org/docs/18/datatype-datetime.html, title_vi: "Kiểu ngày giờ" }
 lab:
   setup: |
     SET TimeZone = 'Asia/Ho_Chi_Minh';

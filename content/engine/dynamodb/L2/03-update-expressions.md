@@ -15,8 +15,8 @@ objectives:
     en: Remove an attribute with `REMOVE`, append to a list with `list_append`, and set a default with `if_not_exists`.
 requires: [e-dy-l2-01, e-dy-l1-07]
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_UpdateItem.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html, title_vi: "Biểu thức cập nhật (update expression)" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_UpdateItem.html, title_vi: "API UpdateItem" }
 lab:
   setup: |
     {"tables": [{"TableName":"Books","KeySchema":[{"AttributeName":"isbn","KeyType":"HASH"}],"AttributeDefinitions":[{"AttributeName":"isbn","AttributeType":"S"}],"BillingMode":"PAY_PER_REQUEST"}],

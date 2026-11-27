@@ -18,9 +18,9 @@ objectives:
     en: Refresh without blocking readers with `CONCURRENTLY`, which needs a unique index.
 requires: [e-ol-l2-01]
 sources:
-  - { url: "https://clickhouse.com/docs/materialized-view/incremental-materialized-view", title: "ClickHouse docs: Incremental materialized view" }
-  - { url: "https://www.postgresql.org/docs/18/rules-materializedviews.html", title: "PostgreSQL 18 docs: Materialized Views" }
-  - { url: "https://www.postgresql.org/docs/18/sql-refreshmaterializedview.html", title: "PostgreSQL 18 docs: REFRESH MATERIALIZED VIEW" }
+  - { url: "https://clickhouse.com/docs/materialized-view/incremental-materialized-view", title: "ClickHouse docs: Incremental materialized view", title_vi: "Tài liệu ClickHouse: materialized view tăng dần" }
+  - { url: "https://www.postgresql.org/docs/18/rules-materializedviews.html", title: "PostgreSQL 18 docs: Materialized Views", title_vi: "Materialized view" }
+  - { url: "https://www.postgresql.org/docs/18/sql-refreshmaterializedview.html", title: "PostgreSQL 18 docs: REFRESH MATERIALIZED VIEW", title_vi: "REFRESH MATERIALIZED VIEW" }
 lab:
   setup: |
     CREATE TABLE moves (

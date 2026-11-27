@@ -19,12 +19,12 @@ objectives:
 requires: []
 demo_setup: '{"collections": {"items": [{"_id": 1, "sku": "A1", "price": 25000}, {"_id": 2, "sku": "A2", "price": "25000"}, {"_id": 3, "sku": "A3", "price": 40000}]}}'
 sources:
-  - https://www.mongodb.com/docs/manual/core/document/
-  - https://www.mongodb.com/docs/manual/reference/bson-types/
-  - https://www.mongodb.com/docs/manual/reference/limits/
-  - https://www.mongodb.com/docs/manual/core/databases-and-collections/
-  - https://www.mongodb.com/docs/manual/core/capped-collections/
-  - https://www.mongodb.com/docs/manual/core/timeseries-collections/
+  - { url: https://www.mongodb.com/docs/manual/core/document/, title_vi: "Tài liệu (document)" }
+  - { url: https://www.mongodb.com/docs/manual/reference/bson-types/, title_vi: "Các kiểu BSON" }
+  - { url: https://www.mongodb.com/docs/manual/reference/limits/, title_vi: "Giới hạn và ngưỡng" }
+  - { url: https://www.mongodb.com/docs/manual/core/databases-and-collections/, title_vi: "Database và collection" }
+  - { url: https://www.mongodb.com/docs/manual/core/capped-collections/, title_vi: "Capped collection" }
+  - { url: https://www.mongodb.com/docs/manual/core/timeseries-collections/, title_vi: "Collection chuỗi thời gian" }
 quiz:
   - q:
       vi: "Trong tài liệu ví dụ, `address` là gì?"

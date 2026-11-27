@@ -15,8 +15,8 @@ objectives:
     en: "Separate two questions: whether the index is used, and what the query's collation matches"
 requires: [e-mg-l3-14]
 sources:
-  - https://www.mongodb.com/docs/manual/core/index-case-insensitive/
-  - https://www.mongodb.com/docs/manual/reference/collation/
+  - { url: https://www.mongodb.com/docs/manual/core/index-case-insensitive/, title_vi: "Index không phân biệt hoa thường" }
+  - { url: https://www.mongodb.com/docs/manual/reference/collation/, title_vi: "Collation" }
 predict:
   sql: |
     db.fruit.createIndex(

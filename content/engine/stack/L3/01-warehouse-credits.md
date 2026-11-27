@@ -18,8 +18,8 @@ objectives:
     en: Know why a forgotten warehouse costs, and what auto-suspend does.
 requires: [e-st-l2-08]
 sources:
-  - { url: "https://docs.snowflake.com/en/user-guide/warehouses-overview", title: "Snowflake docs: Overview of warehouses" }
-  - { url: "https://docs.snowflake.com/en/user-guide/warehouses-considerations", title: "Snowflake docs: Warehouse considerations" }
+  - { url: "https://docs.snowflake.com/en/user-guide/warehouses-overview", title: "Snowflake docs: Overview of warehouses", title_vi: "Tài liệu Snowflake: tổng quan về warehouse" }
+  - { url: "https://docs.snowflake.com/en/user-guide/warehouses-considerations", title: "Snowflake docs: Warehouse considerations", title_vi: "Tài liệu Snowflake: lưu ý khi dùng warehouse" }
 demo_setup: |
   CREATE TABLE wh_sizes (
     size text, credits_per_hour int

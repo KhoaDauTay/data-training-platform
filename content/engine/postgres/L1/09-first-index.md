@@ -19,11 +19,11 @@ objectives:
     en: Know that an index speeds up reads but adds work to every write.
 requires: [e-pg-l1-08]
 sources:
-  - https://www.postgresql.org/docs/18/indexes-intro.html
-  - https://www.postgresql.org/docs/18/indexes-types.html
-  - https://www.postgresql.org/docs/18/sql-createindex.html
-  - https://www.postgresql.org/docs/18/indexes-expressional.html
-  - https://www.postgresql.org/docs/18/using-explain.html
+  - { url: https://www.postgresql.org/docs/18/indexes-intro.html, title_vi: "Nhập môn index" }
+  - { url: https://www.postgresql.org/docs/18/indexes-types.html, title_vi: "Các loại index" }
+  - { url: https://www.postgresql.org/docs/18/sql-createindex.html, title_vi: "CREATE INDEX" }
+  - { url: https://www.postgresql.org/docs/18/indexes-expressional.html, title_vi: "Index trên biểu thức" }
+  - { url: https://www.postgresql.org/docs/18/using-explain.html, title_vi: "Dùng EXPLAIN" }
 lab:
   setup: |
     SELECT setseed(0.42);

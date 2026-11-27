@@ -18,12 +18,16 @@ requires: [e-pg-l5-20]
 sources:
   - url: https://www.postgresql.org/docs/18/sql-copy.html
     title: "COPY"
+    title_vi: "COPY"
   - url: https://www.postgresql.org/docs/18/ddl-constraints.html
     title: "Constraints"
+    title_vi: "Ràng buộc"
   - url: https://www.postgresql.org/docs/18/ddl-partitioning.html
     title: "Table Partitioning"
+    title_vi: "Phân vùng bảng (partitioning)"
   - url: https://www.postgresql.org/docs/18/functions-xml.html
     title: "XML Functions"
+    title_vi: "Hàm XML"
 lab:
   setup: |
     -- Lantern Market: seller 7 is leaving. tenant_id = the seller.

@@ -16,9 +16,9 @@ objectives:
   - { vi: "Giải thích vì sao cùng một câu có thể chọn Bitmap Scan cho giá trị hiếm và Seq Scan cho giá trị phổ biến", en: "Explain why the same query can pick a Bitmap Scan for a rare value and a Seq Scan for a common one" }
 requires: [e-pg-l4-01]
 sources:
-  - https://www.postgresql.org/docs/18/planner-stats.html
-  - https://www.postgresql.org/docs/18/row-estimation-examples.html
-  - https://www.postgresql.org/docs/18/view-pg-stats.html
+  - { url: https://www.postgresql.org/docs/18/planner-stats.html, title_vi: "Thống kê mà planner dùng" }
+  - { url: https://www.postgresql.org/docs/18/row-estimation-examples.html, title_vi: "Ví dụ ước lượng số dòng" }
+  - { url: https://www.postgresql.org/docs/18/view-pg-stats.html, title_vi: "pg_stats" }
 viz: pg-plan-tree
 lab:
   setup: |

@@ -18,12 +18,16 @@ requires: [e-pg-l5-10]
 sources:
   - url: https://www.postgresql.org/docs/18/ddl-rowsecurity.html
     title: "Row Security Policies"
+    title_vi: "Chính sách bảo mật theo dòng (RLS)"
   - url: https://www.postgresql.org/docs/18/sql-createpolicy.html
     title: "CREATE POLICY"
+    title_vi: "CREATE POLICY"
   - url: https://www.postgresql.org/docs/18/sql-altertable.html
     title: "ALTER TABLE"
+    title_vi: "ALTER TABLE (REPLICA IDENTITY)"
   - url: https://www.postgresql.org/docs/18/sql-createview.html
     title: "CREATE VIEW"
+    title_vi: "CREATE VIEW"
 lab:
   setup: |
     DO $$

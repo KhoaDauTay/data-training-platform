@@ -19,10 +19,13 @@ requires: [e-ds-l4-10]
 sources:
   - url: https://www.postgresql.org/docs/18/ddl-constraints.html
     title: "Constraints"
+    title_vi: "Ràng buộc"
   - url: https://www.postgresql.org/docs/18/indexes-multicolumn.html
     title: "Multicolumn Indexes"
+    title_vi: "Index nhiều cột"
   - url: https://www.postgresql.org/docs/18/indexes-expressional.html
     title: "Indexes on Expressions"
+    title_vi: "Index trên biểu thức"
 lab:
   setup: |
     CREATE TABLE sellers (

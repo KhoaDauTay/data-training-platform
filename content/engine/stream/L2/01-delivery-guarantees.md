@@ -18,9 +18,9 @@ objectives:
     en: Understand "effectively once" as at least once plus an idempotent consumer.
 requires: [e-sm-l1-02]
 sources:
-  - { url: "https://kafka.apache.org/41/design/design/", title: "Kafka docs: Design (message delivery semantics)" }
-  - { url: "https://debezium.io/documentation/faq/", title: "Debezium FAQ (events at least once when things go wrong)" }
-  - { url: "https://www.postgresql.org/docs/18/functions-subquery.html", title: "PostgreSQL 18 docs: Subquery expressions (EXISTS)" }
+  - { url: "https://kafka.apache.org/41/design/design/", title: "Kafka docs: Design (message delivery semantics)", title_vi: "Tài liệu Kafka: thiết kế (bảo đảm giao nhận, producer idempotent, transaction)" }
+  - { url: "https://debezium.io/documentation/faq/", title: "Debezium FAQ (events at least once when things go wrong)", title_vi: "Hỏi đáp Debezium (ít nhất một lần khi có lỗi)" }
+  - { url: "https://www.postgresql.org/docs/18/functions-subquery.html", title: "PostgreSQL 18 docs: Subquery expressions (EXISTS)", title_vi: "Biểu thức truy vấn con (EXISTS)" }
 lab:
   setup: |
     CREATE TABLE events (

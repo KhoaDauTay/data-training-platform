@@ -18,9 +18,9 @@ objectives:
     en: Insert, update, delete and read the changes in order from the change table.
 requires: [e-sm-l2-03]
 sources:
-  - { url: "https://www.postgresql.org/docs/18/logicaldecoding-explanation.html", title: "PostgreSQL 18 docs: Logical decoding concepts" }
-  - { url: "https://www.postgresql.org/docs/18/plpgsql-trigger.html", title: "PostgreSQL 18 docs: Trigger functions" }
-  - { url: "https://debezium.io/documentation/reference/stable/connectors/postgresql.html", title: "Debezium docs: PostgreSQL connector" }
+  - { url: "https://www.postgresql.org/docs/18/logicaldecoding-explanation.html", title: "PostgreSQL 18 docs: Logical decoding concepts", title_vi: "Khái niệm logical decoding (thay đổi được gửi lại sau khi máy sập)" }
+  - { url: "https://www.postgresql.org/docs/18/plpgsql-trigger.html", title: "PostgreSQL 18 docs: Trigger functions", title_vi: "Hàm trigger" }
+  - { url: "https://debezium.io/documentation/reference/stable/connectors/postgresql.html", title: "Debezium docs: PostgreSQL connector", title_vi: "Tài liệu Debezium: connector PostgreSQL (giá trị của sự kiện thay đổi)" }
 lab:
   setup: |
     CREATE TABLE shipments (

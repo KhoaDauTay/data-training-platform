@@ -18,9 +18,9 @@ objectives:
     en: Take `rate()` first, then `sum by (…)`.
 requires: [e-tm-l3-01, e-tm-l2-01]
 sources:
-  - { url: "https://prometheus.io/docs/prometheus/latest/querying/functions/", title: "Prometheus: Query functions (rate, increase)" }
-  - { url: "https://prometheus.io/docs/prometheus/latest/querying/operators/", title: "Prometheus: Operators (aggregation)" }
-  - { url: "https://github.com/prometheus/prometheus/blob/v3.5.0/promql/functions.go", title: "Prometheus v3.5.0 source: extrapolatedRate" }
+  - { url: "https://prometheus.io/docs/prometheus/latest/querying/functions/", title: "Prometheus: Query functions (rate, increase)", title_vi: "Prometheus: histogram_quantile()" }
+  - { url: "https://prometheus.io/docs/prometheus/latest/querying/operators/", title: "Prometheus: Operators (aggregation)", title_vi: "Prometheus: toán tử (gộp nhóm)" }
+  - { url: "https://github.com/prometheus/prometheus/blob/v3.5.0/promql/functions.go", title: "Prometheus v3.5.0 source: extrapolatedRate", title_vi: "Mã nguồn Prometheus v3.5.0: extrapolatedRate" }
 lab:
   setup: |
     CREATE TABLE samples (

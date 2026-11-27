@@ -18,8 +18,8 @@ objectives:
     en: "Add a new kind without touching the old documents"
 requires: [e-mg-l4-01]
 sources:
-  - https://www.mongodb.com/docs/manual/data-modeling/design-patterns/polymorphic-data/
-  - https://www.mongodb.com/docs/manual/reference/operator/aggregation/switch/
+  - { url: https://www.mongodb.com/docs/manual/data-modeling/design-patterns/polymorphic-data/, title_vi: "Dữ liệu đa hình" }
+  - { url: https://www.mongodb.com/docs/manual/reference/operator/aggregation/switch/, title_vi: "$switch" }
 lab:
   setup: |
     {"collections": {"policies": [

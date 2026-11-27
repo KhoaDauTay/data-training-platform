@@ -15,9 +15,9 @@ objectives:
     en: Read `ScannedCount`, `Count` and `LastEvaluatedKey` to know whether you must keep reading.
 requires: [e-dy-l2-02, e-dy-l1-10]
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_Query.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_Scan.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.FilterExpression.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_Query.html, title_vi: "API Query" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_Scan.html, title_vi: "API Scan" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.FilterExpression.html, title_vi: "Query: biểu thức lọc (filter expression)" }
 predict:
   sql: |
     {"op": "Query", "input": {"TableName": "Orders",

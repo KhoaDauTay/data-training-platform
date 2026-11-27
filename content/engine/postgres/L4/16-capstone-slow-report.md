@@ -16,11 +16,11 @@ objectives:
   - { vi: "Viết câu tra đơn của một khách vừa đúng vừa đi qua index", en: "Write a customer's order lookup that is both right and goes through an index" }
 requires: [e-pg-l4-02, e-pg-l4-03, e-pg-l4-04, e-pg-l4-09, e-pg-l4-12]
 sources:
-  - https://www.postgresql.org/docs/18/planner-stats.html
-  - https://www.postgresql.org/docs/18/sql-createstatistics.html
-  - https://www.postgresql.org/docs/18/explicit-locking.html
-  - https://www.postgresql.org/docs/18/runtime-config-client.html
-  - https://www.postgresql.org/docs/18/transaction-iso.html
+  - { url: https://www.postgresql.org/docs/18/planner-stats.html, title_vi: "Thống kê mà planner dùng" }
+  - { url: https://www.postgresql.org/docs/18/sql-createstatistics.html, title_vi: "CREATE STATISTICS" }
+  - { url: https://www.postgresql.org/docs/18/explicit-locking.html, title_vi: "Khóa tường minh" }
+  - { url: https://www.postgresql.org/docs/18/runtime-config-client.html, title_vi: "Cấu hình mặc định cho kết nối" }
+  - { url: https://www.postgresql.org/docs/18/transaction-iso.html, title_vi: "Mức cô lập transaction" }
 viz: pg-plan-tree
 lab:
   setup: |

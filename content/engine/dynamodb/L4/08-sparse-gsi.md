@@ -15,8 +15,8 @@ objectives:
   - { vi: "Đưa một item ra khỏi GSI bằng cách xóa thuộc tính khóa của GSI", en: "Take an item out of the GSI by removing the GSI key attributes" }
 requires: []
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-indexes-general-sparse-indexes.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GSI.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-indexes-general-sparse-indexes.html, title_vi: "Thực hành tốt: index thưa" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GSI.html, title_vi: "Global secondary index (GSI)" }
 viz: dy-gsi
 lab:
   setup: |

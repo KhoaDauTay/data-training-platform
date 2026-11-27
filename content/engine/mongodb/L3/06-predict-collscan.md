@@ -15,8 +15,8 @@ objectives:
     en: "Read totalKeysExamined, totalDocsExamined and nReturned"
 requires: [e-mg-l3-05]
 sources:
-  - https://www.mongodb.com/docs/manual/tutorial/analyze-query-plan/
-  - https://www.mongodb.com/docs/manual/reference/explain-results/
+  - { url: https://www.mongodb.com/docs/manual/tutorial/analyze-query-plan/, title_vi: "Phân tích kế hoạch truy vấn" }
+  - { url: https://www.mongodb.com/docs/manual/reference/explain-results/, title_vi: "Đọc kết quả explain" }
 predict:
   sql: |
     db.movies.find(

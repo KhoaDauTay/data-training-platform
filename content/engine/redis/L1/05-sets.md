@@ -18,9 +18,9 @@ objectives:
   - vi: Biết rằng set không có thứ tự, nên đừng dựa vào thứ tự SMEMBERS in ra.
     en: Know that a set has no order, so do not rely on the order SMEMBERS prints.
 sources:
-  - { url: "https://redis.io/docs/latest/develop/data-types/sets/", title: "Redis docs: Sets" }
-  - { url: "https://valkey.io/commands/sadd/", title: "Valkey docs: SADD" }
-  - { url: "https://valkey.io/commands/sinter/", title: "Valkey docs: SINTER" }
+  - { url: "https://redis.io/docs/latest/develop/data-types/sets/", title: "Redis docs: Sets", title_vi: "Tài liệu Redis: set" }
+  - { url: "https://valkey.io/commands/sadd/", title: "Valkey docs: SADD", title_vi: "Tài liệu Valkey: SADD" }
+  - { url: "https://valkey.io/commands/sinter/", title: "Valkey docs: SINTER", title_vi: "Tài liệu Valkey: SINTER" }
 lab:
   setup: |
     SADD visitors:2026-10-30 lily boon an

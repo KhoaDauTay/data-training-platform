@@ -16,9 +16,9 @@ objectives:
     en: Know why `$match` should come early and how stage order changes the result.
 requires: [e-mg-l1-10]
 sources:
-  - https://www.mongodb.com/docs/manual/core/aggregation-pipeline/
-  - https://www.mongodb.com/docs/manual/core/aggregation-pipeline-optimization/
-  - https://www.mongodb.com/docs/manual/reference/mql/aggregation-stages/
+  - { url: https://www.mongodb.com/docs/manual/core/aggregation-pipeline/, title_vi: "Aggregation pipeline" }
+  - { url: https://www.mongodb.com/docs/manual/core/aggregation-pipeline-optimization/, title_vi: "Tối ưu aggregation pipeline" }
+  - { url: https://www.mongodb.com/docs/manual/reference/mql/aggregation-stages/, title_vi: "Các stage của aggregation" }
 demo_setup: '{"collections": {"orders": [{"_id": 1, "store": "S1", "status": "paid", "total": 95000}, {"_id": 2, "store": "S2", "status": "shipped", "total": 120000}, {"_id": 3, "store": "S1", "status": "shipped", "total": 450000}, {"_id": 4, "store": "S1", "status": "cancelled", "total": 150000}, {"_id": 5, "store": "S2", "status": "paid", "total": 210000}, {"_id": 6, "store": "S2", "status": "paid", "total": 25000}]}}'
 quiz:
   - q:

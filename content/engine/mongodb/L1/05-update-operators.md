@@ -16,9 +16,9 @@ objectives:
     en: Use `upsert` to update a document if it exists and insert it if it does not.
 requires: [e-mg-l1-04]
 sources:
-  - https://www.mongodb.com/docs/manual/tutorial/update-documents/
-  - https://www.mongodb.com/docs/manual/reference/mql/update/
-  - https://www.mongodb.com/docs/manual/reference/method/db.collection.updateone/
+  - { url: https://www.mongodb.com/docs/manual/tutorial/update-documents/, title_vi: "Cập nhật tài liệu" }
+  - { url: https://www.mongodb.com/docs/manual/reference/mql/update/, title_vi: "Toán tử cập nhật" }
+  - { url: https://www.mongodb.com/docs/manual/reference/method/db.collection.updateone/, title_vi: "db.collection.updateOne()" }
 lab:
   setup: |
     {"collections": {"products": [

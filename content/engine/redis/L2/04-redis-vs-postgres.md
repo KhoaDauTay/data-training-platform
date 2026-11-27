@@ -16,9 +16,9 @@ objectives:
   - vi: Thấy điều gì xảy ra khi bộ nhớ của Redis mất sạch, và vì sao cache chỉ làm chậm chứ không làm sai.
     en: See what happens when Redis's memory is wiped, and why a cache only slows things down, never makes them wrong.
 sources:
-  - { url: "https://valkey.io/topics/persistence/", title: "Valkey docs: Persistence" }
-  - { url: "https://www.postgresql.org/docs/18/wal-intro.html", title: "PostgreSQL docs: Write-Ahead Logging" }
-  - { url: "https://redis.io/docs/latest/develop/get-started/data-store/", title: "Redis docs: Redis as an in-memory data structure store" }
+  - { url: "https://valkey.io/topics/persistence/", title: "Valkey docs: Persistence", title_vi: "Tài liệu Valkey: lưu bền dữ liệu (persistence)" }
+  - { url: "https://www.postgresql.org/docs/18/wal-intro.html", title: "PostgreSQL docs: Write-Ahead Logging", title_vi: "Ghi nhật ký trước (write-ahead logging)" }
+  - { url: "https://redis.io/docs/latest/develop/get-started/data-store/", title: "Redis docs: Redis as an in-memory data structure store", title_vi: "Tài liệu Redis: Redis làm kho cấu trúc dữ liệu trong bộ nhớ" }
 lab:
   setup: |
     SET cache:order:o101 packed EX 300

@@ -14,8 +14,8 @@ objectives:
   - { vi: "Thêm một cạnh bằng một lần ghi, và thấy cả hai chiều cùng có nó", en: "Add an edge with one write, and see both directions pick it up" }
 requires: []
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-adjacency-graphs.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GSI.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-adjacency-graphs.html, title_vi: "Thực hành tốt: danh sách kề cho quan hệ nhiều-nhiều" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GSI.html, title_vi: "Global secondary index (GSI)" }
 viz: dy-single-table
 figures: [{ name: dy-adjacency-list, at: example, variant: school }]
 lab:

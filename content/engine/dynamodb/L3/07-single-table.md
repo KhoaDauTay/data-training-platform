@@ -18,9 +18,9 @@ objectives:
     en: Know when an entity belongs in a table of its own.
 requires: [e-dy-l3-01]
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-general-nosql-design.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-sort-keys.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-adjacency-graphs.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-general-nosql-design.html, title_vi: "Thực hành tốt: thiết kế NoSQL" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-sort-keys.html, title_vi: "Thực hành tốt: sort key" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-adjacency-graphs.html, title_vi: "Thực hành tốt: danh sách kề cho quan hệ nhiều-nhiều" }
 demo_setup: |
   {"tables": [{"TableName": "Shop", "BillingMode": "PAY_PER_REQUEST", "KeySchema": [{"AttributeName": "PK", "KeyType": "HASH"}, {"AttributeName": "SK", "KeyType": "RANGE"}], "AttributeDefinitions": [{"AttributeName": "PK", "AttributeType": "S"}, {"AttributeName": "SK", "AttributeType": "S"}]}],
    "items": {"Shop": [

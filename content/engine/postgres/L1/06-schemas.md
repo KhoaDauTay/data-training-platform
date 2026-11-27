@@ -19,12 +19,12 @@ objectives:
     en: Explain which table `search_path` picks when two schemas hold tables with the same name.
 requires: [e-pg-l1-05]
 sources:
-  - https://www.postgresql.org/docs/18/manage-ag-overview.html
-  - https://www.postgresql.org/docs/18/sql-createdatabase.html
-  - https://www.postgresql.org/docs/18/ddl-schemas.html
-  - https://www.postgresql.org/docs/18/sql-createschema.html
-  - https://www.postgresql.org/docs/18/sql-dropschema.html
-  - https://www.postgresql.org/docs/18/functions-info.html
+  - { url: https://www.postgresql.org/docs/18/manage-ag-overview.html, title_vi: "Quản lý database › tổng quan" }
+  - { url: https://www.postgresql.org/docs/18/sql-createdatabase.html, title_vi: "CREATE DATABASE" }
+  - { url: https://www.postgresql.org/docs/18/ddl-schemas.html, title_vi: "Schema" }
+  - { url: https://www.postgresql.org/docs/18/sql-createschema.html, title_vi: "CREATE SCHEMA" }
+  - { url: https://www.postgresql.org/docs/18/sql-dropschema.html, title_vi: "DROP SCHEMA" }
+  - { url: https://www.postgresql.org/docs/18/functions-info.html, title_vi: "Hàm thông tin hệ thống" }
 lab:
   setup: |
     CREATE TABLE notes (id int PRIMARY KEY, body text NOT NULL);

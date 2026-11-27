@@ -16,10 +16,10 @@ objectives:
     en: Use a clone to try a risky change without touching the real table, and do the same in Postgres.
 requires: [e-st-l3-01]
 sources:
-  - { url: "https://docs.snowflake.com/en/user-guide/data-time-travel", title: "Snowflake docs: Understanding & using Time Travel" }
-  - { url: "https://docs.snowflake.com/en/user-guide/data-failsafe", title: "Snowflake docs: Understanding and viewing Fail-safe" }
-  - { url: "https://docs.snowflake.com/en/user-guide/tables-storage-considerations", title: "Snowflake docs: Data storage considerations" }
-  - https://www.postgresql.org/docs/18/sql-createtableas.html
+  - { url: "https://docs.snowflake.com/en/user-guide/data-time-travel", title: "Snowflake docs: Understanding & using Time Travel", title_vi: "Tài liệu Snowflake: dùng Time Travel" }
+  - { url: "https://docs.snowflake.com/en/user-guide/data-failsafe", title: "Snowflake docs: Understanding and viewing Fail-safe", title_vi: "Tài liệu Snowflake: Fail-safe" }
+  - { url: "https://docs.snowflake.com/en/user-guide/tables-storage-considerations", title: "Snowflake docs: Data storage considerations", title_vi: "Tài liệu Snowflake: lưu ý về lưu trữ dữ liệu" }
+  - { url: https://www.postgresql.org/docs/18/sql-createtableas.html, title_vi: "CREATE TABLE AS" }
 demo_setup: |
   CREATE SCHEMA marts;
   CREATE TABLE marts.orders (

@@ -18,8 +18,8 @@ objectives:
     en: Know which bucket a reading exactly on a boundary belongs to.
 requires: [e-ts-l1-02]
 sources:
-  - https://www.postgresql.org/docs/18/functions-datetime.html#FUNCTIONS-DATETIME-TRUNC
-  - https://www.postgresql.org/docs/18/functions-datetime.html#FUNCTIONS-DATETIME-BIN
+  - { url: https://www.postgresql.org/docs/18/functions-datetime.html#FUNCTIONS-DATETIME-TRUNC, title_vi: "Hàm ngày giờ › date_trunc" }
+  - { url: https://www.postgresql.org/docs/18/functions-datetime.html#FUNCTIONS-DATETIME-BIN, title_vi: "Hàm ngày giờ › date_bin" }
 lab:
   setup: |
     CREATE TABLE gate_events (

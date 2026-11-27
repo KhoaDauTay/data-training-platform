@@ -18,10 +18,13 @@ viz: pg-rls-path
 sources:
   - url: https://www.postgresql.org/docs/18/sql-set.html
     title: "SET"
+    title_vi: "SET"
   - url: https://www.postgresql.org/docs/18/functions-admin.html
     title: "System Administration Functions"
+    title_vi: "Hàm quản trị hệ thống"
   - url: https://www.postgresql.org/docs/18/ddl-rowsecurity.html
     title: "Row Security Policies"
+    title_vi: "Chính sách bảo mật theo dòng (RLS)"
 lab:
   setup: |
     DO $$

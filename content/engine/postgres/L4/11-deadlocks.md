@@ -16,10 +16,10 @@ objectives:
   - { vi: "Phòng deadlock bằng thứ tự lock nhất quán (`ORDER BY` trước `FOR UPDATE`) và transaction ngắn", en: "Prevent deadlocks with a consistent lock order (`ORDER BY` before `FOR UPDATE`) and short transactions" }
 requires: [e-pg-l4-10]
 sources:
-  - https://www.postgresql.org/docs/18/explicit-locking.html
-  - https://www.postgresql.org/docs/18/runtime-config-locks.html
-  - https://www.postgresql.org/docs/18/runtime-config-client.html
-  - https://www.postgresql.org/docs/18/errcodes-appendix.html
+  - { url: https://www.postgresql.org/docs/18/explicit-locking.html, title_vi: "Khóa tường minh" }
+  - { url: https://www.postgresql.org/docs/18/runtime-config-locks.html, title_vi: "Cấu hình quản lý khóa" }
+  - { url: https://www.postgresql.org/docs/18/runtime-config-client.html, title_vi: "Cấu hình mặc định cho kết nối" }
+  - { url: https://www.postgresql.org/docs/18/errcodes-appendix.html, title_vi: "Mã lỗi" }
 viz: pg-lock-matrix
 quiz:
   - q: { vi: "Hai job chuyển tiền chạy song song: job 1 chuyển 1 → 2, job 2 chuyển 2 → 1, mỗi job cập nhật tài khoản nguồn trước rồi tài khoản đích. Cách sửa gốc là gì?", en: "Two transfer jobs run in parallel: job 1 moves money 1 → 2, job 2 moves 2 → 1, each updating the source account first, then the destination. What is the root fix?" }

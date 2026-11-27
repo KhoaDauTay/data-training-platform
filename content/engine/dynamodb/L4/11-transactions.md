@@ -15,8 +15,8 @@ objectives:
   - { vi: "Dùng client token để gửi lại một transaction an toàn trong 10 phút", en: "Use a client token to resend a transaction safely within 10 minutes" }
 requires: []
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/transaction-apis.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/read-write-operations.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/transaction-apis.html, title_vi: "API transaction" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/read-write-operations.html, title_vi: "Thao tác đọc và ghi" }
 quiz:
   - q: { vi: "Một transaction ghi 3 item, mỗi item 500 byte, chạy 1 lần mỗi giây. Cần bao nhiêu WCU?", en: "A transaction writes 3 items of 500 bytes each, once per second. How many WCU does it need?" }
     options:

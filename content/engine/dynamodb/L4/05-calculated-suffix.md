@@ -15,7 +15,7 @@ objectives:
   - { vi: "Ghi item mới vào đúng shard mà lần đọc sau sẽ tính ra", en: "Write a new item into the very shard a later read will compute" }
 requires: [e-dy-l4-04]
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-partition-key-sharding.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-partition-key-sharding.html, title_vi: "Chia nhỏ lượt ghi (write sharding)" }
 viz: dy-partitions
 lab:
   setup: |

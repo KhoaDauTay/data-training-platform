@@ -19,10 +19,10 @@ objectives:
 requires: [e-pg-l1-03]
 figures: [{ name: pg-constraint-gates, at: idea }]
 sources:
-  - https://www.postgresql.org/docs/18/ddl-constraints.html
-  - https://www.postgresql.org/docs/18/sql-altertable.html
-  - https://www.postgresql.org/docs/18/catalog-pg-constraint.html
-  - https://www.postgresql.org/docs/18/release-18.html
+  - { url: https://www.postgresql.org/docs/18/ddl-constraints.html, title_vi: "Ràng buộc" }
+  - { url: https://www.postgresql.org/docs/18/sql-altertable.html, title_vi: "ALTER TABLE (REPLICA IDENTITY)" }
+  - { url: https://www.postgresql.org/docs/18/catalog-pg-constraint.html, title_vi: "pg_constraint" }
+  - { url: https://www.postgresql.org/docs/18/release-18.html, title_vi: "Ghi chú phát hành PostgreSQL 18" }
 lab:
   setup: |
     CREATE TABLE customers (id int PRIMARY KEY, email text);

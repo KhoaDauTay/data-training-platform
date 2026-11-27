@@ -18,8 +18,8 @@ objectives:
     en: Turn a histogram's cumulative `le` buckets into the count inside each bucket.
 requires: [e-tm-l1-01]
 sources:
-  - { url: "https://prometheus.io/docs/concepts/metric_types/", title: "Prometheus: Metric types" }
-  - { url: "https://opentelemetry.io/docs/concepts/signals/metrics/", title: "OpenTelemetry: Metrics" }
+  - { url: "https://prometheus.io/docs/concepts/metric_types/", title: "Prometheus: Metric types", title_vi: "Prometheus: các loại metric" }
+  - { url: "https://opentelemetry.io/docs/concepts/signals/metrics/", title: "OpenTelemetry: Metrics", title_vi: "OpenTelemetry: metric" }
 lab:
   setup: |
     CREATE TABLE metrics (

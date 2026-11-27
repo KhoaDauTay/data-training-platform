@@ -14,8 +14,8 @@ objectives:
   - { vi: "So giá của `TransactGetItems` với `GetItem` đọc nhất quán mạnh để biết khi nào đáng dùng", en: "Compare the price of `TransactGetItems` with a strong `GetItem` to know when it is worth it" }
 requires: [e-dy-l4-11]
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/transaction-apis.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/read-write-operations.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/transaction-apis.html, title_vi: "API transaction" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/read-write-operations.html, title_vi: "Thao tác đọc và ghi" }
 lab:
   setup: |
     {"tables": [

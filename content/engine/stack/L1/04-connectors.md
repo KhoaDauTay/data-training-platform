@@ -16,10 +16,10 @@ objectives:
     en: Know what an analyst should ask when a connector breaks or lags.
 requires: [e-st-l1-03]
 sources:
-  - { url: "https://fivetran.com/docs/core-concepts/system-columns-and-tables", title: "Fivetran docs: System columns and tables" }
-  - { url: "https://docs.airbyte.com/platform/using-airbyte/core-concepts/sync-modes", title: "Airbyte docs: Sync modes" }
-  - { url: "https://docs.airbyte.com/platform/using-airbyte/core-concepts/sync-modes/incremental-append", title: "Airbyte docs: Incremental Sync - Append" }
-  - https://www.postgresql.org/docs/18/logical-replication.html
+  - { url: "https://fivetran.com/docs/core-concepts/system-columns-and-tables", title: "Fivetran docs: System columns and tables", title_vi: "Tài liệu Fivetran: cột và bảng hệ thống" }
+  - { url: "https://docs.airbyte.com/platform/using-airbyte/core-concepts/sync-modes", title: "Airbyte docs: Sync modes", title_vi: "Tài liệu Airbyte: các chế độ đồng bộ" }
+  - { url: "https://docs.airbyte.com/platform/using-airbyte/core-concepts/sync-modes/incremental-append", title: "Airbyte docs: Incremental Sync - Append", title_vi: "Tài liệu Airbyte: đồng bộ tăng dần, nối thêm" }
+  - { url: https://www.postgresql.org/docs/18/logical-replication.html, title_vi: "Logical replication" }
 demo_setup: |
   CREATE SCHEMA app;
   CREATE SCHEMA raw_shop;

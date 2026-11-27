@@ -18,9 +18,9 @@ objectives:
     en: Know when a property should be a real column rather than live inside `jsonb`.
 requires: [e-gr-l1-01]
 sources:
-  - { url: "https://neo4j.com/docs/getting-started/graph-database/", title: "Neo4j docs: What is a graph database" }
-  - { url: "https://neo4j.com/docs/cypher-manual/current/patterns/fixed-length-patterns/", title: "Cypher Manual: Fixed-length patterns" }
-  - https://www.postgresql.org/docs/18/functions-json.html
+  - { url: "https://neo4j.com/docs/getting-started/graph-database/", title: "Neo4j docs: What is a graph database", title_vi: "Tài liệu Neo4j: cơ sở dữ liệu đồ thị là gì" }
+  - { url: "https://neo4j.com/docs/cypher-manual/current/patterns/fixed-length-patterns/", title: "Cypher Manual: Fixed-length patterns", title_vi: "Cypher Manual: mẫu độ dài cố định" }
+  - { url: https://www.postgresql.org/docs/18/functions-json.html, title_vi: "Hàm và toán tử JSON" }
 lab:
   setup: |
     CREATE TABLE nodes (

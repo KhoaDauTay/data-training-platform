@@ -18,11 +18,11 @@ objectives:
     en: Explain LSN, `pd_lsn`, checkpoints and full-page writes
 requires: [e-pg-l3-02]
 sources:
-  - https://www.postgresql.org/docs/18/wal-intro.html
-  - https://www.postgresql.org/docs/18/wal-configuration.html
-  - https://www.postgresql.org/docs/18/wal-internals.html
-  - https://www.postgresql.org/docs/18/runtime-config-wal.html
-  - https://www.postgresql.org/docs/18/storage-page-layout.html
+  - { url: https://www.postgresql.org/docs/18/wal-intro.html, title_vi: "Ghi nhật ký trước (write-ahead logging)" }
+  - { url: https://www.postgresql.org/docs/18/wal-configuration.html, title_vi: "Cấu hình WAL và checkpoint" }
+  - { url: https://www.postgresql.org/docs/18/wal-internals.html, title_vi: "WAL bên trong" }
+  - { url: https://www.postgresql.org/docs/18/runtime-config-wal.html, title_vi: "Cấu hình WAL" }
+  - { url: https://www.postgresql.org/docs/18/storage-page-layout.html, title_vi: "Cấu trúc trang dữ liệu" }
 quiz:
   - q:
       vi: "Thứ tự nào đúng khi một UPDATE được COMMIT?"

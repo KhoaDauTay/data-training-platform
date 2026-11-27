@@ -17,10 +17,10 @@ objectives:
     en: "Know the cost of a counter: one hot document that every write touches"
 requires: [e-mg-l1-05, e-mg-l4-01]
 sources:
-  - https://www.mongodb.com/docs/manual/reference/method/db.collection.findOneAndUpdate/
-  - https://www.mongodb.com/docs/manual/reference/operator/update/inc/
-  - https://www.mongodb.com/docs/manual/core/write-operations-atomicity/
-  - https://www.mongodb.com/docs/manual/core/document/
+  - { url: https://www.mongodb.com/docs/manual/reference/method/db.collection.findOneAndUpdate/, title_vi: "db.collection.findOneAndUpdate()" }
+  - { url: https://www.mongodb.com/docs/manual/reference/operator/update/inc/, title_vi: "$inc" }
+  - { url: https://www.mongodb.com/docs/manual/core/write-operations-atomicity/, title_vi: "Tính nguyên tử của thao tác ghi" }
+  - { url: https://www.mongodb.com/docs/manual/core/document/, title_vi: "Tài liệu (document)" }
 lab:
   setup: |
     {"collections": {

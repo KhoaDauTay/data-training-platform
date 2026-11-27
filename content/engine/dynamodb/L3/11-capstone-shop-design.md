@@ -15,9 +15,9 @@ objectives:
     en: Explain why a request that returns the right items through a Scan still does not pass.
 requires: [e-dy-l3-06, e-dy-l3-09, e-dy-l3-10]
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-general-nosql-design.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-adjacency-graphs.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-sort-keys.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-general-nosql-design.html, title_vi: "Thực hành tốt: thiết kế NoSQL" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-adjacency-graphs.html, title_vi: "Thực hành tốt: danh sách kề cho quan hệ nhiều-nhiều" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-sort-keys.html, title_vi: "Thực hành tốt: sort key" }
 lab:
   setup: |
     {"tables": [{"TableName":"Shop","BillingMode":"PAY_PER_REQUEST","KeySchema":[{"AttributeName":"PK","KeyType":"HASH"},{"AttributeName":"SK","KeyType":"RANGE"}],"AttributeDefinitions":[{"AttributeName":"PK","AttributeType":"S"},{"AttributeName":"SK","AttributeType":"S"},{"AttributeName":"GSI1PK","AttributeType":"S"},{"AttributeName":"GSI1SK","AttributeType":"S"}],"GlobalSecondaryIndexes":[{"IndexName":"GSI1","KeySchema":[{"AttributeName":"GSI1PK","KeyType":"HASH"},{"AttributeName":"GSI1SK","KeyType":"RANGE"}],"Projection":{"ProjectionType":"ALL"}}]}],

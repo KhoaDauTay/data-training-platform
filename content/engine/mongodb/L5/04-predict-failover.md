@@ -15,9 +15,9 @@ objectives:
     en: "Choose the write concern for a write that must survive a primary change"
 requires: [e-mg-l5-03, e-mg-l4-07]
 sources:
-  - https://www.mongodb.com/docs/manual/reference/write-concern/
-  - https://www.mongodb.com/docs/manual/core/replica-set-elections/
-  - https://www.mongodb.com/docs/manual/core/replica-set-rollbacks/
+  - { url: https://www.mongodb.com/docs/manual/reference/write-concern/, title_vi: "Write concern" }
+  - { url: https://www.mongodb.com/docs/manual/core/replica-set-elections/, title_vi: "Bầu primary trong replica set" }
+  - { url: https://www.mongodb.com/docs/manual/core/replica-set-rollbacks/, title_vi: "Rollback trong replica set" }
 predict:
   sql: |
     db.orders.insertOne({ _id: 1 }, { writeConcern: { w: 1 } })

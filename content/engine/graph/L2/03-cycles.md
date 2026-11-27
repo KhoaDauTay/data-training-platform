@@ -18,9 +18,9 @@ objectives:
     en: Find the loops that return to their own starting port.
 requires: [e-gr-l2-01]
 sources:
-  - https://www.postgresql.org/docs/18/queries-with.html
-  - { url: "https://www.postgresql.org/docs/release/14.0/", title: "PostgreSQL 14 release notes: SEARCH and CYCLE" }
-  - https://www.postgresql.org/docs/18/sql-select.html
+  - { url: https://www.postgresql.org/docs/18/queries-with.html, title_vi: "Truy vấn WITH (CTE)" }
+  - { url: "https://www.postgresql.org/docs/release/14.0/", title: "PostgreSQL 14 release notes: SEARCH and CYCLE", title_vi: "Ghi chú phát hành PostgreSQL 14: SEARCH và CYCLE" }
+  - { url: https://www.postgresql.org/docs/18/sql-select.html, title_vi: "SELECT" }
 lab:
   setup: |
     CREATE TABLE ports (code text PRIMARY KEY);

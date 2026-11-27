@@ -19,9 +19,9 @@ objectives:
     en: Tell whether a new row still fits on the page or goes to the next one
 requires: [e-pg-l3-01]
 sources:
-  - https://www.postgresql.org/docs/18/storage-page-layout.html
-  - https://www.postgresql.org/docs/18/pageinspect.html
-  - https://www.postgresql.org/docs/18/ddl-system-columns.html
+  - { url: https://www.postgresql.org/docs/18/storage-page-layout.html, title_vi: "Cấu trúc trang dữ liệu" }
+  - { url: https://www.postgresql.org/docs/18/pageinspect.html, title_vi: "pageinspect" }
+  - { url: https://www.postgresql.org/docs/18/ddl-system-columns.html, title_vi: "Cột hệ thống" }
 lab:
   setup: |
     CREATE EXTENSION IF NOT EXISTS pageinspect;

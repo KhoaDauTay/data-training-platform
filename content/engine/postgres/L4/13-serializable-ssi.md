@@ -16,10 +16,10 @@ objectives:
   - { vi: "Biết cái giá của Serializable: thử lại, lock cấp quan hệ khi Seq Scan, và cách giảm (index, `READ ONLY DEFERRABLE`)", en: "Know the price of Serializable: retries, relation-level locks on a Seq Scan, and how to reduce it (indexes, `READ ONLY DEFERRABLE`)" }
 requires: [e-pg-l4-12]
 sources:
-  - https://www.postgresql.org/docs/18/transaction-iso.html
-  - https://www.postgresql.org/docs/18/view-pg-locks.html
-  - https://www.postgresql.org/docs/18/applevel-consistency.html
-  - https://www.postgresql.org/docs/18/sql-set-transaction.html
+  - { url: https://www.postgresql.org/docs/18/transaction-iso.html, title_vi: "Mức cô lập transaction" }
+  - { url: https://www.postgresql.org/docs/18/view-pg-locks.html, title_vi: "pg_locks" }
+  - { url: https://www.postgresql.org/docs/18/applevel-consistency.html, title_vi: "Kiểm tra tính nhất quán ở tầng ứng dụng" }
+  - { url: https://www.postgresql.org/docs/18/sql-set-transaction.html, title_vi: "SET TRANSACTION" }
 viz: pg-isolation-anomalies
 quiz:
   - q: { vi: "Quy tắc: luôn có ít nhất một bác sĩ trực. Ana và Bình cùng đang trực. Mỗi người chạy transaction: đếm số người trực (2), nếu ≥ 2 thì tự đặt mình nghỉ. Hai transaction chạy cùng lúc ở Repeatable Read. Kết quả?", en: "Rule: at least one doctor must be on call. Ana and Binh are both on call. Each runs a transaction: count who is on call (2), and if ≥ 2, set themselves off. Both run at the same time under Repeatable Read. Result?" }

@@ -20,9 +20,9 @@ objectives:
     en: Explain why ROLLBACK, UPDATE and DELETE all leave dead tuples on the page
 requires: [e-pg-l3-01]
 sources:
-  - https://www.postgresql.org/docs/18/mvcc-intro.html
-  - https://www.postgresql.org/docs/18/transaction-iso.html
-  - https://www.postgresql.org/docs/18/storage-page-layout.html
+  - { url: https://www.postgresql.org/docs/18/mvcc-intro.html, title_vi: "Nhập môn MVCC" }
+  - { url: https://www.postgresql.org/docs/18/transaction-iso.html, title_vi: "Mức cô lập transaction" }
+  - { url: https://www.postgresql.org/docs/18/storage-page-layout.html, title_vi: "Cấu trúc trang dữ liệu" }
 quiz:
   - q:
       vi: "Bảng có 3 dòng ở (0,1), (0,2), (0,3). Ta sửa cột `owner` của dòng 2. Sau đó `ctid` của dòng 2 là gì?"

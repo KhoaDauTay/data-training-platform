@@ -42,9 +42,9 @@ lab:
         vi: "Bước này chấm theo luật ESR (Equality, Sort, Range: trường so bằng, rồi trường sắp xếp, rồi trường so khoảng) trong docs chính thức, chỉ xét thứ tự trường của index, không đo trên `mongod`: mingo không có index."
         en: "This step is graded by the ESR rule in the official docs (Equality, Sort, Range: equality fields, then sort fields, then range fields), checking only the index's field order, not measured on `mongod`: mingo has no indexes."
 sources:
-  - https://www.mongodb.com/docs/manual/tutorial/equality-sort-range-guideline/
-  - https://www.mongodb.com/docs/manual/reference/explain-results/
-  - https://www.mongodb.com/docs/manual/indexes/
+  - { url: https://www.mongodb.com/docs/manual/tutorial/equality-sort-range-guideline/, title_vi: "Quy tắc ESR (so bằng, sắp xếp, khoảng)" }
+  - { url: https://www.mongodb.com/docs/manual/reference/explain-results/, title_vi: "Đọc kết quả explain" }
+  - { url: https://www.mongodb.com/docs/manual/indexes/, title_vi: "Index" }
 quiz:
   - q:
       vi: "Truy vấn `find({ status: \"A\", qty: { $gt: 10 } }).sort({ day: 1 })`. Index nào theo đúng ESR?"

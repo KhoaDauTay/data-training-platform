@@ -18,9 +18,9 @@ objectives:
     en: "Use a TTL index to expire documents and know its limits"
 requires: []
 sources:
-  - https://www.mongodb.com/docs/manual/core/indexes/index-types/index-multikey/
-  - https://www.mongodb.com/docs/manual/core/index-partial/
-  - https://www.mongodb.com/docs/manual/core/index-ttl/
+  - { url: https://www.mongodb.com/docs/manual/core/indexes/index-types/index-multikey/, title_vi: "Index multikey (trên mảng)" }
+  - { url: https://www.mongodb.com/docs/manual/core/index-partial/, title_vi: "Index một phần (partial)" }
+  - { url: https://www.mongodb.com/docs/manual/core/index-ttl/, title_vi: "Index TTL" }
 quiz:
   - q:
       vi: "Một tài liệu có `genres: [\"Drama\", \"Action\", \"Drama\"]`. Index `{ genres: 1 }` giữ bao nhiêu khóa cho tài liệu này?"

@@ -14,8 +14,8 @@ objectives:
   - { vi: "Chọn giá trị cho thuộc tính chung sao cho sắp đúng theo chuỗi", en: "Choose values for the shared attribute that sort correctly as strings" }
 requires: [e-dy-l4-07]
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-gsi-overloading.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ServiceQuotas.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-gsi-overloading.html, title_vi: "Thực hành tốt: dùng chung một GSI cho nhiều loại item" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ServiceQuotas.html, title_vi: "Hạn mức dịch vụ (quota)" }
 viz: dy-gsi
 lab:
   setup: |

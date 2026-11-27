@@ -18,9 +18,9 @@ objectives:
     en: Know why an analyst reads marts instead of raw tables.
 requires: []
 sources:
-  - { url: "https://docs.getdbt.com/docs/build/models", title: "dbt docs: About dbt models" }
-  - { url: "https://fivetran.com/docs/core-concepts/system-columns-and-tables", title: "Fivetran docs: System columns and tables" }
-  - { url: "https://docs.airbyte.com/platform/understanding-airbyte/airbyte-metadata-fields", title: "Airbyte docs: Airbyte metadata fields" }
+  - { url: "https://docs.getdbt.com/docs/build/models", title: "dbt docs: About dbt models", title_vi: "Tài liệu dbt: model trong dbt" }
+  - { url: "https://fivetran.com/docs/core-concepts/system-columns-and-tables", title: "Fivetran docs: System columns and tables", title_vi: "Tài liệu Fivetran: cột và bảng hệ thống" }
+  - { url: "https://docs.airbyte.com/platform/understanding-airbyte/airbyte-metadata-fields", title: "Airbyte docs: Airbyte metadata fields", title_vi: "Tài liệu Airbyte: các trường metadata của Airbyte" }
 lab:
   setup: |
     CREATE SCHEMA raw_shop;

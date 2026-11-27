@@ -18,8 +18,8 @@ objectives:
     en: Walk against the edge direction and cap the depth.
 requires: [e-gr-l1-02]
 sources:
-  - https://www.postgresql.org/docs/18/queries-with.html
-  - { url: "https://neo4j.com/docs/cypher-manual/current/patterns/variable-length-patterns/", title: "Cypher Manual: Variable-length patterns" }
+  - { url: https://www.postgresql.org/docs/18/queries-with.html, title_vi: "Truy vấn WITH (CTE)" }
+  - { url: "https://neo4j.com/docs/cypher-manual/current/patterns/variable-length-patterns/", title: "Cypher Manual: Variable-length patterns", title_vi: "Cypher Manual: mẫu độ dài thay đổi" }
 lab:
   setup: |
     CREATE TABLE ports (code text PRIMARY KEY);

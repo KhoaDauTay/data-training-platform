@@ -36,11 +36,11 @@ demo_setup: |
          (ARRAY['VNDAD', 'VNSGN', 'VNHPH'])[g % 3 + 1]
   FROM generate_series(0, 10150) AS g;
 sources:
-  - https://github.com/pgpartman/pg_partman
-  - https://github.com/pgpartman/pg_partman/blob/master/doc/pg_partman_howto.md
-  - https://github.com/citusdata/pg_cron
-  - https://www.postgresql.org/docs/18/ddl-partitioning.html
-  - https://www.postgresql.org/docs/18/sql-altertable.html
+  - { url: https://github.com/pgpartman/pg_partman, title_vi: "pg_partman trên GitHub" }
+  - { url: https://github.com/pgpartman/pg_partman/blob/master/doc/pg_partman_howto.md, title_vi: "Hướng dẫn pg_partman" }
+  - { url: https://github.com/citusdata/pg_cron, title_vi: "pg_cron trên GitHub" }
+  - { url: https://www.postgresql.org/docs/18/ddl-partitioning.html, title_vi: "Phân vùng bảng (partitioning)" }
+  - { url: https://www.postgresql.org/docs/18/sql-altertable.html, title_vi: "ALTER TABLE (REPLICA IDENTITY)" }
 quiz:
   - q:
       vi: "Bảng có phân vùng `DEFAULT`. Đêm qua job tạo tháng không chạy, nên vài dòng tháng 11 đã vào `DEFAULT`. Sáng nay bạn tạo phân vùng tháng 11. Kết quả?"

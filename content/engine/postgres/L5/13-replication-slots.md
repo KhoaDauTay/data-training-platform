@@ -16,10 +16,10 @@ objectives:
 requires: [e-pg-l5-09]
 viz: pg-replication
 sources:
-  - https://www.postgresql.org/docs/18/warm-standby.html
-  - https://www.postgresql.org/docs/18/logicaldecoding-explanation.html
-  - https://www.postgresql.org/docs/18/view-pg-replication-slots.html
-  - https://www.postgresql.org/docs/18/functions-admin.html
+  - { url: https://www.postgresql.org/docs/18/warm-standby.html, title_vi: "Máy dự phòng nhận bản sao bằng log" }
+  - { url: https://www.postgresql.org/docs/18/logicaldecoding-explanation.html, title_vi: "Khái niệm logical decoding (thay đổi được gửi lại sau khi máy sập)" }
+  - { url: https://www.postgresql.org/docs/18/view-pg-replication-slots.html, title_vi: "pg_replication_slots" }
+  - { url: https://www.postgresql.org/docs/18/functions-admin.html, title_vi: "Hàm quản trị hệ thống" }
 lab:
   setup: |
     SELECT pg_drop_replication_slot(slot_name) FROM pg_replication_slots WHERE slot_name IN ('standby_lazy', 'standby_reserved');

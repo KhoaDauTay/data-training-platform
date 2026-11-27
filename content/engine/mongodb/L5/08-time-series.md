@@ -15,9 +15,9 @@ objectives:
     en: "Know that time series collections store buckets, and their limits for updates and sharding"
 requires: [e-mg-l4-03, e-mg-l5-05]
 sources:
-  - https://www.mongodb.com/docs/manual/core/timeseries-collections/
-  - https://www.mongodb.com/docs/manual/core/timeseries/timeseries-limitations/
-  - https://www.mongodb.com/docs/manual/core/wiredtiger/
+  - { url: https://www.mongodb.com/docs/manual/core/timeseries-collections/, title_vi: "Collection chuỗi thời gian" }
+  - { url: https://www.mongodb.com/docs/manual/core/timeseries/timeseries-limitations/, title_vi: "Giới hạn của collection chuỗi thời gian" }
+  - { url: https://www.mongodb.com/docs/manual/core/wiredtiger/, title_vi: "Bộ lưu trữ WiredTiger" }
 quiz:
   - q:
       vi: "Bạn muốn sửa nhiệt độ sai của một phép đo trong collection time series bằng bộ lọc trên `temperature`. Được không?"

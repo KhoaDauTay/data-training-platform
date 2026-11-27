@@ -18,9 +18,9 @@ objectives:
     en: Turn a dependency you trust into a database rule with its own table and key.
 requires: [e-ds-l3-01]
 sources:
-  - https://www.postgresql.org/docs/18/functions-aggregate.html
-  - https://www.postgresql.org/docs/18/ddl-constraints.html
-  - https://www.bkent.net/Doc/simple5.htm
+  - { url: https://www.postgresql.org/docs/18/functions-aggregate.html, title_vi: "Hàm gộp" }
+  - { url: https://www.postgresql.org/docs/18/ddl-constraints.html, title_vi: "Ràng buộc" }
+  - { url: https://www.bkent.net/Doc/simple5.htm, title_vi: "William Kent: hướng dẫn đơn giản về năm dạng chuẩn" }
 lab:
   setup: |
     CREATE TABLE order_lines (

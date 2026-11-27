@@ -18,9 +18,9 @@ objectives:
     en: Choose the table shape by how often new metrics appear.
 requires: [e-tm-l1-03]
 sources:
-  - { url: "https://www.postgresql.org/docs/current/sql-expressions.html#SYNTAX-AGGREGATES", title: "PostgreSQL: Aggregate expressions (FILTER)" }
-  - { url: "https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-LATERAL", title: "PostgreSQL: LATERAL subqueries" }
-  - { url: "https://prometheus.io/docs/concepts/data_model/", title: "Prometheus: Data model" }
+  - { url: "https://www.postgresql.org/docs/current/sql-expressions.html#SYNTAX-AGGREGATES", title: "PostgreSQL: Aggregate expressions (FILTER)", title_vi: "Biểu thức gộp (FILTER)" }
+  - { url: "https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-LATERAL", title: "PostgreSQL: LATERAL subqueries", title_vi: "Truy vấn con LATERAL" }
+  - { url: "https://prometheus.io/docs/concepts/data_model/", title: "Prometheus: Data model", title_vi: "Prometheus: mô hình dữ liệu" }
 lab:
   setup: |
     CREATE TABLE metrics (

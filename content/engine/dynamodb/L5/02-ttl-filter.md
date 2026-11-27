@@ -14,8 +14,8 @@ objectives:
   - { vi: "Lùi hạn một item chỉ khi nó chưa hết hạn, bằng ghi có điều kiện", en: "Push an item's expiry back only while it has not expired, with a conditional write" }
 requires: [e-dy-l5-01]
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/TTL.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ttl-expired-items.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/TTL.html, title_vi: "Thời gian sống (TTL)" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ttl-expired-items.html, title_vi: "Item hết hạn TTL" }
 lab:
   setup: |
     {"tables": [

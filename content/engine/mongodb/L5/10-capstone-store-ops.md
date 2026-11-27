@@ -16,9 +16,9 @@ objectives:
     en: "Pick an ESR index for the dashboard query and the concern for the money write path"
 requires: [e-mg-l3-05, e-mg-l4-03, e-mg-l4-07, e-mg-l5-05]
 sources:
-  - https://www.mongodb.com/docs/manual/tutorial/equality-sort-range-guideline/
-  - https://www.mongodb.com/docs/manual/reference/write-concern/
-  - https://www.mongodb.com/docs/manual/data-modeling/design-patterns/group-data/bucket-pattern/
+  - { url: https://www.mongodb.com/docs/manual/tutorial/equality-sort-range-guideline/, title_vi: "Quy tắc ESR (so bằng, sắp xếp, khoảng)" }
+  - { url: https://www.mongodb.com/docs/manual/reference/write-concern/, title_vi: "Write concern" }
+  - { url: https://www.mongodb.com/docs/manual/data-modeling/design-patterns/group-data/bucket-pattern/, title_vi: "Mẫu bucket" }
 lab:
   setup: |
     {"collections": {

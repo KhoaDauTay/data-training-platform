@@ -20,9 +20,9 @@ objectives:
     en: Know `auto_explain` is the next tool, and why a one-session lab shows no contention.
 requires: [e-pg-l5-11]
 sources:
-  - https://www.postgresql.org/docs/18/pgstatstatements.html
-  - https://www.postgresql.org/docs/18/pgbuffercache.html
-  - https://www.postgresql.org/docs/18/auto-explain.html
+  - { url: https://www.postgresql.org/docs/18/pgstatstatements.html, title_vi: "pg_stat_statements" }
+  - { url: https://www.postgresql.org/docs/18/pgbuffercache.html, title_vi: "pg_buffercache" }
+  - { url: https://www.postgresql.org/docs/18/auto-explain.html, title_vi: "auto_explain" }
 lab:
   setup: |
     CREATE EXTENSION IF NOT EXISTS pg_stat_statements;

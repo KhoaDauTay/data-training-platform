@@ -17,11 +17,11 @@ objectives:
 requires: [e-pg-l5-13]
 viz: pg-replication
 sources:
-  - https://www.postgresql.org/docs/18/backup.html
-  - https://www.postgresql.org/docs/18/continuous-archiving.html
-  - https://www.postgresql.org/docs/18/routine-vacuuming.html
-  - https://www.postgresql.org/docs/18/runtime-config-autovacuum.html
-  - https://www.postgresql.org/docs/18/warm-standby-failover.html
+  - { url: https://www.postgresql.org/docs/18/backup.html, title_vi: "Sao lưu và khôi phục" }
+  - { url: https://www.postgresql.org/docs/18/continuous-archiving.html, title_vi: "Lưu trữ WAL liên tục và khôi phục về một thời điểm" }
+  - { url: https://www.postgresql.org/docs/18/routine-vacuuming.html, title_vi: "VACUUM định kỳ" }
+  - { url: https://www.postgresql.org/docs/18/runtime-config-autovacuum.html, title_vi: "Cấu hình autovacuum" }
+  - { url: https://www.postgresql.org/docs/18/warm-standby-failover.html, title_vi: "Chuyển dự phòng (failover)" }
 quiz:
   - q: { vi: "Lúc 14:05 ai đó chạy nhầm `DELETE` không có WHERE. Có base backup đêm qua và WAL được lưu trữ liên tục. Khôi phục thế nào?", en: "At 14:05 someone runs a `DELETE` without WHERE by mistake. There is last night's base backup and continuous WAL archiving. How do you recover?" }
     options:

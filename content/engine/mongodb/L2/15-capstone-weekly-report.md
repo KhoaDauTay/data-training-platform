@@ -15,9 +15,9 @@ objectives:
     en: Combine `$unwind` and `$lookup` to split revenue by product category.
 requires: [e-mg-l2-07, e-mg-l2-08, e-mg-l2-10]
 sources:
-  - https://www.mongodb.com/docs/manual/reference/operator/aggregation/datetrunc/
-  - https://www.mongodb.com/docs/manual/reference/operator/aggregation/setwindowfields/
-  - https://www.mongodb.com/docs/manual/reference/operator/aggregation/lookup/
+  - { url: https://www.mongodb.com/docs/manual/reference/operator/aggregation/datetrunc/, title_vi: "$dateTrunc" }
+  - { url: https://www.mongodb.com/docs/manual/reference/operator/aggregation/setwindowfields/, title_vi: "$setWindowFields" }
+  - { url: https://www.mongodb.com/docs/manual/reference/operator/aggregation/lookup/, title_vi: "$lookup" }
 lab:
   setup: |
     {"collections": {

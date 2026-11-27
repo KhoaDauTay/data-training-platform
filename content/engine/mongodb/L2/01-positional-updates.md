@@ -16,9 +16,9 @@ objectives:
     en: Update every element with `$[]`, or only the elements meeting a condition with `$[<id>]` and `arrayFilters`.
 requires: [e-mg-l1-11]
 sources:
-  - https://www.mongodb.com/docs/manual/reference/operator/update/positional/
-  - https://www.mongodb.com/docs/manual/reference/operator/update/positional-all/
-  - https://www.mongodb.com/docs/manual/reference/operator/update/positional-filtered/
+  - { url: https://www.mongodb.com/docs/manual/reference/operator/update/positional/, title_vi: "$ (phần tử khớp đầu tiên)" }
+  - { url: https://www.mongodb.com/docs/manual/reference/operator/update/positional-all/, title_vi: "$[] (mọi phần tử của mảng)" }
+  - { url: https://www.mongodb.com/docs/manual/reference/operator/update/positional-filtered/, title_vi: "$[<identifier>] (phần tử khớp bộ lọc)" }
 lab:
   setup: |
     {"collections": {"orders": [

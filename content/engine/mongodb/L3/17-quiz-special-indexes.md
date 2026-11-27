@@ -15,10 +15,10 @@ objectives:
     en: "Spot the common misconceptions about text indexes, GeoJSON, collation and hidden indexes"
 requires: [e-mg-l3-13, e-mg-l3-14, e-mg-l3-15, e-mg-l3-16]
 sources:
-  - https://www.mongodb.com/docs/manual/core/indexes/index-types/index-text/
-  - https://www.mongodb.com/docs/manual/reference/geojson/
-  - https://www.mongodb.com/docs/manual/core/index-case-insensitive/
-  - https://www.mongodb.com/docs/manual/core/index-hidden/
+  - { url: https://www.mongodb.com/docs/manual/core/indexes/index-types/index-text/, title_vi: "Index text" }
+  - { url: https://www.mongodb.com/docs/manual/reference/geojson/, title_vi: "Đối tượng GeoJSON" }
+  - { url: https://www.mongodb.com/docs/manual/core/index-case-insensitive/, title_vi: "Index không phân biệt hoa thường" }
+  - { url: https://www.mongodb.com/docs/manual/core/index-hidden/, title_vi: "Index ẩn" }
 quiz:
   - q:
       vi: "Collection `articles` đã có index text trên `title`. Bạn muốn tìm từ trong cả `title` lẫn `body`. Làm thế nào?"

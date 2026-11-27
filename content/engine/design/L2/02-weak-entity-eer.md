@@ -18,9 +18,9 @@ objectives:
     en: Pick one of three ways to map a supertype hierarchy to tables and know the limits of `INHERITS`.
 requires: [e-ds-l2-01]
 sources:
-  - https://doi.org/10.1145/320434.320440
-  - https://www.postgresql.org/docs/18/ddl-inherit.html
-  - https://www.postgresql.org/docs/18/ddl-constraints.html
+  - { url: https://doi.org/10.1145/320434.320440, title_vi: "Bài báo ACM 10.1145/320434.320440" }
+  - { url: https://www.postgresql.org/docs/18/ddl-inherit.html, title_vi: "Kế thừa bảng" }
+  - { url: https://www.postgresql.org/docs/18/ddl-constraints.html, title_vi: "Ràng buộc" }
 lab:
   setup: |
     CREATE TABLE accounts (

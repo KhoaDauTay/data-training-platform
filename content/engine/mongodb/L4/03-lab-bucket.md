@@ -19,9 +19,9 @@ objectives:
     en: "Store buckets with `$merge` and add a new reading with an upsert"
 requires: [e-mg-l4-01]
 sources:
-  - https://www.mongodb.com/docs/manual/data-modeling/design-patterns/group-data/bucket-pattern/
-  - https://www.mongodb.com/docs/manual/core/timeseries-collections/
-  - https://www.mongodb.com/docs/manual/reference/operator/aggregation/merge/
+  - { url: https://www.mongodb.com/docs/manual/data-modeling/design-patterns/group-data/bucket-pattern/, title_vi: "Mẫu bucket" }
+  - { url: https://www.mongodb.com/docs/manual/core/timeseries-collections/, title_vi: "Collection chuỗi thời gian" }
+  - { url: https://www.mongodb.com/docs/manual/reference/operator/aggregation/merge/, title_vi: "$merge" }
 lab:
   setup: |
     {"collections": {"readings": [

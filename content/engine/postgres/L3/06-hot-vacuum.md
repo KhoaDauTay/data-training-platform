@@ -20,11 +20,11 @@ objectives:
     en: Read the HOT ratio in `pg_stat_user_tables` and spot an index that kills HOT
 requires: [e-pg-l3-04]
 sources:
-  - https://www.postgresql.org/docs/18/storage-hot.html
-  - https://www.postgresql.org/docs/18/routine-vacuuming.html
-  - https://www.postgresql.org/docs/18/storage-vm.html
-  - https://www.postgresql.org/docs/18/storage-fsm.html
-  - https://www.postgresql.org/docs/18/monitoring-stats.html
+  - { url: https://www.postgresql.org/docs/18/storage-hot.html, title_vi: "Cập nhật HOT (heap-only tuple)" }
+  - { url: https://www.postgresql.org/docs/18/routine-vacuuming.html, title_vi: "VACUUM định kỳ" }
+  - { url: https://www.postgresql.org/docs/18/storage-vm.html, title_vi: "Bản đồ hiển thị (visibility map)" }
+  - { url: https://www.postgresql.org/docs/18/storage-fsm.html, title_vi: "Bản đồ chỗ trống (free space map)" }
+  - { url: https://www.postgresql.org/docs/18/monitoring-stats.html, title_vi: "Hệ thống thống kê hoạt động" }
 quiz:
   - q:
       vi: "Bảng `orders` có index trên `id` và `updated_at`. Câu nào sau đây không bao giờ được HOT?"

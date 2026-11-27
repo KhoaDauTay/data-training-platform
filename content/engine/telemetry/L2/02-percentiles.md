@@ -18,9 +18,9 @@ objectives:
     en: Know that the p95s of separate groups must not be averaged.
 requires: [e-tm-l1-02]
 sources:
-  - { url: "https://www.postgresql.org/docs/current/functions-aggregate.html#FUNCTIONS-ORDEREDSET-TABLE", title: "PostgreSQL: Ordered-set aggregates (percentile_cont)" }
-  - { url: "https://prometheus.io/docs/practices/histograms/", title: "Prometheus: Histograms and summaries" }
-  - { url: "https://prometheus.io/docs/prometheus/latest/querying/functions/", title: "Prometheus: histogram_quantile()" }
+  - { url: "https://www.postgresql.org/docs/current/functions-aggregate.html#FUNCTIONS-ORDEREDSET-TABLE", title: "PostgreSQL: Ordered-set aggregates (percentile_cont)", title_vi: "Hàm gộp có thứ tự (percentile_cont)" }
+  - { url: "https://prometheus.io/docs/practices/histograms/", title: "Prometheus: Histograms and summaries", title_vi: "Prometheus: histogram và summary" }
+  - { url: "https://prometheus.io/docs/prometheus/latest/querying/functions/", title: "Prometheus: histogram_quantile()", title_vi: "Prometheus: histogram_quantile()" }
 lab:
   setup: |
     CREATE TABLE requests (

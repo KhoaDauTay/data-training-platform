@@ -18,9 +18,9 @@ objectives:
     en: Update an hourly rollup table for the new hours only, with `INSERT ... ON CONFLICT`.
 requires: [e-ts-l2-04]
 sources:
-  - https://www.postgresql.org/docs/18/rules-materializedviews.html
-  - https://www.postgresql.org/docs/18/sql-refreshmaterializedview.html
-  - https://www.postgresql.org/docs/18/sql-insert.html#SQL-ON-CONFLICT
+  - { url: https://www.postgresql.org/docs/18/rules-materializedviews.html, title_vi: "Materialized view" }
+  - { url: https://www.postgresql.org/docs/18/sql-refreshmaterializedview.html, title_vi: "REFRESH MATERIALIZED VIEW" }
+  - { url: https://www.postgresql.org/docs/18/sql-insert.html#SQL-ON-CONFLICT, title_vi: "INSERT … ON CONFLICT" }
 lab:
   setup: |
     CREATE TABLE readings (

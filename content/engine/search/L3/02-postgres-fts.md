@@ -18,10 +18,10 @@ objectives:
     en: "Store the `tsvector` ahead in a generated column and put a GIN index on it."
 requires: [e-sr-l1-03, e-pg-l2-12]
 sources:
-  - https://www.postgresql.org/docs/18/textsearch-controls.html
-  - https://www.postgresql.org/docs/18/textsearch-tables.html
-  - https://www.postgresql.org/docs/18/unaccent.html
-  - https://www.postgresql.org/docs/18/ddl-generated-columns.html
+  - { url: https://www.postgresql.org/docs/18/textsearch-controls.html, title_vi: "Điều khiển tìm kiếm toàn văn" }
+  - { url: https://www.postgresql.org/docs/18/textsearch-tables.html, title_vi: "Bảng và index cho tìm kiếm toàn văn" }
+  - { url: https://www.postgresql.org/docs/18/unaccent.html, title_vi: "unaccent" }
+  - { url: https://www.postgresql.org/docs/18/ddl-generated-columns.html, title_vi: "Cột sinh tự động (generated column)" }
 lab:
   setup: |
     CREATE EXTENSION IF NOT EXISTS unaccent;

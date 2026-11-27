@@ -18,10 +18,10 @@ objectives:
     en: Say why PostgreSQL only needs redo, with no undo phase.
 requires: [e-ds-l5-05]
 sources:
-  - https://www.postgresql.org/docs/18/wal-intro.html
-  - https://www.postgresql.org/docs/18/wal-reliability.html
-  - https://www.postgresql.org/docs/18/backup.html
-  - https://doi.org/10.1145/128765.128770
+  - { url: https://www.postgresql.org/docs/18/wal-intro.html, title_vi: "Ghi nhật ký trước (write-ahead logging)" }
+  - { url: https://www.postgresql.org/docs/18/wal-reliability.html, title_vi: "Độ tin cậy" }
+  - { url: https://www.postgresql.org/docs/18/backup.html, title_vi: "Sao lưu và khôi phục" }
+  - { url: https://doi.org/10.1145/128765.128770, title_vi: "Bài báo ACM 10.1145/128765.128770" }
 lab:
   setup: |
     CREATE TABLE events (v int NOT NULL);

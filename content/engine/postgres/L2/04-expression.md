@@ -19,9 +19,9 @@ objectives:
     en: Use a unique index on an expression to block emails that differ only in case, and know why a function in an index must be `IMMUTABLE`.
 requires: [e-pg-l2-03]
 sources:
-  - https://www.postgresql.org/docs/18/indexes-expressional.html
-  - https://www.postgresql.org/docs/18/indexes-unique.html
-  - https://www.postgresql.org/docs/18/xfunc-volatility.html
+  - { url: https://www.postgresql.org/docs/18/indexes-expressional.html, title_vi: "Index trên biểu thức" }
+  - { url: https://www.postgresql.org/docs/18/indexes-unique.html, title_vi: "Index UNIQUE" }
+  - { url: https://www.postgresql.org/docs/18/xfunc-volatility.html, title_vi: "Mức thay đổi của hàm (volatility)" }
 lab:
   setup: |
     CREATE TABLE users (

@@ -15,9 +15,9 @@ objectives:
     en: "Spot common misconceptions about the oplog, the balancer and priority"
 requires: [e-mg-l5-03, e-mg-l5-05]
 sources:
-  - https://www.mongodb.com/docs/manual/core/replica-set-oplog/
-  - https://www.mongodb.com/docs/manual/core/sharding-balancer-administration/
-  - https://www.mongodb.com/docs/manual/core/replica-set-elections/
+  - { url: https://www.mongodb.com/docs/manual/core/replica-set-oplog/, title_vi: "Oplog của replica set" }
+  - { url: https://www.mongodb.com/docs/manual/core/sharding-balancer-administration/, title_vi: "Quản lý balancer" }
+  - { url: https://www.mongodb.com/docs/manual/core/replica-set-elections/, title_vi: "Bầu primary trong replica set" }
 quiz:
   - q:
       vi: "Oplog đầy sau 24 giờ ghi. Một secondary bảo trì 30 giờ rồi bật lại. Nó đồng bộ lại bằng replication được không?"

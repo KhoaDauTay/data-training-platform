@@ -19,9 +19,9 @@ objectives:
     en: Encrypt and decrypt a sensitive column with `pgp_sym_encrypt` and `pgp_sym_decrypt`, and know where the key should not live.
 requires: [e-pg-ext-01]
 sources:
-  - https://www.postgresql.org/docs/18/pgcrypto.html
-  - https://www.postgresql.org/docs/18/monitoring-stats.html
-  - https://www.postgresql.org/docs/18/runtime-config-logging.html
+  - { url: https://www.postgresql.org/docs/18/pgcrypto.html, title_vi: "pgcrypto" }
+  - { url: https://www.postgresql.org/docs/18/monitoring-stats.html, title_vi: "Hệ thống thống kê hoạt động" }
+  - { url: https://www.postgresql.org/docs/18/runtime-config-logging.html, title_vi: "Cấu hình ghi log" }
 lab:
   setup: |
     CREATE EXTENSION IF NOT EXISTS pgcrypto;

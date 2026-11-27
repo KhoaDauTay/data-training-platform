@@ -21,10 +21,13 @@ requires: [e-ds-l5-09]
 sources:
   - url: https://www.postgresql.org/docs/18/sql-grant.html
     title: "GRANT"
+    title_vi: "GRANT"
   - url: https://www.postgresql.org/docs/18/logicaldecoding-explanation.html#LOGICALDECODING-REPLICATION-SLOTS
     title: "Logical Decoding › Replication Slots"
+    title_vi: "Logical decoding › replication slot"
   - url: https://www.postgresql.org/docs/18/view-pg-replication-slots.html
     title: "pg_replication_slots"
+    title_vi: "pg_replication_slots"
 lab:
   setup: |
     CREATE TABLE shards (

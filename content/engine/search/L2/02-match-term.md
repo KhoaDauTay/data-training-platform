@@ -18,8 +18,8 @@ objectives:
     en: "Spot the classic miss: `term` with capitals or several words on a `text` field returns nothing."
 requires: [e-sr-l1-04]
 sources:
-  - https://www.elastic.co/docs/reference/query-languages/query-dsl/query-dsl-term-query
-  - https://www.elastic.co/docs/reference/query-languages/query-dsl/query-dsl-match-query
+  - { url: https://www.elastic.co/docs/reference/query-languages/query-dsl/query-dsl-term-query, title_vi: "Truy vấn term" }
+  - { url: https://www.elastic.co/docs/reference/query-languages/query-dsl/query-dsl-match-query, title_vi: "Truy vấn match" }
 lab:
   setup: |
     {"index": "shop",

@@ -18,10 +18,10 @@ objectives:
     en: Say where PostgreSQL differs from the theory - MVCC snapshots, row locks and SSI.
 requires: [e-ds-l5-04]
 sources:
-  - https://www.postgresql.org/docs/18/mvcc-intro.html
-  - https://www.postgresql.org/docs/18/explicit-locking.html
-  - https://www.postgresql.org/docs/18/transaction-iso.html
-  - https://arxiv.org/abs/1208.4179
+  - { url: https://www.postgresql.org/docs/18/mvcc-intro.html, title_vi: "Nhập môn MVCC" }
+  - { url: https://www.postgresql.org/docs/18/explicit-locking.html, title_vi: "Khóa tường minh" }
+  - { url: https://www.postgresql.org/docs/18/transaction-iso.html, title_vi: "Mức cô lập transaction" }
+  - { url: https://arxiv.org/abs/1208.4179, title_vi: "Bài báo arXiv 1208.4179" }
 lab:
   setup: |
     CREATE TABLE accounts (id int PRIMARY KEY, balance numeric(12,2) NOT NULL);

@@ -20,10 +20,13 @@ requires: [e-ds-l2-06]
 sources:
   - url: https://docs.aws.amazon.com/wellarchitected/latest/saas-lens/silo-pool-and-bridge-models.html
     title: "Silo, Pool, and Bridge Models"
+    title_vi: "Mô hình silo, pool và bridge"
   - url: https://www.postgresql.org/docs/18/ddl-schemas.html
     title: "Schemas"
+    title_vi: "Schema"
   - url: https://www.postgresql.org/docs/18/manage-ag-overview.html
     title: "Managing Databases › Overview"
+    title_vi: "Quản lý database › tổng quan"
 lab:
   setup: |
     CREATE TABLE invoices (

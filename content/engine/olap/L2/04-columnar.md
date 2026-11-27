@@ -18,9 +18,9 @@ objectives:
     en: See why `SELECT *` on a column store reads and decompresses every column.
 requires: [e-ol-l1-02]
 sources:
-  - { url: "https://clickhouse.com/docs/concepts/why-clickhouse-is-so-fast", title: "ClickHouse docs: Why is ClickHouse so fast?" }
-  - { url: "https://clickhouse.com/docs/intro", title: "ClickHouse docs: What is ClickHouse?" }
-  - { url: "https://www.postgresql.org/docs/18/functions-window.html", title: "PostgreSQL 18 docs: Window Functions" }
+  - { url: "https://clickhouse.com/docs/concepts/why-clickhouse-is-so-fast", title: "ClickHouse docs: Why is ClickHouse so fast?", title_vi: "Tài liệu ClickHouse: vì sao ClickHouse nhanh" }
+  - { url: "https://clickhouse.com/docs/intro", title: "ClickHouse docs: What is ClickHouse?", title_vi: "Tài liệu ClickHouse: ClickHouse là gì?" }
+  - { url: "https://www.postgresql.org/docs/18/functions-window.html", title: "PostgreSQL 18 docs: Window Functions", title_vi: "Hàm cửa sổ (window function)" }
 demo_setup: |
   CREATE TABLE cargo (
     id int PRIMARY KEY,

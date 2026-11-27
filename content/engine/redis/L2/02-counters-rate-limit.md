@@ -18,9 +18,9 @@ objectives:
   - vi: Biết điểm yếu của cửa sổ cố định ở ranh giới hai cửa sổ.
     en: Know the fixed window's weak spot at the boundary between two windows.
 sources:
-  - { url: "https://valkey.io/commands/incr/", title: "Valkey docs: INCR (pattern: rate limiter)" }
-  - { url: "https://valkey.io/commands/expire/", title: "Valkey docs: EXPIRE" }
-  - { url: "https://redis.io/glossary/rate-limiting/", title: "Redis glossary: Rate limiting" }
+  - { url: "https://valkey.io/commands/incr/", title: "Valkey docs: INCR (pattern: rate limiter)", title_vi: "Tài liệu Valkey: INCR" }
+  - { url: "https://valkey.io/commands/expire/", title: "Valkey docs: EXPIRE", title_vi: "Tài liệu Valkey: EXPIRE" }
+  - { url: "https://redis.io/glossary/rate-limiting/", title: "Redis glossary: Rate limiting", title_vi: "Thuật ngữ Redis: giới hạn tần suất (rate limiting)" }
 lab:
   setup: |
     SET rl:k7:1000 57

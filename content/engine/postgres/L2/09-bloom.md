@@ -19,8 +19,8 @@ objectives:
 requires: [e-pg-l2-08]
 figures: [{ name: pg-bloom-signature, at: idea }]
 sources:
-  - https://www.postgresql.org/docs/18/bloom.html
-  - https://www.postgresql.org/docs/18/indexes-types.html
+  - { url: https://www.postgresql.org/docs/18/bloom.html, title_vi: "bloom" }
+  - { url: https://www.postgresql.org/docs/18/indexes-types.html, title_vi: "Các loại index" }
 lab:
   setup: |
     CREATE EXTENSION IF NOT EXISTS bloom;

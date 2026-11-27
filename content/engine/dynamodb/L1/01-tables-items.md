@@ -20,8 +20,8 @@ objectives:
     en: Read the type tags of DynamoDB JSON (S, N, BOOL, NULL, L, M, SS, NS).
 requires: []
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.CoreComponents.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.CoreComponents.html, title_vi: "Cách hoạt động: các thành phần chính" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html, title_vi: "Cách hoạt động: quy tắc đặt tên và kiểu dữ liệu" }
 quiz:
   - q:
       vi: Hai item trong cùng một bảng DynamoDB có bắt buộc phải có cùng danh sách thuộc tính không?

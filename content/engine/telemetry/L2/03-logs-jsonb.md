@@ -18,9 +18,9 @@ objectives:
     en: Compare with Loki, where only labels are indexed.
 requires: [e-tm-l1-01]
 sources:
-  - { url: "https://www.postgresql.org/docs/current/datatype-json.html#JSON-INDEXING", title: "PostgreSQL: jsonb indexing" }
-  - { url: "https://www.postgresql.org/docs/current/functions-json.html", title: "PostgreSQL: JSON functions and operators" }
-  - { url: "https://grafana.com/docs/loki/latest/get-started/overview/", title: "Grafana Loki: Overview" }
+  - { url: "https://www.postgresql.org/docs/current/datatype-json.html#JSON-INDEXING", title: "PostgreSQL: jsonb indexing", title_vi: "Index cho jsonb" }
+  - { url: "https://www.postgresql.org/docs/current/functions-json.html", title: "PostgreSQL: JSON functions and operators", title_vi: "Hàm và toán tử JSON" }
+  - { url: "https://grafana.com/docs/loki/latest/get-started/overview/", title: "Grafana Loki: Overview", title_vi: "Grafana Loki: tổng quan" }
 lab:
   setup: |
     CREATE TABLE logs (

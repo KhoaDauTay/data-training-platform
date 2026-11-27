@@ -19,9 +19,9 @@ objectives:
     en: Write attribute filters the GIN index can use, and compare numbers with the right type.
 requires: [e-pg-l2-10]
 sources:
-  - https://www.postgresql.org/docs/18/datatype-json.html
-  - https://www.postgresql.org/docs/18/functions-json.html
-  - https://www.postgresql.org/docs/18/gin.html
+  - { url: https://www.postgresql.org/docs/18/datatype-json.html, title_vi: "Kiểu JSON" }
+  - { url: https://www.postgresql.org/docs/18/functions-json.html, title_vi: "Hàm và toán tử JSON" }
+  - { url: https://www.postgresql.org/docs/18/gin.html, title_vi: "Index GIN" }
 lab:
   setup: |
     CREATE TABLE products (

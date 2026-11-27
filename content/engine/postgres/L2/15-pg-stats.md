@@ -19,9 +19,9 @@ objectives:
     en: Explain why the planner guesses 1 row for a value it has never seen.
 requires: [e-pg-l2-14]
 sources:
-  - https://www.postgresql.org/docs/18/planner-stats.html
-  - https://www.postgresql.org/docs/18/view-pg-stats.html
-  - https://www.postgresql.org/docs/18/sql-analyze.html
+  - { url: https://www.postgresql.org/docs/18/planner-stats.html, title_vi: "Thống kê mà planner dùng" }
+  - { url: https://www.postgresql.org/docs/18/view-pg-stats.html, title_vi: "pg_stats" }
+  - { url: https://www.postgresql.org/docs/18/sql-analyze.html, title_vi: "ANALYZE" }
 lab:
   setup: |
     CREATE TABLE tickets (

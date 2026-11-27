@@ -17,8 +17,8 @@ objectives:
     en: Recognise which workload a query belongs to from the rows it reads and the columns it needs.
 requires: []
 sources:
-  - { url: "https://clickhouse.com/docs/intro", title: "ClickHouse docs: What is ClickHouse?" }
-  - { url: "https://www.postgresql.org/docs/18/using-explain.html", title: "PostgreSQL 18 docs: Using EXPLAIN" }
+  - { url: "https://clickhouse.com/docs/intro", title: "ClickHouse docs: What is ClickHouse?", title_vi: "Tài liệu ClickHouse: ClickHouse là gì?" }
+  - { url: "https://www.postgresql.org/docs/18/using-explain.html", title: "PostgreSQL 18 docs: Using EXPLAIN", title_vi: "Dùng EXPLAIN" }
 demo_setup: |
   CREATE TABLE shipments (
     id int PRIMARY KEY,

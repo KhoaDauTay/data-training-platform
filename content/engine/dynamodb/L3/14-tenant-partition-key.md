@@ -21,10 +21,13 @@ requires: [e-dy-l3-07, e-dy-l3-04]
 sources:
   - url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-partition-key-design.html
     title: "Best practices for partition keys"
+    title_vi: "Thực hành tốt cho partition key"
   - url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-indexes-gsi-overloading.html
     title: "Overloading global secondary indexes"
+    title_vi: "Dùng chung global secondary index cho nhiều loại item"
   - url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/specifying-conditions.html
     title: "IAM policy conditions for fine-grained access"
+    title_vi: "Điều kiện trong IAM policy để giới hạn quyền chi tiết"
 lab:
   setup: |
     {"tables": [{"TableName": "Portal", "BillingMode": "PAY_PER_REQUEST",

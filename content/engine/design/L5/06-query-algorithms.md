@@ -18,9 +18,9 @@ objectives:
     en: Know when nested-loop, hash and merge joins win.
 requires: [e-ds-l5-01]
 sources:
-  - https://www.postgresql.org/docs/18/query-path.html
-  - https://www.postgresql.org/docs/18/using-explain.html
-  - https://www.postgresql.org/docs/18/planner-optimizer.html
+  - { url: https://www.postgresql.org/docs/18/query-path.html, title_vi: "Đường đi của một truy vấn" }
+  - { url: https://www.postgresql.org/docs/18/using-explain.html, title_vi: "Dùng EXPLAIN" }
+  - { url: https://www.postgresql.org/docs/18/planner-optimizer.html, title_vi: "Planner và optimizer" }
 lab:
   setup: |
     CREATE TABLE sales AS SELECT g AS id, (g * 7919) % 1000 AS amount FROM generate_series(1, 20000) g;

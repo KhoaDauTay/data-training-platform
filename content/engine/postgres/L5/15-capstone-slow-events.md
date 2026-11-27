@@ -15,11 +15,11 @@ objectives:
   - { vi: "Chọn BRIN hay B-tree cho cột thời gian theo `correlation` và kích thước, rồi viết kết luận", en: "Choose BRIN or B-tree for the time column from `correlation` and size, then write the conclusion" }
 requires: [e-pg-l4-03, e-pg-l4-07, e-pg-l5-05, e-pg-l5-07]
 sources:
-  - https://www.postgresql.org/docs/18/planner-stats.html
-  - https://www.postgresql.org/docs/18/ddl-partitioning.html
-  - https://www.postgresql.org/docs/18/brin.html
-  - https://www.postgresql.org/docs/18/indexes-multicolumn.html
-  - https://www.postgresql.org/docs/18/sql-createstatistics.html
+  - { url: https://www.postgresql.org/docs/18/planner-stats.html, title_vi: "Thống kê mà planner dùng" }
+  - { url: https://www.postgresql.org/docs/18/ddl-partitioning.html, title_vi: "Phân vùng bảng (partitioning)" }
+  - { url: https://www.postgresql.org/docs/18/brin.html, title_vi: "Index BRIN" }
+  - { url: https://www.postgresql.org/docs/18/indexes-multicolumn.html, title_vi: "Index nhiều cột" }
+  - { url: https://www.postgresql.org/docs/18/sql-createstatistics.html, title_vi: "CREATE STATISTICS" }
 viz: pg-plan-tree
 lab:
   setup: |

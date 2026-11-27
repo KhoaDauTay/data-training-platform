@@ -18,10 +18,13 @@ requires: [e-pg-l2-02]
 sources:
   - url: https://www.postgresql.org/docs/18/indexes-multicolumn.html
     title: "Multicolumn Indexes"
+    title_vi: "Index nhiều cột"
   - url: https://www.postgresql.org/docs/18/indexes-ordering.html
     title: "Indexes and ORDER BY"
+    title_vi: "Index và ORDER BY"
   - url: https://www.postgresql.org/docs/18/using-explain.html
     title: "Using EXPLAIN"
+    title_vi: "Dùng EXPLAIN"
 lab:
   setup: |
     -- Cargo Query customer portal: 50 shippers share one invoices table (loaded from several systems, so created_at is not in heap order)

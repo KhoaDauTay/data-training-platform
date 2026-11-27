@@ -18,9 +18,9 @@ objectives:
     en: Simulate one compaction pass with a `DELETE` that keeps offsets unchanged.
 requires: [e-sm-l1-02]
 sources:
-  - { url: "https://kafka.apache.org/41/design/design/", title: "Kafka docs: Design (log compaction, tombstones)" }
-  - { url: "https://www.postgresql.org/docs/18/sql-select.html#SQL-DISTINCT", title: "PostgreSQL 18 docs: SELECT DISTINCT ON" }
-  - { url: "https://www.postgresql.org/docs/18/sql-delete.html", title: "PostgreSQL 18 docs: DELETE" }
+  - { url: "https://kafka.apache.org/41/design/design/", title: "Kafka docs: Design (log compaction, tombstones)", title_vi: "Tài liệu Kafka: thiết kế (bảo đảm giao nhận, producer idempotent, transaction)" }
+  - { url: "https://www.postgresql.org/docs/18/sql-select.html#SQL-DISTINCT", title: "PostgreSQL 18 docs: SELECT DISTINCT ON", title_vi: "SELECT DISTINCT ON" }
+  - { url: "https://www.postgresql.org/docs/18/sql-delete.html", title: "PostgreSQL 18 docs: DELETE", title_vi: "DELETE" }
 lab:
   setup: |
     CREATE TABLE status_log (

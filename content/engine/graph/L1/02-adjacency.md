@@ -18,9 +18,9 @@ objectives:
     en: Know why a sparse graph is stored as edges, not as a matrix.
 requires: [e-gr-l1-01]
 sources:
-  - https://www.postgresql.org/docs/18/functions-aggregate.html
-  - https://www.postgresql.org/docs/18/queries-table-expressions.html
-  - { url: "https://neo4j.com/docs/getting-started/graph-database/", title: "Neo4j docs: What is a graph database" }
+  - { url: https://www.postgresql.org/docs/18/functions-aggregate.html, title_vi: "Hàm gộp" }
+  - { url: https://www.postgresql.org/docs/18/queries-table-expressions.html, title_vi: "Biểu thức bảng" }
+  - { url: "https://neo4j.com/docs/getting-started/graph-database/", title: "Neo4j docs: What is a graph database", title_vi: "Tài liệu Neo4j: cơ sở dữ liệu đồ thị là gì" }
 lab:
   setup: |
     CREATE TABLE ports (

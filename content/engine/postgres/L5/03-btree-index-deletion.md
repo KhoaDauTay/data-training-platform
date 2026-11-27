@@ -15,9 +15,9 @@ objectives:
   - { vi: "Biết vì sao từ PostgreSQL 14 index ít phình hơn dưới tải UPDATE nặng", en: "Know why, since PostgreSQL 14, indexes bloat less under heavy UPDATE load" }
 requires: [e-pg-l5-02]
 sources:
-  - https://www.postgresql.org/docs/18/btree.html
-  - https://www.postgresql.org/docs/18/storage-hot.html
-  - https://www.postgresql.org/docs/18/routine-vacuuming.html
+  - { url: https://www.postgresql.org/docs/18/btree.html, title_vi: "Index B-tree" }
+  - { url: https://www.postgresql.org/docs/18/storage-hot.html, title_vi: "Cập nhật HOT (heap-only tuple)" }
+  - { url: https://www.postgresql.org/docs/18/routine-vacuuming.html, title_vi: "VACUUM định kỳ" }
 viz: pg-btree
 lab:
   setup: |

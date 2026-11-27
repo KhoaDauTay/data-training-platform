@@ -17,8 +17,8 @@ objectives:
     en: Know when several tables are the right choice.
 requires: [e-dy-l3-07, e-dy-l2-09]
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/data-modeling-foundations.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/read-write-operations.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/data-modeling-foundations.html, title_vi: "Nền tảng mô hình hóa dữ liệu" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/read-write-operations.html, title_vi: "Thao tác đọc và ghi" }
 predict:
   sql: |
     {"op": "Query", "input": {"TableName": "Shop",

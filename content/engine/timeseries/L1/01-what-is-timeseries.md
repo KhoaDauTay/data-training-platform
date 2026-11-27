@@ -18,9 +18,9 @@ objectives:
     en: Write a query for the newest reading and a statement that removes data past its retention.
 requires: []
 sources:
-  - https://www.postgresql.org/docs/18/datatype-datetime.html
-  - https://www.postgresql.org/docs/18/ddl-partitioning.html
-  - { url: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-time-series.html", title: "AWS docs: Best practices for handling time series data in DynamoDB" }
+  - { url: https://www.postgresql.org/docs/18/datatype-datetime.html, title_vi: "Kiểu ngày giờ" }
+  - { url: https://www.postgresql.org/docs/18/ddl-partitioning.html, title_vi: "Phân vùng bảng (partitioning)" }
+  - { url: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-time-series.html", title: "AWS docs: Best practices for handling time series data in DynamoDB", title_vi: "Thực hành tốt cho dữ liệu chuỗi thời gian trong DynamoDB" }
 lab:
   setup: |
     CREATE TABLE readings (

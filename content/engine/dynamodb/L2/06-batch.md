@@ -17,9 +17,9 @@ objectives:
     en: Handle `UnprocessedKeys` and `UnprocessedItems`.
 requires: [e-dy-l1-07]
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithItems.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_BatchGetItem.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_BatchWriteItem.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithItems.html, title_vi: "Làm việc với item" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_BatchGetItem.html, title_vi: "API BatchGetItem" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_BatchWriteItem.html, title_vi: "API BatchWriteItem" }
 lab:
   setup: |
     {"tables": [{"TableName":"Books","KeySchema":[{"AttributeName":"isbn","KeyType":"HASH"}],"AttributeDefinitions":[{"AttributeName":"isbn","AttributeType":"S"}],"BillingMode":"PAY_PER_REQUEST"}],

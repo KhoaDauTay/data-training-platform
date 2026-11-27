@@ -14,7 +14,7 @@ objectives:
   - { vi: "Biết cách MREC giải xung đột (last writer wins) và các giới hạn của MRSC", en: "Know how MREC resolves conflicts (last writer wins) and the limits of MRSC" }
 requires: [e-dy-l4-11]
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/V2globaltables_HowItWorks.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/V2globaltables_HowItWorks.html, title_vi: "Cách global table hoạt động" }
 quiz:
   - q: { vi: "Ứng dụng thanh toán chạy ở hai vùng, yêu cầu RPO bằng 0 và đọc nhất quán mạnh ở vùng nào cũng thấy bản mới nhất. Chọn gì?", en: "A payments app runs in two Regions, needs an RPO of zero and strong reads that see the latest version in any Region. Which choice?" }
     options:

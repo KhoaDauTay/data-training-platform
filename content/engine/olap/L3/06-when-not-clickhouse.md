@@ -16,10 +16,10 @@ objectives:
     en: Keep the transactional part in PostgreSQL and move only the analytics to a column store.
 requires: [e-ol-l3-02, e-ol-l3-03]
 sources:
-  - { url: "https://clickhouse.com/docs/best-practices/avoid-mutations", title: "ClickHouse docs: Avoid mutations" }
-  - { url: "https://clickhouse.com/docs/best-practices/selecting-an-insert-strategy", title: "ClickHouse docs: Selecting an insert strategy" }
-  - { url: "https://clickhouse.com/docs/data-modeling/schema-design", title: "ClickHouse docs: Schema design" }
-  - { url: "https://www.postgresql.org/docs/18/ddl-constraints.html", title: "PostgreSQL 18 docs: Constraints" }
+  - { url: "https://clickhouse.com/docs/best-practices/avoid-mutations", title: "ClickHouse docs: Avoid mutations", title_vi: "Tài liệu ClickHouse: tránh mutation" }
+  - { url: "https://clickhouse.com/docs/best-practices/selecting-an-insert-strategy", title: "ClickHouse docs: Selecting an insert strategy", title_vi: "Tài liệu ClickHouse: chọn cách ghi dữ liệu" }
+  - { url: "https://clickhouse.com/docs/data-modeling/schema-design", title: "ClickHouse docs: Schema design", title_vi: "Tài liệu ClickHouse: thiết kế schema" }
+  - { url: "https://www.postgresql.org/docs/18/ddl-constraints.html", title: "PostgreSQL 18 docs: Constraints", title_vi: "Ràng buộc" }
 demo_setup: |
   CREATE TABLE customers (
     id int PRIMARY KEY, name text

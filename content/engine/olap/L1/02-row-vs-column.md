@@ -18,9 +18,9 @@ objectives:
     en: Build a narrow table holding only the needed column, like one column of a column store.
 requires: [e-ol-l1-01]
 sources:
-  - { url: "https://clickhouse.com/docs/intro", title: "ClickHouse docs: What is ClickHouse?" }
-  - { url: "https://www.postgresql.org/docs/18/storage-page-layout.html", title: "PostgreSQL 18 docs: Database Page Layout" }
-  - { url: "https://www.postgresql.org/docs/18/functions-admin.html", title: "PostgreSQL 18 docs: Database Object Size Functions" }
+  - { url: "https://clickhouse.com/docs/intro", title: "ClickHouse docs: What is ClickHouse?", title_vi: "Tài liệu ClickHouse: ClickHouse là gì?" }
+  - { url: "https://www.postgresql.org/docs/18/storage-page-layout.html", title: "PostgreSQL 18 docs: Database Page Layout", title_vi: "Cấu trúc trang dữ liệu" }
+  - { url: "https://www.postgresql.org/docs/18/functions-admin.html", title: "PostgreSQL 18 docs: Database Object Size Functions", title_vi: "Hàm quản trị hệ thống" }
 lab:
   setup: |
     CREATE TABLE shipments (

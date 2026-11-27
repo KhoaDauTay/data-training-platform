@@ -15,9 +15,9 @@ objectives:
   - { vi: "Quyết định BRIN hay B-tree từ `correlation` và kích thước", en: "Decide BRIN or B-tree from `correlation` and size" }
 requires: []
 sources:
-  - https://www.postgresql.org/docs/18/brin.html
-  - https://www.postgresql.org/docs/18/pageinspect.html
-  - https://www.postgresql.org/docs/18/sql-createindex.html
+  - { url: https://www.postgresql.org/docs/18/brin.html, title_vi: "Index BRIN" }
+  - { url: https://www.postgresql.org/docs/18/pageinspect.html, title_vi: "pageinspect" }
+  - { url: https://www.postgresql.org/docs/18/sql-createindex.html, title_vi: "CREATE INDEX" }
 viz: pg-brin-ranges
 lab:
   setup: |

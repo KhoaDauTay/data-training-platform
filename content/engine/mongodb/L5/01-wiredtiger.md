@@ -18,8 +18,8 @@ objectives:
     en: "Describe document-level concurrency control"
 requires: []
 sources:
-  - https://www.mongodb.com/docs/manual/core/wiredtiger/
-  - https://www.mongodb.com/docs/manual/core/journaling/
+  - { url: https://www.mongodb.com/docs/manual/core/wiredtiger/, title_vi: "Bộ lưu trữ WiredTiger" }
+  - { url: https://www.mongodb.com/docs/manual/core/journaling/, title_vi: "Journal" }
 quiz:
   - q:
       vi: "Máy có 16 GB RAM, một `mongod`, cấu hình mặc định. Cache nội bộ của WiredTiger là bao nhiêu?"

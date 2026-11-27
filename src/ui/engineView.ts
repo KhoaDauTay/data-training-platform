@@ -910,7 +910,7 @@ function lessonBody(l: EngineLesson): HTMLElement {
       // v38 R3 (R3-06, L595): source links look like the other links (accent ink, underline); one marker, the icon, no bullet
       h('ul', { class: 'm-0 list-none space-y-1 p-0 text-body-sm' }, ...l.sources.map((u) =>
         h('li', {}, h('a', { href: u, target: '_blank', rel: 'noopener noreferrer', title: u, class: d.cls.cx('inline-flex items-center gap-1.5', XREF) },
-          d.icon('external', 'size-4 shrink-0'), sourceTitle(u, l.sourceTitles?.[u]), h('span', { class: 'sr-only' }, ` (${et('newTab')})`)))))) : null));
+          d.icon('external', 'size-4 shrink-0'), sourceTitle(u, (lang() === 'vi' ? l.sourceTitlesVi?.[u] : undefined) ?? l.sourceTitles?.[u]), h('span', { class: 'sr-only' }, ` (${et('newTab')})`)))))) : null));
 }
 
 const SITE: Record<string, string> = {

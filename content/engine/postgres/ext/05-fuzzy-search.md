@@ -19,8 +19,8 @@ objectives:
     en: Know why `soundex` and `dmetaphone` do not work for Vietnamese names.
 requires: [e-pg-ext-01]
 sources:
-  - https://www.postgresql.org/docs/18/pgtrgm.html
-  - https://www.postgresql.org/docs/18/fuzzystrmatch.html
+  - { url: https://www.postgresql.org/docs/18/pgtrgm.html, title_vi: "pg_trgm" }
+  - { url: https://www.postgresql.org/docs/18/fuzzystrmatch.html, title_vi: "fuzzystrmatch" }
 lab:
   setup: |
     CREATE EXTENSION IF NOT EXISTS pg_trgm;

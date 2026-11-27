@@ -15,8 +15,8 @@ objectives:
   - { vi: "Thiết kế bộ xử lý không dựa vào thứ tự giữa các item hay tính nguyên khối của transaction", en: "Design a consumer that does not rely on ordering across items or on transaction atomicity" }
 requires: []
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Streams.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/transaction-apis.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Streams.html, title_vi: "DynamoDB Streams" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/transaction-apis.html, title_vi: "API transaction" }
 quiz:
   - q: { vi: "Bộ xử lý Streams cộng tổng tiền theo cửa hàng. Hai đơn khác nhau của cùng cửa hàng được ghi gần như cùng lúc. Điều gì được bảo đảm?", en: "A Streams consumer adds up totals per store. Two different orders of the same store are written almost at once. What is guaranteed?" }
     options:

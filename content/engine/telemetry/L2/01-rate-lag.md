@@ -18,8 +18,8 @@ objectives:
     en: Know why a SQL rate differs from Prometheus' `rate()` (no extrapolation).
 requires: [e-tm-l1-02]
 sources:
-  - { url: "https://prometheus.io/docs/prometheus/latest/querying/functions/", title: "Prometheus: Query functions (rate, increase, resets)" }
-  - { url: "https://www.postgresql.org/docs/current/functions-window.html", title: "PostgreSQL: Window functions (lag)" }
+  - { url: "https://prometheus.io/docs/prometheus/latest/querying/functions/", title: "Prometheus: Query functions (rate, increase, resets)", title_vi: "Prometheus: histogram_quantile()" }
+  - { url: "https://www.postgresql.org/docs/current/functions-window.html", title: "PostgreSQL: Window functions (lag)", title_vi: "Hàm cửa sổ (lag)" }
 lab:
   setup: |
     CREATE TABLE metrics (

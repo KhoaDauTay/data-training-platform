@@ -17,10 +17,10 @@ objectives:
     en: Read `age(relfrozenxid)` and the visibility map's all-frozen bit
 requires: [e-pg-l3-09]
 sources:
-  - https://www.postgresql.org/docs/18/routine-vacuuming.html
-  - https://www.postgresql.org/docs/18/sql-vacuum.html
-  - https://www.postgresql.org/docs/18/pgvisibility.html
-  - https://www.postgresql.org/docs/18/pageinspect.html
+  - { url: https://www.postgresql.org/docs/18/routine-vacuuming.html, title_vi: "VACUUM định kỳ" }
+  - { url: https://www.postgresql.org/docs/18/sql-vacuum.html, title_vi: "VACUUM" }
+  - { url: https://www.postgresql.org/docs/18/pgvisibility.html, title_vi: "pg_visibility" }
+  - { url: https://www.postgresql.org/docs/18/pageinspect.html, title_vi: "pageinspect" }
 lab:
   setup: |
     CREATE EXTENSION IF NOT EXISTS pageinspect;

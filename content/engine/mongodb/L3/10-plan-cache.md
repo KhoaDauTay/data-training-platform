@@ -18,10 +18,10 @@ objectives:
     en: "Know that explain neither uses nor writes the plan cache, and read the cache with `$planCacheStats`"
 requires: [e-mg-l3-06]
 sources:
-  - https://www.mongodb.com/docs/manual/core/query-plans/
-  - https://www.mongodb.com/docs/manual/reference/explain-results/
-  - https://www.mongodb.com/docs/manual/reference/operator/aggregation/planCacheStats/
-  - https://www.mongodb.com/docs/manual/reference/command/setQuerySettings/
+  - { url: https://www.mongodb.com/docs/manual/core/query-plans/, title_vi: "Kế hoạch truy vấn" }
+  - { url: https://www.mongodb.com/docs/manual/reference/explain-results/, title_vi: "Đọc kết quả explain" }
+  - { url: https://www.mongodb.com/docs/manual/reference/operator/aggregation/planCacheStats/, title_vi: "$planCacheStats" }
+  - { url: https://www.mongodb.com/docs/manual/reference/command/setQuerySettings/, title_vi: "Lệnh setQuerySettings" }
 quiz:
   - q:
       vi: "Bạn vừa tạo một index mới trên collection. Plan cache của collection đó ra sao?"

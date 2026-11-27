@@ -18,9 +18,9 @@ objectives:
     en: Avoid two common traps, `NATURAL JOIN` and a union whose sides have different column counts.
 requires: [e-ds-l1-02]
 sources:
-  - https://doi.org/10.1145/362384.362685
-  - https://www.postgresql.org/docs/18/queries-table-expressions.html
-  - https://www.postgresql.org/docs/18/queries-union.html
+  - { url: https://doi.org/10.1145/362384.362685, title_vi: "Bài báo ACM 10.1145/362384.362685" }
+  - { url: https://www.postgresql.org/docs/18/queries-table-expressions.html, title_vi: "Biểu thức bảng" }
+  - { url: https://www.postgresql.org/docs/18/queries-union.html, title_vi: "Gộp kết quả truy vấn (UNION, INTERSECT, EXCEPT)" }
 lab:
   setup: |
     CREATE TABLE emp (id int PRIMARY KEY, name text NOT NULL, dept_id int NOT NULL, city text NOT NULL);

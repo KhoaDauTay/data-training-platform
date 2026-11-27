@@ -19,9 +19,9 @@ objectives:
     en: Tell "contains these tags" (`@>`) apart from "is exactly this array" (`=`).
 requires: [e-pg-l2-05]
 sources:
-  - https://www.postgresql.org/docs/18/arrays.html
-  - https://www.postgresql.org/docs/18/functions-array.html
-  - https://www.postgresql.org/docs/18/gin.html
+  - { url: https://www.postgresql.org/docs/18/arrays.html, title_vi: "Mảng" }
+  - { url: https://www.postgresql.org/docs/18/functions-array.html, title_vi: "Hàm và toán tử mảng" }
+  - { url: https://www.postgresql.org/docs/18/gin.html, title_vi: "Index GIN" }
 lab:
   setup: |
     CREATE TABLE posts (

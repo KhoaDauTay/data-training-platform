@@ -18,10 +18,10 @@ objectives:
     en: Tell logical from physical data independence with a view and an index.
 requires: []
 sources:
-  - https://www.postgresql.org/docs/18/tutorial-arch.html
-  - https://www.postgresql.org/docs/18/sql-createview.html
-  - https://www.postgresql.org/docs/18/storage-file-layout.html
-  - https://doi.org/10.1145/362384.362685
+  - { url: https://www.postgresql.org/docs/18/tutorial-arch.html, title_vi: "Hướng dẫn › kiến trúc" }
+  - { url: https://www.postgresql.org/docs/18/sql-createview.html, title_vi: "CREATE VIEW" }
+  - { url: https://www.postgresql.org/docs/18/storage-file-layout.html, title_vi: "Cách file của database được sắp xếp" }
+  - { url: https://doi.org/10.1145/362384.362685, title_vi: "Bài báo ACM 10.1145/362384.362685" }
 lab:
   setup: |
     CREATE TABLE products (

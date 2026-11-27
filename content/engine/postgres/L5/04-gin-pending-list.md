@@ -15,10 +15,10 @@ objectives:
   - { vi: "Cân `fastupdate` giữa tốc độ ghi và độ ổn định của thời gian đọc", en: "Weigh `fastupdate` between write speed and stable read latency" }
 requires: []
 sources:
-  - https://www.postgresql.org/docs/18/gin.html
-  - https://www.postgresql.org/docs/18/pageinspect.html
-  - https://www.postgresql.org/docs/18/functions-admin.html
-  - https://www.postgresql.org/docs/18/runtime-config-client.html
+  - { url: https://www.postgresql.org/docs/18/gin.html, title_vi: "Index GIN" }
+  - { url: https://www.postgresql.org/docs/18/pageinspect.html, title_vi: "pageinspect" }
+  - { url: https://www.postgresql.org/docs/18/functions-admin.html, title_vi: "Hàm quản trị hệ thống" }
+  - { url: https://www.postgresql.org/docs/18/runtime-config-client.html, title_vi: "Cấu hình mặc định cho kết nối" }
 viz: pg-gin-postings
 lab:
   setup: |

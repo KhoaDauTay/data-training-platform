@@ -19,10 +19,10 @@ objectives:
 requires: [e-pg-l2-19]
 figures: [{ name: pg-exception-subtx, at: idea }]
 sources:
-  - https://www.postgresql.org/docs/18/plpgsql-errors-and-messages.html
-  - https://www.postgresql.org/docs/18/plpgsql-control-structures.html
-  - https://www.postgresql.org/docs/18/errcodes-appendix.html
-  - https://www.postgresql.org/docs/18/plpgsql.html
+  - { url: https://www.postgresql.org/docs/18/plpgsql-errors-and-messages.html, title_vi: "PL/pgSQL › lỗi và thông báo" }
+  - { url: https://www.postgresql.org/docs/18/plpgsql-control-structures.html, title_vi: "PL/pgSQL › cấu trúc điều khiển" }
+  - { url: https://www.postgresql.org/docs/18/errcodes-appendix.html, title_vi: "Mã lỗi" }
+  - { url: https://www.postgresql.org/docs/18/plpgsql.html, title_vi: "PL/pgSQL" }
 lab:
   setup: |
     CREATE TABLE accounts (

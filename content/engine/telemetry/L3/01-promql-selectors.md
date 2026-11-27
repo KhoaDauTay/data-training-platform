@@ -18,8 +18,8 @@ objectives:
     en: Tell an instant vector (one sample per series) from a range vector `[1m]` (every sample in a left-open window).
 requires: [e-tm-l1-03]
 sources:
-  - { url: "https://prometheus.io/docs/prometheus/latest/querying/basics/", title: "Prometheus: Querying basics" }
-  - { url: "https://prometheus.io/docs/concepts/data_model/", title: "Prometheus: Data model" }
+  - { url: "https://prometheus.io/docs/prometheus/latest/querying/basics/", title: "Prometheus: Querying basics", title_vi: "Prometheus: truy vấn cơ bản" }
+  - { url: "https://prometheus.io/docs/concepts/data_model/", title: "Prometheus: Data model", title_vi: "Prometheus: mô hình dữ liệu" }
 lab:
   setup: |
     CREATE TABLE samples (

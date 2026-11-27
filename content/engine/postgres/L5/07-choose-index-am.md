@@ -14,11 +14,11 @@ objectives:
   - { vi: "Biết AM nào hỗ trợ UNIQUE, nhiều cột, `INCLUDE`, index-only scan và KNN", en: "Know which access methods support UNIQUE, multiple columns, `INCLUDE`, index-only scans and KNN" }
 requires: [e-pg-l5-01, e-pg-l5-04, e-pg-l5-05, e-pg-l5-06]
 sources:
-  - https://www.postgresql.org/docs/18/indexes-types.html
-  - https://www.postgresql.org/docs/18/indexes-multicolumn.html
-  - https://www.postgresql.org/docs/18/indexes-index-only-scans.html
-  - https://www.postgresql.org/docs/18/bloom.html
-  - https://www.postgresql.org/docs/18/textsearch-indexes.html
+  - { url: https://www.postgresql.org/docs/18/indexes-types.html, title_vi: "Các loại index" }
+  - { url: https://www.postgresql.org/docs/18/indexes-multicolumn.html, title_vi: "Index nhiều cột" }
+  - { url: https://www.postgresql.org/docs/18/indexes-index-only-scans.html, title_vi: "Index-only scan và covering index" }
+  - { url: https://www.postgresql.org/docs/18/bloom.html, title_vi: "bloom" }
+  - { url: https://www.postgresql.org/docs/18/textsearch-indexes.html, title_vi: "Index cho tìm kiếm toàn văn" }
 viz: pg-plan-tree
 lab:
   setup: |

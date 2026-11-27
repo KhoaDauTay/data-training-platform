@@ -17,9 +17,9 @@ objectives:
   - vi: Dùng `_analyze` để xem một câu chữ thành những từ nào trong chỉ mục.
     en: Use `_analyze` to see which words a piece of text becomes in the index.
 sources:
-  - https://www.elastic.co/docs/manage-data/data-store/index-basics
-  - https://www.elastic.co/docs/reference/query-languages/query-dsl/query-dsl-match-query
-  - https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-indices-analyze
+  - { url: https://www.elastic.co/docs/manage-data/data-store/index-basics, title_vi: "Kiến thức cơ bản về index" }
+  - { url: https://www.elastic.co/docs/reference/query-languages/query-dsl/query-dsl-match-query, title_vi: "Truy vấn match" }
+  - { url: https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-indices-analyze, title_vi: "API _analyze" }
 lab:
   setup: |
     {"index": "shop",

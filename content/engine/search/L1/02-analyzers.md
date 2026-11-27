@@ -18,10 +18,10 @@ objectives:
     en: Know that the stored text and the typed text must go through matching analyzers to match.
 requires: [e-sr-l1-01]
 sources:
-  - https://www.elastic.co/docs/manage-data/data-store/text-analysis/anatomy-of-an-analyzer
-  - https://www.elastic.co/docs/reference/text-analysis/analysis-standard-tokenizer
-  - https://www.elastic.co/docs/reference/text-analysis/analysis-whitespace-tokenizer
-  - https://www.elastic.co/docs/reference/text-analysis/analysis-keyword-tokenizer
+  - { url: https://www.elastic.co/docs/manage-data/data-store/text-analysis/anatomy-of-an-analyzer, title_vi: "Cấu tạo của một analyzer" }
+  - { url: https://www.elastic.co/docs/reference/text-analysis/analysis-standard-tokenizer, title_vi: "Tokenizer standard" }
+  - { url: https://www.elastic.co/docs/reference/text-analysis/analysis-whitespace-tokenizer, title_vi: "Tokenizer whitespace" }
+  - { url: https://www.elastic.co/docs/reference/text-analysis/analysis-keyword-tokenizer, title_vi: "Tokenizer keyword" }
 lab:
   setup: |
     {"index": "shop",

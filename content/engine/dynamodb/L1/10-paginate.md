@@ -16,8 +16,8 @@ objectives:
     en: Get the next page by passing `LastEvaluatedKey` as `ExclusiveStartKey`.
 requires: [e-dy-l1-08]
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.Pagination.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_Query.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.Pagination.html, title_vi: "Query: phân trang" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_Query.html, title_vi: "API Query" }
 lab:
   setup: |
     {"tables": [{"TableName":"Orders","KeySchema":[{"AttributeName":"customerId","KeyType":"HASH"},{"AttributeName":"orderId","KeyType":"RANGE"}],"AttributeDefinitions":[{"AttributeName":"customerId","AttributeType":"S"},{"AttributeName":"orderId","AttributeType":"S"}],"BillingMode":"PAY_PER_REQUEST"}],

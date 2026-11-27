@@ -15,8 +15,8 @@ objectives:
     en: "Tell a `hint()` that changes the read path from a `hint()` that changes which documents are visible"
 requires: [e-mg-l3-14]
 sources:
-  - https://www.mongodb.com/docs/manual/core/index-sparse/
-  - https://www.mongodb.com/docs/manual/reference/method/cursor.hint/
+  - { url: https://www.mongodb.com/docs/manual/core/index-sparse/, title_vi: "Index thưa (sparse)" }
+  - { url: https://www.mongodb.com/docs/manual/reference/method/cursor.hint/, title_vi: "cursor.hint()" }
 predict:
   sql: |
     db.movies.createIndex( { rated: 1 }, { sparse: true } )

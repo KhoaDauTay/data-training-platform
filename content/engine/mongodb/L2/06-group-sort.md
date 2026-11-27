@@ -16,9 +16,9 @@ objectives:
     en: Rank groups with `$sort` + `$limit` and count with `$count`.
 requires: [e-mg-l2-05]
 sources:
-  - https://www.mongodb.com/docs/manual/reference/operator/aggregation/group/
-  - https://www.mongodb.com/docs/manual/reference/operator/aggregation/sort/
-  - https://www.mongodb.com/docs/manual/reference/operator/aggregation/count/
+  - { url: https://www.mongodb.com/docs/manual/reference/operator/aggregation/group/, title_vi: "$group" }
+  - { url: https://www.mongodb.com/docs/manual/reference/operator/aggregation/sort/, title_vi: "$sort" }
+  - { url: https://www.mongodb.com/docs/manual/reference/operator/aggregation/count/, title_vi: "$count" }
 lab:
   setup: |
     {"collections": {"orders": [

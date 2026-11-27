@@ -15,9 +15,9 @@ objectives:
     en: Choose a composite key so that one access pattern is served by one request.
 requires: [e-dy-l1-03]
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_CreateTable.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.CoreComponents.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/capacity-mode.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_CreateTable.html, title_vi: "API CreateTable" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.CoreComponents.html, title_vi: "Cách hoạt động: các thành phần chính" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/capacity-mode.html, title_vi: "Chế độ capacity" }
 lab:
   steps:
     - task:

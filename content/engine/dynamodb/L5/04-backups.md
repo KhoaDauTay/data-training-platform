@@ -13,8 +13,8 @@ objectives:
   - { vi: "Biết khôi phục luôn tạo bảng mới và những cài đặt phải làm lại", en: "Know that a restore always creates a new table and which settings must be redone" }
 requires: []
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Point-in-time-recovery.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/CreateBackup.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Point-in-time-recovery.html, title_vi: "Khôi phục về một thời điểm (PITR)" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/CreateBackup.html, title_vi: "Tạo bản sao lưu" }
 quiz:
   - q: { vi: "Một lỗi deploy xóa nhầm dữ liệu lúc 14:03:20 hôm qua. Cách nào đưa bảng về đúng 14:03:19?", en: "A bad deploy deleted data by mistake at 14:03:20 yesterday. Which way brings the table back to exactly 14:03:19?" }
     options:

@@ -21,12 +21,16 @@ requires: [e-mg-l5-05, e-mg-l3-19]
 sources:
   - url: https://www.mongodb.com/docs/atlas/build-multi-tenant-arch/
     title: "Build a Multi-Tenant Architecture"
+    title_vi: "Xây kiến trúc nhiều khách thuê"
   - url: https://www.mongodb.com/docs/manual/core/zone-sharding/
     title: "Zones"
+    title_vi: "Zone"
   - url: https://www.mongodb.com/docs/manual/reference/method/sh.addShardToZone/
     title: "sh.addShardToZone()"
+    title_vi: "sh.addShardToZone()"
   - url: https://www.mongodb.com/docs/manual/core/sharding-choose-a-shard-key/
     title: "Choose a Shard Key"
+    title_vi: "Chọn shard key"
 demo_setup: '{"collections": {"orders": [{"_id": 1, "tenantId": "S07", "total": 120000}, {"_id": 2, "tenantId": "S07", "total": 45000}, {"_id": 3, "tenantId": "S03", "total": 300000}, {"_id": 4, "tenantId": "S07", "total": 90000}, {"_id": 5, "tenantId": "S12", "total": 80000}, {"_id": 6, "tenantId": "S07", "total": 60000}, {"_id": 7, "tenantId": "S07", "total": 30000}, {"_id": 8, "tenantId": "S03", "total": 100000}, {"_id": 9, "tenantId": "S07", "total": 70000}, {"_id": 10, "tenantId": "S07", "total": 55000}]}}'
 quiz:
   - q:

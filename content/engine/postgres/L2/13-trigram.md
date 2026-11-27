@@ -18,8 +18,8 @@ objectives:
     en: Know when a trigram index cannot help, for example when the search string is too short.
 requires: [e-pg-l2-12]
 sources:
-  - https://www.postgresql.org/docs/18/pgtrgm.html
-  - https://www.postgresql.org/docs/18/indexes-types.html
+  - { url: https://www.postgresql.org/docs/18/pgtrgm.html, title_vi: "pg_trgm" }
+  - { url: https://www.postgresql.org/docs/18/indexes-types.html, title_vi: "Các loại index" }
 lab:
   setup: |
     CREATE EXTENSION IF NOT EXISTS pg_trgm;

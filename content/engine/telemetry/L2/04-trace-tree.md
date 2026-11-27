@@ -18,8 +18,8 @@ objectives:
     en: Compute self time to find the step that really costs the time.
 requires: [e-tm-l1-01]
 sources:
-  - { url: "https://opentelemetry.io/docs/concepts/signals/traces/", title: "OpenTelemetry: Traces (spans, parent span id)" }
-  - { url: "https://www.postgresql.org/docs/current/queries-with.html#QUERIES-WITH-RECURSIVE", title: "PostgreSQL: Recursive queries" }
+  - { url: "https://opentelemetry.io/docs/concepts/signals/traces/", title: "OpenTelemetry: Traces (spans, parent span id)", title_vi: "OpenTelemetry: trace (span, id của span cha)" }
+  - { url: "https://www.postgresql.org/docs/current/queries-with.html#QUERIES-WITH-RECURSIVE", title: "PostgreSQL: Recursive queries", title_vi: "Truy vấn đệ quy" }
 lab:
   setup: |
     CREATE TABLE spans (

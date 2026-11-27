@@ -18,8 +18,8 @@ objectives:
     en: Find the graph's edges and cycles with SQL over a table that records the schedule.
 requires: [e-ds-l1-01]
 sources:
-  - https://www.postgresql.org/docs/18/transaction-iso.html
-  - https://arxiv.org/abs/1208.4179
+  - { url: https://www.postgresql.org/docs/18/transaction-iso.html, title_vi: "Mức cô lập transaction" }
+  - { url: https://arxiv.org/abs/1208.4179, title_vi: "Bài báo arXiv 1208.4179" }
 lab:
   setup: |
     CREATE TABLE ops (step int PRIMARY KEY, tx text NOT NULL, op text NOT NULL CHECK (op IN ('R', 'W')), item text NOT NULL);

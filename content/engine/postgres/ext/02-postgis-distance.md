@@ -19,11 +19,11 @@ objectives:
     en: Find the nearest point with the `<->` operator and filter by radius with `ST_DWithin`.
 requires: [e-pg-ext-01]
 sources:
-  - https://www.postgresql.org/docs/18/gist.html
-  - { url: "https://postgis.net/docs/using_postgis_dbmanagement.html#PostGIS_Geography", title: "PostGIS · Geography data type" }
-  - { url: "https://postgis.net/docs/ST_Distance.html", title: "PostGIS · ST_Distance" }
-  - { url: "https://postgis.net/docs/ST_DWithin.html", title: "PostGIS · ST_DWithin" }
-  - { url: "https://postgis.net/docs/geometry_distance_knn.html", title: "PostGIS · <-> (KNN distance)" }
+  - { url: https://www.postgresql.org/docs/18/gist.html, title_vi: "Index GiST" }
+  - { url: "https://postgis.net/docs/using_postgis_dbmanagement.html#PostGIS_Geography", title: "PostGIS · Geography data type", title_vi: "PostGIS · kiểu dữ liệu geography" }
+  - { url: "https://postgis.net/docs/ST_Distance.html", title: "PostGIS · ST_Distance", title_vi: "PostGIS · ST_Distance" }
+  - { url: "https://postgis.net/docs/ST_DWithin.html", title: "PostGIS · ST_DWithin", title_vi: "PostGIS · ST_DWithin" }
+  - { url: "https://postgis.net/docs/geometry_distance_knn.html", title: "PostGIS · <-> (KNN distance)", title_vi: "PostGIS · <-> (khoảng cách KNN)" }
 lab:
   setup: |
     CREATE EXTENSION IF NOT EXISTS postgis;

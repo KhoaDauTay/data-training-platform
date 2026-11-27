@@ -18,9 +18,9 @@ objectives:
     en: Find devices that have been silent for too long.
 requires: [e-ts-l1-04]
 sources:
-  - https://www.postgresql.org/docs/18/sql-select.html#SQL-DISTINCT
-  - https://www.postgresql.org/docs/18/queries-table-expressions.html#QUERIES-LATERAL
-  - https://www.postgresql.org/docs/18/indexes-ordering.html
+  - { url: https://www.postgresql.org/docs/18/sql-select.html#SQL-DISTINCT, title_vi: "SELECT DISTINCT ON" }
+  - { url: https://www.postgresql.org/docs/18/queries-table-expressions.html#QUERIES-LATERAL, title_vi: "Biểu thức bảng › truy vấn con LATERAL" }
+  - { url: https://www.postgresql.org/docs/18/indexes-ordering.html, title_vi: "Index và ORDER BY" }
 lab:
   setup: |
     CREATE TABLE trucks (

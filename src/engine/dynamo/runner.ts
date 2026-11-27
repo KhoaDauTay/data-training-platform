@@ -237,7 +237,7 @@ export function dynamoRunner(env: Pick<LabEnv, 'lang'>, client = new DynamoClien
         if (tableShape(want.r) !== tableShape(got.r)) return { ok: false, reason: 'wrong', why: 'table' };
       } else {
         const g = gradeItems(got.r, want.r, { ordered: step.ordered });
-        if (!g.ok) return { ok: false, reason: 'wrong', why: g.why === 'count' ? 'count' : g.why === 'order' ? 'order' : 'items', params: g.why === 'count' ? { want: g.expected, got: g.actual } : undefined };
+        if (!g.ok) return { ok: false, reason: 'wrong', why: g.why === 'count' ? 'countItems' : g.why === 'order' ? 'order' : 'items', params: g.why === 'count' ? { want: g.expected, got: g.actual } : undefined };
         // The cost bar comes before `expect`, so a Scan is refused by the bar and says why (route R5: right but slow = not passed).
         if (step.perf) {
           const w = gradeItems(got.r, want.r, { ordered: step.ordered, ...barOf(want.r, got.req.input.ConsistentRead === true && want.req.input.ConsistentRead !== true) });

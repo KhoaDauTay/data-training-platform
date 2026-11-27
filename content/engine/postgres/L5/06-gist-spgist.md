@@ -15,10 +15,10 @@ objectives:
   - { vi: "Phân biệt GiST (cây cân bằng, hộp có thể chồng nhau) với SP-GiST (chia không gian không chồng: quadtree, k-d tree, radix)", en: "Tell GiST (balanced tree, boxes may overlap) from SP-GiST (non-overlapping space partitioning: quadtree, k-d tree, radix)" }
 requires: []
 sources:
-  - https://www.postgresql.org/docs/18/gist.html
-  - https://www.postgresql.org/docs/18/spgist.html
-  - https://www.postgresql.org/docs/18/indexes-types.html
-  - https://www.postgresql.org/docs/18/pageinspect.html
+  - { url: https://www.postgresql.org/docs/18/gist.html, title_vi: "Index GiST" }
+  - { url: https://www.postgresql.org/docs/18/spgist.html, title_vi: "Index SP-GiST" }
+  - { url: https://www.postgresql.org/docs/18/indexes-types.html, title_vi: "Các loại index" }
+  - { url: https://www.postgresql.org/docs/18/pageinspect.html, title_vi: "pageinspect" }
 viz: pg-gist-boxes
 lab:
   setup: |

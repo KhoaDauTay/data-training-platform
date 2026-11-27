@@ -18,9 +18,9 @@ objectives:
   - vi: Tìm khóa bằng SCAN thay vì KEYS, xóa nhiều khóa bằng một DEL.
     en: Find keys with SCAN instead of KEYS, delete several keys with one DEL.
 sources:
-  - { url: "https://valkey.io/topics/keyspace/", title: "Valkey docs: Keyspace" }
-  - { url: "https://valkey.io/commands/scan/", title: "Valkey docs: SCAN" }
-  - { url: "https://valkey.io/commands/keys/", title: "Valkey docs: KEYS" }
+  - { url: "https://valkey.io/topics/keyspace/", title: "Valkey docs: Keyspace", title_vi: "Tài liệu Valkey: keyspace" }
+  - { url: "https://valkey.io/commands/scan/", title: "Valkey docs: SCAN", title_vi: "Tài liệu Valkey: SCAN" }
+  - { url: "https://valkey.io/commands/keys/", title: "Valkey docs: KEYS", title_vi: "Tài liệu Valkey: KEYS" }
 lab:
   setup: |
     SET user:7:name Lily

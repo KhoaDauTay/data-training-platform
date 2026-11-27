@@ -17,10 +17,10 @@ objectives:
     en: Link `Heap Fetches` to the visibility map and MVCC
 requires: [e-pg-l3-09]
 sources:
-  - https://www.postgresql.org/docs/18/indexes-index-only-scans.html
-  - https://www.postgresql.org/docs/18/storage-vm.html
-  - https://www.postgresql.org/docs/18/routine-vacuuming.html
-  - https://wiki.postgresql.org/wiki/Slow_Counting
+  - { url: https://www.postgresql.org/docs/18/indexes-index-only-scans.html, title_vi: "Index-only scan và covering index" }
+  - { url: https://www.postgresql.org/docs/18/storage-vm.html, title_vi: "Bản đồ hiển thị (visibility map)" }
+  - { url: https://www.postgresql.org/docs/18/routine-vacuuming.html, title_vi: "VACUUM định kỳ" }
+  - { url: https://wiki.postgresql.org/wiki/Slow_Counting, title_vi: "Vì sao đếm dòng chậm" }
 lab:
   setup: |
     CREATE TABLE visits(id int PRIMARY KEY, page text, note char(200));

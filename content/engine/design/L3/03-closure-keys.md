@@ -18,10 +18,10 @@ objectives:
     en: Reduce a set of dependencies to a minimal cover, and check whether two sets are equivalent.
 requires: [e-ds-l3-01]
 sources:
-  - https://doi.org/10.1145/362384.362685
-  - https://www.bkent.net/Doc/simple5.htm
-  - https://www.postgresql.org/docs/18/queries-with.html
-  - https://www.postgresql.org/docs/18/ddl-constraints.html
+  - { url: https://doi.org/10.1145/362384.362685, title_vi: "Bài báo ACM 10.1145/362384.362685" }
+  - { url: https://www.bkent.net/Doc/simple5.htm, title_vi: "William Kent: hướng dẫn đơn giản về năm dạng chuẩn" }
+  - { url: https://www.postgresql.org/docs/18/queries-with.html, title_vi: "Truy vấn WITH (CTE)" }
+  - { url: https://www.postgresql.org/docs/18/ddl-constraints.html, title_vi: "Ràng buộc" }
 lab:
   setup: |
     CREATE TABLE fds (id int PRIMARY KEY, lhs text[] NOT NULL, rhs text NOT NULL);

@@ -15,8 +15,8 @@ objectives:
   - { vi: "Ghi một phiếu mới vào một shard đã chọn", en: "Write a new vote into a chosen shard" }
 requires: [e-dy-l4-01, e-dy-l4-03]
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-partition-key-sharding.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ql-reference.select.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-partition-key-sharding.html, title_vi: "Chia nhỏ lượt ghi (write sharding)" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ql-reference.select.html, title_vi: "PartiQL: SELECT" }
 viz: dy-partitions
 lab:
   setup: |

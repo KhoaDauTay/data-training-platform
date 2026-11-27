@@ -18,9 +18,9 @@ objectives:
     en: Turn a derived attribute into a generated column and a multivalued attribute into a child table.
 requires: [e-ds-l1-02]
 sources:
-  - https://doi.org/10.1145/320434.320440
-  - https://www.postgresql.org/docs/18/ddl-generated-columns.html
-  - https://www.postgresql.org/docs/18/ddl-constraints.html
+  - { url: https://doi.org/10.1145/320434.320440, title_vi: "Bài báo ACM 10.1145/320434.320440" }
+  - { url: https://www.postgresql.org/docs/18/ddl-generated-columns.html, title_vi: "Cột sinh tự động (generated column)" }
+  - { url: https://www.postgresql.org/docs/18/ddl-constraints.html, title_vi: "Ràng buộc" }
 lab:
   setup: |
     CREATE TABLE customers (id int PRIMARY KEY, first_name text NOT NULL, last_name text NOT NULL);

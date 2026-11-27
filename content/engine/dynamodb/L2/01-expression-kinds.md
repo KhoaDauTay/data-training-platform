@@ -18,11 +18,11 @@ objectives:
     en: Remember the limits - an expression is at most 4 KB, 300 operators, and `IN` takes at most 100 operands.
 requires: [e-dy-l1-09]
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.ExpressionAttributeNames.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.ExpressionAttributeValues.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ReservedWords.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Constraints.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.html, title_vi: "Biểu thức (expression)" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.ExpressionAttributeNames.html, title_vi: "Tên thuộc tính trong biểu thức" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.ExpressionAttributeValues.html, title_vi: "Giá trị thuộc tính trong biểu thức" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ReservedWords.html, title_vi: "Từ khóa dành riêng" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Constraints.html, title_vi: "Giới hạn" }
 demo_setup: |
   {"tables": [{"TableName": "Orders", "BillingMode": "PAY_PER_REQUEST", "KeySchema": [{"AttributeName": "customerId", "KeyType": "HASH"}, {"AttributeName": "orderId", "KeyType": "RANGE"}], "AttributeDefinitions": [{"AttributeName": "customerId", "AttributeType": "S"}, {"AttributeName": "orderId", "AttributeType": "S"}]}],
    "items": {"Orders": [

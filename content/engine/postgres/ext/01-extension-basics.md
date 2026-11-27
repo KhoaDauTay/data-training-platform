@@ -19,11 +19,11 @@ objectives:
     en: Know what `DROP EXTENSION` takes with it, and why `CASCADE` can delete data too.
 requires: []
 sources:
-  - https://www.postgresql.org/docs/18/sql-createextension.html
-  - https://www.postgresql.org/docs/18/extend-extensions.html
-  - https://www.postgresql.org/docs/18/view-pg-available-extensions.html
-  - https://www.postgresql.org/docs/18/citext.html
-  - https://www.postgresql.org/docs/18/sql-dropextension.html
+  - { url: https://www.postgresql.org/docs/18/sql-createextension.html, title_vi: "CREATE EXTENSION" }
+  - { url: https://www.postgresql.org/docs/18/extend-extensions.html, title_vi: "Đóng gói đối tượng thành extension" }
+  - { url: https://www.postgresql.org/docs/18/view-pg-available-extensions.html, title_vi: "pg_available_extensions" }
+  - { url: https://www.postgresql.org/docs/18/citext.html, title_vi: "citext" }
+  - { url: https://www.postgresql.org/docs/18/sql-dropextension.html, title_vi: "DROP EXTENSION" }
 lab:
   setup: |
     CREATE TABLE staff (

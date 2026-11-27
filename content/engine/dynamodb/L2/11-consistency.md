@@ -16,8 +16,8 @@ objectives:
     en: Remember where strong reads do not exist - GSIs and Streams.
 requires: [e-dy-l2-09]
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ReadConsistency.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/read-write-operations.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ReadConsistency.html, title_vi: "Cách hoạt động: nhất quán khi đọc" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/read-write-operations.html, title_vi: "Thao tác đọc và ghi" }
 demo_setup: |
   {"tables": [{"TableName": "Users", "BillingMode": "PAY_PER_REQUEST", "KeySchema": [{"AttributeName": "userId", "KeyType": "HASH"}], "AttributeDefinitions": [{"AttributeName": "userId", "AttributeType": "S"}, {"AttributeName": "email", "AttributeType": "S"}], "GlobalSecondaryIndexes": [{"IndexName": "byEmail", "KeySchema": [{"AttributeName": "email", "KeyType": "HASH"}], "Projection": {"ProjectionType": "KEYS_ONLY"}}]}],
    "items": {"Users": [

@@ -18,9 +18,9 @@ objectives:
   - vi: Chặn cơn dồn tải bằng một khóa SET … NX PX để chỉ một request dựng lại cache.
     en: Stop a stampede with a SET … NX PX lock so only one request rebuilds the cache.
 sources:
-  - { url: "https://redis.io/docs/latest/develop/clients/client-side-caching/", title: "Redis docs: Client-side caching" }
-  - { url: "https://docs.aws.amazon.com/whitepapers/latest/database-caching-strategies-using-redis/caching-patterns.html", title: "AWS whitepaper: Caching patterns" }
-  - { url: "https://valkey.io/commands/set/", title: "Valkey docs: SET" }
+  - { url: "https://redis.io/docs/latest/develop/clients/client-side-caching/", title: "Redis docs: Client-side caching", title_vi: "Tài liệu Redis: cache phía client" }
+  - { url: "https://docs.aws.amazon.com/whitepapers/latest/database-caching-strategies-using-redis/caching-patterns.html", title: "AWS whitepaper: Caching patterns", title_vi: "Sách trắng AWS: các mẫu cache" }
+  - { url: "https://valkey.io/commands/set/", title: "Valkey docs: SET", title_vi: "Tài liệu Valkey: SET" }
 lab:
   setup: |
     SET lock:product:p09 req-17 PX 5000

@@ -113,6 +113,8 @@ export interface EngineLesson {
   sources: string[];
   /** v38 (R2 E08): a source written as `{ url, title }` shows that title in "Đọc thêm" instead of its URL slug. */
   sourceTitles?: Record<string, string>;
+  /** v48 E-13 (L1134): a source's VI link text (`title_vi`); EN keeps `sourceTitles` or the URL's slug. */
+  sourceTitlesVi?: Record<string, string>;
   viz?: string;
   /** v39 (L600): figures placed at the end of a named section (src/engine/figureSlot.ts). Full lesson only, never in META_KEYS. */
   figures?: FigRef[];
@@ -203,9 +205,13 @@ export function parseEngineLesson(source: string | LessonSource, path: string, y
     sections: [],
     order: Number(nn),
   };
-  const titled = list(fm.sources, 'sources').filter((s): s is { url: unknown; title: unknown } => !!s && typeof s === 'object');
-  for (const s of titled) if (typeof s.title !== 'string' || !s.title.trim()) fail('sources: { url, title } cần title');
-  if (titled.length) lesson.sourceTitles = Object.fromEntries(titled.map((s) => [String(s.url), String(s.title)]));
+  const titled = list(fm.sources, 'sources').filter((s): s is { url: unknown; title?: unknown; title_vi?: unknown } => !!s && typeof s === 'object');
+  const text = (x: unknown): x is string => typeof x === 'string' && !!x.trim();
+  // v48 E-13 (L1134): `title` = the doc's own (EN) title, `title_vi` = its VI title; an item has at least one of them
+  for (const s of titled) if ((s.title !== undefined && !text(s.title)) || (s.title_vi !== undefined && !text(s.title_vi)) || (!text(s.title) && !text(s.title_vi))) fail('sources: { url, title, title_vi } cần title hoặc title_vi');
+  const srcEn = titled.filter((s) => text(s.title)), srcVi = titled.filter((s) => text(s.title_vi));
+  if (srcEn.length) lesson.sourceTitles = Object.fromEntries(srcEn.map((s) => [String(s.url), String(s.title)]));
+  if (srcVi.length) lesson.sourceTitlesVi = Object.fromEntries(srcVi.map((s) => [String(s.url), String(s.title_vi)]));
   if (lesson.id !== lessonIdFor(engine, level, nn)) fail(`id phải là ${lessonIdFor(engine, level, nn)} (theo đường dẫn)`);
   if (fm.runtime !== undefined) lesson.runtime = RUNTIMES.includes(fm.runtime as Runtime) ? (fm.runtime as Runtime) : fail(`runtime phải là một trong ${RUNTIMES.join(', ')}`);
   if (fm.docs_why !== undefined) {

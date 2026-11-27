@@ -19,8 +19,8 @@ objectives:
     en: "Read a write concern timeout error correctly"
 requires: []
 sources:
-  - https://www.mongodb.com/docs/manual/reference/write-concern/
-  - https://www.mongodb.com/docs/manual/reference/read-concern/
+  - { url: https://www.mongodb.com/docs/manual/reference/write-concern/, title_vi: "Write concern" }
+  - { url: https://www.mongodb.com/docs/manual/reference/read-concern/, title_vi: "Read concern" }
 quiz:
   - q:
       vi: "Replica set P-S-S, ghi với `{ w: 1 }`. Primary sập trước khi secondary nào chép được. Điều gì có thể xảy ra?"

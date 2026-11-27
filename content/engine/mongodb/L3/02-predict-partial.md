@@ -16,7 +16,7 @@ objectives:
     en: "Rewrite a query so it falls inside the index filter"
 requires: [e-mg-l3-01]
 sources:
-  - https://www.mongodb.com/docs/manual/core/index-partial/
+  - { url: https://www.mongodb.com/docs/manual/core/index-partial/, title_vi: "Index một phần (partial)" }
 predict:
   sql: |
     db.movies.createIndex(

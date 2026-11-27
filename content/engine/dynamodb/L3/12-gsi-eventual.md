@@ -18,9 +18,9 @@ objectives:
     en: Read the `ConsumedCapacity` of a write that changes a GSI key.
 requires: [e-dy-l3-04]
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GSI.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_Query.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/read-write-operations.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GSI.html, title_vi: "Global secondary index (GSI)" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_Query.html, title_vi: "API Query" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/read-write-operations.html, title_vi: "Thao tác đọc và ghi" }
 predict:
   sql: |
     {"op": "Query", "input": {"TableName": "Orders", "IndexName": "byStatus",

@@ -18,9 +18,9 @@ objectives:
     en: Know why freshness is not measured on a business date or with one number for a whole source.
 requires: [e-st-l2-04]
 sources:
-  - { url: "https://docs.getdbt.com/reference/resource-properties/freshness", title: "dbt docs: freshness" }
-  - { url: "https://docs.getdbt.com/reference/commands/source", title: "dbt docs: source command" }
-  - { url: "https://fivetran.com/docs/core-concepts/system-columns-and-tables", title: "Fivetran docs: System columns and tables" }
+  - { url: "https://docs.getdbt.com/reference/resource-properties/freshness", title: "dbt docs: freshness", title_vi: "Tài liệu dbt: freshness" }
+  - { url: "https://docs.getdbt.com/reference/commands/source", title: "dbt docs: source command", title_vi: "Tài liệu dbt: lệnh source" }
+  - { url: "https://fivetran.com/docs/core-concepts/system-columns-and-tables", title: "Fivetran docs: System columns and tables", title_vi: "Tài liệu Fivetran: cột và bảng hệ thống" }
 lab:
   setup: |
     CREATE SCHEMA raw_shop;

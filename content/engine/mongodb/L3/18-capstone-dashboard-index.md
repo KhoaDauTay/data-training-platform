@@ -16,9 +16,9 @@ objectives:
     en: "Write a query an existing index can cover, and a pipeline that filters before it joins"
 requires: [e-mg-l3-05, e-mg-l3-09, e-mg-l3-12]
 sources:
-  - https://www.mongodb.com/docs/manual/tutorial/equality-sort-range-guideline/
-  - https://www.mongodb.com/docs/manual/core/query-optimization/
-  - https://www.mongodb.com/docs/manual/core/aggregation-pipeline-optimization/
+  - { url: https://www.mongodb.com/docs/manual/tutorial/equality-sort-range-guideline/, title_vi: "Quy tắc ESR (so bằng, sắp xếp, khoảng)" }
+  - { url: https://www.mongodb.com/docs/manual/core/query-optimization/, title_vi: "Tối ưu truy vấn" }
+  - { url: https://www.mongodb.com/docs/manual/core/aggregation-pipeline-optimization/, title_vi: "Tối ưu aggregation pipeline" }
 lab:
   setup: |
     {"collections": {

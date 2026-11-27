@@ -15,10 +15,10 @@ objectives:
     en: Find documents of the wrong type with `$type` and fix them.
 requires: [e-mg-l2-06, e-mg-l2-11]
 sources:
-  - https://www.mongodb.com/docs/manual/reference/operator/aggregation/sum/
-  - https://www.mongodb.com/docs/manual/reference/operator/query/type/
-  - https://www.mongodb.com/docs/manual/data-modeling/
-  - https://www.mongodb.com/docs/manual/core/schema-validation/
+  - { url: https://www.mongodb.com/docs/manual/reference/operator/aggregation/sum/, title_vi: "$sum" }
+  - { url: https://www.mongodb.com/docs/manual/reference/operator/query/type/, title_vi: "$type" }
+  - { url: https://www.mongodb.com/docs/manual/data-modeling/, title_vi: "Mô hình hóa dữ liệu" }
+  - { url: https://www.mongodb.com/docs/manual/core/schema-validation/, title_vi: "Kiểm tra schema" }
 predict:
   sql: "db.orders.aggregate([{ $group: { _id: '$city', revenue: { $sum: '$total' }, orders: { $sum: 1 } } }, { $sort: { _id: 1 } }])"
   q:

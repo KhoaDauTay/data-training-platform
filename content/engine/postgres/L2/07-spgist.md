@@ -17,10 +17,10 @@ objectives:
 requires: [e-pg-l2-06]
 figures: [{ name: pg-spgist-quadtree, at: idea }]
 sources:
-  - https://www.postgresql.org/docs/18/indexes-types.html
-  - https://www.postgresql.org/docs/18/spgist.html
-  - https://www.postgresql.org/docs/18/datatype-geometric.html
-  - https://www.postgresql.org/docs/18/functions-geometry.html
+  - { url: https://www.postgresql.org/docs/18/indexes-types.html, title_vi: "Các loại index" }
+  - { url: https://www.postgresql.org/docs/18/spgist.html, title_vi: "Index SP-GiST" }
+  - { url: https://www.postgresql.org/docs/18/datatype-geometric.html, title_vi: "Kiểu hình học" }
+  - { url: https://www.postgresql.org/docs/18/functions-geometry.html, title_vi: "Hàm và toán tử hình học" }
 lab:
   setup: |
     CREATE TABLE shops (

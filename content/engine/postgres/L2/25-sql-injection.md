@@ -19,10 +19,10 @@ objectives:
     en: Know that a `$1` parameter can stand for a value, never a name, so names also need an allow list.
 requires: [e-pg-l2-18]
 sources:
-  - https://www.postgresql.org/docs/18/plpgsql-statements.html#PLPGSQL-STATEMENTS-EXECUTING-DYN
-  - https://www.postgresql.org/docs/18/functions-string.html#FUNCTIONS-STRING-FORMAT
-  - https://www.postgresql.org/docs/18/sql-prepare.html
-  - https://www.postgresql.org/docs/18/sql-syntax-lexical.html#SQL-SYNTAX-DOLLAR-QUOTING
+  - { url: https://www.postgresql.org/docs/18/plpgsql-statements.html#PLPGSQL-STATEMENTS-EXECUTING-DYN, title_vi: "PL/pgSQL › chạy câu lệnh động" }
+  - { url: https://www.postgresql.org/docs/18/functions-string.html#FUNCTIONS-STRING-FORMAT, title_vi: "Hàm chuỗi › format" }
+  - { url: https://www.postgresql.org/docs/18/sql-prepare.html, title_vi: "PREPARE" }
+  - { url: https://www.postgresql.org/docs/18/sql-syntax-lexical.html#SQL-SYNTAX-DOLLAR-QUOTING, title_vi: "Cú pháp › chuỗi trong dấu đô la ($$)" }
 lab:
   setup: |
     CREATE TABLE accounts (id int PRIMARY KEY, owner text NOT NULL, balance numeric(12,0) NOT NULL);

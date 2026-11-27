@@ -14,7 +14,7 @@ objectives:
   - { vi: "Đánh số phiên bản có số 0 đứng trước để thứ tự chuỗi đúng", en: "Zero-pad version numbers so string order is right" }
 requires: []
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-sort-keys.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-sort-keys.html, title_vi: "Thực hành tốt: sort key" }
 viz: dy-single-table
 lab:
   setup: |

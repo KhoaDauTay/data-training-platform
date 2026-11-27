@@ -19,10 +19,10 @@ objectives:
     en: Write a query on a small part of the table so the planner goes through the index.
 requires: [e-pg-l1-09]
 sources:
-  - https://www.postgresql.org/docs/18/using-explain.html
-  - https://www.postgresql.org/docs/18/sql-explain.html
-  - https://www.postgresql.org/docs/18/runtime-config-query.html
-  - https://www.postgresql.org/docs/18/indexes-intro.html
+  - { url: https://www.postgresql.org/docs/18/using-explain.html, title_vi: "Dùng EXPLAIN" }
+  - { url: https://www.postgresql.org/docs/18/sql-explain.html, title_vi: "EXPLAIN" }
+  - { url: https://www.postgresql.org/docs/18/runtime-config-query.html, title_vi: "Cấu hình planner" }
+  - { url: https://www.postgresql.org/docs/18/indexes-intro.html, title_vi: "Nhập môn index" }
 lab:
   setup: |
     CREATE TABLE orders (

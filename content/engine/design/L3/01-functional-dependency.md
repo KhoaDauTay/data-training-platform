@@ -18,9 +18,9 @@ objectives:
     en: Use SQL to refute a dependency on data, and see why data can never prove one.
 requires: [e-ds-l2-03]
 sources:
-  - https://doi.org/10.1145/362384.362685
-  - https://www.bkent.net/Doc/simple5.htm
-  - https://www.postgresql.org/docs/18/queries-table-expressions.html
+  - { url: https://doi.org/10.1145/362384.362685, title_vi: "Bài báo ACM 10.1145/362384.362685" }
+  - { url: https://www.bkent.net/Doc/simple5.htm, title_vi: "William Kent: hướng dẫn đơn giản về năm dạng chuẩn" }
+  - { url: https://www.postgresql.org/docs/18/queries-table-expressions.html, title_vi: "Biểu thức bảng" }
 lab:
   setup: |
     CREATE TABLE deliveries (

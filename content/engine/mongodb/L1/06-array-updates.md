@@ -16,9 +16,9 @@ objectives:
     en: Remove elements from an array with `$pull`.
 requires: [e-mg-l1-05]
 sources:
-  - https://www.mongodb.com/docs/manual/reference/operator/update/push/
-  - https://www.mongodb.com/docs/manual/reference/operator/update/addtoset/
-  - https://www.mongodb.com/docs/manual/reference/operator/update/pull/
+  - { url: https://www.mongodb.com/docs/manual/reference/operator/update/push/, title_vi: "$push" }
+  - { url: https://www.mongodb.com/docs/manual/reference/operator/update/addtoset/, title_vi: "$addToSet" }
+  - { url: https://www.mongodb.com/docs/manual/reference/operator/update/pull/, title_vi: "$pull" }
 lab:
   setup: |
     {"collections": {"customers": [

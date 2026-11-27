@@ -43,10 +43,10 @@ demo_setup: |
   ANALYZE market.orders;
   ANALYZE cargo.shipments;
 sources:
-  - https://www.postgresql.org/docs/18/postgres-fdw.html
-  - https://www.postgresql.org/docs/18/sql-importforeignschema.html
-  - https://docs.citusdata.com/en/stable/develop/api_udf.html
-  - https://docs.citusdata.com/en/stable/
+  - { url: https://www.postgresql.org/docs/18/postgres-fdw.html, title_vi: "postgres_fdw" }
+  - { url: https://www.postgresql.org/docs/18/sql-importforeignschema.html, title_vi: "IMPORT FOREIGN SCHEMA" }
+  - { url: https://docs.citusdata.com/en/stable/develop/api_udf.html, title_vi: "Tài liệu Citus: hàm của Citus" }
+  - { url: https://docs.citusdata.com/en/stable/, title_vi: "Tài liệu Citus" }
 quiz:
   - q:
       vi: "Bảng `orders` ở máy kia, đọc qua postgres_fdw. Câu lọc `WHERE my_norm(city) = 'hoi an'`, với `my_norm` là hàm bạn tự viết. Điều gì xảy ra?"

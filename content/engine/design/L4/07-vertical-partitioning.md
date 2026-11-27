@@ -18,11 +18,11 @@ objectives:
     en: Know that TOAST only moves large values (above about 2 KB) out of line, so medium-sized columns still bloat the main table.
 requires: [e-ds-l4-02]
 sources:
-  - https://www.postgresql.org/docs/18/storage-toast.html
-  - https://www.postgresql.org/docs/18/ddl-constraints.html#DDL-CONSTRAINTS-FK
-  - https://www.postgresql.org/docs/18/sql-altertable.html
-  - https://www.postgresql.org/docs/18/sql-vacuum.html
-  - https://www.postgresql.org/docs/18/functions-admin.html#FUNCTIONS-ADMIN-DBSIZE
+  - { url: https://www.postgresql.org/docs/18/storage-toast.html, title_vi: "TOAST" }
+  - { url: https://www.postgresql.org/docs/18/ddl-constraints.html#DDL-CONSTRAINTS-FK, title_vi: "Ràng buộc › khóa ngoại" }
+  - { url: https://www.postgresql.org/docs/18/sql-altertable.html, title_vi: "ALTER TABLE (REPLICA IDENTITY)" }
+  - { url: https://www.postgresql.org/docs/18/sql-vacuum.html, title_vi: "VACUUM" }
+  - { url: https://www.postgresql.org/docs/18/functions-admin.html#FUNCTIONS-ADMIN-DBSIZE, title_vi: "Hàm quản trị › kích thước đối tượng" }
 lab:
   setup: |
     CREATE TABLE customers_wide (

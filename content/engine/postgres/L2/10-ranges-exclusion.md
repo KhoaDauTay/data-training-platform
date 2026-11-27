@@ -19,11 +19,11 @@ objectives:
     en: Write an overlap search that goes through the GiST index instead of scanning the whole table.
 requires: [e-pg-l2-09]
 sources:
-  - https://www.postgresql.org/docs/18/rangetypes.html
-  - https://www.postgresql.org/docs/18/functions-range.html
-  - https://www.postgresql.org/docs/18/ddl-constraints.html
-  - https://www.postgresql.org/docs/18/btree-gist.html
-  - https://www.postgresql.org/docs/18/gist.html
+  - { url: https://www.postgresql.org/docs/18/rangetypes.html, title_vi: "Kiểu khoảng (range)" }
+  - { url: https://www.postgresql.org/docs/18/functions-range.html, title_vi: "Hàm và toán tử khoảng (range)" }
+  - { url: https://www.postgresql.org/docs/18/ddl-constraints.html, title_vi: "Ràng buộc" }
+  - { url: https://www.postgresql.org/docs/18/btree-gist.html, title_vi: "btree_gist" }
+  - { url: https://www.postgresql.org/docs/18/gist.html, title_vi: "Index GiST" }
 lab:
   setup: |
     CREATE EXTENSION IF NOT EXISTS btree_gist;

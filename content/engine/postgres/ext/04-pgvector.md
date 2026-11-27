@@ -19,9 +19,9 @@ objectives:
   - vi: Tạo index HNSW có lớp toán tử khớp với câu hỏi, và biết kết quả của nó là gần đúng.
     en: Create an HNSW index whose operator class matches the query, and know its result is approximate.
 sources:
-  - https://github.com/pgvector/pgvector
-  - https://www.npmjs.com/package/@electric-sql/pglite-pgvector
-  - https://www.postgresql.org/docs/18/indexes-ordering.html
+  - { url: https://github.com/pgvector/pgvector, title_vi: "pgvector trên GitHub" }
+  - { url: https://www.npmjs.com/package/@electric-sql/pglite-pgvector, title_vi: "Gói npm pglite-pgvector" }
+  - { url: https://www.postgresql.org/docs/18/indexes-ordering.html, title_vi: "Index và ORDER BY" }
 lab:
   setup: |
     CREATE EXTENSION IF NOT EXISTS vector;

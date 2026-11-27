@@ -19,9 +19,9 @@ objectives:
   - vi: Dùng `uuid_generate_v5` của uuid-ossp khi cần cùng một id cho cùng một tên trên mọi máy.
     en: Use uuid-ossp's `uuid_generate_v5` when the same name must give the same id on every machine.
 sources:
-  - https://www.postgresql.org/docs/18/functions-uuid.html
-  - https://www.postgresql.org/docs/18/uuid-ossp.html
-  - https://www.postgresql.org/docs/18/datatype-uuid.html
+  - { url: https://www.postgresql.org/docs/18/functions-uuid.html, title_vi: "Hàm UUID" }
+  - { url: https://www.postgresql.org/docs/18/uuid-ossp.html, title_vi: "uuid-ossp" }
+  - { url: https://www.postgresql.org/docs/18/datatype-uuid.html, title_vi: "Kiểu UUID" }
 lab:
   setup: |
     CREATE EXTENSION IF NOT EXISTS "uuid-ossp";

@@ -17,9 +17,9 @@ objectives:
     en: Prove that updating an indexed column adds an entry to every index, while HOT adds none
 requires: [e-pg-l3-06, e-pg-l3-05]
 sources:
-  - https://www.postgresql.org/docs/18/storage-hot.html
-  - https://www.postgresql.org/docs/18/pageinspect.html
-  - https://www.postgresql.org/docs/18/monitoring-stats.html
+  - { url: https://www.postgresql.org/docs/18/storage-hot.html, title_vi: "Cập nhật HOT (heap-only tuple)" }
+  - { url: https://www.postgresql.org/docs/18/pageinspect.html, title_vi: "pageinspect" }
+  - { url: https://www.postgresql.org/docs/18/monitoring-stats.html, title_vi: "Hệ thống thống kê hoạt động" }
 lab:
   setup: |
     CREATE EXTENSION IF NOT EXISTS pageinspect;

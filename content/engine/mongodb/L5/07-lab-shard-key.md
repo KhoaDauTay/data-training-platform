@@ -18,8 +18,8 @@ objectives:
     en: "Measure a compound shard key and see it raise cardinality"
 requires: [e-mg-l5-05]
 sources:
-  - https://www.mongodb.com/docs/manual/core/sharding-choose-a-shard-key/
-  - https://www.mongodb.com/docs/manual/reference/operator/aggregation/facet/
+  - { url: https://www.mongodb.com/docs/manual/core/sharding-choose-a-shard-key/, title_vi: "Chọn shard key" }
+  - { url: https://www.mongodb.com/docs/manual/reference/operator/aggregation/facet/, title_vi: "$facet" }
 lab:
   setup: |
     {"collections":{"orders":[{"_id":1,"customerId":"c08","country":"VN","day":300},{"_id":2,"customerId":"c15","country":"VN","day":300},{"_id":3,"customerId":"c22","country":"JP","day":301},{"_id":4,"customerId":"c06","country":"VN","day":301},{"_id":5,"customerId":"c13","country":"VN","day":301},{"_id":6,"customerId":"c20","country":"TH","day":302},{"_id":7,"customerId":"c04","country":"VN","day":302},{"_id":8,"customerId":"c11","country":"VN","day":302},{"_id":9,"customerId":"c18","country":"SG","day":303},{"_id":10,"customerId":"c02","country":"VN","day":303},{"_id":11,"customerId":"c09","country":"VN","day":303},{"_id":12,"customerId":"c16","country":"VN","day":304},{"_id":13,"customerId":"c23","country":"JP","day":304},{"_id":14,"customerId":"c07","country":"VN","day":304},{"_id":15,"customerId":"c14","country":"VN","day":305},{"_id":16,"customerId":"c21","country":"TH","day":305},{"_id":17,"customerId":"c05","country":"VN","day":305},{"_id":18,"customerId":"c12","country":"VN","day":306},{"_id":19,"customerId":"c19","country":"SG","day":306},{"_id":20,"customerId":"c03","country":"VN","day":306},{"_id":21,"customerId":"c10","country":"VN","day":307},{"_id":22,"customerId":"c17","country":"VN","day":307},{"_id":23,"customerId":"c01","country":"JP","day":307},{"_id":24,"customerId":"c08","country":"VN","day":308},{"_id":25,"customerId":"c15","country":"VN","day":308},{"_id":26,"customerId":"c22","country":"TH","day":308},{"_id":27,"customerId":"c06","country":"VN","day":309},{"_id":28,"customerId":"c13","country":"VN","day":309},{"_id":29,"customerId":"c20","country":"SG","day":309},{"_id":30,"customerId":"c04","country":"VN","day":310}]}}

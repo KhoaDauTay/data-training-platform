@@ -14,8 +14,8 @@ objectives:
   - { vi: "Biết chế độ nào cũng không vượt được trần của một partition", en: "Know that no mode goes past the ceiling of one partition" }
 requires: [e-dy-l4-03]
 sources:
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/capacity-mode.html
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/read-write-operations.html
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/capacity-mode.html, title_vi: "Chế độ capacity" }
+  - { url: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/read-write-operations.html, title_vi: "Thao tác đọc và ghi" }
 quiz:
   - q: { vi: "Ứng dụng mới, chưa biết lượng truy cập, có ngày vắng ngày đông. Chọn chế độ nào?", en: "A new application, traffic unknown, quiet days and busy days. Which mode?" }
     options:

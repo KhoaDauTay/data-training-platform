@@ -15,8 +15,8 @@ objectives:
     en: Use `$literal` to store that exact string.
 requires: [e-mg-l2-02]
 sources:
-  - https://www.mongodb.com/docs/manual/reference/operator/aggregation/literal/
-  - https://www.mongodb.com/docs/manual/tutorial/update-documents-with-aggregation-pipeline/
+  - { url: https://www.mongodb.com/docs/manual/reference/operator/aggregation/literal/, title_vi: "$literal" }
+  - { url: https://www.mongodb.com/docs/manual/tutorial/update-documents-with-aggregation-pipeline/, title_vi: "Cập nhật bằng aggregation pipeline" }
 predict:
   sql: 'db.products.updateOne({ _id: "p1" }, [{ $set: { label: "$sale" } }])'
   q:

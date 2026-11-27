@@ -19,12 +19,12 @@ objectives:
     en: "Read the two-stage plan: bounding boxes in the index, then the exact measure on the rows left."
 requires: [e-pg-ext-02]
 sources:
-  - https://www.postgresql.org/docs/18/gist.html
-  - https://www.postgresql.org/docs/18/indexes-types.html
-  - { url: "https://postgis.net/docs/ST_DWithin.html", title: "PostGIS · ST_DWithin" }
-  - { url: "https://postgis.net/docs/ST_Covers.html", title: "PostGIS · ST_Covers" }
-  - { url: "https://postgis.net/docs/ST_Buffer.html", title: "PostGIS · ST_Buffer" }
-  - { url: "https://postgis.net/docs/using_postgis_query.html", title: "PostGIS · Spatial queries and indexes" }
+  - { url: https://www.postgresql.org/docs/18/gist.html, title_vi: "Index GiST" }
+  - { url: https://www.postgresql.org/docs/18/indexes-types.html, title_vi: "Các loại index" }
+  - { url: "https://postgis.net/docs/ST_DWithin.html", title: "PostGIS · ST_DWithin", title_vi: "PostGIS · ST_DWithin" }
+  - { url: "https://postgis.net/docs/ST_Covers.html", title: "PostGIS · ST_Covers", title_vi: "PostGIS · ST_Covers" }
+  - { url: "https://postgis.net/docs/ST_Buffer.html", title: "PostGIS · ST_Buffer", title_vi: "PostGIS · ST_Buffer" }
+  - { url: "https://postgis.net/docs/using_postgis_query.html", title: "PostGIS · Spatial queries and indexes", title_vi: "PostGIS · truy vấn không gian và index" }
 lab:
   setup: |
     CREATE EXTENSION IF NOT EXISTS postgis;

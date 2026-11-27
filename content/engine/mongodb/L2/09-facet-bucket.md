@@ -16,9 +16,9 @@ objectives:
     en: Run several sub-pipelines over the same data in one pass with `$facet`.
 requires: [e-mg-l2-06]
 sources:
-  - https://www.mongodb.com/docs/manual/reference/operator/aggregation/bucket/
-  - https://www.mongodb.com/docs/manual/reference/operator/aggregation/facet/
-  - https://www.mongodb.com/docs/manual/reference/operator/aggregation/sortbycount/
+  - { url: https://www.mongodb.com/docs/manual/reference/operator/aggregation/bucket/, title_vi: "$bucket" }
+  - { url: https://www.mongodb.com/docs/manual/reference/operator/aggregation/facet/, title_vi: "$facet" }
+  - { url: https://www.mongodb.com/docs/manual/reference/operator/aggregation/sortbycount/, title_vi: "$sortByCount" }
 lab:
   setup: |
     {"collections": {"orders": [

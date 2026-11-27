@@ -18,10 +18,10 @@ objectives:
     en: Read another model with `ref()` instead of typing a table name.
 requires: [e-st-l1-02]
 sources:
-  - { url: "https://docs.getdbt.com/docs/build/models", title: "dbt docs: About dbt models" }
-  - { url: "https://docs.getdbt.com/reference/dbt-jinja-functions/source", title: "dbt docs: source" }
-  - { url: "https://docs.getdbt.com/reference/dbt-jinja-functions/ref", title: "dbt docs: ref" }
-  - { url: "https://docs.getdbt.com/docs/build/materializations", title: "dbt docs: Materializations" }
+  - { url: "https://docs.getdbt.com/docs/build/models", title: "dbt docs: About dbt models", title_vi: "Tài liệu dbt: model trong dbt" }
+  - { url: "https://docs.getdbt.com/reference/dbt-jinja-functions/source", title: "dbt docs: source", title_vi: "Tài liệu dbt: source" }
+  - { url: "https://docs.getdbt.com/reference/dbt-jinja-functions/ref", title: "dbt docs: ref", title_vi: "Tài liệu dbt: ref" }
+  - { url: "https://docs.getdbt.com/docs/build/materializations", title: "dbt docs: Materializations", title_vi: "Tài liệu dbt: materialization" }
 lab:
   setup: |
     CREATE SCHEMA raw_shop;

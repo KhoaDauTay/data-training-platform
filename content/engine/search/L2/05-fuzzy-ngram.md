@@ -18,10 +18,10 @@ objectives:
     en: "Know the price of n-grams: a much bigger index and broader results."
 requires: [e-sr-l1-03]
 sources:
-  - https://www.elastic.co/docs/reference/query-languages/query-dsl/query-dsl-match-query
-  - https://www.elastic.co/docs/reference/elasticsearch/rest-apis/common-options
-  - https://www.elastic.co/docs/reference/text-analysis/analysis-edgengram-tokenfilter
-  - https://www.elastic.co/docs/reference/elasticsearch/mapping-reference/search-analyzer
+  - { url: https://www.elastic.co/docs/reference/query-languages/query-dsl/query-dsl-match-query, title_vi: "Truy vấn match" }
+  - { url: https://www.elastic.co/docs/reference/elasticsearch/rest-apis/common-options, title_vi: "Tùy chọn chung của REST API" }
+  - { url: https://www.elastic.co/docs/reference/text-analysis/analysis-edgengram-tokenfilter, title_vi: "Bộ lọc token edge n-gram" }
+  - { url: https://www.elastic.co/docs/reference/elasticsearch/mapping-reference/search-analyzer, title_vi: "Tham số search_analyzer" }
 lab:
   setup: |
     {"index": "shop",

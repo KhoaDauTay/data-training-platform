@@ -15,9 +15,9 @@ objectives:
   - { vi: "Đọc kết quả trong `pg_stats_ext`", en: "Read the result in `pg_stats_ext`" }
 requires: [e-pg-l4-02]
 sources:
-  - https://www.postgresql.org/docs/18/planner-stats.html
-  - https://www.postgresql.org/docs/18/sql-createstatistics.html
-  - https://www.postgresql.org/docs/18/multivariate-statistics-examples.html
+  - { url: https://www.postgresql.org/docs/18/planner-stats.html, title_vi: "Thống kê mà planner dùng" }
+  - { url: https://www.postgresql.org/docs/18/sql-createstatistics.html, title_vi: "CREATE STATISTICS" }
+  - { url: https://www.postgresql.org/docs/18/multivariate-statistics-examples.html, title_vi: "Ví dụ thống kê nhiều cột" }
 viz: pg-plan-tree
 lab:
   setup: |

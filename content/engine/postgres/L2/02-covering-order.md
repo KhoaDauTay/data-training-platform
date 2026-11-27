@@ -19,10 +19,10 @@ objectives:
     en: Write the range on the second column so the index can narrow the part it reads.
 requires: [e-pg-l2-01]
 sources:
-  - https://www.postgresql.org/docs/18/indexes-index-only-scans.html
-  - https://www.postgresql.org/docs/18/indexes-multicolumn.html
-  - https://www.postgresql.org/docs/18/indexes-ordering.html
-  - https://www.postgresql.org/docs/18/sql-createindex.html
+  - { url: https://www.postgresql.org/docs/18/indexes-index-only-scans.html, title_vi: "Index-only scan và covering index" }
+  - { url: https://www.postgresql.org/docs/18/indexes-multicolumn.html, title_vi: "Index nhiều cột" }
+  - { url: https://www.postgresql.org/docs/18/indexes-ordering.html, title_vi: "Index và ORDER BY" }
+  - { url: https://www.postgresql.org/docs/18/sql-createindex.html, title_vi: "CREATE INDEX" }
 lab:
   setup: |
     CREATE TABLE orders (

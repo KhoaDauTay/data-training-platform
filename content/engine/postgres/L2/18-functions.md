@@ -18,13 +18,13 @@ objectives:
     en: Overload a function by argument types and drop exactly one version with its full signature.
 requires: [e-pg-l1-07]
 sources:
-  - https://www.postgresql.org/docs/18/sql-createfunction.html
-  - https://www.postgresql.org/docs/18/xfunc-sql.html
-  - https://www.postgresql.org/docs/18/plpgsql.html
-  - https://www.postgresql.org/docs/18/xfunc-volatility.html
-  - https://www.postgresql.org/docs/18/xfunc-overload.html
-  - https://www.postgresql.org/docs/18/sql-dropfunction.html
-  - https://www.postgresql.org/docs/18/errcodes-appendix.html
+  - { url: https://www.postgresql.org/docs/18/sql-createfunction.html, title_vi: "CREATE FUNCTION" }
+  - { url: https://www.postgresql.org/docs/18/xfunc-sql.html, title_vi: "Hàm viết bằng SQL" }
+  - { url: https://www.postgresql.org/docs/18/plpgsql.html, title_vi: "PL/pgSQL" }
+  - { url: https://www.postgresql.org/docs/18/xfunc-volatility.html, title_vi: "Mức thay đổi của hàm (volatility)" }
+  - { url: https://www.postgresql.org/docs/18/xfunc-overload.html, title_vi: "Nạp chồng hàm" }
+  - { url: https://www.postgresql.org/docs/18/sql-dropfunction.html, title_vi: "DROP FUNCTION" }
+  - { url: https://www.postgresql.org/docs/18/errcodes-appendix.html, title_vi: "Mã lỗi" }
 lab:
   setup: |
     CREATE TABLE products (

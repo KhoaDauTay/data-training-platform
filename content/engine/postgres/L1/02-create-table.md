@@ -18,10 +18,10 @@ objectives:
     en: Read a table's structure back from `information_schema.columns`.
 requires: [e-pg-l1-01]
 sources:
-  - https://www.postgresql.org/docs/18/sql-createtable.html
-  - https://www.postgresql.org/docs/18/ddl-default.html
-  - https://www.postgresql.org/docs/18/sql-insert.html
-  - https://www.postgresql.org/docs/18/infoschema-columns.html
+  - { url: https://www.postgresql.org/docs/18/sql-createtable.html, title_vi: "CREATE TABLE" }
+  - { url: https://www.postgresql.org/docs/18/ddl-default.html, title_vi: "Giá trị mặc định" }
+  - { url: https://www.postgresql.org/docs/18/sql-insert.html, title_vi: "INSERT" }
+  - { url: https://www.postgresql.org/docs/18/infoschema-columns.html, title_vi: "information_schema.columns" }
 lab:
   setup: |
     CREATE TABLE categories (id int PRIMARY KEY, name text NOT NULL);

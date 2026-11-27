@@ -18,9 +18,9 @@ objectives:
     en: "Know the cost of a separate search engine: data must be copied over, and shows up only after a refresh (near real time)."
 requires: [e-sr-l3-02, e-sr-l3-01]
 sources:
-  - https://www.postgresql.org/docs/18/textsearch-intro.html
-  - https://www.elastic.co/docs/manage-data/data-store/near-real-time-search
-  - https://www.elastic.co/docs/deploy-manage/distributed-architecture/clusters-nodes-shards
+  - { url: https://www.postgresql.org/docs/18/textsearch-intro.html, title_vi: "Nhập môn tìm kiếm toàn văn" }
+  - { url: https://www.elastic.co/docs/manage-data/data-store/near-real-time-search, title_vi: "Tìm kiếm gần thời gian thực" }
+  - { url: https://www.elastic.co/docs/deploy-manage/distributed-architecture/clusters-nodes-shards, title_vi: "Cụm, node và shard" }
 lab:
   setup: |
     CREATE EXTENSION IF NOT EXISTS unaccent;

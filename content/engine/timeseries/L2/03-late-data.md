@@ -18,8 +18,8 @@ objectives:
     en: Recompute exactly those hours with `INSERT ... ON CONFLICT DO UPDATE`.
 requires: [e-ts-l2-02]
 sources:
-  - https://www.postgresql.org/docs/18/sql-insert.html#SQL-ON-CONFLICT
-  - https://www.postgresql.org/docs/18/functions-datetime.html#FUNCTIONS-DATETIME-TRUNC
+  - { url: https://www.postgresql.org/docs/18/sql-insert.html#SQL-ON-CONFLICT, title_vi: "INSERT … ON CONFLICT" }
+  - { url: https://www.postgresql.org/docs/18/functions-datetime.html#FUNCTIONS-DATETIME-TRUNC, title_vi: "Hàm ngày giờ › date_trunc" }
 lab:
   setup: |
     CREATE TABLE readings (

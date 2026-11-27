@@ -16,11 +16,11 @@ objectives:
 requires: [e-pg-l5-12]
 figures: [{ name: pg-tuning-loop, at: idea }]
 sources:
-  - https://www.postgresql.org/docs/18/performance-tips.html
-  - https://www.postgresql.org/docs/18/using-explain.html
-  - https://www.postgresql.org/docs/18/planner-stats.html
-  - https://www.postgresql.org/docs/18/sql-altertable.html
-  - https://www.postgresql.org/docs/18/runtime-config-resource.html
+  - { url: https://www.postgresql.org/docs/18/performance-tips.html, title_vi: "Mẹo hiệu năng" }
+  - { url: https://www.postgresql.org/docs/18/using-explain.html, title_vi: "Dùng EXPLAIN" }
+  - { url: https://www.postgresql.org/docs/18/planner-stats.html, title_vi: "Thống kê mà planner dùng" }
+  - { url: https://www.postgresql.org/docs/18/sql-altertable.html, title_vi: "ALTER TABLE (REPLICA IDENTITY)" }
+  - { url: https://www.postgresql.org/docs/18/runtime-config-resource.html, title_vi: "Cấu hình tài nguyên (bộ nhớ)" }
 lab:
   setup: |
     CREATE TABLE orders (id int PRIMARY KEY, customer_id int NOT NULL, status text NOT NULL, created date NOT NULL, amount int NOT NULL);

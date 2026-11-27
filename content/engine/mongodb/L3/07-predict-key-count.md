@@ -15,8 +15,8 @@ objectives:
     en: "Explain why the equality field should come before the range field"
 requires: [e-mg-l3-06]
 sources:
-  - https://www.mongodb.com/docs/manual/tutorial/analyze-query-plan/
-  - https://www.mongodb.com/docs/manual/tutorial/equality-sort-range-guideline/
+  - { url: https://www.mongodb.com/docs/manual/tutorial/analyze-query-plan/, title_vi: "Phân tích kế hoạch truy vấn" }
+  - { url: https://www.mongodb.com/docs/manual/tutorial/equality-sort-range-guideline/, title_vi: "Quy tắc ESR (so bằng, sắp xếp, khoảng)" }
 predict:
   sql: |
     db.movies.createIndex( { year: 1, rated: 1 } )

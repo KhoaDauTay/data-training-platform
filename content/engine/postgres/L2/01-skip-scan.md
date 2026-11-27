@@ -19,9 +19,9 @@ objectives:
     en: Read `Index Searches` in `EXPLAIN ANALYZE` to see how many times the index was searched.
 requires: [e-pg-l1-12]
 sources:
-  - https://www.postgresql.org/docs/18/indexes-multicolumn.html
-  - https://www.postgresql.org/docs/18/using-explain.html
-  - https://www.postgresql.org/docs/18/release-18.html
+  - { url: https://www.postgresql.org/docs/18/indexes-multicolumn.html, title_vi: "Index nhiều cột" }
+  - { url: https://www.postgresql.org/docs/18/using-explain.html, title_vi: "Dùng EXPLAIN" }
+  - { url: https://www.postgresql.org/docs/18/release-18.html, title_vi: "Ghi chú phát hành PostgreSQL 18" }
 lab:
   setup: |
     CREATE TABLE events (

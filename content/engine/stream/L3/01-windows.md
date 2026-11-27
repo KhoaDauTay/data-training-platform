@@ -18,9 +18,9 @@ objectives:
     en: Keep window bounds right - the start included, the end excluded.
 requires: [e-sm-l2-05]
 sources:
-  - { url: "https://kafka.apache.org/41/streams/developer-guide/dsl-api/#windowing", title: "Kafka Streams docs: Windowing" }
-  - { url: "https://www.postgresql.org/docs/18/functions-datetime.html#FUNCTIONS-DATETIME-BIN", title: "PostgreSQL 18 docs: date_bin" }
-  - { url: "https://www.postgresql.org/docs/18/functions-window.html", title: "PostgreSQL 18 docs: Window functions" }
+  - { url: "https://kafka.apache.org/41/streams/developer-guide/dsl-api/#windowing", title: "Kafka Streams docs: Windowing", title_vi: "Tài liệu Kafka Streams: cửa sổ thời gian (grace period)" }
+  - { url: "https://www.postgresql.org/docs/18/functions-datetime.html#FUNCTIONS-DATETIME-BIN", title: "PostgreSQL 18 docs: date_bin", title_vi: "Hàm ngày giờ › date_bin" }
+  - { url: "https://www.postgresql.org/docs/18/functions-window.html", title: "PostgreSQL 18 docs: Window functions", title_vi: "Hàm cửa sổ (window function)" }
 lab:
   setup: |
     CREATE TABLE scans (

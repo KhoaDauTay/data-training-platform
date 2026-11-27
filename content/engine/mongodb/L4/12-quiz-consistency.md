@@ -16,9 +16,9 @@ objectives:
     en: "See why an arbiter does not help a `majority` write"
 requires: [e-mg-l4-08, e-mg-l4-09, e-mg-l4-10]
 sources:
-  - https://www.mongodb.com/docs/manual/reference/write-concern/
-  - https://www.mongodb.com/docs/manual/reference/read-concern/
-  - https://www.mongodb.com/docs/manual/core/transactions-production-consideration/
+  - { url: https://www.mongodb.com/docs/manual/reference/write-concern/, title_vi: "Write concern" }
+  - { url: https://www.mongodb.com/docs/manual/reference/read-concern/, title_vi: "Read concern" }
+  - { url: https://www.mongodb.com/docs/manual/core/transactions-production-consideration/, title_vi: "Transaction khi chạy thật: những điều cần lưu ý" }
 quiz:
   - q:
       vi: "Replica set Primary-Secondary-Arbiter. Ghi `w: \"majority\"` khi secondary đang tắt thì sao?"

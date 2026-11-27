@@ -18,10 +18,10 @@ objectives:
     en: Keep a copy in step with its source with a materialized view, a generated column or a trigger.
 requires: [e-ds-l4-02]
 sources:
-  - https://www.postgresql.org/docs/18/rules-materializedviews.html
-  - https://www.postgresql.org/docs/18/sql-refreshmaterializedview.html
-  - https://www.postgresql.org/docs/18/ddl-generated-columns.html
-  - https://www.postgresql.org/docs/18/datatype-json.html
+  - { url: https://www.postgresql.org/docs/18/rules-materializedviews.html, title_vi: "Materialized view" }
+  - { url: https://www.postgresql.org/docs/18/sql-refreshmaterializedview.html, title_vi: "REFRESH MATERIALIZED VIEW" }
+  - { url: https://www.postgresql.org/docs/18/ddl-generated-columns.html, title_vi: "Cột sinh tự động (generated column)" }
+  - { url: https://www.postgresql.org/docs/18/datatype-json.html, title_vi: "Kiểu JSON" }
 lab:
   setup: |
     CREATE TABLE stores (id int PRIMARY KEY, city text NOT NULL);

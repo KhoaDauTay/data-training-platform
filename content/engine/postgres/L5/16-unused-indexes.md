@@ -17,9 +17,9 @@ objectives:
 requires: [e-pg-l5-11]
 figures: [{ name: pg-index-write-cost, at: idea }]
 sources:
-  - https://www.postgresql.org/docs/18/indexes-intro.html
-  - https://www.postgresql.org/docs/18/monitoring-stats.html
-  - https://www.postgresql.org/docs/18/storage-hot.html
+  - { url: https://www.postgresql.org/docs/18/indexes-intro.html, title_vi: "Nhập môn index" }
+  - { url: https://www.postgresql.org/docs/18/monitoring-stats.html, title_vi: "Hệ thống thống kê hoạt động" }
+  - { url: https://www.postgresql.org/docs/18/storage-hot.html, title_vi: "Cập nhật HOT (heap-only tuple)" }
 lab:
   setup: |
     CREATE TABLE tickets(id int PRIMARY KEY, customer_id int NOT NULL, status text NOT NULL, opened_on date NOT NULL, note text) WITH (fillfactor = 80);

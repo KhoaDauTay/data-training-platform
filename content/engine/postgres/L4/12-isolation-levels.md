@@ -16,9 +16,9 @@ objectives:
   - { vi: "Đặt mức cô lập đúng chỗ: `BEGIN ISOLATION LEVEL`, trước câu đầu tiên", en: "Set the isolation level in the right place: `BEGIN ISOLATION LEVEL`, before the first statement" }
 requires: [e-pg-l4-09]
 sources:
-  - https://www.postgresql.org/docs/18/transaction-iso.html
-  - https://www.postgresql.org/docs/18/sql-set-transaction.html
-  - https://www.postgresql.org/docs/18/sql-begin.html
+  - { url: https://www.postgresql.org/docs/18/transaction-iso.html, title_vi: "Mức cô lập transaction" }
+  - { url: https://www.postgresql.org/docs/18/sql-set-transaction.html, title_vi: "SET TRANSACTION" }
+  - { url: https://www.postgresql.org/docs/18/sql-begin.html, title_vi: "BEGIN" }
 viz: pg-isolation-anomalies
 quiz:
   - q: { vi: "Ở Read Committed, một transaction chạy `SELECT sum(bal) FROM acct` hai lần. Giữa hai lần, phiên khác chuyển tiền và COMMIT. Hai tổng có thể khác nhau không?", en: "Under Read Committed, a transaction runs `SELECT sum(bal) FROM acct` twice. Between them, another session moves money and COMMITs. Can the two sums differ?" }

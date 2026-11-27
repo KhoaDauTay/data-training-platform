@@ -16,11 +16,11 @@ objectives:
     en: Write searches that really go through the index you built, without wrapping the column in a function that loses it.
 requires: [e-pg-l2-16]
 sources:
-  - https://www.postgresql.org/docs/18/indexes-types.html
-  - https://www.postgresql.org/docs/18/pgtrgm.html
-  - https://www.postgresql.org/docs/18/gin.html
-  - https://www.postgresql.org/docs/18/brin.html
-  - https://www.postgresql.org/docs/18/using-explain.html
+  - { url: https://www.postgresql.org/docs/18/indexes-types.html, title_vi: "Các loại index" }
+  - { url: https://www.postgresql.org/docs/18/pgtrgm.html, title_vi: "pg_trgm" }
+  - { url: https://www.postgresql.org/docs/18/gin.html, title_vi: "Index GIN" }
+  - { url: https://www.postgresql.org/docs/18/brin.html, title_vi: "Index BRIN" }
+  - { url: https://www.postgresql.org/docs/18/using-explain.html, title_vi: "Dùng EXPLAIN" }
 lab:
   setup: |
     CREATE EXTENSION IF NOT EXISTS pg_trgm;

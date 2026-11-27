@@ -18,9 +18,9 @@ objectives:
   - vi: Biết bước nào cần nguồn đúng ở PostgreSQL ngoài Redis.
     en: Know which step needs a source of truth in PostgreSQL besides Redis.
 sources:
-  - { url: "https://valkey.io/topics/transactions/", title: "Valkey docs: Transactions" }
-  - { url: "https://valkey.io/commands/incr/", title: "Valkey docs: INCR (pattern: rate limiter)" }
-  - { url: "https://redis.io/docs/latest/develop/data-types/sorted-sets/", title: "Redis docs: Sorted sets" }
+  - { url: "https://valkey.io/topics/transactions/", title: "Valkey docs: Transactions", title_vi: "Tài liệu Valkey: transaction" }
+  - { url: "https://valkey.io/commands/incr/", title: "Valkey docs: INCR (pattern: rate limiter)", title_vi: "Tài liệu Valkey: INCR" }
+  - { url: "https://redis.io/docs/latest/develop/data-types/sorted-sets/", title: "Redis docs: Sorted sets", title_vi: "Tài liệu Redis: sorted set" }
 lab:
   setup: |
     SET stock:p05 3

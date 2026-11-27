@@ -19,12 +19,12 @@ objectives:
 requires: [e-pg-l2-18]
 figures: [{ name: pg-loop-continue-exit, at: idea }]
 sources:
-  - https://www.postgresql.org/docs/18/sql-createprocedure.html
-  - https://www.postgresql.org/docs/18/sql-call.html
-  - https://www.postgresql.org/docs/18/plpgsql-control-structures.html
-  - https://www.postgresql.org/docs/18/plpgsql-cursors.html
-  - https://www.postgresql.org/docs/18/plpgsql-transactions.html
-  - https://www.postgresql.org/docs/18/sql-declare.html
+  - { url: https://www.postgresql.org/docs/18/sql-createprocedure.html, title_vi: "CREATE PROCEDURE" }
+  - { url: https://www.postgresql.org/docs/18/sql-call.html, title_vi: "CALL" }
+  - { url: https://www.postgresql.org/docs/18/plpgsql-control-structures.html, title_vi: "PL/pgSQL › cấu trúc điều khiển" }
+  - { url: https://www.postgresql.org/docs/18/plpgsql-cursors.html, title_vi: "PL/pgSQL › cursor" }
+  - { url: https://www.postgresql.org/docs/18/plpgsql-transactions.html, title_vi: "PL/pgSQL › quản lý transaction" }
+  - { url: https://www.postgresql.org/docs/18/sql-declare.html, title_vi: "DECLARE (cursor)" }
 lab:
   setup: |
     CREATE TABLE orders (

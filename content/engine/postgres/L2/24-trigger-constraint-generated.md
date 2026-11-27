@@ -16,10 +16,10 @@ objectives:
     en: Tell STORED from VIRTUAL generated columns in PostgreSQL 18.
 requires: [e-pg-l2-23]
 sources:
-  - https://www.postgresql.org/docs/18/ddl-constraints.html
-  - https://www.postgresql.org/docs/18/ddl-generated-columns.html
-  - https://www.postgresql.org/docs/18/trigger-definition.html
-  - https://www.postgresql.org/docs/18/sql-createtable.html
+  - { url: https://www.postgresql.org/docs/18/ddl-constraints.html, title_vi: "Ràng buộc" }
+  - { url: https://www.postgresql.org/docs/18/ddl-generated-columns.html, title_vi: "Cột sinh tự động (generated column)" }
+  - { url: https://www.postgresql.org/docs/18/trigger-definition.html, title_vi: "Trigger hoạt động thế nào" }
+  - { url: https://www.postgresql.org/docs/18/sql-createtable.html, title_vi: "CREATE TABLE" }
 lab:
   setup: |
     CREATE TABLE customers (

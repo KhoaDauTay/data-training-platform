@@ -19,9 +19,9 @@ objectives:
     en: Sync a table from a source with `MERGE` and read `merge_action()` in `RETURNING`; know when to pick which.
 requires: [e-pg-l1-15]
 sources:
-  - https://www.postgresql.org/docs/18/sql-insert.html
-  - https://www.postgresql.org/docs/18/sql-merge.html
-  - https://www.postgresql.org/docs/18/dml-returning.html
+  - { url: https://www.postgresql.org/docs/18/sql-insert.html, title_vi: "INSERT" }
+  - { url: https://www.postgresql.org/docs/18/sql-merge.html, title_vi: "MERGE" }
+  - { url: https://www.postgresql.org/docs/18/dml-returning.html, title_vi: "Lấy lại dữ liệu từ dòng vừa ghi (RETURNING)" }
 lab:
   setup: |
     CREATE TABLE stock (sku text PRIMARY KEY, qty int NOT NULL CHECK (qty >= 0), updated_on date NOT NULL);

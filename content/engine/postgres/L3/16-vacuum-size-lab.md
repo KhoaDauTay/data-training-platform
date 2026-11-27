@@ -19,9 +19,9 @@ objectives:
     en: Explain the exception for pages at the end of the table
 requires: [e-pg-l3-09]
 sources:
-  - https://www.postgresql.org/docs/18/routine-vacuuming.html
-  - https://www.postgresql.org/docs/18/sql-vacuum.html
-  - https://www.postgresql.org/docs/18/monitoring-stats.html
+  - { url: https://www.postgresql.org/docs/18/routine-vacuuming.html, title_vi: "VACUUM định kỳ" }
+  - { url: https://www.postgresql.org/docs/18/sql-vacuum.html, title_vi: "VACUUM" }
+  - { url: https://www.postgresql.org/docs/18/monitoring-stats.html, title_vi: "Hệ thống thống kê hoạt động" }
 lab:
   setup: |
     CREATE TABLE log_head(id int PRIMARY KEY, pad char(100));

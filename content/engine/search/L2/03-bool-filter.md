@@ -18,9 +18,9 @@ objectives:
     en: "Put yes/no conditions (price, category) into `filter` so they do not skew the ranking."
 requires: [e-sr-l2-02]
 sources:
-  - https://www.elastic.co/docs/reference/query-languages/query-dsl/query-dsl-bool-query
-  - https://www.elastic.co/docs/reference/query-languages/query-dsl/query-filter-context
-  - https://www.elastic.co/docs/reference/query-languages/query-dsl/query-dsl-range-query
+  - { url: https://www.elastic.co/docs/reference/query-languages/query-dsl/query-dsl-bool-query, title_vi: "Truy vấn bool" }
+  - { url: https://www.elastic.co/docs/reference/query-languages/query-dsl/query-filter-context, title_vi: "Ngữ cảnh truy vấn và ngữ cảnh lọc" }
+  - { url: https://www.elastic.co/docs/reference/query-languages/query-dsl/query-dsl-range-query, title_vi: "Truy vấn range" }
 lab:
   setup: |
     {"index": "shop",

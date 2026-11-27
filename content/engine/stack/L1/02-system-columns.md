@@ -18,10 +18,10 @@ objectives:
     en: Ask a history table "what was the value at time t".
 requires: [e-st-l1-01]
 sources:
-  - { url: "https://fivetran.com/docs/core-concepts/system-columns-and-tables", title: "Fivetran docs: System columns and tables" }
-  - { url: "https://docs.airbyte.com/platform/understanding-airbyte/airbyte-metadata-fields", title: "Airbyte docs: Airbyte metadata fields" }
-  - { url: "https://fivetran.com/docs/core-concepts/sync-modes/history-mode", title: "Fivetran docs: History mode" }
-  - https://www.postgresql.org/docs/18/sql-select.html#SQL-DISTINCT
+  - { url: "https://fivetran.com/docs/core-concepts/system-columns-and-tables", title: "Fivetran docs: System columns and tables", title_vi: "Tài liệu Fivetran: cột và bảng hệ thống" }
+  - { url: "https://docs.airbyte.com/platform/understanding-airbyte/airbyte-metadata-fields", title: "Airbyte docs: Airbyte metadata fields", title_vi: "Tài liệu Airbyte: các trường metadata của Airbyte" }
+  - { url: "https://fivetran.com/docs/core-concepts/sync-modes/history-mode", title: "Fivetran docs: History mode", title_vi: "Tài liệu Fivetran: chế độ lưu lịch sử" }
+  - { url: https://www.postgresql.org/docs/18/sql-select.html#SQL-DISTINCT, title_vi: "SELECT DISTINCT ON" }
 lab:
   setup: |
     CREATE SCHEMA raw_shop;

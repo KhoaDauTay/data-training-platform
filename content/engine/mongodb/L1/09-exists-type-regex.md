@@ -16,9 +16,9 @@ objectives:
     en: Filter strings by pattern with `$regex`.
 requires: [e-mg-l1-07]
 sources:
-  - https://www.mongodb.com/docs/manual/tutorial/query-for-null-fields/
-  - https://www.mongodb.com/docs/manual/reference/operator/query/type/
-  - https://www.mongodb.com/docs/manual/reference/operator/query/regex/
+  - { url: https://www.mongodb.com/docs/manual/tutorial/query-for-null-fields/, title_vi: "Truy vấn trường null hoặc thiếu" }
+  - { url: https://www.mongodb.com/docs/manual/reference/operator/query/type/, title_vi: "$type" }
+  - { url: https://www.mongodb.com/docs/manual/reference/operator/query/regex/, title_vi: "$regex" }
 lab:
   setup: |
     {"collections": {

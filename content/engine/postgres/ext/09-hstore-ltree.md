@@ -19,9 +19,9 @@ objectives:
   - vi: Tạo index GiST cho cột `ltree`.
     en: Create a GiST index for an `ltree` column.
 sources:
-  - https://www.postgresql.org/docs/18/hstore.html
-  - https://www.postgresql.org/docs/18/ltree.html
-  - https://www.postgresql.org/docs/18/datatype-json.html
+  - { url: https://www.postgresql.org/docs/18/hstore.html, title_vi: "hstore" }
+  - { url: https://www.postgresql.org/docs/18/ltree.html, title_vi: "ltree" }
+  - { url: https://www.postgresql.org/docs/18/datatype-json.html, title_vi: "Kiểu JSON" }
 lab:
   setup: |
     CREATE EXTENSION IF NOT EXISTS hstore;

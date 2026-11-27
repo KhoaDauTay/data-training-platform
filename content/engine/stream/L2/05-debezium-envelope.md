@@ -18,9 +18,9 @@ objectives:
     en: Build the current state from envelopes, snapshot `r` and delete `d` included.
 requires: [e-sm-l2-04]
 sources:
-  - { url: "https://debezium.io/documentation/reference/stable/connectors/postgresql.html", title: "Debezium docs: PostgreSQL connector (change event values)" }
-  - { url: "https://www.postgresql.org/docs/18/sql-altertable.html", title: "PostgreSQL 18 docs: ALTER TABLE (REPLICA IDENTITY)" }
-  - { url: "https://www.postgresql.org/docs/18/functions-comparison.html", title: "PostgreSQL 18 docs: Comparison operators (IS DISTINCT FROM)" }
+  - { url: "https://debezium.io/documentation/reference/stable/connectors/postgresql.html", title: "Debezium docs: PostgreSQL connector (change event values)", title_vi: "Tài liệu Debezium: connector PostgreSQL (giá trị của sự kiện thay đổi)" }
+  - { url: "https://www.postgresql.org/docs/18/sql-altertable.html", title: "PostgreSQL 18 docs: ALTER TABLE (REPLICA IDENTITY)", title_vi: "ALTER TABLE (REPLICA IDENTITY)" }
+  - { url: "https://www.postgresql.org/docs/18/functions-comparison.html", title: "PostgreSQL 18 docs: Comparison operators (IS DISTINCT FROM)", title_vi: "Toán tử so sánh (IS DISTINCT FROM)" }
 lab:
   setup: |
     CREATE TABLE change_log (

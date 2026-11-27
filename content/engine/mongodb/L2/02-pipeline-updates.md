@@ -15,8 +15,8 @@ objectives:
     en: Use `$set`, `$project` and `$cond` in an update and know `$$NOW` gives the current time.
 requires: [e-mg-l2-01]
 sources:
-  - https://www.mongodb.com/docs/manual/tutorial/update-documents-with-aggregation-pipeline/
-  - https://www.mongodb.com/docs/manual/reference/aggregation-variables/
+  - { url: https://www.mongodb.com/docs/manual/tutorial/update-documents-with-aggregation-pipeline/, title_vi: "Cập nhật bằng aggregation pipeline" }
+  - { url: https://www.mongodb.com/docs/manual/reference/aggregation-variables/, title_vi: "Biến trong aggregation" }
 lab:
   setup: |
     {"collections": {"orders": [
