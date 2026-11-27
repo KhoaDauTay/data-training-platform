@@ -42,7 +42,7 @@ const baseDeps = (): EngineDeps => ({
   h, icon, t, getLang, locale, app, persist, announce, loader, reducedMotion, isDark, renderResult, errorView, optionOrder,
   engineHash, engineRouteOf, enginePathOf, enginePathHash, hashOf, engineTermsOf, engineTermsHash, engineInterviewOf, engineInterviewHash, interviewTabHash, engineCompareOf, engineCompareHash, rerender: () => actions.rerender(), cls: { CARD, BTN_GO, BTN_SECONDARY, BTN_GHOST, PILL, DONE_PILL, cx },
   ui: { listRow, LIST, GROUP_TITLE, ABOVE }, createEditor,
-  lab: { sql: (text) => runOn('lab', text), grade: (run, solution, player, ordered) => grade(run, solution, player, ordered), verdict: verdictText, lang: getLang, slow: slowVerdict },
+  lab: { sql: (text) => runOn('lab', text), grade: (run, solution, player, ordered) => grade(run, solution, player, ordered), verdict: (r) => verdictText(r, true), lang: getLang, slow: slowVerdict },
   viz: { h, s, reducedMotion, loadedGsap, loadGsap, getLang },
   prefs: { read: readJson, write: writeJson },
   cheer: { mascot, react, badge: () => illustration('aspect-square', (il) => il.doneBadge()) },

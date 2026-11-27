@@ -13,23 +13,23 @@ import { parseLine } from './parse';
 const TEXT = {
   vi: {
     empty: 'Chưa có lệnh nào để chấm.',
-    reply: 'Câu trả lời của dòng cuối chưa đúng: máy trả `{got}`.',
-    after: 'Lệnh chạy được, nhưng dữ liệu sau đó chưa đúng: `{after}` trả `{got}`.',
+    reply: 'Dòng cuối trả `{got}`, khác lời giải.',
+    after: 'Lệnh chạy được, nhưng dữ liệu sau đó khác lời giải: `{after}` trả `{got}`.',
     ttl: 'Thời gian sống chưa đúng: sau {s} giây nữa, `{cmd}` trả {got}, bước này cần {want}.',
     noError: 'Lệnh này chạy được. Bước này muốn thấy Redis từ chối nó với lỗi `{c}`.',
     otherError: 'Redis báo lỗi `{got}`, còn bước này muốn lỗi `{c}`.',
     errorLast: 'Dòng cuối báo lỗi: {got}',
-    state: 'Câu trả lời đúng, nhưng dữ liệu sau các lệnh khác lời giải ở khóa `{key}`.',
+    state: 'Đúng kết quả, nhưng dữ liệu sau các lệnh khác lời giải ở khóa `{key}`.',
   },
   en: {
     empty: 'There is no command to grade yet.',
-    reply: 'The last line\'s reply is not right yet: the server answered `{got}`.',
-    after: 'The commands ran, but the data afterwards is not right yet: `{after}` answers `{got}`.',
+    reply: 'The last line answers `{got}`, which differs from the solution.',
+    after: 'The commands ran, but the data afterwards differs from the solution: `{after}` answers `{got}`.',
     ttl: 'The time to live is not right yet: {s} seconds later, `{cmd}` answers {got}, this step needs {want}.',
     noError: 'This command runs. This step wants to see Redis refuse it with the error `{c}`.',
     otherError: 'Redis answered with the error `{got}`, but this step wants `{c}`.',
     errorLast: 'The last line failed: {got}',
-    state: 'The reply is right, but after your commands the data differs from the solution at key `{key}`.',
+    state: 'The result is right, but after your commands the data differs from the solution at key `{key}`.',
   },
 };
 const fill = (s: string, p: Record<string, string | number>): string => s.replace(/\{(\w+)\}/g, (_, k: string) => String(p[k] ?? ''));
@@ -118,7 +118,8 @@ export function redisRunner(env: { lang(): 'vi' | 'en' }): LabRunner {
       const want = runScript(ref, step.solution).at(-1)!;
       if (replyKey(last, step.ordered, want) !== replyKey(want, step.ordered)) {
         const msg = last.reply.t === 'err' ? fill(t().errorLast, { got: format(last.reply) }) : fill(t().reply, { got: format(last.reply).split('\n')[0] });
-        return { ok: false, reason: 'wrong', message: msg };
+        // B-11 (L1130): a failed last line is an `error` (run() threw it too), so the page points to the error box like every runtime
+        return { ok: false, reason: last.reply.t === 'err' ? 'error' : 'wrong', message: msg };
       }
       const adv = step.expect?.advance ?? 0;
       if (adv) { mine.advance(adv); ref.advance(adv); }

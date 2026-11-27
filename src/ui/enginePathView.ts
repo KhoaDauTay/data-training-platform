@@ -147,13 +147,13 @@ async function drillVerdict(m: PathChunk, dr: Drill, code: string, v: DrillVisit
   if (dr.grade === 'esr') {
     if (m.followsEsr(dr.query!, code)) return { ok: true, text: et('lab.passed') };
     const flat = (x: string) => x.replace(/\s+/g, '');
-    return { ok: false, text: tip(dr.wrong?.find((w) => w.query && flat(w.query) === flat(code))) ?? et('path.notEsr') };
+    return { ok: false, text: tip(dr.wrong?.find((w) => w.query && flat(w.query) === flat(code))) ?? et('lab.notPassed', { why: et('path.notEsr') }) };
   }
   const r = await mongoRunner();
   const step = { solution: dr.solution!, check: 'doc' as const, ordered: !!dr.ordered, task: dr.task, hint: dr.hint };
   const g = await r.check(PATH_LAB, step, code, { strictId: dr.grade === 'covered' });
   if (g.ok) {
-    if (dr.grade === 'covered' && dr.index && !m.isCovered(code, dr.index)) return { ok: false, text: et('path.notCovered') };
+    if (dr.grade === 'covered' && dr.index && !m.isCovered(code, dr.index)) return { ok: false, text: et('lab.notPassed', { why: et('path.notCovered') }) };
     return { ok: true, text: c.verdictLine(g) };
   }
   if (g.reason === 'wrong') {

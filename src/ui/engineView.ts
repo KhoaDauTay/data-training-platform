@@ -560,7 +560,7 @@ async function labAction(l: EngineLesson, v: Visit, i: number, submit: boolean):
       const verdict = await r.check(l.lab!, l.lab!.steps[i], code);
       // v31 G3 (L515): a run that failed shows its error once, in the error box under the editor; the status line only points to it
       const failed = !verdict.ok && verdict.reason === 'error' && !!v.out[i] && 'error' in v.out[i]!;
-      v.msg[i] = { ok: verdict.ok, text: failed ? et('lab.errBelow') : verdictLine(verdict) };
+      v.msg[i] = { ok: verdict.ok, text: failed ? et('lab.notPassed', { why: et('lab.errBelow') }) : verdictLine(verdict) };
       if (verdict.ok) {
         v.good[i] = code;
         passPart(l, v, `s${i}`);
@@ -575,13 +575,16 @@ async function labAction(l: EngineLesson, v: Visit, i: number, submit: boolean):
   }
 }
 
-/** One sentence for a lab verdict: a runner's ready text, else its `why` code (L248), else the generic line. */
+/**
+ * One sentence for a lab verdict: a runner's ready text, else its `why` code (L248), else the generic line. B-11 (L1130): every
+ * runtime speaks in one frame, "Đạt bước này." / "Chưa đạt. <the runtime's own reason>".
+ */
 function verdictLine(x: LabVerdict): string {
   if (x.ok) return x.tip === 'extraId' ? et('tip.extraId') : et('lab.passed');
   if (x.reason === 'unsupported') return et('lab.unsupported');
-  if (x.message) return x.message;
   const key = `why.${x.why}`;
-  return x.why && Object.hasOwn(ENGINE_DICT.vi, key) ? et(key as EngineKey, x.params) : et('wrong');
+  const why = x.message ?? (x.why && Object.hasOwn(ENGINE_DICT.vi, key) ? et(key as EngineKey, x.params) : et('lab.differs'));
+  return et('lab.notPassed', { why });
 }
 
 // ---- v23 lazy parts: the predict + plan tree chunk (PRED, L256) and the capstone chunk (CAP, L257)

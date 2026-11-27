@@ -24,7 +24,7 @@ describe('verdictText (L84: một câu, không lộ giá trị đáp án)', () =
     const actual = [['Oceanic Star Line', 'SEA'], ['Vietnam Air', 'AIR'], ['FedEx', 'AIR']];
     expect(verdict(actual)).toBe('Cột 1 của bạn là cột 2 của đáp án, cột 2 chưa khớp.');
     await setLang('en');
-    expect(verdict(actual)).toBe("Your column 1 is the answer's column 2, column 2 does not match.");
+    expect(verdict(actual)).toBe('Your column 1 is column 2 of the answer, column 2 does not match.');
     await setLang('vi');
   });
 
@@ -37,7 +37,10 @@ describe('verdictText (L84: một câu, không lộ giá trị đáp án)', () =
   it('khác số dòng, số cột, thứ tự', () => {
     expect(verdict([['OSL', 'Oceanic Star Line']])).toBe('Bạn có 1 dòng, đáp án có 3 dòng.');
     expect(verdict([['OSL'], ['VNA'], ['FDX']])).toBe('Bạn có 1 cột, đáp án có 2 cột.');
-    expect(verdict([...carriers.rows].reverse(), carriers, true)).toBe('Dữ liệu đúng nhưng thứ tự dòng chưa đúng yêu cầu.');
+    // B-11 (L1130): the engine labs say "lời giải", like every other runtime there
+    const r = compareResults(carriers, res([['OSL', 'Oceanic Star Line']]), false);
+    expect(!r.ok && verdictText(r, true)).toBe('Bạn có 1 dòng, lời giải có 3 dòng.');
+    expect(verdict([...carriers.rows].reverse(), carriers, true)).toBe('Đúng dữ liệu, nhưng thứ tự dòng chưa đúng yêu cầu.');
   });
 });
 

@@ -123,12 +123,16 @@ type Fail = Exclude<GradeResult, { ok: true }>;
 const capital = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1);
 const list = (xs: number[]): string => xs.map((i) => i + 1).join(', ');
 
-/** One sentence for a wrong practice answer (L84): which columns differ, or how many rows each side has. */
-export function verdictText(r: Fail): string {
+/**
+ * One sentence for a wrong practice answer (L84): which columns differ, or how many rows each side has. `solution` (B-11,
+ * L1130): the engine labs compare with "lời giải" / "the solution", like every other runtime there; practice says "đáp án".
+ */
+export function verdictText(r: Fail, solution = false): string {
+  const ref = t(solution ? 'verdict.refSol' : 'verdict.ref');
   if (r.reason === 'error') return r.message;
-  if (r.reason === 'columns') return t('verdict.columns', { expected: r.expected, actual: r.actual });
+  if (r.reason === 'columns') return t('verdict.columns', { expected: r.expected, actual: r.actual, ref });
   if (r.reason === 'order') return t('grade.order');
-  if (!r.cols) return t('verdict.rows', { expected: r.expectedRows, actual: r.actualRows });
+  if (!r.cols) return t('verdict.rows', { expected: r.expectedRows, actual: r.actualRows, ref });
   const { mismatched, moved } = r.cols;
   if (mismatched.length === 0) return t('verdict.pairing');
   const parts: string[] = [];
@@ -138,7 +142,7 @@ export function verdictText(r: Fail): string {
     if (moved.some((x) => x.from === to && x.to === from)) {
       parts.push(t('verdict.swap', { a: Math.min(from, to) + 1, b: Math.max(from, to) + 1 }));
       told.add(to);
-    } else parts.push(t('verdict.moved', { from: from + 1, to: to + 1 }));
+    } else parts.push(t('verdict.moved', { from: from + 1, to: to + 1, ref }));
     told.add(from);
   }
   const wrong = mismatched.filter((i) => !told.has(i));
