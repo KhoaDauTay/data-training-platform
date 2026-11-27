@@ -7,3 +7,15 @@
 - id: choose
   vi: Chọn công cụ và tổng hợp
   en: Choosing the tool, and a capstone
+- id: algorithms
+  vi: Thuật toán đồ thị bằng SQL
+  en: Graph algorithms in SQL
+- id: trees
+  vi: Cây phân cấp
+  en: Hierarchies
+- id: patterns
+  vi: Mô hình và mẫu truy vấn
+  en: Models and query patterns
+- id: scale
+  vi: Hiệu năng và lựa chọn
+  en: Performance and the choice

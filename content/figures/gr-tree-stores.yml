@@ -1,0 +1,22 @@
+# v48 Graph R2 (L1180–L1189): three ways to store a tree. Lesson: e-gr-l3-04 (Ý chính). Data: the lab's tree (PGlite 0.5.16,
+# PostgreSQL 18.6): 4000 places, 3999 parent links, closure table 26,182 pairs (step 2), max depth 6; ltree would hold one label
+# per place (4000). Sources: https://www.postgresql.org/docs/18/queries-with.html, https://www.postgresql.org/docs/18/ltree.html
+title: { vi: "Ba cách lưu một cây", en: "Three ways to store a tree" }
+caption:
+  vi: "Cùng cây 4000 vị trí. Danh sách kề rẻ khi ghi, bảng bao đóng rẻ khi đọc nhánh, ltree gọn nhưng chuyển nhánh phải viết lại nhãn."
+  en: "The same tree of 4000 places. The adjacency list is cheap to write, the closure table is cheap for branch reads, ltree is compact but moving a branch rewrites labels."
+alt:
+  vi: "Mỗi cách lưu cây đổi chi phí đọc lấy chi phí ghi: danh sách kề cần CTE đệ quy để đọc nhánh, bảng bao đóng đọc bằng một phép lọc nhưng giữ mọi cặp, ltree giữ đường đi trong nhãn. Kết quả: 3999 dòng kề, 26 182 cặp bao đóng, 4000 nhãn ltree."
+  en: "Each way to store a tree trades read cost for write cost: the adjacency list needs a recursive CTE to read a branch, the closure table reads with one filter but keeps every pair, ltree keeps the path in the label. Result: 3999 adjacency rows, 26,182 closure pairs, 4000 ltree labels."
+nodes:
+  - id: stores
+    shape: grid
+    label: { vi: "so sánh", en: comparison }
+    head: [{ vi: "cách lưu", en: store }, { vi: "đọc nhánh", en: branch read }, { vi: "chuyển nhánh", en: move branch }]
+    cells:
+      - [{ vi: "kề", en: adjacency }, { vi: "CTE đệ quy", en: recursive CTE }, { vi: "1 dòng", en: 1 row }]
+      - [{ vi: "bao đóng", en: closure }, { vi: "1 phép lọc", en: one filter }, { vi: "nhiều cặp", en: many pairs }]
+      - [ltree, "<@ + GiST", { vi: "viết lại nhãn", en: rewrite labels }]
+    colTone: [new, null, null]
+rows:
+  - [stores]

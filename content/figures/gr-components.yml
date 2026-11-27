@@ -1,0 +1,24 @@
+# v48 Graph R2 (L1180–L1189): the components of the feeder network. Lesson: e-gr-l3-02 (Ý chính). Data: the lab's 7 links and
+# 11 ports (PGlite 0.5.16, PostgreSQL 18.6) = step 3: HKHKG 5 (HKHKG, SGSIN, VNDAD, VNHPH, VNSGN), BEANR 3 (BEANR, DEHAM, NLRTM),
+# USLAX 2 (USLAX, USOAK), AUSYD 1. Codes shortened to three letters in the member column.
+# Sources: https://www.postgresql.org/docs/18/queries-with.html, https://neo4j.com/docs/graph-data-science/current/algorithms/wcc/
+title: { vi: "Bốn thành phần của mạng feeder", en: "The four components of the feeder network" }
+caption:
+  vi: "Mỗi thành phần mang tên mã nhỏ nhất trong nó. AUSYD không có liên kết nào nên đứng riêng một thành phần cỡ 1."
+  en: "Each component is named after the smallest code in it. AUSYD has no link, so it is a component of size 1 on its own."
+alt:
+  vi: "Thành phần liên thông gom các cảng tới được nhau khi đi hai chiều; nhãn là mã nhỏ nhất của nhóm nên không đổi giữa các lần chạy. Kết quả: HKHKG 5 cảng, BEANR 3, USLAX 2, AUSYD 1."
+  en: "Connected components group the ports that reach each other going both ways; the label is the group's smallest code, so it never changes between runs. Result: HKHKG 5 ports, BEANR 3, USLAX 2, AUSYD 1."
+nodes:
+  - id: comps
+    shape: grid
+    label: { vi: "thành phần", en: components }
+    head: [comp, { vi: "cảng", en: ports }, { vi: "cỡ", en: size }]
+    cells:
+      - [HKHKG, "HKG HPH SIN +2", "5"]
+      - [BEANR, ANR HAM RTM, "3"]
+      - [USLAX, LAX OAK, "2"]
+      - [AUSYD, SYD, "1"]
+    colTone: [new, null, null]
+rows:
+  - [comps]

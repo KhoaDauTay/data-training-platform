@@ -1,8 +1,9 @@
-// v47 Graph R1 (L1080–L1089; tools/v47/content-gaps.md §5 E6): the Engine card "Graph", lessons `e-gr-l<n>-NN` whose labs run on
+// v47 Graph R1 (L1080–L1089; tools/v47/content-gaps.md §5 E6), v48 R2 L3–L5 (L1180–L1189): the Engine card "Graph", lessons `e-gr-l<n>-NN` whose labs run on
 // PostgreSQL (PGlite 0.5.16 = PostgreSQL 18.6): edge tables, recursive CTEs, SEARCH and CYCLE. Cypher is shown in ```text only.
 // Mirrors tests/engineStack.test.ts: anatomy (concept = Mở bài · Ý chính · Ví dụ · Lỗi hay gặp · Tóm tắt; lab = + Cú pháp ·
 // Thực hành, ≥ 3 steps), ≥ 2 questions with ≥ 1 trap, one gr- figure, code lines ≤ 40 characters, every ```sql block of Ví dụ and
-// Lỗi hay gặp runs after setup, every lab step passes with its Solution and fails with `SELECT 1`.
+// Lỗi hay gặp runs after setup, every lab step passes with its Solution and fails with `SELECT 1`; every `perf:` bar refuses its
+// `slow:` (same rows) for being slow.
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 import { blocksOf, lessonProblems, parseEngineLesson, parseModules, SECTIONS, type EngineLesson, type SectionId } from '../src/engine/content';
@@ -11,6 +12,7 @@ import { extensionsOf, pgScriptRunner, replayOf } from '../src/engine/pglab/runn
 import { runLabScript, splitSql } from '../src/engine/pglab/session';
 import type { ScriptStep } from '../src/engine/pglab/script';
 import { compareResults, grade } from '../src/grader';
+import { slowVerdict } from '../src/planCheck';
 
 const files = import.meta.glob<string>('../content/engine/graph/L*/*.md', { query: '?raw', import: 'default', eager: true });
 const moduleRaw = import.meta.glob<string>('../content/engine/graph/modules.yml', { query: '?raw', import: 'default', eager: true });
@@ -24,6 +26,11 @@ const ids = new Set(all.map((x) => x.l.id));
 const PLAN: Record<string, EngineLesson['kind'][]> = {
   L1: ['lab', 'lab', 'concept'],
   L2: ['lab', 'lab', 'lab', 'lab', 'concept', 'capstone'],
+  // v48 R2: weighted paths, components, PageRank, hierarchies; bipartite, the Cargo Query model, Cypher vs SQL, capstone;
+  // indexes on edges, depth limits, when a graph DB wins, capstone
+  L3: ['lab', 'lab', 'lab', 'lab'],
+  L4: ['lab', 'lab', 'concept', 'capstone'],
+  L5: ['lab', 'lab', 'concept', 'capstone'],
 };
 const ORDER = Object.keys(SECTIONS) as SectionId[];
 const NEED: Partial<Record<EngineLesson['kind'], SectionId[]>> = {
@@ -38,10 +45,10 @@ const isErr = (b: string): boolean => /^--\s*ERROR\b/m.test(b);
 const wordCountOf = (s: string): number => s.split(/\s+/).filter(Boolean).length;
 
 describe('Engine Graph (v47 R1): bài, mô-đun, luật nội dung', () => {
-  it('9 bài R1, đúng loại từng cấp, id e-gr-', () => {
+  it('21 bài (R1 9 + R2 12), đúng loại từng cấp, id e-gr-', () => {
     const got = Object.fromEntries(Object.keys(PLAN).map((lv) => [lv, all.filter((x) => x.l.level === lv).sort((a, b) => a.l.order - b.l.order).map((x) => x.l.kind)]));
     expect(got).toEqual(PLAN);
-    expect(all.every((x) => /^e-gr-l[1-2]-\d\d$/.test(x.l.id) && x.l.engine === 'graph')).toBe(true);
+    expect(all.every((x) => /^e-gr-l[1-5]-\d\d$/.test(x.l.id) && x.l.engine === 'graph')).toBe(true);
   });
   it('modules.yml: mỗi mô-đun có VI/EN và được dùng', () => {
     const [path, raw] = Object.entries(moduleRaw)[0];
@@ -150,10 +157,23 @@ describe('Engine Graph: mọi bước lab qua bằng lời giải, không qua kh
       if (s.ordered) expect(s.solution).toMatch(/ORDER BY/i);
     }
   }, 120_000);
+
+  // tests/perfGateEngine.test.ts does not EXPLAIN this track; this proves each bar.
+  const slowRunner = pgScriptRunner({ grade, verdict: (x) => JSON.stringify(x).slice(0, 300), slow: slowVerdict }, { run: runLabScript, reset: () => undefined });
+  const bars = all.flatMap(({ l }) => l.lab!.steps.flatMap((s, i) => (s.perf ? [[`${l.id} s${i + 1} perf`, l, i] as const] : [])));
+  it('có thanh tốc độ ở bài index trên cạnh, cây phân cấp và hai bài tổng hợp', () =>
+    expect(new Set(bars.map(([n]) => n.split(' ')[0]))).toEqual(new Set(['e-gr-l3-04', 'e-gr-l4-04', 'e-gr-l5-01', 'e-gr-l5-04'])));
+  it.each(bars)('%s: lời giải qua, slow: trượt vì chậm', async (_, l, i) => {
+    const s = l.lab!.steps[i];
+    expect(s.check).toBe('rows');
+    expect(await slowRunner.check(l.lab!, s, s.solution)).toMatchObject({ ok: true });
+    expect(await slowRunner.check(l.lab!, s, s.slow!)).toMatchObject({ ok: false, reason: 'wrong', why: expect.stringMatching(/^slow/) });
+    expect(await runner.check(l.lab!, s, s.slow!)).toMatchObject({ ok: true });
+  }, 120_000);
 });
 
 describe('Engine Graph: wiring kept through merges (regex sites tsc cannot see)', () => {
-  it('ENGINE_ID, routes, play alias, onPg, runner, two badge levels', async () => {
+  it('ENGINE_ID, routes, play alias, onPg, runner, five badge levels (v48)', async () => {
     const { ENGINE_ID } = await import('../src/save');
     const { engineRouteOf, enginePlayOf } = await import('../src/route');
     const { onPg } = await import('../src/engine/content');
@@ -164,7 +184,7 @@ describe('Engine Graph: wiring kept through merges (regex sites tsc cannot see)'
     expect(enginePlayOf('#/engine/play/e-gr-l2-06')).toBe('#/engine/graph/L2/e-gr-l2-06');
     expect(onPg('graph')).toBe(true);
     expect(LAB_RUNNERS.graph).toBe(LAB_RUNNERS.postgres);
-    expect(levelsOf('graph')).toEqual(['L1', 'L2']);
+    expect(levelsOf('graph')).toEqual(['L1', 'L2', 'L3', 'L4', 'L5']);
   });
 });
 

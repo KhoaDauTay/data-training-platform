@@ -1,0 +1,32 @@
+# v48 Graph R2 (L1180–L1189): PageRank after 1 round vs after 20. Lesson: e-gr-l3-03 (Ý chính). Data: the lab's 7 legs, damping
+# 0.85, start 0.2 (PGlite 0.5.16, PostgreSQL 18.6): round 1 = step 2 (SGSIN 0.370, HKHKG 0.285, VNDAD 0.200, KRPUS 0.115,
+# VNSGN 0.030); round 20 = step 3 (HKHKG 0.341, SGSIN 0.276, VNDAD 0.179, KRPUS 0.175, VNSGN 0.030). Bar values are score × 30.
+# Sources: https://neo4j.com/docs/graph-data-science/current/algorithms/page-rank/, https://www.postgresql.org/docs/18/queries-with.html
+title: { vi: "Vòng 1 và vòng 20", en: "Round 1 and round 20" }
+caption:
+  vi: "Sau vòng 1, SGSIN dẫn đầu vì có nhiều cạnh vào nhất. SGSIN chuyển hết điểm cho HKHKG, nên sau 20 vòng HKHKG đứng đầu."
+  en: "After round 1, SGSIN leads because it has the most incoming edges. SGSIN passes all of its score to HKHKG, so after 20 rounds HKHKG is on top."
+alt:
+  vi: "PageRank dồn điểm theo cả mạng chứ không chỉ đếm cạnh vào, nên thứ hạng sau một vòng có thể đổi khi lặp đủ vòng. Kết quả: sau vòng 1 SGSIN 0,370 dẫn đầu; sau vòng 20 HKHKG 0,341, SGSIN 0,276."
+  en: "PageRank pours scores along the whole network instead of just counting incoming edges, so the ranking after one round can change once enough rounds run. Result: after round 1 SGSIN leads with 0.370; after round 20 HKHKG has 0.341 and SGSIN 0.276."
+nodes:
+  - id: r1
+    shape: bars
+    label: { vi: "sau vòng 1", en: "after round 1" }
+    items:
+      - { label: SGSIN, value: 11.1, note: { vi: "0,370", en: "0.370" }, tone: warm }
+      - { label: HKHKG, value: 8.6, note: { vi: "0,285", en: "0.285" } }
+      - { label: VNDAD, value: 6, note: { vi: "0,200", en: "0.200" } }
+      - { label: KRPUS, value: 3.5, note: { vi: "0,115", en: "0.115" } }
+      - { label: VNSGN, value: 0.9, note: { vi: "0,030", en: "0.030" } }
+  - id: r20
+    shape: bars
+    label: { vi: "sau vòng 20", en: "after round 20" }
+    items:
+      - { label: HKHKG, value: 10.2, note: { vi: "0,341", en: "0.341" }, tone: new }
+      - { label: SGSIN, value: 8.3, note: { vi: "0,276", en: "0.276" } }
+      - { label: VNDAD, value: 5.4, note: { vi: "0,179", en: "0.179" } }
+      - { label: KRPUS, value: 5.3, note: { vi: "0,175", en: "0.175" } }
+      - { label: VNSGN, value: 0.9, note: { vi: "0,030", en: "0.030" } }
+rows:
+  - [r1, r20]
