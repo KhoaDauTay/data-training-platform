@@ -12,6 +12,9 @@ import type { InterviewRun } from '../session';
 import type * as State from '../state';
 import type * as Storage from '../storage';
 import type * as Dom from './dom';
+import type * as HomeView from './homeView';
+import type * as Icons from './icons';
+import type * as Theme from '../theme';
 import type * as PaneTabs from './paneTabs';
 import { ivTabs } from './ivTabs';
 
@@ -32,6 +35,8 @@ export interface InterviewDeps {
   /** src/interviewPrefs.ts by value through main: the v16 portfolio may import it from main, so this chunk never does (Plan 6 U3). */
   prefs: { key: typeof Prefs.INTERVIEW_KEY; parse: typeof Prefs.parseInterviewPrefs; textMax: number; elapsed: typeof Prefs.elapsed; setPresence: typeof Prefs.setPresence };
   SKILLS: typeof Progress.SKILLS; knownSkills: typeof Home.knownSkills; loadTickets: typeof Content.loadTickets;
+  /** v48 B-08 (L1132): main's list rows, icons and button classes, so the SQL tab draws the engine tabs' joined list. */
+  ui: { listRow: typeof HomeView.listRow; LIST: string; icon: typeof Icons.icon; BTN_GO: string; BTN_SECONDARY: string; cx: typeof Theme.cx };
   /** Opens the run in the workspace (session mode + new editor + #/learn/play/<id>). */
   enter(run: InterviewRun): void;
   /** Rebuilds the editor for the run's current question or step (force: a new ticket, the last run dropped). */
@@ -45,11 +50,11 @@ export interface InterviewDeps {
 let d$: InterviewDeps;
 let c$: InterviewContent;
 const it = (key: IvKey, params?: I18n.Params): string => ivText(d$.getLang(), d$.locale(), key, params);
-/** v21 U24: a list row (text left, its button right from sm), not a tall card per set. */
-const ROW = 'flex flex-wrap items-center gap-x-4 gap-y-2 rounded-(--r-card) bg-panel px-5 py-3 ring-1 ring-line';
 const TITLE = { id: 'brief-title', tabindex: '-1', class: 'm-0 text-title font-bold' };
-/** eye-v47b B-08 (L1116): the numbered disc the engine tabs' rows start with (green once handed in), so all four tabs share one row. */
-const disc = (i: number, done: boolean): HTMLElement => d$.h('span', { class: done ? 'grid size-10 shrink-0 place-items-center rounded-full bg-good font-bold text-on-accent' : 'grid size-10 shrink-0 place-items-center rounded-full bg-code font-bold text-ink', 'aria-hidden': 'true' }, String(i + 1));
+/** eye-v47b B-08 (L1116, L1132): the engine tabs' row lead: the set's number, a check on green once handed in. */
+const disc = (i: number, done: boolean): HTMLElement => (done
+  ? d$.h('span', { class: 'grid size-10 shrink-0 place-items-center rounded-full bg-good text-on-accent' }, d$.ui.icon('check', 'size-5'))
+  : d$.h('span', { class: 'grid size-10 shrink-0 place-items-center rounded-full bg-code font-bold text-ink' }, String(i + 1)));
 /** "Run the timer" on the list page: off by default (D-N10), remembered for this page load only. */
 let timerPick = false;
 
@@ -482,11 +487,15 @@ export function listPage(): HTMLElement {
   const takeHomes = c$.takeHomes.filter((x) => !x.domain); // v47 (L82): domain cases live on their Overview, never here
   const all = [...c$.sets, ...takeHomes];
   const main = (all.find((x) => resumable(x.id)) ?? c$.sets.find((x) => ready(x.modules)) ?? c$.sets[0])?.id;
-  const actions = (id: string): HTMLElement => h('div', { class: 'actions mb-0 shrink-0' }, ...(resumable(id)
-    ? [h('button', { type: 'button', class: id === main ? 'primary' : '', onclick: () => void d$.startRun(id, false, false) }, it('iv.resume')),
-      h('button', { type: 'button', onclick: () => void d$.startRun(id, timerPick, true) }, it('iv.restart'))]
-    : [h('button', { type: 'button', class: id === main ? 'primary' : '', onclick: () => void d$.startRun(id, timerPick, true) },
-      timerPick && setOf(id) ? it('iv.startTimed', { min: setOf(id)!.minutes }) : it('iv.start'))]));
+  const { cx, BTN_GO, BTN_SECONDARY } = d$.ui;
+  const btn = (primary: boolean): string => cx(primary ? BTN_GO : BTN_SECONDARY, 'shrink-0 px-4 py-1.5 whitespace-nowrap');
+  // one button = the row's action (listRow stretches it over the row); resume + restart stay two buttons side by side
+  const actions = (id: string): HTMLElement => (resumable(id)
+    ? h('div', { class: 'flex shrink-0 flex-wrap gap-2' },
+      h('button', { type: 'button', class: btn(id === main), onclick: () => void d$.startRun(id, false, false) }, it('iv.resume')),
+      h('button', { type: 'button', class: btn(false), onclick: () => void d$.startRun(id, timerPick, true) }, it('iv.restart')))
+    : h('button', { type: 'button', class: btn(id === main), onclick: () => void d$.startRun(id, timerPick, true) },
+      timerPick && setOf(id) ? it('iv.startTimed', { min: setOf(id)!.minutes }) : it('iv.start')));
   const knownLine = (modules: number[]): string => {
     const skills = d$.SKILLS.filter((s) => modules.includes(s.chapter));
     return it('iv.known', { k: skills.filter((s) => known.has(s.id)).length, m: skills.length });
@@ -499,6 +508,9 @@ export function listPage(): HTMLElement {
       document.getElementById('iv-timer')?.focus();
     },
   });
+  // v48 B-08 (L1132): the engine tabs' joined list (main's listRow in one LIST card), one muted line per row, so all four tabs share one row
+  const { listRow, LIST } = d$.ui;
+  const sub = (...parts: (string | false)[]): string => parts.filter(Boolean).join(' · ');
   return h('div', { class: 'flex flex-col gap-6' },
     // v21 U18: the breadcrumb and the h1 "Phòng phỏng vấn" are drawn above by homeView; v47 S4 (L982): the room's tabs, SQL open
     ivTabs(h, 'sql', d$.interviewTabHash, d$.getLang()),
@@ -507,26 +519,26 @@ export function listPage(): HTMLElement {
       h('h2', { id: 'iv-sets', class: 'm-0 text-title font-bold' }, it('iv.sets')),
       h('p', { class: 'm-0 text-body-sm text-muted' }, it('iv.setsIntro')),
       h('label', { class: 'flex min-h-6 items-center gap-2' }, pick, it('iv.timerPick')),
-      h('ul', { class: 'm-0 flex list-none flex-col gap-3 p-0' }, ...c$.sets.map((s, i) => {
+      h('ul', { class: LIST }, ...c$.sets.map((s, i) => {
         const last = p.sets[s.id];
-        return h('li', { class: ROW }, disc(i, !!last), h('div', { class: 'flex min-w-0 flex-1 basis-48 flex-col gap-1' },
-          h('h3', { class: 'm-0 text-body font-bold' }, s.title[lang]),
-          h('p', { class: 'm-0 text-body-sm text-muted' }, `${it(`iv.level.${s.level}`)} · ${it('iv.setLine', { ...range(s.modules), n: s.questions.length, min: s.minutes })}`),
-          h('p', { class: 'm-0 text-body-sm' }, knownLine(s.modules)),
-          last ? h('p', { class: 'm-0 text-body-sm' }, it('iv.lastSet', { day: last.at, solved: last.solved, total: last.total, time: clock(last.ms) })) : null),
-          actions(s.id));
+        return listRow({
+          lead: disc(i, !!last), title: s.title[lang],
+          sub: sub(`${it(`iv.level.${s.level}`)} · ${it('iv.setLine', { ...range(s.modules), n: s.questions.length, min: s.minutes })}`, knownLine(s.modules),
+            !!last && it('iv.lastSet', { day: last.at, solved: last.solved, total: last.total, time: clock(last.ms) })),
+          action: actions(s.id),
+        });
       }))),
     h('section', { class: 'flex flex-col gap-3', 'aria-labelledby': 'iv-th' },
       h('h2', { id: 'iv-th', class: 'm-0 text-title font-bold' }, it('iv.takeHomes')),
       h('p', { class: 'm-0 text-body-sm text-muted' }, it('iv.thIntro')),
-      h('ul', { class: 'm-0 flex list-none flex-col gap-3 p-0' }, ...takeHomes.map((x, i) => {
+      h('ul', { class: LIST }, ...takeHomes.map((x, i) => {
         const last = p.takeHomes[x.id];
-        return h('li', { class: ROW }, disc(i, !!last), h('div', { class: 'flex min-w-0 flex-1 basis-48 flex-col gap-1' },
-          h('h3', { class: 'm-0 text-body font-bold' }, x.title[lang]),
-          h('p', { class: 'm-0 text-body-sm text-muted' }, `${it('iv.thLine', { ...range(x.modules), n: x.steps.length })}`),
-          h('p', { class: 'm-0 text-body-sm' }, knownLine(x.modules)),
-          last ? h('p', { class: 'm-0 text-body-sm' }, it('iv.lastTh', { day: last.at, k: last.checks.length, m: last.rubric })) : null),
-          actions(x.id));
+        return listRow({
+          lead: disc(i, !!last), title: x.title[lang],
+          sub: sub(it('iv.thLine', { ...range(x.modules), n: x.steps.length }), knownLine(x.modules),
+            !!last && it('iv.lastTh', { day: last.at, k: last.checks.length, m: last.rubric })),
+          action: actions(x.id),
+        });
       }))));
 }
 

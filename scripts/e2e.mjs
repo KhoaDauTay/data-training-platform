@@ -781,7 +781,7 @@ async function startSet(set, timer) {
   await go('#/learn/interview');
   await waitFor('the set list', `!!document.querySelector('section[aria-labelledby="iv-sets"] li button')`, 60000);
   await ev(`(() => { const c = document.getElementById('iv-timer'); if (c && c.checked !== ${timer}) c.click(); })()`);
-  const li = `[...document.querySelectorAll('section[aria-labelledby="iv-sets"] li')].find((li) => li.querySelector('h3')?.textContent.includes(${S(set.title.vi)}))`; // v21 UX-A: h4 → h3
+  const li = `[...document.querySelectorAll('section[aria-labelledby="iv-sets"] li')].find((li) => li.querySelector('b')?.textContent.includes(${S(set.title.vi)}))`; // v21 UX-A: h4 → h3; v48 B-08 (L1132): listRow's <b> title
   // a run left from earlier: start over
   if (await ev(`[...${li}.querySelectorAll('button')].some((b) => /Làm lại từ đầu/.test(b.textContent))`)) await ev(`[...${li}.querySelectorAll('button')].find((b) => /Làm lại từ đầu/.test(b.textContent)).click()`);
   else await ev(`[...${li}.querySelectorAll('button')].find((b) => /^Bắt đầu/.test(b.textContent.trim())).click()`); // v21 U24: only one row's button is primary

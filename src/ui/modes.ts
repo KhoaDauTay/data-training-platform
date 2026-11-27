@@ -34,7 +34,7 @@ import { errorText, errorView } from './feedback';
 import { createEditor } from './editor';
 import { elapsed, INTERVIEW_KEY, parseInterviewPrefs, setPresence, TEXT_MAX } from '../interviewPrefs';
 import { engineIvPage } from './engine';
-import { homeHooks, learnTitles, openResume, registerHomeSection, registerMode, resumeLine, resumeName, resumeNow } from './homeView';
+import { homeHooks, learnTitles, LIST, listRow, openResume, registerHomeSection, registerMode, resumeLine, resumeName, resumeNow } from './homeView';
 import { PER_WEEK, readGoal, sessionPlan, showsSession, writeGoal, type Goal, type SessionItem } from '../goal';
 import { laneNote } from './lanePanel';
 import { go } from './router';
@@ -236,7 +236,7 @@ let ivUi: typeof import('./interviewView') | undefined;
 const loadIvUi = () => Promise.all([import('./interviewView'), loadInterview()]).then(([m, content]) => {
   if (!ivUi) m.initInterview({
     h, nodes, richText, announce, getLang, locale, app, actions, session, ivItemId, ivHooks, readDraft, today, readJson, writeJson, hashOf, drillHash, interviewTabHash,
-    SKILLS, knownSkills, loadTickets, showPane, prefs: { key: INTERVIEW_KEY, parse: parseInterviewPrefs, textMax: TEXT_MAX, elapsed, setPresence }, enter: (run) => enter({ kind: 'interview', run }), leave: leaveGeneral, startRun: (id, timer, fresh) => void startInterview(id, timer, fresh),
+    SKILLS, knownSkills, loadTickets, showPane, ui: { listRow, LIST, icon, BTN_GO, BTN_SECONDARY, cx }, prefs: { key: INTERVIEW_KEY, parse: parseInterviewPrefs, textMax: TEXT_MAX, elapsed, setPresence }, enter: (run) => enter({ kind: 'interview', run }), leave: leaveGeneral, startRun: (id, timer, fresh) => void startInterview(id, timer, fresh),
     openEditor: (force) => {
       ctx?.work.setTicket(activeTicket(), activeStep(), force);
       ctx?.work.focus();

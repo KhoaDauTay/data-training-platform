@@ -22,6 +22,9 @@ import { actions, app } from '../src/state';
 import { readJson, writeJson } from '../src/storage';
 import { h, nodes, richText } from '../src/ui/dom';
 import * as view from '../src/ui/interviewView';
+import { LIST, listRow } from '../src/ui/homeView';
+import { icon } from '../src/ui/icons';
+import { BTN_GO, BTN_SECONDARY, cx } from '../src/theme';
 
 const content = buildInterview(parseYaml(interviewYml));
 const it_ = (k: IvKey, p?: Record<string, string | number>): string => ivText('vi', 'vi-VN', k, p);
@@ -142,7 +145,7 @@ describe('một bộ đề và một take-home qua UI: Save không đổi, kết
     };
     view.initInterview({
       h, nodes, richText, announce: () => undefined, getLang, locale, app, actions, session, ivItemId, ivHooks, readDraft, today, readJson, writeJson, hashOf, drillHash, interviewTabHash,
-      SKILLS, knownSkills, loadTickets, showPane: () => undefined, prefs: { key: INTERVIEW_KEY, parse: parseInterviewPrefs, textMax: TEXT_MAX, elapsed, setPresence },
+      SKILLS, knownSkills, loadTickets, showPane: () => undefined, ui: { listRow, LIST, icon, BTN_GO, BTN_SECONDARY, cx }, prefs: { key: INTERVIEW_KEY, parse: parseInterviewPrefs, textMax: TEXT_MAX, elapsed, setPresence },
       enter: (r) => { session.mode = { kind: 'interview', run: r }; actions.rerender(); },
       openEditor: () => void editors++,
       leave: () => { left++; session.mode = { kind: 'story' }; },
