@@ -1,0 +1,22 @@
+# OL-18 (v48 E4, L1200): where a join costs in ClickHouse: the hash join builds the right table in memory per query, a dictionary
+# is loaded once and looked up by key. Lesson: e-ol-l4-04. Sources: https://clickhouse.com/docs/best-practices/minimize-optimize-joins,
+# https://clickhouse.com/docs/dictionary
+title: { vi: "Dựng mỗi câu, hay nạp sẵn một lần", en: "Built per query, or loaded once" }
+caption:
+  vi: "Hash join dựng bảng băm từ bảng phải trong mỗi câu; dictionary nằm sẵn trong bộ nhớ, dictGet chỉ tra khóa."
+  en: "A hash join builds a hash table from the right table in every query; a dictionary is already in memory, and dictGet only looks up a key."
+alt:
+  vi: "Bảng cập bến lớn là phía trái, chỉ được đọc qua để dò; bảng cảng nhỏ là phía phải và được dựng thành bảng băm. Dictionary nạp bảng cảng vào bộ nhớ theo lịch làm mới, nên mỗi câu chỉ tra theo mã cảng."
+  en: "The big arrivals table is the left side, only streamed through to probe; the small ports table is the right side and is built into a hash table. A dictionary loads the ports table into memory on a refresh schedule, so each query only looks up by port code."
+nodes:
+  - { id: fact, shape: table, label: arrivals, sub: { vi: "phía trái, đọc qua", en: "left side, streamed" }, tone: warm }
+  - { id: hash, label: { vi: "bảng băm", en: "hash table" }, sub: { vi: "dựng mỗi câu", en: "built per query" }, tone: dead }
+  - { id: dim, shape: table, label: ports, sub: { vi: "phía phải, nhỏ", en: "right side, small" } }
+  - { id: dict, label: "port_dict", sub: { vi: "nạp theo LIFETIME", en: "loaded by LIFETIME" }, tone: new }
+rows:
+  - [fact, hash, dim]
+  - [dict]
+edges:
+  - { from: fact, to: hash, label: { vi: "dò", en: "probe" } }
+  - { from: dim, to: hash, label: { vi: "dựng", en: "build" } }
+  - { from: dim, to: dict }

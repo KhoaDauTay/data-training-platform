@@ -1,0 +1,20 @@
+# OL-22 (v48 E4, L1200): where analytical data comes from: PostgreSQL stays the system of record and CDC replicates committed
+# changes; open table formats in object storage are queried in place or loaded into MergeTree. Lesson: e-ol-l5-02.
+# Sources: https://clickhouse.com/docs/get-started/migrate/postgres/overview, https://clickhouse.com/docs/use-cases/data-lake
+title: { vi: "Hai đường dữ liệu vào ClickHouse", en: "Two ways data reaches ClickHouse" }
+caption:
+  vi: "PostgreSQL giữ giao dịch, CDC sao thay đổi đã commit sang; Iceberg trên object storage được đọc tại chỗ."
+  en: "PostgreSQL keeps the transactions and CDC copies committed changes across; Iceberg in object storage is read in place."
+alt:
+  vi: "Ứng dụng vẫn ghi giao dịch vào PostgreSQL, còn CDC gửi từng thay đổi đã commit sang ClickHouse để chạy phân tích. Dữ liệu ở định dạng bảng mở trên object storage được ClickHouse đọc ngay tại chỗ bằng hàm bảng, hoặc nạp vào MergeTree khi cần độ trễ thấp."
+  en: "The application still writes transactions to PostgreSQL, while CDC sends each committed change to ClickHouse for analytics. Data in an open table format in object storage is read by ClickHouse in place with a table function, or loaded into MergeTree when low latency is needed."
+nodes:
+  - { id: pg, shape: table, label: PostgreSQL, sub: { vi: "nơi ghi giao dịch", en: "system of record" } }
+  - { id: lake, shape: doc, label: "Iceberg / Parquet", sub: { vi: "object storage", en: "object storage" } }
+  - { id: ch, shape: table, label: ClickHouse, sub: { vi: "câu phân tích", en: "analytical queries" }, tone: new }
+rows:
+  - [pg, lake]
+  - [ch]
+edges:
+  - { from: pg, to: ch, label: "CDC" }
+  - { from: lake, to: ch, label: "iceberg()" }

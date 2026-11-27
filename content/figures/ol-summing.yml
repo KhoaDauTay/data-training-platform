@@ -1,0 +1,37 @@
+# OL-16 (v48 E4, L1200): SummingMergeTree before and after a merge: rows with the same (port, day) become one total; a key
+# totalling 0 is dropped. Lesson: e-ol-l4-02. Source: https://clickhouse.com/docs/engines/table-engines/mergetree-family/summingmergetree
+title: { vi: "Cộng dồn khi gộp part", en: "Totals added on merge" }
+caption:
+  vi: "Hai part cùng có VNDAD ngày 1/10; sau khi gộp còn một dòng tổng. Cặp VNQNH có tổng 0 nên bị bỏ."
+  en: "Two parts both hold VNDAD on 1 Oct; after the merge one total row is left. The VNQNH pair totals 0, so it is dropped."
+alt:
+  vi: "Mỗi lần chèn tạo một part, nên một cặp cảng và ngày có dòng ở nhiều part. Khi gộp, các dòng cùng khóa thành một dòng giữ tổng TEU, và khóa có tổng bằng 0 bị bỏ."
+  en: "Every insert creates a part, so one port and day pair has rows in several parts. On merge, rows with the same key become one row holding the TEU total, and a key totalling 0 is dropped."
+nodes:
+  - id: p1
+    shape: grid
+    mono: true
+    label: "part 1"
+    head: [port, day, teu]
+    cells: [["VNDAD", "10-01", "4"], ["VNQNH", "10-02", "5"]]
+    rowTone: [warm, dead]
+  - id: p2
+    shape: grid
+    mono: true
+    label: "part 2"
+    head: [port, day, teu]
+    cells: [["VNDAD", "10-01", "3"], ["VNQNH", "10-02", "-5"]]
+    rowTone: [warm, dead]
+  - id: m
+    shape: grid
+    mono: true
+    label: { vi: "sau khi gộp", en: "after the merge" }
+    head: [port, day, teu]
+    cells: [["VNDAD", "10-01", "7"]]
+    rowTone: [new]
+rows:
+  - [p1, p2]
+  - [m]
+edges:
+  - { from: p1, to: m }
+  - { from: p2, to: m }

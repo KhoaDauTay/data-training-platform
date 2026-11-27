@@ -1,0 +1,38 @@
+# OL-21 (v48 E4, L1200): two-phase GROUP BY over a Distributed table: each shard sends sum and count for VNDAD, the receiving
+# server adds them and divides once. Data = the lab's real partial states (shard = container_no % 3).
+# Lesson: e-ol-l5-01. Source: https://clickhouse.com/docs/engines/table-engines/special/distributed
+title: { vi: "Shard gửi tổng và số đếm", en: "Shards send sums and counts" }
+caption:
+  vi: "VNDAD: 150 190 giờ trên 4 599 dòng = 32,66. Trung bình của ba trung bình (47; 19,51; 19,5) chỉ ra 28,67."
+  en: "VNDAD: 150,190 hours over 4,599 rows = 32.66. The average of the three averages (47; 19.51; 19.5) gives only 28.67."
+alt:
+  vi: "Mỗi shard gộp phần dữ liệu của nó thành trạng thái trung gian gồm tổng giờ lưu bãi và số dòng. Máy nhận câu cộng các tổng, cộng các số đếm rồi mới chia, nên shard nhiều dòng được tính đúng trọng số. Kết quả: VNDAD trung bình 32,66 giờ."
+  en: "Each shard aggregates its part of the data into an intermediate state of total dwell hours and row count. The receiving server adds the sums, adds the counts, then divides once, so a shard with more rows gets its proper weight. Result: VNDAD averages 32.66 hours."
+nodes:
+  - id: s0
+    shape: grid
+    mono: true
+    label: "shard 0"
+    head: [dwell_sum, n]
+    cells: [["103400", "2200"]]
+    rowTone: [warm]
+  - id: s1
+    shape: grid
+    mono: true
+    label: "shard 1"
+    head: [dwell_sum, n]
+    cells: [["23390", "1199"]]
+  - id: s2
+    shape: grid
+    mono: true
+    label: "shard 2"
+    head: [dwell_sum, n]
+    cells: [["23400", "1200"]]
+  - { id: init, mono: true, label: "150190 / 4599", sub: { vi: "máy nhận câu: 32,66", en: "receiving server: 32.66" }, tone: new }
+rows:
+  - [s0, s1, s2]
+  - [init]
+edges:
+  - { from: s0, to: init }
+  - { from: s1, to: init }
+  - { from: s2, to: init }

@@ -10,3 +10,9 @@
 - id: clickhouse
   vi: ClickHouse
   en: ClickHouse
+- id: chtuning
+  vi: Tinh chỉnh ClickHouse
+  en: Tuning ClickHouse
+- id: scale
+  vi: Mở rộng và hồ dữ liệu
+  en: Scale-out and the lakehouse

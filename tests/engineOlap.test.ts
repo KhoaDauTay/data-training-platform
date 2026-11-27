@@ -31,6 +31,8 @@ const PLAN: Record<string, EngineLesson['kind'][]> = {
   L1: ['concept', 'lab', 'lab'],
   L2: ['lab', 'lab', 'lab', 'concept'],
   L3: ['concept', 'concept', 'lab', 'lab', 'concept', 'concept', 'capstone'],
+  L4: ['lab', 'lab', 'lab', 'lab', 'lab', 'capstone'], // v48 E4 (L1200): LowCardinality, SummingMergeTree, skip index + projection, joins, bytes read, capstone
+  L5: ['lab', 'concept', 'capstone'], // sharding, HTAP + lakehouse (docs), capstone
 };
 const ORDER = Object.keys(SECTIONS) as SectionId[];
 const NEED: Partial<Record<EngineLesson['kind'], SectionId[]>> = {
@@ -45,10 +47,10 @@ const isErr = (b: string): boolean => /^--\s*ERROR\b/m.test(b);
 const wordCountOf = (s: string): number => s.split(/\s+/).filter(Boolean).length;
 
 describe('Engine OLAP & ClickHouse (v47 R1): bài, mô-đun, luật nội dung', () => {
-  it('14 bài, đúng loại từng cấp, id e-ol-', () => {
+  it('23 bài (v48 L1200: + L4–L5), đúng loại từng cấp, id e-ol-', () => {
     const got = Object.fromEntries(Object.keys(PLAN).map((lv) => [lv, all.filter((x) => x.l.level === lv).sort((a, b) => a.l.order - b.l.order).map((x) => x.l.kind)]));
     expect(got).toEqual(PLAN);
-    expect(all.every((x) => /^e-ol-l[1-3]-\d\d$/.test(x.l.id) && x.l.engine === 'olap')).toBe(true);
+    expect(all.every((x) => /^e-ol-l[1-5]-\d\d$/.test(x.l.id) && x.l.engine === 'olap')).toBe(true);
   });
   it('modules.yml: mỗi mô-đun có VI/EN và được dùng', () => {
     const [path, raw] = Object.entries(moduleRaw)[0];
@@ -195,11 +197,11 @@ describe('Engine OLAP & ClickHouse: wiring (routes, Save ids, XP, badges, track 
     expect(engineXp({ ...l, kind: 'capstone' }, false)).toBe(ENGINE_XP.capstone);
     expect(engineXp(l, true)).toBe(0);
   });
-  it('badges: olap L1–L3 only', () => {
+  it('badges: olap L1–L5 (v48 L1200)', () => {
     expect(BADGE_ENGINES).toContain('olap');
-    expect(levelsOf('olap')).toEqual(['L1', 'L2', 'L3']);
+    expect(levelsOf('olap')).toEqual(['L1', 'L2', 'L3', 'L4', 'L5']);
     const b = badges({ parts: [], levels: new Map(), foundation: [], perf: [], completed: new Set(), engines: { olap: [{ level: 'L1', k: 1, n: 1, started: true, done: true }] }, domains: [] });
-    expect(b.filter((x) => x.kind === 'engine' && x.engine === 'olap').map((x) => [x.id, x.have])).toEqual([['olap-L1', true], ['olap-L2', false], ['olap-L3', false]]);
+    expect(b.filter((x) => x.kind === 'engine' && x.engine === 'olap').map((x) => [x.id, x.have])).toEqual([['olap-L1', true], ['olap-L2', false], ['olap-L3', false], ['olap-L4', false], ['olap-L5', false]]);
   });
   it('track facts: prerequisites name SQL Parts and PostgreSQL L1', () => {
     expect(PREREQS.olap).toEqual([{ sql: [1, 7] }, { engine: 'postgres', to: 'L1' }]);

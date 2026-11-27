@@ -1,0 +1,26 @@
+# OL-17 (v48 E4, L1200): a minmax skip index per block of 8,192 rows on the lab table ev (sorted by port, minute): trip follows
+# the sort order and skips half the blocks, box is scattered and skips none. Data = the lab's real block summaries.
+# Lesson: e-ol-l4-03. Source: https://clickhouse.com/docs/optimize/skipping-indexes
+title: { vi: "minmax chỉ bỏ được khối khi cột có thứ tự", en: "minmax skips only when the column is ordered" }
+caption:
+  vi: "trip = 150 đọc 4 trên 8 khối; box = 1234 đọc cả 8, vì mọi khối đều chứa 0 đến gần 4999."
+  en: "trip = 150 reads 4 of 8 blocks; box = 1234 reads all 8, since every block spans 0 to nearly 4999."
+alt:
+  vi: "Mỗi khối của chỉ mục minmax giữ giá trị nhỏ nhất và lớn nhất. Cột trip đi theo thứ tự sắp nên nhiều khối có khoảng không chứa 150 và được bỏ qua; cột box rải khắp bảng nên khoảng của khối nào cũng chứa 1234."
+  en: "Each block of a minmax index holds its smallest and largest value. Column trip follows the sort order, so many blocks have a range without 150 and are skipped; column box is scattered, so every block's range holds 1234."
+nodes:
+  - { id: qt, mono: true, label: "trip = 150", sub: { vi: "đọc 4/8 khối", en: "reads 4/8 blocks" }, tone: new }
+  - { id: qb, mono: true, label: "box = 1234", sub: { vi: "đọc 8/8 khối", en: "reads 8/8 blocks" }, tone: warm }
+  - id: g
+    shape: grid
+    mono: true
+    label: { vi: "chỉ mục minmax", en: "minmax index" }
+    head: [block, trip, box]
+    cells: [["0", "0–81", "0–4999"], ["1", "81–163", "0–4999"], ["2", "0–200", "0–4999"], ["3", "45–127", "0–4999"], ["4", "0–200", "0–4999"], ["5", "9–91", "0–4999"], ["6", "91–173", "0–4999"], ["7", "173–200", "0–4998"]]
+    cellTone: { "0:1": dead, "1:1": new, "2:1": new, "3:1": dead, "4:1": new, "5:1": dead, "6:1": new, "7:1": dead, "0:2": warm, "1:2": warm, "2:2": warm, "3:2": warm, "4:2": warm, "5:2": warm, "6:2": warm, "7:2": warm }
+rows:
+  - [qt, qb]
+  - [g]
+edges:
+  - { from: qt, to: g }
+  - { from: qb, to: g }

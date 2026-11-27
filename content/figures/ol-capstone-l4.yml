@@ -1,0 +1,25 @@
+# OL-20 (v48 E4, L1200): the L4 capstone's rebuild: 30,000 raw rows → 90-row daily summary, 4-row port table → 3-row lookup,
+# then the dashboard joins the two small tables. Data = the lab's real counts. Lesson: e-ol-l4-06.
+# Sources: https://clickhouse.com/docs/engines/table-engines/mergetree-family/summingmergetree, https://clickhouse.com/docs/dictionary
+title: { vi: "Đọc bảng nhỏ thay cho bảng thô", en: "Read small tables, not raw ones" }
+caption:
+  vi: "Dashboard mới đọc 90 dòng tổng hợp và 3 dòng tra cảng thay cho 30.000 dòng sự kiện."
+  en: "The new dashboard reads 90 summary rows and 3 lookup rows instead of 30,000 event rows."
+alt:
+  vi: "Bảng sự kiện thô được tổng hợp thành một dòng mỗi cảng mỗi ngày, và bảng cảng có mã trùng được thu về mỗi mã một dòng. Câu dashboard nối hai bảng nhỏ đó, nên vừa đọc ít hơn vừa không nhân dòng."
+  en: "The raw events table is summarized to one row per port per day, and the port table with a duplicate code is reduced to one row per code. The dashboard query joins those two small tables, so it reads less and multiplies no rows."
+nodes:
+  - { id: raw, shape: table, label: events_raw, sub: { vi: "30 000 dòng", en: "30 000 rows" }, tone: dead }
+  - { id: ports, shape: table, label: ports, sub: { vi: "4 dòng, VNSGN trùng", en: "4 rows, VNSGN twice" }, tone: dead }
+  - { id: sum, shape: table, label: teu_daily, sub: { vi: "90 dòng", en: "90 rows" }, tone: new }
+  - { id: dict, shape: table, label: port_dict, sub: { vi: "3 dòng", en: "3 rows" }, tone: new }
+  - { id: dash, label: "dashboard", sub: { vi: "nối hai bảng nhỏ", en: "joins the small tables" }, tone: warm }
+rows:
+  - [raw, ports]
+  - [sum, dict]
+  - [dash]
+edges:
+  - { from: raw, to: sum, label: "sum(teu)" }
+  - { from: ports, to: dict, label: "DISTINCT ON" }
+  - { from: sum, to: dash }
+  - { from: dict, to: dash }

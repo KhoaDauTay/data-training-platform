@@ -1,0 +1,38 @@
+# OL-15 (v48 E4, L1200): dictionary encoding of a status column, as LowCardinality(String) stores it. Lesson: e-ol-l4-01.
+# Data = the lab's first rows (g % 4 → loaded, sailed, arrived, booked). Source:
+# https://clickhouse.com/docs/sql-reference/data-types/lowcardinality
+title: { vi: "Mỗi chữ ghi một lần", en: "Each word stored once" }
+caption:
+  vi: "Từ điển giữ 4 trạng thái; mỗi dòng chỉ giữ một mã nhỏ trỏ vào từ điển."
+  en: "The dictionary holds 4 statuses; each row keeps only a small code pointing into it."
+alt:
+  vi: "Cột trạng thái chưa mã hóa lặp lại cùng một chữ trên nhiều dòng. Sau mã hóa từ điển, mỗi chữ chỉ có một mục trong từ điển, còn mỗi dòng giữ mã số của mục đó."
+  en: "The unencoded status column repeats the same word on many rows. After dictionary encoding, each word has one dictionary entry, and each row keeps that entry's code."
+nodes:
+  - id: raw
+    shape: grid
+    mono: true
+    label: { vi: "cột status", en: "status column" }
+    head: [id, status]
+    cells: [["1", "loaded"], ["2", "sailed"], ["3", "arrived"], ["4", "booked"], ["5", "loaded"]]
+    rowTone: [warm, null, null, null, warm]
+  - id: dict
+    shape: grid
+    mono: true
+    label: { vi: "từ điển", en: "dictionary" }
+    head: [code, status]
+    cells: [["1", "arrived"], ["2", "booked"], ["3", "loaded"], ["4", "sailed"]]
+    rowTone: [null, null, warm, null]
+  - id: codes
+    shape: grid
+    mono: true
+    label: { vi: "mã mỗi dòng", en: "code per row" }
+    head: [id, code]
+    cells: [["1", "3"], ["2", "4"], ["3", "1"], ["4", "2"], ["5", "3"]]
+    rowTone: [warm, null, null, null, warm]
+rows:
+  - [raw]
+  - [dict, codes]
+edges:
+  - { from: raw, to: dict }
+  - { from: raw, to: codes }

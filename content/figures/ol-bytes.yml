@@ -1,0 +1,26 @@
+# OL-19 (v48 E4, L1200): bytes per column of the lab table shipments_wide (20,000 rows, pg_column_size): the dashboard needs
+# port and teu (200,000 bytes) out of 3,354,667 bytes of whole rows. Lesson: e-ol-l4-05. Sources: https://clickhouse.com/docs/intro,
+# https://www.postgresql.org/docs/18/functions-admin.html
+title: { vi: "Chi phí nằm ở cột nào", en: "Where the bytes are" }
+caption:
+  vi: "Câu dashboard cần port và teu: 200.000 byte, trong khi cả dòng là khoảng 3,35 triệu byte."
+  en: "The dashboard query needs port and teu: 200,000 bytes, while whole rows are about 3.35 million bytes."
+alt:
+  vi: "Trên 20.000 dòng, cột notes chiếm hơn 2 triệu byte, còn port và teu cộng lại chỉ 200.000 byte. Kho lưu theo cột chỉ đọc các cột câu cần, nên câu dashboard tránh được gần hết số byte của bảng."
+  en: "Over 20,000 rows, column notes takes over 2 million bytes, while port and teu together take only 200,000 bytes. A column store reads only the columns a query needs, so the dashboard query avoids almost all of the table's bytes."
+nodes:
+  - id: b
+    shape: bars
+    label: { vi: "byte mỗi cột", en: "bytes per column" }
+    sub: "shipments_wide"
+    items:
+      - { label: port, value: 120000, note: "120 000", tone: new }
+      - { label: teu, value: 80000, note: "80 000", tone: new }
+      - { label: customer, value: 149000, note: "149 000" }
+      - { label: notes, value: 2020000, note: "2 020 000", tone: warm }
+  - { id: q, mono: true, label: "port, teu", sub: { vi: "câu cần 200 000 byte", en: "query needs 200 000 bytes" }, tone: new }
+rows:
+  - [q]
+  - [b]
+edges:
+  - { from: q, to: b }
