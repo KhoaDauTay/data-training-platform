@@ -1,0 +1,149 @@
+# Redis part of the Database Engine interview bank (v48, L1144). Field rules: the header of content/engine/iv-postgres.yml.
+# A track has one Junior and one Mid set of 5 (rd-junior-1, rd-mid-1); facts from valkey.io / redis.io docs only.
+
+questions:
+  # ---------------- Redis · junior
+  - id: e-iv-rd-junior-01
+    engine: redis
+    band: junior
+    kind: concept
+    set: rd-junior-1
+    q: { vi: "Redis giữ dữ liệu ở đâu, vì sao đọc ghi rất nhanh, và khi nào dữ liệu có thể mất?", en: "Where does Redis keep its data, why are reads and writes so fast, and when can data be lost?" }
+    answer: { vi: "Redis giữ mọi khóa trong bộ nhớ (RAM), và mỗi lệnh là một thao tác nhỏ trên một khóa, nên một lệnh thường xong dưới một mili giây. Vì dữ liệu nằm trong RAM, khởi động lại mà không lưu gì xuống đĩa là mất sạch; RDB và AOF giảm lượng mất nhưng cấu hình mặc định vẫn có thể mất vài giây ghi cuối khi sập.", en: "Redis keeps every key in memory (RAM), and each command is a small operation on one key, so a command usually finishes in under a millisecond. Because the data lives in RAM, a restart with nothing saved to disk loses everything; RDB and AOF reduce the loss, but a default setup can still lose the last seconds of writes in a crash." }
+    rubric:
+      - { vi: "Nói dữ liệu nằm trong RAM", en: "Says the data lives in RAM" }
+      - { vi: "Nêu lệnh nhỏ trên một khóa là lý do nhanh", en: "Names small single-key commands as the reason for speed" }
+      - { vi: "Biết không lưu đĩa thì khởi động lại là mất, RDB/AOF chỉ giảm lượng mất", en: "Knows a restart without persistence loses everything and RDB/AOF only reduce the loss" }
+    doc: https://valkey.io/topics/persistence/
+  - id: e-iv-rd-junior-02
+    engine: redis
+    band: junior
+    kind: concept
+    set: rd-junior-1
+    q: { vi: "`TTL` trả -1 và -2 nghĩa là gì? Lệnh nào xóa thời gian sống của một khóa, lệnh nào giữ nó?", en: "What do -1 and -2 from `TTL` mean? Which commands remove a key's time to live, and which keep it?" }
+    answer: { vi: "-1: khóa có nhưng không có hạn; -2: khóa không tồn tại. `SET` thường ghi đè cả khóa nên xóa hạn (trừ khi thêm `KEEPTTL`), `PERSIST` bỏ hạn hẳn. `INCR` và `HSET` sửa giá trị tại chỗ nên giữ nguyên hạn.", en: "-1: the key exists but has no expiry; -2: the key does not exist. A plain `SET` overwrites the whole key and so clears the expiry (unless `KEEPTTL` is given), and `PERSIST` removes it on purpose. `INCR` and `HSET` change the value in place and keep the expiry." }
+    rubric:
+      - { vi: "Đúng nghĩa -1 và -2", en: "Gets -1 and -2 right" }
+      - { vi: "Biết `SET` thường xóa hạn và `KEEPTTL` giữ nó", en: "Knows a plain `SET` clears the expiry and `KEEPTTL` keeps it" }
+      - { vi: "Biết lệnh sửa tại chỗ (`INCR`, `HSET`) giữ hạn", en: "Knows in-place commands (`INCR`, `HSET`) keep the expiry" }
+    doc: https://valkey.io/commands/ttl/
+  - id: e-iv-rd-junior-03
+    engine: redis
+    band: junior
+    kind: concept
+    set: rd-junior-1
+    q: { vi: "Chọn kiểu dữ liệu Redis cho bốn việc: giỏ hàng, hàng đợi đơn chờ đóng gói, khách khác nhau mỗi ngày, bảng xếp hạng cửa hàng theo doanh số.", en: "Pick a Redis data type for four jobs: a shopping cart, a queue of orders waiting to be packed, distinct visitors per day, a leaderboard of shops by sales." }
+    answer: { vi: "Giỏ hàng: hash (mỗi sản phẩm một trường, `HINCRBY` cộng số lượng). Hàng đợi: list (`RPUSH` xếp vào cuối, `LPOP` lấy đơn chờ lâu nhất). Khách mỗi ngày: set theo ngày (`SADD`, `SCARD`), không trùng. Bảng xếp hạng: sorted set (`ZINCRBY` cộng doanh số, `ZRANGE … REV WITHSCORES` đọc từ cao xuống).", en: "Cart: a hash (one field per product, `HINCRBY` adds quantity). Queue: a list (`RPUSH` to the end, `LPOP` takes the oldest order). Visitors per day: a set per day (`SADD`, `SCARD`), no duplicates. Leaderboard: a sorted set (`ZINCRBY` adds sales, `ZRANGE … REV WITHSCORES` reads from the top)." }
+    rubric:
+      - { vi: "Cả bốn kiểu đúng: hash, list, set, sorted set", en: "All four types right: hash, list, set, sorted set" }
+      - { vi: "Nêu được một lệnh hợp cho mỗi việc", en: "Names a fitting command for each job" }
+      - { vi: "Nói rõ vì sao set hợp với đếm khách khác nhau (không trùng)", en: "Explains why a set fits distinct visitors (no duplicates)" }
+    doc: https://valkey.io/topics/data-types/
+  - id: e-iv-rd-junior-04
+    engine: redis
+    band: junior
+    kind: diagnose
+    set: rd-junior-1
+    q: { vi: "Một đồng nghiệp đọc giỏ hàng và nhận lỗi dưới đây. Vì sao, và nên đọc thế nào?", en: "A colleague reads a cart and gets the error below. Why, and how should it be read?" }
+    answer: { vi: "Khóa `cart:42` đã được tạo bằng `HSET`, nên nó giữ một hash. Mỗi khóa chỉ giữ một kiểu, và `GET` là lệnh của chuỗi, nên Redis từ chối với WRONGTYPE thay vì đổi kiểu. Đọc bằng lệnh của hash: `HGET cart:42 lamp-01` cho một trường, `HGETALL cart:42` cho cả giỏ; `TYPE cart:42` cho biết khóa đang giữ kiểu gì.", en: "The key `cart:42` was created with `HSET`, so it holds a hash. Each key holds one type, and `GET` is a string command, so Redis refuses with WRONGTYPE instead of converting. Read it with hash commands: `HGET cart:42 lamp-01` for one field, `HGETALL cart:42` for the whole cart; `TYPE cart:42` tells which type the key holds." }
+    rubric:
+      - { vi: "Nói khóa giữ hash vì được tạo bằng `HSET`", en: "Says the key holds a hash because `HSET` created it" }
+      - { vi: "Biết mỗi khóa chỉ một kiểu, lệnh kiểu khác bị từ chối", en: "Knows a key holds one type and another type's commands are refused" }
+      - { vi: "Đưa lệnh đọc đúng (`HGET`/`HGETALL`) và `TYPE` để kiểm", en: "Gives the right read (`HGET`/`HGETALL`) and `TYPE` to check" }
+    exhibits:
+      - label: { vi: "redis-cli", en: "redis-cli" }
+        source: illustrative
+        shown: |
+          > HSET cart:42 lamp-01 2
+          (integer) 1
+          > GET cart:42
+          (error) WRONGTYPE Operation against a key holding the wrong kind of value
+    doc: https://valkey.io/commands/type/
+  - id: e-iv-rd-junior-05
+    engine: redis
+    band: junior
+    kind: design
+    set: rd-junior-1
+    q: { vi: "Lưu phiên đăng nhập hết hạn sau 30 phút không hoạt động. Viết lệnh ghi phiên, lệnh gia hạn khi người dùng còn thao tác, và nói vì sao không cần job dọn phiên cũ.", en: "Store a login session that expires after 30 minutes of inactivity. Write the command that stores it, the one that extends it while the user is active, and say why no cleanup job is needed." }
+    answer: { vi: "Ghi giá trị và hạn trong một lệnh: `SET session:abc '{...}' EX 1800`, nên không có lúc nào phiên tồn tại mà thiếu hạn. Mỗi request còn hợp lệ gọi `EXPIRE session:abc 1800` để đặt lại hạn (hạn trượt). Redis tự xóa khóa hết hạn: khi có lệnh chạm vào khóa đó và bằng một tác vụ nền dọn dần, nên khóa hết hạn không bao giờ được đọc ra.", en: "Store the value and the expiry in one command: `SET session:abc '{...}' EX 1800`, so the session never exists without an expiry. Each valid request calls `EXPIRE session:abc 1800` to reset the expiry (a sliding expiry). Redis deletes expired keys itself: when a command touches the key and through a background task, so an expired key is never read back." }
+    rubric:
+      - { vi: "Dùng `SET … EX` (một lệnh) thay vì `SET` rồi `EXPIRE`", en: "Uses `SET … EX` (one command) rather than `SET` then `EXPIRE`" }
+      - { vi: "Gia hạn bằng `EXPIRE` ở mỗi request", en: "Extends with `EXPIRE` on each request" }
+      - { vi: "Giải thích Redis tự xóa khóa hết hạn (khi chạm và nền)", en: "Explains Redis deletes expired keys itself (on access and in the background)" }
+    tradeoffs:
+      - { vi: "Chuỗi JSON đọc ghi cả phiên một lần; hash sửa được một trường (`HSET`) mà không ghi lại cả phiên", en: "A JSON string reads and writes the whole session at once; a hash can change one field (`HSET`) without rewriting the session" }
+      - { vi: "Hạn trượt giữ người dùng đang làm việc; hạn cố định buộc đăng nhập lại sau một thời gian dù đang dùng, an toàn hơn", en: "A sliding expiry keeps active users signed in; a fixed expiry forces a new sign-in after a set time even while in use, which is safer" }
+    doc: https://valkey.io/commands/expire/
+
+  # ---------------- Redis · mid
+  - id: e-iv-rd-mid-01
+    engine: redis
+    band: mid
+    kind: concept
+    set: rd-mid-1
+    q: { vi: "Với cache-aside, sau khi cập nhật giá trong PostgreSQL, nên xóa khóa cache hay ghi giá mới vào cache? Vì sao?", en: "With cache-aside, after updating a price in PostgreSQL, should you delete the cache key or write the new price into the cache? Why?" }
+    answer: { vi: "Xóa khóa (`DEL`). Hai lần cập nhật gần nhau có thể ghi vào cache sai thứ tự, để lại giá cũ hơn giá trong PostgreSQL; xóa thì lần đọc kế tiếp trượt và nạp đúng giá từ nguồn. Hạn (TTL) trên mọi khóa cache là lưới an toàn: dù một lần xóa bị lỡ, giá cũ chỉ sống tới hết hạn.", en: "Delete the key (`DEL`). Two updates close together can write to the cache out of order and leave an older price than PostgreSQL holds; after a delete, the next read misses and loads the right price from the source. An expiry (TTL) on every cache key is the safety net: even if a delete is missed, the old price only lives until it expires." }
+    rubric:
+      - { vi: "Chọn xóa khóa", en: "Chooses to delete the key" }
+      - { vi: "Giải thích rủi ro hai lần ghi tới cache sai thứ tự", en: "Explains the risk of two writes reaching the cache out of order" }
+      - { vi: "Nhắc TTL là lưới an toàn khi lần xóa bị lỡ", en: "Mentions TTL as the safety net when a delete is missed" }
+    doc: https://docs.aws.amazon.com/whitepapers/latest/database-caching-strategies-using-redis/caching-patterns.html
+  - id: e-iv-rd-mid-02
+    engine: redis
+    band: mid
+    kind: concept
+    set: rd-mid-1
+    q: { vi: "Trong một `MULTI … EXEC`, lệnh thứ hai lỗi lúc chạy (`INCR` trên một chuỗi chữ). Lệnh thứ nhất và thứ ba ra sao? Khác gì nếu lệnh thứ hai sai tên lệnh?", en: "Inside a `MULTI … EXEC`, the second command fails at run time (`INCR` on a text string). What happens to the first and third commands? What changes if the second command has a wrong name?" }
+    answer: { vi: "Lỗi lúc chạy chỉ nằm trong ô kết quả của lệnh đó; lệnh thứ nhất và thứ ba vẫn chạy và kết quả của chúng ở lại, vì Redis không có hoàn tác. Sai tên lệnh là lỗi lúc xếp hàng: transaction bị đánh dấu hỏng và `EXEC` trả lỗi EXECABORT mà không chạy lệnh nào.", en: "A run-time error stays in that command's result slot; the first and third commands still run and their effects remain, because Redis has no rollback. A wrong command name is a queue-time error: the transaction is marked failed and `EXEC` returns an EXECABORT error without running anything." }
+    rubric:
+      - { vi: "Nói lệnh 1 và 3 vẫn chạy, không hoàn tác", en: "Says commands 1 and 3 still run, no rollback" }
+      - { vi: "Phân biệt lỗi lúc chạy với lỗi lúc xếp hàng", en: "Tells run-time errors from queue-time errors" }
+      - { vi: "Biết lỗi lúc xếp hàng làm `EXEC` không chạy gì (EXECABORT)", en: "Knows a queue-time error makes `EXEC` run nothing (EXECABORT)" }
+    doc: https://valkey.io/topics/transactions/
+  - id: e-iv-rd-mid-03
+    engine: redis
+    band: mid
+    kind: diagnose
+    set: rd-mid-1
+    q: { vi: "Bộ giới hạn tần suất cho 100 request mỗi phút: `INCR`, và nếu kết quả là 1 thì `EXPIRE … 60`. Khách hàng api-7 bị từ chối suốt 3 giờ. Đọc hai lệnh dưới đây và tìm nguyên nhân.", en: "A rate limiter allows 100 requests a minute: `INCR`, and if the result is 1 then `EXPIRE … 60`. Customer api-7 has been refused for 3 hours. Read the two commands below and find the cause." }
+    answer: { vi: "`TTL` trả -1: khóa đếm không có hạn, nên nó không bao giờ về 0 và mọi request sau lần thứ 100 đều bị từ chối. `INCR` và `EXPIRE` là hai lệnh riêng; tiến trình chết (hoặc lỗi mạng) đúng sau `INCR` đầu tiên thì `EXPIRE` không bao giờ chạy. Sửa: gọi `EXPIRE key 60 NX` sau mỗi `INCR` (NX chỉ đặt hạn khi khóa chưa có hạn, nên không kéo dài cửa sổ), hoặc gửi cả hai trong một `MULTI … EXEC`.", en: "`TTL` returns -1: the counter key has no expiry, so it never resets and every request after the 100th is refused. `INCR` and `EXPIRE` are two separate commands; if the process dies (or the network fails) right after the first `INCR`, the `EXPIRE` never runs. Fix: call `EXPIRE key 60 NX` after every `INCR` (NX sets an expiry only when the key has none, so it never extends the window), or send both in one `MULTI … EXEC`." }
+    rubric:
+      - { vi: "Đọc -1 là khóa không có hạn", en: "Reads -1 as the key having no expiry" }
+      - { vi: "Thấy `EXPIRE` có thể không bao giờ chạy sau `INCR` đầu tiên", en: "Sees that `EXPIRE` may never run after the first `INCR`" }
+      - { vi: "Đưa cách sửa: `EXPIRE … NX` sau mỗi `INCR` hoặc gộp trong `MULTI … EXEC`", en: "Gives a fix: `EXPIRE … NX` after every `INCR` or both in `MULTI … EXEC`" }
+    exhibits:
+      - label: { vi: "redis-cli", en: "redis-cli" }
+        source: illustrative
+        shown: |
+          > GET rl:api-7
+          "100"
+          > TTL rl:api-7
+          (integer) -1
+    doc: https://valkey.io/commands/expire/
+  - id: e-iv-rd-mid-04
+    engine: redis
+    band: mid
+    kind: concept
+    set: rd-mid-1
+    q: { vi: "RDB và AOF với `appendfsync everysec`: mỗi cách mất tối đa bao nhiêu dữ liệu khi server sập, và vì sao?", en: "RDB and AOF with `appendfsync everysec`: how much data can each lose when the server crashes, and why?" }
+    answer: { vi: "RDB chụp toàn bộ bộ nhớ theo lịch (`save 300 100` là sau 300 giây nếu có ít nhất 100 lần ghi), nên mất mọi thứ ghi sau lần chụp cuối, có khi vài phút. AOF nối mỗi lệnh ghi vào file; với `everysec` file được ép xuống đĩa mỗi giây một lần, nên mất tối đa khoảng một giây. `always` gần như không mất nhưng chậm hơn nhiều.", en: "RDB snapshots the whole dataset on a schedule (`save 300 100` means after 300 seconds if there were at least 100 writes), so it loses everything written after the last snapshot, sometimes minutes. AOF appends every write command to a file; with `everysec` the file is flushed to disk once a second, so it loses about one second at most. `always` loses almost nothing but is much slower." }
+    rubric:
+      - { vi: "RDB mất mọi thứ sau lần chụp cuối", en: "RDB loses everything after the last snapshot" }
+      - { vi: "AOF everysec mất tối đa khoảng một giây", en: "AOF everysec loses about one second at most" }
+      - { vi: "Đọc đúng ý nghĩa một dòng `save` hoặc nêu `always` và cái giá của nó", en: "Reads a `save` line correctly or names `always` and its cost" }
+    doc: https://valkey.io/topics/persistence/
+  - id: e-iv-rd-mid-05
+    engine: redis
+    band: mid
+    kind: design
+    set: rd-mid-1
+    q: { vi: "Đợt bán chớp nhoáng chỉ có 3 chiếc đèn, rất nhiều người bấm mua cùng lúc. Trừ kho trong Redis thế nào để không bán lố, và đơn hàng, tiền ghi ở đâu?", en: "A flash sale has only 3 lamps and very many buyers clicking at once. How do you decrement stock in Redis without overselling, and where do orders and money go?" }
+    answer: { vi: "Nếu chỉ một khóa đổi: `DECR stock:lamp` là một lệnh nguyên tử trả số còn lại; kết quả âm thì `INCR` trả lại và từ chối người mua đó. Khi nhiều khóa phải đổi cùng nhau (trừ kho và xếp mã đơn vào hàng đợi), dùng `WATCH stock:lamp`, đọc, rồi `MULTI … EXEC`; `EXEC` trả nil nếu kho bị đổi trước đó và ứng dụng thử lại. Đơn hàng và tiền vẫn ghi vào PostgreSQL, nguồn đúng có transaction; Redis giữ số đếm và hàng đợi.", en: "If only one key changes: `DECR stock:lamp` is one atomic command that returns what is left; a negative result is given back with `INCR` and that buyer is refused. When several keys must change together (decrement stock and queue the order id), use `WATCH stock:lamp`, read, then `MULTI … EXEC`; `EXEC` returns nil if the stock changed in between and the application retries. Orders and money still go to PostgreSQL, the source of truth with transactions; Redis holds the counters and the queue." }
+    rubric:
+      - { vi: "Dùng một lệnh nguyên tử (`DECR`) và xử lý kết quả âm", en: "Uses one atomic command (`DECR`) and handles a negative result" }
+      - { vi: "Dùng `WATCH` + `MULTI … EXEC` khi nhiều khóa phải đổi cùng nhau", en: "Uses `WATCH` + `MULTI … EXEC` when several keys must change together" }
+      - { vi: "Ghi đơn và tiền vào PostgreSQL, không chỉ Redis", en: "Writes orders and money to PostgreSQL, not only Redis" }
+    tradeoffs:
+      - { vi: "`DECR` đơn giản và không bao giờ phải thử lại, nhưng cần lệnh bù `INCR` khi xuống dưới 0", en: "`DECR` is simple and never retries, but needs a compensating `INCR` when it goes below 0" }
+      - { vi: "`WATCH` gói được nhiều khóa, nhưng khi tranh chấp nhiều thì nhiều người phải thử lại", en: "`WATCH` covers several keys, but under heavy contention many buyers have to retry" }
+    doc: https://valkey.io/commands/watch/

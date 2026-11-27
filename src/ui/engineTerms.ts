@@ -1,4 +1,4 @@
-import { ENGINES, LEVELS, type EngineId, type Level } from '../engine/content';
+import { ENGINES, LEVELS, REF_ENGINES, type EngineId, type Level } from '../engine/content';
 import { aliasesOf, docFor, marker, parseGlossary, searchTerms, type Term } from '../engine/glossary';
 import type * as I18n from '../i18n';
 import { termsText, type TermsKey } from '../i18n/engineTerms';
@@ -14,11 +14,17 @@ import type { PageSub } from './homeView';
  */
 let d: EngineDeps;
 let terms: Term[] = [];
-const NAME: Record<EngineId, string> = { postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB', redis: 'Redis', design: '', stack: '', olap: '', search: '', timeseries: '', telemetry: '', graph: '', stream: '' };
-/** F15: design is never a glossary engine (glossary.ts ENG), so it gets no filter (it would match nothing); v47: Redis has no terms yet. */
-const TERM_ENGINES = ENGINES.filter((e) => e !== 'design' && e !== 'stack' && e !== 'redis' && e !== 'olap' && e !== 'search' && e !== 'timeseries' && e !== 'telemetry' && e !== 'graph' && e !== 'stream');
 const tt = (key: TermsKey, params?: I18n.Params): string => termsText(d.getLang(), d.locale(), key, params);
 const lang = (): 'vi' | 'en' => d.getLang();
+/** Product names stay as they are; v48 (L1142): the two tracks with a VI name (Time-series, Search) follow the language. */
+const NAMES: Record<EngineId, string | { vi: string; en: string }> = {
+  postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB', redis: 'Redis', design: '', stack: '', olap: 'OLAP & ClickHouse',
+  search: { vi: 'Tìm kiếm & Elasticsearch', en: 'Search & Elasticsearch' }, timeseries: { vi: 'Chuỗi thời gian', en: 'Time-series' },
+  telemetry: 'Telemetry & Observability', graph: 'Graph', stream: 'Streaming & CDC',
+};
+const nameOf = (e: EngineId): string => { const n = NAMES[e]; return typeof n === 'string' ? n : n[lang()]; };
+/** F15: design and stack are never glossary engines (glossary.ts ENG), so they get no filter; v48 (L1140): REF_ENGINES. */
+const TERM_ENGINES: readonly EngineId[] = REF_ENGINES;
 
 export const USE_KEY = 'cargo-query/engine-terms';
 /** `{ opened: { [term id]: n }, page: n }`; anything else reads as zero (ids must be glossary ids, ≤ 400 keys). */
@@ -129,11 +135,11 @@ function entry(t: Term): HTMLElement {
   const text = h('p', { class: 'm-0' }, ...rich(t[lang()]));
   return h('article', { id: `term-${t.id}`, class: 'flex flex-col gap-2 rounded-(--r-card) bg-panel p-4 ring-1 ring-line', 'aria-labelledby': `term-${t.id}-h` },
     h('h3', { id: `term-${t.id}-h`, tabindex: '-1', class: 'm-0 flex flex-wrap items-baseline gap-x-2 text-title font-bold' }, h('span', { lang: 'en' }, t.term), viLine(t) ? h('span', { class: 'text-body font-normal' }, viLine(t)) : null),
-    h('p', { class: 'm-0 flex flex-wrap items-center gap-2 text-body-sm' }, ...t.engines.map((e) => h('span', { class: d.cls.cx(d.cls.PILL, 'bg-accent-soft text-ink') }, NAME[e])), levelChip(t.level)),
+    h('p', { class: 'm-0 flex flex-wrap items-center gap-2 text-body-sm' }, ...t.engines.map((e) => h('span', { class: d.cls.cx(d.cls.PILL, 'bg-accent-soft text-ink') }, nameOf(e))), levelChip(t.level)),
     f.hide ? h('details', {}, h('summary', { class: 'cursor-pointer text-body-sm font-semibold text-accent-ink' }, tt('show')), text) : text,
     lang() === 'vi' && t.avoid ? h('p', { class: 'm-0 text-body-sm text-muted' }, tt('avoid', { x: t.avoid })) : null,
     h('p', { class: 'm-0 flex flex-wrap items-center gap-x-4 gap-y-1 text-body-sm' }, docLink(t), // v47 S2 (I7): the term's lesson
-      d.track?.termLink(d, [t.term, ...aliasesOf(t)], t.engines, t.level, `${NAME[t.engines[0]] ?? ''} ${t.level}`.trim()) ?? null));
+      d.track?.termLink(d, [t.term, ...aliasesOf(t)], t.engines, t.level, `${nameOf(t.engines[0])} ${t.level}`.trim()) ?? null));
 }
 
 function list(): HTMLElement[] {
@@ -182,7 +188,7 @@ export function termsPage(id: string): HTMLElement {
     h('search', { class: 'flex flex-col gap-3 rounded-(--r-card) bg-surface-2 p-4' },
       h('div', { class: 'flex flex-col gap-1' }, h('label', { for: 'terms-q', class: 'font-bold' }, tt('search')), search,
         h('p', { id: 'terms-q-hint', class: 'm-0 text-caption text-muted' }, tt('search.hint'))),
-      h('fieldset', { class: 'm-0 flex flex-wrap items-center gap-2 border-0 p-0' }, h('legend', { class: 'mb-1 p-0 text-body-sm font-bold' }, tt('engines')), ...TERM_ENGINES.map((e) => check(f.engines, e, NAME[e]))),
+      h('fieldset', { class: 'm-0 flex flex-wrap items-center gap-2 border-0 p-0' }, h('legend', { class: 'mb-1 p-0 text-body-sm font-bold' }, tt('engines')), ...TERM_ENGINES.map((e) => check(f.engines, e, nameOf(e)))),
       h('fieldset', { class: 'm-0 flex flex-wrap items-center gap-2 border-0 p-0' }, h('legend', { class: 'mb-1 p-0 text-body-sm font-bold' }, tt('levels')), ...LEVELS.map((lv) => check(f.levels, lv, lv))),
       h('label', { class: 'inline-flex min-h-6 cursor-pointer items-center gap-2 text-body-sm' },
         h('input', { type: 'checkbox', checked: f.hide, 'data-ek': 'terms-hide', onchange: (e: Event) => { f.hide = (e.target as HTMLInputElement).checked; redraw(); } }), tt('hide'))),

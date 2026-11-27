@@ -1,4 +1,4 @@
-import type { Bi, ProductEngine as EngineId } from './content';
+import type { Bi, RefEngine as EngineId } from './content'; // types only: the engineInterview chunk loads without content.ts
 
 /**
  * v27 (L411, design-v27 §2): the Database Engine interview bank (content/engine/iv-<engine>.yml, one lazy chunk per engine),
@@ -14,10 +14,18 @@ export interface IvQuestion { id: string; engine: EngineId; band: Band; kind: Iv
 export interface TakeHome { id: string; engine: EngineId; band: Band; title: Bi; brief: Bi; fixture?: string; queries: string[]; deliverables: Bi[]; model: Bi; rubric: Bi[]; doc: string }
 export interface Bank { fixtures: Record<string, string>; questions: IvQuestion[]; takeHomes: TakeHome[] }
 
-export const CODE: Record<EngineId, 'pg' | 'mg' | 'dy'> = { postgres: 'pg', mongodb: 'mg', dynamodb: 'dy' };
-const ENGINE_OF: Record<string, EngineId> = { pg: 'postgres', mg: 'mongodb', dy: 'dynamodb' };
+export type IvCode = 'pg' | 'mg' | 'dy' | 'rd' | 'ts' | 'ol' | 'sr' | 'tm' | 'sm' | 'gr';
+/** The id code of each bank (ENGINE_SHORT); v48 (L1144): the seven tracks' banks are `iv-<engine>.yml` like the products'. */
+export const CODE: Record<EngineId, IvCode> = { postgres: 'pg', mongodb: 'mg', dynamodb: 'dy', redis: 'rd', timeseries: 'ts', olap: 'ol', search: 'sr', telemetry: 'tm', stream: 'sm', graph: 'gr' };
+const ENGINE_OF = Object.fromEntries(Object.entries(CODE).map(([e, c]) => [c, e])) as Record<string, EngineId>;
+/** The three products, each its own tab of the room; the seven tracks share the "Khác / More" tab (v48, L1145). */
+export const PRODUCTS: readonly EngineId[] = ['postgres', 'mongodb', 'dynamodb'];
+export const IV_ENGINES = Object.keys(CODE) as EngineId[]; // = REF_ENGINES (tests/engineInterview.test.ts)
+export const TRACKS: readonly EngineId[] = IV_ENGINES.filter((e) => !PRODUCTS.includes(e));
 /** Sets per engine and band (design-v27 Q6: 3 × 5 questions; tests/engineInterview.test.ts checks the YAML has exactly these). */
 export const SETS_PER_BAND = 3;
+/** v48 (L1144): a track has one Junior and one Mid set of 5 (its lessons stop at L3 today). */
+const TRACK_BANDS: readonly string[] = ['junior', 'mid'];
 /** Suggested minutes per set, by band (a constant, not a YAML field: design-v27 §2.2). */
 export const SET_MINUTES: Record<Band, number> = { junior: 15, mid: 20, senior: 25, staff: 30 };
 /** A question scored below this share of its rubric comes back for review (design-v27 Q9). */
@@ -25,16 +33,19 @@ export const PASS = 0.6;
 
 /** v36 (L565): a fourth senior set for MongoDB and DynamoDB (multi-tenant questions); every other engine/band keeps 3. */
 const EXTRA_SETS: Partial<Record<string, number>> = { 'mg-senior': 1, 'dy-senior': 1 };
-const setCount = (code: string, b: string): number => SETS_PER_BAND + (EXTRA_SETS[`${code}-${b}`] ?? 0);
+const setCount = (code: string, b: string): number => (!ENGINE_OF[code] ? 0 : PRODUCTS.includes(ENGINE_OF[code])
+  ? SETS_PER_BAND + (EXTRA_SETS[`${code}-${b}`] ?? 0) : TRACK_BANDS.includes(b) ? 1 : 0);
+/** A band the engine has no set in gives `[]` (the room skips it). */
 export const setsOf = (e: EngineId, b: Band): string[] => Array.from({ length: setCount(CODE[e], b) }, (_, i) => `${CODE[e]}-${b}-${i + 1}`);
-export const ALL_SETS: string[] = (['postgres', 'mongodb', 'dynamodb'] as const).flatMap((e) => BANDS.flatMap((b) => setsOf(e, b)));
+export const ALL_SETS: string[] = IV_ENGINES.flatMap((e) => BANDS.flatMap((b) => setsOf(e, b)));
+const CODES = 'pg|mg|dy|rd|ts|ol|sr|tm|sm|gr';
 /** `pg-mid-2` → its engine and band; undefined for anything else. */
 export function setOf(id: string): { engine: EngineId; band: Band; n: number } | undefined {
-  const m = /^(pg|mg|dy)-(junior|mid|senior|staff)-([1-9])$/.exec(id);
+  const m = new RegExp(`^(${CODES})-(junior|mid|senior|staff)-([1-9])$`).exec(id);
   return m && +m[3] <= setCount(m[1], m[2]) ? { engine: ENGINE_OF[m[1]], band: m[2] as Band, n: +m[3] } : undefined;
 }
 /** The engine of a question or take-home id (`e-iv-pg-…`). */
-export const engineOfId = (id: string): EngineId | undefined => ENGINE_OF[/^e-iv-(pg|mg|dy)-/.exec(id)?.[1] ?? ''];
+export const engineOfId = (id: string): EngineId | undefined => ENGINE_OF[new RegExp(`^e-iv-(${CODES})-`).exec(id)?.[1] ?? ''];
 
 const bi = (x: unknown, what: string): Bi => {
   const o = x as Bi;
@@ -49,7 +60,7 @@ export function parseBank(raw: unknown): Bank {
   if (!r || !Array.isArray(r.questions)) throw new Error('interview bank: no questions');
   const questions = r.questions.map((x: Record<string, unknown>): IvQuestion => {
     const id = String(x.id);
-    if (!/^e-iv-(pg|mg|dy)-(junior|mid|senior|staff)-\d\d$/.test(id) || !setOf(String(x.set))) throw new Error(`interview bank: ${id}`);
+    if (!new RegExp(`^e-iv-(${CODES})-(junior|mid|senior|staff)-\\d\\d$`).test(id) || !setOf(String(x.set))) throw new Error(`interview bank: ${id}`);
     return {
       id, engine: x.engine as EngineId, band: x.band as Band, kind: x.kind as IvKind, set: String(x.set),
       q: bi(x.q, `${id} q`), answer: bi(x.answer, `${id} answer`), rubric: list(x.rubric, (y) => bi(y, `${id} rubric`)), doc: String(x.doc ?? ''),
@@ -68,7 +79,7 @@ export function parseBank(raw: unknown): Bank {
   const takeHomes = list(r.takeHomes, (y): TakeHome => {
     const x = y as Record<string, unknown>;
     const id = String(x.id);
-    if (!/^e-iv-(pg|mg|dy)-th-\d$/.test(id)) throw new Error(`interview bank: ${id}`);
+    if (!new RegExp(`^e-iv-(${CODES})-th-\\d$`).test(id)) throw new Error(`interview bank: ${id}`);
     return {
       id, engine: x.engine as EngineId, band: x.band as Band, title: bi(x.title, `${id} title`), brief: bi(x.brief, `${id} brief`),
       ...(typeof x.fixture === 'string' ? { fixture: x.fixture } : {}), queries: list(x.queries, String),

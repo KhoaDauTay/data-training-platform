@@ -289,7 +289,7 @@
   doc: "https://www.postgresql.org/docs/18/indexes-expressional.html"
 - id: gin
   term: GIN
-  engines: [postgres]
+  engines: [postgres, telemetry]
   level: L2
   keep_en: true
   vi_term: "GIN"
@@ -320,7 +320,7 @@
   doc: "https://www.postgresql.org/docs/18/gin.html"
 - id: brin
   term: BRIN
-  engines: [postgres]
+  engines: [postgres, olap]
   level: L2
   keep_en: true
   vi_term: "BRIN"
@@ -621,7 +621,7 @@
   doc: "https://www.postgresql.org/docs/18/routine-vacuuming.html"
 - id: wal-write-ahead-log
   term: WAL (write-ahead log)
-  engines: [postgres]
+  engines: [postgres, stream]
   level: L3
   keep_en: true
   vi_term: "WAL"
@@ -821,7 +821,7 @@
   doc: "https://www.postgresql.org/docs/18/ddl-partitioning.html"
 - id: partition-pruning
   term: partition pruning
-  engines: [postgres]
+  engines: [postgres, timeseries, olap]
   level: L4
   keep_en: true
   vi_term: "partition pruning"
@@ -1029,7 +1029,7 @@
   doc: "https://www.postgresql.org/docs/18/hot-standby.html"
 - id: replication-slot
   term: replication slot
-  engines: [postgres]
+  engines: [postgres, stream]
   level: L5
   keep_en: true
   vi_term: "replication slot"
@@ -1039,7 +1039,7 @@
   doc: "https://www.postgresql.org/docs/18/warm-standby.html"
 - id: logical-decoding
   term: logical decoding
-  engines: [postgres]
+  engines: [postgres, stream]
   level: L5
   keep_en: true
   vi_term: "logical decoding"
@@ -1864,7 +1864,7 @@
   doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithItems.html"
 - id: idempotent
   term: idempotent
-  engines: [dynamodb, mongodb, postgres]
+  engines: [dynamodb, mongodb, postgres, stream]
   level: L2
   keep_en: true
   vi_term: "idempotent"
@@ -1872,7 +1872,7 @@
   vi: "Chạy một lần hay nhiều lần cho cùng kết quả, nên gửi lại khi lỗi mạng là an toàn."
   en: "Running it once or many times gives the same result, so retrying after a network error is safe."
   doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithItems.html"
-  docs: { postgres: "https://www.postgresql.org/docs/18/sql-insert.html" }
+  docs: { postgres: "https://www.postgresql.org/docs/18/sql-insert.html", stream: "https://debezium.io/documentation/faq/" }
 - id: batchgetitem-batchwriteitem
   term: BatchGetItem / BatchWriteItem
   engines: [dynamodb]
@@ -2528,7 +2528,7 @@
   doc: "https://www.postgresql.org/docs/18/sql-prepare.html"
 - id: time-zone-utc
   term: time zone (UTC)
-  engines: [postgres, mongodb, dynamodb]
+  engines: [postgres, mongodb, dynamodb, timeseries]
   level: L1
   keep_en: false
   vi_term: "múi giờ"
@@ -3117,7 +3117,7 @@
   doc: "https://www.postgresql.org/docs/18/queries-limit.html"
 - id: change-data-capture-cdc
   term: change data capture (CDC)
-  engines: [postgres, mongodb, dynamodb]
+  engines: [postgres, mongodb, dynamodb, stream]
   level: L5
   keep_en: true
   vi_term: "CDC"
@@ -3126,7 +3126,7 @@
   vi: "Đọc các thay đổi đã commit của database thành một luồng để đẩy sang hệ thống khác. Postgres: logical decoding đọc WAL qua replication slot; MongoDB: change stream; DynamoDB: DynamoDB Streams."
   en: "Reading a database's committed changes as a stream to feed another system. Postgres: logical decoding of the WAL through a replication slot; MongoDB: change streams; DynamoDB: DynamoDB Streams."
   doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Streams.html"
-  docs: { postgres: "https://www.postgresql.org/docs/18/logical-replication.html" }
+  docs: { postgres: "https://www.postgresql.org/docs/18/logical-replication.html", stream: "https://debezium.io/documentation/reference/stable/connectors/postgresql.html" }
 - id: parallel-scan
   term: parallel scan
   engines: [dynamodb]
@@ -3160,3 +3160,1045 @@
   en: "Two disaster targets: RPO is the most data you may lose (measured in time), RTO is the longest time until service is back. They drive the choice of backups, PITR, replication and global tables."
   doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GlobalTables.html"
   docs: { postgres: "https://www.postgresql.org/docs/18/continuous-archiving.html" }
+
+# ───────────────────────── v48 (L1141): bảy track v47 ─────────────────────────
+# Mỗi mục chỉ thuộc track của nó (engines), doc lấy từ `sources:` của các bài track đó; level = cấp bài đầu tiên dạy từ.
+# Redis: lệnh và kiểu theo docs Valkey/Redis. "khóa" = key (va chạm 1).
+- id: string
+  term: string
+  engines: [redis]
+  level: L1
+  keep_en: false
+  vi_term: "chuỗi"
+  match: ["string"]
+  avoid: "xâu ký tự cố định"
+  vi: "Kiểu giá trị đơn giản nhất của Redis: một dãy byte (chữ, số hay dữ liệu nhị phân) gắn với một khóa. Chuỗi chứa số nguyên tăng được tại chỗ bằng `INCR`."
+  en: "Redis's simplest value type: a sequence of bytes (text, a number or binary data) stored under a key. A string holding an integer can be increased in place with `INCR`."
+  doc: "https://valkey.io/topics/data-types/"
+- id: ttl-time-to-live
+  term: TTL (time to live)
+  engines: [redis]
+  level: L1
+  keep_en: false
+  vi_term: "thời gian sống"
+  match: ["thời gian sống", "TTL"]
+  avoid: "thời hạn lưu trữ"
+  vi: "Thời gian một khóa còn được giữ; hết giờ thì Redis xóa khóa. `TTL` trả số giây còn lại, -1 khi khóa không có hạn, -2 khi khóa không tồn tại."
+  en: "How long a key is kept; when it runs out, Redis deletes the key. `TTL` returns the seconds left, -1 when the key has no expiry, -2 when the key does not exist."
+  doc: "https://valkey.io/commands/ttl/"
+- id: hash
+  term: hash
+  engines: [redis]
+  level: L1
+  keep_en: true
+  vi_term: "hash"
+  avoid: "hàm băm"
+  vi: "Kiểu giá trị gom nhiều cặp trường và giá trị vào một khóa, như một từ điển nhỏ. Giá trị của trường luôn là chuỗi; `HINCRBY` sửa một trường mà không đọc lại cả hash."
+  en: "A value type that groups field-value pairs under one key, like a small dictionary. Field values are always strings; `HINCRBY` changes one field without reading the whole hash."
+  doc: "https://redis.io/docs/latest/develop/data-types/hashes/"
+- id: list
+  term: list
+  engines: [redis]
+  level: L1
+  keep_en: true
+  vi_term: "list"
+  avoid: "mảng"
+  vi: "Dãy chuỗi có thứ tự, cho phép trùng, thêm và lấy nhanh ở cả hai đầu. `RPUSH` + `LPOP` là hàng đợi vào trước ra trước; `LPUSH` + `LPOP` là ngăn xếp."
+  en: "An ordered sequence of strings, duplicates allowed, fast to push and pop at both ends. `RPUSH` + `LPOP` is a first-in first-out queue; `LPUSH` + `LPOP` is a stack."
+  doc: "https://redis.io/docs/latest/develop/data-types/lists/"
+- id: set
+  term: set
+  engines: [redis]
+  level: L1
+  keep_en: true
+  vi_term: "set"
+  avoid: "danh sách"
+  vi: "Tập chuỗi không trùng và không có thứ tự. `SISMEMBER` và `SCARD` trả lời nhanh dù set lớn; `SINTER` và `SUNION` tính phần giao và phần hợp."
+  en: "A collection of unique strings with no order. `SISMEMBER` and `SCARD` answer fast however large the set is; `SINTER` and `SUNION` compute the intersection and the union."
+  doc: "https://redis.io/docs/latest/develop/data-types/sets/"
+- id: sorted-set
+  term: sorted set
+  engines: [redis]
+  level: L1
+  keep_en: true
+  vi_term: "sorted set"
+  avoid: "tập đã sắp xếp một lần"
+  vi: "Tập không trùng trong đó mỗi thành viên mang một điểm (score) là số thực, và Redis luôn giữ chúng theo điểm tăng dần, cùng điểm thì theo tên. Hợp cho bảng xếp hạng: `ZRANGE … REV` đọc từ điểm cao xuống."
+  en: "A collection of unique members, each with a floating-point score, always kept by score ascending, ties by name. It fits leaderboards: `ZRANGE … REV` reads from the highest score down."
+  doc: "https://redis.io/docs/latest/develop/data-types/sorted-sets/"
+- id: keyspace
+  term: keyspace
+  engines: [redis]
+  level: L1
+  keep_en: false
+  vi_term: "không gian khóa"
+  match: ["không gian khóa", "keyspace"]
+  avoid: "lược đồ"
+  vi: "Toàn bộ khóa của một database Redis, nằm phẳng một chỗ, không có bảng hay thư mục. Dấu hai chấm trong tên khóa chỉ là quy ước đặt tên để nhóm khóa."
+  en: "All the keys of a Redis database, in one flat space with no tables or folders. A colon in a key name is only a naming convention for grouping keys."
+  doc: "https://valkey.io/topics/keyspace/"
+- id: cursor-scan
+  term: cursor (SCAN)
+  engines: [redis]
+  level: L1
+  keep_en: false
+  vi_term: "con trỏ"
+  match: ["SCAN"]
+  avoid: "con trỏ chuột"
+  vi: "`SCAN` duyệt không gian khóa từng đợt: mỗi lần trả một con trỏ và vài khóa, gọi tiếp với con trỏ đó cho tới khi nhận lại `0`. Khác `KEYS`, nó không chặn server trong lúc duyệt."
+  en: "`SCAN` walks the keyspace in batches: each call returns a cursor and some keys; call again with that cursor until it returns `0`. Unlike `KEYS`, it does not block the server while it walks."
+  doc: "https://valkey.io/commands/scan/"
+- id: cache-aside
+  term: cache-aside
+  engines: [redis]
+  level: L2
+  keep_en: true
+  vi_term: "cache-aside"
+  avoid: "write-through (đó là mẫu khác)"
+  vi: "Mẫu cache do ứng dụng tự quản: đọc Redis trước, trượt (miss) thì đọc cơ sở dữ liệu gốc rồi ghi kết quả vào Redis kèm hạn. Nguồn đúng vẫn là cơ sở dữ liệu, nên mất cache chỉ làm chậm, không làm sai."
+  en: "A caching pattern the application manages: read Redis first; on a miss, read the source database and write the result to Redis with an expiry. The database stays the source of truth, so losing the cache makes reads slower, not wrong."
+  doc: "https://docs.aws.amazon.com/whitepapers/latest/database-caching-strategies-using-redis/caching-patterns.html"
+- id: cache-stampede
+  term: cache stampede
+  engines: [redis]
+  level: L2
+  keep_en: false
+  vi_term: "cơn dồn tải"
+  match: ["cơn dồn tải", "cache stampede"]
+  avoid: "tràn cache"
+  vi: "Một khóa rất nóng hết hạn, rồi hàng trăm request cùng trượt và cùng đọc cơ sở dữ liệu gốc một lúc. Cách chặn hay gặp: chỉ request giành được một khóa tạm bằng `SET … NX PX` mới dựng lại cache."
+  en: "A very hot key expires and hundreds of requests miss at once and all read the source database together. A common guard: only the request that wins a short-lived lock key with `SET … NX PX` rebuilds the cache."
+  doc: "https://valkey.io/commands/set/"
+- id: rate-limiting
+  term: rate limiting
+  engines: [redis]
+  level: L2
+  keep_en: false
+  vi_term: "giới hạn tần suất"
+  match: ["giới hạn tần suất", "rate limit"]
+  avoid: "giới hạn băng thông"
+  vi: "Cho mỗi client tối đa N request trong một khoảng thời gian, quá thì từ chối (HTTP 429). Với Redis, một bộ đếm `INCR` có hạn cho mỗi client và mỗi khoảng là cách đơn giản nhất."
+  en: "Allowing each client at most N requests per time period and refusing the rest (HTTP 429). In Redis, an expiring `INCR` counter per client and period is the simplest way."
+  doc: "https://valkey.io/commands/incr/"
+- id: fixed-window
+  term: fixed window
+  engines: [redis]
+  level: L2
+  keep_en: false
+  vi_term: "cửa sổ cố định"
+  avoid: "cửa sổ trượt (đó là cách khác)"
+  vi: "Cách đếm giới hạn tần suất theo từng khoảng thời gian cố định, mỗi phút một khóa đếm. Rẻ và đơn giản, nhưng ở ranh giới hai cửa sổ một client có thể lọt gần gấp đôi giới hạn."
+  en: "Counting a rate limit per fixed time slot, one counter key per minute. Cheap and simple, but at the boundary of two windows a client can get through almost twice the limit."
+  doc: "https://valkey.io/commands/incr/"
+- id: multi-exec
+  term: MULTI / EXEC
+  engines: [redis]
+  level: L2
+  keep_en: true
+  vi_term: "MULTI / EXEC"
+  match: ["MULTI", "EXEC"]
+  avoid: "transaction có rollback"
+  vi: "Transaction của Redis: các lệnh sau `MULTI` được xếp hàng, và `EXEC` chạy cả hàng liền một mạch, không lệnh của client khác chen vào giữa. Không có hoàn tác: một lệnh lỗi lúc chạy không làm các lệnh khác bị hủy."
+  en: "A Redis transaction: commands after `MULTI` are queued, and `EXEC` runs them all in one go with no other client's command in between. There is no rollback: a command that fails at run time does not undo the others."
+  doc: "https://valkey.io/topics/transactions/"
+- id: watch
+  term: WATCH
+  engines: [redis]
+  level: L2
+  keep_en: true
+  vi_term: "WATCH"
+  avoid: "lock (WATCH không chặn ai)"
+  vi: "Lệnh gửi trước `MULTI` để kiểm tra lạc quan (optimistic locking): nếu một khóa đang được theo dõi bị đổi trước `EXEC`, `EXEC` trả nil và không chạy gì, ứng dụng đọc lại rồi thử lại. Không client nào phải chờ."
+  en: "A command sent before `MULTI` for optimistic locking: if a watched key changes before `EXEC`, `EXEC` returns nil and runs nothing, so the application reads again and retries. No client has to wait."
+  doc: "https://valkey.io/commands/watch/"
+- id: rdb-snapshot
+  term: RDB snapshot
+  engines: [redis]
+  level: L2
+  keep_en: false
+  vi_term: "ảnh chụp RDB"
+  match: ["RDB"]
+  avoid: "bản sao lưu đầy đủ theo thời gian thực"
+  vi: "Cách lưu xuống đĩa bằng việc định kỳ chụp toàn bộ dữ liệu vào một file. File gọn và khởi động lại nhanh, nhưng mọi lần ghi sau lần chụp cuối sẽ mất nếu server sập."
+  en: "Persistence by periodically writing a point-in-time snapshot of the whole dataset to one file. The file is compact and restarts fast, but every write after the last snapshot is lost if the server crashes."
+  doc: "https://valkey.io/topics/persistence/"
+- id: aof-append-only-file
+  term: AOF (append-only file)
+  engines: [redis]
+  level: L2
+  keep_en: false
+  vi_term: "nhật ký lệnh AOF"
+  match: ["AOF"]
+  avoid: "WAL (AOF ghi lệnh, không ghi trang)"
+  vi: "Cách lưu xuống đĩa bằng việc nối mỗi lệnh ghi vào cuối một file; khi khởi động lại, Redis chạy lại các lệnh đó. Lượng có thể mất khi sập tùy `appendfsync`: `always`, `everysec` (tối đa khoảng một giây) hoặc `no`."
+  en: "Persistence by appending every write command to a log file; on restart Redis replays those commands. How much a crash can lose depends on `appendfsync`: `always`, `everysec` (about one second at most) or `no`."
+  doc: "https://valkey.io/topics/persistence/"
+
+# Chuỗi thời gian (timeseries): mọi lab chạy trên PostgreSQL; "dòng" = row.
+- id: retention
+  term: retention
+  engines: [timeseries]
+  level: L1
+  keep_en: true
+  vi_term: "retention"
+  match: ["retention"]
+  avoid: "lưu trữ vĩnh viễn"
+  vi: "Chính sách chỉ giữ dữ liệu trong một khoảng (ví dụ ba tháng gần nhất) và xóa phần cũ hơn theo lịch. Với bảng chia partition theo thời gian, bỏ cả một partition cũ nhanh hơn nhiều so với `DELETE` từng dòng."
+  en: "A policy of keeping data only for a period (for example the last three months) and deleting older data on a schedule. With a table partitioned by time, dropping a whole old partition is far faster than a row-by-row `DELETE`."
+  doc: "https://www.postgresql.org/docs/18/ddl-partitioning.html"
+- id: time-bucket
+  term: time bucket
+  engines: [timeseries]
+  level: L1
+  keep_en: false
+  vi_term: "khung thời gian"
+  avoid: "múi giờ"
+  vi: "Khoảng thời gian đều nhau để gom số đo (mỗi giờ, mỗi 15 phút). `date_trunc` cắt về đầu một đơn vị lịch; `date_bin` gom theo cỡ tùy ý tính từ một mốc gốc (origin), mỗi khung gồm điểm đầu và không gồm điểm cuối."
+  en: "An equal time slot for grouping readings (each hour, each 15 minutes). `date_trunc` cuts to the start of a calendar unit; `date_bin` groups by any size counted from an origin, each bucket including its start and excluding its end."
+  doc: "https://www.postgresql.org/docs/18/functions-datetime.html#FUNCTIONS-DATETIME-BIN"
+- id: gap-filling
+  term: gap filling
+  engines: [timeseries]
+  level: L1
+  keep_en: false
+  vi_term: "lấp khung trống"
+  match: ["khung trống", "gap filling"]
+  avoid: "nội suy (lấp khung không tự bịa giá trị)"
+  vi: "Hiện cả những khung thời gian không có số đo: dựng đủ mọi mốc bằng `generate_series` rồi `LEFT JOIN` số đo vào. Khung trống đếm ra 0, còn trung bình của nó nên để NULL."
+  en: "Showing the time slots that have no readings too: build every slot with `generate_series`, then `LEFT JOIN` the readings to it. An empty slot counts as 0, while its average should stay NULL."
+  doc: "https://www.postgresql.org/docs/18/functions-srf.html"
+- id: locf-last-observation-carried-forward
+  term: LOCF (last observation carried forward)
+  engines: [timeseries]
+  level: L1
+  keep_en: true
+  vi_term: "LOCF"
+  match: ["LOCF"]
+  avoid: "nội suy tuyến tính"
+  vi: "Lấp một khung trống bằng số đo gần nhất trước nó, thường bằng một câu con `LATERAL`. Chỉ hợp khi giá trị thật sự giữ nguyên tới lần đo sau; với nhiệt độ, nó có thể che mất một lần mất tín hiệu."
+  en: "Filling an empty slot with the most recent reading before it, usually with a `LATERAL` subquery. It fits only when the value really stays the same until the next reading; for temperatures it can hide a signal loss."
+  doc: "https://www.postgresql.org/docs/18/queries-table-expressions.html#QUERIES-LATERAL"
+- id: latest-row-per-group
+  term: latest row per group
+  engines: [timeseries]
+  level: L1
+  keep_en: false
+  vi_term: "dòng mới nhất của từng nhóm"
+  avoid: "MAX của từng cột (trộn các dòng khác nhau)"
+  vi: "Mẫu truy vấn lấy số đo cuối cùng của mỗi thiết bị. `DISTINCT ON` ngắn gọn nhưng đi qua mọi dòng; `LATERAL` cùng một index `(device_id, ts DESC)` chỉ đọc một mục index cho mỗi thiết bị."
+  en: "The query pattern that returns each device's last reading. `DISTINCT ON` is short but goes through every row; `LATERAL` with an index on `(device_id, ts DESC)` reads one index entry per device."
+  doc: "https://www.postgresql.org/docs/18/sql-select.html#SQL-DISTINCT"
+- id: moving-average
+  term: moving average
+  engines: [timeseries]
+  level: L2
+  keep_en: false
+  vi_term: "trung bình trượt"
+  avoid: "trung bình cộng dồn"
+  vi: "Trung bình của vài số đo gần nhất quanh mỗi dòng, để thấy xu hướng. Khung `ROWS` đếm dòng nên kéo số đo cũ vào khi có giờ mất số đo; khung `RANGE` theo một khoảng thời gian thì không."
+  en: "The average of the last few readings around each row, to show the trend. A `ROWS` frame counts rows, so it pulls in old readings when some hours are missing; a `RANGE` frame over a time interval does not."
+  doc: "https://www.postgresql.org/docs/18/sql-expressions.html#SYNTAX-WINDOW-FUNCTIONS"
+- id: window-frame
+  term: window frame
+  engines: [timeseries]
+  level: L2
+  keep_en: false
+  vi_term: "khung cửa sổ"
+  match: ["khung (frame)", "window frame"]
+  avoid: "cửa sổ thời gian của luồng"
+  vi: "Tập dòng mà một hàm cửa sổ tính trên đó, quanh dòng hiện tại: `ROWS BETWEEN 2 PRECEDING AND CURRENT ROW` là ba dòng, còn `RANGE` với một khoảng thời gian lấy mọi dòng trong khoảng đó."
+  en: "The set of rows a window function computes over, around the current row: `ROWS BETWEEN 2 PRECEDING AND CURRENT ROW` is three rows, while `RANGE` with a time interval takes every row inside that interval."
+  doc: "https://www.postgresql.org/docs/18/sql-expressions.html#SYNTAX-WINDOW-FUNCTIONS"
+- id: counter-reset
+  term: counter reset
+  engines: [timeseries, telemetry]
+  level: L2
+  keep_en: true
+  vi_term: "counter reset"
+  match: ["counter reset", "reset"]
+  avoid: "đặt lại thủ công"
+  vi: "Lúc một bộ đếm cộng dồn quay về 0 vì thiết bị hay tiến trình khởi động lại. Hiệu hai lần đọc khi đó ra số âm; cách xử lý hay gặp là coi giá trị mới chính là số tăng kể từ lúc khởi động lại, như `rate()` của Prometheus tự điều chỉnh."
+  en: "When a cumulative counter drops back to 0 because the device or process restarted. The difference of two readings is then negative; the usual fix treats the new value itself as the increase since the restart, as Prometheus's `rate()` adjusts automatically."
+  doc: "https://prometheus.io/docs/prometheus/latest/querying/functions/#rate"
+  docs: { timeseries: "https://www.postgresql.org/docs/18/functions-window.html" }
+- id: late-arriving-data
+  term: late-arriving data
+  engines: [timeseries]
+  level: L2
+  keep_en: false
+  vi_term: "số đo về trễ"
+  match: ["về trễ", "late-arriving data"]
+  avoid: "dữ liệu lỗi"
+  vi: "Số đo tới kho sau những số đo mới hơn nó, ví dụ thiết bị mất sóng rồi gửi bù. Báo cáo gom theo thời điểm đo, còn việc tìm giờ cần tính lại phải theo thời điểm nhận, nếu không sẽ bỏ sót đúng các số đo về trễ."
+  en: "Readings that reach the store after newer ones, for example a device that lost signal and then sends the backlog. Reports group by measurement time, but finding the hours to recompute must use arrival time, or exactly the late readings are missed."
+  doc: "https://www.postgresql.org/docs/18/sql-insert.html#SQL-ON-CONFLICT"
+- id: gaps-and-islands
+  term: gaps and islands
+  engines: [timeseries]
+  level: L2
+  keep_en: true
+  vi_term: "gaps and islands"
+  match: ["gaps and islands", "đảo và khoảng trống"]
+  avoid: "phân cụm"
+  vi: "Bài toán gom các dòng liên tiếp cùng trạng thái (ví dụ các phút vượt ngưỡng liền nhau) thành một đợt. Cách hay gặp: đánh dấu dòng mở đầu mỗi đợt bằng `lag()`, rồi cộng dồn các dấu đó thành số thứ tự của đợt."
+  en: "Grouping consecutive rows with the same state (for example back-to-back minutes over a threshold) into one run. A common way: flag the row that starts each run with `lag()`, then sum those flags cumulatively into a run number."
+  doc: "https://www.postgresql.org/docs/18/functions-window.html"
+- id: downsampling
+  term: downsampling
+  engines: [timeseries]
+  level: L3
+  keep_en: true
+  vi_term: "downsampling"
+  match: ["downsampling", "bảng tổng hợp"]
+  avoid: "lấy mẫu ngẫu nhiên"
+  vi: "Gom số đo thô cũ thành một bảng tổng hợp theo giờ hay theo ngày, để báo cáo đọc ít dòng hơn và số thô được xóa sớm hơn. Lưu tổng và số đếm thay vì trung bình, để gộp tiếp từ giờ lên ngày vẫn đúng."
+  en: "Rolling old raw readings up into an hourly or daily summary table, so reports read fewer rows and raw data can be dropped sooner. Store sums and counts, not averages, so rolling hours up into days stays correct."
+  doc: "https://www.postgresql.org/docs/18/rules-materializedviews.html"
+- id: block-range
+  term: block range
+  engines: [timeseries]
+  level: L3
+  keep_en: false
+  vi_term: "khối trang"
+  match: ["Block Range", "block range", "tóm tắt khối"]
+  avoid: "partition"
+  vi: "Nhóm trang liên tiếp mà một index BRIN tóm tắt bằng một cặp min và max; cỡ nhóm đặt bằng `pages_per_range` (mặc định 128 trang). Bảng ghi thêm theo thời gian cho mỗi khối một khoảng giờ hẹp, nên câu lọc một ngày bỏ qua được gần hết các khối."
+  en: "A group of consecutive pages that a BRIN index summarizes with one min and max pair; its size is set by `pages_per_range` (128 pages by default). A table appended in time order gives each range a narrow time span, so a one-day filter skips almost every range."
+  doc: "https://www.postgresql.org/docs/18/brin.html"
+
+# OLAP & ClickHouse (olap): lab chạy trên PostgreSQL, ClickHouse theo docs clickhouse.com.
+- id: oltp-olap
+  term: OLTP / OLAP
+  engines: [olap]
+  level: L1
+  keep_en: true
+  vi_term: "OLTP / OLAP"
+  match: ["OLTP", "OLAP"]
+  avoid: "OLAP là một loại cơ sở dữ liệu (đó là một kiểu tải)"
+  vi: "Hai kiểu tải: OLTP là rất nhiều transaction nhỏ, mỗi cái đọc hay ghi vài dòng (đặt hàng, thanh toán); OLAP là ít câu hỏi lớn quét và gom hàng triệu dòng (báo cáo, phân tích)."
+  en: "Two kinds of workload: OLTP is many small transactions, each reading or writing a few rows (orders, payments); OLAP is a few large questions that scan and aggregate millions of rows (reports, analysis)."
+  doc: "https://clickhouse.com/docs/intro"
+- id: column-oriented-storage
+  term: column-oriented storage
+  engines: [olap]
+  level: L1
+  keep_en: false
+  vi_term: "lưu theo cột"
+  match: ["lưu theo cột", "column-oriented"]
+  avoid: "bảng nhiều cột"
+  vi: "Cách lưu đặt các giá trị của cùng một cột liền nhau trên đĩa. Câu báo cáo chỉ đọc vài cột nên đọc ít dữ liệu hơn hẳn, và các giá trị giống nhau nằm cạnh nhau nén rất tốt; đổi lại, đọc hay sửa một dòng lẻ thì chậm."
+  en: "Storage that keeps the values of one column next to each other on disk. A report that reads a few columns reads far less data, and similar values side by side compress very well; reading or changing a single row is slow in exchange."
+  doc: "https://clickhouse.com/docs/intro"
+- id: star-schema
+  term: star schema
+  engines: [olap]
+  level: L1
+  keep_en: true
+  vi_term: "star schema"
+  match: ["star schema", "hình sao"]
+  avoid: "lược đồ chuẩn hóa 3NF"
+  vi: "Thiết kế cho phân tích: một bảng fact ở giữa, mỗi dòng là một sự kiện đo được (một lượt giao hàng, một dòng đơn), nối tới các bảng dimension mô tả nó (ngày, khách hàng, cảng)."
+  en: "A design for analytics: one fact table in the middle, each row a measured event (a delivery, an order line), joined to the dimension tables that describe it (date, customer, port)."
+  doc: "https://clickhouse.com/docs/data-modeling/schema-design"
+- id: fact-table-dimension-table
+  term: fact table / dimension table
+  engines: [olap]
+  level: L1
+  keep_en: false
+  vi_term: "bảng fact / bảng dimension"
+  match: ["bảng fact", "bảng dimension"]
+  avoid: "bảng chính / bảng phụ"
+  vi: "Bảng fact giữ các số đo theo một grain cố định (mỗi dòng một sự kiện) và rất dài; bảng dimension giữ thuộc tính để lọc và nhóm (tên khách, tháng, vùng) và ngắn."
+  en: "A fact table holds measures at one fixed grain (one row per event) and is very long; a dimension table holds the attributes used to filter and group (customer name, month, region) and is short."
+  doc: "https://clickhouse.com/docs/data-modeling/schema-design"
+- id: rollup-cube
+  term: ROLLUP / CUBE
+  engines: [olap]
+  level: L2
+  keep_en: true
+  vi_term: "ROLLUP / CUBE"
+  match: ["ROLLUP", "CUBE", "GROUPING SETS"]
+  avoid: "bảng tổng hợp vật lý (đây chỉ là một câu GROUP BY)"
+  vi: "Cách viết tắt của `GROUPING SETS`: `ROLLUP (a, b)` cho các mức (a, b), (a) và tổng; `CUBE (a, b)` cho mọi tổ hợp. Dòng tổng có NULL ở cột bị gộp, và `GROUPING()` phân biệt NULL đó với NULL thật."
+  en: "Shorthands for `GROUPING SETS`: `ROLLUP (a, b)` gives the levels (a, b), (a) and the grand total; `CUBE (a, b)` gives every combination. A total row has NULL in the rolled-up column, and `GROUPING()` tells that NULL from a real one."
+  doc: "https://www.postgresql.org/docs/18/queries-table-expressions.html#QUERIES-GROUPING-SETS"
+- id: materialized-view
+  term: materialized view
+  engines: [olap, timeseries]
+  level: L2
+  keep_en: true
+  vi_term: "materialized view"
+  avoid: "view thường (view không lưu kết quả)"
+  vi: "View lưu sẵn kết quả của câu truy vấn như một bảng. Trong PostgreSQL nó không tự cập nhật: `REFRESH MATERIALIZED VIEW` tính lại toàn bộ; materialized view của ClickHouse thì chạy trên mỗi lần insert."
+  en: "A view that stores its query's result like a table. In PostgreSQL it does not update itself: `REFRESH MATERIALIZED VIEW` recomputes it all; a ClickHouse materialized view instead runs on every insert."
+  doc: "https://www.postgresql.org/docs/18/rules-materializedviews.html"
+  docs: { olap: "https://clickhouse.com/docs/materialized-view/incremental-materialized-view" }
+- id: vectorized-execution
+  term: vectorized execution
+  engines: [olap]
+  level: L2
+  keep_en: false
+  vi_term: "thực thi theo lô"
+  match: ["thực thi theo lô", "vectorized"]
+  avoid: "chạy song song nhiều câu"
+  vi: "Executor xử lý cả một khối giá trị của một cột trong mỗi bước thay vì từng dòng một, nên CPU làm một phép trên nhiều giá trị liên tiếp. Đây là một lý do ClickHouse quét nhanh."
+  en: "The executor processes a whole block of a column's values per step instead of one row at a time, so the CPU applies one operation to many consecutive values. It is one reason ClickHouse scans fast."
+  doc: "https://clickhouse.com/docs/concepts/why-clickhouse-is-so-fast"
+- id: mergetree
+  term: MergeTree
+  engines: [olap]
+  level: L3
+  keep_en: true
+  vi_term: "MergeTree"
+  avoid: "B-tree"
+  vi: "Họ table engine chính của ClickHouse: mỗi lần insert ghi một part mới đã sắp theo khóa sắp xếp (`ORDER BY`), rồi các part được gộp dần ở nền. `ORDER BY` của bảng quyết định thứ tự trên đĩa và sparse primary index."
+  en: "ClickHouse's main family of table engines: each insert writes a new part sorted by the sorting key (`ORDER BY`), and parts are merged in the background. The table's `ORDER BY` sets the order on disk and the sparse primary index."
+  doc: "https://clickhouse.com/docs/engines/table-engines/mergetree-family/mergetree"
+- id: granule
+  term: granule
+  engines: [olap]
+  level: L3
+  keep_en: true
+  vi_term: "granule"
+  match: ["granule", "sparse"]
+  avoid: "trang 8 KB của PostgreSQL"
+  vi: "Nhóm dòng nhỏ nhất ClickHouse đọc, mặc định 8192 dòng. Sparse primary index giữ một mục cho mỗi granule chứ không cho mỗi dòng, nên rất nhỏ và nằm vừa bộ nhớ."
+  en: "The smallest group of rows ClickHouse reads, 8192 rows by default. The sparse primary index keeps one entry per granule, not per row, so it is tiny and fits in memory."
+  doc: "https://clickhouse.com/docs/optimize/sparse-primary-indexes"
+- id: part-mergetree
+  term: part (MergeTree)
+  engines: [olap]
+  level: L3
+  keep_en: true
+  vi_term: "part"
+  match: ["part"]
+  avoid: "partition"
+  vi: "Một khối dữ liệu bất biến trên đĩa do một lần insert tạo ra, đã sắp theo khóa sắp xếp. Mỗi insert nhỏ tạo một part, nên ClickHouse khuyên insert theo lô lớn để không phải gộp quá nhiều part."
+  en: "An immutable chunk of data on disk created by one insert, sorted by the sorting key. Every small insert makes a part, so ClickHouse advises large batched inserts to avoid merging too many parts."
+  doc: "https://clickhouse.com/docs/best-practices/selecting-an-insert-strategy"
+- id: replacingmergetree
+  term: ReplacingMergeTree
+  engines: [olap]
+  level: L3
+  keep_en: true
+  vi_term: "ReplacingMergeTree"
+  avoid: "UPSERT tức thì"
+  vi: "Engine bỏ các dòng trùng khóa sắp xếp khi gộp part, giữ dòng có phiên bản cao nhất (không có cột phiên bản thì giữ dòng chèn sau cùng). Việc gộp chạy lúc nào không biết trước, nên câu đọc cần `FINAL` (hoặc gom lại) mới chắc không đếm trùng."
+  en: "An engine that drops rows with the same sorting key when parts merge, keeping the row with the highest version (the last inserted one when there is no version column). Merges run at an unknown time, so a read needs `FINAL` (or its own aggregation) to be sure it does not count twice."
+  doc: "https://clickhouse.com/docs/engines/table-engines/mergetree-family/replacingmergetree"
+- id: aggregatingmergetree
+  term: AggregatingMergeTree
+  engines: [olap]
+  level: L3
+  keep_en: true
+  vi_term: "AggregatingMergeTree"
+  avoid: "materialized view của PostgreSQL"
+  vi: "Engine giữ trạng thái gom dở (như tổng và số đếm) và gộp tiếp các trạng thái cùng khóa khi gộp part. Thường là bảng đích của một materialized view chạy lúc insert; câu đọc ghép trạng thái bằng các hàm `-Merge`."
+  en: "An engine that stores partial aggregate states (such as sums and counts) and combines states with the same key when parts merge. It is usually the target of an insert-time materialized view; reads combine the states with the `-Merge` functions."
+  doc: "https://clickhouse.com/docs/engines/table-engines/mergetree-family/aggregatingmergetree"
+- id: approximate-aggregate
+  term: approximate aggregate
+  engines: [olap]
+  level: L3
+  keep_en: false
+  vi_term: "hàm gần đúng"
+  match: ["gần đúng"]
+  avoid: "làm tròn"
+  vi: "Hàm gom đổi một chút độ chính xác lấy bộ nhớ và tốc độ: `uniq` đếm số giá trị khác nhau gần đúng, `quantile` ước lượng phân vị từ một mẫu. Cần số chính xác thì dùng `uniqExact` hay `quantileExact`."
+  en: "Aggregates that trade a little accuracy for memory and speed: `uniq` counts distinct values approximately, `quantile` estimates a percentile from a sample. For exact numbers use `uniqExact` or `quantileExact`."
+  doc: "https://clickhouse.com/docs/sql-reference/aggregate-functions/reference/uniq"
+- id: mutation
+  term: mutation
+  engines: [olap]
+  level: L3
+  keep_en: true
+  vi_term: "mutation"
+  avoid: "UPDATE nhẹ như PostgreSQL"
+  vi: "Một `ALTER TABLE … UPDATE` hay `DELETE` của ClickHouse: nó viết lại các part bị ảnh hưởng ở nền, nên nặng và không hợp để sửa từng dòng thường xuyên. ClickHouse khuyên tránh mutation."
+  en: "A ClickHouse `ALTER TABLE … UPDATE` or `DELETE`: it rewrites the affected parts in the background, so it is heavy and unsuited to frequent row-by-row changes. ClickHouse advises avoiding mutations."
+  doc: "https://clickhouse.com/docs/best-practices/avoid-mutations"
+
+# Tìm kiếm & Elasticsearch (search): bộ thông dịch ES và PostgreSQL FTS.
+- id: inverted-index
+  term: inverted index
+  engines: [search]
+  level: L1
+  keep_en: true
+  vi_term: "inverted index"
+  avoid: "index đảo chiều sắp xếp (DESC)"
+  vi: "Cấu trúc trỏ từ mỗi từ (token) tới danh sách tài liệu chứa nó, kèm vị trí. Tìm một từ là tra danh sách đó thay vì đọc mọi tài liệu."
+  en: "A structure that points from each word (token) to the list of documents containing it, with positions. Finding a word means looking up that list instead of reading every document."
+  doc: "https://www.elastic.co/docs/manage-data/data-store/index-basics"
+- id: analyzer
+  term: analyzer
+  engines: [search]
+  level: L1
+  keep_en: true
+  vi_term: "analyzer"
+  avoid: "trình phân tích cú pháp SQL"
+  vi: "Chuỗi xử lý biến văn bản thành token: không hoặc nhiều character filter, đúng một tokenizer, rồi không hoặc nhiều token filter. Cùng một analyzer phải chạy khi ghi và khi tìm, nếu không từ sẽ không khớp."
+  en: "The pipeline that turns text into tokens: zero or more character filters, exactly one tokenizer, then zero or more token filters. The same analysis must run at index time and at search time, or words will not match."
+  doc: "https://www.elastic.co/docs/manage-data/data-store/text-analysis/anatomy-of-an-analyzer"
+- id: tokenizer
+  term: tokenizer
+  engines: [search]
+  level: L1
+  keep_en: true
+  vi_term: "tokenizer"
+  avoid: "token filter"
+  vi: "Bước cắt văn bản thành token: `standard` cắt theo ranh giới từ và bỏ dấu câu, `whitespace` chỉ cắt ở khoảng trắng, `keyword` giữ cả chuỗi làm một token."
+  en: "The step that splits text into tokens: `standard` splits on word boundaries and drops punctuation, `whitespace` splits only on spaces, `keyword` keeps the whole string as one token."
+  doc: "https://www.elastic.co/docs/reference/text-analysis/analysis-standard-tokenizer"
+- id: token-filter
+  term: token filter
+  engines: [search]
+  level: L1
+  keep_en: true
+  vi_term: "token filter"
+  match: ["token filter"]
+  avoid: "bộ lọc truy vấn"
+  vi: "Bước sửa token sau tokenizer: `lowercase` hạ chữ thường, `asciifolding` bỏ dấu (cả chữ đ cũng thành d), `edge_ngram` sinh các tiền tố. Thứ tự các filter có ý nghĩa."
+  en: "A step that changes tokens after the tokenizer: `lowercase` lower-cases, `asciifolding` strips accents (the crossed d becomes d too), `edge_ngram` produces prefixes. The order of filters matters."
+  doc: "https://www.elastic.co/docs/reference/text-analysis/analysis-asciifolding-tokenfilter"
+- id: mapping
+  term: mapping
+  engines: [search]
+  level: L1
+  keep_en: true
+  vi_term: "mapping"
+  avoid: "schema SQL có ràng buộc"
+  vi: "Khai báo kiểu của từng trường trong một index (text, keyword, số, ngày…). Không khai báo thì Elasticsearch đoán từ tài liệu đầu tiên (dynamic mapping), và một trường đã có kiểu thì không đổi tại chỗ được."
+  en: "The declared type of each field in an index (text, keyword, number, date…). Without one, Elasticsearch guesses from the first document (dynamic mapping), and a field's type cannot be changed in place once set."
+  doc: "https://www.elastic.co/docs/manage-data/data-store/mapping/dynamic-field-mapping"
+- id: keyword-field
+  term: keyword field
+  engines: [search]
+  level: L1
+  keep_en: true
+  vi_term: "keyword"
+  match: ["keyword"]
+  avoid: "từ khóa SQL"
+  vi: "Trường giữ nguyên cả chuỗi làm một token, không qua analyzer: hợp để lọc đúng giá trị, sắp xếp và gom nhóm (mã, trạng thái). Trường `text` thì được phân tích để tìm theo từ."
+  en: "A field that keeps the whole string as one token with no analyzer: right for exact filters, sorting and aggregations (codes, statuses). A `text` field is analyzed for word search instead."
+  doc: "https://www.elastic.co/docs/reference/elasticsearch/mapping-reference/keyword"
+- id: multi-field
+  term: multi-field
+  engines: [search]
+  level: L1
+  keep_en: true
+  vi_term: "multi-field"
+  avoid: "nhiều trường khác nhau"
+  vi: "Một trường được lập index nhiều cách cùng lúc qua `fields`, ví dụ `name` (text có dấu) và `name.folded` (đã bỏ dấu), để một truy vấn tìm được cả hai cách gõ."
+  en: "One field indexed several ways at once through `fields`, for example `name` (accented text) and `name.folded` (accents stripped), so one query finds both ways of typing."
+  doc: "https://www.elastic.co/docs/reference/elasticsearch/mapping-reference/multi-fields"
+- id: bm25
+  term: BM25
+  engines: [search]
+  level: L2
+  keep_en: true
+  vi_term: "BM25"
+  match: ["BM25", "IDF"]
+  avoid: "độ chính xác phần trăm"
+  vi: "Công thức điểm liên quan mặc định: tăng theo số lần từ xuất hiện (TF, có bão hòa theo `k1`), tăng khi từ hiếm trong cả index (IDF), và giảm với trường dài (theo `b`). Mặc định `k1 = 1.2`, `b = 0.75`."
+  en: "The default relevance formula: it rises with how often the term occurs (TF, saturating via `k1`), rises when the term is rare in the whole index (IDF), and falls for long fields (via `b`). Defaults are `k1 = 1.2`, `b = 0.75`."
+  doc: "https://www.elastic.co/docs/reference/elasticsearch/index-settings/similarity"
+- id: match-query-term-query
+  term: match query / term query
+  engines: [search]
+  level: L2
+  keep_en: true
+  vi_term: "match / term"
+  match: ["term query", "match query"]
+  avoid: "LIKE"
+  vi: "`match` cho chuỗi tìm qua analyzer của trường rồi tìm các token; `term` tìm đúng giá trị đã cho, không phân tích. Dùng `term` trên trường `text` thường không ra gì, vì token đã bị hạ chữ thường."
+  en: "`match` runs the search string through the field's analyzer and then looks up the tokens; `term` looks up the exact value given, with no analysis. A `term` on a `text` field usually finds nothing, because the tokens were lower-cased."
+  doc: "https://www.elastic.co/docs/reference/query-languages/query-dsl/query-dsl-term-query"
+- id: filter-context
+  term: filter context
+  engines: [search]
+  level: L2
+  keep_en: false
+  vi_term: "ngữ cảnh lọc"
+  match: ["filter context", "ngữ cảnh lọc"]
+  avoid: "WHERE của SQL (ở đây còn có điểm)"
+  vi: "Phần của truy vấn chỉ trả lời có khớp hay không, không tính điểm, nên có thể được cache: mệnh đề `filter` và `must_not` của `bool`. Mệnh đề `must` và `should` chạy trong ngữ cảnh truy vấn và cộng vào điểm."
+  en: "The part of a query that only answers whether a document matches, with no scoring, so it can be cached: the `filter` and `must_not` clauses of `bool`. The `must` and `should` clauses run in query context and add to the score."
+  doc: "https://www.elastic.co/docs/reference/query-languages/query-dsl/query-filter-context"
+- id: phrase-query
+  term: phrase query
+  engines: [search]
+  level: L2
+  keep_en: false
+  vi_term: "truy vấn cụm từ"
+  match: ["cụm từ", "phrase"]
+  avoid: "tìm chuỗi con"
+  vi: "Truy vấn `match_phrase` yêu cầu các token đứng đúng thứ tự và liền nhau, dựa vào vị trí token lưu trong inverted index; `slop` cho phép lệch vài vị trí."
+  en: "A `match_phrase` query requires the tokens in the right order and next to each other, using the token positions stored in the inverted index; `slop` allows a few positions of distance."
+  doc: "https://www.elastic.co/docs/reference/query-languages/query-dsl/query-dsl-match-query-phrase"
+- id: fuzziness
+  term: fuzziness
+  engines: [search]
+  level: L2
+  keep_en: true
+  vi_term: "fuzziness"
+  avoid: "tìm gần nghĩa"
+  vi: "Cho phép một từ khớp dù gõ sai vài ký tự, đo bằng khoảng cách sửa (thêm, xóa, thay, đổi chỗ hai ký tự). `AUTO` cho 0 lần sửa với từ 1–2 ký tự, 1 với 3–5 ký tự, 2 với từ dài hơn."
+  en: "Lets a word match despite a few wrong characters, measured as edit distance (insert, delete, substitute, transpose two characters). `AUTO` allows 0 edits for 1–2 characters, 1 for 3–5, and 2 for longer words."
+  doc: "https://www.elastic.co/docs/reference/elasticsearch/rest-apis/common-options"
+- id: n-gram
+  term: n-gram
+  engines: [search]
+  level: L2
+  keep_en: true
+  vi_term: "n-gram"
+  avoid: "trigram của PostgreSQL (cùng ý, khác hệ)"
+  vi: "Cắt từ thành các đoạn ký tự liên tiếp; `edge_ngram` chỉ lấy các tiền tố (`lo`, `lon`), giúp tìm khi người dùng mới gõ nửa từ. Thường chỉ dùng khi ghi; lúc tìm dùng `search_analyzer` khác để không cắt chuỗi tìm."
+  en: "Splitting words into runs of consecutive characters; `edge_ngram` keeps only prefixes (`lo`, `lon`), which helps when the user has typed half a word. It usually runs only at index time; searches use a different `search_analyzer` so the query is not split."
+  doc: "https://www.elastic.co/docs/reference/text-analysis/analysis-edgengram-tokenfilter"
+- id: bucket-aggregation
+  term: bucket aggregation
+  engines: [search]
+  level: L3
+  keep_en: true
+  vi_term: "bucket aggregation"
+  match: ["aggregations", "aggregation", "bucket"]
+  avoid: "aggregation pipeline của MongoDB"
+  vi: "Phần `aggs` của một truy vấn tìm kiếm chia các tài liệu khớp vào các nhóm (bucket), như `terms` theo giá trị của một trường `keyword`, rồi tính số liệu cho từng nhóm. Giống `GROUP BY` chạy trên đúng kết quả tìm."
+  en: "The `aggs` part of a search splits the matching documents into groups (buckets), such as `terms` by the values of a `keyword` field, and computes metrics per group. It is like a `GROUP BY` run on exactly the search results."
+  doc: "https://www.elastic.co/docs/explore-analyze/query-filter/aggregations"
+- id: unaccent
+  term: unaccent
+  engines: [search]
+  level: L3
+  keep_en: true
+  vi_term: "unaccent"
+  avoid: "asciifolding (cùng ý, đó là của Elasticsearch)"
+  vi: "Extension của PostgreSQL bỏ dấu khỏi chữ, dùng làm từ điển trong một cấu hình full-text để `tsvector` và `tsquery` khớp cả khi gõ không dấu."
+  en: "A PostgreSQL extension that removes accents from text, used as a dictionary in a full-text configuration so `tsvector` and `tsquery` match even when typed without accents."
+  doc: "https://www.postgresql.org/docs/18/unaccent.html"
+- id: trigram-similarity
+  term: trigram similarity
+  engines: [search]
+  level: L3
+  keep_en: true
+  vi_term: "similarity"
+  match: ["similarity"]
+  avoid: "độ giống về nghĩa"
+  vi: "Số từ 0 tới 1 của `pg_trgm`: tỉ lệ bộ ba ký tự chung giữa hai chuỗi. Toán tử `%` khớp khi số này vượt `pg_trgm.similarity_threshold` (mặc định 0.3), và một index GIN hay GiST giúp nó nhanh."
+  en: "A number from 0 to 1 in `pg_trgm`: the share of three-character groups two strings have in common. The `%` operator matches when it exceeds `pg_trgm.similarity_threshold` (0.3 by default), and a GIN or GiST index makes it fast."
+  doc: "https://www.postgresql.org/docs/18/pgtrgm.html"
+- id: refresh-near-real-time
+  term: refresh (near real-time)
+  engines: [search]
+  level: L3
+  keep_en: true
+  vi_term: "refresh"
+  match: ["refresh", "near real-time"]
+  avoid: "commit của PostgreSQL"
+  vi: "Tài liệu vừa ghi chỉ tìm được sau lần refresh kế tiếp, khi Elasticsearch mở một segment mới; mặc định khoảng mỗi giây với index có người tìm. Vì vậy tìm kiếm là gần thời gian thực, không tức thì như một `SELECT` sau `COMMIT`."
+  en: "A freshly written document becomes searchable only after the next refresh, when Elasticsearch opens a new segment; by default about every second on an index that receives searches. Search is therefore near real-time, not immediate like a `SELECT` after `COMMIT`."
+  doc: "https://www.elastic.co/docs/manage-data/data-store/near-real-time-search"
+- id: shard-elasticsearch
+  term: shard (Elasticsearch)
+  engines: [search]
+  level: L3
+  keep_en: true
+  vi_term: "shard"
+  match: ["shard"]
+  avoid: "partition của PostgreSQL"
+  vi: "Một index được chia thành nhiều shard nằm trên các node của cụm; mỗi shard có thể có bản sao (replica). Một truy vấn chạy trên mọi shard rồi gộp kết quả."
+  en: "An index is split into shards spread over the cluster's nodes; each shard can have copies (replicas). A query runs on every shard and the results are merged."
+  doc: "https://www.elastic.co/docs/deploy-manage/distributed-architecture/clusters-nodes-shards"
+
+# Telemetry & Observability (telemetry): OpenTelemetry, Prometheus; L1–L2 chạy trên PostgreSQL.
+- id: opentelemetry
+  term: OpenTelemetry
+  engines: [telemetry]
+  level: L1
+  keep_en: true
+  vi_term: "OpenTelemetry"
+  match: ["OpenTelemetry", "OTel"]
+  avoid: "một sản phẩm giám sát (đây là chuẩn và bộ SDK mở)"
+  vi: "Chuẩn mở và bộ SDK để thu ba tín hiệu (metric, log, trace) theo một cách chung, không phụ thuộc nơi lưu. Một log có thể mang `trace_id` để nối sang trace của cùng request."
+  en: "An open standard and set of SDKs for collecting the three signals (metrics, logs, traces) in one common way, independent of where they are stored. A log can carry a `trace_id` that links it to the trace of the same request."
+  doc: "https://opentelemetry.io/docs/concepts/signals/"
+- id: trace-span
+  term: trace / span
+  engines: [telemetry]
+  level: L1
+  keep_en: true
+  vi_term: "trace / span"
+  match: ["trace", "span"]
+  avoid: "stack trace (đó là chuỗi lời gọi trong một tiến trình)"
+  vi: "Trace là đường đi của một request qua các dịch vụ; nó gồm các span, mỗi span là một bước có tên, thời điểm bắt đầu, thời lượng và span cha. Span không có cha là span gốc."
+  en: "A trace is one request's path through the services; it is made of spans, each a named step with a start time, a duration and a parent span. The span without a parent is the root span."
+  doc: "https://opentelemetry.io/docs/concepts/signals/traces/"
+- id: counter-metric
+  term: counter (metric)
+  engines: [telemetry]
+  level: L1
+  keep_en: true
+  vi_term: "counter"
+  match: ["counter"]
+  avoid: "gauge (gauge lên xuống được)"
+  vi: "Metric cộng dồn chỉ tăng (hoặc về 0 khi tiến trình khởi động lại), như tổng số request. Giá trị tự thân ít ý nghĩa; thứ cần là mức tăng trong một khoảng, tức tốc độ."
+  en: "A cumulative metric that only goes up (or back to 0 when the process restarts), such as the total number of requests. Its raw value means little; what matters is the increase over a period, that is the rate."
+  doc: "https://prometheus.io/docs/concepts/metric_types/"
+- id: gauge
+  term: gauge
+  engines: [telemetry]
+  level: L1
+  keep_en: true
+  vi_term: "gauge"
+  avoid: "counter"
+  vi: "Metric là một con số lên xuống tự do tại mỗi thời điểm, như nhiệt độ, bộ nhớ đang dùng hay số request đang chạy. Đọc thẳng giá trị, không tính tốc độ."
+  en: "A metric that is a single number free to go up and down at each moment, such as temperature, memory in use or requests in flight. Read the value directly; do not take its rate."
+  doc: "https://prometheus.io/docs/concepts/metric_types/"
+- id: histogram
+  term: histogram
+  engines: [telemetry]
+  level: L1
+  keep_en: true
+  vi_term: "histogram"
+  avoid: "biểu đồ cột vẽ tay"
+  vi: "Metric đếm số quan sát rơi vào từng khoảng (bucket) cộng dồn `le` (nhỏ hơn hoặc bằng), kèm tổng và số đếm. Phân vị được ước lượng từ các bucket, nên độ chính xác tùy cách chọn ranh giới bucket."
+  en: "A metric that counts observations into cumulative buckets `le` (less than or equal), plus a sum and a count. Percentiles are estimated from the buckets, so their accuracy depends on the bucket boundaries."
+  doc: "https://prometheus.io/docs/practices/histograms/"
+- id: label
+  term: label
+  engines: [telemetry]
+  level: L1
+  keep_en: true
+  vi_term: "label"
+  avoid: "tên metric"
+  vi: "Cặp tên và giá trị gắn vào một metric (như `route` hay `status`). Mỗi tổ hợp giá trị label khác nhau là một chuỗi thời gian riêng."
+  en: "A name-value pair attached to a metric (such as `route` or `status`). Every distinct combination of label values is its own time series."
+  doc: "https://prometheus.io/docs/concepts/data_model/"
+- id: cardinality-labels
+  term: cardinality (labels)
+  engines: [telemetry]
+  level: L1
+  keep_en: true
+  vi_term: "cardinality"
+  match: ["cardinality"]
+  avoid: "cardinality estimate của planner"
+  vi: "Số chuỗi thời gian một metric sinh ra, bằng số tổ hợp giá trị label. Một label có giá trị không giới hạn (mã người dùng, `trace_id`) làm số chuỗi bùng nổ, nên Prometheus khuyên không dùng loại label đó."
+  en: "The number of time series a metric produces, equal to the number of label value combinations. A label with unbounded values (user ids, `trace_id`) makes the series count explode, so Prometheus advises against such labels."
+  doc: "https://prometheus.io/docs/practices/naming/"
+- id: narrow-table-wide-table
+  term: narrow table / wide table
+  engines: [telemetry]
+  level: L1
+  keep_en: false
+  vi_term: "bảng hẹp / bảng rộng"
+  match: ["bảng hẹp", "bảng rộng"]
+  avoid: "bảng nhỏ / bảng lớn"
+  vi: "Hai cách lưu metric trong PostgreSQL: bảng hẹp có một dòng cho mỗi số đo (tên, label, thời điểm, giá trị), thêm metric mới không phải đổi bảng; bảng rộng có một cột cho mỗi metric, đọc nhanh nhưng mỗi metric mới là một `ALTER TABLE`."
+  en: "Two ways to store metrics in PostgreSQL: a narrow table has one row per sample (name, labels, time, value), and a new metric needs no table change; a wide table has one column per metric, fast to read, but every new metric is an `ALTER TABLE`."
+  doc: "https://www.postgresql.org/docs/18/ddl-alter.html"
+- id: percentile
+  term: percentile
+  engines: [telemetry]
+  level: L2
+  keep_en: false
+  vi_term: "phân vị"
+  match: ["percentile", "phân vị"]
+  avoid: "trung bình (một vài request rất chậm không đổi trung bình bao nhiêu)"
+  vi: "Giá trị mà một tỉ lệ quan sát nằm dưới nó: p95 là thời gian mà 95% request nhanh hơn. Từ dữ liệu thô dùng `percentile_cont`; từ histogram thì nội suy trong bucket, nên chỉ là ước lượng."
+  en: "The value below which a share of observations falls: p95 is the time 95% of requests beat. From raw data use `percentile_cont`; from a histogram it is interpolated inside a bucket, so it is only an estimate."
+  doc: "https://prometheus.io/docs/practices/histograms/"
+- id: critical-path
+  term: critical path
+  engines: [telemetry]
+  level: L2
+  keep_en: false
+  vi_term: "đường găng"
+  match: ["critical path", "đường găng"]
+  avoid: "span dài nhất (span gốc luôn dài nhất)"
+  vi: "Chuỗi span từ gốc tới lá quyết định thời lượng của cả trace. Rút ngắn một span không nằm trên đường găng không làm request nhanh hơn."
+  en: "The chain of spans from the root to a leaf that sets the duration of the whole trace. Shortening a span that is not on the critical path does not make the request faster."
+  doc: "https://opentelemetry.io/docs/concepts/signals/traces/"
+- id: slo-error-budget
+  term: SLO / error budget
+  engines: [telemetry]
+  level: L2
+  keep_en: true
+  vi_term: "SLO / error budget"
+  match: ["SLO", "error budget", "burn rate"]
+  avoid: "SLA (SLA là cam kết hợp đồng)"
+  vi: "SLO là mục tiêu tỉ lệ thành công trong một khoảng (ví dụ 99,9% trong 30 ngày); error budget là phần còn lại được phép lỗi (0,1%). Burn rate là tốc độ tiêu ngân sách đó: bằng 1 thì tiêu vừa hết đúng cuối kỳ."
+  en: "An SLO is a target success ratio over a period (for example 99.9% over 30 days); the error budget is the rest you may fail (0.1%). The burn rate is how fast that budget is spent: 1 means it runs out exactly at the end of the period."
+  doc: "https://grafana.com/docs/grafana-cloud/alerting-and-irm/slo/introduction/"
+- id: promql
+  term: PromQL
+  engines: [telemetry]
+  level: L3
+  keep_en: true
+  vi_term: "PromQL"
+  avoid: "SQL"
+  vi: "Ngôn ngữ truy vấn của Prometheus: chọn chuỗi theo tên metric và label, rồi tính trên chúng (`rate`, `sum by`, `histogram_quantile`). Kết quả là chuỗi thời gian, không phải bảng dòng."
+  en: "Prometheus's query language: select series by metric name and labels, then compute on them (`rate`, `sum by`, `histogram_quantile`). The result is time series, not a table of rows."
+  doc: "https://prometheus.io/docs/prometheus/latest/querying/basics/"
+- id: label-matcher
+  term: label matcher
+  engines: [telemetry]
+  level: L3
+  keep_en: true
+  vi_term: "label matcher"
+  match: ["label matcher", "selector"]
+  avoid: "WHERE (matcher chỉ so label)"
+  vi: "Điều kiện trong `{}` của một selector PromQL: `=`, `!=`, `=~` (khớp regex), `!~`. Regex phải khớp cả giá trị label, không chỉ một phần."
+  en: "A condition inside the `{}` of a PromQL selector: `=`, `!=`, `=~` (regex match), `!~`. The regex must match the whole label value, not just part of it."
+  doc: "https://prometheus.io/docs/prometheus/latest/querying/basics/"
+- id: range-vector
+  term: range vector
+  engines: [telemetry]
+  level: L3
+  keep_en: true
+  vi_term: "range vector"
+  match: ["range vector", "instant vector"]
+  avoid: "mảng"
+  vi: "Instant vector là một mẫu cho mỗi chuỗi tại một thời điểm; range vector như `[5m]` là mọi mẫu của mỗi chuỗi trong 5 phút trước thời điểm đó. `rate()` cần range vector."
+  en: "An instant vector is one sample per series at one moment; a range vector such as `[5m]` is every sample of each series in the 5 minutes before that moment. `rate()` needs a range vector."
+  doc: "https://prometheus.io/docs/prometheus/latest/querying/basics/"
+
+# Streaming & CDC (stream): Kafka, Debezium; lab chạy trên PostgreSQL.
+- id: append-only-log
+  term: append-only log
+  engines: [stream]
+  level: L1
+  keep_en: false
+  vi_term: "log chỉ ghi thêm"
+  match: ["chỉ ghi thêm", "append-only log"]
+  avoid: "file log lỗi của ứng dụng"
+  vi: "Dãy sự kiện chỉ được nối vào cuối, không sửa tại chỗ; mỗi sự kiện có một offset tăng dần. Nhiều consumer đọc cùng log, mỗi consumer tự nhớ mình đã đọc tới đâu."
+  en: "A sequence of events that is only appended to, never changed in place; each event has an increasing offset. Many consumers read the same log, and each remembers how far it has read."
+  doc: "https://kafka.apache.org/41/design/design/"
+- id: offset
+  term: offset
+  engines: [stream]
+  level: L1
+  keep_en: true
+  vi_term: "offset"
+  avoid: "OFFSET của SQL"
+  vi: "Số thứ tự của một sự kiện trong một partition. Consumer ghi lại offset đã xử lý (commit), nên sau khi khởi động lại nó đọc tiếp từ đó."
+  en: "The position number of an event within a partition. A consumer records the offset it has processed (commits it), so after a restart it reads on from there."
+  doc: "https://kafka.apache.org/41/getting-started/introduction/#main-concepts-and-terminology"
+- id: consumer-group
+  term: consumer group
+  engines: [stream]
+  level: L1
+  keep_en: true
+  vi_term: "consumer group"
+  avoid: "nhóm người dùng"
+  vi: "Nhóm consumer chia nhau các partition của một topic: mỗi partition chỉ giao cho một consumer trong nhóm, và nhóm giữ offset riêng của mình."
+  en: "A set of consumers that share the partitions of a topic: each partition goes to one consumer in the group, and the group keeps its own offsets."
+  doc: "https://kafka.apache.org/41/getting-started/introduction/#main-concepts-and-terminology"
+- id: topic
+  term: topic
+  engines: [stream]
+  level: L1
+  keep_en: true
+  vi_term: "topic"
+  avoid: "chủ đề thảo luận"
+  vi: "Tên một luồng sự kiện trong Kafka, như `shipment-status`. Producer ghi vào topic, consumer đọc từ topic, và topic được chia thành các partition."
+  en: "The name of an event stream in Kafka, such as `shipment-status`. Producers write to a topic, consumers read from it, and a topic is split into partitions."
+  doc: "https://kafka.apache.org/41/getting-started/introduction/#main-concepts-and-terminology"
+- id: partition-kafka
+  term: partition (Kafka)
+  engines: [stream]
+  level: L1
+  keep_en: true
+  vi_term: "partition"
+  match: ["partition"]
+  avoid: "partition của bảng PostgreSQL"
+  vi: "Một phần của topic, là một log có thứ tự riêng. Sự kiện cùng khóa luôn vào cùng partition, nên thứ tự chỉ được giữ trong từng khóa, không giữ giữa các partition."
+  en: "A slice of a topic that is its own ordered log. Events with the same key always go to the same partition, so order is kept per key, not across partitions."
+  doc: "https://kafka.apache.org/41/getting-started/introduction/#main-concepts-and-terminology"
+- id: log-compaction
+  term: log compaction
+  engines: [stream]
+  level: L1
+  keep_en: true
+  vi_term: "log compaction"
+  match: ["compaction", "tombstone"]
+  avoid: "nén file (đây là bỏ bản cũ của cùng khóa)"
+  vi: "Kafka giữ ít nhất giá trị mới nhất của mỗi khóa và bỏ dần các bản cũ hơn, thay vì xóa theo thời gian. Một sự kiện có giá trị null (tombstone) đánh dấu khóa đã bị xóa."
+  en: "Kafka keeps at least the latest value of each key and drops older ones over time, instead of deleting by age. An event with a null value (a tombstone) marks the key as deleted."
+  doc: "https://kafka.apache.org/41/design/design/"
+- id: delivery-guarantee
+  term: delivery guarantee
+  engines: [stream]
+  level: L2
+  keep_en: true
+  vi_term: "delivery guarantee"
+  match: ["at-most-once", "at-least-once"]
+  avoid: "đảm bảo thứ tự"
+  vi: "Lời hứa về số lần một sự kiện tới nơi: at-most-once (có thể mất, không trùng), at-least-once (không mất, có thể trùng). Commit offset trước khi xử lý cho at-most-once, sau khi xử lý cho at-least-once."
+  en: "The promise about how many times an event arrives: at-most-once (may be lost, never duplicated), at-least-once (never lost, may be duplicated). Committing the offset before processing gives at-most-once, after processing gives at-least-once."
+  doc: "https://kafka.apache.org/41/design/design/"
+- id: exactly-once
+  term: exactly-once
+  engines: [stream]
+  level: L3
+  keep_en: true
+  vi_term: "exactly-once"
+  avoid: "mỗi sự kiện chỉ được gửi đúng một lần qua mạng"
+  vi: "Kafka hứa exactly-once cho việc đọc từ Kafka rồi ghi lại vào Kafka, nhờ producer idempotent và transaction. Khi đầu ra là một hệ khác (một cơ sở dữ liệu, một API), hiệu ứng chỉ một lần cần consumer idempotent."
+  en: "Kafka promises exactly-once for reading from Kafka and writing back to Kafka, through idempotent producers and transactions. When the output is another system (a database, an API), an effect that happens once needs an idempotent consumer."
+  doc: "https://kafka.apache.org/41/design/design/"
+- id: outbox-pattern
+  term: outbox pattern
+  engines: [stream]
+  level: L2
+  keep_en: true
+  vi_term: "outbox"
+  match: ["outbox"]
+  avoid: "hàng đợi trong bộ nhớ"
+  vi: "Ghi thay đổi nghiệp vụ và một dòng sự kiện vào bảng outbox trong cùng một transaction, rồi một tiến trình khác (như Debezium đọc WAL) đẩy dòng đó đi. Không còn cảnh đã ghi dữ liệu mà không gửi sự kiện, hay ngược lại."
+  en: "Write the business change and an event row into an outbox table in the same transaction, then another process (such as Debezium reading the WAL) sends that row on. No more data written without its event, or the other way round."
+  doc: "https://debezium.io/documentation/reference/stable/transformations/outbox-event-router.html"
+- id: debezium-envelope
+  term: Debezium envelope
+  engines: [stream]
+  level: L2
+  keep_en: true
+  vi_term: "envelope"
+  match: ["envelope"]
+  avoid: "header HTTP"
+  vi: "Hình dạng sự kiện thay đổi của Debezium: `before` (dòng trước thay đổi), `after` (dòng sau), `op` (`c` thêm, `u` sửa, `d` xóa, `r` đọc lúc chụp ban đầu) và `source` (vị trí trong WAL, transaction)."
+  en: "The shape of a Debezium change event: `before` (the row before the change), `after` (the row after), `op` (`c` create, `u` update, `d` delete, `r` read during the initial snapshot) and `source` (WAL position, transaction)."
+  doc: "https://debezium.io/documentation/reference/stable/connectors/postgresql.html"
+- id: tumbling-hopping-window
+  term: tumbling / hopping window
+  engines: [stream]
+  level: L3
+  keep_en: true
+  vi_term: "tumbling / hopping window"
+  match: ["tumbling", "hopping"]
+  avoid: "hàm cửa sổ SQL"
+  vi: "Cửa sổ thời gian để gom sự kiện của luồng: tumbling dài cố định và không chồng nhau (mỗi sự kiện thuộc đúng một cửa sổ); hopping dài cố định, nhảy một bước nhỏ hơn độ dài nên chồng nhau. Session window thì mở và đóng theo khoảng nghỉ giữa các sự kiện."
+  en: "Time windows for grouping a stream's events: tumbling windows have a fixed size and never overlap (each event is in exactly one); hopping windows have a fixed size and advance by a smaller step, so they overlap. Session windows open and close on gaps between events."
+  doc: "https://kafka.apache.org/41/streams/developer-guide/dsl-api/#windowing"
+- id: grace-period
+  term: grace period
+  engines: [stream]
+  level: L3
+  keep_en: true
+  vi_term: "grace period"
+  match: ["grace"]
+  avoid: "thời gian chờ mạng"
+  vi: "Thời gian một cửa sổ còn nhận sự kiện về muộn sau khi cửa sổ đã kết thúc, tính theo thời điểm sự kiện. Quá grace period, sự kiện muộn bị bỏ, và kết quả của cửa sổ được coi là xong."
+  en: "How long a window still accepts late events after it has ended, measured in event time. After the grace period, late events are dropped and the window's result is final."
+  doc: "https://kafka.apache.org/41/streams/developer-guide/dsl-api/#windowing"
+
+# Graph (graph): recursive CTE trên PostgreSQL; Neo4j/Cypher để so sánh.
+- id: node
+  term: node
+  engines: [graph]
+  level: L1
+  keep_en: false
+  vi_term: "nút"
+  match: ["node"]
+  avoid: "node của cụm máy chủ"
+  vi: "Một thực thể của đồ thị (một cảng, một người). Trong PostgreSQL, mỗi nút thường là một dòng của bảng nút; trong Neo4j, một nút có nhãn và thuộc tính."
+  en: "An entity in a graph (a port, a person). In PostgreSQL each node is usually a row of a node table; in Neo4j a node has labels and properties."
+  doc: "https://neo4j.com/docs/getting-started/graph-database/"
+- id: edge
+  term: edge
+  engines: [graph]
+  level: L1
+  keep_en: false
+  vi_term: "cạnh"
+  match: ["edge"]
+  avoid: "đường viền"
+  vi: "Mối nối giữa hai nút (một chặng tàu, một quan hệ đối tác). Trong PostgreSQL thường là một dòng của bảng cạnh với hai cột khóa ngoại trỏ về bảng nút (danh sách cạnh); Neo4j gọi là relationship."
+  en: "A link between two nodes (a voyage leg, a partnership). In PostgreSQL it is usually a row of an edge table with two foreign key columns pointing at the node table (an edge list); Neo4j calls it a relationship."
+  doc: "https://neo4j.com/docs/getting-started/graph-database/"
+- id: directed-graph
+  term: directed graph
+  engines: [graph]
+  level: L1
+  keep_en: false
+  vi_term: "đồ thị có hướng"
+  match: ["có hướng", "vô hướng"]
+  avoid: "đồ thị có trọng số"
+  vi: "Cạnh có hướng có chiều đi từ nút đầu tới nút cuối (chuyến từ Đà Nẵng đi Singapore không nói gì về chiều về). Cạnh vô hướng không có chiều; lưu một dòng cho mỗi cặp thì khi đọc phải xem cả hai cột."
+  en: "A directed edge goes from a start node to an end node (a trip from Da Nang to Singapore says nothing about the way back). An undirected edge has no direction; storing one row per pair means reads must check both columns."
+  doc: "https://neo4j.com/docs/getting-started/graph-database/"
+- id: adjacency-matrix
+  term: adjacency matrix
+  engines: [graph]
+  level: L1
+  keep_en: false
+  vi_term: "ma trận kề"
+  match: ["adjacency matrix", "ma trận kề", "danh sách kề"]
+  avoid: "bảng tần suất"
+  vi: "Bảng N × N với một ô cho mỗi cặp nút, 1 khi có cạnh. Hỏi một cặp rất nhanh nhưng tốn chỗ với đồ thị thưa; danh sách kề (mỗi nút giữ các nút nối với nó) gọn hơn, và bảng cạnh của PostgreSQL là dạng đó."
+  en: "An N × N grid with one cell per pair of nodes, 1 when there is an edge. Checking one pair is very fast but it wastes space on a sparse graph; an adjacency list (each node keeps its neighbours) is smaller, and a PostgreSQL edge table is that form."
+  doc: "https://neo4j.com/docs/getting-started/graph-database/"
+- id: property-graph
+  term: property graph
+  engines: [graph]
+  level: L1
+  keep_en: true
+  vi_term: "property graph"
+  match: ["property graph", "đồ thị thuộc tính"]
+  avoid: "đồ thị vẽ biểu đồ"
+  vi: "Mô hình đồ thị mà cả nút và cạnh đều mang thuộc tính dạng khóa và giá trị, nút có nhãn, cạnh có kiểu và hướng. Neo4j dùng mô hình này; trong PostgreSQL, thuộc tính là cột của bảng nút và bảng cạnh."
+  en: "A graph model in which both nodes and edges carry key-value properties; nodes have labels, edges have a type and a direction. Neo4j uses this model; in PostgreSQL the properties are columns of the node and edge tables."
+  doc: "https://neo4j.com/docs/getting-started/graph-database/"
+- id: cypher
+  term: Cypher
+  engines: [graph]
+  level: L1
+  keep_en: true
+  vi_term: "Cypher"
+  avoid: "mật mã (cipher)"
+  vi: "Ngôn ngữ truy vấn của Neo4j, viết mẫu đồ thị bằng hình vẽ chữ: `(a)-[:LEG]->(b)`. Bài học chỉ hiện Cypher để so sánh; mọi lab chạy SQL trên PostgreSQL."
+  en: "Neo4j's query language, which draws graph patterns in text: `(a)-[:LEG]->(b)`. The lessons show Cypher only for comparison; every lab runs SQL on PostgreSQL."
+  doc: "https://neo4j.com/docs/cypher-manual/current/patterns/fixed-length-patterns/"
+- id: recursive-cte
+  term: recursive CTE
+  engines: [graph]
+  level: L2
+  keep_en: false
+  vi_term: "CTE đệ quy"
+  match: ["CTE đệ quy", "recursive CTE"]
+  avoid: "hàm đệ quy PL/pgSQL"
+  vi: "`WITH RECURSIVE` gồm một phần neo (các nút xuất phát) `UNION` hoặc `UNION ALL` với phần đệ quy nối kết quả vòng trước với bảng cạnh. Nó dừng khi một vòng không sinh dòng mới, nên trên đồ thị có chu trình cần giới hạn độ sâu hoặc `CYCLE`."
+  en: "`WITH RECURSIVE` is an anchor part (the start nodes) combined with `UNION` or `UNION ALL` and a recursive part that joins the previous round's result to the edge table. It stops when a round yields no new rows, so on a graph with cycles it needs a depth limit or `CYCLE`."
+  doc: "https://www.postgresql.org/docs/18/queries-with.html#QUERIES-WITH-RECURSIVE"
+- id: breadth-first-search
+  term: breadth-first search
+  engines: [graph]
+  level: L2
+  keep_en: false
+  vi_term: "duyệt theo chiều rộng"
+  match: ["BFS", "theo chiều rộng", "breadth-first"]
+  avoid: "duyệt theo chiều sâu"
+  vi: "Đi hết các nút cách 1 bước, rồi 2 bước, rồi 3 bước. Trên đồ thị không trọng số, lần đầu một nút được chạm tới là đường ngắn nhất tính theo số chặng; `SEARCH BREADTH FIRST BY` thêm cột thứ tự đó vào CTE đệ quy."
+  en: "Visiting every node 1 step away, then 2 steps, then 3. On an unweighted graph, the first time a node is reached is its shortest path in hops; `SEARCH BREADTH FIRST BY` adds that ordering column to a recursive CTE."
+  doc: "https://www.postgresql.org/docs/18/queries-with.html#QUERIES-WITH-SEARCH"
+- id: cycle-clause
+  term: CYCLE clause
+  engines: [graph]
+  level: L2
+  keep_en: true
+  vi_term: "CYCLE"
+  match: ["CYCLE"]
+  avoid: "vòng lặp FOR"
+  vi: "Mệnh đề `CYCLE id SET is_cycle USING path` của CTE đệ quy: PostgreSQL ghi đường đi đã qua và đánh dấu dòng quay lại một nút đã thăm, rồi không đi tiếp từ dòng đó, nên truy vấn không chạy mãi trên đồ thị có chu trình."
+  en: "The `CYCLE id SET is_cycle USING path` clause of a recursive CTE: PostgreSQL records the path taken and flags a row that returns to a visited node, then does not expand that row, so the query does not run forever on a graph with cycles."
+  doc: "https://www.postgresql.org/docs/18/queries-with.html#QUERIES-WITH-CYCLE"
+- id: degree-centrality
+  term: degree centrality
+  engines: [graph]
+  level: L2
+  keep_en: false
+  vi_term: "độ trung tâm theo bậc"
+  match: ["degree", "centrality"]
+  avoid: "độ quan trọng do người chấm"
+  vi: "Bậc (degree) của một nút là số cạnh nối vào nó; với đồ thị có hướng tách bậc vào và bậc ra. Degree centrality xếp hạng nút theo bậc: nút nhiều cạnh nhất là trung tâm theo nghĩa đơn giản nhất, đếm được bằng một `GROUP BY` trên bảng cạnh."
+  en: "A node's degree is the number of edges touching it; on a directed graph, in-degree and out-degree are separate. Degree centrality ranks nodes by degree: the node with the most edges is central in the simplest sense, countable with one `GROUP BY` on the edge table."
+  doc: "https://neo4j.com/docs/graph-data-science/current/algorithms/degree-centrality/"

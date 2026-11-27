@@ -21,9 +21,10 @@ export interface IvPrefs {
   noted: string[];
 }
 
-const SET_ID = /^((pg|mg|dy)-(junior|mid|senior|staff)-[1-3]|again)$/;
-const Q_ID = /^e-iv-(pg|mg|dy)-(junior|mid|senior|staff)-\d\d$/;
-const TH_ID = /^e-iv-(pg|mg|dy)-th-[1-9]$/;
+// v48 (L1144): + the seven tracks' codes; sets up to 9 (v36's mg-senior-4 / dy-senior-4 results were dropped by [1-3])
+const SET_ID = /^((pg|mg|dy|rd|ts|ol|sr|tm|sm|gr)-(junior|mid|senior|staff)-[1-9]|again)$/;
+const Q_ID = /^e-iv-(pg|mg|dy|rd|ts|ol|sr|tm|sm|gr)-(junior|mid|senior|staff)-\d\d$/;
+const TH_ID = /^e-iv-(pg|mg|dy|rd|ts|ol|sr|tm|sm|gr)-th-[1-9]$/;
 const DAY = /^\d{4}-\d\d-\d\d$/;
 const obj = (x: unknown): Record<string, unknown> => (x && typeof x === 'object' && !Array.isArray(x) ? (x as Record<string, unknown>) : {});
 const num = (x: unknown): number => (typeof x === 'number' && Number.isFinite(x) && x >= 0 ? x : 0);

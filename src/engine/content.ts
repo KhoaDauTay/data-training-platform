@@ -17,8 +17,16 @@ import { LAYERS, MATERIALIZED, type ModelSpec } from './stack/dbt';
 /** v28 R4 (L322, L420): `design` = database design and DBMS theory, the fourth card; its labs run on PostgreSQL (`onPg`). */
 export const ENGINES = ['postgres', 'mongodb', 'dynamodb', 'redis', 'design', 'stack', 'olap', 'search', 'timeseries', 'telemetry', 'graph', 'stream'] as const; // v47 (L1080): + graph; // v47 (L1030): + telemetry; // v45 (L740): + stack, the data stack (dbt, Fivetran, Snowflake); v47 (L950): + redis, on BoonData's own interpreter; v47 (L990): + olap, OLAP & ClickHouse on PostgreSQL labs
 export type EngineId = (typeof ENGINES)[number];
-/** The three database products (the interview room and the glossary): every engine but the design track. */
-export type ProductEngine = Exclude<EngineId, 'design' | 'stack' | 'redis' | 'olap' | 'search' | 'timeseries' | 'telemetry' | 'graph' | 'stream'>; // v47 (L950): Redis has no interview bank or glossary terms yet
+/** The three database products (their own interview-room tabs). */
+export type ProductEngine = Exclude<EngineId, 'design' | 'stack' | 'redis' | 'olap' | 'search' | 'timeseries' | 'telemetry' | 'graph' | 'stream'>;
+/**
+ * v48 (L1140): the engines with reference material, i.e. glossary terms and an interview bank: the three products and the
+ * seven v47 tracks. Design and Data stack have none (their lessons read the PostgreSQL terms). `ProductEngine` keeps its
+ * meaning (the three products, each its own interview tab); the seven tracks share the room's "Khác / More" tab.
+ */
+export const REF_ENGINES = ['postgres', 'mongodb', 'dynamodb', 'redis', 'timeseries', 'olap', 'search', 'telemetry', 'stream', 'graph'] as const;
+export type RefEngine = (typeof REF_ENGINES)[number];
+export const isRefEngine = (e: string): e is RefEngine => (REF_ENGINES as readonly string[]).includes(e);
 export const ENGINE_SHORT: Record<EngineId, 'pg' | 'mg' | 'dy' | 'rd' | 'ds' | 'st' | 'ol' | 'sr' | 'ts' | 'tm' | 'gr' | 'sm'> = { postgres: 'pg', mongodb: 'mg', dynamodb: 'dy', redis: 'rd', design: 'ds', stack: 'st', olap: 'ol', search: 'sr', timeseries: 'ts', telemetry: 'tm', graph: 'gr', stream: 'sm' };
 /** The engines whose labs, predicts and plans run on PostgreSQL (PGlite): Postgres itself and the design track (L420). */
 export const onPg = (e: EngineId): boolean => e === 'postgres' || e === 'design' || e === 'stack' || e === 'olap' || e === 'search' || e === 'timeseries' || e === 'telemetry' || e === 'graph' || e === 'stream';

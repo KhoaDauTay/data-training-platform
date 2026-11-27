@@ -15,7 +15,7 @@ export interface PaletteSources {
   lessons: Record<string, { fm?: unknown }>;
   terms: unknown;
 }
-export interface PaletteHashes { skill: (id: string) => string; lesson: (engine: string, level: string, id: string) => string; term: (id: string) => string; interview?: (tab: 'sql' | 'pg' | 'mg' | 'dy') => string }
+export interface PaletteHashes { skill: (id: string) => string; lesson: (engine: string, level: string, id: string) => string; term: (id: string) => string; interview?: (tab: 'sql' | 'pg' | 'mg' | 'dy' | 'more') => string }
 
 const str = (x: unknown): string => (typeof x === 'string' ? x : '');
 /**
@@ -70,8 +70,9 @@ export function paletteItems(src: PaletteSources, lang: 'vi' | 'en', hash: Palet
     return id && term ? [{ kind: 'term', title: term, alt: vi && vi !== term ? vi : undefined, href: hash.term(id) }] : [];
   });
   // v47 S4 (L984): the one interview room, one result per tab (searchable as "interview" or "phong van" in both languages)
-  const rooms = hash.interview ? ([['sql', 'SQL'], ['pg', 'PostgreSQL'], ['mg', 'MongoDB'], ['dy', 'DynamoDB']] as const)
-    .map(([tab, name]): PaletteItem => ({ kind: 'page', title: `${roomName} · ${name}`, alt: 'interview phỏng vấn', href: hash.interview!(tab) })) : [];
+  // v48 (L1146): + the fifth tab, the seven tracks' banks, also found by a track's name
+  const rooms = hash.interview ? ([['sql', 'SQL'], ['pg', 'PostgreSQL'], ['mg', 'MongoDB'], ['dy', 'DynamoDB'], ['more', lang === 'en' ? 'More' : 'Khác']] as const)
+    .map(([tab, name]): PaletteItem => ({ kind: 'page', title: `${roomName} · ${name}`, alt: tab === 'more' ? 'interview phỏng vấn redis time-series chuỗi thời gian olap clickhouse search elasticsearch tìm kiếm telemetry streaming cdc kafka graph' : 'interview phỏng vấn', href: hash.interview!(tab) })) : [];
   // L1092 (eye E-01): the pages a newcomer names (hub rows, Practise sections); the hashes are kept forever (canonicalHash)
   const pages = PAGES.map(([vi, en, href, alt]): PaletteItem => ({ kind: 'page', title: lang === 'en' ? en : vi, alt: `${lang === 'en' ? vi : en} ${alt}`, href }));
   const levels = new Set(Object.values(src.lessons).map((x) => { const l = (x.fm ?? {}) as LessonMeta; return `${str(l.engine)}/${str(l.level)}`; }));

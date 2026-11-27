@@ -7,6 +7,7 @@ import type { Lang, Params } from './index';
  */
 const vi = {
   'intro': 'Câu hỏi phỏng vấn {name}: mỗi bộ 5 câu, xếp theo cấp Junior đến Staff. Viết câu trả lời của bạn trước, rồi mới xem đáp án mẫu đặt cạnh và tự tích rubric. Không có XP, không ghi vào tiến độ; kết quả chỉ lưu trên máy này và không đi theo khi xuất tiến độ.',
+  'introMore': 'Câu hỏi phỏng vấn cho các khóa khác: Redis, chuỗi thời gian, OLAP, tìm kiếm, telemetry, streaming và graph. Mỗi khóa có một bộ Junior và một bộ Mid, mỗi bộ 5 câu. Viết câu trả lời trước, rồi xem đáp án mẫu và tự tích rubric. Không có XP; kết quả chỉ lưu trên máy này.',
   'band.junior': 'Junior',
   'band.mid': 'Mid',
   'band.senior': 'Senior',
@@ -87,6 +88,7 @@ export type IvKey = keyof typeof vi;
 
 const en: Record<IvKey, string> = {
   'intro': '{name} interview questions: 5 per set, ordered by level from Junior to Staff. Write your own answer first, then see the model answer beside it and tick the rubric yourself. No XP, nothing in your progress; results stay on this device only and are not part of Export progress.',
+  'introMore': 'Interview questions for the other tracks: Redis, time-series, OLAP, search, telemetry, streaming and graph. Each track has one Junior and one Mid set of 5 questions. Write your answer first, then see the model answer and tick the rubric yourself. No XP; results stay on this device only.',
   'band.junior': 'Junior level',
   'band.mid': 'Mid level',
   'band.senior': 'Senior level',

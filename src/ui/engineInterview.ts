@@ -1,7 +1,7 @@
-import type { ProductEngine as EngineId } from '../engine/content';
+import type { RefEngine as EngineId } from '../engine/content';
 import { ANSWER_MAX, DRAFT_MAX, dayPlus, dueAgain, IV_KEY, parseIvPrefs, shareOf, type IvLive, type IvPrefs } from '../engine/engineInterviewPrefs';
 import {
-  BANDS, engineOfId, exhibitScript, parseBank, PASS, SET_MINUTES, setOf, setQuestions, setsOf, type Band, type Bank, type Exhibit, type IvQuestion, type TakeHome,
+  BANDS, engineOfId, exhibitScript, parseBank, PASS, PRODUCTS, SET_MINUTES, setOf, setQuestions, setsOf, TRACKS, type Band, type Bank, type Exhibit, type IvQuestion, type TakeHome,
 } from '../engine/interviewBank';
 import type { PgLabClient } from '../engine/pglab/client';
 import type { StepResult } from '../engine/pglab/script';
@@ -24,12 +24,23 @@ import { ivTabs } from './ivTabs';
 let d: EngineDeps;
 const it = (key: IvKey, params?: I18n.Params): string => ivText(d.getLang(), d.locale(), key, params);
 const lang = (): 'vi' | 'en' => d.getLang();
-const NAME: Record<EngineId, string> = { postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB' };
-const ENGINES: EngineId[] = ['postgres', 'mongodb', 'dynamodb'];
+/** Product names stay as they are; v48 (L1145): the two tracks with a VI name follow the language. */
+const NAMES: Record<EngineId, string | { vi: string; en: string }> = {
+  postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB', redis: 'Redis', timeseries: { vi: 'Chuỗi thời gian', en: 'Time-series' }, olap: 'OLAP & ClickHouse',
+  search: { vi: 'Tìm kiếm & Elasticsearch', en: 'Search & Elasticsearch' }, telemetry: 'Telemetry & Observability', stream: 'Streaming & CDC', graph: 'Graph',
+};
+const nameOf = (e: EngineId): string => { const n = NAMES[e]; return typeof n === 'string' ? n : n[lang()]; };
 const SRC: Record<EngineId, () => Promise<{ default: unknown }>> = {
   postgres: () => import('../../content/engine/iv-postgres.yml'),
   mongodb: () => import('../../content/engine/iv-mongodb.yml'),
   dynamodb: () => import('../../content/engine/iv-dynamodb.yml'),
+  redis: () => import('../../content/engine/iv-redis.yml'),
+  timeseries: () => import('../../content/engine/iv-timeseries.yml'),
+  olap: () => import('../../content/engine/iv-olap.yml'),
+  search: () => import('../../content/engine/iv-search.yml'),
+  telemetry: () => import('../../content/engine/iv-telemetry.yml'),
+  stream: () => import('../../content/engine/iv-stream.yml'),
+  graph: () => import('../../content/engine/iv-graph.yml'),
 };
 
 export function initIv(deps: EngineDeps): void {
@@ -69,7 +80,7 @@ const bandName = (b: Band): string => it(`band.${b}`);
 export const setName = (set: string): string => {
   if (set === 'again') return it('again.title');
   const s = setOf(set);
-  return s ? it('set.name', { engine: NAME[s.engine], band: bandName(s.band), n: s.n }) : set;
+  return s ? it('set.name', { engine: nameOf(s.engine), band: bandName(s.band), n: s.n }) : set;
 };
 const mmss = (ms: number): string => { const s = Math.max(0, Math.round(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
 const card = (...c: (Node | string | null)[]): HTMLElement => d.h('section', { class: d.cls.cx(d.cls.CARD, 'flex flex-col gap-4 p-5 max-sm:p-4') }, ...c);
@@ -89,57 +100,80 @@ export function subOf(r: { set?: string; th?: string }): { title: string; up: { 
   const th = typeof b === 'object' ? b.takeHomes.find((x) => x.id === r.th) : undefined;
   return { title: th ? th.title[lang()].replace(/`/g, '') : it('th'), up }; // F02: the h1 and tab title are plain text
 }
-const TAB: Record<EngineId, Exclude<IvTab, 'sql'>> = { postgres: 'pg', mongodb: 'mg', dynamodb: 'dy' };
+const TAB: Record<EngineId, Exclude<IvTab, 'sql'>> = {
+  postgres: 'pg', mongodb: 'mg', dynamodb: 'dy', redis: 'more', timeseries: 'more', olap: 'more', search: 'more', telemetry: 'more', stream: 'more', graph: 'more',
+};
 /** The room's tab a set or take-home came from (the review run `again` mixes engines: PostgreSQL's tab). */
 const roomOf = (id: string): string => d.interviewTabHash(TAB[setOf(id)?.engine ?? engineOfId(id) ?? 'postgres']);
 
 export function ivPage(r: { set?: string; th?: string }, tab: IvTab): HTMLElement {
   if (r.th) return takeHomePage(r.th);
   if (r.set) return setPage(r.set);
-  return room(ENGINES.find((e) => TAB[e] === tab) ?? 'postgres');
+  if (tab === 'more') return room(TRACKS, 'more');
+  const e = PRODUCTS.find((x) => TAB[x] === tab) ?? 'postgres';
+  return room([e], TAB[e]);
 }
 
-// ---- the room's engine tab
+// ---- the room's engine tab (one product), or v48 (L1145) the "Khác / More" tab (one section per track)
 
-function room(e: EngineId): HTMLElement {
+function room(es: readonly EngineId[], tab: Exclude<IvTab, 'sql'>): HTMLElement {
   const { h, cls } = d;
   const p = prefs();
   const due = dueAgain(p, today());
-  const b = bankOf(e);
+  const bs = es.map((e) => [e, bankOf(e)] as const);
+  const broken = bs.find(([, b]) => b === 'failed');
+  const main = due.length ? undefined : mainSet(es, p);
+  const body = bs.some(([, b]) => b === 'loading') ? loading() : broken ? failed(broken[0])
+    : h('div', { class: 'flex flex-col gap-8' }, ...bs.flatMap(([e, b]) => (tab === 'more' ? [trackSection(b as Bank, e, p, main)] : BANDS.map((band) => bandSection(b as Bank, e, band, p, main)))));
   return h('div', { class: 'flex flex-col gap-8' },
-    ivTabs(h, TAB[e], d.interviewTabHash, lang()),
-    h('p', { class: 'm-0 text-muted' }, it('intro', { name: NAME[e] })), // eye-v47b B-08 (L1116): the tab's own engine
+    ivTabs(h, tab, d.interviewTabHash, lang()),
+    h('p', { class: 'm-0 text-muted' }, tab === 'more' ? it('introMore') : it('intro', { name: nameOf(es[0]) })), // eye-v47b B-08 (L1116): the tab's own engine
     due.length ? card(h('h2', { class: 'm-0 text-title font-bold' }, it('again.card', { n: due.length })), h('p', { class: 'm-0 text-body-sm text-muted' }, it('again.line')),
       h('div', {}, h('a', { href: d.engineInterviewHash('again'), class: cls.cx(cls.BTN_GO, 'inline-flex px-4 py-2 no-underline') }, it('again.go')))) : null,
-    b === 'loading' ? loading() : b === 'failed' ? failed(e) : h('div', { class: 'flex flex-col gap-8' }, ...BANDS.map((band) => bandSection(b, e, band, p, due.length ? undefined : mainSet(e, p)))));
+    body);
 }
 
 /** eye-v47b B-08 (L1116): the tab's one main button, like the SQL tab: the set in progress, else the first not done (none while the again card shows). */
-const mainSet = (e: EngineId, p: IvPrefs): string | undefined => {
-  const all = BANDS.flatMap((band) => setsOf(e, band));
+const mainSet = (es: readonly EngineId[], p: IvPrefs): string | undefined => {
+  const all = es.flatMap((e) => BANDS.flatMap((band) => setsOf(e, band)));
   return all.find((s) => p.live[s]) ?? all.find((s) => !p.results[s]);
 };
 
-function bandSection(b: Bank, e: EngineId, band: Band, p: IvPrefs, main: string | undefined): HTMLElement {
+/** One set's row: its number within the list, its meta line, its one button. */
+function setRow(b: Bank, set: string, i: number, p: IvPrefs, main: string | undefined): HTMLElement {
+  const { h } = d;
+  const qs = setQuestions(b, set);
+  const res = p.results[set];
+  const live = p.live[set];
+  const band = setOf(set)!.band;
+  const kinds = (['concept', 'diagnose', 'design'] as const).map((k) => [k, qs.filter((q) => q.kind === k).length] as const).filter(([, n]) => n);
+  const runs = qs.filter((q) => q.exhibits.some((x) => x.source === 'pglite-0.5.16')).length;
+  const sub = [it('set.meta', { n: qs.length, m: SET_MINUTES[band] }), kinds.map(([k, n]) => it(`kindN.${k}`, { n })).join(' · '),
+    runs ? it('set.runs', { n: runs }) : '', res ? it('set.last', { k: res.score, n: res.total }) : ''].filter(Boolean).join(' · ');
+  return d.ui.listRow({
+    lead: h('span', { class: d.cls.cx('grid size-10 place-items-center rounded-full font-bold', res ? 'bg-good text-on-accent' : 'bg-code text-ink') }, res ? d.icon('check', 'size-5') : String(i + 1)),
+    title: setName(set), sub,
+    action: h('a', { href: d.engineInterviewHash(set), class: d.cls.cx(set === main ? d.cls.BTN_GO : d.cls.BTN_SECONDARY, 'shrink-0 px-4 py-1.5 whitespace-nowrap no-underline') },
+      it(live ? 'set.resume' : res ? 'set.redo' : 'set.start')),
+  });
+}
+
+/** v48 (L1145): a track on the "Khác / More" tab: its sets (one Junior, one Mid) in one list under the track's name. */
+function trackSection(b: Bank, e: EngineId, p: IvPrefs, main: string | undefined): HTMLElement {
+  const { h } = d;
+  return h('section', { class: 'flex flex-col gap-3', 'aria-labelledby': `iv-${e}`, 'data-iv-track': e },
+    h('h2', { id: `iv-${e}`, class: 'm-0 text-title font-bold' }, nameOf(e)),
+    h('ul', { class: d.ui.LIST }, ...BANDS.flatMap((band) => setsOf(e, band)).map((set, i) => setRow(b, set, i, p, main))));
+}
+
+function bandSection(b: Bank, e: EngineId, band: Band, p: IvPrefs, main: string | undefined): HTMLElement | null {
   const { h } = d;
   const ths = b.takeHomes.filter((x) => x.band === band);
+  const sets = setsOf(e, band);
+  if (!sets.length && !ths.length) return null; // v48: a band the engine has no set in
   return h('section', { class: 'flex flex-col gap-3', 'aria-labelledby': `iv-${band}` },
-    h('h2', { id: `iv-${band}`, class: 'm-0 text-title font-bold' }, `${NAME[e]} · ${bandName(band)}`),
-    h('ul', { class: d.ui.LIST }, ...setsOf(e, band).map((set, i) => {
-      const qs = setQuestions(b, set);
-      const res = p.results[set];
-      const live = p.live[set];
-      const kinds = (['concept', 'diagnose', 'design'] as const).map((k) => [k, qs.filter((q) => q.kind === k).length] as const).filter(([, n]) => n);
-      const runs = qs.filter((q) => q.exhibits.some((x) => x.source === 'pglite-0.5.16')).length;
-      const sub = [it('set.meta', { n: qs.length, m: SET_MINUTES[band] }), kinds.map(([k, n]) => it(`kindN.${k}`, { n })).join(' · '),
-        runs ? it('set.runs', { n: runs }) : '', res ? it('set.last', { k: res.score, n: res.total }) : ''].filter(Boolean).join(' · ');
-      return d.ui.listRow({
-        lead: h('span', { class: d.cls.cx('grid size-10 place-items-center rounded-full font-bold', res ? 'bg-good text-on-accent' : 'bg-code text-ink') }, res ? d.icon('check', 'size-5') : String(i + 1)),
-        title: setName(set), sub,
-        action: h('a', { href: d.engineInterviewHash(set), class: d.cls.cx(set === main ? d.cls.BTN_GO : d.cls.BTN_SECONDARY, 'shrink-0 px-4 py-1.5 whitespace-nowrap no-underline') },
-          it(live ? 'set.resume' : res ? 'set.redo' : 'set.start')),
-      });
-    }), ...ths.map((th) => d.ui.listRow({
+    h('h2', { id: `iv-${band}`, class: 'm-0 text-title font-bold' }, `${nameOf(e)} · ${bandName(band)}`),
+    h('ul', { class: d.ui.LIST }, ...sets.map((set, i) => setRow(b, set, i, p, main)), ...ths.map((th) => d.ui.listRow({
       lead: h('span', { class: 'grid size-10 place-items-center rounded-full bg-accent-soft text-accent' }, d.icon('secPractice', 'size-5')),
       title: h('span', {}, ...th.title[lang()].split(/`([^`]+)`/).map((x, i) => (i % 2 ? h('code', {}, x) : x))), sub: `${it('th')} · ${p.th[th.id]?.at ? it('th.done') : it('th.self')}`,
       action: h('a', { href: d.engineInterviewHash(th.id), class: d.cls.cx(d.cls.BTN_SECONDARY, 'shrink-0 px-4 py-1.5 whitespace-nowrap no-underline') }, it('th.open')),
@@ -297,7 +331,7 @@ function runView(set: string, live: IvLive, p: IvPrefs): HTMLElement {
   return h('div', { class: 'flex flex-col gap-4', 'data-iv-run': set },
     top, note,
     h('article', { class: cls.cx(cls.CARD, 'flex flex-col gap-4 p-5 max-sm:p-4'), 'aria-labelledby': 'iv-q' },
-      h('p', { class: 'm-0 flex flex-wrap items-center gap-2 text-body-sm' }, chip(it(`kind.${q.kind}`)), set === 'again' ? chip(NAME[q.engine]) : null),
+      h('p', { class: 'm-0 flex flex-wrap items-center gap-2 text-body-sm' }, chip(it(`kind.${q.kind}`)), set === 'again' ? chip(nameOf(q.engine)) : null),
       h('h2', { id: 'iv-q', class: 'm-0 text-title font-bold' }, ...rich(q.q[lang()])),
       ...q.exhibits.map((x, k) => exhibitView(q, x, k, live.timer)),
       shown ? reveal() : answerBox()));
@@ -420,7 +454,7 @@ function takeHomePage(id: string): HTMLElement {
     onclick: () => write((x) => { x.at = new Date().toISOString(); x.ticks ??= []; }, true),
   }, it('th.submit'));
   return h('div', { class: 'flex flex-col gap-6' },
-    h('p', { class: 'm-0 flex flex-wrap items-center gap-2 text-body-sm' }, chip(it('th')), chip(bandName(th.band)), chip(NAME[th.engine])),
+    h('p', { class: 'm-0 flex flex-wrap items-center gap-2 text-body-sm' }, chip(it('th')), chip(bandName(th.band)), chip(nameOf(th.engine))),
     card(h('h2', { class: 'm-0 text-title font-bold' }, it('th.brief')), h('p', { class: 'm-0' }, ...rich(th.brief[lang()])), th.doc ? h('p', { class: 'm-0 text-body-sm' }, ext(th.doc, it('docs'))) : null),
     th.fixture && th.queries.length ? card(h('h2', { class: 'm-0 text-title font-bold' }, it('th.data')),
       h('p', { class: 'm-0 text-body-sm text-muted' }, it('th.dataLine', { f: th.fixture })),

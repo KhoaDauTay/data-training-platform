@@ -1,8 +1,8 @@
 // v27 (L410): the Database Engine glossary (content/engine/glossary.yml), its routes and the lesson term marker.
 import { describe, expect, it } from 'vitest';
 import glossary from '../content/engine/glossary.yml';
-import { aliasesOf, docFor, fold, marker, MAX_BUTTONS, parseGlossary, searchTerms, termSlug, type Term } from '../src/engine/glossary';
-import { ENGINES, LEVELS, parseEngineLesson, type LessonSource } from '../src/engine/content';
+import { aliasesOf, docFor, DOC_SITE, fold, marker, MAX_BUTTONS, parseGlossary, searchTerms, termSlug, type Term } from '../src/engine/glossary';
+import { ENGINES, isRefEngine, LEVELS, parseEngineLesson, REF_ENGINES, type LessonSource, type RefEngine } from '../src/engine/content';
 import { canonicalHash, engineInterviewHash, engineInterviewOf, engineRouteOf, engineTermsHash, engineTermsOf, interviewTabHash, interviewTabOf, parseRoute } from '../src/route';
 import { parseUse } from '../src/ui/engineTerms';
 import { TERMS_DICT } from '../src/i18n/engineTerms';
@@ -13,17 +13,22 @@ const spans = (s: string): string[] => [...s.matchAll(/`([^`]+)`/g)].map((m) => 
 
 describe('glossary.yml', () => {
   it('every entry parses, has an id = slug of its term, ids unique', () => {
-    expect(terms.length).toBeGreaterThanOrEqual(296);
+    expect(terms.length).toBeGreaterThanOrEqual(390); // v48 (L1141): + 96 terms of the seven v47 tracks
     for (const t of terms) expect([t.term, t.id]).toEqual([t.term, termSlug(t.term)]);
     expect(new Set(terms.map((t) => t.id)).size).toBe(terms.length);
     for (const t of terms) expect(t.id).toMatch(/^[a-z0-9]+(-[a-z0-9]+)*$/);
   });
-  it('EN without diacritics, code spans VI = EN, docs on the three official sites', () => {
+  it('EN without diacritics, code spans VI = EN, `doc` on the official site of one of its engines', () => {
     for (const t of terms) {
       expect([t.id, DIACRITIC.test(t.en) || DIACRITIC.test(t.term)]).toEqual([t.id, false]);
       expect([t.id, spans(t.vi)]).toEqual([t.id, spans(t.en)]);
-      expect([t.id, t.doc]).toEqual([t.id, expect.stringMatching(/^https:\/\/(www\.postgresql\.org\/docs\/|www\.mongodb\.com\/docs\/|docs\.aws\.amazon\.com\/amazondynamodb\/)/)]);
+      expect([t.id, t.engines.some((e) => isRefEngine(e) && DOC_SITE[e].test(t.doc))]).toEqual([t.id, true]);
     }
+  });
+  it('v48 (L1140–L1141): every engine with reference material has 10+ terms; Design and Data stack have none', () => {
+    for (const e of REF_ENGINES) expect([e, terms.filter((t) => t.engines.includes(e)).length >= 10]).toEqual([e, true]);
+    expect(terms.some((t) => t.engines.includes('design') || t.engines.includes('stack'))).toBe(false);
+    expect(() => parseGlossary([{ ...(glossary as Record<string, unknown>[])[0], engines: ['design'] }])).toThrow(/engines/);
   });
   it('v35 R1 (E09): a lesson shows its own engine\'s docs, never another product\'s', () => {
     const by = (id: string): Term => terms.find((t) => t.id === id)!;
@@ -33,8 +38,15 @@ describe('glossary.yml', () => {
     expect(docFor(by('primary-key'), 'dynamodb')).toMatch(/amazondynamodb/);
     for (const t of terms) for (const e of t.engines) {
       const u = docFor(t, e);
-      if (u) expect([t.id, e, u]).toEqual([t.id, e, expect.stringMatching(e === 'postgres' ? /postgresql\.org/ : e === 'mongodb' ? /mongodb\.com/ : /amazondynamodb/)]);
+      if (u) expect([t.id, e, DOC_SITE[e as RefEngine].test(u)]).toEqual([t.id, e, true]);
     }
+    // v48 (L1141): a track reads its own sites; Design and Data stack read PostgreSQL's
+    expect(docFor(by('ttl-time-to-live'), 'redis')).toMatch(/^https:\/\/valkey\.io\//);
+    expect(docFor(by('counter-reset'), 'telemetry')).toMatch(/prometheus\.io/);
+    expect(docFor(by('counter-reset'), 'timeseries')).toMatch(/postgresql\.org/);
+    expect(docFor(by('change-data-capture-cdc'), 'stream')).toMatch(/debezium\.io/);
+    expect(docFor(by('brin'), 'olap')).toMatch(/postgresql\.org/);
+    expect(docFor(by('brin'), 'stack')).toMatch(/postgresql\.org/);
     expect(() => parseGlossary([{ ...(glossary as Record<string, unknown>[])[0], docs: { postgres: 'https://example.org/' } }])).toThrow(/docs/);
   });
   it('a broken entry throws (the page shows Retry, a lesson draws without buttons)', () => {
@@ -141,9 +153,7 @@ describe('the marker on the real Engine lessons (objectives + sections, code spa
   const lessons = Object.entries(files).map(([p, s]) => parseEngineLesson(s, p));
   it('≤ 15 buttons per lesson, most lessons get at least one, no term in a code span', () => {
     let some = 0;
-    let counted = 0; // v47: tracks with no glossary terms yet (redis, olap, search, …) cannot get a button; the ratio counts the others
-    for (const l of lessons) {
-      if (terms.some((t) => t.engines.includes(l.engine))) counted++;
+    for (const l of lessons) { // v48 (L1143): every engine but Design and Data stack has terms, so the ratio counts every lesson again
       for (const lang of ['vi', 'en'] as const) {
         const m = marker(terms, l.engine, l.level);
         const texts = [...l.objectives.map((o) => o[lang]), ...l.sections.map((s) => s.text[lang])];
@@ -153,7 +163,7 @@ describe('the marker on the real Engine lessons (objectives + sections, code spa
         if (lang === 'vi' && n) some++;
       }
     }
-    expect(some / counted).toBeGreaterThan(0.6);
+    expect(some / lessons.length).toBeGreaterThan(0.6);
   });
 });
 

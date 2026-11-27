@@ -1,4 +1,4 @@
-import type { EngineId, Level } from './content';
+import { isRefEngine, type EngineId, type Level, type RefEngine } from './content';
 
 /**
  * v27 (L410): the Database Engine glossary (content/engine/glossary.yml), pure: parsing, search, and the first-mention marker
@@ -11,17 +11,30 @@ export interface Term {
   docs?: Partial<Record<EngineId, string>>;
 }
 
-/** The site of each engine's official docs (tests/engineGlossary.test.ts holds every `doc` to these). */
-const DOC_SITE: Record<string, RegExp> = {
-  postgres: /^https:\/\/www\.postgresql\.org\/docs\//, mongodb: /^https:\/\/www\.mongodb\.com\/docs\//, dynamodb: /^https:\/\/docs\.aws\.amazon\.com\/amazondynamodb\//,
+const PG_DOCS = 'www\\.postgresql\\.org\\/docs\\/';
+const site = (...hosts: string[]): RegExp => new RegExp(`^https:\\/\\/(${hosts.join('|')})`);
+/**
+ * The official docs sites of each engine (tests/engineGlossary.test.ts holds every `doc` to these). v48 (L1141): the seven
+ * tracks; those whose labs run on PostgreSQL also accept PostgreSQL's docs.
+ */
+export const DOC_SITE: Record<RefEngine, RegExp> = {
+  postgres: site(PG_DOCS), mongodb: site('www\\.mongodb\\.com\\/docs\\/'), dynamodb: site('docs\\.aws\\.amazon\\.com\\/amazondynamodb\\/'),
+  redis: site('valkey\\.io\\/', 'redis\\.io\\/docs\\/', 'docs\\.aws\\.amazon\\.com\\/whitepapers\\/latest\\/database-caching-strategies-using-redis\\/'),
+  timeseries: site(PG_DOCS),
+  olap: site('clickhouse\\.com\\/docs\\/', PG_DOCS),
+  search: site('www\\.elastic\\.co\\/(guide|docs)\\/', PG_DOCS),
+  telemetry: site('prometheus\\.io\\/docs\\/', 'opentelemetry\\.io\\/docs\\/', 'grafana\\.com\\/docs\\/', PG_DOCS),
+  stream: site('kafka\\.apache\\.org\\/', 'debezium\\.io\\/documentation\\/', PG_DOCS),
+  graph: site('neo4j\\.com\\/docs\\/', PG_DOCS),
 };
 /**
  * v35 R1 (E09): the docs link a lesson of `engine` shows: that engine's own page (`docs`), else `doc` when it is on that
- * engine's site, else none (a Postgres learner never lands on MongoDB's or DynamoDB's docs). Design lessons read Postgres.
+ * engine's site, else none (a Postgres learner never lands on MongoDB's or DynamoDB's docs). Design and Data stack lessons
+ * read PostgreSQL; v48 (L1141): each of the seven tracks reads its own sites (a Redis lesson never shows a PostgreSQL page).
  */
 export function docFor(t: Term, engine: EngineId): string | undefined {
-  const e = engine === 'design' || engine === 'stack' || engine === 'olap' || engine === 'search' || engine === 'timeseries' || engine === 'telemetry' || engine === 'graph' || engine === 'stream' ? 'postgres' : engine;
-  return t.docs?.[e] ?? (DOC_SITE[e]?.test(t.doc) ? t.doc : undefined);
+  const e: RefEngine = isRefEngine(engine) ? engine : 'postgres';
+  return t.docs?.[e] ?? (DOC_SITE[e].test(t.doc) ? t.doc : undefined);
 }
 
 /** A term's id: its `term` without diacritics, lower case, runs of anything else as one `-` (every id in the YAML is this). */
@@ -29,7 +42,7 @@ export const termSlug = (s: string): string => fold(s).replace(/[^a-z0-9]+/g, '-
 /** Search form: no diacritics (đ → d), lower case. */
 export const fold = (s: string): string => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[đĐ]/g, 'd').toLowerCase();
 
-const ENG = new Set<string>(['postgres', 'mongodb', 'dynamodb']);
+const ENG = { has: isRefEngine }; // v48 (L1140): REF_ENGINES
 const str = (x: unknown, what: string): string => {
   if (typeof x !== 'string' || !x.trim()) throw new Error(`glossary: ${what}`);
   return x;
@@ -44,7 +57,7 @@ export function parseGlossary(raw: unknown): Term[] {
     if (!/^L[1-5]$/.test(String(x.level))) throw new Error(`glossary: ${id} level`);
     const docs = x.docs;
     if (docs !== undefined && (typeof docs !== 'object' || docs === null || Array.isArray(docs)
-      || !Object.entries(docs).every(([e, u]) => ENG.has(e) && typeof u === 'string' && DOC_SITE[e].test(u)))) throw new Error(`glossary: ${id} docs`);
+      || !Object.entries(docs).every(([e, u]) => isRefEngine(e) && typeof u === 'string' && DOC_SITE[e].test(u)))) throw new Error(`glossary: ${id} docs`);
     const match = x.match === undefined ? undefined : x.match;
     if (match !== undefined && (!Array.isArray(match) || !match.every((m) => typeof m === 'string' && m))) throw new Error(`glossary: ${id} match`);
     return {

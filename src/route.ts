@@ -135,16 +135,16 @@ export function engineTermsOf(hash: string): string | undefined {
 export const engineTermsHash = (id?: string): string => `#/engine/terms${id ? `/${id}` : ''}`;
 /** An engine bank's set (`pg-mid-2`, `again` = the questions due for review) or take-home (`e-iv-pg-th-1`), else undefined. */
 function ivRun(x = ''): { set?: string; th?: string } | undefined {
-  return /^(pg|mg|dy)-(junior|mid|senior|staff)-[1-3]$|^(mg|dy)-senior-4$|^again$/.test(x) ? { set: x } : /^e-iv-(pg|mg|dy)-th-[1-9]$/.test(x) ? { th: x } : undefined;
+  return /^(pg|mg|dy)-(junior|mid|senior|staff)-[1-3]$|^(mg|dy)-senior-4$|^(rd|ts|ol|sr|tm|sm|gr)-(junior|mid)-1$|^again$/.test(x) ? { set: x } : /^e-iv-(pg|mg|dy)-th-[1-9]$/.test(x) ? { th: x } : undefined; // v48 (L1144): + one Junior and one Mid set per track
 }
 /**
  * v47 S4 (I5, L980–L981): ONE interview room, `#/learn/interview`, with tabs SQL (no query) / PostgreSQL / MongoDB / DynamoDB
  * (`?e=pg|mg|dy`). An engine bank's set run or take-home is `#/learn/interview/<set|take-home id>` → `{ set }` / `{ th }`;
  * undefined elsewhere (an unknown tail draws the room). The v27 hashes `#/engine/interview…` are aliases (canonicalHash).
  */
-export type IvTab = 'sql' | 'pg' | 'mg' | 'dy';
+export type IvTab = 'sql' | 'pg' | 'mg' | 'dy' | 'more'; // v48 (L1145): 'more' = the seven tracks' banks
 export const engineInterviewOf = (hash: string): { set?: string; th?: string } | undefined => ivRun(/^#\/?learn\/interview\/([a-z0-9-]+)(?=$|[/?])/.exec(hash)?.[1]);
-export const interviewTabOf = (hash: string): IvTab => (/^#\/?learn\/interview\/?\?(?:.*&)?e=(pg|mg|dy)(?=$|&)/.exec(hash)?.[1] as IvTab | undefined) ?? 'sql';
+export const interviewTabOf = (hash: string): IvTab => (/^#\/?learn\/interview\/?\?(?:.*&)?e=(pg|mg|dy|more)(?=$|&)/.exec(hash)?.[1] as IvTab | undefined) ?? 'sql';
 export const interviewTabHash = (tab: IvTab): string => (tab === 'sql' ? INTERVIEW_PAGE : `${INTERVIEW_PAGE}?e=${tab}`);
 /** A set run or take-home; no argument = the room on its PostgreSQL tab (the Databases hub and sidebar link there). */
 export const engineInterviewHash = (x?: string): string => (x ? `${INTERVIEW_PAGE}/${x}` : interviewTabHash('pg'));
