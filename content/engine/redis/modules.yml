@@ -13,3 +13,21 @@
 - id: capstone
   vi: Bài tổng hợp
   en: Capstone
+- id: streams
+  vi: Stream và tin nhắn
+  en: Streams and messaging
+- id: scripting
+  vi: Kịch bản phía server
+  en: Server-side scripts
+- id: memory
+  vi: Bộ nhớ và chính sách xóa
+  en: Memory and eviction
+- id: scale
+  vi: Mẫu dùng khi tải lớn
+  en: Patterns at scale
+- id: ops
+  vi: Bền vững và nhân bản
+  en: Durability and replication
+- id: cluster
+  vi: Cluster và hash slot
+  en: Cluster and hash slots

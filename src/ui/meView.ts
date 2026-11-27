@@ -181,8 +181,8 @@ function nextCard(x: Measured): HTMLElement {
 
 const ENGINES = ['postgres', 'mongodb', 'dynamodb', 'redis', 'design', 'stack', 'olap', 'search', 'timeseries', 'telemetry', 'graph', 'stream'];
 const LEVELS = ['L1', 'L2', 'L3', 'L4', 'L5'];
-/** The levels a track has (mastery.ts levelsOf, inlined: this chunk takes no value from main): stack and olap L1–L3, redis L1–L2 (v47 L956, L990). */
-const TOP: Record<string, string> = { stack: 'L3', redis: 'L2', olap: 'L3', search: 'L3', timeseries: 'L3', telemetry: 'L3', graph: 'L2', stream: 'L3' };
+/** The levels a track has (mastery.ts levelsOf, inlined: this chunk takes no value from main): stack and olap L1–L3, redis L1–L5 since v48 (L1174; v47 L956, L990). */
+const TOP: Record<string, string> = { stack: 'L3', olap: 'L3', search: 'L3', timeseries: 'L3', telemetry: 'L3', graph: 'L2', stream: 'L3' };
 const ENGINE_ICON: Record<string, Icons.IconName> = { postgres: 'engRelational', mongodb: 'engDocument', dynamodb: 'engKeyValue', redis: 'engRedis', design: 'engDesign', stack: 'engStack', olap: 'engOlap', search: 'engSearch', timeseries: 'engTimeseries', telemetry: 'engTelemetry', graph: 'engGraph', stream: 'engStream' };
 const DOMAIN_ICON: Record<string, Icons.IconName> = { logistics: 'anchor', ecommerce: 'box', finance: 'percent' };
 const ENGINE_NAME: Record<string, string> = { postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB', redis: 'Redis', olap: 'OLAP & ClickHouse', telemetry: 'Telemetry & Observability', graph: 'Graph', stream: 'Streaming & CDC' };

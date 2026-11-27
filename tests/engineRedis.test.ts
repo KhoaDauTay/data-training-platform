@@ -26,10 +26,13 @@ const all = Object.entries(files).map(([p, raw]) => {
 const ids = new Set(all.map((x) => x.l.id));
 const runner = redisRunner({ lang: () => 'vi' });
 
-/** R1 plan (tools/v47 content-gaps §E1, cut to L1–L2 by the coordinator): 7 + 6 lessons. */
+/** R1 plan (tools/v47 content-gaps §E1, cut to L1–L2 by the coordinator): 7 + 6 lessons; v48 E1 (L1174): L3–L5, 4 + 6 + 4. */
 const PLAN: Record<string, EngineLesson['kind'][]> = {
   L1: ['lab', 'lab', 'lab', 'lab', 'lab', 'lab', 'lab'],
   L2: ['lab', 'lab', 'lab', 'lab', 'concept', 'capstone'],
+  L3: ['lab', 'lab', 'lab', 'concept'],
+  L4: ['lab', 'lab', 'lab', 'lab', 'lab', 'capstone'],
+  L5: ['concept', 'concept', 'lab', 'capstone'],
 };
 const ORDER = Object.keys(SECTIONS) as SectionId[];
 const NEED: Partial<Record<EngineLesson['kind'], SectionId[]>> = {
@@ -40,21 +43,21 @@ const NEED: Partial<Record<EngineLesson['kind'], SectionId[]>> = {
 /** Commands that only read: a Solution ending in anything else is a write and needs `after:` or a ttl/pttl expectation. */
 const READS = new Set(['get', 'mget', 'strlen', 'exists', 'ttl', 'pttl', 'type', 'keys', 'scan', 'dbsize', 'hget', 'hgetall', 'hkeys', 'hvals', 'hlen',
   'hexists', 'llen', 'lrange', 'smembers', 'sismember', 'scard', 'sinter', 'sunion', 'zrange', 'zrevrange', 'zrank', 'zrevrank', 'zscore', 'zcard',
-  'zrangebyscore', 'ping', 'echo', 'exec']);
+  'zrangebyscore', 'ping', 'echo', 'exec', 'zcount', 'xlen', 'xrange', 'xread', 'xpending', 'object', 'memory', 'pubsub', 'cluster', 'time', 'mget']);
 const text = (l: EngineLesson, id: SectionId) => l.sections.find((s) => s.id === id)?.text;
 const words = (l: EngineLesson): number => l.sections.map((s) => s.text.vi.replace(/```[\s\S]*?```/g, '')).join(' ').split(/\s+/).filter(Boolean).length;
 const isTrap = (b: DemoBlock): boolean => b.mark === 'error' || b.mark === 'wrong';
 const lastCmd = (sol: string): string => sol.split('\n').map((x) => x.trim()).filter((x) => x && !/^[#@]/.test(x)).at(-1)!.split(/\s+/)[0].toLowerCase();
 
 describe('Redis R1: wiring (ids, routes, Save, badges, runner)', () => {
-  it('ids e-rd-…, routes, ENGINE_ID, #/engine/play, badges L1–L2 only', () => {
+  it('ids e-rd-…, routes, ENGINE_ID, #/engine/play, badges L1–L5 (v48)', () => {
     expect(engineRouteOf('#/engine/redis/l2/e-rd-l2-01')).toEqual({ engine: 'redis', level: 'L2', lesson: 'e-rd-l2-01' });
     expect(engineHash('redis', 'L1', 'e-rd-l1-01')).toBe('#/engine/redis/L1/e-rd-l1-01');
     expect(enginePlayOf('#/engine/play/e-rd-l1-03')).toBe('#/engine/redis/L1/e-rd-l1-03');
     expect(ENGINE_ID.test('e-rd-l1-01')).toBe(true);
-    expect(levelsOf('redis')).toEqual(['L1', 'L2']);
+    expect(levelsOf('redis')).toEqual(['L1', 'L2', 'L3', 'L4', 'L5']);
     const b = badges({ parts: [], levels: new Map(), foundation: [], perf: [], completed: new Set(), engines: {}, domains: [] });
-    expect(b.filter((x) => x.kind === 'engine' && x.engine === 'redis').map((x) => x.id)).toEqual(['redis-L1', 'redis-L2']);
+    expect(b.filter((x) => x.kind === 'engine' && x.engine === 'redis').map((x) => x.id)).toEqual(['redis-L1', 'redis-L2', 'redis-L3', 'redis-L4', 'redis-L5']);
     expect(LAB_RUNNERS.redis).toBeTypeOf('function');
   });
   it('the runner: replay, directives only outside the editor, an error last line throws with its code', async () => {
@@ -71,10 +74,10 @@ describe('Redis R1: wiring (ids, routes, Save, badges, runner)', () => {
 });
 
 describe('Redis R1: lessons, modules, content rules', () => {
-  it('13 lessons of the plan, ids e-rd-', () => {
+  it('27 lessons of the plan, ids e-rd-', () => {
     const got = Object.fromEntries(Object.keys(PLAN).map((lv) => [lv, all.filter((x) => x.l.level === lv).sort((a, b) => a.l.order - b.l.order).map((x) => x.l.kind)]));
     expect(got).toEqual(PLAN);
-    expect(all.every((x) => /^e-rd-l[12]-\d\d$/.test(x.l.id) && x.l.engine === 'redis')).toBe(true);
+    expect(all.every((x) => /^e-rd-l[1-5]-\d\d$/.test(x.l.id) && x.l.engine === 'redis')).toBe(true);
   });
   it('modules.yml: every module named VI/EN and used', () => {
     const [path, raw] = Object.entries(moduleRaw)[0];
