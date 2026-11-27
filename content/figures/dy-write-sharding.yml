@@ -23,14 +23,14 @@ nodes:
   - id: b1
     shape: bars
     label: { vi: "1 khóa", en: 1 key }
-    sub: { vi: "vạch: trần 1000 WCU", en: "line: 1000 WCU ceiling" }
+    markLabel: { vi: "trần 1000 WCU", en: "1000 WCU ceiling" }
     mark: 10
     items:
       - { label: { vi: "ghi/s", en: writes/s }, value: 15, note: "1500", tone: dead }
   - id: b
     shape: bars
     label: { vi: "ghi mỗi giây theo shard", en: "writes per second by shard" }
-    sub: { vi: "vạch: trần 1000 WCU", en: "line: 1000 WCU ceiling" }
+    markLabel: { vi: "trần 1000 WCU", en: "1000 WCU ceiling" }
     mark: 10
     items:
       - { label: "#0", value: 1.88, note: "188", tone: live }
@@ -51,7 +51,7 @@ nodes:
   - id: bt
     shape: bars
     label: { vi: "ghi mỗi giây", en: "writes per second" }
-    sub: { vi: "vạch: trần 1000 WCU", en: "line: 1000 WCU ceiling" }
+    markLabel: { vi: "trần 1000 WCU", en: "1000 WCU ceiling" }
     mark: 10
     items:
       - { label: "C09#0", value: 8, note: "800", tone: live }

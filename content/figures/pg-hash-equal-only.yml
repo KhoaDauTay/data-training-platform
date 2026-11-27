@@ -16,6 +16,7 @@ nodes:
   - { id: q, shape: key, label: "token = md5('42')", sub: { vi: "mã -164201981", en: "code -164201981" }, tone: new }
   - id: ix
     shape: grid
+    mono: true
     label: { vi: "index Hash trên token", en: "Hash index on token" }
     sub: { vi: "mẫu: 6 mục theo mã", en: "sample: 6 entries by code" }
     head: [{ vi: "mã băm", en: hash code }, token, { vi: "thứ tự chữ", en: text order }]

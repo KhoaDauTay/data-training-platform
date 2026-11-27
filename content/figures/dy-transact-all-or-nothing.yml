@@ -16,7 +16,7 @@ alt:
   vi: "TransactWriteItems áp dụng mọi hành động hoặc không hành động nào, khác BatchWriteItem. Giá gấp đôi, và một transaction bị hủy vẫn tiêu capacity."
   en: "TransactWriteItems applies every action or none, unlike BatchWriteItem. It costs double, and a cancelled transaction still consumes capacity."
 nodes:
-  - { id: u1, label: Update w1 -100000, sub: { vi: "nếu số dư ≥ 100000", en: "if amount ≥ 100000" }, tone: live }
+  - { id: u1, label: Update w1 -100000, sub: { vi: "số dư ≥ 100000", en: "balance ≥ 100000" }, tone: live }
   - { id: u2, label: Update w2 +100000, tone: live }
   - { id: ok, shape: key, label: { vi: "cả hai, 4 WCU", en: "both, 4 WCU" }, tone: live }
   - id: no
@@ -60,7 +60,7 @@ variants:
   partiql:
     step: 0
     set:
-      u1: { label: UPDATE w3 -50000, sub: { vi: "nếu số dư ≥ 50000", en: "if amount ≥ 50000" } }
+      u1: { label: UPDATE w3 -50000, sub: { vi: "số dư ≥ 50000", en: "balance ≥ 50000" } }
       u2: { label: UPDATE w2 +50000 }
     title: { vi: "Transaction PartiQL thành công", en: "A PartiQL transaction that succeeds" }
     caption:

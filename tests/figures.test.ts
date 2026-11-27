@@ -7,12 +7,12 @@
 // sentence per step, no data dumped into sentences, the data as generated tables. And the content links: every `figures:` name exists (a spec or a registry diagram), every spec is used.
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
-import { analyze, samplePath, type OverlapFrame } from '../scripts/overlap-check.mjs';
+import { analyze, axisRuns, samplePath, type OverlapFrame } from '../scripts/overlap-check.mjs';
 import { parseBestCard, type BpCard } from '../src/engine/best';
 import { parseEngineLesson, type EngineLesson } from '../src/engine/content';
 import type { Shape } from '../src/engine/viz/engineVizCore';
 import { resolveViz } from '../src/engine/viz/engineViz';
-import { altTables, altText, type FigRef, type FigSpec, layout, linkGap, MARGIN, NOTE_CH, textWidth, tr, WIDE } from '../src/engine/viz/figure';
+import { altTables, altText, type FigRef, type FigSpec, groupNum, keepSegs, layout, linkGap, localize, MARGIN, NOTE_CH, textWidth, tr, WIDE, wrap } from '../src/engine/viz/figure';
 import { GLYPHS } from '../src/engine/viz/glyphs';
 import { parseFullLesson } from '../src/fullLesson';
 import { fullLessons, lessonIdOf } from '../src/generalLessonSources';
@@ -235,6 +235,10 @@ describe.each(Object.keys(specs))('v39 figure %s', (name) => {
             const [A, B] = [m.arrows[p], m.arrows[q]];
             const d = Math.hypot(A.tip[0] - B.tip[0], A.tip[1] - B.tip[1]);
             if (A.to && A.to === B.to) expect(d < 0.5 || d >= 16, `${at}: ${A.k} / ${B.k} tips ${d}`).toBe(true);
+            // v48 (L1163, b4 eye SR1): arrows that leave one point (a fork) bend at one height, never at two
+            const [ra, rb] = [axisRuns(A.pts), axisRuns(B.pts)];
+            if (Math.hypot(A.pts[0][0] - B.pts[0][0], A.pts[0][1] - B.pts[0][1]) < 0.5 && ra[1]?.o === 'h' && rb[1]?.o === 'h' && ra[0].o === 'v' && rb[0].o === 'v')
+              expect(ra[1].c, `${at}: ${A.k} / ${B.k} fork bends`).toBeCloseTo(rb[1].c, 1);
           }
           // R1 E4/E5 (L626): linked tables side by side are linkGap(lines) apart, or the row already fills the room
           const xs = extents(f);

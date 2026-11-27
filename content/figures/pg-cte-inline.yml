@@ -37,6 +37,6 @@ steps:
     alt: { vi: "CTE được tính riêng thành kết quả đầy đủ, nên điều kiện chỉ còn là Filter trên CTE Scan và chi phí gấp chín lần.", en: "The CTE is computed in full first, so the condition is only a Filter on the CTE Scan and the cost is nine times higher." }
     set:
       cost: { label: cost 759, tone: dead }
-      mid: { label: CTE Scan, sub: { vi: "lọc 20000 dòng", en: "filters 20000 rows" }, tone: dead }
+      mid: { label: CTE Scan, sub: { vi: "lọc 20000 dòng", en: "checks 20000 rows" }, tone: dead }
       low: { label: Seq Scan, sub: { vi: "20000 dòng", en: "20000 rows" }, tone: dead }
       up: { label: CTE t }

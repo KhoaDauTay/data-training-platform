@@ -175,10 +175,13 @@ export function analyze(f, width) {
     const [A, B] = [arrows[i], arrows[j]];
     if (A.pts.length < 2 || B.pts.length < 2) continue;
     const bus = Math.hypot(A.tip[0] - B.tip[0], A.tip[1] - B.tip[1]) < 0.5; // one bus: shared lane and one arrowhead, by design
+    // v48 (L1163): a fork shares its start and its trunk: runs lying on each other (< 0.5 apart) from one start are that trunk
+    const fork = Math.hypot(A.pts[0][0] - B.pts[0][0], A.pts[0][1] - B.pts[0][1]) < 0.5;
     // h: parallel runs ≤ 8 apart over > 12 (the builder's lanes are exactly 8 apart, the E1 pair: "< 8" would miss it)
     if (!bus) for (const p of runs[i]) for (const q of runs[j]) {
       if (p.o !== q.o) continue;
       const d = Math.abs(p.c - q.c), run = Math.min(p.b, q.b) - Math.max(p.a, q.a);
+      if (fork && d < 0.5) continue;
       if (d <= RULES.parGap && run > RULES.parRun) add('h', d < 4 ? 'P1' : 'P2', `${A.k ?? 'arrow'} / ${B.k ?? 'arrow'} run ${r1(d)} apart for ${r1(run)}`, { depth: r1(d) });
     }
     // j: arrowheads head to head: tips ≤ 12 apart pointing at each other, or last legs on one line in opposite directions that

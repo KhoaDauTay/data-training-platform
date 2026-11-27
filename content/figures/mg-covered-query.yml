@@ -2,7 +2,8 @@
 # Data (quoted rule from the lesson and the docs; no mongod in the browser): index { title: 1 }; find({ title: … }, { title: 1 })
 # still returns _id, so explain shows IXSCAN under FETCH; with { title: 1, _id: 0 } it shows IXSCAN alone.
 # Deviation: one projection slot whose text changes per step (eye CQ2), pointing at the plan it produces; the FETCH edge from the collection is drawn only in frame 1 (dashed: it opens documents; the plan box names both stages,
-# so no edge carries a label). Phone rows put the index beside the plan and the collection under it, so each edge keeps its own head (eye CQ1). The optional reuse in e-mg-l3-07 is skipped (hosts.txt).
+# so no edge carries a label). v48 (eye CQ3, L1167): the plan is two stage boxes as explain shows them, FETCH above IXSCAN (IXSCAN
+# feeds it); in frame 2 FETCH is greyed "không cần" and its edge from IXSCAN is a skip line (dashed, no head). Columns line up (align): collection above the index. The optional reuse in e-mg-l3-07 is skipped (hosts.txt).
 # Source: https://www.mongodb.com/docs/manual/core/query-optimization/
 title: { vi: "Truy vấn được phủ: index tự trả lời", en: "A covered query: the index answers alone" }
 caption:
@@ -11,28 +12,32 @@ caption:
 alt:
   vi: "Một truy vấn được phủ khi mọi trường lọc và trả về đều thuộc index; khi đó explain chỉ có IXSCAN, không FETCH. _id luôn được trả về trừ khi ghi _id: 0."
   en: "A query is covered when every filtered and returned field is in the index; then explain shows IXSCAN with no FETCH. _id is always returned unless you write _id: 0."
+align: true
 nodes:
   - { id: p, shape: key, mono: true, label: "{ title: 1 }", tone: warm }
-  - { id: ix, shape: grid, label: "index { title: 1 }", head: [title], cells: [["…"]], sub: { vi: "không có _id", en: "no _id" } }
-  - { id: plan, label: IXSCAN → FETCH, sub: { vi: "cần _id", en: "needs _id" }, tone: warm }
   - { id: coll, shape: table, label: collection }
+  - { id: fetch, label: FETCH, sub: { vi: "đọc tài liệu: _id", en: "reads docs for _id" }, tone: warm }
+  - { id: ix, shape: grid, label: "index { title: 1 }", head: [title], cells: [["…"]], sub: { vi: "không có _id", en: "no _id" } }
+  - { id: ixs, label: IXSCAN, sub: { vi: "đọc index title", en: "reads the index" } }
 rows:
   - [p]
-  - [ix, plan, coll]
-phone:
-  rows: [[p], [ix, plan], [coll]]
+  - [coll, fetch]
+  - [ix, ixs]
 edges:
-  - { from: p, to: plan }
-  - { from: ix, to: plan }
-  - { id: f, from: coll, to: plan, dash: true }
+  - { id: pf, from: p, to: fetch }
+  - { id: f, from: coll, to: fetch, dash: true }
+  - { id: up, from: ixs, to: fetch }
+  - { from: ix, to: ixs }
 steps:
-  - say: { vi: "Projection mặc định vẫn trả _id.", en: "The default projection still returns _id." }
-    show: [p, ix, plan, coll, f]
-    alt: { vi: "_id không thuộc index title, nên MongoDB phải mở tài liệu để lấy nó.", en: "_id is not in the title index, so MongoDB must open each document to get it." }
-  - say: { vi: "Thêm _id: 0: index đủ trả lời.", en: "Add _id: 0: the index answers alone." }
-    show: [p, ix, plan, coll]
-    alt: { vi: "Mọi trường lọc và trả về đều nằm trong index, nên IXSCAN không cần FETCH.", en: "Every filtered and returned field is in the index, so IXSCAN needs no FETCH." }
+  - say: { vi: "Projection mặc định vẫn trả _id: FETCH mở tài liệu.", en: "The default projection still returns _id: FETCH opens documents." }
+    show: [p, coll, fetch, ix, ixs, pf, f, up]
+    alt: { vi: "_id không thuộc index title, nên trên IXSCAN có thêm FETCH mở từng tài liệu để lấy nó.", en: "_id is not in the title index, so a FETCH stage above IXSCAN opens each document to get it." }
+  - say: { vi: "Thêm _id: 0: chỉ còn IXSCAN.", en: "Add _id: 0: only IXSCAN is left." }
+    show: [p, coll, fetch, ix, ixs, up]
+    alt: { vi: "Mọi trường lọc và trả về đều nằm trong index, nên kế hoạch chỉ còn IXSCAN, không FETCH.", en: "Every filtered and returned field is in the index, so the plan is IXSCAN alone, with no FETCH." }
     set:
       p: { label: "{\u00a0title:\u00a01, _id:\u00a00\u00a0}", tone: live }
-      plan: { label: IXSCAN, sub: { vi: "không mở tài liệu", en: "no document opened" }, tone: live }
+      ixs: { sub: { vi: "tự trả lời", en: "answers alone" }, tone: live }
+      fetch: { sub: { vi: "không cần", en: "not needed" }, tone: ghost }
+      up: { kind: skip }
       coll: { tone: ghost, sub: { vi: "không đọc", en: not read } }

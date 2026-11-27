@@ -4,8 +4,8 @@
 # to SHIP#…#SH-<id>, the full key is 23 characters). RCU by tenant: dynoxide on e-dy-l5-09's two runnable Queries
 # (tools/v42/b4check.log): C02 eventually consistent 0.5 RCU, C01 strongly consistent 1.0 RCU (the plan's r-101 / r-102).
 # Eye TI1/TI2: a third step explains the RCU bars; step 2 no longer names ForAllValues/Null (the lesson text does).
-# Deviation: Scan sits beside the table (a dashed arrow, labelled) and the Query comes from above, so the two arrows never share a
-# side; the variant's GSI1PK values are cut to TENANT#C0n#… (22 characters), the grid's sub names the rest (all three are open shipments in the lab); no row links (side by side the rows already line up).
+# Deviation (v48 eye X6/TI3, L1166): Query sits left of the table and points at the first C02 row, Scan right of it points (dashed)
+# at the C01 row it would leak; stacked on a phone both are routed from the node; the variant's GSI1PK values are cut to TENANT#C0n#… (22 characters), the grid's sub names the rest (all three are open shipments in the lab); no row links (side by side the rows already line up).
 # Source: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/specifying-conditions.html
 title: { vi: "Một bảng chung, mỗi khách một tiền tố khóa", en: "One shared table, one key prefix per tenant" }
 caption:
@@ -16,7 +16,7 @@ alt:
   en: "In a shared table the tenant id leads every key, and the IAM condition dynamodb:LeadingKeys limits each tenant to its own prefix. Per-tenant cost must be summed from each request's ConsumedCapacity."
 nodes:
   - { id: iam, shape: key, mono: true, label: "LeadingKeys = TENANT#C02" }
-  - { id: q, label: Query C02, tone: live }
+  - { id: q, label: Query C02, sub: { vi: "chỉ item C02", en: "C02 items only" }, tone: live }
   - id: t
     shape: grid
     label: Portal
@@ -39,13 +39,12 @@ nodes:
       - { label: C02, value: 5, note: "0.5", tone: live }
 rows:
   - [iam]
-  - [q]
-  - [t, gk, s]
+  - [q, t, gk, s]
   - [bill]
 edges:
   - { from: iam, to: q }
-  - { from: q, to: t, label: { vi: "chỉ C02", en: C02 only } }
-  - { from: s, to: t, dash: true }
+  - { from: q, to: "t#1" }
+  - { from: s, to: "t#0", dash: true }
 steps:
   - say: { vi: "Mọi khóa mở đầu bằng mã khách.", en: "Every key starts with the tenant id." }
     show: [iam, q, t]

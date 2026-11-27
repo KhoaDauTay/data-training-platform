@@ -181,7 +181,9 @@ const HOLD_MS = 2050; // the 0.55 s tween + 1.5 s rest (engine-ux-spec §6); 4 s
  * A figure with one frame is static (P3): no buttons, counter, status line or focus stop.
  */
 export interface FigOpts {
-  name: string; caption: string;
+  name: string;
+  /** v48 (L1162): plain text, or pieces of which keep ones are drawn in nowrap spans (no break inside code or a math phrase) */
+  caption: string | { s: string; keep?: boolean }[];
   /** v42 (L700): the point, 1–2 plain sentences (`alt`); `steps` = one sentence per step, the numbered list (else the step sentences) */
   alt: string[]; steps?: string[];
   /** v42 (L702): the sample data of the figure's grids, as real tables behind their own toggle (never prose) */
@@ -230,7 +232,7 @@ export function mount(host: HTMLElement, d: Diagram, lang: Lang, start = 0, fo?:
     class: 'm-0 grid gap-2', tabindex: '0', 'aria-roledescription': lang === 'vi' ? 'sơ đồ từng bước' : 'step-through diagram',
     'aria-label': `${d.title}. ${ui.keys}`, ...(fo ? { 'data-fig': fo!.name } : { 'data-viz': '' }),
   },
-  D.h('figcaption', { id: `${id}-cap`, class: fo ? '' : 'font-bold' }, ...(fo ? [D.h('b', { class: 'block' }, d.title), fo.caption] : [d.title])), // R1 E12: the caption on its own line
+  D.h('figcaption', { id: `${id}-cap`, class: fo ? '' : 'font-bold' }, ...(fo ? [D.h('b', { class: 'block' }, d.title), ...(typeof fo.caption === 'string' ? [fo.caption] : fo.caption.map((c) => (c.keep ? D.h('span', { class: 'whitespace-nowrap' }, c.s) : c.s)))] : [d.title])), // R1 E12: the caption on its own line
   D.h('div', { class: 'overflow-hidden rounded-(--r-ctl) bg-panel p-2 ring-1 ring-line max-sm:p-1' }, st.svg),
   ...(one ? [d.frames[0].say ? D.h('p', { class: 'm-0 text-body-sm' }, d.frames[0].say) : '', explain(id, fo!)] : [
     // A5 (v31, L515): every step's sentence sits in the same grid cell, hidden but the shown one, so the cell is as tall as the

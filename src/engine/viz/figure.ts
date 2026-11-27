@@ -21,6 +21,8 @@ export interface FigNode {
   /** v40: one grid cell, `"<body row>:<col>"` → tone, drawn with a bold edge (the highlight; words still carry the meaning) */
   cellTone?: Record<string, Tone>;
   items?: { label: Bi; value: number; note?: Bi; tone?: Tone }[]; mark?: number;
+  /** v48 (L1165, b4 eye X5/X6): the mark line's name, drawn once at its top (left of the line), instead of a legend sub under the bars */
+  markLabel?: Bi;
   /** v40 R2 (E-03): a box or key that shows a crow's-foot mark before its label (a legend entry) */
   card?: Card;
   /** v42 (L690): an ER entity's attribute rows under its title band: a name, or `{ name, pk?, fk? }` drawn with PK / FK pills */
@@ -62,6 +64,32 @@ export interface FigSpec {
 export interface FigRef { name: string; at: string; variant?: string; step?: number }
 
 export const tr = (b: Bi | undefined, lang: Lang): string => (b === undefined ? '' : typeof b === 'string' ? b : b[lang]);
+/** v48 (L1160): the spec in one language, every number shown grouped (groupNum) except in mono text (code). */
+export function localize(spec: FigSpec, lang: Lang): FigSpec {
+  const g = (b: Bi | undefined): string | undefined => (b === undefined ? undefined : groupNum(tr(b, lang), lang));
+  const keep = (b: Bi | undefined): string | undefined => (b === undefined ? undefined : tr(b, lang));
+  const monoOf = new Map(spec.nodes.map((n) => [n.id, !!n.mono]));
+  const node = <T extends Partial<FigNode>>(n: T, id: string): T => {
+    const mono = n.mono ?? monoOf.get(id) ?? false, d = mono ? keep : g;
+    const o: Partial<FigNode> = { ...n };
+    if (n.label !== undefined) o.label = d(n.label);
+    if (n.sub !== undefined) o.sub = g(n.sub);
+    if (n.head) o.head = n.head.map((c) => g(c)!);
+    if (n.cells) o.cells = n.cells.map((r) => r.map((c) => d(c)!));
+    if (n.items) o.items = n.items.map((i) => ({ ...i, label: g(i.label)!, note: g(i.note) }));
+    if (n.markLabel !== undefined) o.markLabel = g(n.markLabel);
+    return o as T;
+  };
+  const patch = (set?: Patch): Patch | undefined => set && Object.fromEntries(Object.entries(set).map(([id, p]) => [id, monoOf.has(id) ? node(p, id) : { ...p, ...(p.label !== undefined ? { label: g(p.label) } : {}) }]));
+  return {
+    ...spec, title: g(spec.title)!, caption: g(spec.caption)!, alt: g(spec.alt),
+    nodes: spec.nodes.map((n) => node(n, n.id)),
+    edges: spec.edges?.map((e) => ({ ...e, label: g(e.label) })),
+    groups: spec.groups?.map((x) => ({ ...x, label: g(x.label)! })),
+    steps: spec.steps?.map((st) => ({ ...st, say: g(st.say)!, alt: g(st.alt), set: patch(st.set) })),
+    variants: spec.variants && Object.fromEntries(Object.entries(spec.variants).map(([k, v]) => [k, { ...v, title: g(v.title), caption: g(v.caption), alt: g(v.alt), set: patch(v.set) }])),
+  };
+}
 const fail = (msg: string): never => {
   throw new Error(`figure: ${msg}`);
 };
@@ -85,15 +113,73 @@ export const lineH = (size: number): number => Math.ceil(size * 1.37) + 1;
 export const MAX_CH = 18;
 /** R1 E14 (L629): a note keeps one line up to NOTE_CH characters when the figure is ≥ WIDE units wide. */
 export const NOTE_CH = 32, WIDE = 480;
-/** ≤ 18 characters a line, ≤ 2 lines, broken at the most balanced space; anything longer is a content error (never "…"). */
+/** ≤ 18 characters a line, ≤ 2 lines, broken at the most balanced space; anything longer is a content error (never "…").
+ * v48 (L1161, b56 eye X5): never inside a math phrase ("x ≥ 500, y < 500") or inside parentheses when another break fits. */
 export function wrap(s: string, one = MAX_CH): string[] {
   if ([...s].length <= one) return [s];
-  let best: string[] | undefined;
+  let best: string[] | undefined, loose: string[] | undefined;
+  const glue = glued(s);
   for (let i = s.indexOf(' '); i > 0; i = s.indexOf(' ', i + 1)) {
     const a = s.slice(0, i), b = s.slice(i + 1);
-    if ([...a].length <= MAX_CH && [...b].length <= MAX_CH && (!best || Math.abs(a.length - b.length) < Math.abs(best[0].length - best[1].length))) best = [a, b];
+    const better = (o?: string[]): boolean => !o || Math.abs(a.length - b.length) < Math.abs(o[0].length - o[1].length);
+    if ([...a].length > MAX_CH || [...b].length > MAX_CH) continue;
+    if (better(loose)) loose = [a, b];
+    if (!glue.has(i) && better(best)) best = [a, b];
   }
-  return best ?? fail(`"${s}": > 18 ký tự một dòng hoặc > 2 dòng`);
+  return best ?? loose ?? fail(`"${s}": > 18 ký tự một dòng hoặc > 2 dòng`);
+}
+/** Comparison and arithmetic operators that bind their neighbours into one phrase (a flow arrow → is a fine place to break). */
+const OP = /^(?:≥|≤|<|>|=|≠|<>|<=|>=|\+|−|-|×|÷|\*|\/|%)$/;
+/** v48 (L1161): the indexes of the spaces a line may not break at: between two tokens of a math phrase (an operator and the
+ * tokens beside it, so "x ≥ 500, y < 500" is one phrase) and inside parentheses. */
+export function glued(s: string, parens = true): Set<number> {
+  const out = new Set<number>();
+  const toks = [...s.matchAll(/[^ ]+/g)].map((m) => ({ t: m[0], at: m.index! }));
+  const op = (j: number): boolean => OP.test(toks[j]?.t ?? '');
+  const math = (j: number): boolean => op(j) || op(j - 1) || op(j + 1);
+  let depth = 0;
+  toks.forEach((k, j) => {
+    depth += (k.t.match(/\(/g)?.length ?? 0) - (k.t.match(/\)/g)?.length ?? 0);
+    if (j + 1 < toks.length && ((math(j) && math(j + 1)) || (parens && depth > 0))) out.add(k.at + k.t.length);
+  });
+  return out;
+}
+/** v48 (L1162, b56 eye X5): caption pieces a browser must not break inside: a math phrase ("b = 42", "e = 7.") and a code-like
+ * token holding a digit or # with a hyphen or # inside it (978-0-06…, VN#DA-NANG#…); the core draws them in nowrap spans. */
+export function keepSegs(s: string): { s: string; keep?: boolean }[] {
+  const glue = glued(s, false), out: { s: string; keep?: boolean }[] = [];
+  const push = (x: string, keep: boolean): void => {
+    const last = out[out.length - 1];
+    if (last && !last.keep && !keep) last.s += x;
+    else out.push(keep ? { s: x, keep } : { s: x });
+  };
+  let from = -1, prev = 0;
+  for (const m of s.matchAll(/[^ ]+/g)) {
+    const at = m.index!, end = at + m[0].length;
+    if (from < 0) { push(s.slice(prev, at), false); from = at; }
+    if (glue.has(end)) continue; // the phrase goes on
+    const piece = s.slice(from, end);
+    push(piece, piece.includes(' ') || (/[\d#]/.test(piece) && /.[-#‐]./.test(piece)));
+    prev = end;
+    from = -1;
+  }
+  push(s.slice(prev), false);
+  return out.filter((x) => x.s);
+}
+/** v48 (L1160, b56 eye X5): a bare number of ≥ 5 digits is shown grouped (VI 28.365.000 and 52.833,33; EN 28,365,000). Left as
+ * written: a SQLSTATE (after an error word and at most one short word, an upper-case keyword and → or (, or another code), code (after `name =`, `name >`…, a
+ * type tag `N:`, an `_id`-like name, or inside [ ] / { }), and a number that is part of a word, id or date (12-34, #12345, x_16384). */
+export function groupNum(s: string, lang: Lang): string {
+  let code = false;
+  return s.replace(/(?<![\w.,#:/\-$@'"‐])(\d{5,})(?:\.(\d+))?(?![\w\-‐])/g, (m, int: string, dec: string | undefined, at: number) => {
+    const pre = s.slice(0, at);
+    const open = (a: string, b: string): boolean => pre.split(a).length > pre.split(b).length;
+    const state = /(?:lỗi|error|từ chối|refused|cha|parent|code|mã|SQLSTATE)(?:\s+\S{1,4})?\s*:?\s*$/i.test(pre) || /\b[A-Z]{2,}\s*[(→]\s*$/.test(pre) || (code && /\d{5},\s*$/.test(pre));
+    code = state;
+    if (state || open('[', ']') || open('{', '}') || /(?:^|[^\wÀ-ỹ])[A-Za-z_]\w*\s*(?:[<>=]=?|<>)\s*$/.test(pre) || /\b[NSB]:\s*$/.test(pre) || /\b\w*_\w*\s+$/.test(pre)) return m;
+    const g = int.replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'vi' ? '.' : ',');
+    return dec === undefined ? g : `${g}${lang === 'vi' ? ',' : '.'}${dec}`;
+  });
 }
 
 // ── grammar (svg-system §2) ──────────────────────────────────────────────────────────────────────────────────────
@@ -131,7 +217,7 @@ function gridCols(n: FigNode, lang: Lang): number[] {
 function barsDims(n: FigNode, lang: Lang, room: number): { lw: number; u: number; vw: number } {
   const its = n.items ?? [];
   const lw = Math.max(0, ...its.map((i) => textWidth(cellText(n, i.label, lang), SS)));
-  const vw = Math.max(0, ...its.map((i) => textWidth(i.note === undefined ? String(i.value) : cellText(n, i.note, lang), SS)));
+  const vw = Math.max(0, ...its.map((i) => textWidth(i.note === undefined ? groupNum(String(i.value), lang) : cellText(n, i.note, lang), SS)));
   const top = Math.max(1, n.mark ?? 0, ...its.map((i) => i.value));
   return { lw, vw, u: Math.max(8, Math.min(20, Math.floor((room - lw - vw - 16) / top))) };
 }
@@ -146,7 +232,7 @@ function size(n: FigNode, lang: Lang, room: number): Sized {
       inner = { w: cols.reduce((a, b) => a + b, 0), h: ((n.head ? 1 : 0) + (n.cells?.length ?? 0)) * ROW_H };
     } else {
       const { lw, u, vw } = barsDims(n, lang, room);
-      inner = { w: lw + 8 + Math.max(1, n.mark ?? 0, ...(n.items ?? []).map((i) => i.value)) * u + 8 + vw, h: (n.items?.length ?? 0) * BAR_H };
+      inner = { w: lw + 8 + Math.max(1, n.mark ?? 0, ...(n.items ?? []).map((i) => i.value)) * u + 8 + vw, h: (n.items?.length ?? 0) * BAR_H + (n.markLabel === undefined ? 0 : lineH(SS)) };
     }
     return { w: Math.ceil(Math.max(inner.w, widest(t), widest(sb))), h: tall(t) + (t.length ? 4 : 0) + inner.h + (sb.length ? 4 : 0) + tall(sb) };
   }
@@ -206,7 +292,8 @@ function plans(spec: FigSpec, lang: Lang, variant?: string): Plan[] {
 }
 
 /** Lays the spec out `W` units wide (W = the svg's own width in px, 280–640) and returns the renderer's Diagram. */
-export function layout(spec0: FigSpec, lang: Lang, W: number, variant?: string): Diagram {
+export function layout(spec00: FigSpec, lang: Lang, W: number, variant?: string): Diagram {
+  const spec0 = localize(spec00, lang);
   const [spec, ps] = shownOnly(spec0, plans(spec0, lang, variant));
   const byId = new Map(spec.nodes.map((n) => [n.id, n]));
   const wide = W >= WIDE;
@@ -271,9 +358,26 @@ export function layout(spec0: FigSpec, lang: Lang, W: number, variant?: string):
     const [ra, rb] = rowE(e);
     return e.link || ra === rb || dropped(e) ? undefined : `${base(e.to)}|${rb > ra}`;
   };
-  const cx = (e: FigEdge): number => { const a = at.get(base(e.from))!; return a.x + a.w / 2; };
-  const spread = (e: FigEdge, g: FigEdge[]): number => { const b = at.get(base(e.to))!; return Math.round(b.x + (b.w * (g.indexOf(e) + 1)) / (g.length + 1)); };
-  const fits = (e: FigEdge, x: number): boolean => { const a = at.get(base(e.from))!; return x >= a.x + 12 && x <= a.x + a.w - 12; };
+  /** v48 (L1165, b4 eye X6): where an arrow may leave or land on a box from another row: a grid's cells or a bars' block (in
+   * their widest frame), not the rect, which is as wide as its longest title or sub (an arrow under the end of a wide title
+   * started in empty space beside the cells). Any other node: its rect. */
+  const coreMemo = new Map<string, Rect>();
+  const core = (end: string): Rect => {
+    const id = base(end), r = at.get(id)!;
+    if (coreMemo.has(id)) return coreMemo.get(id)!;
+    const ws = ps.flatMap((p) => p.nodes.filter((n) => n.id === id && p.show.has(id))).flatMap((n) => {
+      if (n.shape === 'grid') return [gridCols(n, lang).reduce((s, c) => s + c, 0)];
+      if (n.shape !== 'bars') return [];
+      const { lw, vw } = barsDims(n, lang, 0), top = Math.max(1, n.mark ?? 0, ...(n.items ?? []).map((i) => i.value));
+      return [lw + 8 + top * Math.max(8, Math.min(20, Math.floor((r.w - lw - vw - 16) / top))) + 8 + vw];
+    });
+    const w = ws.length ? Math.min(r.w, Math.max(...ws)) : r.w, c = { ...r, x: r.x + Math.round((r.w - w) / 2), w };
+    coreMemo.set(id, c);
+    return c;
+  };
+  const cx = (e: FigEdge): number => { const a = core(e.from); return a.x + a.w / 2; };
+  const spread = (e: FigEdge, g: FigEdge[]): number => { const b = core(e.to); return Math.round(b.x + (b.w * (g.indexOf(e) + 1)) / (g.length + 1)); };
+  const fits = (e: FigEdge, x: number): boolean => { const a = core(e.from); return x >= a.x + 12 && x <= a.x + a.w - 12; };
   /** undefined = alone on its side; a number = its landing x; 'bus' = it joins the bus */
   const land = (e: FigEdge): number | 'bus' | undefined => {
     const g = edges.filter((f) => side(f) !== undefined && side(f) === side(e) && co(e.from, e.to, f.from, f.to)).sort((p, q) => cx(p) - cx(q));
@@ -285,9 +389,20 @@ export function layout(spec0: FigSpec, lang: Lang, W: number, variant?: string):
   const leave = (e: FigEdge): number | undefined => {
     const dir = (f: FigEdge): number => Math.sign(rowE(f)[1] - rowE(f)[0]);
     const g = edges.filter((f) => !f.link && !far(f) && base(f.from) === base(e.from) && dir(f) && dir(f) === dir(e) && co(e.from, e.to, f.from, f.to)).sort((p, q) => at.get(base(p.to))!.x - at.get(base(q.to))!.x);
-    const a = at.get(base(e.from))!;
+    const a = core(e.from);
     return g.length < 2 ? undefined : Math.round(a.x + (a.w * (g.indexOf(e) + 1)) / (g.length + 1));
   };
+  /** v48 (L1163, b4 eye SR1, b56 eye MG5): ≥ 2 unlabelled arrows from one box to boxes of the same neighbouring row, each alone
+   * on its target's side, fork: they share one trunk from the box's middle and one bend height, then drop onto each target's
+   * middle (before: they left at ⅓ ⅔ and bent at two heights, uneven and bunched). undefined = not a fork. */
+  const forkOf = (e: FigEdge): FigEdge[] | undefined => {
+    if (e.link || e.label || far(e) || rowE(e)[0] === rowE(e)[1]) return undefined;
+    const g = edges.filter((f) => !f.link && base(f.from) === base(e.from) && rowE(f)[0] === rowE(e)[0] && rowE(f)[1] === rowE(e)[1] && co(e.from, e.to, f.from, f.to));
+    // never beside a longer arrow from the same box the same way (its lane would run 8 from the fork's: rule h)
+    const longer = edges.some((f) => base(f.from) === base(e.from) && far(f) && Math.sign(rowE(f)[1] - rowE(f)[0]) === Math.sign(rowE(e)[1] - rowE(e)[0]) && co(e.from, e.to, f.from, f.to));
+    return !longer && g.length >= 2 && g.every((f) => !f.label && land(f) === undefined && !rowEnd(f) && g.filter((h) => base(h.to) === base(f.to)).length === 1) ? g : undefined;
+  };
+  const forkLane = new Map<string, number>();
   let laneNo = 0;
   const near2 = new Map<string, number>(); // local lanes already beside the same rows
   const routes = edges.map((e) => {
@@ -339,11 +454,19 @@ export function layout(spec0: FigSpec, lang: Lang, W: number, variant?: string):
       if (lx !== undefined) near2.set(key, (near2.get(key) ?? 0) + 1);
       else if (label) fail(`${e.from}→${e.to}: nhãn trên làn bên chưa hỗ trợ`);
       const third = (r: Rect): number => Math.round(lx === undefined ? r.x + r.w / 2 : lx > r.x + r.w / 2 ? r.x + r.w - Math.min(r.w / 3, 16) : r.x + Math.min(r.w / 3, 16)); // 16 in from the lane side, clear of a straight arrow in the middle
-      const d = laneRoute(third(a), y1, typeof L === 'number' ? L : third(b), ra, rb, lx ?? CW + 8 + 16 * laneNo++, nextLane, end);
+      const d = laneRoute(third(core(e.from)), y1, typeof L === 'number' ? L : third(core(e.to)), ra, rb, lx ?? CW + 8 + 16 * laneNo++, nextLane, end);
       const q = d.split(/[ ML]+/).filter(Boolean).map(Number), lft = q[4] < q[0]; // a label beside the lane's vertical run, on its outer side
       return { e, d, lab: label ? { x: q[4] + (lft ? -6 : 6), y: (q[5] + q[7]) / 2, a: lft ? ('e' as const) : undefined, s: label } : undefined };
     }
-    const lo = Math.max(a.x, b.x), hi = Math.min(a.x + a.w, b.x + b.w);
+    if (forkOf(e)) {
+      // v48 (L1163): a fork: one trunk from the source's middle to one lane, then a drop onto each target's middle
+      const sx = Math.round(a.x + a.w / 2), tx = Math.round(b.x + b.w / 2), key = `${base(e.from)}|${rb > ra}`;
+      if (Math.abs(tx - sx) < 1) return { e, d: `M${sx} ${y1} L${sx} ${end(sx, y1)}`, lab: undefined };
+      const ym = forkLane.get(key) ?? nextLane(Math.min(ra, rb));
+      forkLane.set(key, ym);
+      return { e, d: `M${sx} ${y1} L${sx} ${ym} L${tx} ${ym} L${tx} ${end(tx, ym)}`, lab: undefined };
+    }
+    const A = core(e.from), B = core(e.to), lo = Math.max(A.x, B.x), hi = Math.min(A.x + A.w, B.x + B.w);
     const D = leave(e);
     const straight = L === undefined ? hi - lo >= 24 : L !== 'bus' && fits(e, L);
     if (straight) {
@@ -356,8 +479,8 @@ export function layout(spec0: FigSpec, lang: Lang, W: number, variant?: string):
     lanes.set(gap, L === 'bus' ? Math.max(1, lanes.get(gap) ?? 0) : k + 1); // ponytail: a lone elbow placed before a bus in the same gap may share its lane
     const ym = laneY(gap, k);
     // a lone elbow lands on the part of b nearest the source (or its spread place); a bus lands in b's middle
-    const ax = D ?? Math.round(a.x + a.w / 2);
-    const bx = L === 'bus' ? Math.round(b.x + b.w / 2) : typeof L === 'number' ? L : Math.round(Math.min(b.x + b.w - 12, Math.max(b.x + 12, ax)));
+    const ax = D ?? Math.round(A.x + A.w / 2);
+    const bx = L === 'bus' ? Math.round(B.x + B.w / 2) : typeof L === 'number' ? L : Math.round(Math.min(B.x + B.w - 12, Math.max(B.x + 12, ax)));
     if (label && L === 'bus') fail(`${e.from}→${e.to}: nhãn trên đường bus chưa hỗ trợ`);
     return { e, d: `M${ax} ${y1} L${ax} ${ym} L${bx} ${ym} L${bx} ${end(bx, ym)}`, lab: label ? elbowLabel(label, ax, bx, ym, e) : undefined };
   });
@@ -366,10 +489,8 @@ export function layout(spec0: FigSpec, lang: Lang, W: number, variant?: string):
   function rowArrow(e: FigEdge, a: Rect, b: Rect) {
     const s = a.x < b.x ? 1 : -1;
     /** the x where a node's cells end on the side facing (out = 1) or away from (out = -1) the other node */
-    const edge = (end: string, r: Rect, out: number): number => {
-      const n = drawnNode(ps, base(end)), gw = n.shape === 'grid' ? gridCols(n, lang).reduce((p, q) => p + q, 0) : r.w;
-      return r.x + Math.round((r.w - gw) / 2) + (out * s > 0 ? gw : 0);
-    };
+    // v48 (L1166): the cells in their widest frame (core), so a cell that widens in a later step never swallows the tip
+    const edge = (end: string, r: Rect, out: number): number => { const c = core(end); return c.x + (out * s > 0 ? c.w : 0); };
     const y1 = anchorY(e.from, a, e), yb = e.to.includes('#') ? anchorY(e.to, b, e) : Math.min(b.y + b.h - 8, Math.max(b.y + 8, y1));
     const x1 = edge(e.from, a, 1) + 2 * s, tx = edge(e.to, b, -1), xm = Math.round((x1 + tx) / 2);
     // the tip (end + 0.75·w) stays 3 short of the cells, as stopAt() does
@@ -410,7 +531,7 @@ export function layout(spec0: FigSpec, lang: Lang, W: number, variant?: string):
       const k = `e:${i}`, pe = p.edges[i]; // v42: this frame's ends and label; v44: and its dash
       shapes.push(r.e.link
         ? { k, t: 'p', d: r.d, ink: pe.ends ? 'edge' : 'new', w: pe.bold ? 3 : STROKE, dash: pe.dash } // v44 (L800): `bold` = an identifying relationship or total participation (a step may set it)
-        : pe.kind === 'skip' ? { k, t: 'p', d: r.d, ink: 'muted', w: STROKE, dash: true, attrs: { ...ends(r.e), 'data-kind': 'skip' } } // v46 (L880): no head, the label says it does not happen
+        : pe.kind === 'skip' || ghostIn(p, r.e.from) ? { k, t: 'p', d: r.d, ink: 'muted', w: STROKE, dash: true, attrs: { ...ends(r.e), 'data-kind': 'skip' } } // v46 (L880): no head, the label says it does not happen
           : { k, t: 'p', d: r.d, ink: pe.kind === 'error' ? 'dead' : 'edge', w: STROKE, arrow: true, dash: pe.kind === 'error' ? false : pe.dash, attrs: { ...ends(r.e), ...(pe.kind ? { 'data-kind': pe.kind } : {}) } });
       if (pe.ends) shapes.push(...crowEnds(k, r.d, pe.ends, !!r.rev));
       if (r.lab && pe.label) shapes.push({ k: `${k}.l`, t: 't', x: r.lab.x, y: r.lab.y, s: tr(pe.label, lang), size: SS, a: r.lab.a, ink: 'muted' });
@@ -571,8 +692,9 @@ function placeRows(spec: FigSpec, lang: Lang, W: number, dims: Map<string, Sized
     bands.push([y, y + hh]);
     y += hh;
     if (group(i) && group(i) !== group(i + 1)) y += GPAD;
-    // R1 E14: a row of notes is a heading for the row below: GAP_NOTE when no edge crosses the gap
-    if (i < vrows.length - 1) y += labelled.has(i) ? GAP_ELBOW : r.every(isNote) && !linked(i) && !group(i) && !group(i + 1) ? GAP_NOTE : GAP_Y;
+    // R1 E14: a row of notes is a heading for the row below: GAP_NOTE when no edge crosses the gap; v48 (L1164, b56 eye SQ3):
+    // and a closing line under the row above (5 dòng → 3 dòng), not 36 away from it
+    if (i < vrows.length - 1) y += labelled.has(i) ? GAP_ELBOW : (r.every(isNote) || vrows[i + 1].every(isNote)) && !linked(i) && !group(i) && !group(i + 1) ? GAP_NOTE : GAP_Y;
   });
   // a group's frame is a rect in `at` too (an edge end since v41 R3)
   for (const [id, ns] of gr) {
@@ -659,6 +781,12 @@ function shownOnly(spec: FigSpec, ps: Plan[]): [FigSpec, Plan[]] {
 function gatedEdges(spec: FigSpec): Set<string> {
   const ids = new Set((spec.edges ?? []).flatMap((e) => (e.id ? [e.id] : [])));
   return new Set([...(spec.steps ?? []), ...Object.values(spec.variants ?? {})].flatMap((s) => s.show ?? []).filter((x) => ids.has(x)));
+}
+/** v48 (L1168, b56 eye DY2/PG1): a node that is greyed out in this frame (tone ghost, or a grid whose every row is) feeds
+ * nothing: an arrow leaving it is drawn as a skip line (dashed, no head), never a solid arrow out of something not there. */
+export function ghostIn(p: { nodes: FigNode[] }, end: string): boolean {
+  const n = p.nodes.find((m) => m.id === base(end));
+  return !!n && (n.tone === 'ghost' || (!!n.rowTone?.length && n.rowTone.length === (n.cells?.length ?? -1) && n.rowTone.every((t) => t === 'ghost')));
 }
 /** v44 (L761): a node as its first frame draws it (a variant's set may change a grid's cells, so its row anchors follow). */
 const drawnNode = (ps: Plan[], id: string): FigNode => ps[0].nodes.find((n) => n.id === id) ?? fail(`edge: không có node "${id}"`);
@@ -811,15 +939,23 @@ function draw(n: FigNode, r: Rect, lang: Lang, wide = false, parent?: string): S
     const top = Math.max(1, n.mark ?? 0, ...its.map((i) => i.value));
     const unit = Math.max(8, Math.min(20, Math.floor((r.w - lw - vw - 16) / top))); // the node is as wide as size() made it
     const bx = r.x + Math.round((r.w - (lw + 8 + top * unit + 8 + vw)) / 2) + Math.ceil(lw) + 8;
+    // v48 (L1165): the mark's name in a line of its own above the bars, ending 5 left of the line, which runs up beside it
+    const mk = tr(n.markLabel, lang), ml = mk && n.mark !== undefined ? lineH(SS) : 0;
+    if (ml) {
+      const mx = bx + n.mark! * unit - 5;
+      if (mx - textWidth(mk, SS) < r.x) fail(`${n.id}: nhãn vạch "${mk}" dài hơn chỗ bên trái vạch`);
+      out.push({ k: `${k}.mk`, t: 't', x: mx, y: y + ml / 2, s: mk, size: SS, a: 'e', ink: 'muted', attrs: { 'data-owner': k } });
+      y += ml;
+    }
     its.forEach((it, i) => {
       const cy = y + i * BAR_H + BAR_H / 2;
-      const s = tr(it.note, lang) || String(it.value);
+      const s = tr(it.note, lang) || groupNum(String(it.value), lang);
       out.push({ k: `${k}.l${i}`, t: 't', x: bx - 8, y: cy, s: tr(it.label, lang), size: SS, a: 'e', ink: 'ink' },
         { k: `${k}:b${i}`, t: 'r', x: bx, y: cy - 7, w: it.value * unit, h: 14, tone: it.tone ?? n.tone ?? 'new', rx: 3 },
         // B4 eye X5 (L823): the value sits right after its own bar; only a value that would cross the mark line goes past it
         { k: `${k}.v${i}`, t: 't', x: bx + (n.mark === undefined || it.value * unit + 8 + textWidth(s, SS) + 6 < n.mark * unit ? it.value : Math.max(it.value, n.mark)) * unit + 8, y: cy, s, size: SS, ink: 'ink' });
     });
-    if (n.mark !== undefined) out.push({ k: `${k}.m`, t: 'l', x1: bx + n.mark * unit, y1: y + 1, x2: bx + n.mark * unit, y2: y + its.length * BAR_H - 1, ink: 'warm', w: 1.5, dash: true });
+    if (n.mark !== undefined) out.push({ k: `${k}.m`, t: 'l', x1: bx + n.mark * unit, y1: y + 1 - ml, x2: bx + n.mark * unit, y2: y + its.length * BAR_H - 1, ink: 'warm', w: 1.5, dash: true });
     y += its.length * BAR_H;
   }
   out.push(...lines(`${k}.s`, sb, r.x + r.w / 2, y + (sb.length ? 4 : 0), { ink: 'ink' }));
@@ -833,7 +969,8 @@ const WORDS = {
 };
 /** [the point, then one sentence per step]: the point is the variant's `alt`, else the figure's (hand-written, required);
  * a step is its `alt`, else its `say`. A variant draws one frame, so it has no steps. */
-export function altText(spec: FigSpec, lang: Lang, variant?: string): string[] {
+export function altText(spec0: FigSpec, lang: Lang, variant?: string): string[] {
+  const spec = localize(spec0, lang);
   const v = variantOf(spec, variant);
   const point = tr(v?.alt ?? spec.alt, lang);
   return v || !spec.steps?.length ? [point] : [point, ...spec.steps.map((s) => tr(s.alt ?? s.say, lang))];
@@ -841,7 +978,8 @@ export function altText(spec: FigSpec, lang: Lang, variant?: string): string[] {
 /** The figure's grids and bars as plain tables (caption = label, else sub), only those some frame shows. Each takes its most
  * filled version: the figure before its steps (with the variant's patch), then each frame, the first with the fewest blank
  * cells (a stepped figure that fills cells in gives its end state); a column blank in its header and every row is dropped. */
-export function altTables(spec: FigSpec, lang: Lang, variant?: string): FigTable[] {
+export function altTables(spec0: FigSpec, lang: Lang, variant?: string): FigTable[] {
+  const spec = localize(spec0, lang);
   const ps = plans(spec, lang, variant);
   // v44 (L802, eye E2): a variant reads only the frame(s) it draws, never the base figure's version of a grid. B4 eye X4 (L822):
   // a grid's table is its version in the frame the point is about: `data_step` (1-based) when the spec names one, else the last
@@ -851,7 +989,7 @@ export function altTables(spec: FigSpec, lang: Lang, variant?: string): FigTable
     .map((n) => [...(want ? [want] : []), ...[...ps].reverse()].find((p) => p.show.has(n.id))!.nodes.find((m) => m.id === n.id)!);
   return ns.map((n, i) => {
     const head = (n.head ?? []).map((c) => tr(c, lang));
-    const rows = n.cells?.map((r) => r.map((c) => tr(c, lang))) ?? (n.items ?? []).map((it) => [tr(it.label, lang), tr(it.note, lang) || String(it.value)]); // bars: label, value
+    const rows = n.cells?.map((r) => r.map((c) => tr(c, lang))) ?? (n.items ?? []).map((it) => [tr(it.label, lang), tr(it.note, lang) || groupNum(String(it.value), lang)]); // bars: label, value
     const keep = (_: unknown, c: number): boolean => !!head[c] || rows.some((r) => r[c]);
     return { caption: tr(n.label, lang) || tr(n.sub, lang) || `${tr(variantOf(spec, variant)?.title ?? spec.title, lang)}${ns.length > 1 ? ` · ${WORDS[lang].table} ${i + 1}` : ''}`, head: head.filter(keep), rows: rows.map((r) => r.filter(keep)) };
   });
@@ -889,7 +1027,7 @@ export async function mountFigure(host: HTMLElement, ref: FigRef, deps: Deps, en
     const open = [...host.querySelectorAll('details')].map((x) => x.open); // a width change keeps the explanation open
     v?.destroy();
     const a = altText(spec, lang, ref.variant);
-    v = mount(host, layout(spec, lang, W, ref.variant), lang, i, { name: ref.name, caption: tr(variantOf(spec, ref.variant)?.caption ?? spec.caption, lang), alt: a[0].split(/ (?=(?:Kết quả|Result): )/), steps: a.slice(1), tables: altTables(spec, lang, ref.variant), words: WORDS[lang] });
+    v = mount(host, layout(spec, lang, W, ref.variant), lang, i, { name: ref.name, caption: keepSegs(groupNum(tr(variantOf(spec, ref.variant)?.caption ?? spec.caption, lang), lang)), alt: a[0].split(/ (?=(?:Kết quả|Result): )/), steps: a.slice(1), tables: altTables(spec, lang, ref.variant), words: WORDS[lang] });
     host.querySelectorAll('details').forEach((x, j) => (x.open = !!open[j]));
   };
   draw();

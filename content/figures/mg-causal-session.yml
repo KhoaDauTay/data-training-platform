@@ -4,6 +4,7 @@
 # with w: majority, then find({ _id: 1 }) with readConcern majority and readPref secondary; without a session the read may return
 # the old city, in the session it carries afterClusterTime and returns Hue, maybe after a wait.
 # Deviation: the plan's wait note is the read cell itself (Hue, after a wait), so nothing floats under the grid.
+# v48 (eye X6, L1166): afterClusterTime sits right of the table and points at the read row (it landed on the table's title).
 # Source: https://www.mongodb.com/docs/manual/core/causal-consistency-read-write-concerns/
 title: { vi: "Session nhân quả: đọc được điều mình vừa ghi", en: "A causal session: read your own write" }
 caption:
@@ -13,7 +14,7 @@ alt:
   vi: "Session nhất quán nhân quả bảo đảm đọc được điều mình vừa ghi, kể cả từ secondary, bằng cách chờ node tới mốc thời gian của lần ghi. Bảo đảm chỉ có với write và read concern majority."
   en: "A causally consistent session guarantees reading your own write, even from a secondary, by waiting for the node to reach the write's time. The guarantee holds only with majority write and read concerns."
 nodes:
-  - { id: t, shape: key, mono: true, label: afterClusterTime, tone: live }
+  - { id: t, shape: key, mono: true, label: afterClusterTime, sub: { vi: "lần đọc mang theo", en: "the read carries it" }, tone: live }
   - id: tl
     shape: grid
     label: { vi: "đọc lại sau một lần ghi", en: "reading back after a write" }
@@ -23,10 +24,9 @@ nodes:
       - [{ vi: "đọc", en: read }, "–", { vi: "cũ", en: old }]
     cellTone: { "1:2": dead }
 rows:
-  - [t]
-  - [tl]
+  - [tl, t]
 edges:
-  - { from: t, to: tl, label: { vi: "lần đọc mang", en: the read carries } }
+  - { from: t, to: "tl#1" }
 steps:
   - say: { vi: "Không session: secondary có thể chưa thấy lần ghi.", en: "No session: the secondary may not have the write." }
     show: [tl]
